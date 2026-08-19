@@ -6,6 +6,7 @@ from pull_requests.container import pull_requests_container
 from tasks.app.domain.model.config import SortingConfig
 from tasks.container import tasks_container
 from velocity.container import velocity_container
+from bug_metrics.container import bug_metrics_container
 from .convertors.member_convertor import MemberConvertor
 from .convertors.pull_request_convertor import PullRequestConvertor
 from .convertors.task_convertor import TaskConvertor
@@ -22,6 +23,7 @@ from .facades.members_facade import MembersFacade
 from .facades.task_forecast_facade import TaskForecastFacade
 from .facades.task_filter_facade import TaskFilterFacade
 from .facades.pull_requests_facade import PullRequestsFacade
+from .facades.bug_trend_facade import BugTrendFacade
 from .facades.tasks_facade import TasksFacade
 from .facades.team_velocity_facade import TeamVelocityFacade
 from .utils.available_member_stage_filter import AvailableMemberStageFilter
@@ -52,6 +54,7 @@ class UiWebContainer:
         self._member_group_task_filter = None
         self._pull_request_convertor = None
         self._pull_requests_facade = None
+        self._bug_trend_facade = None
 
     @property
     def task_convertor(self) -> TaskConvertor:
@@ -97,6 +100,12 @@ class UiWebContainer:
                 enabled=enabled
             )
         return self._pull_requests_facade
+
+    @property
+    def bug_trend_facade(self) -> BugTrendFacade:
+        if self._bug_trend_facade is None:
+            self._bug_trend_facade = BugTrendFacade(bug_metrics_container.bug_trend_api)
+        return self._bug_trend_facade
 
     @staticmethod
     def _pull_request_sorting_config() -> SortingConfig:

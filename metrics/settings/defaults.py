@@ -38,6 +38,9 @@ CUSTOM_APP = (
     'forecast',
     'velocity',
     'pull_requests',
+    'jira_history',
+    'jira_sync',
+    'bug_metrics',
     'ui_web',
 )
 

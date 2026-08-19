@@ -1,0 +1,40 @@
+<div class="box">
+    <h3 class="title is-4">Drilldown: {{ drilldown.series_name }}</h3>
+    <p class="is-size-7 has-text-grey">Run {{ drilldown.calculation_run_id }} / bucket {{ drilldown.bucket_id }}</p>
+    <table class="table is-fullwidth is-striped is-hoverable">
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Summary</th>
+                <th>Status</th>
+                <th>Severity</th>
+                <th>Owner</th>
+                <th>Component</th>
+                <th>Created</th>
+                <th>Updated</th>
+                {% for field_name in drilldown.display_fields %}
+                    <th>{{ field_name }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in drilldown.rows %}
+                <tr>
+                    <td>{{ row.issue_key }}</td>
+                    <td>{{ row.summary }}</td>
+                    <td>{{ row.status }}</td>
+                    <td>{{ row.severity }}</td>
+                    <td>{{ row.owner }}</td>
+                    <td>{{ row.component }}</td>
+                    <td>{{ row.created_at }}</td>
+                    <td>{{ row.updated_at }}</td>
+                    {% for field_name, field_value in row.extra_fields.items %}
+                        <td>{{ field_value }}</td>
+                    {% endfor %}
+                </tr>
+            {% empty %}
+                <tr><td colspan="8">No issues matched this bucket.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

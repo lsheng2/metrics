@@ -1,0 +1,79 @@
+{
+    "version": "2.0.0",
+    "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+            "executable": "pwsh.exe",
+            "args": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"]
+        }
+    },
+    "tasks": [
+        {
+            "label": "Demo: Migrate Database",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $python = Join-Path $workspace '.venv\\Scripts\\python.exe'; & $python manage.py migrate",
+            "problemMatcher": []
+        },
+        {
+            "label": "Demo: Seed Bug Trend Mock Data",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $python = Join-Path $workspace '.venv\\Scripts\\python.exe'; & $python manage.py seed_bug_trend_demo",
+            "dependsOn": "Demo: Migrate Database",
+            "problemMatcher": []
+        },
+        {
+            "label": "Backend: Start Django",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\demo_start_backend.ps1'; & $script -Workspace $workspace",
+            "problemMatcher": []
+        },
+        {
+            "label": "Backend: Stop Django",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\demo_stop_backend.ps1'; & $script",
+            "problemMatcher": []
+        },
+        {
+            "label": "Backend: Restart Django",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Backend: Stop Django", "Backend: Start Django"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Frontend: Open Bug Trend",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\demo_open_bug_trend.ps1'; & $script",
+            "problemMatcher": []
+        },
+        {
+            "label": "Frontend: Stop Bug Trend",
+            "type": "shell",
+            "command": "Write-Host 'Frontend is served by Django; stop Backend: Stop Django to stop the demo server.'",
+            "problemMatcher": []
+        },
+        {
+            "label": "Frontend: Restart Bug Trend",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Frontend: Stop Bug Trend", "Frontend: Open Bug Trend"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Demo: Start E2E Bug Trend",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Demo: Seed Bug Trend Mock Data", "Backend: Start Django", "Frontend: Open Bug Trend"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Demo: Stop E2E Bug Trend",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Frontend: Stop Bug Trend", "Backend: Stop Django"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Demo: Restart E2E Bug Trend",
+            "dependsOrder": "sequence",
+            "dependsOn": ["Demo: Stop E2E Bug Trend", "Demo: Start E2E Bug Trend"],
+            "problemMatcher": []
+        }
+    ]
+}

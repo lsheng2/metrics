@@ -7,6 +7,7 @@ from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
+from .views.bug_trend_view import BugTrendView, BugTrendChartView, BugTrendDrilldownView
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
 
@@ -27,6 +28,7 @@ urlpatterns = [
     path(_base_prefix + 'dev-velocity/<str:team_id>/', DevVelocityView.as_view(), name='dev_velocity_with_team'),
     path(_base_prefix + 'task-forecast/', TaskForecastView.as_view(), name='task_forecast'),
     path(_base_prefix + 'pull-requests/', PullRequestsView.as_view(), name='pull_requests'),
+    path(_base_prefix + 'bug-trend/', BugTrendView.as_view(), name='bug_trend'),
 
     # Partials for HTMX
     path(_base_prefix + 'partials/tasks/', CurrentTasksView.as_view(), name='partials_tasks'),
@@ -46,4 +48,6 @@ urlpatterns = [
     path(_base_prefix + 'partials/team-velocity/chart/', TeamVelocityChartView.as_view(), name='team_velocity_chart'),
     path(_base_prefix + 'partials/team-velocity/sp-chart/', TeamStoryPointsChartView.as_view(), name='team_sp_chart'),
     path(_base_prefix + 'partials/team-velocity/tasks/', TeamVelocityTasksView.as_view(), name='team_velocity_tasks'),
+    path(_base_prefix + 'partials/bug-trend/chart/', BugTrendChartView.as_view(), name='bug_trend_chart'),
+    path(_base_prefix + 'bug-trend/drilldown/', BugTrendDrilldownView.as_view(), name='bug_trend_drilldown'),
 ]

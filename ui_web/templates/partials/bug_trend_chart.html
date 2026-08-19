@@ -1,0 +1,66 @@
+<div class="box">
+    <h3 class="title is-4">Bug Trend</h3>
+    {% if unavailable_reason %}
+        <div class="notification is-warning">{{ unavailable_reason }}</div>
+    {% endif %}
+    <canvas id="bugTrendChart" width="900" height="360" data-testid="bug-trend-chart"></canvas>
+</div>
+
+<script>
+(function() {
+    function initBugTrendChart() {
+        if (typeof Chart === 'undefined') {
+            setTimeout(initBugTrendChart, 100);
+            return;
+        }
+        if (window.bugTrendChartInstance) {
+            window.bugTrendChartInstance.destroy();
+            window.bugTrendChartInstance = null;
+        }
+        const canvas = document.getElementById('bugTrendChart');
+        if (!canvas) return;
+        const chartData = {{ chart_json|safe }};
+        if (!chartData || !chartData.labels || chartData.labels.length === 0) return;
+        window.bugTrendChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.datasets.map(dataset => ({
+                    type: dataset.type,
+                    label: dataset.series_name,
+                    data: dataset.values,
+                    borderColor: dataset.color,
+                    backgroundColor: dataset.type === 'bar' ? dataset.color : 'transparent',
+                    tension: 0.2,
+                    fill: false
+                }))
+            },
+            options: {
+                responsive: true,
+                interaction: { intersect: false, mode: 'index' },
+                onClick: function(event, elements) {
+                    if (!elements || elements.length === 0) return;
+                    const point = elements[0];
+                    const bucketId = chartData.bucket_ids[point.index];
+                    const seriesName = chartData.datasets[point.datasetIndex].series_name;
+                    const params = '?run=' + encodeURIComponent(chartData.calculation_run_id)
+                        + '&bucket=' + encodeURIComponent(bucketId)
+                        + '&series=' + encodeURIComponent(seriesName);
+                    htmx.ajax('GET', '{% url "ui_web:bug_trend_drilldown" %}' + params, {
+                        target: '#bug-trend-drilldown-container',
+                        swap: 'innerHTML'
+                    });
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initBugTrendChart);
+    } else {
+        initBugTrendChart();
+    }
+})();
+</script>
