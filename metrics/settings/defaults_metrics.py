@@ -9,9 +9,15 @@ def metrics_absolute_state_path(raw_path):
 
 
 METRICS_STATE_DIR = metrics_absolute_state_path(env.str('METRICS_STATE_DIR', default=str(BASE_DIR / 'state')))
+METRICS_STATE_DIR.mkdir(parents=True, exist_ok=True)
+METRICS_SQLITE_DATABASE_PATH = metrics_absolute_state_path(
+    env.str('METRICS_SQLITE_DATABASE_PATH', default=str(METRICS_STATE_DIR / 'db.sqlite3'))
+)
 METRICS_TASK_SEARCH_CACHE_DIR = metrics_absolute_state_path(
     env.str('METRICS_TASK_SEARCH_CACHE_DIR', default=str(METRICS_STATE_DIR / 'task_search_cache'))
 )
+
+DATABASES['default']['NAME'] = METRICS_SQLITE_DATABASE_PATH
 
 # Application deployment setup
 METRICS_BASE_URL = env.str('METRICS_BASE_URL', default='')
