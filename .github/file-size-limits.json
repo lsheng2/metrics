@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "description": "Repository-specific file-size limits consumed by scripts/check_file_size_limits.py. Rules are ordered: first match wins.",
+  "include_untracked": true,
+  "rules": [
+    {
+      "name": "github-ai-markdown",
+      "patterns": [
+        ".github/**/*.md"
+      ],
+      "max_lines": 260,
+      "rationale": "AI customization and BKM files should stay compact enough to be loaded selectively without becoming parallel manuals."
+    },
+    {
+      "name": "github-ai-json",
+      "patterns": [
+        ".github/**/*.json"
+      ],
+      "max_lines": 220,
+      "rationale": "AI governance JSON should remain reviewable and should not hide large policy bodies."
+    },
+    {
+      "name": "python-test",
+      "patterns": [
+        "**/tests/**/*.py",
+        "**/test_*.py"
+      ],
+      "max_lines": 600,
+      "rationale": "Test files may group business scenarios and fixtures, but should split above this point."
+    },
+    {
+      "name": "python-source",
+      "patterns": [
+        "**/*.py"
+      ],
+      "max_lines": 400,
+      "rationale": "Production Python modules should remain small enough to preserve module boundaries and readability."
+    }
+  ],
+  "exemptions": [
+    {
+      "name": "generated-or-cache-output",
+      "patterns": [
+        "**/__pycache__/**",
+        "**/*.pyc",
+        "db.sqlite3"
+      ],
+      "reason": "Generated or local runtime artifacts are not source files for review gates."
+    }
+  ],
+  "exemption_principles": [
+    "Prefer splitting source files over adding exemptions.",
+    "Only exempt generated, cache, runtime, or external artifact files.",
+    "Any source-code exemption must name an owner, a reason, and a follow-up split plan."
+  ]
+}
