@@ -1,13 +1,21 @@
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Dict, List, Optional
-from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
 from jira_history.container import jira_history_container
+
+from .page_query import (
+    BugTrendChartListSyncResult,
+    BugTrendEvidenceTicketResult,
+    BugTrendPageQueryService,
+    BugTrendPageQueryState,
+    BugTrendTicketListFilters,
+)
+from .series import active_bug_trend_series
 
 
 @dataclass(slots=True)
@@ -28,20 +36,13 @@ class BugTrendChart:
     unavailable_reason: str = ''
 
 
-@dataclass(slots=True)
-class BugTrendIssueRow:
-    issue_key: str
-    summary: str
-    status: str
-    severity: str
-    owner: str
-    component: str
-    created_at: str
-    updated_at: str
-    extra_fields: Dict[str, str]
-
-
 class ApiForBugTrend:
+    def __init__(self):
+        self._page_query_service = BugTrendPageQueryService(
+            self.get_scope,
+            self._format_bucket_label,
+        )
+
     def list_enabled_scopes(self) -> List[JiraScopeConfig]:
         return list(JiraScopeConfig.objects.filter(enabled=True).order_by('ip', 'project_label', 'name'))
 
@@ -63,13 +64,11 @@ class ApiForBugTrend:
             datasets=self._build_datasets(scope, buckets),
         )
 
-    def get_drilldown(self, calculation_run_id: UUID, bucket_id: UUID, series_name: str) -> List[BugTrendIssueRow]:
-        memberships = BugTrendBucketIssue.objects.filter(
-            calculation_run_id=calculation_run_id,
-            bucket_id=bucket_id,
-            series_name=series_name,
-        ).order_by('issue_key')
-        return [self._build_issue_row_from_membership(membership) for membership in memberships]
+    def get_evidence_tickets(self, state: BugTrendPageQueryState) -> BugTrendEvidenceTicketResult:
+        return self._page_query_service.get_evidence_tickets(state)
+
+    def validate_chart_list_sync(self, state: BugTrendPageQueryState) -> BugTrendChartListSyncResult:
+        return self._page_query_service.validate_chart_list_sync(state)
 
     def recalculate_scope(self, scope_id: int, coverage_start: date, coverage_end: date) -> BugTrendCalculationRun:
         scope = self.get_scope(scope_id)
@@ -136,25 +135,26 @@ class ApiForBugTrend:
         )
 
     def _create_memberships(self, scope, run, bucket, issues, transitions_by_issue):
-        memberships = {
+        memberships_by_series = {
             'new_critical_high': self._new_issue_keys(scope, issues, bucket.bucket_start, bucket.bucket_end, critical=True),
             'new_medium_low': self._new_issue_keys(scope, issues, bucket.bucket_start, bucket.bucket_end, critical=False),
             'fixed_or_closed_bugs': self._fixed_or_closed_issue_keys(scope, issues, transitions_by_issue, bucket.bucket_start, bucket.bucket_end),
             'all_open_bugs': self._open_issue_keys_at_bucket_end(scope, issues, transitions_by_issue, bucket.bucket_end),
         }
-        memberships['all_open_critical_high'] = {
+        memberships_by_series['all_open_critical_high'] = {
             issue.issue_key for issue in issues
-            if issue.issue_key in memberships['all_open_bugs'] and self._is_critical_high(scope, issue)
+            if issue.issue_key in memberships_by_series['all_open_bugs'] and self._is_critical_high(scope, issue)
         }
         issue_by_key = {issue.issue_key: issue for issue in issues}
-        for series_name, issue_keys in memberships.items():
+        for series in active_bug_trend_series(scope):
+            issue_keys = memberships_by_series[series.series_name]
             for issue_key in sorted(issue_keys):
                 issue = issue_by_key[issue_key]
                 BugTrendBucketIssue.objects.create(
                     scope=scope,
                     bucket=bucket,
                     calculation_run=run,
-                    series_name=series_name,
+                    series_name=series.series_name,
                     issue_key=issue_key,
                     summary=issue.summary,
                     status=issue.status,
@@ -261,47 +261,16 @@ class ApiForBugTrend:
         return grouped
 
     def _build_datasets(self, scope: JiraScopeConfig, buckets: List[BugTrendBucket]) -> List[BugTrendDataset]:
-        datasets = [
-            BugTrendDataset('all_open_bugs', 'line', [bucket.open_count for bucket in buckets], '#f2c94c'),
-            BugTrendDataset('new_medium_low', 'bar', [bucket.new_medium_low_count for bucket in buckets], '#56ccf2'),
-            BugTrendDataset('fixed_or_closed_bugs', 'bar', [-bucket.fixed_or_closed_count for bucket in buckets], '#bdbdbd'),
+        return [
+            BugTrendDataset(series.series_name, series.chart_type, series.chart_values(buckets), series.color)
+            for series in active_bug_trend_series(scope)
         ]
-        if scope.severity_field and scope.critical_high_values:
-            datasets.insert(1, BugTrendDataset('all_open_critical_high', 'line', [bucket.open_critical_high_count for bucket in buckets], '#f2994a'))
-            datasets.insert(2, BugTrendDataset('new_critical_high', 'bar', [bucket.new_critical_high_count for bucket in buckets], '#eb5757'))
-        return datasets
 
     def _format_bucket_label(self, bucket: BugTrendBucket) -> str:
         if bucket.granularity == JiraScopeConfig.GRANULARITY_WEEKLY:
             year, week, _ = bucket.bucket_start.isocalendar()
             return f'{str(year)[2:]}WW{week:02d}'
         return bucket.bucket_start.isoformat()
-
-    def _build_issue_row(self, scope, issue) -> BugTrendIssueRow:
-        return BugTrendIssueRow(
-            issue_key=issue.issue_key,
-            summary=issue.summary,
-            status=issue.status,
-            severity=issue.severity_value,
-            owner=issue.owner_value,
-            component=issue.component_value,
-            created_at=issue.created_at.isoformat() if issue.created_at else '',
-            updated_at=issue.updated_at.isoformat() if issue.updated_at else '',
-            extra_fields={field_name: self._display_field_value(issue.raw_fields_json.get(field_name)) for field_name in scope.display_fields},
-        )
-
-    def _build_issue_row_from_membership(self, membership) -> BugTrendIssueRow:
-        return BugTrendIssueRow(
-            issue_key=membership.issue_key,
-            summary=membership.summary,
-            status=membership.status,
-            severity=membership.severity_value,
-            owner=membership.owner_value,
-            component=membership.component_value,
-            created_at=membership.created_at.isoformat() if membership.created_at else '',
-            updated_at=membership.updated_at.isoformat() if membership.updated_at else '',
-            extra_fields=membership.extra_fields_json,
-        )
 
     def _display_field_value(self, raw_value):
         if raw_value is None:

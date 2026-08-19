@@ -27,13 +27,39 @@ class TestBugTrendViews(TestCase):
         self.assertIn(str(bucket.id), content)
         self.assertIn('bugTrendChart', content)
 
-    def test_shouldRenderDrilldownForRequestedRunAndBucket(self):
+    def test_shouldNotRenderEvidencePanelWhenSelectedRangeHasNoRun(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL empty trend',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+        })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        content = response.content.decode()
+        self.assertIn('No completed calculation covers the selected range', content)
+        self.assertNotIn('id="bug-trend-evidence-container"', content)
+        self.assertNotIn('Evidence tickets for visible range', content)
+
+    def test_shouldRenderEvidenceForRequestedRunAndBucket(self):
         # Given
         _, run, bucket = self._seed_trend_data()
 
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_drilldown'), {
+        response = self.client.get(reverse('ui_web:bug_trend_evidence'), {
+            'scope_id': bucket.scope_id,
             'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
         })
@@ -42,8 +68,7 @@ class TestBugTrendViews(TestCase):
         self.assertEqual(200, response.status_code)
         content = response.content.decode()
         self.assertIn('STDEL-8942', content)
-        self.assertIn(str(run.id), content)
-        self.assertIn(str(bucket.id), content)
+        self.assertIn('fixed_or_closed_bugs tickets for 26WW32', content)
 
     def _seed_trend_data(self):
         scope = JiraScopeConfig.objects.create(

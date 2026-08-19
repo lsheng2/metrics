@@ -12,7 +12,7 @@ The dashboard must show, for a user-defined Jira scope:
 - Day or week fixed or closed bugs.
 - Open bug backlog trend.
 - Open critical or high bug trend when severity data is available.
-- Drilldown from any time bucket to the matching Jira issues.
+- Evidence list from any time bucket to the matching Jira issues.
 
 Intel Jira is a superset for many Intel projects. The MVP must therefore support project-specific Jira definitions instead of hardcoding one global workflow, one component field, or one bug status model.
 
@@ -108,7 +108,7 @@ Minimum `jira_scope_config` fields:
 | `milestone_field` | Jira field used for milestone/release filtering. |
 | `fix_version_field` | Jira field used for affected or fixed version filtering. |
 | `package_version_field` | Optional Jira field used when a project exposes package/version separately from fix version. |
-| `display_fields` | Extra Jira fields shown in drilldown rows for this scope. |
+| `display_fields` | Extra Jira fields shown in evidence rows for this scope. |
 | `timezone` | Timezone used for date bucketing. |
 | `bucket_granularity` | `daily` or `weekly`. |
 | `enabled` | Whether this scope is visible in the dashboard. |
@@ -249,8 +249,8 @@ The provided `STDEL-8942` issue screenshot confirms these useful fields for the 
 | Affects Version/s | `crc_2a` | Optional affected-version filter/display field. |
 | Fix Version/s | `crc_2a`, `CRC RC2a.2` | Milestone/fix-version filter dimension. |
 | Packages / Version | `crc_2a`, `CRC RC2a.2` | Optional package/version filter dimension if exposed via REST. |
-| Assignee | User field | Owner filter and drilldown display. |
-| Reporter | User field | Drilldown display. |
+| Assignee | User field | Owner filter and evidence display. |
+| Reporter | User field | Evidence display. |
 | Created / Updated / Resolved | Date fields | Trend bucketing and sync verification. |
 | Bug Type | `Emulation` | Optional bug subtype filter/display field. |
 | Environment Found | `Emulation` | Optional environment filter/display field. |
@@ -324,7 +324,7 @@ flowchart TD
     Calc --> Daily["bug_trend_bucket"]
     Daily --> Api["Bug trend facade/API"]
     Api --> Chart["Chart.js mixed indicator chart"]
-    Api --> Drilldown["Issue drilldown table"]
+    Api --> Evidence["Issue evidence table"]
 ```
 
 ## Module Architecture
@@ -358,7 +358,7 @@ Cross-module access uses public APIs under each module's `app/api/` package. The
 
 | API owner | Public contract | Consumers |
 | --- | --- | --- |
-| `bug_metrics/app/api` | Read enabled scope configs and expose trend chart/drilldown query methods. | `ui_web`, `jira_sync` |
+| `bug_metrics/app/api` | Read enabled scope configs and expose trend chart/evidence query methods. | `ui_web`, `jira_sync` |
 | `jira_sync/app/api` | Expose sync trigger/status for a saved scope. | `ui_web`, management commands |
 | `jira_history/app/api` | Store/read normalized Jira issues, snapshots, transitions, and bucket membership artifacts. | `jira_sync`, `bug_metrics` |
 
@@ -480,7 +480,7 @@ The current dashboard only treats a completed run as authoritative when its `con
 
 ### `bug_trend_bucket_issue`
 
-Durable drilldown artifact connecting a chart bucket and series to the issue facts used for that exact count.
+Durable evidence artifact connecting a chart bucket and series to the issue facts used for that exact count.
 
 Required fields:
 
@@ -501,7 +501,7 @@ Required fields:
 - `updated_at`
 - `extra_fields_json`
 
-Drilldown consumes this table instead of reconstructing issue membership or display fields from mutable current issue state. Drilldown queries must use the same `calculation_run_id` and persisted bucket artifact id as the chart bucket that produced the clicked count.
+Evidence queries consume this table instead of reconstructing issue membership or display fields from mutable current issue state. Evidence queries must use the same `calculation_run_id` and persisted bucket artifact id as the chart bucket that produced the clicked count.
 
 ## Sync Strategy
 
@@ -542,7 +542,7 @@ If a scope has no severity field configured, the dashboard hides critical/high s
 
 If a scope defines both status and resolution mappings, the calculator treats either configured signal as sufficient to classify a bug as fixed or closed. This is required because some Jira projects express completion primarily through status while others express it through resolution.
 
-Each calculation run writes a `bug_trend_calculation_run`, aggregate bucket counts, and bucket drilldown rows. The chart and drilldown both read artifacts with the same `calculation_run_id` and bucket artifact id so a later sync or mapping edit cannot make a bucket's issue list or displayed row facts drift away from the displayed count.
+Each calculation run writes a `bug_trend_calculation_run`, aggregate bucket counts, and bucket evidence rows. The chart and evidence list both read artifacts with the same `calculation_run_id` and bucket artifact id so a later sync or mapping edit cannot make a bucket's issue list or displayed row facts drift away from the displayed count.
 
 ## UI Architecture
 
@@ -584,10 +584,10 @@ URL:
 Responsibilities:
 
 - Render filter bar.
-- Render chart partial.
-- Render bucket summary table.
+- Render mixed indicator chart.
+- Render synchronized evidence list when a completed calculation run covers the selected range.
 - Trigger sync or refresh.
-- Support drilldown links from bucket rows.
+- Support chart bucket/series selection that loads run-pinned evidence rows.
 - Read only saved `jira_scope_config` records. Freeform JQL edits belong to the scope configuration page and must be validated and synced before they can drive the chart.
 
 ### Scope Configuration
@@ -608,12 +608,12 @@ Responsibilities:
 - Validate JQL with a limited Jira search.
 - Save the scope before dashboard charting; the chart does not execute unsaved per-request JQL.
 
-### Drilldown
+### Evidence List
 
 URL:
 
 ```text
-/bug-trend/drilldown/?run=<calculation_run_id>&bucket=<bucket_id>&series=<series>
+/partials/bug-trend/evidence/?scope_id=<scope_id>&run=<calculation_run_id>&begin=<begin>&end=<end>&bucket=<bucket_id>&series=<series>
 ```
 
 Responsibilities:
@@ -621,6 +621,7 @@ Responsibilities:
 - List issue key, summary, status, severity, owner, component, created, updated.
 - Link to the Intel Jira issue.
 - Use the `calculation_run_id` and bucket artifact id carried by the clicked chart bucket; never re-resolve the latest run or rederive bucket boundaries at click time.
+- Show the evidence row count as positive rows even when the chart renders a series below zero for visual contrast.
 
 ## Third-Party Library Decision
 
@@ -629,9 +630,9 @@ Responsibilities:
 | Main indicator chart | Chart.js | Already loaded by baseline, MIT license, supports mixed line/bar chart, stacked bars, negative bars, date axis, dual axis, and legend toggles. |
 | Date axis | chartjs-adapter-date-fns | Already loaded by baseline. Avoids custom date scale code. |
 | Milestone/current marker | chartjs-plugin-annotation | Already loaded by baseline. Avoids custom canvas overlays. |
-| UI partial updates | HTMX | Existing baseline pattern for chart partials and filters. |
+| UI partial updates | HTMX | Existing baseline pattern for content and evidence partials. |
 | Styling | Bulma | Existing baseline CSS framework. |
-| Data grid | HTML table first | Drilldown MVP does not need DataTables/AG Grid yet. Add only if sorting/filtering exceeds native table needs. |
+| Data grid | HTML table first | Evidence-list MVP does not need DataTables/AG Grid yet. Add only if sorting/filtering exceeds native table needs. |
 
 Rejected for MVP:
 
@@ -661,10 +662,10 @@ Required validation layers:
 
 | Layer | Required coverage | Closure role |
 | --- | --- | --- |
-| Domain and persistence tests | Scope config versioning, sync cursor coverage, snapshot/transition persistence, calculation runs, bucket counts, bucket membership, and drilldown membership. | Proves calculation and durable truth contracts. |
+| Domain and persistence tests | Scope config versioning, sync cursor coverage, snapshot/transition persistence, calculation runs, bucket counts, bucket membership, and evidence membership. | Proves calculation and durable truth contracts. |
 | Facade/API tests | Chart API returns stable series, `calculation_run_id`, bucket ids, coverage state, and no live Jira dependency on dashboard load. | Proves UI consumes module APIs instead of private owners or Jira. |
-| Django view/template tests | `/bug-trend/`, chart partial, scope configuration page, and drilldown route render expected controls, htmx attributes, links, run ids, bucket ids, and coverage/stale-run messages. | Proves server-rendered HTML contract. |
-| Browser UI tests | User can load the dashboard, select a saved scope and date range, see a non-empty mixed Chart.js chart, trigger htmx refresh/sync controls, click a bucket drilldown, and observe the exact issue rows for that bucket. | Proves the actual UI works, not only Python data shaping. |
+| Django view/template tests | `/bug-trend/`, content partial refresh, scope configuration page, and evidence endpoint render expected controls, htmx attributes, links, run ids, bucket ids, and coverage/stale-run messages. | Proves server-rendered HTML contract. |
+| Browser UI tests | User can load the dashboard, select a saved scope and date range, see a non-empty mixed Chart.js chart, trigger htmx refresh/sync controls, click a bucket/series, and observe the exact evidence rows for that run and bucket. | Proves the actual UI works, not only Python data shaping. |
 | Browser negative-path tests | Stale config hash, before-start coverage, after-end coverage, partial-overlap coverage, and unavailable Jira on page load show safe UI states. | Proves the dashboard refuses misleading output. |
 
 Browser UI validation should use Playwright or an equivalent real-browser harness. If no browser harness exists at implementation time, creating the harness is part of `W5.N1`; template tests alone are not a substitute for MVP closure. The browser gate may use seeded local durable data and mocked Jira because the dashboard is required to render from local artifacts.
@@ -673,7 +674,7 @@ Minimum browser UI scenarios:
 
 1. Dashboard renders saved-scope filters and the mixed trend chart from local durable data with Jira unavailable.
 2. Chart payload contains stable series keys, `calculation_run_id`, and bucket ids; the canvas is nonblank after Chart.js renders.
-3. Clicking a bucket opens drilldown with the same `calculation_run_id` and bucket id and displays the exact membership rows.
+3. Clicking a bucket/series opens evidence with the same `calculation_run_id` and bucket id and displays the exact membership rows.
 4. A saved scope edit that changes `config_version_hash` prevents old runs from rendering as current results and prompts sync/recalculation.
 5. Date ranges before, after, or partially outside the completed calculation run coverage show unavailable or rejected states.
 6. The page uses the existing Bulma, HTMX, and Chart.js path and introduces no React/ECharts/Plotly/Recharts runtime dependency.
@@ -696,8 +697,8 @@ dirty_paths:
 | --- | --- | --- | --- |
 | `SCOPE-1` scope config is the only authority for project-specific JQL, lifecycle statuses, severity values, and field mappings. | `jira_scope_config` model and `bug_metrics/app/api` scope config API | `jira_sync`, `bug_metrics`, `ui_web` filters | A grep for trend code using global env workflow/status values instead of scope config for bug series calculation; a test shows a changed config hash prevents old runs from rendering as current results. |
 | `SYNC-1` dashboard page load reads local durable data, not live Jira. | `jira_sync` and `jira_history/app/api` persistence | `bug_metrics`, `ui_web` | A focused test or trace showing `/bug-trend/` can render with Jira client mocked unavailable. |
-| `TREND-1` chart series names are stable dashboard outputs, not Jira status names. | `bug_metrics` domain service | `ui_web` chart partial, drilldown | Unit tests with two scopes using different status names produce the same series keys. |
-| `DRILL-1` every chart bucket can resolve to the exact issue rows behind its counts. | `bug_metrics` calculation run and bucket drilldown artifact persistence | `bug_metrics/app/api` drilldown, `ui_web` drilldown | Tests for a bucket read persisted drilldown rows with the same `calculation_run_id` and bucket artifact id as the bucket count, and later current-issue changes do not change old drilldown row facts. |
+| `TREND-1` chart series names are stable dashboard outputs, not Jira status names. | `bug_metrics` domain service | `ui_web` chart and evidence views | Unit tests with two scopes using different status names produce the same series keys. |
+| `EVIDENCE-1` every chart bucket can resolve to the exact issue rows behind its counts. | `bug_metrics` calculation run and bucket membership artifact persistence | `bug_metrics/app/api` evidence query, `ui_web` evidence list | Tests for a bucket read persisted evidence rows with the same `calculation_run_id` and bucket artifact id as the bucket count, and later current-issue changes do not change old evidence row facts. |
 | `UI-1` indicator UI uses existing Bulma, HTMX, and Chart.js ownership path. | `ui_web` templates/views/static | Browser users | No React/ECharts/Plotly/Recharts dependency or parallel chart abstraction is introduced. |
 | `SEC-1` Jira credentials remain local secret/config only. | `.env`, deployment secret store, settings loader | `jira_sync/out` | `git ls-files` and staged diff scans do not contain `.env` or PAT-like values. |
 | `COV-1` chart ranges are limited to locally reliable Jira history coverage. | `jira_sync_cursor` and trend calculation run metadata | `bug_metrics`, `ui_web` | Tests selecting ranges before start, after end, and partially overlapping the completed calculation run coverage reject or mark buckets unavailable. |
@@ -713,11 +714,11 @@ flowchart TD
   W2N1 --> W2N2["W2.N2: Jira scope sync command"]
   W2N2 --> W3N1["W3.N1: Trend bucket calculator"]
     W1N1 --> W3N1
-    W3N1 --> W3N2["W3.N2: Drilldown query API"]
+    W3N1 --> W3N2["W3.N2: Evidence query API"]
     W3N1 --> W4N1["W4.N1: Bug trend facade"]
     W3N2 --> W4N1
     W4N1 --> W4N2["W4.N2: Indicator chart UI"]
-    W4N1 --> W4N3["W4.N3: Drilldown UI"]
+    W4N1 --> W4N3["W4.N3: Evidence UI"]
     W4N2 --> W5N1["W5.N1: End-to-end validation"]
     W4N3 --> W5N1
     W5N1 --> CR["CLOSE.R: Closure review"]
@@ -730,13 +731,13 @@ flowchart TD
 | `P0` | [] | `docs/mvp-bug-trend-architecture-spec.md` | Architecture plan | all | Architect/reviewer signoff | Plan contracts, graph, nodes, and ledger agree. | serial |
 | `W1.N1` | [`P0`] | `bug_metrics/`, `metrics/settings/`, `docs/` | Scope configuration authority | `SCOPE-1`, `SEC-1` | Model/config unit tests; settings check | Saved scope stores JQL, lifecycle mappings, severity mappings, field mappings, display fields, and semantic config version hash. | serial |
 | `W1.N2` | [`P0`] | `jira_sync/`, `docs/` | Sync state authority | `SYNC-1`, `COV-1` | Model tests; idempotent cursor and coverage tests | Cursor records last successful sync, safe updated cutoff, and reliable history coverage per scope. | parallel with `W1.N1` only if model migrations do not conflict |
-| `W2.N1` | [`W1.N1`, `W1.N2`] | `jira_history/`, `docs/` | Durable Jira history | `SYNC-1`, `DRILL-1`, `COV-1` | Snapshot/transition/calculation-run/bucket/bucket-membership persistence tests | Raw snapshots, normalized issues, transitions, calculation runs, bucket artifacts, and bucket membership artifacts are idempotently stored. | serial |
+| `W2.N1` | [`W1.N1`, `W1.N2`] | `jira_history/`, `docs/` | Durable Jira history | `SYNC-1`, `EVIDENCE-1`, `COV-1` | Snapshot/transition/calculation-run/bucket/bucket-membership persistence tests | Raw snapshots, normalized issues, transitions, calculation runs, bucket artifacts, and bucket membership artifacts are idempotently stored. | serial |
 | `W2.N2` | [`W2.N1`] | `jira_sync/`, `docs/` | Jira sync orchestration | `SCOPE-1`, `SYNC-1`, `SEC-1`, `COV-1` | Management command test with mocked Jira adapter | Command syncs a saved scope JQL with updated-overlap, writes through `jira_history/app/api`, records coverage, and never prints tokens. | serial |
-| `W3.N1` | [`W1.N1`, `W2.N1`, `W2.N2`] | `bug_metrics/`, `docs/` | Trend calculation | `SCOPE-1`, `TREND-1`, `DRILL-1`, `COV-1` | Unit tests for two scopes with different status names; config-hash mismatch test; before-start, after-end, and partial-overlap coverage tests | Produces stable series keys, matching-config runs, bucket artifacts, and durable membership for daily and weekly buckets from local data. | serial |
-| `W3.N2` | [`W3.N1`] | `bug_metrics/`, `docs/` | Drilldown data | `DRILL-1` | Bucket-to-issue query tests include `calculation_run_id` and bucket artifact id | Every bucket/series can return issue keys and display fields for the requested calculation run and bucket artifact. | serial |
-| `W4.N1` | [`W3.N1`, `W3.N2`] | `ui_web/facades/`, `ui_web/data/`, `docs/` | UI federation API | `TREND-1`, `DRILL-1`, `UI-1`, `COV-1` | Facade tests with mocked `bug_metrics/app/api` verify run id and bucket id propagation | Facade returns Chart.js-ready datasets, coverage state, calculation run id, bucket ids, and drilldown data without Jira access. | serial |
+| `W3.N1` | [`W1.N1`, `W2.N1`, `W2.N2`] | `bug_metrics/`, `docs/` | Trend calculation | `SCOPE-1`, `TREND-1`, `EVIDENCE-1`, `COV-1` | Unit tests for two scopes with different status names; config-hash mismatch test; before-start, after-end, and partial-overlap coverage tests | Produces stable series keys, matching-config runs, bucket artifacts, and durable membership for daily and weekly buckets from local data. | serial |
+| `W3.N2` | [`W3.N1`] | `bug_metrics/`, `docs/` | Evidence data | `EVIDENCE-1` | Bucket-to-issue query tests include `calculation_run_id` and bucket artifact id | Every bucket/series can return issue keys, source links, and display fields for the requested calculation run and bucket artifact. | serial |
+| `W4.N1` | [`W3.N1`, `W3.N2`] | `ui_web/facades/`, `ui_web/data/`, `docs/` | UI federation API | `TREND-1`, `EVIDENCE-1`, `UI-1`, `COV-1` | Facade tests with mocked `bug_metrics/app/api` verify run id and bucket id propagation | Facade returns Chart.js-ready datasets, coverage state, calculation run id, bucket ids, and evidence data without Jira access. | serial |
 | `W4.N2` | [`W4.N1`] | `ui_web/views/`, `ui_web/templates/`, `ui_web/static/`, `docs/` | Indicator chart UI | `UI-1`, `TREND-1` | Template/view tests; browser smoke proves Chart.js renders a nonblank mixed chart when local data exists | `/bug-trend/` renders filter bar and mixed Chart.js indicator chart. | serial |
-| `W4.N3` | [`W4.N1`] | `ui_web/views/`, `ui_web/templates/`, `docs/` | Drilldown UI | `DRILL-1`, `UI-1` | View/template tests verify clicked run id and bucket id reach drilldown API | Bucket drilldown displays issue list and Jira links for the same calculation run and bucket artifact as the chart. | parallel with `W4.N2` if view/template ownership does not overlap |
+| `W4.N3` | [`W4.N1`] | `ui_web/views/`, `ui_web/templates/`, `docs/` | Evidence UI | `EVIDENCE-1`, `UI-1` | View/template tests verify clicked run id and bucket id reach evidence API | Bucket evidence displays issue list and Jira links for the same calculation run and bucket artifact as the chart. | parallel with `W4.N2` if view/template ownership does not overlap |
 | `W5.N1` | [`W4.N2`, `W4.N3`] | `tests/`, `docs/`, `README.md` | MVP validation | all | Focused tests, `python manage.py check`, browser UI validation with seeded local durable data, local manual sync against STDEL if token is available | Acceptance criteria are demonstrated through backend contracts and browser-observed UI behavior using local durable data. | serial |
 | `CLOSE.R` | [`W5.N1`] | `docs/`, `README.md`, `.github/` if changed | Closure review | all | Independent review, file-size/whitespace gates if scripts exist | No unresolved blocker findings; residual risks are named. | serial |
 
@@ -748,10 +749,10 @@ flowchart TD
 - [ ] `W2.N1` - Add issue snapshot, transition, calculation-run, bucket, and bucket-membership persistence.
 - [ ] `W2.N2` - Add Jira scope sync command.
 - [ ] `W3.N1` - Add trend bucket calculator.
-- [ ] `W3.N2` - Add drilldown query API.
+- [ ] `W3.N2` - Add evidence query API.
 - [ ] `W4.N1` - Add bug trend facade.
 - [ ] `W4.N2` - Add indicator chart UI.
-- [ ] `W4.N3` - Add drilldown UI.
+- [ ] `W4.N3` - Add evidence UI.
 - [ ] `W5.N1` - Run end-to-end validation.
 - [ ] `CLOSE.R` - Run closure review.
 

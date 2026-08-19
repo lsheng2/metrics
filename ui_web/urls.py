@@ -7,7 +7,7 @@ from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
-from .views.bug_trend_view import BugTrendView, BugTrendChartView, BugTrendDrilldownView
+from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
 
@@ -48,6 +48,5 @@ urlpatterns = [
     path(_base_prefix + 'partials/team-velocity/chart/', TeamVelocityChartView.as_view(), name='team_velocity_chart'),
     path(_base_prefix + 'partials/team-velocity/sp-chart/', TeamStoryPointsChartView.as_view(), name='team_sp_chart'),
     path(_base_prefix + 'partials/team-velocity/tasks/', TeamVelocityTasksView.as_view(), name='team_velocity_tasks'),
-    path(_base_prefix + 'partials/bug-trend/chart/', BugTrendChartView.as_view(), name='bug_trend_chart'),
-    path(_base_prefix + 'bug-trend/drilldown/', BugTrendDrilldownView.as_view(), name='bug_trend_drilldown'),
+    path(_base_prefix + 'partials/bug-trend/evidence/', BugTrendEvidenceView.as_view(), name='bug_trend_evidence'),
 ]

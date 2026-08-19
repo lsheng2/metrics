@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 
 from django.test import TestCase
 
-from bug_metrics.app.api import bug_trend_api
+from bug_metrics.app.api import BugTrendPageQueryState, bug_trend_api
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
 from jira_history.models import JiraIssue, JiraTransition
 
@@ -87,7 +87,7 @@ class TestBugTrendChartContract(TestCase):
         self.assertIsNone(after_chart.calculation_run_id)
         self.assertIsNone(overlap_chart.calculation_run_id)
 
-    def test_shouldReturnDrilldownForRequestedRunAndBucketArtifact(self):
+    def test_shouldReturnEvidenceForRequestedRunAndBucketArtifact(self):
         # Given
         scope = self._create_scope()
         run = self._create_run(scope, date(2026, 8, 1), date(2026, 8, 31), scope.config_version_hash)
@@ -127,13 +127,22 @@ class TestBugTrendChartContract(TestCase):
         )
 
         # When
-        rows = bug_trend_api.get_drilldown(run.id, bucket.id, 'fixed_or_closed_bugs')
+        result = bug_trend_api.get_evidence_tickets(
+            BugTrendPageQueryState(
+                scope.id,
+                date(2026, 8, 3),
+                date(2026, 8, 9),
+                calculation_run_id=str(run.id),
+                selected_bucket_id=str(bucket.id),
+                selected_series_name='fixed_or_closed_bugs',
+            )
+        )
 
         # Then
-        self.assertEqual(['STDEL-8942'], [row.issue_key for row in rows])
-        self.assertEqual('Failure in emulation flow', rows[0].summary)
+        self.assertEqual(['STDEL-8942'], [row.issue_key for row in result.rows])
+        self.assertEqual('Failure in emulation flow', result.rows[0].summary)
 
-    def test_shouldKeepDrilldownFactsStableWhenCurrentIssueChangesAfterRun(self):
+    def test_shouldKeepEvidenceFactsStableWhenCurrentIssueChangesAfterRun(self):
         # Given
         scope = self._create_scope()
         run = self._create_run(scope, date(2026, 8, 1), date(2026, 8, 31), scope.config_version_hash)
@@ -169,11 +178,20 @@ class TestBugTrendChartContract(TestCase):
         )
 
         # When
-        rows = bug_trend_api.get_drilldown(run.id, bucket.id, 'fixed_or_closed_bugs')
+        result = bug_trend_api.get_evidence_tickets(
+            BugTrendPageQueryState(
+                scope.id,
+                date(2026, 8, 3),
+                date(2026, 8, 9),
+                calculation_run_id=str(run.id),
+                selected_bucket_id=str(bucket.id),
+                selected_series_name='fixed_or_closed_bugs',
+            )
+        )
 
         # Then
-        self.assertEqual('Original fixed bug', rows[0].summary)
-        self.assertEqual('Fixed', rows[0].status)
+        self.assertEqual('Original fixed bug', result.rows[0].summary)
+        self.assertEqual('Fixed', result.rows[0].status)
 
     def test_shouldCountBugAsOpenBeforeFutureFixedTransition(self):
         # Given
@@ -370,7 +388,7 @@ class TestBugTrendChartContract(TestCase):
         # Then
         self.assertEqual([0], chart.datasets[0].values)
 
-    def test_shouldExposeConfiguredDisplayFieldsInDrilldownRows(self):
+    def test_shouldExposeConfiguredDisplayFieldsInEvidenceRows(self):
         # Given
         scope = self._create_scope()
         scope.display_fields = ['customfield_bug_type']
@@ -410,10 +428,19 @@ class TestBugTrendChartContract(TestCase):
         )
 
         # When
-        rows = bug_trend_api.get_drilldown(run.id, bucket.id, 'fixed_or_closed_bugs')
+        result = bug_trend_api.get_evidence_tickets(
+            BugTrendPageQueryState(
+                scope.id,
+                date(2026, 8, 3),
+                date(2026, 8, 9),
+                calculation_run_id=str(run.id),
+                selected_bucket_id=str(bucket.id),
+                selected_series_name='fixed_or_closed_bugs',
+            )
+        )
 
         # Then
-        self.assertEqual('Emulation', rows[0].extra_fields['customfield_bug_type'])
+        self.assertEqual('Emulation', result.rows[0].extra_fields['customfield_bug_type'])
 
     def _create_scope(self):
         return JiraScopeConfig.objects.create(

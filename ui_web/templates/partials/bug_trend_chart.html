@@ -37,17 +37,20 @@
             },
             options: {
                 responsive: true,
-                interaction: { intersect: false, mode: 'index' },
+                interaction: { intersect: true, mode: 'nearest' },
                 onClick: function(event, elements) {
                     if (!elements || elements.length === 0) return;
                     const point = elements[0];
                     const bucketId = chartData.bucket_ids[point.index];
                     const seriesName = chartData.datasets[point.datasetIndex].series_name;
-                    const params = '?run=' + encodeURIComponent(chartData.calculation_run_id)
+                    const params = '?scope_id=' + encodeURIComponent(chartData.scope_id)
+                        + '&run=' + encodeURIComponent(chartData.calculation_run_id)
+                        + '&begin=' + encodeURIComponent('{{ begin }}')
+                        + '&end=' + encodeURIComponent('{{ end }}')
                         + '&bucket=' + encodeURIComponent(bucketId)
                         + '&series=' + encodeURIComponent(seriesName);
-                    htmx.ajax('GET', '{% url "ui_web:bug_trend_drilldown" %}' + params, {
-                        target: '#bug-trend-drilldown-container',
+                    htmx.ajax('GET', '{% url "ui_web:bug_trend_evidence" %}' + params, {
+                        target: '#bug-trend-evidence-container',
                         swap: 'innerHTML'
                     });
                 },

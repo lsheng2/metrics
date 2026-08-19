@@ -20,9 +20,14 @@ class BugTrendChartData:
 
 
 @dataclass(slots=True)
-class BugTrendDrilldownData:
-    calculation_run_id: str
-    bucket_id: str
-    series_name: str
+class BugTrendEvidenceData:
     rows: List[object]
+    total_count: int
+    shown_count: int
+    selection_title: str
     display_fields: List[str]
+    scope_id: int
+    calculation_run_id: str
+    begin: str
+    end: str
+    has_selection: bool

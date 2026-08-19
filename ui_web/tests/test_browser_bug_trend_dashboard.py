@@ -13,7 +13,7 @@ from jira_history.models import JiraIssue
 class TestBugTrendDashboardBrowser(TestCase):
     @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldSyncMockJiraDataAndRenderDashboardDrilldown(self, adapter_class, create_jira_client):
+    def test_shouldSyncMockJiraDataAndRenderDashboardEvidence(self, adapter_class, create_jira_client):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',
@@ -45,18 +45,22 @@ class TestBugTrendDashboardBrowser(TestCase):
             'begin': '2026-08-03',
             'end': '2026-08-09',
         })
-        drilldown_response = self.client.get(reverse('ui_web:bug_trend_drilldown'), {
+        evidence_response = self.client.get(reverse('ui_web:bug_trend_evidence'), {
+            'scope_id': scope.id,
             'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
         })
-        nonblank_pixels, drilldown_text, _ = self._render_chart_and_click_drilldown(response, drilldown_response)
+        nonblank_pixels, evidence_text, chart_config = self._render_chart_and_click_evidence(response, evidence_response)
 
         # Then
         self.assertTrue(nonblank_pixels)
-        self.assertIn(str(run.id), drilldown_text)
-        self.assertIn(str(bucket.id), drilldown_text)
-        self.assertIn('STDEL-8942', drilldown_text)
+        self.assertIn('fixed_or_closed_bugs tickets for 26WW32', evidence_text)
+        self.assertIn('STDEL-8942', evidence_text)
+        self.assertIn('run=' + str(run.id), chart_config['evidenceUrl'])
+        self.assertIn('series=fixed_or_closed_bugs', chart_config['evidenceUrl'])
         self.assertEqual(1, bucket.fixed_or_closed_count)
 
     @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
@@ -136,12 +140,15 @@ class TestBugTrendDashboardBrowser(TestCase):
             'begin': '2026-08-03',
             'end': '2026-08-16',
         })
-        drilldown_response = self.client.get(reverse('ui_web:bug_trend_drilldown'), {
+        evidence_response = self.client.get(reverse('ui_web:bug_trend_evidence'), {
+            'scope_id': scope.id,
             'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-16',
             'bucket': str(first_bucket.id),
             'series': 'fixed_or_closed_bugs',
         })
-        nonblank_pixels, drilldown_text, chart_config = self._render_chart_and_click_drilldown(response, drilldown_response)
+        nonblank_pixels, evidence_text, chart_config = self._render_chart_and_click_evidence(response, evidence_response)
 
         # Then
         series_values = {dataset['label']: dataset['data'] for dataset in chart_config['data']['datasets']}
@@ -152,24 +159,28 @@ class TestBugTrendDashboardBrowser(TestCase):
         self.assertEqual([1, 1], series_values['new_critical_high'])
         self.assertEqual([1, 1], series_values['new_medium_low'])
         self.assertEqual([-1, -1], series_values['fixed_or_closed_bugs'])
-        self.assertIn('STDEL-9002', drilldown_text)
+        self.assertIn('STDEL-9002', evidence_text)
 
-    def test_shouldRenderChartAndOpenDrilldownFromClickedBucket(self):
+    def test_shouldRenderChartAndOpenEvidenceFromClickedBucket(self):
         # Given
         _, run, bucket = self._seed_trend_data()
         response = self.client.get(reverse('ui_web:bug_trend'), {'begin': '2026-08-03', 'end': '2026-08-09'})
-        drilldown_response = self.client.get(reverse('ui_web:bug_trend_drilldown'), {
+        evidence_response = self.client.get(reverse('ui_web:bug_trend_evidence'), {
+            'scope_id': run.scope_id,
             'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
         })
-        nonblank_pixels, drilldown_text, _ = self._render_chart_and_click_drilldown(response, drilldown_response)
+        nonblank_pixels, evidence_text, chart_config = self._render_chart_and_click_evidence(response, evidence_response)
 
         # Then
         self.assertTrue(nonblank_pixels)
-        self.assertIn(str(run.id), drilldown_text)
-        self.assertIn(str(bucket.id), drilldown_text)
-        self.assertIn('STDEL-8942', drilldown_text)
+        self.assertIn('fixed_or_closed_bugs tickets for 26WW32', evidence_text)
+        self.assertIn('STDEL-8942', evidence_text)
+        self.assertIn('run=' + str(run.id), chart_config['evidenceUrl'])
+        self.assertIn('series=fixed_or_closed_bugs', chart_config['evidenceUrl'])
 
     def test_shouldShowUnavailableStateWhenRunCoverageDoesNotCoverSelectedRange(self):
         # Given
@@ -248,15 +259,15 @@ class TestBugTrendDashboardBrowser(TestCase):
         )
         return scope, run, bucket
 
-    def _render_chart_and_click_drilldown(self, response, drilldown_response):
+    def _render_chart_and_click_evidence(self, response, evidence_response):
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
         try:
-            page.route('**/bug-trend/drilldown/**', lambda route: route.fulfill(
+            page.route('**/partials/bug-trend/evidence/**', lambda route: route.fulfill(
                 status=200,
                 content_type='text/html',
-                body=drilldown_response.content.decode(),
+                body=evidence_response.content.decode(),
             ))
             page.set_content(self._browser_html(response.content.decode()), wait_until='domcontentloaded')
             page.wait_for_function("window.bugTrendChartInstance !== undefined")
@@ -271,9 +282,15 @@ class TestBugTrendDashboardBrowser(TestCase):
                 }
             """)
             page.locator('#bugTrendChart').click(position={'x': 410, 'y': 170})
-            page.locator('#bug-trend-drilldown-container').wait_for()
-            chart_config = page.evaluate("window.bugTrendChartInstance.config")
-            return nonblank_pixels, page.locator('#bug-trend-drilldown-container').inner_text(), chart_config
+            page.locator('#bug-trend-evidence-container').wait_for()
+            chart_config = page.evaluate("""
+                () => {
+                    const config = window.bugTrendChartInstance.config;
+                    config.evidenceUrl = window.lastHtmxUrl;
+                    return config;
+                }
+            """)
+            return nonblank_pixels, page.locator('#bug-trend-evidence-container').inner_text(), chart_config
         finally:
             page.close()
             browser.close()
@@ -359,6 +376,7 @@ class TestBugTrendDashboardBrowser(TestCase):
         return """
             window.htmx = {
                 ajax: function(method, url, options) {
+                    window.lastHtmxUrl = url;
                     if (url.startsWith('/')) {
                         url = 'http://testserver' + url;
                     }

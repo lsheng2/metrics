@@ -1,4 +1,7 @@
+import json
 from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from datetime import datetime, timezone
 
@@ -322,6 +325,89 @@ class TestSyncJiraScopeCommand(TestCase):
         }
 
 
+class TestDumpRealJiraBugTrendFixtureCommand(TestCase):
+    @patch('jira_sync.management.commands.dump_real_jira_bug_trend_fixture.create_jira_client')
+    @patch('jira_sync.management.commands.dump_real_jira_bug_trend_fixture.JiraScopeIssueAdapter')
+    def test_shouldDumpRealJiraRestFixtureWithoutSeedingDatabase(self, adapter_class, create_jira_client):
+        # Given
+        adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
+
+        # When
+        with TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / 'real-jira.json'
+            call_command(
+                'dump_real_jira_bug_trend_fixture',
+                '--project', '131600',
+                '--issue-limit', '2',
+                '--page-size', '25',
+                '--output', str(output_path),
+                stdout=StringIO(),
+            )
+            fixture = json.loads(output_path.read_text(encoding='utf-8'))
+
+        # Then
+        adapter_class.assert_called_once_with(create_jira_client.return_value, page_size=25)
+        adapter_class.return_value.fetch_issues.assert_called_once()
+        self.assertEqual('project = 131600 ORDER BY updated DESC', adapter_class.return_value.fetch_issues.call_args.args[0])
+        self.assertEqual(2, adapter_class.return_value.fetch_issues.call_args.kwargs['issue_limit'])
+        self.assertEqual('jira-rest-read-only', fixture['source'])
+        self.assertEqual('STDEL-8942', fixture['issues'][0]['key'])
+        self.assertEqual('Failure in emulation flow', fixture['issues'][0]['fields']['summary'])
+        self.assertIn('changelog', fixture['issues'][0])
+        self.assertFalse(JiraScopeConfig.objects.exists())
+        self.assertFalse(JiraIssue.objects.exists())
+
+    @patch('jira_sync.management.commands.dump_real_jira_bug_trend_fixture.create_jira_client')
+    @patch('jira_sync.management.commands.dump_real_jira_bug_trend_fixture.JiraScopeIssueAdapter')
+    def test_shouldSeedDumpedRealJiraFixtureWhenRequested(self, adapter_class, create_jira_client):
+        # Given
+        adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
+
+        # When
+        with TemporaryDirectory() as temp_dir:
+            call_command(
+                'dump_real_jira_bug_trend_fixture',
+                '--project', '131600',
+                '--seed-db',
+                '--output', str(Path(temp_dir) / 'real-jira.json'),
+                stdout=StringIO(),
+            )
+
+        # Then
+        scope = JiraScopeConfig.objects.get(project_label='131600')
+        issue = JiraIssue.objects.get(scope=scope, issue_key='STDEL-8942')
+        self.assertEqual('Failure in emulation flow', issue.summary)
+        self.assertEqual({'name': 'P3-Medium'}, issue.raw_fields_json['priority'])
+        self.assertTrue(JiraTransition.objects.filter(scope=scope, issue_key='STDEL-8942', to_value='Fixed').exists())
+
+    def _jira_issue_payload(self):
+        return {
+            'key': 'STDEL-8942',
+            'fields': {
+                'summary': 'Failure in emulation flow',
+                'issuetype': {'name': 'Bug'},
+                'status': {'name': 'Fixed'},
+                'resolution': {'name': 'Fixed'},
+                'priority': {'name': 'P3-Medium'},
+                'components': [{'name': 'team_emulation'}],
+                'assignee': {'displayName': 'Alice'},
+                'created': '2026-08-04T10:00:00.000+0000',
+                'updated': '2026-08-05T10:00:00.000+0000',
+                'resolutiondate': '2026-08-05T09:00:00.000+0000',
+            },
+            'changelog': {
+                'histories': [
+                    {
+                        'created': '2026-08-05T09:00:00.000+0000',
+                        'items': [
+                            {'field': 'status', 'fromString': 'Open', 'toString': 'Fixed'},
+                        ],
+                    }
+                ]
+            },
+        }
+
+
 class TestJiraScopeIssueAdapter(TestCase):
     def test_shouldRejectPartialExpandedChangelog(self):
         # Given
@@ -340,6 +426,18 @@ class TestJiraScopeIssueAdapter(TestCase):
         with self.assertRaises(ValueError):
             adapter.fetch_issues('project = STDEL', ['summary'])
 
+    def test_shouldStopFetchingWhenIssueLimitIsReached(self):
+        # Given
+        jira_client = PagedFakeJiraClient()
+        adapter = JiraScopeIssueAdapter(jira_client, page_size=2)
+
+        # When
+        issues = adapter.fetch_issues('project = STDEL', ['summary'], issue_limit=3)
+
+        # Then
+        self.assertEqual(['STDEL-1', 'STDEL-2', 'STDEL-3'], [issue['key'] for issue in issues])
+        self.assertEqual([2, 1], [call['limit'] for call in jira_client.calls])
+
 
 class FakeJiraClient:
     def __init__(self, response):
@@ -347,3 +445,20 @@ class FakeJiraClient:
 
     def jql(self, *args, **kwargs):
         return self._response
+
+
+class PagedFakeJiraClient:
+    def __init__(self):
+        self.calls = []
+
+    def jql(self, *args, **kwargs):
+        self.calls.append(kwargs)
+        start = kwargs['start']
+        limit = kwargs['limit']
+        issues = []
+        for index in range(start + 1, start + limit + 1):
+            issues.append({
+                'key': f'STDEL-{index}',
+                'changelog': {'total': 0, 'histories': []},
+            })
+        return {'issues': issues, 'total': 10}

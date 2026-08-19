@@ -6,16 +6,19 @@ class JiraScopeIssueAdapter:
         self._jira_client = jira_client
         self._page_size = page_size
 
-    def fetch_issues(self, jql: str, field_names: list[str]) -> list[dict]:
+    def fetch_issues(self, jql: str, field_names: list[str], issue_limit: int | None = None) -> list[dict]:
         issues = []
         start_at = 0
         fields = sorted(set(field_names)) or '*all'
         while True:
+            limit = min(self._page_size, issue_limit - len(issues)) if issue_limit else self._page_size
+            if limit <= 0:
+                break
             result = self._jira_client.jql(
                 jql,
                 fields=fields,
                 start=start_at,
-                limit=self._page_size,
+                limit=limit,
                 expand='changelog',
             )
             page_issues = result.get('issues', [])
@@ -24,11 +27,13 @@ class JiraScopeIssueAdapter:
             for issue in page_issues:
                 self._require_complete_changelog(issue)
             issues.extend(page_issues)
+            if issue_limit and len(issues) >= issue_limit:
+                return issues[:issue_limit]
             start_at += len(page_issues)
             total = result.get('total')
             if total is not None and start_at >= total:
                 break
-            if len(page_issues) < self._page_size:
+            if len(page_issues) < limit:
                 break
         return issues
 

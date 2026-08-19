@@ -1,0 +1,64 @@
+<div class="box">
+    <div class="level mb-3">
+        <div class="level-left">
+            <div>
+                <h3 class="title is-4">{{ evidence.selection_title }}</h3>
+                <p class="is-size-7 has-text-grey">{{ evidence.shown_count }} of {{ evidence.total_count }} evidence tickets shown</p>
+            </div>
+        </div>
+        {% if evidence.has_selection %}
+            <div class="level-right">
+                <button class="button is-small"
+                        hx-get="{% url 'ui_web:bug_trend_evidence' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}"
+                        hx-target="#bug-trend-evidence-container"
+                        hx-swap="innerHTML">
+                    Clear selection
+                </button>
+            </div>
+        {% endif %}
+    </div>
+    <table class="table is-fullwidth is-striped is-hoverable">
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Summary</th>
+                <th>Series</th>
+                <th>Status</th>
+                <th>Severity</th>
+                <th>Owner</th>
+                <th>Component</th>
+                <th>Created</th>
+                <th>Updated</th>
+                {% for field_name in evidence.display_fields %}
+                    <th>{{ field_name }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in evidence.rows %}
+                <tr>
+                    <td>
+                        {% if row.source_url %}
+                            <a href="{{ row.source_url }}" target="_blank" rel="noopener noreferrer">{{ row.issue_key }}</a>
+                        {% else %}
+                            {{ row.issue_key }}
+                        {% endif %}
+                    </td>
+                    <td>{{ row.summary }}</td>
+                    <td>{{ row.series_name }}</td>
+                    <td>{{ row.status }}</td>
+                    <td>{{ row.severity }}</td>
+                    <td>{{ row.owner }}</td>
+                    <td>{{ row.component }}</td>
+                    <td>{{ row.created_at }}</td>
+                    <td>{{ row.updated_at }}</td>
+                    {% for field_value in row.extra_field_values %}
+                        <td>{{ field_value }}</td>
+                    {% endfor %}
+                </tr>
+            {% empty %}
+                <tr><td colspan="{{ evidence.display_fields|length|add:9 }}">No evidence rows matched this selection.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

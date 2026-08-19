@@ -1,6 +1,6 @@
-<article class="block">
+<article id="bug-trend-content" class="block">
     <h2 class="title is-3">Bug Trend Indicator</h2>
-    <form class="box" hx-get="{% url 'ui_web:bug_trend_chart' %}" hx-target="#bug-trend-chart-container" hx-swap="innerHTML" hx-indicator="#loading-indicator">
+    <form class="box" hx-get="{% url 'ui_web:bug_trend' %}" hx-target="#bug-trend-content" hx-swap="outerHTML" hx-indicator="#loading-indicator">
         <div class="columns is-align-items-end">
             <div class="column">
                 <label class="label" for="bug-trend-scope">Scope</label>
@@ -28,5 +28,9 @@
     <div id="bug-trend-chart-container">
         {% include "partials/bug_trend_chart.html" %}
     </div>
-    <div id="bug-trend-drilldown-container" class="mt-5"></div>
+    {% if evidence %}
+        <div id="bug-trend-evidence-container" class="mt-5">
+            {% include "partials/bug_trend_evidence.html" %}
+        </div>
+    {% endif %}
 </article>
