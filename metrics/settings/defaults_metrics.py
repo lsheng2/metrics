@@ -1,5 +1,18 @@
 from .defaults import *
 
+
+def metrics_absolute_state_path(raw_path):
+    path = Path(raw_path)
+    if not path.is_absolute():
+        path = BASE_DIR / path
+    return path.resolve()
+
+
+METRICS_STATE_DIR = metrics_absolute_state_path(env.str('METRICS_STATE_DIR', default=str(BASE_DIR / 'state')))
+METRICS_TASK_SEARCH_CACHE_DIR = metrics_absolute_state_path(
+    env.str('METRICS_TASK_SEARCH_CACHE_DIR', default=str(METRICS_STATE_DIR / 'task_search_cache'))
+)
+
 # Application deployment setup
 METRICS_BASE_URL = env.str('METRICS_BASE_URL', default='')
 METRICS_BASIC_AUTH_USERS = env.json('METRICS_BASIC_AUTH_USERS', default=None)
@@ -80,7 +93,7 @@ METRICS_DEFAULT_VELOCITY_TIME_UNIT = env.str('METRICS_DEFAULT_VELOCITY_TIME_UNIT
 
 CACHES['task_search_results'] = {
     'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-    'LOCATION': '/tmp/metrics_task_search_cache',
+    'LOCATION': str(METRICS_TASK_SEARCH_CACHE_DIR),
     "OPTIONS": {"MAX_ENTRIES": 100000},
     'TIMEOUT': 300
 }
