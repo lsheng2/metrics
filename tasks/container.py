@@ -122,9 +122,7 @@ class TasksContainer:
     def _has_jira_config(self) -> bool:
         jira_config = self._config.jira
         return all([
-            jira_config.jira_server_url,
-            jira_config.jira_email,
-            jira_config.jira_api_token,
+            jira_config.has_authentication(),
             self._config.project.project_keys
         ])
 

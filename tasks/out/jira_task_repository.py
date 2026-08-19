@@ -9,6 +9,7 @@ from sd_metrics_lib.sources.tasks import CachingTaskProvider
 from sd_metrics_lib.utils.worktime import WorkTimeExtractor, SIMPLE_WORKTIME_EXTRACTOR, BoundarySimpleWorkTimeExtractor
 
 from .convertors.jira import JiraTaskConverter
+from .jira_server_task_provider import JiraServerTaskProvider
 from .story_point_extractors import extract_jira_story_points
 from ..app.domain.model.config import TasksConfig
 from ..app.domain.model.task import TaskSearchCriteria, Task, EnrichmentOptions, WorkTimeExtractorType
@@ -19,17 +20,13 @@ class JiraTaskRepository(TaskRepository):
 
     def __init__(self, config: TasksConfig, worktime_extractor_type: Optional[WorkTimeExtractorType] = None, cache=None):
         jira_config = config.jira
-        if not all([jira_config.jira_server_url, jira_config.jira_email, jira_config.jira_api_token]):
+        if not jira_config.has_authentication():
             raise ValueError("Missing Jira authentication configuration")
 
         if not config.project.project_keys:
             raise ValueError("Missing project keys configuration")
 
-        self.jira_client = Jira(url=jira_config.jira_server_url,
-                                username=jira_config.jira_email,
-                                password=jira_config.jira_api_token,
-                                cloud=True
-                                )
+        self.jira_client = self._create_jira_client(jira_config)
         self.project_keys = config.project.project_keys
         self.jira_server_url = jira_config.jira_server_url
         self.config = config
@@ -37,6 +34,19 @@ class JiraTaskRepository(TaskRepository):
         self._cache = cache
 
         self._story_point_extractor = FunctionStoryPointExtractor(extract_jira_story_points(config))
+
+    @staticmethod
+    def _create_jira_client(jira_config):
+        if jira_config.uses_server_pat():
+            return Jira(url=jira_config.jira_server_url,
+                        token=jira_config.jira_api_token,
+                        verify_ssl=jira_config.verify_ssl)
+        return Jira(url=jira_config.jira_server_url,
+                    username=jira_config.jira_email,
+                    password=jira_config.jira_api_token,
+                    verify_ssl=jira_config.verify_ssl,
+                    cloud=True
+                    )
 
     async def find_all(self, search_criteria: Optional[TaskSearchCriteria] = None,
                        enrichment: Optional[EnrichmentOptions] = None) -> List[Task]:
@@ -56,7 +66,8 @@ class JiraTaskRepository(TaskRepository):
             additional_fields.append(self.config.jira.iteration_field)
         additional_fields.extend(self.config.sorting.custom_sort_field_names())
 
-        base_provider = JiraTaskProvider(
+        provider_class = JiraServerTaskProvider if self.config.jira.uses_server_pat() else JiraTaskProvider
+        base_provider = provider_class(
             self.jira_client,
             query,
             additional_fields=additional_fields

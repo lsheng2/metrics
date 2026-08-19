@@ -8,8 +8,18 @@ class JiraConfig:
     jira_email: Optional[str]
     jira_api_token: Optional[str]
     story_point_custom_field_id: str
+    auth_mode: str = 'cloud_basic'
+    verify_ssl: bool = True
     release_field: Optional[str] = None
     iteration_field: Optional[str] = None
+
+    def uses_server_pat(self) -> bool:
+        return self.auth_mode == 'server_pat'
+
+    def has_authentication(self) -> bool:
+        if self.uses_server_pat():
+            return bool(self.jira_server_url and self.jira_api_token)
+        return bool(self.jira_server_url and self.jira_email and self.jira_api_token)
 
 @dataclass(slots=True)
 class AzureConfig:
