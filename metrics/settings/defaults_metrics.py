@@ -15,6 +15,7 @@ METRICS_JIRA_EMAIL = env.str('METRICS_JIRA_EMAIL', default=None)
 METRICS_JIRA_API_TOKEN = env.str('METRICS_JIRA_API_TOKEN', default=None)
 METRICS_JIRA_AUTH_MODE = env.str('METRICS_JIRA_AUTH_MODE', default='cloud_basic')
 METRICS_JIRA_VERIFY_SSL = env.bool('METRICS_JIRA_VERIFY_SSL', default=True)
+METRICS_JIRA_CA_BUNDLE = env.str('METRICS_JIRA_CA_BUNDLE', default=None)
 
 # Pull request source (Bitbucket, used when the tracker is JIRA)
 METRICS_BITBUCKET_URL = env.str('METRICS_BITBUCKET_URL', default='https://api.bitbucket.org/')

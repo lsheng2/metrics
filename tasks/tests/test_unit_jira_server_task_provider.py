@@ -1,10 +1,16 @@
 import unittest
 from unittest.mock import MagicMock
 
+from sd_metrics_lib.sources.jira.tasks import JiraTaskProvider
+
 from tasks.out.jira_server_task_provider import JiraServerTaskProvider
 
 
 class TestJiraServerTaskProvider(unittest.TestCase):
+
+    def test_shouldReuseSharedJiraTaskProviderOwnershipForSubtasksAndFieldMetadata(self):
+        # then
+        self.assertTrue(issubclass(JiraServerTaskProvider, JiraTaskProvider))
 
     def test_shouldFetchServerDataCenterSearchResultsUsingStartAtPagination(self):
         # given
@@ -39,6 +45,28 @@ class TestJiraServerTaskProvider(unittest.TestCase):
             start=2,
             limit=2,
             expand="subtasks",
+        )
+
+    def test_shouldPassChangelogReleaseAndIterationFieldsAsServerDataCenterExpandValues(self):
+        # given
+        jira_client = MagicMock()
+        jira_client.jql.return_value = {"issues": [], "total": 0}
+        provider = JiraServerTaskProvider(
+            jira_client,
+            "project = STDEL",
+            additional_fields=["changelog", "subtasks", "fixVersions", "customfield_10020"],
+        )
+
+        # when
+        provider.get_tasks()
+
+        # then
+        jira_client.jql.assert_called_once_with(
+            "project = STDEL",
+            fields="*all",
+            start=0,
+            limit=1000,
+            expand="changelog,subtasks,fixVersions,customfield_10020",
         )
 
 

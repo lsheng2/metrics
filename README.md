@@ -69,7 +69,7 @@ docker run -p 8000:8000 \
   -e METRICS_JIRA_SERVER_URL=https://your-company.atlassian.net \
   -e METRICS_JIRA_EMAIL=your-email@company.com \
   -e METRICS_JIRA_API_TOKEN=your-api-token \
-  -e 'METRICS_PROJECT_KEYS=["PROJ"]' \
+  -e METRICS_PROJECT_KEYS=PROJ \
   metrics-dashboard
 ```
 
@@ -120,9 +120,12 @@ METRICS_TASK_TRACKER=jira
 METRICS_JIRA_SERVER_URL=https://your-company.atlassian.net
 METRICS_JIRA_EMAIL=your-email@company.com
 METRICS_JIRA_API_TOKEN=your-api-token
-METRICS_PROJECT_KEYS=["PROJ", "TEAM"]
+METRICS_JIRA_AUTH_MODE=cloud_basic
+METRICS_PROJECT_KEYS=PROJ,TEAM
 METRICS_STORY_POINT_CUSTOM_FIELD_ID=customfield_10016
 ```
+
+For Jira Server/Data Center with a personal access token, set `METRICS_JIRA_AUTH_MODE=server_pat`, omit `METRICS_JIRA_EMAIL`, and use the PAT as `METRICS_JIRA_API_TOKEN`. If your corporate TLS chain is not trusted by Python, prefer `METRICS_JIRA_CA_BUNDLE=C:/path/to/corporate-ca-bundle.pem`; set `METRICS_JIRA_VERIFY_SSL=false` only for local troubleshooting.
 
 **For Azure DevOps:**
 ```bash
@@ -357,8 +360,10 @@ METRICS_MEMBER_GROUP_WHEN_MISSING="Unassigned"
 
 **Error: JIRA connection failed**
 - Verify `METRICS_JIRA_SERVER_URL` is correct (include https://)
-- Check `METRICS_JIRA_EMAIL` matches your JIRA account
+- For Jira Cloud/basic auth, check `METRICS_JIRA_EMAIL` matches your JIRA account
+- For Jira Server/Data Center PAT auth, set `METRICS_JIRA_AUTH_MODE=server_pat`
 - Ensure `METRICS_JIRA_API_TOKEN` is valid and has proper permissions
+- If SSL verification fails on a corporate network, prefer `METRICS_JIRA_CA_BUNDLE` over disabling verification
 - Test connection: `python manage.py check`
 
 **Error: Story points not showing**

@@ -13,6 +13,7 @@ def load_tasks_config() -> TasksConfig:
         jira_api_token=settings.METRICS_JIRA_API_TOKEN,
         auth_mode=settings.METRICS_JIRA_AUTH_MODE,
         verify_ssl=settings.METRICS_JIRA_VERIFY_SSL,
+        ca_bundle=settings.METRICS_JIRA_CA_BUNDLE,
         story_point_custom_field_id=settings.METRICS_STORY_POINT_CUSTOM_FIELD_ID,
         release_field=settings.METRICS_JIRA_RELEASE_FIELD or None,
         iteration_field=settings.METRICS_JIRA_ITERATION_FIELD or None

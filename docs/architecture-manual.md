@@ -117,8 +117,9 @@ Required minimal change:
 2. Support at least two modes:
    - `cloud_basic`: existing behavior, `username + password/api token + cloud=True`.
    - `server_pat`: new behavior, `token=<PAT>`, no `cloud=True`.
-3. Default should be conservative for our fork: `server_pat` when `METRICS_JIRA_EMAIL` is empty and `METRICS_JIRA_API_TOKEN` is present.
+3. `server_pat` is explicit and mandatory for Intel Jira Server/Data Center; no implicit auth-mode inference is part of the MVP contract.
 4. Rename or alias token env var later if desired, for example `METRICS_JIRA_PAT`, but preserve `METRICS_JIRA_API_TOKEN` during the fork to minimize churn.
+5. Use `METRICS_JIRA_CA_BUNDLE` for trusted corporate CA bundles. `METRICS_JIRA_VERIFY_SSL=false` is local troubleshooting only.
 
 Minimal connectivity validation after the auth change:
 
@@ -331,6 +332,7 @@ Tasks:
 - Fork or clone `clutcher/metrics`.
 - Add `METRICS_JIRA_AUTH_MODE=server_pat`.
 - Instantiate `Jira(url=..., token=...)` for Server/Data Center PAT mode.
+- Prefer a trusted CA bundle through `METRICS_JIRA_CA_BUNDLE`; use `METRICS_JIRA_VERIFY_SSL=false` only for local troubleshooting.
 - Test `/rest/api/2/serverInfo`.
 - Test `/rest/api/2/issue/STDEL-8942` with limited fields.
 - Test `/rest/api/2/search` with `project = STDEL ORDER BY updated DESC` and small `maxResults`.

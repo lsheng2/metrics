@@ -40,11 +40,11 @@ class JiraTaskRepository(TaskRepository):
         if jira_config.uses_server_pat():
             return Jira(url=jira_config.jira_server_url,
                         token=jira_config.jira_api_token,
-                        verify_ssl=jira_config.verify_ssl)
+                        verify_ssl=jira_config.ssl_verification())
         return Jira(url=jira_config.jira_server_url,
                     username=jira_config.jira_email,
                     password=jira_config.jira_api_token,
-                    verify_ssl=jira_config.verify_ssl,
+                    verify_ssl=jira_config.ssl_verification(),
                     cloud=True
                     )
 

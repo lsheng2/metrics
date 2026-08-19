@@ -62,6 +62,28 @@ class TestJiraTaskRepositoryAuth(unittest.TestCase):
         jira_client.assert_called_once_with(url="https://jira.devtools.intel.com", token="pat", verify_ssl=True)
 
     @patch("tasks.out.jira_task_repository.Jira")
+    def test_shouldUseConfiguredCaBundleForServerDataCenterPersonalAccessToken(self, jira_client):
+        # given
+        config = _build_tasks_config(JiraConfig(
+            jira_server_url="https://jira.devtools.intel.com",
+            jira_email=None,
+            jira_api_token="pat",
+            story_point_custom_field_id="customfield_10016",
+            auth_mode="server_pat",
+            ca_bundle="C:/certs/intel-ca.pem",
+        ))
+
+        # when
+        JiraTaskRepository(config)
+
+        # then
+        jira_client.assert_called_once_with(
+            url="https://jira.devtools.intel.com",
+            token="pat",
+            verify_ssl="C:/certs/intel-ca.pem",
+        )
+
+    @patch("tasks.out.jira_task_repository.Jira")
     def test_shouldKeepCloudBasicAuthenticationWhenServerPatIsNotConfigured(self, jira_client):
         # given
         config = _build_tasks_config(JiraConfig(

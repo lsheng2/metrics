@@ -81,10 +81,10 @@ Implementation changes made for M0:
 
 - Added `METRICS_JIRA_AUTH_MODE=server_pat` support.
 - Added a local Server/Data Center Jira task provider using `jira_client.jql(...)` with `startAt`/`maxResults` pagination.
-- Added `METRICS_JIRA_VERIFY_SSL` so local corporate certificate issues can be handled explicitly.
+- Added `METRICS_JIRA_VERIFY_SSL` and `METRICS_JIRA_CA_BUNDLE` so corporate certificate handling has an explicit configuration path.
 
 Known follow-ups:
 
-- Local `.env` uses `METRICS_JIRA_VERIFY_SSL=false` for the current corporate/self-signed certificate chain. Replace this with a trusted corporate CA bundle before any shared deployment.
+- Local `.env` uses `METRICS_JIRA_VERIFY_SSL=false` for the current corporate/self-signed certificate chain. Replace this with `METRICS_JIRA_CA_BUNDLE=<corporate CA bundle path>` before any shared deployment.
 - `STDEL-8942` currently maps to `status=todo` and `stage=None` because the local workflow config does not yet include Intel Jira's `Fixed` status. Field and workflow discovery is the next setup task.
 - Rotate the PAT that appeared in chat context, then place the replacement only in local `.env` or an approved secret store.

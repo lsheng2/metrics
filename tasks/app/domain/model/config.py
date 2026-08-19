@@ -10,6 +10,7 @@ class JiraConfig:
     story_point_custom_field_id: str
     auth_mode: str = 'cloud_basic'
     verify_ssl: bool = True
+    ca_bundle: Optional[str] = None
     release_field: Optional[str] = None
     iteration_field: Optional[str] = None
 
@@ -20,6 +21,9 @@ class JiraConfig:
         if self.uses_server_pat():
             return bool(self.jira_server_url and self.jira_api_token)
         return bool(self.jira_server_url and self.jira_email and self.jira_api_token)
+
+    def ssl_verification(self):
+        return self.ca_bundle or self.verify_ssl
 
 @dataclass(slots=True)
 class AzureConfig:
