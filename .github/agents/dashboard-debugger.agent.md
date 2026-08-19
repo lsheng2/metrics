@@ -16,6 +16,7 @@ You are a focused diagnostics agent for this Django metrics dashboard.
 | `htmx-partials` | Debug lazy-loaded current-task/PR/chart partials | Spinners never resolve, wrong rows, filter swaps wrong target |
 | `calculation-quality` | Debug forecast, health, velocity, sorting, filtering | Numbers wrong, task health wrong, completed/in-progress scope wrong |
 | `configuration` | Debug `.env` and defaults interaction | Setting ignored, wrong tracker mode, hidden field/filter |
+| `mvp-bug-trend` | Debug Intel Jira bug trend MVP flow | Scope config wrong, sync stale, bucket count mismatch, drilldown mismatch |
 
 Classify the incident into one or more domains before collecting evidence.
 
@@ -26,6 +27,8 @@ Classify the incident into one or more domains before collecting evidence.
 3. Inspect the owner module and nearby tests.
 4. Separate configuration, provider adapter, domain calculation, facade conversion, template rendering, and htmx swap behavior.
 5. Report a fix-ready diagnosis with exact owner path and discriminating validation.
+
+For `mvp-bug-trend`, first identify which owner path is failing: `jira_scope_config` semantics, `jira_sync` collection, `jira_history` persistence, `bug_metrics` aggregation, or `ui_web` rendering. Do not diagnose a chart mismatch from UI code alone until the bucket and drilldown `calculation_run_id` evidence has been checked.
 
 ## Secret Handling
 

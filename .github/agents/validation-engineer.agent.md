@@ -20,6 +20,7 @@ You do not own production implementation unless explicitly delegated by the user
 3. Prefer a small failing test that directly falsifies the changed behavior over a broad green suite.
 4. Check both producer and consumer sides of any changed contract.
 5. For UI behavior, prefer facade/utility tests plus `manage.py check`; use browser/manual checks only when rendering or htmx behavior is the claim.
+6. For pull-request work, do not rely on broad pytest defaults alone; `pytest.ini` excludes `pull_requests/tests/`, so name the focused PR test path explicitly.
 
 ## Required Questions
 

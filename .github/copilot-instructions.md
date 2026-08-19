@@ -18,6 +18,15 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 5. External tracker behavior should reuse `sd-metrics-lib` where practical.
 6. Secrets belong in `.env` or deployment environment variables and must not be committed or pasted into docs, tests, or chat output.
 
+## Intel Jira MVP Routing
+
+1. Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Source docs: `docs/implementation-start.md`, `docs/architecture-manual.md`, and `docs/mvp-bug-trend-architecture-spec.md`.
+2. M0 Intel Jira Server/Data Center PAT connectivity has passed; preserve it and do not leak credentials.
+3. Next architecture gate is M1 durable Jira history: cursor, issue, snapshot, transition, calculation-run, bucket, and bucket-membership artifacts before chart polish.
+4. `jira_scope_config` is the single authority for project-specific Jira semantics. Do not move workflow status, severity, component, milestone, or bug-type truth into global env vars or hardcoded calculators.
+5. Bug trend pages must read local durable history/aggregate artifacts, not live-query Jira on every dashboard render. Drilldown must use the same `calculation_run_id` as the clicked chart bucket.
+6. Planned owner boundaries: `jira_sync` fetches/cursors/status, `jira_history` persists issues/snapshots/transitions, `bug_metrics` owns scope config and trend buckets, and `ui_web` renders views/partials/charts.
+
 ## Implementation Rules
 
 1. Start from the owning module and the nearest existing test.
@@ -39,8 +48,17 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 
 ## Local BKM Index
 
-1. `.github/ai-governance/context-loading-policy.md` — progressive context loading.
-2. `.github/ai-governance/shell-execution-policy.md` — PowerShell-first command rules on Windows.
-3. `.github/ai-governance/closure-verification-policy.md` — completion, gates, and evidence rules.
-4. `.github/ai-governance/code-comment-policy.md` — when comments are allowed or required.
-5. `.github/ai-governance/behavioral-first-principles.md` — short behavior baseline for AI work.
+1. `.github/ai-governance/repo-context.md` — compact project map, owner boundaries, validation commands, and local pitfalls.
+2. `.github/ai-governance/context-loading-policy.md` — progressive context loading.
+3. `.github/ai-governance/shell-execution-policy.md` — PowerShell-first command rules on Windows.
+4. `.github/ai-governance/closure-verification-policy.md` — completion, gates, and evidence rules.
+5. `.github/ai-governance/code-comment-policy.md` — when comments are allowed or required.
+6. `.github/ai-governance/behavioral-first-principles.md` — short behavior baseline for AI work.
+
+## Local Pitfalls
+
+1. `pytest.ini` does not include `pull_requests/tests/`; for pull-request work, run the focused `python -m pytest pull_requests\tests\... -q` command explicitly.
+2. `README.md` and `CLAUDE.md` mention different dev-server ports (`8000` vs `8002`); preserve the command used by the current task or ask before standardizing docs.
+3. Do not simplify Azure PR pagination in `AzurePullRequestRepository`; short/overlapping Azure pages require fixed-stride paging plus de-duplication.
+4. For Intel Jira setup/current-state details, prefer links in `docs/implementation-start.md` and `docs/architecture-manual.md`; never paste `.env` secrets into docs, tests, or chat output.
+5. Do not build or polish bug/feature charts before the durable Jira history and calculation-run artifacts exist and have focused validation.
