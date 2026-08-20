@@ -14,6 +14,7 @@ class BugTrendChartOption:
     chart_id: str
     title: str
     capability: str
+    unsupported_reason: str = ''
 
 
 @dataclass(slots=True)

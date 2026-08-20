@@ -27,6 +27,7 @@ class BugTrendFacade:
                 chart_id=chart.chart_id,
                 title=chart.title,
                 capability=chart.evidence_contract.capability,
+                unsupported_reason=chart.evidence_contract.unsupported_reason,
             )
             for chart in self._bug_trend_api.list_enabled_charts()
         ]

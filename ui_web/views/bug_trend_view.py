@@ -65,14 +65,19 @@ class BugTrendView(GracefulTemplateView):
 
         selected_scope_id = int(self.request.GET.get('scope_id') or scope_options[0].id)
         active_chart_id = self.request.GET.get('chart_id') or 'default_bug_trend'
+        active_chart = self._active_chart_option(context['chart_options'], active_chart_id)
         begin, end = self._date_range()
         try:
             chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end, active_chart_id)
         except ObjectDoesNotExist:
             active_chart_id = 'default_bug_trend'
+            active_chart = self._active_chart_option(context['chart_options'], active_chart_id)
             chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end, active_chart_id)
         evidence = None
-        if chart_data.current_evidence_available:
+        evidence_unavailable_reason = ''
+        if active_chart and active_chart.capability == 'summary_only':
+            evidence_unavailable_reason = active_chart.unsupported_reason or 'Selected chart does not support ticket evidence.'
+        elif chart_data.current_evidence_available:
             evidence = self.bug_trend_facade.get_evidence_data(selected_scope_id, begin, end, calculation_run_id=chart_data.calculation_run_id, active_chart_id=active_chart_id)
         context['selected_scope_id'] = selected_scope_id
         context['active_chart_id'] = active_chart_id
@@ -82,6 +87,7 @@ class BugTrendView(GracefulTemplateView):
         context['unavailable_reason'] = chart_data.unavailable_reason
         context['run_metadata'] = chart_data.run_metadata or {}
         context['evidence'] = evidence
+        context['evidence_unavailable_reason'] = evidence_unavailable_reason
 
     def _populate_common_context(self, context):
         context['scope_options'] = self.bug_trend_facade.get_scope_options()
@@ -94,6 +100,9 @@ class BugTrendView(GracefulTemplateView):
         begin = parse_date_query(self.request.GET.get('begin') or default_begin.isoformat(), 'begin')
         end = parse_date_query(self.request.GET.get('end') or today.isoformat(), 'end')
         return begin, end
+
+    def _active_chart_option(self, chart_options, chart_id):
+        return next((chart for chart in chart_options if chart.chart_id == chart_id), None)
 
 
 class BugTrendEvidenceView(GracefulTemplateView):

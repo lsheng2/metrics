@@ -61,5 +61,9 @@
         <div id="bug-trend-evidence-container" class="mt-5">
             {% include "partials/bug_trend_evidence.html" %}
         </div>
+    {% elif evidence_unavailable_reason %}
+        <div id="bug-trend-evidence-container" class="notification is-warning is-light mt-5">
+            {{ evidence_unavailable_reason }}
+        </div>
     {% endif %}
 </article>
