@@ -541,6 +541,90 @@ Browser validation must additionally record the observed URL, selected scope, da
 | Use C-stock only for non-evidence dashboards | Chart parity passes, but event/evidence is only link-out or range-only. | Use stock Grafana for summary dashboards; use C-plugin for evidence-backed analysis pages. |
 | Escalate to C-plugin | Event/evidence or governance gates fail. | Build Grafana App/Scenes plugin that calls Metrics APIs for chart state and evidence list. |
 
+## C1 Evidence Link / Drilldown Validation DAG
+
+C0 已证明 stock Grafana 可以安装、加载 datasource、渲染 Bug Trend panel，并与 Metrics chart payload 保持 parity。C1 只验证一条更窄的产品边界：Grafana panel 的 data link 是否能把用户从 rendered point 带回 Metrics-owned evidence query，并且 payload 不丢失 `scope_id`、`begin`、`end`、`calculation_run_id`、`bucket_id` 和 `series_name`。
+
+C1 不实现 Grafana App/Scenes，不创建第二套 evidence list，不让 Grafana query ticket rows。若 stock Grafana 只能 link-out 到 Metrics API/页面，C1 必须明确记录该能力边界；如果 payload 不可靠，则 C1 决策应升级 C-plugin，而不是继续加 workaround。
+
+字段映射必须保持单一权威：Grafana point dataframe 字段 `calculation_run_id`、`bucket_id`、`series_name` 只来自 Metrics chart-data API；Grafana data link 只能把它们映射为 Metrics evidence API query params `run`、`bucket`、`series`。Evidence API 不接受长字段名参数。
+
+### C1 Contract Registry
+
+| Contract | Owner | Consumers | Disconfirming check |
+| --- | --- | --- | --- |
+| `INV-C1-LINK-FIELDS` | Grafana dashboard artifact `metricsContract.evidenceLinkFields` | Grafana field link, Metrics evidence API | Validator/test fails if the data link URL does not reference every field named in `evidenceLinkFields`, or if a referenced field is absent from target columns. |
+| `INV-C1-LINK-PAYLOAD` | Grafana rendered dataframe and field link | User click/link action, Metrics evidence API | Browser or Grafana API evidence proves one rendered point exposes a link carrying `scope_id`, `begin`, `end`, `run`, `bucket`, and `series`; missing or unresolved template variables fail the node. |
+| `INV-C1-EVIDENCE-PARITY` | Metrics EvidenceContract / evidence API | Grafana data link, Chart.js reference click | For one known bucket/series, the Grafana link target returns the same selection title and row count as the Chart.js click/API evidence path. |
+| `INV-C1-DECISION` | `docs/c1-evidence-link-validation-evidence.md` | C2/C-plugin planning | Decision record must be exactly one of `c_stock_linked_evidence_supported`, `c_stock_non_evidence_only`, or `c_plugin_required`; unsupported same-page behavior cannot be described as full same-page evidence support. |
+
+### C1 DAG Nodes
+
+| id | depends_on | owner_paths | authority_boundary | contracts | validation | exit_criteria | parallel_policy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| C1.N1 - Validate artifact data-link contract | [] | `ops/grafana/`, `scripts/`, `bug_metrics/tests/`, `docs/` | Grafana artifact may describe links; Metrics validator owns allowed fields and URLs. | `INV-C1-LINK-FIELDS`, `INV-CSTOCK-SEMANTICS`, `INV-CSTOCK-SECURITY` | Extend artifact validation/tests to assert link URL field refs are backed by target columns and include required evidence params. | Static artifact cannot publish a data link that drops run/bucket/series or references missing fields. | serial |
+| C1.N2 - Validate rendered link payload | [C1.N1] | `ops/grafana/`, `docs/c1-evidence-link-validation-evidence.md` | Grafana runtime renders field links; Metrics remains evidence owner. | `INV-C1-LINK-PAYLOAD`, `INV-CSTOCK-PAGESTATE` | Use local Grafana runtime on `127.0.0.1:3001` to inspect the rendered panel or panel JSON for one point/link; record `payload_captured` with resolved URL, or `payload_unavailable` with exact runtime limitation. | Result is one of `payload_captured` or `payload_unavailable`; unresolved template variables fail this node. | serial |
+| C1.N3 - Validate evidence parity from Grafana link target | [C1.N2] | `ui_web/`, `bug_metrics/`, `docs/c1-evidence-link-validation-evidence.md` | Metrics evidence API owns ticket rows. | `INV-C1-EVIDENCE-PARITY`, `INV-CSTOCK-EVIDENCE` | If C1.N2 is `payload_captured`, request the captured link target and compare selection title/row count against Chart.js/API evidence for the same bucket/series. If C1.N2 is `payload_unavailable`, record `skipped_with_reason` and do not claim evidence parity. | Captured target matches reference evidence, or parity is explicitly skipped/failed because stock Grafana cannot expose reliable payload. | serial |
+| C1.N4 - Record C-stock evidence decision | [C1.N2, C1.N3] | `docs/c1-evidence-link-validation-evidence.md`, `docs/` | C1 evidence record owns the decision consumed by later C2/C-plugin work. | `INV-C1-DECISION` | Update evidence/decision doc with supported mode, limitations, and next route; run `scripts/check_c1_evidence_link_evidence.py --evidence docs/c1-evidence-link-validation-evidence.md`. | Decision is precise: link-out evidence supported, non-evidence-only, or C-plugin required. | serial |
+
+```mermaid
+flowchart TD
+  C1N1["C1.N1 Validate artifact data-link contract"]
+  C1N2["C1.N2 Validate rendered link payload"]
+  C1N3["C1.N3 Validate evidence parity from link target"]
+  C1N4["C1.N4 Record C-stock evidence decision"]
+
+  C1N1 --> C1N2
+  C1N2 --> C1N3
+  C1N2 --> C1N4
+  C1N3 --> C1N4
+```
+
+### C1 Execution Ledger
+
+- [ ] C1.N1 - Validate artifact data-link contract
+- [ ] C1.N2 - Validate rendered link payload
+- [ ] C1.N3 - Validate evidence parity from Grafana link target
+- [ ] C1.N4 - Record C-stock evidence decision
+
+### C1 Validation Commands
+
+```powershell
+.venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
+.venv\Scripts\python.exe -m pytest bug_metrics\tests\test_grafana_data_surface_contract.py -q
+.venv\Scripts\python.exe scripts\compare_grafana_bug_trend_parity.py --calculation-run-id <calculation_run_id>
+.venv\Scripts\python.exe scripts\check_c1_evidence_link_evidence.py --evidence docs\c1-evidence-link-validation-evidence.md
+.venv\Scripts\python.exe scripts\check_c0_validation_evidence.py --evidence docs\c0-validation-closure-evidence.md
+```
+
+### C1 Evidence Record Schema
+
+`docs/c1-evidence-link-validation-evidence.md` 必须记录：
+
+| Field | Meaning |
+| --- | --- |
+| `node_id` | `C1.N1`、`C1.N2`、`C1.N3` 或 `C1.N4`。 |
+| `status` | `passed`、`failed`、`blocked` 或 `skipped_with_reason`。 |
+| `command_or_manual_step` | 具体命令、Grafana browser step 或 manual inspection step。 |
+| `result` | 退出码、观察结果或失败原因。 |
+| `observed_grafana_url` | Grafana dashboard/panel URL。 |
+| `payload_state` | `payload_captured` 或 `payload_unavailable`。 |
+| `resolved_link_url` | C1.N2 捕获到的 Metrics evidence URL；payload unavailable 时为空。 |
+| `scope_id` / `begin` / `end` | PageQueryState。 |
+| `run` / `bucket` / `series` | Evidence API query 参数。 |
+| `reference_selection_title` / `linked_selection_title` | 参考路径和 link target 的 evidence title。 |
+| `reference_row_count` / `linked_row_count` | 参考路径和 link target 的 row count。 |
+| `decision_verdict` | `c_stock_linked_evidence_supported`、`c_stock_non_evidence_only` 或 `c_plugin_required`。 |
+| `residual_risk` | 若无写 `none`；如果只是 link-out 而非 same-page，必须写明。 |
+
+Verdict 规则：
+
+| Verdict | Required evidence |
+| --- | --- |
+| `c_stock_linked_evidence_supported` | C1.N1、C1.N2、C1.N3、C1.N4 all passed；`payload_state=payload_captured`；resolved link target 与 reference evidence row count/title 一致；residual risk 明确说明 stock Grafana 支持的是 link-out evidence，不是同页下方 evidence list。 |
+| `c_stock_non_evidence_only` | C1.N1 passed；C1.N2 `payload_unavailable` 或 C1.N3 skipped/failed；C1.N4 passed；后续 evidence-backed analysis 不使用 C-stock。 |
+| `c_plugin_required` | C1.N1 failed，或 link payload/evidence parity 失败且 C-stock workaround 会产生 parallel truth system。 |
+
 ### First Spike Validation Commands
 
 Initial implementation should end with at least these checks, adjusted to the actual files introduced by the spike:

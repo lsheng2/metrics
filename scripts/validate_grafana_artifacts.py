@@ -110,7 +110,95 @@ def validate_artifact(path: Path, allowlist: GrafanaAllowlist) -> list[Finding]:
     except json.JSONDecodeError as error:
         return [Finding(path, f"invalid JSON: {error}")]
 
-    return validate_node(path, "", payload, allowlist, None)
+    return validate_node(path, "", payload, allowlist, None) + validate_panel_evidence_links(path, payload)
+
+
+def validate_panel_evidence_links(path: Path, payload: dict[str, Any]) -> list[Finding]:
+    panels = payload.get("panels", [])
+    if not isinstance(panels, list):
+        return []
+    findings: list[Finding] = []
+    for panel_index, panel in enumerate(panels):
+        if not isinstance(panel, dict):
+            continue
+        panel_path = f"panels[{panel_index}]"
+        target_fields = evidence_fields_by_target(panel)
+        if not target_fields:
+            continue
+        link_urls = panel_link_urls(panel)
+        if not link_urls:
+            findings.append(Finding(path, f"{panel_path} declares evidence link fields but has no panel field links"))
+            continue
+        column_fields = target_column_fields(panel)
+        for target_path, fields in target_fields.items():
+            missing_columns = fields - column_fields
+            if missing_columns:
+                findings.append(Finding(path, f"{target_path} evidenceLinkFields missing target columns: {', '.join(sorted(missing_columns))}"))
+            for field in sorted(fields):
+                field_ref = f"${{__data.fields.{field}}}"
+                if not any(field_ref in link_url for link_url in link_urls):
+                    findings.append(Finding(path, f"{panel_path} evidence link URL does not reference {field_ref}"))
+        findings.extend(validate_evidence_link_param_mapping(path, panel_path, link_urls))
+    return findings
+
+
+def evidence_fields_by_target(panel: dict[str, Any]) -> dict[str, frozenset[str]]:
+    fields_by_target: dict[str, frozenset[str]] = {}
+    targets = panel.get("targets", [])
+    if not isinstance(targets, list):
+        return fields_by_target
+    for target_index, target in enumerate(targets):
+        if not isinstance(target, dict):
+            continue
+        metrics_contract = target.get("metricsContract", {})
+        if not isinstance(metrics_contract, dict):
+            continue
+        evidence_fields = metrics_contract.get("evidenceLinkFields", [])
+        if evidence_fields:
+            fields_by_target[f"targets[{target_index}]"] = frozenset(str(field) for field in evidence_fields)
+    return fields_by_target
+
+
+def panel_link_urls(panel: dict[str, Any]) -> list[str]:
+    defaults = panel.get("fieldConfig", {}).get("defaults", {})
+    links = defaults.get("links", []) if isinstance(defaults, dict) else []
+    return [link.get("url", "") for link in links if isinstance(link, dict) and isinstance(link.get("url"), str)]
+
+
+def target_column_fields(panel: dict[str, Any]) -> frozenset[str]:
+    fields: set[str] = set()
+    targets = panel.get("targets", [])
+    if not isinstance(targets, list):
+        return frozenset()
+    for target in targets:
+        if not isinstance(target, dict):
+            continue
+        columns = target.get("columns", [])
+        if not isinstance(columns, list):
+            continue
+        for column in columns:
+            if not isinstance(column, dict):
+                continue
+            selector = column.get("selector")
+            text = column.get("text")
+            if isinstance(selector, str):
+                fields.add(selector)
+            if isinstance(text, str):
+                fields.add(text)
+    return frozenset(fields)
+
+
+def validate_evidence_link_param_mapping(path: Path, panel_path: str, link_urls: list[str]) -> list[Finding]:
+    required_fragments = {
+        "run": "run=${__data.fields.calculation_run_id}",
+        "bucket": "bucket=${__data.fields.bucket_id}",
+        "series": "series=${__data.fields.series_name}",
+    }
+    findings: list[Finding] = []
+    for param_name, fragment in required_fragments.items():
+        if not any(fragment in link_url for link_url in link_urls):
+            findings.append(Finding(path, f"{panel_path} evidence link URL must map {param_name} via {fragment}"))
+    return findings
 
 
 def validate_node(
