@@ -37,6 +37,7 @@ class BugTrendFacade:
                 for dataset in chart.datasets
             ],
             unavailable_reason=chart.unavailable_reason,
+            run_metadata=self._run_metadata_payload(chart.run_metadata),
         )
 
     def get_chart_json(self, chart_data: BugTrendChartData) -> str:
@@ -63,6 +64,20 @@ class BugTrendFacade:
             'datasets': chart_data.datasets,
             'points': points,
             'unavailable_reason': chart_data.unavailable_reason,
+            'run_metadata': chart_data.run_metadata or {},
+        }
+
+    def _run_metadata_payload(self, run_metadata) -> dict:
+        if not run_metadata:
+            return {}
+        return {
+            'calculation_run_id': run_metadata.calculation_run_id,
+            'run_config_version_hash': run_metadata.run_config_version_hash,
+            'current_config_version_hash': run_metadata.current_config_version_hash,
+            'freshness_status': run_metadata.freshness_status,
+            'source_coverage_start': run_metadata.source_coverage_start,
+            'source_coverage_end': run_metadata.source_coverage_end,
+            'completed_at': run_metadata.completed_at,
         }
 
     def get_evidence_data(self, scope_id: int, begin: date, end: date, bucket_id: str = '', series_name: str = '',

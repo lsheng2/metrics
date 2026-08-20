@@ -26,6 +26,35 @@ class TestBugTrendViews(TestCase):
         self.assertIn(str(run.id), content)
         self.assertIn(str(bucket.id), content)
         self.assertIn('bugTrendChart', content)
+        self.assertIn('Freshness: fresh', content)
+        self.assertIn('Run config hash:', content)
+        self.assertIn(scope.config_version_hash, content)
+        self.assertIn('Coverage: 2026-08-03 to 2026-08-09', content)
+        self.assertIn('Completed: 2026-08-19T00:00:00+00:00', content)
+
+    def test_shouldShowStaleRunGuidanceWhenScopeConfigChanged(self):
+        # Given
+        scope, run, _ = self._seed_trend_data()
+        old_hash = scope.config_version_hash
+        scope.fixed_status_values = ['Fixed', 'Verified Fixed']
+        scope.save()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+        })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        content = response.content.decode()
+        self.assertIn(str(run.id), content)
+        self.assertIn('Freshness: stale_config', content)
+        self.assertIn(old_hash, content)
+        self.assertIn(scope.config_version_hash, content)
+        self.assertIn('Recalculate this scope before using this chart as current evidence.', content)
+        self.assertNotIn('id="bug-trend-evidence-container"', content)
 
     def test_shouldNotRenderEvidencePanelWhenSelectedRangeHasNoRun(self):
         # Given

@@ -27,6 +27,17 @@ class BugTrendDataset:
 
 
 @dataclass(slots=True)
+class BugTrendRunMetadata:
+    calculation_run_id: str
+    run_config_version_hash: str
+    current_config_version_hash: str
+    freshness_status: str
+    source_coverage_start: str
+    source_coverage_end: str
+    completed_at: str
+
+
+@dataclass(slots=True)
 class BugTrendChart:
     scope_id: int
     calculation_run_id: Optional[str]
@@ -34,6 +45,7 @@ class BugTrendChart:
     bucket_ids: List[str]
     datasets: List[BugTrendDataset]
     unavailable_reason: str = ''
+    run_metadata: Optional[BugTrendRunMetadata] = None
 
 
 class ApiForBugTrend:
@@ -53,6 +65,17 @@ class ApiForBugTrend:
         scope = self.get_scope(scope_id)
         run = self._latest_authoritative_run(scope, begin, end)
         if run is None:
+            stale_run = self._latest_stale_run(scope, begin, end)
+            if stale_run:
+                return BugTrendChart(
+                    scope.id,
+                    str(stale_run.id),
+                    [],
+                    [],
+                    [],
+                    'Calculation run does not match the current scope configuration. Recalculate this scope to refresh the Bug Trend chart.',
+                    self._run_metadata(scope, stale_run, 'stale_config'),
+                )
             return BugTrendChart(scope.id, None, [], [], [], 'No completed calculation covers the selected range for the current scope configuration.')
 
         return self._chart_from_run(scope, run, begin, end)
@@ -66,7 +89,7 @@ class ApiForBugTrend:
         chart_begin = begin or run.source_coverage_start
         chart_end = end or run.source_coverage_end
         if run.config_version_hash != scope.config_version_hash:
-            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not match the current scope configuration.')
+            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not match the current scope configuration.', self._run_metadata(scope, run, 'stale_config'))
         return self._chart_from_run(scope, run, chart_begin, chart_end)
 
     def _chart_from_run(self, scope: JiraScopeConfig, run: BugTrendCalculationRun, begin: date, end: date) -> BugTrendChart:
@@ -80,6 +103,7 @@ class ApiForBugTrend:
             labels=[self._format_bucket_label(bucket) for bucket in buckets],
             bucket_ids=[str(bucket.id) for bucket in buckets],
             datasets=self._build_datasets(scope, buckets),
+            run_metadata=self._run_metadata(scope, run, 'fresh'),
         )
 
     def get_evidence_tickets(self, state: BugTrendPageQueryState) -> BugTrendEvidenceTicketResult:
@@ -120,6 +144,25 @@ class ApiForBugTrend:
             source_coverage_start__lte=begin,
             source_coverage_end__gte=end,
         ).order_by('-completed_at').first()
+
+    def _latest_stale_run(self, scope: JiraScopeConfig, begin: date, end: date) -> Optional[BugTrendCalculationRun]:
+        return BugTrendCalculationRun.objects.filter(
+            scope=scope,
+            status=BugTrendCalculationRun.STATUS_COMPLETED,
+            source_coverage_start__lte=begin,
+            source_coverage_end__gte=end,
+        ).exclude(config_version_hash=scope.config_version_hash).order_by('-completed_at').first()
+
+    def _run_metadata(self, scope: JiraScopeConfig, run: BugTrendCalculationRun, freshness_status: str) -> BugTrendRunMetadata:
+        return BugTrendRunMetadata(
+            calculation_run_id=str(run.id),
+            run_config_version_hash=run.config_version_hash,
+            current_config_version_hash=scope.config_version_hash,
+            freshness_status=freshness_status,
+            source_coverage_start=run.source_coverage_start.isoformat(),
+            source_coverage_end=run.source_coverage_end.isoformat(),
+            completed_at=run.completed_at.isoformat() if run.completed_at else '',
+        )
 
     def _build_bucket_ranges(self, scope: JiraScopeConfig, coverage_start: date, coverage_end: date):
         ranges = []

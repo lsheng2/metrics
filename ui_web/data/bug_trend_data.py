@@ -17,6 +17,7 @@ class BugTrendChartData:
     bucket_ids: List[str]
     datasets: List[dict]
     unavailable_reason: str = ''
+    run_metadata: dict = None
 
 
 @dataclass(slots=True)

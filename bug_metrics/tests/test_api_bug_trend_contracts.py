@@ -56,6 +56,13 @@ class TestBugTrendChartContract(TestCase):
         self.assertEqual(['all_open_bugs', 'all_open_critical_high', 'new_critical_high', 'new_medium_low', 'fixed_or_closed_bugs'], [dataset.series_name for dataset in chart.datasets])
         self.assertEqual([8], chart.datasets[0].values)
         self.assertEqual([-1], chart.datasets[4].values)
+        self.assertEqual('fresh', chart.run_metadata.freshness_status)
+        self.assertEqual(str(run.id), chart.run_metadata.calculation_run_id)
+        self.assertEqual(run.config_version_hash, chart.run_metadata.run_config_version_hash)
+        self.assertEqual(scope.config_version_hash, chart.run_metadata.current_config_version_hash)
+        self.assertEqual('2026-08-01', chart.run_metadata.source_coverage_start)
+        self.assertEqual('2026-08-31', chart.run_metadata.source_coverage_end)
+        self.assertEqual('2026-08-19T00:00:00+00:00', chart.run_metadata.completed_at)
 
     def test_shouldRejectOldRunWhenScopeConfigHashChanged(self):
         # Given
@@ -69,8 +76,11 @@ class TestBugTrendChartContract(TestCase):
         chart = bug_trend_api.get_chart(scope.id, date(2026, 8, 3), date(2026, 8, 9))
 
         # Then
-        self.assertIsNone(chart.calculation_run_id)
-        self.assertIn('No completed calculation', chart.unavailable_reason)
+        self.assertEqual('stale_config', chart.run_metadata.freshness_status)
+        self.assertEqual(old_hash, chart.run_metadata.run_config_version_hash)
+        self.assertEqual(scope.config_version_hash, chart.run_metadata.current_config_version_hash)
+        self.assertEqual([], chart.datasets)
+        self.assertIn('does not match the current scope configuration', chart.unavailable_reason)
 
     def test_shouldRejectDateRangeBeforeAfterOrPartiallyOutsideRunCoverage(self):
         # Given

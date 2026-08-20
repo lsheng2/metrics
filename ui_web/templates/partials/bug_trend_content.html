@@ -25,6 +25,19 @@
             </div>
         </div>
     </form>
+    {% if run_metadata %}
+        <div class="notification {% if run_metadata.freshness_status == 'fresh' %}is-info{% else %}is-warning{% endif %} is-light">
+            <p class="has-text-weight-semibold">Calculation run: {{ run_metadata.calculation_run_id }}</p>
+            <p class="is-size-7">Freshness: {{ run_metadata.freshness_status }}</p>
+            <p class="is-size-7">Run config hash: {{ run_metadata.run_config_version_hash }}</p>
+            <p class="is-size-7">Current config hash: {{ run_metadata.current_config_version_hash }}</p>
+            <p class="is-size-7">Coverage: {{ run_metadata.source_coverage_start }} to {{ run_metadata.source_coverage_end }}</p>
+            <p class="is-size-7">Completed: {{ run_metadata.completed_at }}</p>
+            {% if run_metadata.freshness_status != 'fresh' %}
+                <p class="is-size-7 has-text-weight-semibold">Recalculate this scope before using this chart as current evidence.</p>
+            {% endif %}
+        </div>
+    {% endif %}
     <div id="bug-trend-chart-container">
         {% include "partials/bug_trend_chart.html" %}
     </div>

@@ -129,6 +129,15 @@ class TestBugTrendFactTableUi(TestCase):
         payload = response.json()
         self.assertEqual(scope.id, payload['scope_id'])
         self.assertEqual(str(run.id), payload['calculation_run_id'])
+        self.assertEqual({
+            'calculation_run_id': str(run.id),
+            'run_config_version_hash': run.config_version_hash,
+            'current_config_version_hash': scope.config_version_hash,
+            'freshness_status': 'fresh',
+            'source_coverage_start': '2026-08-03',
+            'source_coverage_end': '2026-08-09',
+            'completed_at': '2026-08-19T00:00:00+00:00',
+        }, payload['run_metadata'])
         self.assertEqual([str(bucket.id)], payload['bucket_ids'])
         self.assertIn('fixed_or_closed_bugs', [dataset['series_name'] for dataset in payload['datasets']])
         self.assertIn({

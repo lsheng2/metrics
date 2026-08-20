@@ -449,7 +449,7 @@ ChartDefinition
 | 增量 | 用户价值 | 交付范围 | 非目标 | DoD |
 | --- | --- | --- | --- | --- |
 | P0a Demo hardening | 当前真实 Jira demo 可稳定验收。 | 保持 Chart.js reference chart + evidence list；补数据状态、empty/error/unsupported 文案。 | 不做 Grafana 正式路径。 | 现有 real Jira fixture chart/list 回归通过；warnings-as-errors 通过。 |
-| P0b Run/stale visibility | 用户知道图表来自哪次计算。 | 显示 calculation run、config hash、last sync、fresh/stale 状态。 | 不做完整 run compare。 | 改 scope config 后旧 chart 显示 config stale。 |
+| P0b Run/stale visibility | 用户知道图表来自哪次计算。 | 显示 calculation run、config hash、coverage、completed time、fresh/stale 状态。 | 不做完整 run compare；`last sync` 留给 P1 Data Health。 | 改 scope config 后旧 chart 显示 config stale。 |
 | P0c Read-only Scope Audit | scope owner 能看真实 Jira observed values。 | issue type/status/resolution/priority/component/coverage audit。 | 不提供自动修复 mapping。 | `P1-Stopper` 等真实值可见且标记 mapped/unmapped。 |
 | P0d Scope Config draft/activate | 用户可维护项目语义。 | draft 编辑、activate、config hash、recalculate 提示。 | cloud 审批 UI 仅预留接口。 | 新 scope 无需改代码可生成 Bug Trend。 |
 | P1 Chart/list filters + export | 用户能做实际分析和带走证据。 | chart filters、list-local filters、audit-backed evidence export。 | 不做自定义图表。 | Export 行数等于当前 evidence result。 |
@@ -458,6 +458,61 @@ ChartDefinition
 | P2 C-stock Grafana feasibility | 验证是否可以直接让 stock Grafana 成为主图表路径。 | Grafana 主图、变量/time range 同步、与 Chart.js 数字比对、click/data-link 到 evidence 可行性。 | 不承诺 stock Grafana 覆盖全部 PRD。 | 同一 PageQueryState 下 Grafana 与 reference chart 一致，并明确 event/evidence gate 是否通过。 |
 | P2/P3 C-plugin spike | 当 C-stock 不满足 evidence 联动时，验证 Grafana App/Scenes 主页面。 | Grafana App/Scenes 内实现 chart selector、active chart state、evidence list 调 Metrics API。 | 不迁移 Jira sync/indicator/evidence ownership 到 Grafana。 | Grafana app 可以在同一页面完成 chart + evidence 联动。 |
 | P3 AI draft chart pipeline | 用户可用自然语言生成 draft chart。 | AI request、validator、draft preview、personal 模式直接发布。 | cloud 审批完整 UI 可后续。 | AI chart 未通过 validator 不出现在 chart selector。 |
+
+## P0b Run/Stale Visibility DAG
+
+P0b 只解决一个生产可见性问题：用户必须知道当前 Bug Trend 图表来自哪次 Metrics-owned calculation run，以及该 run 是否匹配当前 scope config。它不实现 scope config editor、不做完整 run compare、不显示 `last sync`，也不让 Grafana 或 Django template 自己推断 stale 语义。`last sync` 的 owner 属于后续 P1 Data Health。
+
+### P0b Contract Registry
+
+| Contract | Owner | Consumers | Disconfirming check |
+| --- | --- | --- | --- |
+| `INV-P0B-RUN-METADATA` | `bug_metrics.app.api.BugTrendChart` | `ui_web` page, JSON API, Grafana payload | Focused tests fail if a fresh chart omits run id, run config hash, current scope config hash, completed time, coverage range, or freshness status. |
+| `INV-P0B-STALE-AUTHORITY` | `bug_metrics.app.api.ApiForBugTrend.get_chart` | `ui_web`, Grafana payload | Test changes scope config after a completed run and expects `freshness_status=stale_config`, stale run metadata, and no evidence panel claiming current data. |
+| `INV-P0B-UI-VISIBILITY` | `ui_web` Bug Trend template/facade | End user | View test fails if fresh/stale status and run/config hash are not visible in the Bug Trend page. |
+| `INV-P0B-GRAFANA-PAYLOAD` | `ui_web.facades.BugTrendFacade.get_chart_payload` | Grafana C-stock dashboard and validators | JSON API test fails if payload omits `run_metadata.calculation_run_id`, `run_config_version_hash`, `current_config_version_hash`, `freshness_status`, `source_coverage_start`, `source_coverage_end`, or `completed_at`. |
+
+### P0b DAG Nodes
+
+| id | depends_on | owner_paths | authority_boundary | contracts | validation | exit_criteria | parallel_policy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P0B.N1 - Add chart run metadata contract | [] | `bug_metrics/app/api/`, `bug_metrics/tests/` | `bug_metrics` owns calculation run freshness and config-hash semantics. | `INV-P0B-RUN-METADATA`, `INV-P0B-STALE-AUTHORITY` | API tests for fresh run metadata and stale config after scope config changes. | `BugTrendChart` exposes fresh/stale/no-run metadata without UI-specific interpretation. | serial |
+| P0B.N2 - Surface metadata through UI facade and JSON API | [P0B.N1] | `ui_web/facades/`, `ui_web/data/`, `ui_web/tests/` | UI facade transports API-owned metadata; it does not recompute freshness. | `INV-P0B-RUN-METADATA`, `INV-P0B-GRAFANA-PAYLOAD` | Facade/API tests assert payload contains run metadata and stale status. | Chart JSON and Grafana payload can show operator-visible run/config state. | serial |
+| P0B.N3 - Render run/stale visibility on Bug Trend page | [P0B.N2] | `ui_web/templates/`, `ui_web/tests/` | Template presents API-owned freshness state. | `INV-P0B-UI-VISIBILITY`, `INV-P0B-STALE-AUTHORITY` | View tests assert fresh run details render; stale config displays recalculation guidance and no evidence panel is rendered under current-scope semantics. This is P0b UI policy, not a claim that historical stale evidence is unavailable. | User can distinguish fresh current chart from stale/no-run state. | serial |
+| P0B.N4 - Run closure gates | [P0B.N1, P0B.N2, P0B.N3] | `bug_metrics/tests/`, `ui_web/tests/`, `docs/` | Validation evidence owner. | all P0b contracts | Focused tests, `manage.py check`, Grafana artifact validator, C0/C1 evidence checkers, whitespace/file-size gates. | P0b can be committed without weakening C-stock validation. | serial |
+
+```mermaid
+flowchart TD
+  P0BN1["P0B.N1 Add chart run metadata contract"]
+  P0BN2["P0B.N2 Surface metadata through UI facade and JSON API"]
+  P0BN3["P0B.N3 Render run/stale visibility"]
+  P0BN4["P0B.N4 Run closure gates"]
+
+  P0BN1 --> P0BN2
+  P0BN2 --> P0BN3
+  P0BN1 --> P0BN4
+  P0BN2 --> P0BN4
+  P0BN3 --> P0BN4
+```
+
+### P0b Execution Ledger
+
+- [ ] P0B.N1 - Add chart run metadata contract
+- [ ] P0B.N2 - Surface metadata through UI facade and JSON API
+- [ ] P0B.N3 - Render run/stale visibility on Bug Trend page
+- [ ] P0B.N4 - Run closure gates
+
+### P0b Validation Commands
+
+```powershell
+.venv\Scripts\python.exe -m pytest bug_metrics\tests\test_api_bug_trend_contracts.py ui_web\tests\test_bug_trend_views.py ui_web\tests\test_bug_trend_fact_table_ui.py -q
+.venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
+.venv\Scripts\python.exe scripts\check_c0_validation_evidence.py --evidence docs\c0-validation-closure-evidence.md
+.venv\Scripts\python.exe scripts\check_c1_evidence_link_evidence.py --evidence docs\c1-evidence-link-validation-evidence.md
+.venv\Scripts\python.exe manage.py check
+.venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
+.venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
+```
 
 ## 验收标准
 

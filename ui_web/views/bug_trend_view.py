@@ -50,13 +50,14 @@ class BugTrendView(GracefulTemplateView):
         begin, end = self._date_range()
         chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end)
         evidence = None
-        if chart_data.calculation_run_id:
+        if chart_data.calculation_run_id and chart_data.run_metadata.get('freshness_status') == 'fresh':
             evidence = self.bug_trend_facade.get_evidence_data(selected_scope_id, begin, end, calculation_run_id=chart_data.calculation_run_id)
         context['selected_scope_id'] = selected_scope_id
         context['begin'] = begin.isoformat()
         context['end'] = end.isoformat()
         context['chart_json'] = self.bug_trend_facade.get_chart_json(chart_data)
         context['unavailable_reason'] = chart_data.unavailable_reason
+        context['run_metadata'] = chart_data.run_metadata or {}
         context['evidence'] = evidence
 
     def _populate_common_context(self, context):
