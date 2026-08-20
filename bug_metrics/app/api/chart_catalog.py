@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from bug_metrics.models import BugTrendAuditEvent, BugTrendChartDefinition, BugTrendChartPublishRequest, BugTrendEvidenceContract, BugTrendRendererRouteDecision
+from .series import BUG_TREND_SERIES
 
 
 @dataclass(slots=True)
@@ -199,6 +200,11 @@ class ChartCatalogService:
         series = spec.get('series', [])
         if series and (not isinstance(series, list) or any(not isinstance(item, str) for item in series)):
             errors.append('AI chart specs series must be a list of series names.')
+        elif series:
+            known_series = {item.series_name for item in BUG_TREND_SERIES}
+            unknown_series = sorted(set(series) - known_series)
+            if unknown_series:
+                errors.append(f'AI chart specs reference unknown Bug Trend series: {", ".join(unknown_series)}.')
         return errors
 
     def _to_definition(self, chart: BugTrendChartDefinition) -> ChartDefinition:

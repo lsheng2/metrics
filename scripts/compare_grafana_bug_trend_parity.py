@@ -60,15 +60,27 @@ def main() -> None:
     }
     artifact = json.loads((repo_root / args.artifact).read_text(encoding='utf-8'))
     chart_target = chart_target_from(artifact)
+    chart_id = chart_id_from(chart_target)
     response = Client().get(reverse('ui_web:bug_trend_chart_data_api'), {
         'scope_id': run.scope_id,
         'begin': begin.isoformat(),
         'end': end.isoformat(),
+        'chart_id': chart_id,
     })
     if response.status_code != 200:
         print(f'FAIL chart API returned HTTP {response.status_code}')
         raise SystemExit(1)
     actual_payload = response.json()
+    expected_chart = bug_metrics_container.bug_trend_api.get_chart_for_run(str(run.id), begin, end, chart_id)
+    expected_payload['datasets'] = [
+        {
+            'series_name': dataset.series_name,
+            'type': dataset.chart_type,
+            'values': dataset.values,
+            'color': dataset.color,
+        }
+        for dataset in expected_chart.datasets
+    ]
     mismatches = compare_payloads(expected_payload, actual_payload)
     mismatches.extend(compare_artifact_contract(chart_target, artifact, actual_payload))
     for mismatch in mismatches:
@@ -93,6 +105,12 @@ def chart_target_from(artifact):
             if path.startswith('/api/bug-trend/chart-data/'):
                 return target
     raise SystemExit('FAIL no approved chart-data target found in Grafana artifact')
+
+
+def chart_id_from(chart_target):
+    target_path = chart_target.get('path') or chart_target.get('url', '')
+    params = dict(parse_qsl(urlparse(target_path).query, keep_blank_values=True))
+    return params.get('chart_id') or 'default_bug_trend'
 
 
 def compare_artifact_contract(chart_target, artifact, payload):

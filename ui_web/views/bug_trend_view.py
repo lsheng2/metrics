@@ -35,6 +35,13 @@ def chart_id_error_response(error):
     return None
 
 
+def parse_date_query(value: str, field_name: str):
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        raise ValueError(f'{field_name} must be an ISO date.')
+
+
 class BugTrendView(GracefulTemplateView):
     template_name = 'bug_trend.html'
 
@@ -84,8 +91,8 @@ class BugTrendView(GracefulTemplateView):
     def _date_range(self):
         today = date.today()
         default_begin = today - timedelta(days=27)
-        begin = date.fromisoformat(self.request.GET.get('begin') or default_begin.isoformat())
-        end = date.fromisoformat(self.request.GET.get('end') or today.isoformat())
+        begin = parse_date_query(self.request.GET.get('begin') or default_begin.isoformat(), 'begin')
+        end = parse_date_query(self.request.GET.get('end') or today.isoformat(), 'end')
         return begin, end
 
 
@@ -115,8 +122,8 @@ class BugTrendEvidenceView(GracefulTemplateView):
         context['evidence'] = evidence
 
     def _date_range(self):
-        begin = date.fromisoformat(self.request.GET.get('begin'))
-        end = date.fromisoformat(self.request.GET.get('end'))
+        begin = parse_date_query(self.request.GET.get('begin'), 'begin')
+        end = parse_date_query(self.request.GET.get('end'), 'end')
         return begin, end
 
 
@@ -129,8 +136,8 @@ class BugTrendEvidenceExportView(GracefulTemplateView):
         invalid_response = validate_query_contract(request, EVIDENCE_REQUIRED_PARAMS, EVIDENCE_OPTIONAL_PARAMS)
         if invalid_response:
             return invalid_response
-        begin, end = self._date_range()
         try:
+            begin, end = self._date_range()
             export = self.bug_trend_facade.export_evidence_data(
                 scope_id=int(request.GET.get('scope_id')),
                 begin=begin,
@@ -152,8 +159,8 @@ class BugTrendEvidenceExportView(GracefulTemplateView):
         return response
 
     def _date_range(self):
-        begin = date.fromisoformat(self.request.GET.get('begin'))
-        end = date.fromisoformat(self.request.GET.get('end'))
+        begin = parse_date_query(self.request.GET.get('begin'), 'begin')
+        end = parse_date_query(self.request.GET.get('end'), 'end')
         return begin, end
 
 
@@ -221,16 +228,16 @@ class BugTrendChartDataApiView(GracefulTemplateView):
         invalid_response = validate_query_contract(request, CHART_DATA_REQUIRED_PARAMS, CHART_DATA_OPTIONAL_PARAMS)
         if invalid_response:
             return invalid_response
-        begin, end = self._date_range()
         try:
+            begin, end = self._date_range()
             chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end, request.GET.get('chart_id', 'default_bug_trend'))
         except (ObjectDoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_chart_payload(chart_data))
 
     def _date_range(self):
-        begin = date.fromisoformat(self.request.GET.get('begin'))
-        end = date.fromisoformat(self.request.GET.get('end'))
+        begin = parse_date_query(self.request.GET.get('begin'), 'begin')
+        end = parse_date_query(self.request.GET.get('end'), 'end')
         return begin, end
 
 
@@ -243,8 +250,8 @@ class BugTrendEvidenceApiView(GracefulTemplateView):
         invalid_response = validate_query_contract(request, EVIDENCE_REQUIRED_PARAMS, EVIDENCE_OPTIONAL_PARAMS)
         if invalid_response:
             return invalid_response
-        begin, end = self._date_range()
         try:
+            begin, end = self._date_range()
             evidence = self.bug_trend_facade.get_evidence_data(
                 scope_id=int(request.GET.get('scope_id')),
                 begin=begin,
@@ -264,6 +271,6 @@ class BugTrendEvidenceApiView(GracefulTemplateView):
         return JsonResponse(self.bug_trend_facade.get_evidence_payload(evidence))
 
     def _date_range(self):
-        begin = date.fromisoformat(self.request.GET.get('begin'))
-        end = date.fromisoformat(self.request.GET.get('end'))
+        begin = parse_date_query(self.request.GET.get('begin'), 'begin')
+        end = parse_date_query(self.request.GET.get('end'), 'end')
         return begin, end

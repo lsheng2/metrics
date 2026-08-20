@@ -34,6 +34,19 @@ class TestAiChartGovernance(TestCase):
             ))
         self.assertFalse(BugTrendChartDefinition.objects.filter(chart_id='ai_conflicting_contract').exists())
 
+    def test_shouldRejectAiDraftWhenSpecReferencesUnknownSeries(self):
+        # When / Then
+        with self.assertRaises(ValueError):
+            bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
+                chart_id='ai_unknown_series',
+                title='Unknown Series Chart',
+                renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+                integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+                evidence_contract_id='default_bug_trend_bucket_series',
+                spec={'evidence_contract_id': 'default_bug_trend_bucket_series', 'series': ['not_a_bug_trend_series']},
+            ))
+        self.assertFalse(BugTrendChartDefinition.objects.filter(chart_id='ai_unknown_series').exists())
+
     def test_shouldCreateValidatedAiDraftAndPublishPersonalChartWithAudit(self):
         # Given
         draft = bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
