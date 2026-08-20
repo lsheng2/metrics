@@ -141,6 +141,17 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('Scope config was not saved.', content)
         self.assertIn('id: Scope id is required.', content)
 
+    def test_shouldRenderValidationErrorsWhenScopeConfigGetHasMalformedScopeId(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'scope_id': 'abc'})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(400, response.status_code)
+        self.assertIn('Scope config was not saved.', content)
+        self.assertIn('scope_id: A valid scope id is required.', content)
+        self.assertNotIn('Save scope config', content)
+
 
     def _post_payload(self, scope, critical_high_values):
         return {

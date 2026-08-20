@@ -6,8 +6,10 @@
 <article class="block">
     <nav class="breadcrumb" aria-label="breadcrumbs">
         <ul>
-            <li><a href="{% url 'ui_web:bug_trend' %}?scope_id={{ config.id }}">Bug Trend</a></li>
-            <li><a href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ config.id }}">Scope Audit</a></li>
+            <li><a href="{% url 'ui_web:bug_trend' %}{% if config %}?scope_id={{ config.id }}{% endif %}">Bug Trend</a></li>
+            {% if config %}
+                <li><a href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ config.id }}">Scope Audit</a></li>
+            {% endif %}
             <li class="is-active"><a href="#" aria-current="page">Scope Config</a></li>
         </ul>
     </nav>
@@ -30,6 +32,7 @@
         </div>
     {% endif %}
 
+    {% if config %}
     <form class="box" method="post">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ config.id }}">
@@ -141,5 +144,6 @@
         </div>
         <p class="is-size-7">Config hash: {{ config.config_version_hash }}</p>
     </form>
+    {% endif %}
 </article>
 {% endblock %}

@@ -190,8 +190,14 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         return response
 
     def populate_context(self, context, **kwargs):
+        scope_id = self.request.GET.get('scope_id')
+        if not scope_id or not scope_id.isdecimal():
+            context['config'] = None
+            context['scope_config_errors'] = {'scope_id': 'A valid scope id is required.'}
+            context['build_page_title'] = 'Bug Trend Scope Config'
+            return
         config = self.bug_trend_facade.get_scope_config(
-            int(self.request.GET.get('scope_id')),
+            int(scope_id),
             self.request.GET.get('add_field', ''),
             self.request.GET.get('add_value', ''),
         )
@@ -199,6 +205,11 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         context['saved'] = self.request.GET.get('saved') == '1'
         context['hash_changed'] = self.request.GET.get('hash_changed') == '1'
         context['build_page_title'] = 'Bug Trend Scope Config'
+
+    def render_to_response(self, context, **response_kwargs):
+        if context.get('scope_config_errors') and context.get('config') is None:
+            response_kwargs.setdefault('status', 400)
+        return super().render_to_response(context, **response_kwargs)
 
 
 class BugTrendChartDataApiView(GracefulTemplateView):
