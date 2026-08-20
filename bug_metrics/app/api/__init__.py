@@ -68,14 +68,7 @@ class ApiForBugTrend:
                                        c_stock_same_page_capable: bool, supported_c_stock_capabilities: List[str],
                                        decision_summary: str,
                                        renderer_route: str = BugTrendChartDefinition.ROUTE_C_STOCK) -> RendererRouteDecisionResult:
-        return self._chart_catalog_service.record_renderer_route_decision(
-            chart_id,
-            same_page_evidence_required,
-            c_stock_same_page_capable,
-            supported_c_stock_capabilities,
-            decision_summary,
-            renderer_route,
-        )
+        return self._chart_catalog_service.record_renderer_route_decision(chart_id, same_page_evidence_required, c_stock_same_page_capable, supported_c_stock_capabilities, decision_summary, renderer_route)
 
     def latest_renderer_route_decision(self, chart_id: str) -> RendererRouteDecisionResult | None:
         return self._chart_catalog_service.latest_renderer_route_decision(chart_id)
@@ -136,7 +129,8 @@ class ApiForBugTrend:
         )
 
     def get_evidence_tickets(self, state: BugTrendPageQueryState) -> BugTrendEvidenceTicketResult:
-        self._enabled_evidence_chart_definition(state.active_chart_id)
+        chart_definition = self._enabled_evidence_chart_definition(state.active_chart_id)
+        state.allowed_series_names = list(chart_definition.chart_spec.get('series', []))
         return self._page_query_service.get_evidence_tickets(state)
 
     def export_evidence_tickets(self, state: BugTrendPageQueryState, actor: str = 'local_operator') -> BugTrendEvidenceExport:
@@ -144,7 +138,8 @@ class ApiForBugTrend:
         return self._evidence_export_service.export_evidence_tickets(state, result, actor)
 
     def validate_chart_list_sync(self, state: BugTrendPageQueryState) -> BugTrendChartListSyncResult:
-        self._enabled_evidence_chart_definition(state.active_chart_id)
+        chart_definition = self._enabled_evidence_chart_definition(state.active_chart_id)
+        state.allowed_series_names = list(chart_definition.chart_spec.get('series', []))
         return self._page_query_service.validate_chart_list_sync(state)
 
     def get_scope_audit(self, scope_id: int) -> ScopeAudit:

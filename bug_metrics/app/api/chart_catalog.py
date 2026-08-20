@@ -111,8 +111,10 @@ class ChartCatalogService:
     def create_ai_chart_draft(self, request: AiChartDraftRequest) -> ChartDefinition:
         errors = self._validate_ai_spec(request.spec, request.evidence_contract_id)
         if errors:
+            self._record_chart_audit('chart_validation_failed', request.actor, request.chart_id, {'errors': errors})
             raise ValueError(errors)
         contract = BugTrendEvidenceContract.objects.get(contract_id=request.evidence_contract_id)
+        self._record_chart_audit('chart_draft_created', request.actor, request.chart_id, {'renderer_type': request.renderer_type, 'integration_route': request.integration_route})
         chart = BugTrendChartDefinition.objects.create(
             chart_id=request.chart_id,
             title=request.title,
@@ -130,8 +132,10 @@ class ChartCatalogService:
         )
         validation = self.validate_chart_for_publish(chart)
         if not validation.valid:
+            self._record_chart_audit('chart_validation_failed', request.actor, request.chart_id, {'errors': validation.errors})
             chart.delete()
             raise ValueError(validation.errors)
+        self._record_chart_audit('chart_validation_passed', request.actor, request.chart_id, {'chart_version': chart.chart_version})
         return self._to_definition(chart)
 
     def publish_chart(self, chart_id: str, actor: str, governance_mode: str) -> ChartPublishResult:
@@ -147,6 +151,7 @@ class ChartCatalogService:
                 status=BugTrendChartPublishRequest.STATUS_PENDING,
                 request_summary={'chart_id': chart.chart_id, 'chart_version': chart.chart_version},
             )
+            self._record_chart_audit('chart_publish_requested', actor, chart.chart_id, {'governance_mode': governance_mode, 'chart_version': chart.chart_version})
             return ChartPublishResult(chart.chart_id, request.status, governance_mode, False)
         chart.status = BugTrendChartDefinition.STATUS_PUBLISHED
         chart.enabled = True
@@ -160,6 +165,14 @@ class ChartCatalogService:
             request_summary={'governance_mode': governance_mode, 'chart_version': chart.chart_version},
         )
         return ChartPublishResult(chart.chart_id, chart.status, governance_mode, True)
+
+    def _record_chart_audit(self, event_type: str, actor: str, chart_id: str, request_summary: dict) -> None:
+        BugTrendAuditEvent.objects.create(
+            event_type=event_type,
+            actor=actor,
+            chart_id=chart_id,
+            request_summary=request_summary,
+        )
 
     def _validate_evidence_contract(self, contract: BugTrendEvidenceContract) -> List[str]:
         if contract.capability == BugTrendEvidenceContract.CAPABILITY_SUMMARY_ONLY:

@@ -18,6 +18,8 @@ class TestAiChartGovernance(TestCase):
                 spec={'query': 'select * from jira_history_issue', 'token': 'do-not-store'},
             ))
         self.assertFalse(BugTrendChartDefinition.objects.filter(chart_id='ai_unsafe').exists())
+        event = BugTrendAuditEvent.objects.get(event_type='chart_validation_failed', chart_id='ai_unsafe')
+        self.assertIn('errors', event.request_summary)
 
     def test_shouldRejectAiDraftWhenSpecEvidenceContractConflictsWithCatalogContract(self):
         # When / Then
@@ -56,6 +58,8 @@ class TestAiChartGovernance(TestCase):
         event = BugTrendAuditEvent.objects.get(event_type='chart_published', chart_id='ai_daily_bug_in')
         self.assertEqual('local_operator', event.actor)
         self.assertIsNone(event.scope)
+        event_types = set(BugTrendAuditEvent.objects.filter(chart_id='ai_daily_bug_in').values_list('event_type', flat=True))
+        self.assertTrue({'chart_draft_created', 'chart_validation_passed', 'chart_published'}.issubset(event_types))
         self.assertIn('ai_daily_bug_in', [item.chart_id for item in bug_trend_api.list_enabled_charts()])
         chart_definition = bug_trend_api.get_chart_definition('ai_daily_bug_in')
         self.assertEqual(['new_critical_high'], chart_definition.chart_spec['series'])
@@ -80,6 +84,8 @@ class TestAiChartGovernance(TestCase):
         self.assertEqual(BugTrendChartPublishRequest.STATUS_PENDING, result.status)
         request = BugTrendChartPublishRequest.objects.get(chart__chart_id='ai_cloud_chart')
         self.assertEqual(BugTrendChartPublishRequest.STATUS_PENDING, request.status)
+        event = BugTrendAuditEvent.objects.get(event_type='chart_publish_requested', chart_id='ai_cloud_chart')
+        self.assertEqual('cloud', event.request_summary['governance_mode'])
         chart = BugTrendChartDefinition.objects.get(chart_id='ai_cloud_chart')
         self.assertFalse(chart.enabled)
         self.assertNotIn('ai_cloud_chart', [item.chart_id for item in bug_trend_api.list_enabled_charts()])

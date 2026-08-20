@@ -226,7 +226,10 @@ class BugTrendFacade:
             'owner_field', 'team_field', 'milestone_field', 'fix_version_field',
             'package_version_field', 'timezone', 'bucket_granularity',
         ]}
-        payload['id'] = int(payload['id']) if payload['id'] else None
+        try:
+            payload['id'] = int(payload['id']) if payload['id'] else None
+        except ValueError:
+            payload['id'] = None
         payload['enabled'] = post_data.get('enabled') == 'on'
         for field_name in SEMANTIC_LIST_FIELDS:
             payload[field_name] = self._parse_list_field(post_data.get(field_name, ''))

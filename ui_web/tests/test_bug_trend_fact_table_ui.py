@@ -245,6 +245,62 @@ class TestBugTrendFactTableUi(TestCase):
         self.assertEqual(['all_open_bugs'], [dataset['series_name'] for dataset in payload['datasets']])
         self.assertEqual(str(run.id), payload['calculation_run_id'])
 
+    def test_shouldFilterRangeEvidenceToSelectedCatalogChartSeries(self):
+        # Given
+        scope, run, _ = self._seed_trend_data()
+        draft = bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
+            chart_id='ai_open_evidence_only',
+            title='AI Open Evidence Only',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract_id='default_bug_trend_bucket_series',
+            spec={'evidence_contract_id': 'default_bug_trend_bucket_series', 'series': ['all_open_bugs']},
+        ))
+        bug_trend_api.publish_chart(draft.chart_id)
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'ai_open_evidence_only',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(['STDEL-1001'], [row['issue_key'] for row in payload['rows']])
+        self.assertEqual(['all_open_bugs'], [row['series_name'] for row in payload['rows']])
+
+    def test_shouldExportOnlySelectedCatalogChartSeries(self):
+        # Given
+        scope, run, _ = self._seed_trend_data()
+        draft = bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
+            chart_id='ai_open_export_only',
+            title='AI Open Export Only',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract_id='default_bug_trend_bucket_series',
+            spec={'evidence_contract_id': 'default_bug_trend_bucket_series', 'series': ['all_open_bugs']},
+        ))
+        bug_trend_api.publish_chart(draft.chart_id)
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_export'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'ai_open_export_only',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('STDEL-1001', content)
+        self.assertNotIn('STDEL-1002', content)
+
     def test_shouldReturnBadRequestForUnknownChartDataApiChartId(self):
         # Given
         scope, _, _ = self._seed_trend_data()

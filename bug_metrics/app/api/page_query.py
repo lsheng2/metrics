@@ -30,6 +30,7 @@ class BugTrendPageQueryState:
     selected_series_name: str = ''
     list_filters: BugTrendTicketListFilters = field(default_factory=BugTrendTicketListFilters)
     active_chart_id: str = 'default_bug_trend'
+    allowed_series_names: List[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -131,6 +132,8 @@ class BugTrendPageQueryService:
             memberships = memberships.filter(bucket_id=state.selected_bucket_id)
         if include_selection and state.selected_series_name:
             memberships = memberships.filter(series_name=state.selected_series_name)
+        elif state.allowed_series_names:
+            memberships = memberships.filter(series_name__in=state.allowed_series_names)
         return memberships.select_related('bucket').order_by('bucket__bucket_start', 'series_name', 'issue_key')
 
     def _apply_list_filters(self, memberships, filters: BugTrendTicketListFilters):
