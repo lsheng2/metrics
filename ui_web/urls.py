@@ -7,7 +7,7 @@ from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
-from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendChartDataApiView, BugTrendEvidenceApiView
+from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendScopeAuditView, BugTrendChartDataApiView, BugTrendEvidenceApiView
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
 
@@ -29,6 +29,7 @@ urlpatterns = [
     path(_base_prefix + 'task-forecast/', TaskForecastView.as_view(), name='task_forecast'),
     path(_base_prefix + 'pull-requests/', PullRequestsView.as_view(), name='pull_requests'),
     path(_base_prefix + 'bug-trend/', BugTrendView.as_view(), name='bug_trend'),
+     path(_base_prefix + 'bug-trend/scope-audit/', BugTrendScopeAuditView.as_view(), name='bug_trend_scope_audit'),
 
     # Partials for HTMX
     path(_base_prefix + 'partials/tasks/', CurrentTasksView.as_view(), name='partials_tasks'),

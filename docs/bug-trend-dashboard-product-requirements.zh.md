@@ -514,6 +514,82 @@ flowchart TD
 .venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
 ```
 
+## P0c Read-only Scope Audit DAG
+
+P0c 只解决一个已保存 scope 的配置诊断问题：scope owner 必须能从 Metrics 已同步的本地 Jira history 中看到真实 observed values，并知道这些值是否已被当前 `JiraScopeConfig` 覆盖。Audit 是只读诊断面，不修改 Jira、不自动修 mapping、不审计未保存 draft、不保存新的语义 truth，也不从 Grafana、template 或 AI prompt 推断分类规则。未保存 draft config 的 audit preview 属于 P0d Scope Config draft/activate。
+
+### P0c Scope Baseline
+
+| Field | Value |
+| --- | --- |
+| baseline_head | `43754832dd5517872efb3ac9dff18430cd8f3067` |
+| pre_existing_dirty_paths | `.github/copilot-instructions.md` |
+| planned_owner_paths | `jira_history/app/api/__init__.py`, `jira_history/tests/test_api_scope_audit_facts.py`, `bug_metrics/app/api/__init__.py`, `bug_metrics/app/api/scope_audit.py`, `bug_metrics/tests/test_api_scope_audit.py`, `ui_web/data/bug_trend_data.py`, `ui_web/facades/bug_trend_facade.py`, `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_audit.html`, `ui_web/tests/test_bug_trend_scope_audit_views.py`, `ui_web/urls.py`, `docs/bug-trend-dashboard-product-requirements.zh.md`, `docs/architecture-manual.md`, `docs/implementation-start.md` |
+| excluded_paths | `.github/copilot-instructions.md` remains outside P0c unless explicitly repaired in a separate task. |
+
+### P0c Code-doc Truth Sync
+
+| Surface | Status | Reason |
+| --- | --- | --- |
+| `docs/bug-trend-dashboard-product-requirements.zh.md` | update-required | P0c defines the audit contract, owner paths, and closure gates here. |
+| `docs/architecture-manual.md`, `docs/implementation-start.md` | update-required | P0c adds an operator-facing read-only Scope Audit entry point and public module API behavior. These docs must name the workflow and owner boundary. |
+| `README.md`, `CLAUDE.md`, `.github/ai-governance/` | no-doc-change | P0c follows existing module-boundary and validation rules without changing global workflow. |
+
+### P0c Contract Registry
+
+| Contract | Owner | Consumers | Disconfirming check |
+| --- | --- | --- | --- |
+| `INV-P0C-OBSERVED-VALUES` | `jira_history.app.api.get_scope_audit_facts(scope_config)` DTOs in `jira_history/app/api/__init__.py` | `bug_metrics.app.api.get_scope_audit(scope_id)` | `jira_history/tests/test_api_scope_audit_facts.py` seeds `JiraIssue` and `JiraTransition` rows for a persisted `JiraScopeConfig`, then fails if issue type, status, resolution, priority/severity, and component values are not returned with counts from local history only. `bug_metrics` owns resolving `scope_id` to `JiraScopeConfig`; `jira_history` does not accept raw ids or draft criteria in P0c. |
+| `INV-P0C-MAPPING-AUTHORITY` | `bug_metrics.models.JiraScopeConfig` plus audit DTOs in `bug_metrics/app/api/scope_audit.py` | `ui_web` audit facade/view | `bug_metrics/tests/test_api_scope_audit.py` includes mapped and unmapped priority values such as `P1-Stopper`, then fails if mapped/unmapped classification comes from any source other than the current scope config fields. |
+| `INV-P0C-READ-ONLY-AUDIT` | `bug_metrics.app.api.get_scope_audit(scope_id)` | `ui_web` page/API | `bug_metrics/tests/test_api_scope_audit.py` captures model counts before and after audit and fails if audit creates, updates, deletes, recalculates, syncs, or mutates scope config/history rows. |
+| `INV-P0C-COVERAGE` | `jira_history.app.api.get_scope_audit_facts(scope_config)` coverage DTO | `bug_metrics.app.api` audit DTO, operator UI | `jira_history/tests/test_api_scope_audit_facts.py` fails if coverage omits total issue count, non-empty created/updated/resolved counts, status transition count, and resolution transition count. `bug_metrics/tests/test_api_scope_audit.py` fails if these coverage counts are not transported unchanged from `jira_history`; P0c performs no coverage arithmetic, percentages, sums, or model recounting. |
+| `INV-P0C-UI-VISIBILITY` | `ui_web` scope audit facade/view/template | Scope owner | `ui_web/tests/test_bug_trend_scope_audit_views.py` fails if observed values, counts, mapped/unmapped status, and coverage summary are not visible for a saved scope. |
+
+### P0c DAG Nodes
+
+| id | depends_on | owner_paths | authority_boundary | contracts | validation | exit_criteria | parallel_policy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P0C.N1 - Expose local history audit facts | [] | `jira_history/app/api/__init__.py`, `jira_history/tests/test_api_scope_audit_facts.py` | `jira_history` owns persisted Jira issue/transition observations and coverage facts for a persisted `JiraScopeConfig`. It does not classify business meaning and does not resolve `scope_id`. | `INV-P0C-OBSERVED-VALUES`, `INV-P0C-COVERAGE` | `test_api_scope_audit_facts.py` seeds local history and asserts observed value counts plus coverage facts. | `get_scope_audit_facts(scope_config)` returns raw observed value DTOs and coverage DTOs for one saved scope without reading Jira live. | serial |
+| P0C.N2 - Classify observed values against scope config | [P0C.N1] | `bug_metrics/app/api/__init__.py`, `bug_metrics/app/api/scope_audit.py`, `bug_metrics/tests/test_api_scope_audit.py` | `JiraScopeConfig` is the only mapping authority; `bug_metrics` resolves `scope_id`, asks `jira_history` for observations, compares observations to config, and returns scope audit DTOs. | `INV-P0C-MAPPING-AUTHORITY`, `INV-P0C-READ-ONLY-AUDIT`, `INV-P0C-COVERAGE` | `test_api_scope_audit.py` asserts `P1-Stopper` priority is unmapped until listed in `critical_high_values`, mapped statuses/resolutions are recognized, coverage counts are transported unchanged, and no DB mutations occur during audit. | `get_scope_audit(scope_id)` names each observed value, count, category, mapped/unmapped state, and unchanged coverage counts while preserving read-only behavior. | serial |
+| P0C.N3 - Surface read-only audit in UI | [P0C.N2] | `ui_web/data/bug_trend_data.py`, `ui_web/facades/bug_trend_facade.py`, `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_audit.html`, `ui_web/tests/test_bug_trend_scope_audit_views.py`, `ui_web/urls.py` | UI transports and renders API-owned audit results at `bug-trend/scope-audit/?scope_id=<id>`; it does not recompute mappings, observed counts, or coverage facts. | `INV-P0C-UI-VISIBILITY`, `INV-P0C-MAPPING-AUTHORITY` | `test_bug_trend_scope_audit_views.py` asserts audit page renders observed values, counts, mapped/unmapped badges, and coverage from API data for a saved scope. | Scope owner can open read-only Audit for a saved scope and see unmapped values before editing the saved config. | serial |
+| P0C.N4 - Run closure gates | [P0C.N1, P0C.N2, P0C.N3] | `jira_history/tests/test_api_scope_audit_facts.py`, `bug_metrics/tests/test_api_scope_audit.py`, `ui_web/tests/test_bug_trend_scope_audit_views.py`, `docs/architecture-manual.md`, `docs/implementation-start.md`, `docs/bug-trend-dashboard-product-requirements.zh.md` | Validation evidence owner. | all P0c contracts | Focused audit tests, affected Bug Trend focused tests, Grafana artifact validator, `manage.py check`, file-size and whitespace gates. | P0c can be committed without weakening P0b stale evidence authority, C-stock validation, or operator docs. | serial |
+
+```mermaid
+flowchart TD
+  P0CN1["P0C.N1 Expose local history audit facts"]
+  P0CN2["P0C.N2 Classify observed values against scope config"]
+  P0CN3["P0C.N3 Surface read-only audit in UI"]
+  P0CN4["P0C.N4 Run closure gates"]
+
+  P0CN1 --> P0CN2
+  P0CN2 --> P0CN3
+  P0CN1 --> P0CN4
+  P0CN2 --> P0CN4
+  P0CN3 --> P0CN4
+```
+
+### P0c Execution Ledger
+
+- [x] P0C.N1 - Expose local history audit facts
+- [x] P0C.N2 - Classify observed values against scope config
+- [x] P0C.N3 - Surface read-only audit in UI
+- [x] P0C.N4 - Run closure gates
+
+### P0c Validation Commands
+
+```powershell
+.venv\Scripts\python.exe -m pytest jira_history\tests\test_api_scope_audit_facts.py bug_metrics\tests\test_api_scope_audit.py ui_web\tests\test_bug_trend_scope_audit_views.py -q
+.venv\Scripts\python.exe -m pytest bug_metrics\tests\test_api_bug_trend_contracts.py ui_web\tests\test_bug_trend_views.py ui_web\tests\test_bug_trend_fact_table_ui.py -q
+.venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
+.venv\Scripts\python.exe manage.py check
+.venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
+.venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
+```
+
+### P0c Review Gate
+
+Before implementation starts, `PLAN.R` must confirm that observed facts, mapping authority, read-only behavior, coverage reporting, and UI visibility each have one owner and one executable disconfirming check. It must also confirm every P0c coverage dimension is rendered in the audit UI and transported unchanged from `jira_history` through `bug_metrics`. Any request to auto-fix mappings, write scope config, audit unsaved draft config, live-query Jira, or expose `last sync` belongs to P0d or P1 Data Health, not P0c.
+
 ## 验收标准
 
 1. 用户无需改代码即可创建一个新的 Jira scope 并生成 Bug Trend。

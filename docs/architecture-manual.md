@@ -159,8 +159,8 @@ Add these modules to the baseline:
 
 ```text
 jira_sync/               Incremental sync, REST client checks, cursors
-jira_history/            Normalized issues, raw snapshots, transitions
-bug_metrics/             Daily/weekly bug created/fixed/open/reopened aggregates
+jira_history/            Normalized issues, raw snapshots, transitions, read-only audit facts
+bug_metrics/             Daily/weekly bug created/fixed/open/reopened aggregates, scope mapping audit
 feature_metrics/         Feature completion and aging aggregates
 pm_dashboard/            PM-focused overview pages and drilldowns
 ```
@@ -299,6 +299,7 @@ MVP pages:
    - Open bug backlog.
    - Weekly rollup toggle.
    - Drilldown table for selected date/series.
+    - Read-only scope audit for saved scopes. `jira_history` owns observed values and coverage counts, `JiraScopeConfig` owns mapping truth, `bug_metrics` classifies mapped/unmapped values, and `ui_web` only renders the audit result.
 
 3. Feature completion page
    - Completion by feature group, epic, fixVersion, component, or configured custom field.

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Bug Trend Scope Audit{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:bug_trend' %}?scope_id={{ audit.scope_id }}">Bug Trend</a></li>
+            <li class="is-active"><a href="#" aria-current="page">Scope Audit</a></li>
+        </ul>
+    </nav>
+
+    <h2 class="title is-3">Bug Trend Scope Audit</h2>
+    <section class="box">
+        <h3 class="title is-4">{{ audit.scope_name }}</h3>
+        <p class="is-size-7">Config hash: {{ audit.config_version_hash }}</p>
+    </section>
+
+    <section class="box">
+        <h3 class="title is-4">Data coverage</h3>
+        <div class="columns is-multiline">
+            <div class="column is-one-third"><strong>Total issues</strong><br>{{ audit.coverage.total_issue_count }}</div>
+            <div class="column is-one-third"><strong>Issues with created date</strong><br>{{ audit.coverage.created_count }}</div>
+            <div class="column is-one-third"><strong>Issues with updated date</strong><br>{{ audit.coverage.updated_count }}</div>
+            <div class="column is-one-third"><strong>Issues with resolved date</strong><br>{{ audit.coverage.resolved_count }}</div>
+            <div class="column is-one-third"><strong>Status transitions</strong><br>{{ audit.coverage.status_transition_count }}</div>
+            <div class="column is-one-third"><strong>Resolution transitions</strong><br>{{ audit.coverage.resolution_transition_count }}</div>
+        </div>
+    </section>
+
+    <section class="box">
+        <h3 class="title is-4">Observed values</h3>
+        <table class="table is-fullwidth is-striped is-hoverable">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Value</th>
+                    <th>Count</th>
+                    <th>Mapping</th>
+                    <th>Mapping group</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for value in audit.observed_values %}
+                    <tr>
+                        <td>{{ value.category }}</td>
+                        <td>{{ value.value }}</td>
+                        <td>{{ value.count }}</td>
+                        <td>
+                            {% if value.mapped %}
+                                <span class="tag is-success is-light">mapped</span>
+                            {% else %}
+                                <span class="tag is-warning is-light">unmapped</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ value.mapping_group }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">No observed values found for this saved scope.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</article>
+{% endblock %}

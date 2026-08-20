@@ -102,6 +102,19 @@ class BugTrendEvidenceView(GracefulTemplateView):
         return begin, end
 
 
+class BugTrendScopeAuditView(GracefulTemplateView):
+    template_name = 'bug_trend_scope_audit.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def populate_context(self, context, **kwargs):
+        audit = self.bug_trend_facade.get_scope_audit_data(int(self.request.GET.get('scope_id')))
+        context['audit'] = audit
+        context['build_page_title'] = 'Bug Trend Scope Audit'
+
+
 class BugTrendChartDataApiView(GracefulTemplateView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

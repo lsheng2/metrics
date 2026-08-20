@@ -33,3 +33,12 @@ class BugTrendEvidenceData:
     begin: str
     end: str
     has_selection: bool
+
+
+@dataclass(slots=True)
+class BugTrendScopeAuditData:
+    scope_id: int
+    scope_name: str
+    config_version_hash: str
+    observed_values: List[object]
+    coverage: object

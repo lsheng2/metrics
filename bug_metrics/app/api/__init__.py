@@ -15,6 +15,7 @@ from .page_query import (
     BugTrendPageQueryState,
     BugTrendTicketListFilters,
 )
+from .scope_audit import ScopeAudit, ScopeAuditService
 from .series import active_bug_trend_series
 
 
@@ -55,6 +56,7 @@ class ApiForBugTrend:
             self.get_scope,
             self._format_bucket_label,
         )
+        self._scope_audit_service = ScopeAuditService()
 
     def list_enabled_scopes(self) -> List[JiraScopeConfig]:
         return list(JiraScopeConfig.objects.filter(enabled=True).order_by('ip', 'project_label', 'name'))
@@ -114,6 +116,11 @@ class ApiForBugTrend:
 
     def validate_chart_list_sync(self, state: BugTrendPageQueryState) -> BugTrendChartListSyncResult:
         return self._page_query_service.validate_chart_list_sync(state)
+
+    def get_scope_audit(self, scope_id: int) -> ScopeAudit:
+        scope = self.get_scope(scope_id)
+        facts = jira_history_container.jira_history_api.get_scope_audit_facts(scope)
+        return self._scope_audit_service.build_scope_audit(scope, facts)
 
     def recalculate_scope(self, scope_id: int, coverage_start: date, coverage_end: date) -> BugTrendCalculationRun:
         scope = self.get_scope(scope_id)

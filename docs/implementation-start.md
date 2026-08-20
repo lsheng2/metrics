@@ -88,3 +88,28 @@ Known follow-ups:
 - Local `.env` uses `METRICS_JIRA_VERIFY_SSL=false` for the current corporate/self-signed certificate chain. Replace this with `METRICS_JIRA_CA_BUNDLE=<corporate CA bundle path>` before any shared deployment.
 - `STDEL-8942` currently maps to `status=todo` and `stage=None` because the local workflow config does not yet include Intel Jira's `Fixed` status. Field and workflow discovery is the next setup task.
 - Rotate the PAT that appeared in chat context, then place the replacement only in local `.env` or an approved secret store.
+
+## P0c Scope Audit Workflow
+
+The next Bug Trend productization step is a read-only Scope Audit for saved Jira scopes.
+
+Operator workflow:
+
+1. Open the Bug Trend page for a saved scope.
+2. Open `bug-trend/scope-audit/?scope_id=<id>` from the Audit action.
+3. Review observed issue types, statuses, resolutions, priorities/severities, components, and coverage counts.
+4. Use mapped/unmapped status to decide whether the saved `JiraScopeConfig` needs a later P0d config edit and recalculation.
+
+Ownership rules:
+
+- `jira_history` owns observed values and raw coverage counts from local persisted Jira issue/transition rows.
+- `JiraScopeConfig` owns mapping truth.
+- `bug_metrics` resolves saved `scope_id`, compares observed values to `JiraScopeConfig`, and transports coverage counts unchanged.
+- `ui_web` renders the audit result without recomputing mappings or coverage.
+
+Non-goals for P0c:
+
+- No unsaved draft audit preview.
+- No automatic mapping edits.
+- No live Jira query.
+- No latest sync or Data Health status.

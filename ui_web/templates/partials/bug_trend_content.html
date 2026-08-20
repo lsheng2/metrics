@@ -23,6 +23,9 @@
             <div class="column is-narrow">
                 <button class="button is-primary" type="submit">Apply</button>
             </div>
+            <div class="column is-narrow">
+                <a class="button" href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ selected_scope_id }}">Audit</a>
+            </div>
         </div>
     </form>
     {% if run_metadata %}

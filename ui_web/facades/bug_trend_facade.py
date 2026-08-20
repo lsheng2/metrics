@@ -3,7 +3,7 @@ from datetime import date
 
 from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilters
 
-from ..data.bug_trend_data import BugTrendChartData, BugTrendEvidenceData, BugTrendScopeOption
+from ..data.bug_trend_data import BugTrendChartData, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
 
 
 class BugTrendFacade:
@@ -148,3 +148,13 @@ class BugTrendFacade:
                 for row in evidence.rows
             ],
         }
+
+    def get_scope_audit_data(self, scope_id: int) -> BugTrendScopeAuditData:
+        audit = self._bug_trend_api.get_scope_audit(scope_id)
+        return BugTrendScopeAuditData(
+            scope_id=audit.scope_id,
+            scope_name=audit.scope_name,
+            config_version_hash=audit.config_version_hash,
+            observed_values=audit.observed_values,
+            coverage=audit.coverage,
+        )
