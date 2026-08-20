@@ -6,7 +6,7 @@ from django.urls import reverse
 from bug_metrics.app.api import BugTrendPageQueryState, bug_trend_api
 from bug_metrics.app.api.chart_catalog import AiChartDraftRequest
 from bug_metrics.models import BugTrendAuditEvent
-from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendChartDefinition, JiraScopeConfig
+from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendChartDefinition, BugTrendEvidenceContract, JiraScopeConfig
 
 
 class TestBugTrendFactTableUi(TestCase):
@@ -296,6 +296,26 @@ class TestBugTrendFactTableUi(TestCase):
         self.assertEqual(400, response.status_code)
         self.assertEqual('Unknown or unpublished Bug Trend chart.', response.json()['error'])
 
+    def test_shouldReturnBadRequestForSummaryOnlyEvidenceApiChartId(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        self._publish_summary_only_chart()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'all_open_bugs',
+            'chart_id': 'summary_only_chart',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertIn('Summary-only chart has no ticket evidence.', response.json()['error'])
+
     def test_shouldReturnBadRequestForUnknownExportChartId(self):
         # Given
         scope, run, bucket = self._seed_trend_data()
@@ -314,6 +334,26 @@ class TestBugTrendFactTableUi(TestCase):
         # Then
         self.assertEqual(400, response.status_code)
         self.assertEqual('Unknown or unpublished Bug Trend chart.', response.json()['error'])
+
+    def test_shouldReturnBadRequestForSummaryOnlyExportChartId(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        self._publish_summary_only_chart()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_export'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'all_open_bugs',
+            'chart_id': 'summary_only_chart',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertIn('Summary-only chart has no ticket evidence.', response.json()['error'])
 
     def test_shouldExposeBugTrendEvidenceJsonForGrafanaSurface(self):
         # Given
@@ -440,6 +480,28 @@ class TestBugTrendFactTableUi(TestCase):
         self._create_membership(scope, run, bucket, 'all_open_bugs', 'STDEL-1001', 'Open', 'Alice')
         self._create_membership(scope, run, bucket, 'fixed_or_closed_bugs', 'STDEL-1002', 'Fixed', 'Bob')
         return scope, run, bucket
+
+    def _publish_summary_only_chart(self):
+        contract = BugTrendEvidenceContract.objects.create(
+            contract_id='summary_only_contract',
+            capability=BugTrendEvidenceContract.CAPABILITY_SUMMARY_ONLY,
+            membership_source='',
+            membership_key='',
+            ticket_identity='none',
+            dedupe_policy='none',
+            time_boundary_policy='none',
+            export_policy='none',
+            unsupported_reason='Summary-only chart has no ticket evidence.',
+        )
+        BugTrendChartDefinition.objects.create(
+            chart_id='summary_only_chart',
+            title='Summary Only',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract=contract,
+            status=BugTrendChartDefinition.STATUS_PUBLISHED,
+            enabled=True,
+        )
 
     def _create_membership(self, scope, run, bucket, series_name, issue_key, status, owner):
         BugTrendBucketIssue.objects.create(

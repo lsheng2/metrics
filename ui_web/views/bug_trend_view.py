@@ -30,6 +30,8 @@ def validate_query_contract(request, required_params, optional_params):
 def chart_id_error_response(error):
     if isinstance(error, BugTrendChartDefinition.DoesNotExist):
         return JsonResponse({'error': 'Unknown or unpublished Bug Trend chart.', 'chart_id': ''}, status=400)
+    if isinstance(error, ValueError):
+        return JsonResponse({'error': str(error)}, status=400)
     return None
 
 
@@ -143,7 +145,7 @@ class BugTrendEvidenceExportView(GracefulTemplateView):
                 text=request.GET.get('text', ''),
                 active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
             )
-        except BugTrendChartDefinition.DoesNotExist as error:
+        except (BugTrendChartDefinition.DoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         response = HttpResponse(export.content, content_type=export.content_type)
         response['Content-Disposition'] = f'attachment; filename="{export.filename}"'
@@ -211,7 +213,7 @@ class BugTrendChartDataApiView(GracefulTemplateView):
         begin, end = self._date_range()
         try:
             chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end, request.GET.get('chart_id', 'default_bug_trend'))
-        except BugTrendChartDefinition.DoesNotExist as error:
+        except (BugTrendChartDefinition.DoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_chart_payload(chart_data))
 
@@ -246,7 +248,7 @@ class BugTrendEvidenceApiView(GracefulTemplateView):
                 text=request.GET.get('text', ''),
                 active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
             )
-        except BugTrendChartDefinition.DoesNotExist as error:
+        except (BugTrendChartDefinition.DoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_evidence_payload(evidence))
 

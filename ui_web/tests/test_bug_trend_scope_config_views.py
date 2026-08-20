@@ -103,6 +103,25 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('name: Scope name must be unique.', content)
         self.assertEqual('STDEL editable', second_scope.name)
 
+    def test_shouldRenderValidationErrorsWhenScopeConfigPostHasNoId(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL editable no id',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+        )
+        payload = self._post_payload(scope, 'P2-High')
+        payload['id'] = ''
+
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_config'), payload)
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(400, response.status_code)
+        self.assertIn('Scope config was not saved.', content)
+        self.assertIn('id: Scope id is required.', content)
+
 
     def _post_payload(self, scope, critical_high_values):
         return {

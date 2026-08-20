@@ -214,6 +214,8 @@ class BugTrendFacade:
 
     def save_scope_config(self, post_data) -> tuple[SavedScopeConfig, bool]:
         config = self.scope_config_from_post(post_data)
+        if config.id is None:
+            raise ValueError({'id': 'Scope id is required.'})
         original_hash = self._bug_trend_api.get_scope_config(config.id).config_version_hash
         saved = self._bug_trend_api.save_scope_config(config)
         return saved, saved.config_version_hash != original_hash
