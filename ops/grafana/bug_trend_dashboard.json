@@ -1,0 +1,78 @@
+{
+  "uid": "metrics-bug-trend-c-stock",
+  "title": "Metrics Bug Trend C-stock Spike",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["metrics", "bug-trend", "c-stock"],
+  "templating": {
+    "list": [
+      {
+        "name": "scope_id",
+        "type": "textbox",
+        "query": "1",
+        "current": {"text": "1", "value": "1"}
+      },
+      {
+        "name": "begin",
+        "type": "textbox",
+        "query": "2025-04-07",
+        "current": {"text": "2025-04-07", "value": "2025-04-07"}
+      },
+      {
+        "name": "end",
+        "type": "textbox",
+        "query": "2026-08-09",
+        "current": {"text": "2026-08-09", "value": "2026-08-09"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Bug Trend",
+      "type": "barchart",
+      "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "metrics-bug-trend-api"},
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {"method": "GET"},
+          "url": "/api/bug-trend/chart-data/?scope_id=$scope_id&begin=$begin&end=$end",
+          "root_selector": "$.points",
+          "columns": [
+            {"selector": "label", "text": "label", "type": "string"},
+            {"selector": "series_name", "text": "series_name", "type": "string"},
+            {"selector": "value", "text": "value", "type": "number"},
+            {"selector": "calculation_run_id", "text": "calculation_run_id", "type": "string"},
+            {"selector": "bucket_id", "text": "bucket_id", "type": "string"},
+            {"selector": "type", "text": "type", "type": "string"},
+            {"selector": "color", "text": "color", "type": "string"}
+          ],
+          "metricsContract": {
+            "root": "points",
+            "requiredFields": ["calculation_run_id", "bucket_id", "series_name", "label", "value"],
+            "evidenceLinkFields": ["calculation_run_id", "bucket_id", "series_name"]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "links": [
+            {
+              "title": "Open Metrics evidence",
+              "url": "/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"},
+        "tooltip": {"mode": "multi", "sort": "none"}
+      }
+    }
+  ]
+}

@@ -55,6 +55,24 @@ class ApiForBugTrend:
         if run is None:
             return BugTrendChart(scope.id, None, [], [], [], 'No completed calculation covers the selected range for the current scope configuration.')
 
+        return self._chart_from_run(scope, run, begin, end)
+
+    def get_chart_for_run(self, calculation_run_id: str, begin: date | None = None, end: date | None = None) -> BugTrendChart:
+        run = BugTrendCalculationRun.objects.select_related('scope').get(
+            id=calculation_run_id,
+            status=BugTrendCalculationRun.STATUS_COMPLETED,
+        )
+        scope = self.get_scope(run.scope_id)
+        chart_begin = begin or run.source_coverage_start
+        chart_end = end or run.source_coverage_end
+        if run.config_version_hash != scope.config_version_hash:
+            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not match the current scope configuration.')
+        return self._chart_from_run(scope, run, chart_begin, chart_end)
+
+    def _chart_from_run(self, scope: JiraScopeConfig, run: BugTrendCalculationRun, begin: date, end: date) -> BugTrendChart:
+        if run.source_coverage_start > begin or run.source_coverage_end < end:
+            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not cover the selected range.')
+
         buckets = list(run.buckets.filter(bucket_start__gte=begin, bucket_end__lte=end).order_by('bucket_start'))
         return BugTrendChart(
             scope_id=scope.id,

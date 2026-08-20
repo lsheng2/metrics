@@ -40,14 +40,30 @@ class BugTrendFacade:
         )
 
     def get_chart_json(self, chart_data: BugTrendChartData) -> str:
-        return json.dumps({
+        return json.dumps(self.get_chart_payload(chart_data))
+
+    def get_chart_payload(self, chart_data: BugTrendChartData) -> dict:
+        points = []
+        for dataset in chart_data.datasets:
+            for index, value in enumerate(dataset['values']):
+                points.append({
+                    'calculation_run_id': chart_data.calculation_run_id,
+                    'bucket_id': chart_data.bucket_ids[index],
+                    'series_name': dataset['series_name'],
+                    'label': chart_data.labels[index],
+                    'value': value,
+                    'type': dataset['type'],
+                    'color': dataset['color'],
+                })
+        return {
             'scope_id': chart_data.scope_id,
             'calculation_run_id': chart_data.calculation_run_id,
             'labels': chart_data.labels,
             'bucket_ids': chart_data.bucket_ids,
             'datasets': chart_data.datasets,
+            'points': points,
             'unavailable_reason': chart_data.unavailable_reason,
-        })
+        }
 
     def get_evidence_data(self, scope_id: int, begin: date, end: date, bucket_id: str = '', series_name: str = '',
                           calculation_run_id: str = '', owner: str = '', status: str = '', severity: str = '',
@@ -85,3 +101,33 @@ class BugTrendFacade:
     def _scope_label(self, scope):
         parts = [part for part in [scope.ip, scope.project_label, scope.name] if part]
         return ' / '.join(parts) if parts else scope.name
+
+    def get_evidence_payload(self, evidence: BugTrendEvidenceData) -> dict:
+        return {
+            'scope_id': evidence.scope_id,
+            'calculation_run_id': evidence.calculation_run_id,
+            'begin': evidence.begin,
+            'end': evidence.end,
+            'selection_title': evidence.selection_title,
+            'total_count': evidence.total_count,
+            'shown_count': evidence.shown_count,
+            'display_fields': evidence.display_fields,
+            'has_selection': evidence.has_selection,
+            'rows': [
+                {
+                    'issue_key': row.issue_key,
+                    'source_url': row.source_url,
+                    'summary': row.summary,
+                    'series_name': row.series_name,
+                    'status': row.status,
+                    'severity': row.severity,
+                    'owner': row.owner,
+                    'component': row.component,
+                    'created_at': row.created_at,
+                    'updated_at': row.updated_at,
+                    'extra_fields': row.extra_fields,
+                    'extra_field_values': row.extra_field_values,
+                }
+                for row in evidence.rows
+            ],
+        }

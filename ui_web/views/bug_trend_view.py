@@ -1,7 +1,28 @@
 from datetime import date, timedelta
 
+from django.http import JsonResponse
+
 from ..container import ui_web_container
 from .graceful_template_view import GracefulTemplateView
+
+
+CHART_DATA_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end'})
+CHART_DATA_OPTIONAL_PARAMS = frozenset()
+EVIDENCE_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end', 'run'})
+EVIDENCE_OPTIONAL_PARAMS = frozenset({'bucket', 'series', 'owner', 'status', 'severity', 'component', 'text'})
+
+
+def validate_query_contract(request, required_params, optional_params):
+    provided_params = set(request.GET.keys())
+    missing_params = sorted(param for param in required_params if not request.GET.get(param))
+    unknown_params = sorted(provided_params - required_params - optional_params)
+    if missing_params or unknown_params:
+        return JsonResponse({
+            'error': 'Invalid Bug Trend API query parameters.',
+            'missing_params': missing_params,
+            'unknown_params': unknown_params,
+        }, status=400)
+    return None
 
 
 class BugTrendView(GracefulTemplateView):
@@ -73,6 +94,56 @@ class BugTrendEvidenceView(GracefulTemplateView):
             text=self.request.GET.get('text', ''),
         )
         context['evidence'] = evidence
+
+    def _date_range(self):
+        begin = date.fromisoformat(self.request.GET.get('begin'))
+        end = date.fromisoformat(self.request.GET.get('end'))
+        return begin, end
+
+
+class BugTrendChartDataApiView(GracefulTemplateView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def get(self, request, *args, **kwargs):
+        invalid_response = validate_query_contract(request, CHART_DATA_REQUIRED_PARAMS, CHART_DATA_OPTIONAL_PARAMS)
+        if invalid_response:
+            return invalid_response
+        begin, end = self._date_range()
+        chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end)
+        return JsonResponse(self.bug_trend_facade.get_chart_payload(chart_data))
+
+    def _date_range(self):
+        begin = date.fromisoformat(self.request.GET.get('begin'))
+        end = date.fromisoformat(self.request.GET.get('end'))
+        return begin, end
+
+
+class BugTrendEvidenceApiView(GracefulTemplateView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def get(self, request, *args, **kwargs):
+        invalid_response = validate_query_contract(request, EVIDENCE_REQUIRED_PARAMS, EVIDENCE_OPTIONAL_PARAMS)
+        if invalid_response:
+            return invalid_response
+        begin, end = self._date_range()
+        evidence = self.bug_trend_facade.get_evidence_data(
+            scope_id=int(request.GET.get('scope_id')),
+            begin=begin,
+            end=end,
+            calculation_run_id=request.GET.get('run', ''),
+            bucket_id=request.GET.get('bucket', ''),
+            series_name=request.GET.get('series', ''),
+            owner=request.GET.get('owner', ''),
+            status=request.GET.get('status', ''),
+            severity=request.GET.get('severity', ''),
+            component=request.GET.get('component', ''),
+            text=request.GET.get('text', ''),
+        )
+        return JsonResponse(self.bug_trend_facade.get_evidence_payload(evidence))
 
     def _date_range(self):
         begin = date.fromisoformat(self.request.GET.get('begin'))

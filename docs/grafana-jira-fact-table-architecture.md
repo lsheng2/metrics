@@ -2,6 +2,12 @@
 
 Date: 2026-08-19
 
+## Current Status
+
+This document remains a future source-neutral fact-table architecture reference. The executable authority for the first Grafana C-stock spike is intentionally narrower: Grafana may use only the Metrics-owned HTTP/API surfaces listed in `docs/grafana-approved-data-surfaces.json` and enforced by `scripts/validate_grafana_artifacts.py`.
+
+Direct Grafana SQL over fact views is deferred until the owning Metrics/fact module actually produces named, versioned DB views or materialized facts with migrations and schema tests. Until then, SQL examples in this document are directional, not an enabled C-stock data surface.
+
 ## Purpose
 
 This document adjusts the bug trend direction after validating real Intel Jira data from project `131600`.

@@ -113,6 +113,88 @@ class TestBugTrendFactTableUi(TestCase):
         self.assertLess(content.index('field_a'), content.index('field_b'))
         self.assertLess(content.index('A value'), content.index('B value'))
 
+    def test_shouldExposeBugTrendChartDataJsonForGrafanaSurface(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+        })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        payload = response.json()
+        self.assertEqual(scope.id, payload['scope_id'])
+        self.assertEqual(str(run.id), payload['calculation_run_id'])
+        self.assertEqual([str(bucket.id)], payload['bucket_ids'])
+        self.assertIn('fixed_or_closed_bugs', [dataset['series_name'] for dataset in payload['datasets']])
+        self.assertIn({
+            'calculation_run_id': str(run.id),
+            'bucket_id': str(bucket.id),
+            'series_name': 'fixed_or_closed_bugs',
+            'label': '26WW32',
+            'value': -1,
+            'type': 'bar',
+            'color': '#bdbdbd',
+        }, payload['points'])
+
+    def test_shouldRejectUnapprovedChartDataApiQueryParams(self):
+        # Given
+        scope, run, _ = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'run': str(run.id),
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(['run'], response.json()['unknown_params'])
+
+    def test_shouldExposeBugTrendEvidenceJsonForGrafanaSurface(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'fixed_or_closed_bugs',
+        })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        payload = response.json()
+        self.assertEqual('fixed_or_closed_bugs tickets for 26WW32', payload['selection_title'])
+        self.assertEqual(1, payload['total_count'])
+        self.assertEqual(['STDEL-1002'], [row['issue_key'] for row in payload['rows']])
+
+    def test_shouldRequireRunForBugTrendEvidenceApi(self):
+        # Given
+        scope, _, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'fixed_or_closed_bugs',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(['run'], response.json()['missing_params'])
+
     def _seed_trend_data(self, display_fields=None):
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',
