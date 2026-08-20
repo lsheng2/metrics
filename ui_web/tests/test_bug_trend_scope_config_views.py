@@ -77,6 +77,33 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('Scope config saved.', content)
         self.assertIn('Semantic config changed. Recalculate this scope before using existing Bug Trend runs as current evidence.', content)
 
+    def test_shouldRenderValidationErrorsWhenScopeConfigPostIsInvalid(self):
+        # Given
+        first_scope = JiraScopeConfig.objects.create(
+            name='STDEL duplicate owner',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+        )
+        second_scope = JiraScopeConfig.objects.create(
+            name='STDEL editable',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+        )
+        payload = self._post_payload(second_scope, 'P2-High')
+        payload['name'] = first_scope.name
+
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_config'), payload)
+        second_scope.refresh_from_db()
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(400, response.status_code)
+        self.assertIn('Scope config was not saved.', content)
+        self.assertIn('name: Scope name must be unique.', content)
+        self.assertEqual('STDEL editable', second_scope.name)
+
+
     def _post_payload(self, scope, critical_high_values):
         return {
             'id': str(scope.id),

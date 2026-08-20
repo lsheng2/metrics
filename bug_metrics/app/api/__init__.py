@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 
-from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
+from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendChartDefinition, JiraScopeConfig
 from jira_history.container import jira_history_container
 
 from .chart_catalog import AiChartDraftRequest, ChartCatalogService, ChartDefinition, ChartPublishResult, ChartValidationResult, RendererRouteDecisionResult
@@ -66,13 +66,15 @@ class ApiForBugTrend:
 
     def record_renderer_route_decision(self, chart_id: str, same_page_evidence_required: bool,
                                        c_stock_same_page_capable: bool, supported_c_stock_capabilities: List[str],
-                                       decision_summary: str) -> RendererRouteDecisionResult:
+                                       decision_summary: str,
+                                       renderer_route: str = BugTrendChartDefinition.ROUTE_C_STOCK) -> RendererRouteDecisionResult:
         return self._chart_catalog_service.record_renderer_route_decision(
             chart_id,
             same_page_evidence_required,
             c_stock_same_page_capable,
             supported_c_stock_capabilities,
             decision_summary,
+            renderer_route,
         )
 
     def latest_renderer_route_decision(self, chart_id: str) -> RendererRouteDecisionResult | None:
@@ -84,8 +86,9 @@ class ApiForBugTrend:
     def publish_chart(self, chart_id: str, actor: str = 'local_operator', governance_mode: str = 'personal') -> ChartPublishResult:
         return self._chart_catalog_service.publish_chart(chart_id, actor, governance_mode)
 
-    def get_chart(self, scope_id: int, begin: date, end: date) -> BugTrendChart:
+    def get_chart(self, scope_id: int, begin: date, end: date, chart_id: str = 'default_bug_trend') -> BugTrendChart:
         scope = self.get_scope(scope_id)
+        chart_definition = self._enabled_chart_definition(chart_id)
         run = self._latest_authoritative_run(scope, begin, end)
         if run is None:
             stale_run = self._latest_stale_run(scope, begin, end)
@@ -102,21 +105,22 @@ class ApiForBugTrend:
                 )
             return BugTrendChart(scope.id, None, [], [], [], 'No completed calculation covers the selected range for the current scope configuration.', current_evidence_available=False)
 
-        return self._chart_from_run(scope, run, begin, end)
+        return self._chart_from_run(scope, run, begin, end, chart_definition)
 
-    def get_chart_for_run(self, calculation_run_id: str, begin: date | None = None, end: date | None = None) -> BugTrendChart:
+    def get_chart_for_run(self, calculation_run_id: str, begin: date | None = None, end: date | None = None, chart_id: str = 'default_bug_trend') -> BugTrendChart:
         run = BugTrendCalculationRun.objects.select_related('scope').get(
             id=calculation_run_id,
             status=BugTrendCalculationRun.STATUS_COMPLETED,
         )
         scope = self.get_scope(run.scope_id)
+        chart_definition = self._enabled_chart_definition(chart_id)
         chart_begin = begin or run.source_coverage_start
         chart_end = end or run.source_coverage_end
         if run.config_version_hash != scope.config_version_hash:
             return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not match the current scope configuration.', self._run_metadata(scope, run, 'stale_config'), current_evidence_available=False)
-        return self._chart_from_run(scope, run, chart_begin, chart_end)
+        return self._chart_from_run(scope, run, chart_begin, chart_end, chart_definition)
 
-    def _chart_from_run(self, scope: JiraScopeConfig, run: BugTrendCalculationRun, begin: date, end: date) -> BugTrendChart:
+    def _chart_from_run(self, scope: JiraScopeConfig, run: BugTrendCalculationRun, begin: date, end: date, chart_definition: BugTrendChartDefinition) -> BugTrendChart:
         if run.source_coverage_start > begin or run.source_coverage_end < end:
             return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not cover the selected range.', current_evidence_available=False)
 
@@ -126,12 +130,13 @@ class ApiForBugTrend:
             calculation_run_id=str(run.id),
             labels=[self._format_bucket_label(bucket) for bucket in buckets],
             bucket_ids=[str(bucket.id) for bucket in buckets],
-            datasets=self._build_datasets(scope, buckets),
+            datasets=self._build_datasets(scope, buckets, chart_definition),
             run_metadata=self._run_metadata(scope, run, 'fresh'),
             current_evidence_available=True,
         )
 
     def get_evidence_tickets(self, state: BugTrendPageQueryState) -> BugTrendEvidenceTicketResult:
+        self._enabled_evidence_chart_definition(state.active_chart_id)
         return self._page_query_service.get_evidence_tickets(state)
 
     def export_evidence_tickets(self, state: BugTrendPageQueryState, actor: str = 'local_operator') -> BugTrendEvidenceExport:
@@ -139,6 +144,7 @@ class ApiForBugTrend:
         return self._evidence_export_service.export_evidence_tickets(state, result, actor)
 
     def validate_chart_list_sync(self, state: BugTrendPageQueryState) -> BugTrendChartListSyncResult:
+        self._enabled_evidence_chart_definition(state.active_chart_id)
         return self._page_query_service.validate_chart_list_sync(state)
 
     def get_scope_audit(self, scope_id: int) -> ScopeAudit:
@@ -355,10 +361,24 @@ class ApiForBugTrend:
             grouped.setdefault(transition.issue_key, []).append(transition)
         return grouped
 
-    def _build_datasets(self, scope: JiraScopeConfig, buckets: List[BugTrendBucket]) -> List[BugTrendDataset]:
+    def _enabled_chart_definition(self, chart_id: str) -> BugTrendChartDefinition:
+        return BugTrendChartDefinition.objects.select_related('evidence_contract').get(chart_id=chart_id, enabled=True, status=BugTrendChartDefinition.STATUS_PUBLISHED)
+
+    def _enabled_evidence_chart_definition(self, chart_id: str) -> BugTrendChartDefinition:
+        chart_definition = self._enabled_chart_definition(chart_id)
+        if chart_definition.evidence_contract.capability == chart_definition.evidence_contract.CAPABILITY_SUMMARY_ONLY:
+            raise ValueError(chart_definition.evidence_contract.unsupported_reason or 'Chart does not support ticket evidence.')
+        return chart_definition
+
+    def _build_datasets(self, scope: JiraScopeConfig, buckets: List[BugTrendBucket], chart_definition: BugTrendChartDefinition) -> List[BugTrendDataset]:
+        series_names = chart_definition.chart_spec.get('series', [])
+        series_definitions = active_bug_trend_series(scope)
+        if series_names:
+            allowed_names = set(series_names)
+            series_definitions = [series for series in series_definitions if series.series_name in allowed_names]
         return [
             BugTrendDataset(series.series_name, series.chart_type, series.chart_values(buckets), series.color)
-            for series in active_bug_trend_series(scope)
+            for series in series_definitions
         ]
 
     def _format_bucket_label(self, bucket: BugTrendBucket) -> str:

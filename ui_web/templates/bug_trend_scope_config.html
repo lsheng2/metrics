@@ -21,6 +21,14 @@
             {% endif %}
         </div>
     {% endif %}
+    {% if scope_config_errors %}
+        <div class="notification is-danger is-light">
+            <p class="has-text-weight-semibold">Scope config was not saved.</p>
+            {% for field_name, message in scope_config_errors.items %}
+                <p>{{ field_name }}: {{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     <form class="box" method="post">
         {% csrf_token %}

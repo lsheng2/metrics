@@ -2,13 +2,14 @@ from datetime import date, timedelta
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
+from bug_metrics.models import BugTrendChartDefinition
 
 from ..container import ui_web_container
 from .graceful_template_view import GracefulTemplateView
 
 
 CHART_DATA_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end'})
-CHART_DATA_OPTIONAL_PARAMS = frozenset()
+CHART_DATA_OPTIONAL_PARAMS = frozenset({'chart_id'})
 EVIDENCE_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end', 'run'})
 EVIDENCE_OPTIONAL_PARAMS = frozenset({'bucket', 'series', 'owner', 'status', 'severity', 'component', 'text', 'chart_id'})
 
@@ -23,6 +24,12 @@ def validate_query_contract(request, required_params, optional_params):
             'missing_params': missing_params,
             'unknown_params': unknown_params,
         }, status=400)
+    return None
+
+
+def chart_id_error_response(error):
+    if isinstance(error, BugTrendChartDefinition.DoesNotExist):
+        return JsonResponse({'error': 'Unknown or unpublished Bug Trend chart.', 'chart_id': ''}, status=400)
     return None
 
 
@@ -50,7 +57,11 @@ class BugTrendView(GracefulTemplateView):
         selected_scope_id = int(self.request.GET.get('scope_id') or scope_options[0].id)
         active_chart_id = self.request.GET.get('chart_id') or 'default_bug_trend'
         begin, end = self._date_range()
-        chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end)
+        try:
+            chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end, active_chart_id)
+        except BugTrendChartDefinition.DoesNotExist:
+            active_chart_id = 'default_bug_trend'
+            chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end, active_chart_id)
         evidence = None
         if chart_data.current_evidence_available:
             evidence = self.bug_trend_facade.get_evidence_data(selected_scope_id, begin, end, calculation_run_id=chart_data.calculation_run_id, active_chart_id=active_chart_id)
@@ -117,20 +128,23 @@ class BugTrendEvidenceExportView(GracefulTemplateView):
         if invalid_response:
             return invalid_response
         begin, end = self._date_range()
-        export = self.bug_trend_facade.export_evidence_data(
-            scope_id=int(request.GET.get('scope_id')),
-            begin=begin,
-            end=end,
-            calculation_run_id=request.GET.get('run', ''),
-            bucket_id=request.GET.get('bucket', ''),
-            series_name=request.GET.get('series', ''),
-            owner=request.GET.get('owner', ''),
-            status=request.GET.get('status', ''),
-            severity=request.GET.get('severity', ''),
-            component=request.GET.get('component', ''),
-            text=request.GET.get('text', ''),
-            active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
-        )
+        try:
+            export = self.bug_trend_facade.export_evidence_data(
+                scope_id=int(request.GET.get('scope_id')),
+                begin=begin,
+                end=end,
+                calculation_run_id=request.GET.get('run', ''),
+                bucket_id=request.GET.get('bucket', ''),
+                series_name=request.GET.get('series', ''),
+                owner=request.GET.get('owner', ''),
+                status=request.GET.get('status', ''),
+                severity=request.GET.get('severity', ''),
+                component=request.GET.get('component', ''),
+                text=request.GET.get('text', ''),
+                active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
+            )
+        except BugTrendChartDefinition.DoesNotExist as error:
+            return chart_id_error_response(error)
         response = HttpResponse(export.content, content_type=export.content_type)
         response['Content-Disposition'] = f'attachment; filename="{export.filename}"'
         return response
@@ -162,7 +176,13 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         self.bug_trend_facade = ui_web_container.bug_trend_facade
 
     def post(self, request, *args, **kwargs):
-        saved, hash_changed = self.bug_trend_facade.save_scope_config(request.POST)
+        try:
+            saved, hash_changed = self.bug_trend_facade.save_scope_config(request.POST)
+        except ValueError as error:
+            context = self.get_context_data(**kwargs)
+            context['config'] = self.bug_trend_facade.scope_config_from_post(request.POST)
+            context['scope_config_errors'] = error.args[0] if error.args else {'config': 'Invalid scope config.'}
+            return self.render_to_response(context, status=400)
         response = redirect('ui_web:bug_trend_scope_config')
         response['Location'] = f'{response["Location"]}?scope_id={saved.id}&saved=1&hash_changed={int(hash_changed)}'
         return response
@@ -189,7 +209,10 @@ class BugTrendChartDataApiView(GracefulTemplateView):
         if invalid_response:
             return invalid_response
         begin, end = self._date_range()
-        chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end)
+        try:
+            chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end, request.GET.get('chart_id', 'default_bug_trend'))
+        except BugTrendChartDefinition.DoesNotExist as error:
+            return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_chart_payload(chart_data))
 
     def _date_range(self):
@@ -208,20 +231,23 @@ class BugTrendEvidenceApiView(GracefulTemplateView):
         if invalid_response:
             return invalid_response
         begin, end = self._date_range()
-        evidence = self.bug_trend_facade.get_evidence_data(
-            scope_id=int(request.GET.get('scope_id')),
-            begin=begin,
-            end=end,
-            calculation_run_id=request.GET.get('run', ''),
-            bucket_id=request.GET.get('bucket', ''),
-            series_name=request.GET.get('series', ''),
-            owner=request.GET.get('owner', ''),
-            status=request.GET.get('status', ''),
-            severity=request.GET.get('severity', ''),
-            component=request.GET.get('component', ''),
-            text=request.GET.get('text', ''),
-            active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
-        )
+        try:
+            evidence = self.bug_trend_facade.get_evidence_data(
+                scope_id=int(request.GET.get('scope_id')),
+                begin=begin,
+                end=end,
+                calculation_run_id=request.GET.get('run', ''),
+                bucket_id=request.GET.get('bucket', ''),
+                series_name=request.GET.get('series', ''),
+                owner=request.GET.get('owner', ''),
+                status=request.GET.get('status', ''),
+                severity=request.GET.get('severity', ''),
+                component=request.GET.get('component', ''),
+                text=request.GET.get('text', ''),
+                active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
+            )
+        except BugTrendChartDefinition.DoesNotExist as error:
+            return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_evidence_payload(evidence))
 
     def _date_range(self):

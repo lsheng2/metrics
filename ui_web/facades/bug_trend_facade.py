@@ -31,9 +31,10 @@ class BugTrendFacade:
             for chart in self._bug_trend_api.list_enabled_charts()
         ]
 
-    def get_chart_data(self, scope_id: int, begin: date, end: date) -> BugTrendChartData:
-        chart = self._bug_trend_api.get_chart(scope_id, begin, end)
+    def get_chart_data(self, scope_id: int, begin: date, end: date, chart_id: str = 'default_bug_trend') -> BugTrendChartData:
+        chart = self._bug_trend_api.get_chart(scope_id, begin, end, chart_id)
         return BugTrendChartData(
+            chart_id=chart_id,
             scope_id=chart.scope_id,
             calculation_run_id=chart.calculation_run_id or '',
             labels=chart.labels,
@@ -70,6 +71,7 @@ class BugTrendFacade:
                 })
         return {
             'scope_id': chart_data.scope_id,
+            'chart_id': chart_data.chart_id,
             'calculation_run_id': chart_data.calculation_run_id,
             'labels': chart_data.labels,
             'bucket_ids': chart_data.bucket_ids,
@@ -211,12 +213,12 @@ class BugTrendFacade:
         return config
 
     def save_scope_config(self, post_data) -> tuple[SavedScopeConfig, bool]:
-        config = self._scope_config_from_post(post_data)
+        config = self.scope_config_from_post(post_data)
         original_hash = self._bug_trend_api.get_scope_config(config.id).config_version_hash
         saved = self._bug_trend_api.save_scope_config(config)
         return saved, saved.config_version_hash != original_hash
 
-    def _scope_config_from_post(self, post_data) -> SavedScopeConfig:
+    def scope_config_from_post(self, post_data) -> SavedScopeConfig:
         payload = {field_name: post_data.get(field_name, '') for field_name in [
             'id', 'name', 'ip', 'project_label', 'jql', 'severity_field', 'component_field',
             'owner_field', 'team_field', 'milestone_field', 'fix_version_field',

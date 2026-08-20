@@ -19,6 +19,19 @@ class TestAiChartGovernance(TestCase):
             ))
         self.assertFalse(BugTrendChartDefinition.objects.filter(chart_id='ai_unsafe').exists())
 
+    def test_shouldRejectAiDraftWhenSpecEvidenceContractConflictsWithCatalogContract(self):
+        # When / Then
+        with self.assertRaises(ValueError):
+            bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
+                chart_id='ai_conflicting_contract',
+                title='Conflicting Contract Chart',
+                renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+                integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+                evidence_contract_id='default_bug_trend_bucket_series',
+                spec={'evidence_contract_id': 'different_contract', 'series': ['all_open_bugs']},
+            ))
+        self.assertFalse(BugTrendChartDefinition.objects.filter(chart_id='ai_conflicting_contract').exists())
+
     def test_shouldCreateValidatedAiDraftAndPublishPersonalChartWithAudit(self):
         # Given
         draft = bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
@@ -44,6 +57,8 @@ class TestAiChartGovernance(TestCase):
         self.assertEqual('local_operator', event.actor)
         self.assertIsNone(event.scope)
         self.assertIn('ai_daily_bug_in', [item.chart_id for item in bug_trend_api.list_enabled_charts()])
+        chart_definition = bug_trend_api.get_chart_definition('ai_daily_bug_in')
+        self.assertEqual(['new_critical_high'], chart_definition.chart_spec['series'])
 
     def test_shouldKeepCloudPublishPendingUntilApprovalBoundary(self):
         # Given

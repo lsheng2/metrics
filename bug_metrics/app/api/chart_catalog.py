@@ -23,6 +23,7 @@ class ChartDefinition:
     status: str
     enabled: bool
     built_in: bool
+    chart_spec: dict
     evidence_contract: EvidenceContractDefinition
 
 
@@ -84,12 +85,15 @@ class ChartCatalogService:
 
     def record_renderer_route_decision(self, chart_id: str, same_page_evidence_required: bool,
                                        c_stock_same_page_capable: bool, supported_c_stock_capabilities: List[str],
-                                       decision_summary: str) -> RendererRouteDecisionResult:
+                                       decision_summary: str,
+                                       renderer_route: str = BugTrendChartDefinition.ROUTE_C_STOCK) -> RendererRouteDecisionResult:
+        if renderer_route not in {BugTrendChartDefinition.ROUTE_REFERENCE, BugTrendChartDefinition.ROUTE_C_STOCK, BugTrendChartDefinition.ROUTE_C_PLUGIN}:
+            raise ValueError('Renderer route is not approved.')
         chart = BugTrendChartDefinition.objects.get(chart_id=chart_id)
         trigger_p2c_spike = same_page_evidence_required and not c_stock_same_page_capable
         decision = BugTrendRendererRouteDecision.objects.create(
             chart=chart,
-            renderer_route=BugTrendChartDefinition.ROUTE_C_STOCK,
+            renderer_route=renderer_route,
             same_page_evidence_required=same_page_evidence_required,
             c_stock_same_page_capable=c_stock_same_page_capable,
             supported_c_stock_capabilities=supported_c_stock_capabilities,
@@ -105,7 +109,7 @@ class ChartCatalogService:
         return self._to_decision_result(decision)
 
     def create_ai_chart_draft(self, request: AiChartDraftRequest) -> ChartDefinition:
-        errors = self._validate_ai_spec(request.spec)
+        errors = self._validate_ai_spec(request.spec, request.evidence_contract_id)
         if errors:
             raise ValueError(errors)
         contract = BugTrendEvidenceContract.objects.get(contract_id=request.evidence_contract_id)
@@ -121,6 +125,7 @@ class ChartCatalogService:
             created_by='ai',
             owner=request.actor,
             visibility='personal',
+            chart_spec=request.spec,
             validation_summary={'ai_spec_validated': True},
         )
         validation = self.validate_chart_for_publish(chart)
@@ -166,7 +171,7 @@ class ChartCatalogService:
             errors.append('Bucket-series evidence requires a series dimension.')
         return errors
 
-    def _validate_ai_spec(self, spec: dict) -> List[str]:
+    def _validate_ai_spec(self, spec: dict, evidence_contract_id: str) -> List[str]:
         errors = []
         forbidden_fragments = ['select ', ' from ', ' join ', 'token', 'password', 'secret', 'pat', 'api_key']
         spec_text = str(spec).lower()
@@ -176,6 +181,11 @@ class ChartCatalogService:
                 break
         if 'evidence_contract_id' not in spec:
             errors.append('AI chart specs must reference a Metrics evidence contract.')
+        elif spec.get('evidence_contract_id') != evidence_contract_id:
+            errors.append('AI chart spec evidence contract must match the catalog evidence contract.')
+        series = spec.get('series', [])
+        if series and (not isinstance(series, list) or any(not isinstance(item, str) for item in series)):
+            errors.append('AI chart specs series must be a list of series names.')
         return errors
 
     def _to_definition(self, chart: BugTrendChartDefinition) -> ChartDefinition:
@@ -188,6 +198,7 @@ class ChartCatalogService:
             status=chart.status,
             enabled=chart.enabled,
             built_in=chart.built_in,
+            chart_spec=dict(chart.chart_spec),
             evidence_contract=EvidenceContractDefinition(
                 contract_id=chart.evidence_contract.contract_id,
                 capability=chart.evidence_contract.capability,

@@ -224,6 +224,7 @@ class BugTrendChartDefinition(models.Model):
     created_by = models.CharField(max_length=120, default='system')
     owner = models.CharField(max_length=120, default='system')
     visibility = models.CharField(max_length=40, default='shared')
+    chart_spec = models.JSONField(default=_empty_dict)
     validation_summary = models.JSONField(default=_empty_dict)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

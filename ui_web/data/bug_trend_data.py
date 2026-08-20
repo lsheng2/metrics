@@ -18,6 +18,7 @@ class BugTrendChartOption:
 
 @dataclass(slots=True)
 class BugTrendChartData:
+    chart_id: str
     scope_id: int
     calculation_run_id: str
     labels: List[str]

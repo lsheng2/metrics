@@ -106,3 +106,30 @@ class TestBugTrendChartCatalogApi(TestCase):
 
         # Then
         self.assertTrue(decision.trigger_p2c_spike)
+
+    def test_shouldRecordActualRendererRouteDecision(self):
+        # When
+        decision = bug_trend_api.record_renderer_route_decision(
+            'default_bug_trend',
+            same_page_evidence_required=True,
+            c_stock_same_page_capable=False,
+            supported_c_stock_capabilities=['chart_values'],
+            decision_summary='Plugin route required for same-page evidence.',
+            renderer_route=BugTrendChartDefinition.ROUTE_C_PLUGIN,
+        )
+
+        # Then
+        self.assertEqual(BugTrendChartDefinition.ROUTE_C_PLUGIN, decision.renderer_route)
+        self.assertTrue(decision.trigger_p2c_spike)
+
+    def test_shouldRejectUnknownRendererRouteDecision(self):
+        # When / Then
+        with self.assertRaises(ValueError):
+            bug_trend_api.record_renderer_route_decision(
+                'default_bug_trend',
+                same_page_evidence_required=False,
+                c_stock_same_page_capable=False,
+                supported_c_stock_capabilities=[],
+                decision_summary='Invalid route.',
+                renderer_route='side_channel',
+            )

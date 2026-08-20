@@ -47,6 +47,7 @@
                         + '&run=' + encodeURIComponent(chartData.calculation_run_id)
                         + '&begin=' + encodeURIComponent('{{ begin }}')
                         + '&end=' + encodeURIComponent('{{ end }}')
+                        + '&chart_id=' + encodeURIComponent(chartData.chart_id)
                         + '&bucket=' + encodeURIComponent(bucketId)
                         + '&series=' + encodeURIComponent(seriesName);
                     htmx.ajax('GET', '{% url "ui_web:bug_trend_evidence" %}' + params, {
