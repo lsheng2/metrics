@@ -33,6 +33,7 @@ class FakeRunMetadata:
 
 @dataclass(slots=True)
 class FakeChart:
+    chart_id: str
     scope_id: int
     calculation_run_id: str
     labels: list
@@ -40,14 +41,16 @@ class FakeChart:
     datasets: list
     unavailable_reason: str = ''
     run_metadata: FakeRunMetadata = None
+    current_evidence_available: bool = True
 
 
 class FakeBugTrendApi:
     def list_enabled_scopes(self):
         return [FakeScope(7, 'STDEL emulation', 'NVU', 'STDEL')]
 
-    def get_chart(self, scope_id, begin, end):
+    def get_chart(self, scope_id, begin, end, chart_id='default_bug_trend'):
         return FakeChart(
+            chart_id=chart_id,
             scope_id=scope_id,
             calculation_run_id='run-123',
             labels=['26WW32'],
@@ -86,6 +89,7 @@ class TestBugTrendFacade(TestCase):
 
         # Then
         self.assertIn('run-123', chart_json)
+        self.assertIn('default_bug_trend', chart_json)
         self.assertIn('bucket-123', chart_json)
         self.assertIn('all_open_bugs', chart_json)
         self.assertIn('fresh', chart_json)
