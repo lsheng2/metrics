@@ -590,6 +590,278 @@ flowchart TD
 
 Before implementation starts, `PLAN.R` must confirm that observed facts, mapping authority, read-only behavior, coverage reporting, and UI visibility each have one owner and one executable disconfirming check. It must also confirm every P0c coverage dimension is rendered in the audit UI and transported unchanged from `jira_history` through `bug_metrics`. Any request to auto-fix mappings, write scope config, audit unsaved draft config, live-query Jira, or expose `last sync` belongs to P0d or P1 Data Health, not P0c.
 
+## P0d/P1 Long-run Implementation DAG
+
+P0d 和 P1 作为一个长跑计划执行，但仍按 owner boundary 分片提交。P0d 关闭 saved scope 配置维护闭环；P1 分为两个后续轨道：P1A chart/list filters + export，P1B Data Health。三个轨道共享同一个原则：`JiraScopeConfig` 继续是 scope semantics 的唯一权威，`BugTrendPageQueryState` 继续是 chart/list/export 选择状态的唯一入口，`jira_sync`/`bug_metrics` 分别拥有 sync/calculation health，`ui_web` 只渲染和传输。
+
+### P0d/P1 Scope Baseline
+
+| Field | Value |
+| --- | --- |
+| baseline_head | `e71490c Add read-only bug trend scope audit` |
+| pre_existing_dirty_paths | `.github/copilot-instructions.md` |
+| planned_owner_paths | `bug_metrics/models.py`, `bug_metrics/app/api/`, `bug_metrics/tests/`, `jira_sync/app/api/`, `jira_sync/tests/`, `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/templates/`, `ui_web/urls.py`, `ui_web/tests/`, `docs/bug-trend-dashboard-product-requirements.zh.md`, `docs/architecture-manual.md`, `docs/implementation-start.md` |
+| excluded_paths | `.github/copilot-instructions.md` remains outside P0d/P1 unless explicitly repaired in a separate task. |
+
+### P0d/P1 Code-doc Truth Sync
+
+| Surface | Status | Reason |
+| --- | --- | --- |
+| `docs/bug-trend-dashboard-product-requirements.zh.md` | update-required | This section owns the combined long-run contracts, DAG, ledger, and validation commands. |
+| `docs/architecture-manual.md` | update-required | Add or update sections for Bug Trend Scope Config Workflow, Evidence Export, and Data Health ownership. |
+| `docs/implementation-start.md` | update-required | Add operator workflow entries for scope config edit/activate, evidence export, and Data Health entry points. |
+| `README.md` | deferred-with-trigger | Update if the implemented route set becomes part of demo/operator setup instructions. |
+| `CLAUDE.md`, `.github/ai-governance/` | no-doc-change | The plan follows existing module-boundary and validation policy without changing AI workflow. |
+
+### P0d/P1 Parallel Policy
+
+`baseline` for this long-run plan means P0b and P0c are committed and pushed at `e71490c`, and `.github/copilot-instructions.md` remains the only pre-existing dirty path. P0D.N1 starts from that baseline. P1B.N1 and P1B.N2 may be planned in parallel with P0d because Data Health reads existing `jira_sync` cursors and `bug_metrics` runs, but P1B.N3 cannot start until both health APIs exist. P1A starts only after P0D.N3 because filter/export UX depends on the final saved-scope workflow and recalculation prompt behavior.
+
+Parallel policy glossary for P0d/P1/P2/P3:
+
+- `serial`: the node must wait for all listed dependencies and blocks its dependents until complete.
+- `parallel-after-baseline`: the node can be planned or implemented in parallel with sibling tracks after the declared baseline is available.
+- `serial-after-health-apis`: the node runs serially after both health API tracks converge.
+- `conditional-serial-spike`: the node runs only when the preceding decision record sets its trigger flag; a proven or rejected spike can both satisfy exit criteria if the fallback route is documented.
+
+### P0d/P1 Contract Registry
+
+| Contract | Owner | Consumers | Disconfirming check |
+| --- | --- | --- | --- |
+| `INV-P0D-SAVED-SCOPE-CONFIG-AUTHORITY` | `bug_metrics.models.JiraScopeConfig` and `bug_metrics.app.api` config methods | `ui_web` config editor, recalculation prompt, Bug Trend chart | API tests fail if saved scope edits bypass `JiraScopeConfig`, store semantics outside config fields, or fail to update `config_version_hash` after semantic changes. |
+| `INV-P0D-DRAFT-ACTIVATE-BOUNDARY` | `bug_metrics.app.api` scope config workflow | `ui_web` editor | Tests fail if draft edits become active chart semantics before explicit save/activate, or if cloud approval behavior is implemented rather than only bounded as a non-goal/interface placeholder. |
+| `INV-P0D-AUDIT-TO-CONFIG-HANDOFF` | `bug_metrics.app.api` scope audit + scope config DTOs | `ui_web` audit/config pages | View/API tests fail if an unmapped audit value such as `P1-Stopper` cannot be copied or selected into the saved config workflow without creating a second mapping truth. |
+| `INV-P0D-RECALCULATION-PROMPT` | `bug_metrics.app.api` config hash and latest run freshness | `ui_web` config editor, Bug Trend page | Tests fail if changing saved semantics does not preserve `INV-P0B-STALE-AUTHORITY`, mark current runs stale, or show a recalculate prompt tied to the current `config_version_hash`. |
+| `INV-P1A-PAGEQUERY-STATE` | `bug_metrics.app.api.page_query.BugTrendPageQueryState` | chart click, list filters, export, UI links | Tests fail if chart selection, Clear selection, list-local filters, or export use separate state parameters instead of one backend `BugTrendPageQueryState`. |
+| `INV-P1A-CHART-SELECTION-STATE` | `bug_metrics.app.api.page_query.BugTrendPageQueryState.active_chart_id` | `ui_web` chart selector, evidence panel, export | Tests fail if chart selection is stored in UI-local state, template variables, Grafana variables, or any owner outside backend `BugTrendPageQueryState`. |
+| `INV-P1A-LIST-FILTERS` | `bug_metrics.app.api.page_query.BugTrendTicketListFilters` | `ui_web` evidence panel | Focused tests fail if owner/status/severity/component/text filters change chart data, lose run pinning, or return rows outside the current evidence result. |
+| `INV-P1A-EVIDENCE-EXPORT` | `bug_metrics.app.api` export method over evidence query result | `ui_web` export action | Tests fail if export row count differs from current evidence result, ignores list filters, changes run/bucket/series pinning, or serializes fields not present in the evidence DTO. |
+| `INV-P1A-EXPORT-AUDIT` | `bug_metrics.app.api` export audit record or event surface | operator docs, future governance | Tests fail if export completes without recording scope id, run id, filters, row count, timestamp, and actor value. P1 uses a non-secret local actor placeholder such as `local_operator`; authenticated actors are deferred to later governance. |
+| `INV-P1B-SYNC-HEALTH-AUTHORITY` | `jira_sync.app.api` over `JiraSyncCursor` | Data Health facade/view | Tests fail if latest sync status, errors, coverage window, or changelog coverage are inferred from UI, logs, or chart metadata instead of `jira_sync` cursor state. |
+| `INV-P1B-CALCULATION-HEALTH-AUTHORITY` | `bug_metrics.app.api` over `BugTrendCalculationRun` and scope config hash | Data Health facade/view | Tests fail if latest calculation status, stale scope state, failed run state, or warning status are inferred outside `bug_metrics`. |
+| `INV-P1B-DATA-HEALTH-UI` | `ui_web` Data Health facade/view/template | Maintainer | View tests fail if a maintainer cannot see Jira connectivity placeholder/status, latest sync per scope, latest calculation per scope, stale scopes, failed sync/calculation, warning counts, and DB/storage summary placeholders without triggering recovery actions. |
+| `INV-P1B-NO-AUTO-RECOVERY` | `jira_sync.app.api`, `bug_metrics.app.api`, `ui_web` Data Health view | Maintainer | Tests fail if opening Data Health starts sync, recalculation, token validation, or any write/recovery action. |
+
+### P0d/P1 DAG Nodes
+
+| id | depends_on | owner_paths | authority_boundary | contracts | validation | exit_criteria | parallel_policy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P0D.N1 - Define saved scope config API | [] | `bug_metrics/app/api/`, `bug_metrics/tests/` | `bug_metrics` owns saved scope config DTOs, field validation, and `config_version_hash` semantics. | `INV-P0D-SAVED-SCOPE-CONFIG-AUTHORITY`, `INV-P0D-DRAFT-ACTIVATE-BOUNDARY` | API tests edit representative semantic fields and assert hash changes only through `JiraScopeConfig` owner. | Saved scope config can be loaded, validated, saved, and activated through one Metrics-owned API without touching Jira secrets. | serial |
+| P0D.N2 - Connect audit values to config workflow | [P0D.N1] | `bug_metrics/app/api/`, `bug_metrics/tests/`, `ui_web/facades/`, `ui_web/tests/` | Audit remains diagnostic; config API owns semantic writes. | `INV-P0D-AUDIT-TO-CONFIG-HANDOFF`, `INV-P0D-SAVED-SCOPE-CONFIG-AUTHORITY` | Tests start with `P1-Stopper` unmapped in audit, save it through config workflow, then assert audit reports it mapped from `JiraScopeConfig`. | Scope owner can use P0c audit findings to update saved config without creating parallel mapping storage. | serial |
+| P0D.N3 - Render scope config editor and recalc prompt | [P0D.N1, P0D.N2] | `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/templates/`, `ui_web/urls.py`, `ui_web/tests/` | UI renders and submits config DTOs; it does not compute semantic hashes or run freshness. | `INV-P0D-RECALCULATION-PROMPT`, `INV-P0D-DRAFT-ACTIVATE-BOUNDARY` | View tests edit saved config, assert new hash and recalc prompt, and assert stale chart state remains API-owned. | Operator can maintain saved scope semantics and clearly see recalculation need. | serial |
+| P1A.N1 - Extend PageQueryState for list filters | [P0D.N3] | `bug_metrics/app/api/page_query.py`, `bug_metrics/tests/` | `BugTrendPageQueryState` owns chart/list/export selection state, including `active_chart_id` for later chart selector integration. | `INV-P1A-PAGEQUERY-STATE`, `INV-P1A-CHART-SELECTION-STATE`, `INV-P1A-LIST-FILTERS` | API tests cover active chart id, chart selection, Clear selection, and list filters against the same run/bucket/series state. | `BugTrendPageQueryState` includes `active_chart_id`; in P1 it may point to a hardcoded `default_bug_trend` context, and in P2A it resolves through Chart Catalog. Evidence list filters operate without changing chart data or losing run pinning. | serial |
+| P1A.N2 - Add evidence export over current query result | [P1A.N1] | `bug_metrics/app/api/`, `bug_metrics/tests/`, `ui_web/facades/`, `ui_web/tests/` | Export consumes the same evidence query result; it does not define a second evidence query language. | `INV-P1A-EVIDENCE-EXPORT`, `INV-P1A-PAGEQUERY-STATE` | Tests assert export rows equal current evidence rows for range-only, bucket/series, and list-filtered states. | User can export exactly the evidence currently represented by `BugTrendPageQueryState`. | serial |
+| P1A.N3 - Record evidence export audit | [P1A.N2] | `bug_metrics/app/api/`, `bug_metrics/tests/`, `docs/` | Metrics owns export audit evidence. | `INV-P1A-EXPORT-AUDIT` | Tests assert export records scope id, run id, filters, row count, timestamp, and actor placeholder without secrets. | Export has governance traceability without adding AI/chart catalog approval flow. | serial |
+| P1A.N4 - Render filters and export UI | [P1A.N2, P1A.N3] | `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/templates/`, `ui_web/tests/` | UI submits filter/export state; backend remains source of evidence truth. | `INV-P1A-LIST-FILTERS`, `INV-P1A-EVIDENCE-EXPORT` | View/browser tests assert filters narrow list only, export link preserves current query state, and Clear selection resets bucket/series but not unrelated scope/date state. | User can analyze and take evidence without desynchronizing chart/list/export. | serial |
+| P1B.N1 - Expose sync health API | [] | `jira_sync/app/api/`, `jira_sync/tests/` | `jira_sync` owns sync cursor status and sync errors. | `INV-P1B-SYNC-HEALTH-AUTHORITY`, `INV-P1B-NO-AUTO-RECOVERY` | API tests seed success/running/failed cursors and assert health DTOs without writes or live Jira calls. | Maintainer can read latest sync health per scope from cursor state. | parallel-after-baseline |
+| P1B.N2 - Expose calculation health API | [] | `bug_metrics/app/api/`, `bug_metrics/tests/` | `bug_metrics` owns calculation run status, stale state, failed run state, and warnings. | `INV-P1B-CALCULATION-HEALTH-AUTHORITY`, `INV-P1B-NO-AUTO-RECOVERY` | API tests seed fresh/stale/failed/running runs and assert health DTOs without recalculation. | Maintainer can read calculation health per scope from run artifacts and config hashes. | parallel-after-baseline |
+| P1B.N3 - Compose Data Health UI | [P1B.N1, P1B.N2] | `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/templates/`, `ui_web/urls.py`, `ui_web/tests/` | UI composes health APIs; it does not own sync or calculation truth. | `INV-P1B-DATA-HEALTH-UI`, `INV-P1B-SYNC-HEALTH-AUTHORITY`, `INV-P1B-CALCULATION-HEALTH-AUTHORITY` | View tests assert latest sync, latest calculation, stale scopes, failed items, warning counts, and no recovery action controls execute on load. | Maintainer can diagnose production state from a read-only Data Health page. | serial-after-health-apis |
+| P1.CLOSE - Long-run closure gates | [P0D.N3, P1A.N4, P1B.N3] | `bug_metrics/tests/`, `jira_sync/tests/`, `ui_web/tests/`, `docs/`, `scripts/` | Validation evidence owner. | all P0d/P1 contracts | P0d/P1 focused tests, existing Bug Trend focused tests, Grafana artifact validator, `manage.py check`, file-size/whitespace gates, UI-level smoke for config/audit/export/health entry points. | P0d/P1 can close without weakening P0b/P0c, C-stock validation, or Metrics-owned evidence authority. | serial |
+
+```mermaid
+flowchart TD
+  P0B["P0b Run/Stale Visibility completed"]
+  P0C["P0c Scope Audit completed"]
+  P0DN1["P0D.N1 Saved scope config API"]
+  P0DN2["P0D.N2 Audit to config handoff"]
+  P0DN3["P0D.N3 Config editor and recalc prompt"]
+  P1AN1["P1A.N1 PageQueryState list filters"]
+  P1AN2["P1A.N2 Evidence export"]
+  P1AN3["P1A.N3 Export audit"]
+  P1AN4["P1A.N4 Filters and export UI"]
+  P1BN1["P1B.N1 Sync health API"]
+  P1BN2["P1B.N2 Calculation health API"]
+  P1BN3["P1B.N3 Data Health UI"]
+  P1CLOSE["P1.CLOSE Closure gates"]
+
+  P0B --> P0DN1
+  P0C --> P0DN1
+  P0DN1 --> P0DN2
+  P0DN1 --> P0DN3
+  P0DN2 --> P0DN3
+  P0DN3 --> P1AN1
+  P1AN1 --> P1AN2
+  P1AN2 --> P1AN3
+  P1AN2 --> P1AN4
+  P1AN3 --> P1AN4
+  P1BN1 --> P1BN3
+  P1BN2 --> P1BN3
+  P0DN3 --> P1CLOSE
+  P1AN4 --> P1CLOSE
+  P1BN3 --> P1CLOSE
+```
+
+### P0d/P1 Execution Ledger
+
+- [ ] P0D.N1 - Define saved scope config API
+- [ ] P0D.N2 - Connect audit values to config workflow
+- [ ] P0D.N3 - Render scope config editor and recalc prompt
+- [ ] P1A.N1 - Extend PageQueryState for list filters
+- [ ] P1A.N2 - Add evidence export over current query result
+- [ ] P1A.N3 - Record evidence export audit
+- [ ] P1A.N4 - Render filters and export UI
+- [ ] P1B.N1 - Expose sync health API
+- [ ] P1B.N2 - Expose calculation health API
+- [ ] P1B.N3 - Compose Data Health UI
+- [ ] P1.CLOSE - Long-run closure gates
+
+### P0d/P1 Planned Focused Tests
+
+These tests are created by their owning nodes before the corresponding node can be closed:
+
+| Node | Planned focused tests | Existing regression to keep green |
+| --- | --- | --- |
+| P0D.N1 | `bug_metrics\tests\test_api_scope_config.py` | `bug_metrics\tests\test_api_bug_trend_contracts.py`, `bug_metrics\tests\test_api_scope_audit.py` |
+| P0D.N2 | `bug_metrics\tests\test_api_scope_config.py`, `ui_web\tests\test_bug_trend_scope_config_views.py` | `jira_history\tests\test_api_scope_audit_facts.py`, `bug_metrics\tests\test_api_scope_audit.py` |
+| P0D.N3 | `ui_web\tests\test_bug_trend_scope_config_views.py` | `ui_web\tests\test_bug_trend_views.py`, `ui_web\tests\test_bug_trend_scope_audit_views.py` |
+| P1A.N1 | `bug_metrics\tests\test_bug_trend_page_query_state.py` | `bug_metrics\tests\test_api_bug_trend_contracts.py` |
+| P1A.N2 | `bug_metrics\tests\test_api_evidence_export.py` | `ui_web\tests\test_bug_trend_fact_table_ui.py` |
+| P1A.N3 | `bug_metrics\tests\test_api_evidence_export.py` | `scripts\validate_grafana_artifacts.py` |
+| P1A.N4 | `ui_web\tests\test_bug_trend_fact_table_ui.py` | `ui_web\tests\test_bug_trend_views.py` |
+| P1B.N1 | `jira_sync\tests\test_api_data_health.py` | `jira_sync\tests\test_sync_jira_scope_command.py` |
+| P1B.N2 | `bug_metrics\tests\test_api_data_health.py` | `bug_metrics\tests\test_api_bug_trend_contracts.py` |
+| P1B.N3 | `ui_web\tests\test_data_health_views.py` | `ui_web\tests\test_bug_trend_views.py` |
+
+### P0d/P1 Executable Baseline Gates
+
+These commands are executable at plan creation and must stay green while new focused tests are introduced by each node:
+
+```powershell
+.venv\Scripts\python.exe -m pytest jira_history\tests\test_api_scope_audit_facts.py bug_metrics\tests\test_api_scope_audit.py ui_web\tests\test_bug_trend_scope_audit_views.py bug_metrics\tests\test_api_bug_trend_contracts.py ui_web\tests\test_bug_trend_views.py ui_web\tests\test_bug_trend_fact_table_ui.py -q
+.venv\Scripts\python.exe -m pytest jira_sync\tests\test_sync_jira_scope_command.py -q
+.venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
+.venv\Scripts\python.exe manage.py check
+.venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
+.venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
+```
+
+### P0d/P1 Review Gates
+
+`PLAN.R` by the Architect Planner Reviewer must approve the combined DAG before implementation starts. Before P1A starts, the same `PLAN.R` role must confirm all filter/export state flows through `BugTrendPageQueryState`. Before P1B starts, the same `PLAN.R` role must confirm Data Health is read-only and uses `jira_sync`/`bug_metrics` health APIs rather than UI-derived state. `CLOSE.R` by the Architect Planner Reviewer must review the final implementation after focused validation.
+
+UI smoke criteria for `CLOSE.R`:
+
+1. Open `/bug-trend/scope-config/?scope_id=<saved>` and verify the editor renders saved config and recalculation guidance.
+2. Apply an evidence list filter, trigger export, and verify the exported row count matches the current evidence result.
+3. Open `/bug-trend/data-health/` and verify sync/calculation health tables render without starting sync, recalculation, or recovery actions.
+
+## P2/P3 Long-run Continuation DAG
+
+P2/P3 extends the P0d/P1 foundation into chart governance and alternate renderers. It does not move Jira sync, scope semantics, calculation runs, evidence query rules, validators, or audit ownership into Grafana or AI. Metrics remains the semantic and governance authority; Grafana and AI are consumers/producers that must pass Metrics-owned contracts before anything is visible to users.
+
+### P2/P3 Continuation Policy
+
+P2 starts only after P1.CLOSE unless a separate reviewer-approved spike isolates read-only Grafana validation from production UI. P2A introduces the minimal Chart Catalog owner. P2B decides whether stock Grafana can be promoted as a supported renderer route. P2C is optional: it starts only if P2B records same-page evidence as a required capability that C-stock cannot provide. If C-stock link-out evidence is sufficient, P2C is skipped and the P2B renderer route decision is enough for closure. P3 starts only after Chart Catalog validation and publish/audit ownership exist in Metrics.
+
+### P2/P3 Contract Registry
+
+| Contract | Owner | Consumers | Disconfirming check |
+| --- | --- | --- | --- |
+| `INV-P2A-CHART-CATALOG-AUTHORITY` | `bug_metrics` Chart Catalog API/model | `ui_web` chart selector, Grafana artifact validator, AI draft pipeline | Tests fail if chart definitions, renderer route, evidence capability, status, version, or enabled state are stored in templates, Grafana JSON, AI prompt text, or any owner outside Metrics. |
+| `INV-P2A-EVIDENCE-CONTRACT` | `bug_metrics` EvidenceContract DTO/API | chart selector, evidence panel, export, Grafana data links | Tests fail if an evidence-backed chart can be published without a contract mapping chart selection to `BugTrendPageQueryState`, or if `summary_only` charts render ticket-level evidence. |
+| `INV-P2A-CHART-SELECTOR-STATE` | `bug_metrics.app.api.page_query.BugTrendPageQueryState.active_chart_id` plus Chart Catalog API | `ui_web` selector, evidence panel | Tests fail if switching charts preserves stale bucket/series selection, bypasses scope/date state, or uses UI-local state rather than backend `BugTrendPageQueryState.active_chart_id`. |
+| `INV-P2B-CSTOCK-PARITY` | `scripts/compare_grafana_bug_trend_parity.py` and Metrics API | Grafana C-stock dashboard, reviewer evidence | Tests fail if C-stock chart values diverge from Metrics reference chart for the same scope/date/run. |
+| `INV-P2B-CSTOCK-LINK-EVIDENCE` | Metrics API evidence endpoints and Grafana artifact validator | Grafana C-stock dashboard | Tests fail if C-stock data links omit run/bucket/series fields, use unapproved params, or imply same-page evidence support that stock Grafana cannot provide. |
+| `INV-P2B-RENDERER-ROUTE-DECISION` | `bug_metrics` Chart Catalog + docs decision record | `ui_web`, ops Grafana artifacts | Tests/docs checks fail if C-stock is promoted beyond its validated capability or if unsupported same-page evidence behavior is hidden. |
+| `INV-P2C-CPLUGIN-BOUNDARY` | Grafana App/Scenes spike artifact under `ops/grafana` plus Metrics APIs | reviewer, future chart UI | Spike validation fails if plugin/app reads Jira or DB directly, owns semantics, stores evidence query rules, or bypasses Metrics API. |
+| `INV-P3-AI-DRAFT-VALIDATION` | Metrics chart validator and Chart Catalog draft state | AI draft chart pipeline | Tests fail if AI-generated charts become selectable before validator approval or if generated specs contain SQL, secrets, unsupported data sources, or missing evidence contracts. |
+| `INV-P3-PUBLISH-AUDIT` | Metrics Chart Catalog audit surface | personal/cloud publish flows | Tests fail if personal publish skips validator/audit, or if cloud publish makes a chart visible before pending approval is resolved. |
+| `INV-P3-NO-PROMPT-TRUTH` | Metrics prompt/context builder and validator | AI draft pipeline | Tests fail if AI prompt text becomes the source of scope semantics, evidence rules, or chart availability instead of Metrics-owned APIs. |
+
+### P2/P3 DAG Nodes
+
+| id | depends_on | owner_paths | authority_boundary | contracts | validation | exit_criteria | parallel_policy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P2A.N1 - Define minimal Chart Catalog API | [P1.CLOSE] | `bug_metrics/models.py`, `bug_metrics/app/api/`, `bug_metrics/tests/`, `docs/` | `bug_metrics` owns chart definitions, renderer route, evidence capability, version, and publish status. | `INV-P2A-CHART-CATALOG-AUTHORITY`, `INV-P2A-EVIDENCE-CONTRACT` | Focused tests register the existing P0b/P0c reference Bug Trend chart as the built-in default and reject chart definitions without valid evidence capability/contract. | The existing Metrics reference Bug Trend chart is registered in the catalog with a stable chart id, renderer route, capability, and evidence contract without changing its evidence semantics. | serial |
+| P2A.N2 - Add chart selector against catalog | [P2A.N1] | `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/templates/`, `ui_web/tests/` | UI renders catalog choices and submits active chart id; backend `BugTrendPageQueryState.active_chart_id` owns chart state and catalog owns evidence contract. | `INV-P2A-CHART-SELECTOR-STATE`, `INV-P2A-EVIDENCE-CONTRACT` | View/API tests switch between built-in charts and assert stale selection clears and evidence area follows capability. | User can select an approved chart without desynchronizing scope/date/evidence state. | serial |
+| P2B.N1 - Re-run C-stock parity and link validation under catalog | [P2A.N1] | `ops/grafana/`, `scripts/`, `docs/`, `bug_metrics/tests/` | C-stock is a renderer route registered by Metrics, not a semantic owner. | `INV-P2B-CSTOCK-PARITY`, `INV-P2B-CSTOCK-LINK-EVIDENCE` | Grafana artifact validator and parity tests run through chart catalog metadata for the built-in chart. | C-stock is validated as link-out evidence renderer with explicit capability limits. | serial |
+| P2B.N2 - Record renderer route decision | [P2B.N1] | `docs/`, `bug_metrics/app/api/`, `bug_metrics/tests/` | Metrics records whether `c_stock` is supported, limited, or rejected for each chart capability. | `INV-P2B-RENDERER-ROUTE-DECISION`, `INV-P2A-CHART-CATALOG-AUTHORITY` | Tests/docs checks fail if renderer route claims exceed validated C-stock evidence behavior. | Decision record, stored as a docs YAML/Markdown record or Metrics API model, contains `same_page_evidence_required`, `c_stock_same_page_capable`, `supported_c_stock_capabilities`, and `trigger_p2c_spike = same_page_evidence_required and not c_stock_same_page_capable`; P2C.N1 executes only when `trigger_p2c_spike` is true. | serial |
+| P2C.N1 - Spike Grafana App/Scenes same-page evidence | [P2B.N2] | `ops/grafana/`, `docs/`, `scripts/` | Grafana App/Scenes may host UI but must call Metrics APIs for chart data and evidence. This node runs only when P2B.N2 records same-page evidence as required and C-stock as insufficient. | `INV-P2C-CPLUGIN-BOUNDARY`, `INV-P2A-EVIDENCE-CONTRACT` | Spike test/check fails if app/plugin accesses DB/Jira directly or encodes semantic SQL/rules. | Same-page Grafana chart + evidence feasibility is proven or rejected with documented rationale and fallback renderer route decision; rejection is a valid spike outcome. | conditional-serial-spike |
+| P3.N1 - Define AI draft chart request and validator path | [P2A.N1] | `bug_metrics/app/api/`, `scripts/`, `docs/`, `bug_metrics/tests/` | Metrics validator owns acceptance; AI only proposes draft chart specs. | `INV-P3-AI-DRAFT-VALIDATION`, `INV-P3-NO-PROMPT-TRUTH` | Tests reject generated specs with SQL, secrets, unapproved data sources, missing evidence contract, or unsupported renderer route. | AI-generated chart specs can enter draft state only after validator checks. | serial-after-catalog |
+| P3.N2 - Add draft preview and personal publish flow | [P3.N1, P2A.N2] | `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/templates/`, `ui_web/tests/`, `bug_metrics/tests/` | UI previews validator-approved drafts; Metrics owns publish state and audit. | `INV-P3-PUBLISH-AUDIT`, `INV-P3-AI-DRAFT-VALIDATION` | Tests assert personal publish records validator result and audit event before appearing in personal chart selector. | Personal mode can publish validated draft charts without bypassing Metrics governance. | serial |
+| P3.N3 - Add cloud approval boundary | [P3.N2] | `bug_metrics/app/api/`, `ui_web/views/`, `ui_web/templates/`, `docs/`, `bug_metrics/tests/` | Cloud shared publish requires pending approval; approval state is owned by Metrics catalog. | `INV-P3-PUBLISH-AUDIT`, `INV-P2A-CHART-CATALOG-AUTHORITY` | Tests assert cloud submissions enter pending approval and do not appear in shared selector until approved. | Cloud governance boundary exists without implementing full enterprise workflow. | serial |
+| P23.CLOSE - Full renderer/governance closure | [P2A.N2, P2B.N2, P2C.N1, P3.N3] | `bug_metrics/tests/`, `ui_web/tests/`, `ops/grafana/`, `scripts/`, `docs/` | Validation evidence owner. | all P2/P3 contracts | Catalog tests, renderer route tests, Grafana validator/parity checks, AI validator tests, publish audit tests, `manage.py check`, file-size/whitespace gates, UI smoke for selector/Grafana route/draft publish. | P2/P3 can close without moving semantic/evidence/governance authority out of Metrics. | serial |
+
+```mermaid
+flowchart TD
+  P1DONE["P1.CLOSE completed"]
+  P2AN1["P2A.N1 Minimal Chart Catalog API"]
+  P2AN2["P2A.N2 Chart selector"]
+  P2BN1["P2B.N1 C-stock parity/link validation"]
+  P2BN2["P2B.N2 Renderer route decision"]
+  P2CN1["P2C.N1 Grafana App/Scenes spike"]
+  P3N1["P3.N1 AI draft validator path"]
+  P3N2["P3.N2 Draft preview and personal publish"]
+  P3N3["P3.N3 Cloud approval boundary"]
+  P23CLOSE["P23.CLOSE Renderer/governance closure"]
+
+  P1DONE --> P2AN1
+  P2AN1 --> P2AN2
+  P2AN1 --> P2BN1
+  P2BN1 --> P2BN2
+  P2BN2 -. optional if same-page evidence required .-> P2CN1
+  P2AN1 --> P3N1
+  P2AN2 --> P3N2
+  P3N1 --> P3N2
+  P3N2 --> P3N3
+  P2AN2 --> P23CLOSE
+  P2BN2 --> P23CLOSE
+  P2CN1 -. if executed .-> P23CLOSE
+  P3N3 --> P23CLOSE
+```
+
+### P2/P3 Execution Ledger
+
+- [ ] P2A.N1 - Define minimal Chart Catalog API
+- [ ] P2A.N2 - Add chart selector against catalog
+- [ ] P2B.N1 - Re-run C-stock parity and link validation under catalog
+- [ ] P2B.N2 - Record renderer route decision
+- [ ] P2C.N1 - Spike Grafana App/Scenes same-page evidence
+- [ ] P3.N1 - Define AI draft chart request and validator path
+- [ ] P3.N2 - Add draft preview and personal publish flow
+- [ ] P3.N3 - Add cloud approval boundary
+- [ ] P23.CLOSE - Full renderer/governance closure
+
+### P2/P3 Planned Focused Tests
+
+These tests are created by their owning nodes before the corresponding node can be closed:
+
+| Node | Planned focused tests | Existing regression to keep green |
+| --- | --- | --- |
+| P2A.N1 | `bug_metrics\tests\test_api_chart_catalog.py` | `bug_metrics\tests\test_api_bug_trend_contracts.py`, `scripts\validate_grafana_artifacts.py` |
+| P2A.N2 | `ui_web\tests\test_bug_trend_chart_selector_views.py` | `ui_web\tests\test_bug_trend_fact_table_ui.py` |
+| P2B.N1 | `bug_metrics\tests\test_grafana_data_surface_contract.py`, `scripts\compare_grafana_bug_trend_parity.py` | `scripts\validate_grafana_artifacts.py` |
+| P2B.N2 | `bug_metrics\tests\test_api_chart_catalog.py`, docs decision check if added | `docs\c1-evidence-link-validation-evidence.md` checker |
+| P2C.N1 | `scripts\validate_grafana_artifacts.py` plus spike-specific validator | P2B parity/link checks |
+| P3.N1 | `bug_metrics\tests\test_api_ai_chart_drafts.py`, validator tests | `scripts\validate_grafana_artifacts.py` |
+| P3.N2 | `ui_web\tests\test_ai_chart_draft_views.py`, `bug_metrics\tests\test_api_ai_chart_drafts.py` | chart selector tests |
+| P3.N3 | `bug_metrics\tests\test_api_chart_publish_governance.py` | publish audit tests |
+
+### P2/P3 Executable Baseline Gates
+
+These commands are executable before P2 starts and must stay green while each P2/P3 node adds its own focused tests. If any listed file is missing at P2 plan approval time, the command is not a valid baseline gate and the plan must be corrected before implementation continues:
+
+```powershell
+.venv\Scripts\python.exe -m pytest bug_metrics\tests\test_grafana_data_surface_contract.py bug_metrics\tests\test_api_bug_trend_contracts.py ui_web\tests\test_bug_trend_fact_table_ui.py -q
+.venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
+.venv\Scripts\python.exe scripts\check_c0_validation_evidence.py --evidence docs\c0-validation-closure-evidence.md
+.venv\Scripts\python.exe scripts\check_c1_evidence_link_evidence.py --evidence docs\c1-evidence-link-validation-evidence.md
+.venv\Scripts\python.exe manage.py check
+.venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
+.venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
+```
+
+### P2/P3 Review Gates
+
+`P2.PLAN.R` by the Architect Planner Reviewer must confirm Chart Catalog owner paths and renderer route contracts before P2A starts. `P2B.R` must review C-stock evidence capability before any route is marked supported. If P2B.R records same-page evidence as required and C-stock as insufficient, `P2C.R` must review the Grafana App/Scenes spike before any plugin/app work is treated as production direction; otherwise P2C is explicitly skipped. `P3.PLAN.R` must confirm AI draft validation and publish/audit ownership before P3 starts. `P23.CLOSE.R` must review final renderer/governance implementation after focused validation and UI smoke for chart selector, Grafana route, draft preview, and publish state.
+
+UI smoke criteria for `P23.CLOSE.R`:
+
+1. Open Bug Trend chart selector and verify the built-in Metrics reference chart remains available.
+2. Select a Grafana/C-stock route only if catalog marks its evidence capability as link-out; verify unsupported same-page evidence is not presented.
+3. Preview an AI draft chart, verify validator status is visible, and confirm it does not enter selector until publish rules pass.
+4. Submit a cloud publish request and verify it remains pending approval and hidden from the shared selector.
+
 ## 验收标准
 
 1. 用户无需改代码即可创建一个新的 Jira scope 并生成 Bug Trend。
