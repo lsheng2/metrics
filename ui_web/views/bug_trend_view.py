@@ -1,8 +1,8 @@
 from datetime import date, timedelta
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
-from bug_metrics.models import BugTrendChartDefinition
 
 from ..container import ui_web_container
 from .graceful_template_view import GracefulTemplateView
@@ -28,7 +28,7 @@ def validate_query_contract(request, required_params, optional_params):
 
 
 def chart_id_error_response(error):
-    if isinstance(error, BugTrendChartDefinition.DoesNotExist):
+    if isinstance(error, ObjectDoesNotExist):
         return JsonResponse({'error': 'Unknown or unpublished Bug Trend chart.', 'chart_id': ''}, status=400)
     if isinstance(error, ValueError):
         return JsonResponse({'error': str(error)}, status=400)
@@ -61,7 +61,7 @@ class BugTrendView(GracefulTemplateView):
         begin, end = self._date_range()
         try:
             chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end, active_chart_id)
-        except BugTrendChartDefinition.DoesNotExist:
+        except ObjectDoesNotExist:
             active_chart_id = 'default_bug_trend'
             chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end, active_chart_id)
         evidence = None
@@ -145,7 +145,7 @@ class BugTrendEvidenceExportView(GracefulTemplateView):
                 text=request.GET.get('text', ''),
                 active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
             )
-        except (BugTrendChartDefinition.DoesNotExist, ValueError) as error:
+        except (ObjectDoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         response = HttpResponse(export.content, content_type=export.content_type)
         response['Content-Disposition'] = f'attachment; filename="{export.filename}"'
@@ -213,7 +213,7 @@ class BugTrendChartDataApiView(GracefulTemplateView):
         begin, end = self._date_range()
         try:
             chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end, request.GET.get('chart_id', 'default_bug_trend'))
-        except (BugTrendChartDefinition.DoesNotExist, ValueError) as error:
+        except (ObjectDoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_chart_payload(chart_data))
 
@@ -248,7 +248,7 @@ class BugTrendEvidenceApiView(GracefulTemplateView):
                 text=request.GET.get('text', ''),
                 active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
             )
-        except (BugTrendChartDefinition.DoesNotExist, ValueError) as error:
+        except (ObjectDoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_evidence_payload(evidence))
 
