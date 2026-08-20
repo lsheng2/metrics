@@ -40,7 +40,7 @@
           "parser": "backend",
           "format": "table",
           "url_options": {"method": "GET"},
-          "url": "/api/bug-trend/chart-data/?scope_id=$scope_id&begin=$begin&end=$end",
+          "url": "/api/bug-trend/chart-data/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend",
           "root_selector": "$.points",
           "columns": [
             {"selector": "label", "text": "label", "type": "string"},
@@ -63,7 +63,7 @@
           "links": [
             {
               "title": "Open Metrics evidence",
-              "url": "/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}"
+              "url": "/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}"
             }
           ]
         },

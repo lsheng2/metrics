@@ -135,6 +135,23 @@ class TestGrafanaDataSurfaceContract(TestCase):
         self.assertTrue(any('does not reference ${__data.fields.calculation_run_id}' in finding.message for finding in findings))
         self.assertTrue(any('must map run via run=${__data.fields.calculation_run_id}' in finding.message for finding in findings))
 
+    def test_shouldRejectGrafanaArtifactWhenEvidenceLinkOmitsChartId(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            artifact = self._evidence_link_artifact()
+            artifact['panels'][0]['fieldConfig']['defaults']['links'][0]['url'] = artifact['panels'][0]['fieldConfig']['defaults']['links'][0]['url'].replace('&chart_id=default_bug_trend', '')
+            self._write_artifact(artifact_root, artifact)
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertTrue(any('evidence link URL must include chart_id' in finding.message for finding in findings))
+
+
     def test_shouldRejectChartDataArtifactWithEvidenceOnlyParams(self):
         # Given
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -469,7 +486,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
                     'datasource': {'uid': 'metrics-bug-trend-api'},
                     'targets': [
                         {
-                            'url': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end',
+                            'url': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end&chart_id=default_bug_trend',
                             'columns': [
                                 {'selector': 'label', 'text': 'label'},
                                 {'selector': 'calculation_run_id', 'text': 'calculation_run_id'},
@@ -485,7 +502,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
                         'defaults': {
                             'links': [
                                 {
-                                    'url': '/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}'
+                                    'url': '/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}'
                                 }
                             ]
                         }

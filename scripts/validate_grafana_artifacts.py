@@ -198,6 +198,9 @@ def validate_evidence_link_param_mapping(path: Path, panel_path: str, link_urls:
     for param_name, fragment in required_fragments.items():
         if not any(fragment in link_url for link_url in link_urls):
             findings.append(Finding(path, f"{panel_path} evidence link URL must map {param_name} via {fragment}"))
+    chart_ids = {value for link_url in link_urls for name, value in parse_qsl(urlparse(link_url).query, keep_blank_values=True) if name == 'chart_id'}
+    if not chart_ids:
+        findings.append(Finding(path, f"{panel_path} evidence link URL must include chart_id when chart-data target uses Chart Catalog"))
     return findings
 
 
