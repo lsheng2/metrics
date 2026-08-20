@@ -5,7 +5,7 @@
   "api_surfaces": {
     "/api/bug-trend/chart-data/": {
       "required_query_params": ["scope_id", "begin", "end"],
-      "optional_query_params": []
+      "optional_query_params": ["chart_id"]
     },
     "/api/bug-trend/evidence/": {
       "required_query_params": ["scope_id", "begin", "end", "run"],

@@ -201,6 +201,22 @@ class TestBugTrendFactTableUi(TestCase):
             'color': '#bdbdbd',
         }, payload['points'])
 
+    def test_shouldAcceptChartIdOnBugTrendChartDataJsonApi(self):
+        # Given
+        scope, _, _ = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('default_bug_trend', response.json()['chart_id'])
+
     def test_shouldRejectUnapprovedChartDataApiQueryParams(self):
         # Given
         scope, run, _ = self._seed_trend_data()

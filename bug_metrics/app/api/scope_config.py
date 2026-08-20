@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from bug_metrics.models import JiraScopeConfig
+from bug_metrics.models import BugTrendAuditEvent, JiraScopeConfig
 
 
 SEMANTIC_LIST_FIELDS = (
@@ -97,15 +97,34 @@ class ScopeConfigService:
             raise ValueError(validation.errors)
 
         scope = JiraScopeConfig.objects.get(id=config.id) if config.id else JiraScopeConfig()
+        original_hash = scope.config_version_hash if scope.id else ''
         self._apply_config(scope, config)
         scope.save()
+        self._record_scope_audit('scope_saved', scope, {
+            'previous_config_version_hash': original_hash,
+            'current_config_version_hash': scope.config_version_hash,
+            'semantic_hash_changed': original_hash != scope.config_version_hash,
+        })
         return self._to_saved_scope_config(scope)
 
     def activate_scope_config(self, scope_id: int) -> SavedScopeConfig:
         scope = JiraScopeConfig.objects.get(id=scope_id)
+        was_enabled = scope.enabled
         scope.enabled = True
         scope.save(update_fields=['enabled', 'config_version_hash', 'updated_at'])
+        self._record_scope_audit('scope_activated', scope, {
+            'was_enabled': was_enabled,
+            'current_config_version_hash': scope.config_version_hash,
+        })
         return self._to_saved_scope_config(scope)
+
+    def _record_scope_audit(self, event_type: str, scope: JiraScopeConfig, request_summary: Dict[str, Any]) -> None:
+        BugTrendAuditEvent.objects.create(
+            event_type=event_type,
+            actor='local_operator',
+            scope=scope,
+            request_summary=request_summary,
+        )
 
     def _validate_list_fields(self, config: SavedScopeConfig, errors: Dict[str, str]) -> None:
         for field_name in SEMANTIC_LIST_FIELDS:

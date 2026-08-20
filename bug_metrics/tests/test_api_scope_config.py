@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from bug_metrics.app.api import bug_trend_api
 from bug_metrics.app.api.scope_config import SavedScopeConfig
-from bug_metrics.models import JiraScopeConfig
+from bug_metrics.models import BugTrendAuditEvent, JiraScopeConfig
 from jira_history.models import JiraIssue
 
 
@@ -62,6 +62,10 @@ class TestScopeConfigApi(TestCase):
         self.assertEqual(['P1-Critical', 'P2-High'], scope.critical_high_values)
         self.assertNotEqual(original_hash, scope.config_version_hash)
         self.assertEqual(scope.config_version_hash, saved.config_version_hash)
+        event = BugTrendAuditEvent.objects.get(event_type='scope_saved', scope=scope)
+        self.assertEqual(original_hash, event.request_summary['previous_config_version_hash'])
+        self.assertEqual(scope.config_version_hash, event.request_summary['current_config_version_hash'])
+        self.assertTrue(event.request_summary['semantic_hash_changed'])
 
     def test_shouldKeepSemanticHashWhenOnlyDisplayIdentityChanges(self):
         # Given
@@ -93,6 +97,9 @@ class TestScopeConfigApi(TestCase):
         self.assertEqual([], enabled_before)
         self.assertTrue(activated.enabled)
         self.assertEqual(['STDEL activation'], [scope.name for scope in enabled_after])
+        event = BugTrendAuditEvent.objects.get(event_type='scope_activated', scope_id=saved.id)
+        self.assertFalse(event.request_summary['was_enabled'])
+        self.assertEqual(activated.config_version_hash, event.request_summary['current_config_version_hash'])
 
     def test_shouldNotLoadDisabledScopeThroughChartScopeLookupBeforeActivation(self):
         # Given
