@@ -63,6 +63,7 @@ class TestBugTrendChartContract(TestCase):
         self.assertEqual('2026-08-01', chart.run_metadata.source_coverage_start)
         self.assertEqual('2026-08-31', chart.run_metadata.source_coverage_end)
         self.assertEqual('2026-08-19T00:00:00+00:00', chart.run_metadata.completed_at)
+        self.assertTrue(chart.current_evidence_available)
 
     def test_shouldRejectOldRunWhenScopeConfigHashChanged(self):
         # Given
@@ -81,6 +82,7 @@ class TestBugTrendChartContract(TestCase):
         self.assertEqual(scope.config_version_hash, chart.run_metadata.current_config_version_hash)
         self.assertEqual([], chart.datasets)
         self.assertIn('does not match the current scope configuration', chart.unavailable_reason)
+        self.assertFalse(chart.current_evidence_available)
 
     def test_shouldRejectDateRangeBeforeAfterOrPartiallyOutsideRunCoverage(self):
         # Given
@@ -202,6 +204,50 @@ class TestBugTrendChartContract(TestCase):
         # Then
         self.assertEqual('Original fixed bug', result.rows[0].summary)
         self.assertEqual('Fixed', result.rows[0].status)
+
+    def test_shouldNotReturnEvidenceForStaleRunWhenScopeConfigChanged(self):
+        # Given
+        scope = self._create_scope()
+        old_hash = scope.config_version_hash
+        run = self._create_run(scope, date(2026, 8, 1), date(2026, 8, 31), old_hash)
+        bucket = BugTrendBucket.objects.create(
+            calculation_run=run,
+            scope=scope,
+            bucket_start=date(2026, 8, 3),
+            bucket_end=date(2026, 8, 9),
+            granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+            fixed_or_closed_count=1,
+        )
+        BugTrendBucketIssue.objects.create(
+            scope=scope,
+            bucket=bucket,
+            calculation_run=run,
+            series_name='fixed_or_closed_bugs',
+            issue_key='STDEL-3002',
+            summary='Old scope evidence',
+            status='Fixed',
+            severity_value='P3-Medium',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        )
+        scope.fixed_status_values = ['Fixed', 'Verified Fixed']
+        scope.save()
+
+        # When
+        result = bug_trend_api.get_evidence_tickets(
+            BugTrendPageQueryState(
+                scope.id,
+                date(2026, 8, 3),
+                date(2026, 8, 9),
+                calculation_run_id=str(run.id),
+                selected_bucket_id=str(bucket.id),
+                selected_series_name='fixed_or_closed_bugs',
+            )
+        )
+
+        # Then
+        self.assertEqual([], result.rows)
+        self.assertEqual(0, result.total_count)
 
     def test_shouldCountBugAsOpenBeforeFutureFixedTransition(self):
         # Given

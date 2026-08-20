@@ -50,7 +50,7 @@ class BugTrendView(GracefulTemplateView):
         begin, end = self._date_range()
         chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end)
         evidence = None
-        if chart_data.calculation_run_id and chart_data.run_metadata.get('freshness_status') == 'fresh':
+        if chart_data.current_evidence_available:
             evidence = self.bug_trend_facade.get_evidence_data(selected_scope_id, begin, end, calculation_run_id=chart_data.calculation_run_id)
         context['selected_scope_id'] = selected_scope_id
         context['begin'] = begin.isoformat()

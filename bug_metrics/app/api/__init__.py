@@ -46,6 +46,7 @@ class BugTrendChart:
     datasets: List[BugTrendDataset]
     unavailable_reason: str = ''
     run_metadata: Optional[BugTrendRunMetadata] = None
+    current_evidence_available: bool = False
 
 
 class ApiForBugTrend:
@@ -75,8 +76,9 @@ class ApiForBugTrend:
                     [],
                     'Calculation run does not match the current scope configuration. Recalculate this scope to refresh the Bug Trend chart.',
                     self._run_metadata(scope, stale_run, 'stale_config'),
+                    current_evidence_available=False,
                 )
-            return BugTrendChart(scope.id, None, [], [], [], 'No completed calculation covers the selected range for the current scope configuration.')
+            return BugTrendChart(scope.id, None, [], [], [], 'No completed calculation covers the selected range for the current scope configuration.', current_evidence_available=False)
 
         return self._chart_from_run(scope, run, begin, end)
 
@@ -89,12 +91,12 @@ class ApiForBugTrend:
         chart_begin = begin or run.source_coverage_start
         chart_end = end or run.source_coverage_end
         if run.config_version_hash != scope.config_version_hash:
-            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not match the current scope configuration.', self._run_metadata(scope, run, 'stale_config'))
+            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not match the current scope configuration.', self._run_metadata(scope, run, 'stale_config'), current_evidence_available=False)
         return self._chart_from_run(scope, run, chart_begin, chart_end)
 
     def _chart_from_run(self, scope: JiraScopeConfig, run: BugTrendCalculationRun, begin: date, end: date) -> BugTrendChart:
         if run.source_coverage_start > begin or run.source_coverage_end < end:
-            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not cover the selected range.')
+            return BugTrendChart(scope.id, str(run.id), [], [], [], 'Calculation run does not cover the selected range.', current_evidence_available=False)
 
         buckets = list(run.buckets.filter(bucket_start__gte=begin, bucket_end__lte=end).order_by('bucket_start'))
         return BugTrendChart(
@@ -104,6 +106,7 @@ class ApiForBugTrend:
             bucket_ids=[str(bucket.id) for bucket in buckets],
             datasets=self._build_datasets(scope, buckets),
             run_metadata=self._run_metadata(scope, run, 'fresh'),
+            current_evidence_available=True,
         )
 
     def get_evidence_tickets(self, state: BugTrendPageQueryState) -> BugTrendEvidenceTicketResult:

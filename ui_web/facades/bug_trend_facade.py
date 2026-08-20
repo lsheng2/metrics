@@ -38,6 +38,7 @@ class BugTrendFacade:
             ],
             unavailable_reason=chart.unavailable_reason,
             run_metadata=self._run_metadata_payload(chart.run_metadata),
+            current_evidence_available=chart.current_evidence_available,
         )
 
     def get_chart_json(self, chart_data: BugTrendChartData) -> str:
@@ -65,6 +66,7 @@ class BugTrendFacade:
             'points': points,
             'unavailable_reason': chart_data.unavailable_reason,
             'run_metadata': chart_data.run_metadata or {},
+            'current_evidence_available': chart_data.current_evidence_available,
         }
 
     def _run_metadata_payload(self, run_metadata) -> dict:

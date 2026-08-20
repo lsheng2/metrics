@@ -18,6 +18,7 @@ class BugTrendChartData:
     datasets: List[dict]
     unavailable_reason: str = ''
     run_metadata: dict = None
+    current_evidence_available: bool = False
 
 
 @dataclass(slots=True)

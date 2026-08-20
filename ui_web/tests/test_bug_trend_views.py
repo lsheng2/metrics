@@ -99,6 +99,28 @@ class TestBugTrendViews(TestCase):
         self.assertIn('STDEL-8942', content)
         self.assertIn('fixed_or_closed_bugs tickets for 26WW32', content)
 
+    def test_shouldNotRenderStaleEvidenceForDirectPartialRequest(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        scope.fixed_status_values = ['Fixed', 'Verified Fixed']
+        scope.save()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'fixed_or_closed_bugs',
+        })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        content = response.content.decode()
+        self.assertIn('0 of 0 evidence tickets shown', content)
+        self.assertNotIn('STDEL-8942', content)
+
     def _seed_trend_data(self):
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',

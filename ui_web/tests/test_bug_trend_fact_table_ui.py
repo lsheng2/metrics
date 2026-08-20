@@ -138,6 +138,7 @@ class TestBugTrendFactTableUi(TestCase):
             'source_coverage_end': '2026-08-09',
             'completed_at': '2026-08-19T00:00:00+00:00',
         }, payload['run_metadata'])
+        self.assertTrue(payload['current_evidence_available'])
         self.assertEqual([str(bucket.id)], payload['bucket_ids'])
         self.assertIn('fixed_or_closed_bugs', [dataset['series_name'] for dataset in payload['datasets']])
         self.assertIn({
@@ -203,6 +204,28 @@ class TestBugTrendFactTableUi(TestCase):
         # Then
         self.assertEqual(400, response.status_code)
         self.assertEqual(['run'], response.json()['missing_params'])
+
+    def test_shouldNotExposeStaleRunEvidenceThroughJsonApi(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        scope.fixed_status_values = ['Fixed', 'Verified Fixed']
+        scope.save()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'fixed_or_closed_bugs',
+        })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        payload = response.json()
+        self.assertEqual(0, payload['total_count'])
+        self.assertEqual([], payload['rows'])
 
     def _seed_trend_data(self, display_fields=None):
         scope = JiraScopeConfig.objects.create(
