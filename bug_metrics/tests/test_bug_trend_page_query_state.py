@@ -26,6 +26,21 @@ class TestBugTrendPageQueryState(TestCase):
         self.assertEqual('Evidence tickets for visible range', result.selection_title)
         self.assertEqual(['STDEL-1001', 'STDEL-1002'], [row.issue_key for row in result.rows])
 
+    def test_shouldKeepCalculationRunAsFourthPositionalArgumentWhenActiveChartIdIsAdded(self):
+        # Given
+        scope = self._create_scope()
+        run = self._create_run(scope, date(2026, 8, 1), date(2026, 8, 31))
+        bucket = self._create_bucket(scope, run, date(2026, 8, 3), date(2026, 8, 9), open_count=1)
+        self._create_membership(scope, run, bucket, 'all_open_bugs', 'STDEL-1003')
+
+        # When
+        result = bug_trend_api.get_evidence_tickets(
+            BugTrendPageQueryState(scope.id, date(2026, 8, 3), date(2026, 8, 9), str(run.id))
+        )
+
+        # Then
+        self.assertEqual(['STDEL-1003'], [row.issue_key for row in result.rows])
+
     def test_shouldReturnDistinctTicketsForVisibleRangeEvidence(self):
         # Given
         scope = self._create_scope()

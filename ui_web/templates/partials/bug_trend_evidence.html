@@ -9,7 +9,7 @@
         {% if evidence.has_selection %}
             <div class="level-right">
                 <button class="button is-small"
-                        hx-get="{% url 'ui_web:bug_trend_evidence' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}"
+                    hx-get="{% url 'ui_web:bug_trend_evidence' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}"
                         hx-target="#bug-trend-evidence-container"
                         hx-swap="innerHTML">
                     Clear selection
@@ -17,6 +17,43 @@
             </div>
         {% endif %}
     </div>
+    <form class="mb-4" hx-get="{% url 'ui_web:bug_trend_evidence' %}" hx-target="#bug-trend-evidence-container" hx-swap="innerHTML">
+        <input type="hidden" name="scope_id" value="{{ evidence.scope_id }}">
+        <input type="hidden" name="run" value="{{ evidence.calculation_run_id }}">
+        <input type="hidden" name="chart_id" value="{{ evidence.active_chart_id }}">
+        <input type="hidden" name="begin" value="{{ evidence.begin }}">
+        <input type="hidden" name="end" value="{{ evidence.end }}">
+        <input type="hidden" name="bucket" value="{{ evidence.bucket_id }}">
+        <input type="hidden" name="series" value="{{ evidence.series_name }}">
+        <div class="columns is-multiline is-align-items-end">
+            <div class="column is-one-quarter">
+                <label class="label" for="evidence-text">Text</label>
+                <input class="input" id="evidence-text" name="text" value="{{ evidence.text }}">
+            </div>
+            <div class="column">
+                <label class="label" for="evidence-status">Status</label>
+                <input class="input" id="evidence-status" name="status" value="{{ evidence.status }}">
+            </div>
+            <div class="column">
+                <label class="label" for="evidence-severity">Severity</label>
+                <input class="input" id="evidence-severity" name="severity" value="{{ evidence.severity }}">
+            </div>
+            <div class="column">
+                <label class="label" for="evidence-owner">Owner</label>
+                <input class="input" id="evidence-owner" name="owner" value="{{ evidence.owner }}">
+            </div>
+            <div class="column">
+                <label class="label" for="evidence-component">Component</label>
+                <input class="input" id="evidence-component" name="component" value="{{ evidence.component }}">
+            </div>
+            <div class="column is-narrow">
+                <button class="button is-link" type="submit">Filter evidence</button>
+            </div>
+            <div class="column is-narrow">
+                <a class="button" href="{% url 'ui_web:bug_trend_evidence_export' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}&bucket={{ evidence.bucket_id }}&series={{ evidence.series_name }}&owner={{ evidence.owner|urlencode }}&status={{ evidence.status|urlencode }}&severity={{ evidence.severity|urlencode }}&component={{ evidence.component|urlencode }}&text={{ evidence.text|urlencode }}">Export CSV</a>
+            </div>
+        </div>
+    </form>
     <table class="table is-fullwidth is-striped is-hoverable">
         <thead>
             <tr>

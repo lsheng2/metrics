@@ -12,6 +12,16 @@
                     </select>
                 </div>
             </div>
+            <div class="column">
+                <label class="label" for="bug-trend-chart">Chart</label>
+                <div class="select is-fullwidth">
+                    <select id="bug-trend-chart" name="chart_id">
+                        {% for chart in chart_options %}
+                            <option value="{{ chart.chart_id }}" {% if chart.chart_id == active_chart_id %}selected{% endif %}>{{ chart.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
             <div class="column is-one-quarter">
                 <label class="label" for="bug-trend-begin">Begin</label>
                 <input class="input" id="bug-trend-begin" type="date" name="begin" value="{{ begin }}">
@@ -25,6 +35,9 @@
             </div>
             <div class="column is-narrow">
                 <a class="button" href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ selected_scope_id }}">Audit</a>
+            </div>
+            <div class="column is-narrow">
+                <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ selected_scope_id }}">Config</a>
             </div>
         </div>
     </form>

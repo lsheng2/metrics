@@ -9,7 +9,7 @@
     },
     "/api/bug-trend/evidence/": {
       "required_query_params": ["scope_id", "begin", "end", "run"],
-      "optional_query_params": ["bucket", "series", "owner", "status", "severity", "component", "text"]
+      "optional_query_params": ["bucket", "series", "owner", "status", "severity", "component", "text", "chart_id"]
     }
   },
   "sql_views": [],

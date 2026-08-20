@@ -2,8 +2,9 @@ import json
 from datetime import date
 
 from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilters
+from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, saved_scope_config_from_dict
 
-from ..data.bug_trend_data import BugTrendChartData, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
+from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
 
 
 class BugTrendFacade:
@@ -18,6 +19,16 @@ class BugTrendFacade:
                 label=self._scope_label(scope),
             )
             for scope in self._bug_trend_api.list_enabled_scopes()
+        ]
+
+    def get_chart_options(self):
+        return [
+            BugTrendChartOption(
+                chart_id=chart.chart_id,
+                title=chart.title,
+                capability=chart.evidence_contract.capability,
+            )
+            for chart in self._bug_trend_api.list_enabled_charts()
         ]
 
     def get_chart_data(self, scope_id: int, begin: date, end: date) -> BugTrendChartData:
@@ -84,7 +95,7 @@ class BugTrendFacade:
 
     def get_evidence_data(self, scope_id: int, begin: date, end: date, bucket_id: str = '', series_name: str = '',
                           calculation_run_id: str = '', owner: str = '', status: str = '', severity: str = '',
-                          component: str = '', text: str = '') -> BugTrendEvidenceData:
+                          component: str = '', text: str = '', active_chart_id: str = 'default_bug_trend') -> BugTrendEvidenceData:
         result = self._bug_trend_api.get_evidence_tickets(
             BugTrendPageQueryState(
                 scope_id=scope_id,
@@ -100,6 +111,7 @@ class BugTrendFacade:
                     component=component,
                     text=text,
                 ),
+                active_chart_id=active_chart_id,
             )
         )
         return BugTrendEvidenceData(
@@ -113,6 +125,36 @@ class BugTrendFacade:
             begin.isoformat(),
             end.isoformat(),
             bool(bucket_id or series_name),
+            bucket_id,
+            series_name,
+            owner,
+            status,
+            severity,
+            component,
+            text,
+            active_chart_id,
+        )
+
+    def export_evidence_data(self, scope_id: int, begin: date, end: date, bucket_id: str = '', series_name: str = '',
+                             calculation_run_id: str = '', owner: str = '', status: str = '', severity: str = '',
+                             component: str = '', text: str = '', active_chart_id: str = 'default_bug_trend'):
+        return self._bug_trend_api.export_evidence_tickets(
+            BugTrendPageQueryState(
+                scope_id=scope_id,
+                begin=begin,
+                end=end,
+                calculation_run_id=calculation_run_id,
+                selected_bucket_id=bucket_id,
+                selected_series_name=series_name,
+                list_filters=BugTrendTicketListFilters(
+                    owner=owner,
+                    status=status,
+                    severity=severity,
+                    component=component,
+                    text=text,
+                ),
+                active_chart_id=active_chart_id,
+            )
         )
 
     def _scope_label(self, scope):
@@ -158,3 +200,34 @@ class BugTrendFacade:
             observed_values=audit.observed_values,
             coverage=audit.coverage,
         )
+
+    def get_scope_config(self, scope_id: int, add_field: str = '', add_value: str = '') -> SavedScopeConfig:
+        config = self._bug_trend_api.get_scope_config(scope_id)
+        if add_field in SEMANTIC_LIST_FIELDS and add_value:
+            values = list(getattr(config, add_field))
+            if add_value not in values:
+                values.append(add_value)
+                setattr(config, add_field, values)
+        return config
+
+    def save_scope_config(self, post_data) -> tuple[SavedScopeConfig, bool]:
+        config = self._scope_config_from_post(post_data)
+        original_hash = self._bug_trend_api.get_scope_config(config.id).config_version_hash
+        saved = self._bug_trend_api.save_scope_config(config)
+        return saved, saved.config_version_hash != original_hash
+
+    def _scope_config_from_post(self, post_data) -> SavedScopeConfig:
+        payload = {field_name: post_data.get(field_name, '') for field_name in [
+            'id', 'name', 'ip', 'project_label', 'jql', 'severity_field', 'component_field',
+            'owner_field', 'team_field', 'milestone_field', 'fix_version_field',
+            'package_version_field', 'timezone', 'bucket_granularity',
+        ]}
+        payload['id'] = int(payload['id']) if payload['id'] else None
+        payload['enabled'] = post_data.get('enabled') == 'on'
+        for field_name in SEMANTIC_LIST_FIELDS:
+            payload[field_name] = self._parse_list_field(post_data.get(field_name, ''))
+        return saved_scope_config_from_dict(payload)
+
+    def _parse_list_field(self, value: str) -> list[str]:
+        normalized = value.replace('\r\n', '\n').replace(',', '\n')
+        return [item.strip() for item in normalized.split('\n') if item.strip()]

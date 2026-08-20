@@ -10,6 +10,13 @@ class BugTrendScopeOption:
 
 
 @dataclass(slots=True)
+class BugTrendChartOption:
+    chart_id: str
+    title: str
+    capability: str
+
+
+@dataclass(slots=True)
 class BugTrendChartData:
     scope_id: int
     calculation_run_id: str
@@ -33,6 +40,14 @@ class BugTrendEvidenceData:
     begin: str
     end: str
     has_selection: bool
+    bucket_id: str = ''
+    series_name: str = ''
+    owner: str = ''
+    status: str = ''
+    severity: str = ''
+    component: str = ''
+    text: str = ''
+    active_chart_id: str = 'default_bug_trend'
 
 
 @dataclass(slots=True)

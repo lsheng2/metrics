@@ -175,6 +175,10 @@
                                hx-indicator="#loading-indicator"
                                hx-push-url="{% url 'ui_web:bug_trend' %}">Bug Trend</a>
                         </li>
+                           <li>
+                            <a href="{% url 'ui_web:data_health' %}"
+                               {% if request.resolver_match.url_name == 'data_health' %}class="is-active"{% endif %}>Data Health</a>
+                           </li>
                     </ul>
                     {% block sidebar_extra %}{% endblock %}
             </aside>

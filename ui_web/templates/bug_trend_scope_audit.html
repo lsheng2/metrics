@@ -39,6 +39,7 @@
                     <th>Count</th>
                     <th>Mapping</th>
                     <th>Mapping group</th>
+                    <th>Config handoff</th>
                 </tr>
             </thead>
             <tbody>
@@ -55,9 +56,14 @@
                             {% endif %}
                         </td>
                         <td>{{ value.mapping_group }}</td>
+                        <td>
+                            {% if not value.mapped and value.category == 'severity' %}
+                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ audit.scope_id }}&add_field=critical_high_values&add_value={{ value.value|urlencode }}">Add as critical/high</a>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="5">No observed values found for this saved scope.</td></tr>
+                    <tr><td colspan="6">No observed values found for this saved scope.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
@@ -8,6 +7,10 @@ from django.utils import timezone
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
 from jira_history.container import jira_history_container
 
+from .chart_catalog import AiChartDraftRequest, ChartCatalogService, ChartDefinition, ChartPublishResult, ChartValidationResult, RendererRouteDecisionResult
+from .chart_data import BugTrendChart, BugTrendDataset, BugTrendRunMetadata
+from .data_health import BugTrendCalculationHealth, BugTrendCalculationHealthService
+from .evidence_export import BugTrendEvidenceExport, BugTrendEvidenceExportService
 from .page_query import (
     BugTrendChartListSyncResult,
     BugTrendEvidenceTicketResult,
@@ -16,39 +19,8 @@ from .page_query import (
     BugTrendTicketListFilters,
 )
 from .scope_audit import ScopeAudit, ScopeAuditService
+from .scope_config import SavedScopeConfig, ScopeConfigService, ScopeConfigValidationResult
 from .series import active_bug_trend_series
-
-
-@dataclass(slots=True)
-class BugTrendDataset:
-    series_name: str
-    chart_type: str
-    values: List[int]
-    color: str
-
-
-@dataclass(slots=True)
-class BugTrendRunMetadata:
-    calculation_run_id: str
-    run_config_version_hash: str
-    current_config_version_hash: str
-    freshness_status: str
-    source_coverage_start: str
-    source_coverage_end: str
-    completed_at: str
-
-
-@dataclass(slots=True)
-class BugTrendChart:
-    scope_id: int
-    calculation_run_id: Optional[str]
-    labels: List[str]
-    bucket_ids: List[str]
-    datasets: List[BugTrendDataset]
-    unavailable_reason: str = ''
-    run_metadata: Optional[BugTrendRunMetadata] = None
-    current_evidence_available: bool = False
-
 
 class ApiForBugTrend:
     def __init__(self):
@@ -57,12 +29,60 @@ class ApiForBugTrend:
             self._format_bucket_label,
         )
         self._scope_audit_service = ScopeAuditService()
+        self._scope_config_service = ScopeConfigService()
+        self._chart_catalog_service = ChartCatalogService()
+        self._calculation_health_service = BugTrendCalculationHealthService()
+        self._evidence_export_service = BugTrendEvidenceExportService()
 
     def list_enabled_scopes(self) -> List[JiraScopeConfig]:
         return list(JiraScopeConfig.objects.filter(enabled=True).order_by('ip', 'project_label', 'name'))
 
     def get_scope(self, scope_id: int) -> JiraScopeConfig:
         return JiraScopeConfig.objects.get(id=scope_id, enabled=True)
+
+    def get_scope_config(self, scope_id: int) -> SavedScopeConfig:
+        return self._scope_config_service.get_scope_config(scope_id)
+
+    def validate_scope_config(self, config: SavedScopeConfig) -> ScopeConfigValidationResult:
+        return self._scope_config_service.validate_scope_config(config)
+
+    def save_scope_config(self, config: SavedScopeConfig) -> SavedScopeConfig:
+        return self._scope_config_service.save_scope_config(config)
+
+    def activate_scope_config(self, scope_id: int) -> SavedScopeConfig:
+        return self._scope_config_service.activate_scope_config(scope_id)
+
+    def list_calculation_health(self) -> List[BugTrendCalculationHealth]:
+        return self._calculation_health_service.list_calculation_health()
+
+    def list_enabled_charts(self) -> List[ChartDefinition]:
+        return self._chart_catalog_service.list_enabled_charts()
+
+    def get_chart_definition(self, chart_id: str) -> ChartDefinition:
+        return self._chart_catalog_service.get_chart(chart_id)
+
+    def validate_chart_for_publish(self, chart) -> ChartValidationResult:
+        return self._chart_catalog_service.validate_chart_for_publish(chart)
+
+    def record_renderer_route_decision(self, chart_id: str, same_page_evidence_required: bool,
+                                       c_stock_same_page_capable: bool, supported_c_stock_capabilities: List[str],
+                                       decision_summary: str) -> RendererRouteDecisionResult:
+        return self._chart_catalog_service.record_renderer_route_decision(
+            chart_id,
+            same_page_evidence_required,
+            c_stock_same_page_capable,
+            supported_c_stock_capabilities,
+            decision_summary,
+        )
+
+    def latest_renderer_route_decision(self, chart_id: str) -> RendererRouteDecisionResult | None:
+        return self._chart_catalog_service.latest_renderer_route_decision(chart_id)
+
+    def create_ai_chart_draft(self, request: AiChartDraftRequest) -> ChartDefinition:
+        return self._chart_catalog_service.create_ai_chart_draft(request)
+
+    def publish_chart(self, chart_id: str, actor: str = 'local_operator', governance_mode: str = 'personal') -> ChartPublishResult:
+        return self._chart_catalog_service.publish_chart(chart_id, actor, governance_mode)
 
     def get_chart(self, scope_id: int, begin: date, end: date) -> BugTrendChart:
         scope = self.get_scope(scope_id)
@@ -113,6 +133,10 @@ class ApiForBugTrend:
 
     def get_evidence_tickets(self, state: BugTrendPageQueryState) -> BugTrendEvidenceTicketResult:
         return self._page_query_service.get_evidence_tickets(state)
+
+    def export_evidence_tickets(self, state: BugTrendPageQueryState, actor: str = 'local_operator') -> BugTrendEvidenceExport:
+        result = self.get_evidence_tickets(state)
+        return self._evidence_export_service.export_evidence_tickets(state, result, actor)
 
     def validate_chart_list_sync(self, state: BugTrendPageQueryState) -> BugTrendChartListSyncResult:
         return self._page_query_service.validate_chart_list_sync(state)

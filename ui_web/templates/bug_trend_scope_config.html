@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Bug Trend Scope Config{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:bug_trend' %}?scope_id={{ config.id }}">Bug Trend</a></li>
+            <li><a href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ config.id }}">Scope Audit</a></li>
+            <li class="is-active"><a href="#" aria-current="page">Scope Config</a></li>
+        </ul>
+    </nav>
+
+    <h2 class="title is-3">Bug Trend Scope Config</h2>
+    {% if saved %}
+        <div class="notification is-success is-light">
+            <p class="has-text-weight-semibold">Scope config saved.</p>
+            {% if hash_changed %}
+                <p>Semantic config changed. Recalculate this scope before using existing Bug Trend runs as current evidence.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <form class="box" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ config.id }}">
+        <div class="columns">
+            <div class="column">
+                <label class="label" for="scope-name">Name</label>
+                <input class="input" id="scope-name" name="name" value="{{ config.name }}" required>
+            </div>
+            <div class="column">
+                <label class="label" for="scope-ip">IP</label>
+                <input class="input" id="scope-ip" name="ip" value="{{ config.ip }}">
+            </div>
+            <div class="column">
+                <label class="label" for="scope-project-label">Project label</label>
+                <input class="input" id="scope-project-label" name="project_label" value="{{ config.project_label }}">
+            </div>
+        </div>
+        <div class="field">
+            <label class="label" for="scope-jql">JQL</label>
+            <textarea class="textarea" id="scope-jql" name="jql" required>{{ config.jql }}</textarea>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <label class="label" for="scope-bug-types">Bug type values</label>
+                <textarea class="textarea" id="scope-bug-types" name="bug_type_values">{{ config.bug_type_values|join:"\n" }}</textarea>
+            </div>
+            <div class="column">
+                <label class="label" for="scope-critical-high">Critical/high values</label>
+                <textarea class="textarea" id="scope-critical-high" name="critical_high_values">{{ config.critical_high_values|join:"\n" }}</textarea>
+            </div>
+            <div class="column">
+                <label class="label" for="scope-medium-low">Medium/low values</label>
+                <textarea class="textarea" id="scope-medium-low" name="medium_low_values">{{ config.medium_low_values|join:"\n" }}</textarea>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <label class="label" for="scope-open-status">Open status values</label>
+                <textarea class="textarea" id="scope-open-status" name="open_status_values">{{ config.open_status_values|join:"\n" }}</textarea>
+            </div>
+            <div class="column">
+                <label class="label" for="scope-fixed-status">Fixed status values</label>
+                <textarea class="textarea" id="scope-fixed-status" name="fixed_status_values">{{ config.fixed_status_values|join:"\n" }}</textarea>
+            </div>
+            <div class="column">
+                <label class="label" for="scope-closed-status">Closed status values</label>
+                <textarea class="textarea" id="scope-closed-status" name="closed_status_values">{{ config.closed_status_values|join:"\n" }}</textarea>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <label class="label" for="scope-fixed-resolution">Fixed resolution values</label>
+                <textarea class="textarea" id="scope-fixed-resolution" name="fixed_resolution_values">{{ config.fixed_resolution_values|join:"\n" }}</textarea>
+            </div>
+            <div class="column">
+                <label class="label" for="scope-closed-resolution">Closed resolution values</label>
+                <textarea class="textarea" id="scope-closed-resolution" name="closed_resolution_values">{{ config.closed_resolution_values|join:"\n" }}</textarea>
+            </div>
+            <div class="column">
+                <label class="label" for="scope-reopen-status">Reopen status values</label>
+                <textarea class="textarea" id="scope-reopen-status" name="reopen_status_values">{{ config.reopen_status_values|join:"\n" }}</textarea>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <label class="label" for="scope-severity-field">Severity field</label>
+                <input class="input" id="scope-severity-field" name="severity_field" value="{{ config.severity_field }}">
+            </div>
+            <div class="column">
+                <label class="label" for="scope-component-field">Component field</label>
+                <input class="input" id="scope-component-field" name="component_field" value="{{ config.component_field }}">
+            </div>
+            <div class="column">
+                <label class="label" for="scope-owner-field">Owner field</label>
+                <input class="input" id="scope-owner-field" name="owner_field" value="{{ config.owner_field }}">
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <label class="label" for="scope-milestone-field">Milestone field</label>
+                <input class="input" id="scope-milestone-field" name="milestone_field" value="{{ config.milestone_field }}">
+            </div>
+            <div class="column">
+                <label class="label" for="scope-fix-version-field">Fix version field</label>
+                <input class="input" id="scope-fix-version-field" name="fix_version_field" value="{{ config.fix_version_field }}">
+            </div>
+            <div class="column">
+                <label class="label" for="scope-bucket-granularity">Bucket granularity</label>
+                <div class="select is-fullwidth">
+                    <select id="scope-bucket-granularity" name="bucket_granularity">
+                        <option value="weekly" {% if config.bucket_granularity == 'weekly' %}selected{% endif %}>Weekly</option>
+                        <option value="daily" {% if config.bucket_granularity == 'daily' %}selected{% endif %}>Daily</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="terminal_excluded_status_values" value="{{ config.terminal_excluded_status_values|join:', ' }}">
+        <input type="hidden" name="team_field" value="{{ config.team_field }}">
+        <input type="hidden" name="package_version_field" value="{{ config.package_version_field }}">
+        <input type="hidden" name="display_fields" value="{{ config.display_fields|join:', ' }}">
+        <input type="hidden" name="timezone" value="{{ config.timezone }}">
+        <label class="checkbox mb-4">
+            <input type="checkbox" name="enabled" {% if config.enabled %}checked{% endif %}>
+            Enabled
+        </label>
+        <div class="buttons">
+            <button class="button is-primary" type="submit">Save scope config</button>
+            <a class="button" href="{% url 'ui_web:bug_trend' %}?scope_id={{ config.id }}">Back to Bug Trend</a>
+        </div>
+        <p class="is-size-7">Config hash: {{ config.config_version_hash }}</p>
+    </form>
+</article>
+{% endblock %}

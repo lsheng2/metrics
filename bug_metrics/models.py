@@ -151,3 +151,116 @@ class BugTrendBucketIssue(models.Model):
         indexes = [
             models.Index(fields=['calculation_run', 'bucket', 'series_name']),
         ]
+
+
+class BugTrendAuditEvent(models.Model):
+    EVENT_EVIDENCE_EXPORTED = 'evidence_exported'
+
+    event_type = models.CharField(max_length=80)
+    actor = models.CharField(max_length=120)
+    scope = models.ForeignKey(JiraScopeConfig, on_delete=models.CASCADE, related_name='audit_events', null=True, blank=True)
+    calculation_run_id = models.CharField(max_length=80, blank=True)
+    chart_id = models.CharField(max_length=120, blank=True)
+    request_summary = models.JSONField(default=_empty_dict)
+    result = models.CharField(max_length=40, default='success')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['event_type', 'scope', 'created_at']),
+        ]
+
+
+class BugTrendEvidenceContract(models.Model):
+    CAPABILITY_BUCKET_SERIES = 'bucket_series'
+    CAPABILITY_RANGE_ONLY = 'range_only'
+    CAPABILITY_SUMMARY_ONLY = 'summary_only'
+
+    CAPABILITY_CHOICES = (
+        (CAPABILITY_BUCKET_SERIES, 'Bucket series'),
+        (CAPABILITY_RANGE_ONLY, 'Range only'),
+        (CAPABILITY_SUMMARY_ONLY, 'Summary only'),
+    )
+
+    contract_id = models.CharField(max_length=120, unique=True)
+    capability = models.CharField(max_length=40, choices=CAPABILITY_CHOICES)
+    membership_source = models.CharField(max_length=120)
+    membership_key = models.CharField(max_length=120)
+    bucket_dimension = models.CharField(max_length=120, blank=True)
+    series_dimension = models.CharField(max_length=120, blank=True)
+    ticket_identity = models.CharField(max_length=120)
+    dedupe_policy = models.CharField(max_length=240)
+    time_boundary_policy = models.CharField(max_length=240)
+    allowed_list_filters = models.JSONField(default=_empty_list)
+    export_policy = models.CharField(max_length=240)
+    unsupported_reason = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.contract_id
+
+
+class BugTrendChartDefinition(models.Model):
+    RENDERER_CHARTJS = 'chartjs'
+    RENDERER_GRAFANA = 'grafana'
+    RENDERER_STATIC_IMAGE = 'static_image'
+
+    ROUTE_REFERENCE = 'reference'
+    ROUTE_C_STOCK = 'c_stock'
+    ROUTE_C_PLUGIN = 'c_plugin'
+
+    STATUS_DRAFT = 'draft'
+    STATUS_PUBLISHED = 'published'
+    STATUS_DISABLED = 'disabled'
+
+    chart_id = models.CharField(max_length=120, unique=True)
+    chart_version = models.PositiveIntegerField(default=1)
+    title = models.CharField(max_length=160)
+    renderer_type = models.CharField(max_length=40)
+    integration_route = models.CharField(max_length=40)
+    evidence_contract = models.ForeignKey(BugTrendEvidenceContract, on_delete=models.PROTECT, related_name='chart_definitions')
+    status = models.CharField(max_length=40, default=STATUS_DRAFT)
+    enabled = models.BooleanField(default=False)
+    built_in = models.BooleanField(default=False)
+    created_by = models.CharField(max_length=120, default='system')
+    owner = models.CharField(max_length=120, default='system')
+    visibility = models.CharField(max_length=40, default='shared')
+    validation_summary = models.JSONField(default=_empty_dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['enabled', 'status', 'chart_id']),
+        ]
+
+    def __str__(self):
+        return self.chart_id
+
+
+class BugTrendRendererRouteDecision(models.Model):
+    chart = models.ForeignKey(BugTrendChartDefinition, on_delete=models.CASCADE, related_name='renderer_route_decisions')
+    renderer_route = models.CharField(max_length=40)
+    same_page_evidence_required = models.BooleanField(default=False)
+    c_stock_same_page_capable = models.BooleanField(default=False)
+    supported_c_stock_capabilities = models.JSONField(default=_empty_list)
+    trigger_p2c_spike = models.BooleanField(default=False)
+    decision_summary = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['chart', 'created_at']),
+        ]
+
+
+class BugTrendChartPublishRequest(models.Model):
+    STATUS_PENDING = 'pending_approval'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+
+    chart = models.ForeignKey(BugTrendChartDefinition, on_delete=models.CASCADE, related_name='publish_requests')
+    actor = models.CharField(max_length=120)
+    governance_mode = models.CharField(max_length=40)
+    status = models.CharField(max_length=40, default=STATUS_PENDING)
+    request_summary = models.JSONField(default=_empty_dict)
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect
 
 from ..container import ui_web_container
 from .graceful_template_view import GracefulTemplateView
@@ -9,7 +10,7 @@ from .graceful_template_view import GracefulTemplateView
 CHART_DATA_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end'})
 CHART_DATA_OPTIONAL_PARAMS = frozenset()
 EVIDENCE_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end', 'run'})
-EVIDENCE_OPTIONAL_PARAMS = frozenset({'bucket', 'series', 'owner', 'status', 'severity', 'component', 'text'})
+EVIDENCE_OPTIONAL_PARAMS = frozenset({'bucket', 'series', 'owner', 'status', 'severity', 'component', 'text', 'chart_id'})
 
 
 def validate_query_contract(request, required_params, optional_params):
@@ -47,12 +48,14 @@ class BugTrendView(GracefulTemplateView):
             return
 
         selected_scope_id = int(self.request.GET.get('scope_id') or scope_options[0].id)
+        active_chart_id = self.request.GET.get('chart_id') or 'default_bug_trend'
         begin, end = self._date_range()
         chart_data = self.bug_trend_facade.get_chart_data(selected_scope_id, begin, end)
         evidence = None
         if chart_data.current_evidence_available:
-            evidence = self.bug_trend_facade.get_evidence_data(selected_scope_id, begin, end, calculation_run_id=chart_data.calculation_run_id)
+            evidence = self.bug_trend_facade.get_evidence_data(selected_scope_id, begin, end, calculation_run_id=chart_data.calculation_run_id, active_chart_id=active_chart_id)
         context['selected_scope_id'] = selected_scope_id
+        context['active_chart_id'] = active_chart_id
         context['begin'] = begin.isoformat()
         context['end'] = end.isoformat()
         context['chart_json'] = self.bug_trend_facade.get_chart_json(chart_data)
@@ -62,6 +65,7 @@ class BugTrendView(GracefulTemplateView):
 
     def _populate_common_context(self, context):
         context['scope_options'] = self.bug_trend_facade.get_scope_options()
+        context['chart_options'] = self.bug_trend_facade.get_chart_options()
         context['build_page_title'] = 'Bug Trend Indicator'
 
     def _date_range(self):
@@ -93,8 +97,43 @@ class BugTrendEvidenceView(GracefulTemplateView):
             severity=self.request.GET.get('severity', ''),
             component=self.request.GET.get('component', ''),
             text=self.request.GET.get('text', ''),
+            active_chart_id=self.request.GET.get('chart_id', 'default_bug_trend'),
         )
         context['evidence'] = evidence
+
+    def _date_range(self):
+        begin = date.fromisoformat(self.request.GET.get('begin'))
+        end = date.fromisoformat(self.request.GET.get('end'))
+        return begin, end
+
+
+class BugTrendEvidenceExportView(GracefulTemplateView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def get(self, request, *args, **kwargs):
+        invalid_response = validate_query_contract(request, EVIDENCE_REQUIRED_PARAMS, EVIDENCE_OPTIONAL_PARAMS)
+        if invalid_response:
+            return invalid_response
+        begin, end = self._date_range()
+        export = self.bug_trend_facade.export_evidence_data(
+            scope_id=int(request.GET.get('scope_id')),
+            begin=begin,
+            end=end,
+            calculation_run_id=request.GET.get('run', ''),
+            bucket_id=request.GET.get('bucket', ''),
+            series_name=request.GET.get('series', ''),
+            owner=request.GET.get('owner', ''),
+            status=request.GET.get('status', ''),
+            severity=request.GET.get('severity', ''),
+            component=request.GET.get('component', ''),
+            text=request.GET.get('text', ''),
+            active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
+        )
+        response = HttpResponse(export.content, content_type=export.content_type)
+        response['Content-Disposition'] = f'attachment; filename="{export.filename}"'
+        return response
 
     def _date_range(self):
         begin = date.fromisoformat(self.request.GET.get('begin'))
@@ -113,6 +152,31 @@ class BugTrendScopeAuditView(GracefulTemplateView):
         audit = self.bug_trend_facade.get_scope_audit_data(int(self.request.GET.get('scope_id')))
         context['audit'] = audit
         context['build_page_title'] = 'Bug Trend Scope Audit'
+
+
+class BugTrendScopeConfigView(GracefulTemplateView):
+    template_name = 'bug_trend_scope_config.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def post(self, request, *args, **kwargs):
+        saved, hash_changed = self.bug_trend_facade.save_scope_config(request.POST)
+        response = redirect('ui_web:bug_trend_scope_config')
+        response['Location'] = f'{response["Location"]}?scope_id={saved.id}&saved=1&hash_changed={int(hash_changed)}'
+        return response
+
+    def populate_context(self, context, **kwargs):
+        config = self.bug_trend_facade.get_scope_config(
+            int(self.request.GET.get('scope_id')),
+            self.request.GET.get('add_field', ''),
+            self.request.GET.get('add_value', ''),
+        )
+        context['config'] = config
+        context['saved'] = self.request.GET.get('saved') == '1'
+        context['hash_changed'] = self.request.GET.get('hash_changed') == '1'
+        context['build_page_title'] = 'Bug Trend Scope Config'
 
 
 class BugTrendChartDataApiView(GracefulTemplateView):
@@ -156,6 +220,7 @@ class BugTrendEvidenceApiView(GracefulTemplateView):
             severity=request.GET.get('severity', ''),
             component=request.GET.get('component', ''),
             text=request.GET.get('text', ''),
+            active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
         )
         return JsonResponse(self.bug_trend_facade.get_evidence_payload(evidence))
 

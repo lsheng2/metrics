@@ -33,6 +33,11 @@ def main() -> None:
     from bug_metrics.container import bug_metrics_container
     from bug_metrics.models import BugTrendCalculationRun
 
+    chart_definition = bug_metrics_container.bug_trend_api.get_chart_definition('default_bug_trend')
+    if chart_definition.evidence_contract.capability != 'bucket_series':
+        print('FAIL default_bug_trend must keep bucket_series evidence capability')
+        raise SystemExit(1)
+
     run = BugTrendCalculationRun.objects.select_related('scope').get(id=args.calculation_run_id)
     begin = date.fromisoformat(args.begin) if args.begin else run.source_coverage_start
     end = date.fromisoformat(args.end) if args.end else run.source_coverage_end

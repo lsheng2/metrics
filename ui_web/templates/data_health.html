@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Data Health{% endblock %}
+
+{% block content %}
+<article class="block">
+    <h2 class="title is-3">Data Health</h2>
+    <section class="box">
+        <h3 class="title is-4">Summary</h3>
+        <div class="columns is-multiline">
+            <div class="column is-one-quarter"><strong>Scopes</strong><br>{{ data_health.scope_count }}</div>
+            <div class="column is-one-quarter"><strong>Stale scopes</strong><br>{{ data_health.stale_scope_count }}</div>
+            <div class="column is-one-quarter"><strong>Failed syncs</strong><br>{{ data_health.failed_sync_count }}</div>
+            <div class="column is-one-quarter"><strong>Failed calculations</strong><br>{{ data_health.failed_calculation_count }}</div>
+        </div>
+    </section>
+
+    <section class="box">
+        <h3 class="title is-4">Jira Sync Health</h3>
+        <table class="table is-fullwidth is-striped">
+            <thead>
+                <tr>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th>Last success</th>
+                    <th>Jira cutoff</th>
+                    <th>Reliable coverage</th>
+                    <th>Changelog coverage</th>
+                    <th>Config hash</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data_health.sync_health %}
+                    <tr>
+                        <td>{{ item.scope_name }}</td>
+                        <td>{{ item.status }}</td>
+                        <td>{{ item.last_successful_sync_at }}</td>
+                        <td>{{ item.last_jira_updated_cutoff }}</td>
+                        <td>{{ item.earliest_reliable_bucket_start }} to {{ item.latest_reliable_bucket_end }}</td>
+                        <td>{{ item.changelog_coverage_status }}</td>
+                        <td>{{ item.materialized_config_version_hash }} / {{ item.current_config_version_hash }}</td>
+                        <td>{{ item.last_error }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="8">No Jira sync cursors found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="box">
+        <h3 class="title is-4">Calculation Health</h3>
+        <table class="table is-fullwidth is-striped">
+            <thead>
+                <tr>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th>Freshness</th>
+                    <th>Run</th>
+                    <th>Coverage</th>
+                    <th>Config hash</th>
+                    <th>Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data_health.calculation_health %}
+                    <tr>
+                        <td>{{ item.scope_name }}</td>
+                        <td>{{ item.status }}</td>
+                        <td>{{ item.freshness_status }}</td>
+                        <td>{{ item.calculation_run_id }}</td>
+                        <td>{{ item.source_coverage_start }} to {{ item.source_coverage_end }}</td>
+                        <td>{{ item.run_config_version_hash }} / {{ item.current_config_version_hash }}</td>
+                        <td>{{ item.completed_at }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7">No enabled scopes found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</article>
+{% endblock %}

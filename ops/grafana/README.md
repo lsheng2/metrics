@@ -17,3 +17,5 @@ docs/grafana-bug-trend-deployment-guide.zh.md
 ```
 
 The current local validation path uses Grafana OSS on `127.0.0.1:3001`, the Infinity datasource plugin, and the datasource UID `metrics-bug-trend-api`.
+
+Renderer route decision for the built-in chart is recorded in Metrics Chart Catalog as `default_bug_trend`. C-stock is validated only for chart values and Metrics evidence link-out; same-page evidence requires the separate P2C App/Scenes spike trigger.

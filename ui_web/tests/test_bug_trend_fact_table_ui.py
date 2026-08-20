@@ -3,6 +3,7 @@ from datetime import date, datetime, timezone
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from bug_metrics.models import BugTrendAuditEvent
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
 
 
@@ -27,6 +28,25 @@ class TestBugTrendFactTableUi(TestCase):
         self.assertIn('STDEL-1001', content)
         self.assertIn('https://jira.devtools.intel.com/browse/STDEL-1001', content)
         self.assertIn('STDEL-1002', content)
+
+        def test_shouldRenderChartSelectorFromMetricsCatalog(self):
+            # Given
+            scope, _, _ = self._seed_trend_data()
+
+            # When
+            response = self.client.get(reverse('ui_web:bug_trend'), {
+                'scope_id': scope.id,
+                'begin': '2026-08-03',
+                'end': '2026-08-09',
+                'chart_id': 'default_bug_trend',
+            })
+
+            # Then
+            content = response.content.decode()
+            self.assertEqual(200, response.status_code)
+            self.assertIn('name="chart_id"', content)
+            self.assertIn('value="default_bug_trend" selected', content)
+            self.assertIn('Default Bug Trend', content)
 
     def test_shouldRenderBucketSeriesEvidenceFromChartSelection(self):
         # Given
@@ -68,6 +88,33 @@ class TestBugTrendFactTableUi(TestCase):
         self.assertEqual(200, response.status_code)
         content = response.content.decode()
         self.assertIn('1 of 2 evidence tickets shown', content)
+        self.assertIn('STDEL-1001', content)
+        self.assertNotIn('STDEL-1002', content)
+
+    def test_shouldRenderEvidenceFiltersAndExportLinkWithCurrentQueryState(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'all_open_bugs',
+            'owner': 'Alice',
+                'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Filter evidence', content)
+        self.assertIn('Export CSV', content)
+        self.assertIn(f'bucket={bucket.id}', content)
+        self.assertIn('series=all_open_bugs', content)
+        self.assertIn('owner=Alice', content)
         self.assertIn('STDEL-1001', content)
         self.assertNotIn('STDEL-1002', content)
 
@@ -226,6 +273,37 @@ class TestBugTrendFactTableUi(TestCase):
         payload = response.json()
         self.assertEqual(0, payload['total_count'])
         self.assertEqual([], payload['rows'])
+
+    def test_shouldExportFilteredEvidenceCsvAndRecordAuditEvent(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_export'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'all_open_bugs',
+            'owner': 'Alice',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('text/csv', response['Content-Type'])
+        self.assertIn('attachment; filename="bug-trend-evidence-scope-', response['Content-Disposition'])
+        self.assertIn('issue_key,summary,series_name,status,severity,owner,component,created_at,updated_at', content)
+        self.assertIn('STDEL-1001', content)
+        self.assertNotIn('STDEL-1002', content)
+        event = BugTrendAuditEvent.objects.get(event_type=BugTrendAuditEvent.EVENT_EVIDENCE_EXPORTED)
+        self.assertEqual(scope, event.scope)
+        self.assertEqual(str(run.id), event.calculation_run_id)
+        self.assertEqual('default_bug_trend', event.chart_id)
+        self.assertEqual('Alice', event.request_summary['filters']['owner'])
+        self.assertEqual(1, event.request_summary['row_count'])
 
     def _seed_trend_data(self, display_fields=None):
         scope = JiraScopeConfig.objects.create(

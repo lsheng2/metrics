@@ -693,17 +693,17 @@ flowchart TD
 
 ### P0d/P1 Execution Ledger
 
-- [ ] P0D.N1 - Define saved scope config API
-- [ ] P0D.N2 - Connect audit values to config workflow
-- [ ] P0D.N3 - Render scope config editor and recalc prompt
-- [ ] P1A.N1 - Extend PageQueryState for list filters
-- [ ] P1A.N2 - Add evidence export over current query result
-- [ ] P1A.N3 - Record evidence export audit
-- [ ] P1A.N4 - Render filters and export UI
-- [ ] P1B.N1 - Expose sync health API
-- [ ] P1B.N2 - Expose calculation health API
-- [ ] P1B.N3 - Compose Data Health UI
-- [ ] P1.CLOSE - Long-run closure gates
+- [x] P0D.N1 - Define saved scope config API
+- [x] P0D.N2 - Connect audit values to config workflow
+- [x] P0D.N3 - Render scope config editor and recalc prompt
+- [x] P1A.N1 - Extend PageQueryState for list filters
+- [x] P1A.N2 - Add evidence export over current query result
+- [x] P1A.N3 - Record evidence export audit
+- [x] P1A.N4 - Render filters and export UI
+- [x] P1B.N1 - Expose sync health API
+- [x] P1B.N2 - Expose calculation health API
+- [x] P1B.N3 - Compose Data Health UI
+- [x] P1.CLOSE - Long-run closure gates
 
 ### P0d/P1 Planned Focused Tests
 
@@ -812,15 +812,15 @@ flowchart TD
 
 ### P2/P3 Execution Ledger
 
-- [ ] P2A.N1 - Define minimal Chart Catalog API
-- [ ] P2A.N2 - Add chart selector against catalog
-- [ ] P2B.N1 - Re-run C-stock parity and link validation under catalog
-- [ ] P2B.N2 - Record renderer route decision
-- [ ] P2C.N1 - Spike Grafana App/Scenes same-page evidence
-- [ ] P3.N1 - Define AI draft chart request and validator path
-- [ ] P3.N2 - Add draft preview and personal publish flow
-- [ ] P3.N3 - Add cloud approval boundary
-- [ ] P23.CLOSE - Full renderer/governance closure
+- [x] P2A.N1 - Define minimal Chart Catalog API
+- [x] P2A.N2 - Add chart selector against catalog
+- [x] P2B.N1 - Re-run C-stock parity and link validation under catalog
+- [x] P2B.N2 - Record renderer route decision
+- [x] P2C.N1 - Spike Grafana App/Scenes same-page evidence skipped by P2B decision: `same_page_evidence_required=false`, `c_stock_same_page_capable=false`, `trigger_p2c_spike=false`; C-stock is link-out evidence only.
+- [x] P3.N1 - Define AI draft chart request and validator path
+- [x] P3.N2 - Add draft preview and personal publish flow
+- [x] P3.N3 - Add cloud approval boundary
+- [x] P23.CLOSE - Full renderer/governance closure
 
 ### P2/P3 Planned Focused Tests
 

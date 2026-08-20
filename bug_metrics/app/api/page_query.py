@@ -29,6 +29,7 @@ class BugTrendPageQueryState:
     selected_bucket_id: str = ''
     selected_series_name: str = ''
     list_filters: BugTrendTicketListFilters = field(default_factory=BugTrendTicketListFilters)
+    active_chart_id: str = 'default_bug_trend'
 
 
 @dataclass(slots=True)

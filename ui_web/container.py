@@ -7,6 +7,7 @@ from tasks.app.domain.model.config import SortingConfig
 from tasks.container import tasks_container
 from velocity.container import velocity_container
 from bug_metrics.container import bug_metrics_container
+from jira_sync.container import jira_sync_container
 from .convertors.member_convertor import MemberConvertor
 from .convertors.pull_request_convertor import PullRequestConvertor
 from .convertors.task_convertor import TaskConvertor
@@ -24,6 +25,7 @@ from .facades.task_forecast_facade import TaskForecastFacade
 from .facades.task_filter_facade import TaskFilterFacade
 from .facades.pull_requests_facade import PullRequestsFacade
 from .facades.bug_trend_facade import BugTrendFacade
+from .facades.data_health_facade import DataHealthFacade
 from .facades.tasks_facade import TasksFacade
 from .facades.team_velocity_facade import TeamVelocityFacade
 from .utils.available_member_stage_filter import AvailableMemberStageFilter
@@ -55,6 +57,7 @@ class UiWebContainer:
         self._pull_request_convertor = None
         self._pull_requests_facade = None
         self._bug_trend_facade = None
+        self._data_health_facade = None
 
     @property
     def task_convertor(self) -> TaskConvertor:
@@ -106,6 +109,15 @@ class UiWebContainer:
         if self._bug_trend_facade is None:
             self._bug_trend_facade = BugTrendFacade(bug_metrics_container.bug_trend_api)
         return self._bug_trend_facade
+
+    @property
+    def data_health_facade(self) -> DataHealthFacade:
+        if self._data_health_facade is None:
+            self._data_health_facade = DataHealthFacade(
+                jira_sync_container.jira_sync_api,
+                bug_metrics_container.bug_trend_api
+            )
+        return self._data_health_facade
 
     @staticmethod
     def _pull_request_sorting_config() -> SortingConfig:
