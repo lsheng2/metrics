@@ -128,12 +128,12 @@ class BugTrendPageQueryService:
             bucket__bucket_start__gte=state.begin,
             bucket__bucket_end__lte=state.end,
         )
+        if state.allowed_series_names:
+            memberships = memberships.filter(series_name__in=state.allowed_series_names)
         if include_selection and state.selected_bucket_id:
             memberships = memberships.filter(bucket_id=state.selected_bucket_id)
         if include_selection and state.selected_series_name:
             memberships = memberships.filter(series_name=state.selected_series_name)
-        elif state.allowed_series_names:
-            memberships = memberships.filter(series_name__in=state.allowed_series_names)
         return memberships.select_related('bucket').order_by('bucket__bucket_start', 'series_name', 'issue_key')
 
     def _apply_list_filters(self, memberships, filters: BugTrendTicketListFilters):
