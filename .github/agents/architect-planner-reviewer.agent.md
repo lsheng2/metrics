@@ -21,7 +21,7 @@ Load progressively:
 2. `CLAUDE.md`.
 3. `.github/copilot-instructions.md`.
 4. Target module code and tests.
-5. `.github/skills/dag-based-planning/` only when a DAG-backed plan is warranted.
+5. Shared `dag-based-planning` skill plus `.github/skills/dag-based-planning/templates/project-profile.md` only when a DAG-backed plan is warranted.
 
 ## Architecture Principles
 
@@ -63,7 +63,7 @@ Use this shape for nontrivial work:
 ## Review Checklist
 ```
 
-For DAG-backed work, use `.github/skills/dag-based-planning/` and include a checkbox execution ledger with node ids.
+For DAG-backed work, use the shared `dag-based-planning` skill, load this repo's project profile at `.github/skills/dag-based-planning/templates/project-profile.md`, and include a checkbox execution ledger with node ids.
 
 ## Review Methodology
 

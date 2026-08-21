@@ -17,7 +17,7 @@ Status: active BKM.
 | --- | --- |
 | Code change | `code-comment-policy.md`, target module tests, owner public API |
 | Django settings/view/template change | `repo-context.md`, `python manage.py check` as validation |
-| DAG plan or multi-agent handoff | `.github/skills/dag-based-planning/SKILL.md` and its project profile |
+| DAG plan or multi-agent handoff | Shared `dag-based-planning` skill and `.github/skills/dag-based-planning/templates/project-profile.md` |
 | Runtime debugging | `.github/agents/dashboard-debugger.agent.md`, failing command/URL/log excerpt, nearest owner tests |
 | Diagram work | `.github/skills/drawio/SKILL.md` for complex diagrams; Mermaid skill for simple Markdown diagrams |
 | Completion or review claim | `closure-verification-policy.md` and actual command output |

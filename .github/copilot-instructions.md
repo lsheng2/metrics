@@ -7,7 +7,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 1. Root `CLAUDE.md` for architecture, testing, frontend, and configuration rules.
 2. `.github/ai-governance/README.md` and the matching BKM file when the task touches coding flow, validation, shell commands, comments, or closure claims.
 3. Target module files and nearby tests before editing.
-4. `.github/skills/dag-based-planning/templates/project-profile.md` when a task needs DAG-backed planning, multi-agent handoff, or review gates.
+4. Shared `dag-based-planning` skill plus `.github/skills/dag-based-planning/templates/project-profile.md` when a task needs DAG-backed planning, multi-agent handoff, or review gates.
 
 ## Stable Repo Truths
 
@@ -42,7 +42,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 2. Use `.github/agents/implementation-engineer.agent.md` to execute approved handoffs.
 3. Use `.github/agents/validation-engineer.agent.md` for test-plan signoff and stale/wrong-owner test review.
 4. Use `.github/agents/dashboard-debugger.agent.md` for runtime debugging across Django, tracker adapters, htmx partials, and templates.
-5. Use `.github/skills/dag-based-planning/` for dependency-aware plans and multi-agent execution ledgers.
+5. Use the shared `dag-based-planning` skill with `.github/skills/dag-based-planning/templates/project-profile.md` for dependency-aware plans and multi-agent execution ledgers.
 6. Use `.github/skills/drawio/` for complex architecture diagrams.
 7. Use `.github/ai-governance/` as the local BKM library for repeatable AI coding practices.
 
@@ -57,8 +57,12 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 
 ## Local Pitfalls
 
-1. `pytest.ini` does not include `pull_requests/tests/`; for pull-request work, run the focused `python -m pytest pull_requests\tests\... -q` command explicitly.
+1. `pytest.ini` does not include `pull_requests/tests/`; for pull-request work, run the focused `python -m pytest pull_requests/tests/... -q` command explicitly.
 2. `README.md` and `CLAUDE.md` mention different dev-server ports (`8000` vs `8002`); preserve the command used by the current task or ask before standardizing docs.
 3. Do not simplify Azure PR pagination in `AzurePullRequestRepository`; short/overlapping Azure pages require fixed-stride paging plus de-duplication.
 4. For Intel Jira setup/current-state details, prefer links in `docs/implementation-start.md` and `docs/architecture-manual.md`; never paste `.env` secrets into docs, tests, or chat output.
 5. Do not build or polish bug/feature charts before the durable Jira history and calculation-run artifacts exist and have focused validation.
+
+## Additional requirements
+
+- Please always answer me in Chinese. You can think in English, but when answer or conclude, please use Chinese. If any professional keywords or function name/parameters/formulas, folder/file names, it is not necessary to translate to Chinese, you can keep it in English.

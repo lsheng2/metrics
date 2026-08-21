@@ -5,6 +5,7 @@ Everything repository-specific lives here so the DAG workflow stays portable.
 ## Identity
 
 - Project: Metrics Django dashboard.
+- Profile source: repo-local.
 - Plan location: `docs/` for stable architecture or implementation plans; `.github/` for AI workflow/customization changes.
 - Shell: PowerShell on Windows.
 - Runtime: Python from the active environment; project commands use `python manage.py ...` and `python -m pytest ...`.
@@ -15,6 +16,9 @@ Everything repository-specific lives here so the DAG workflow stays portable.
 - `forecast/`
 - `velocity/`
 - `pull_requests/`
+- `jira_sync/`
+- `jira_history/`
+- `bug_metrics/`
 - `ui_web/`
 - `metrics/`
 - `ops/`
@@ -41,6 +45,9 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 - `forecast/tests/`
 - `velocity/tests/`
 - `pull_requests/tests/`
+- `jira_sync/tests/`
+- `jira_history/tests/`
+- `bug_metrics/tests/`
 - `ui_web/tests/`
 
 ## Doc Truth Roots
@@ -59,17 +66,21 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 PowerShell:
 
 ```powershell
-python scripts/check_file_size_limits.py --include-untracked
-python scripts/check_diff_whitespace.py --include-untracked
-python manage.py check
+$python = Join-Path (Get-Location) '.venv/Scripts/python.exe'
+& $python scripts/check_file_size_limits.py --include-untracked
+& $python scripts/check_diff_whitespace.py --include-untracked
+& $python manage.py check
 ```
 
 Focused tests:
 
 ```powershell
-python -m pytest tasks\tests\test_api_tasks_health.py::TestClass::test_method -q
-python -m pytest ui_web\tests\test_unit_filter_fields.py -q
+$python = Join-Path (Get-Location) '.venv/Scripts/python.exe'
+& $python -m pytest tasks/tests/test_api_tasks_health.py -q
+& $python -m pytest ui_web/tests/test_unit_field_filters.py -q
 ```
+
+Focused test commands are examples only. Each DAG node must name the focused tests for its actual owner path before using them as closure evidence.
 
 ## Scope Gate Configuration
 
@@ -90,6 +101,21 @@ Generated or local runtime outputs may be ignored only when they are not part of
 
 Do not add unrelated dirty files to a plan after implementation starts. Either record them as pre-existing baseline paths or create a separate node that owns them.
 
+## Discovery Evidence
+
+This profile was hand-maintained for the Metrics repository before the shared `dag-based-planning` skill was split into a global core plus repo-local profile. Treat the evidence below as the current audit trail for profile facts.
+
+| Profile Area | Evidence Used | Confidence |
+| --- | --- | --- |
+| Identity | `CLAUDE.md`, `README.md`, `metrics/`, Django app roots | high |
+| Source roots | Workspace file tree and module directories: `tasks/`, `forecast/`, `velocity/`, `pull_requests/`, `jira_sync/`, `jira_history/`, `bug_metrics/`, `ui_web/`, `metrics/`, `ops/`, `scripts/` | high |
+| Test roots | Module-local `tests/` directories present in source roots | high |
+| Doc truth roots | `CLAUDE.md`, `README.md`, `docs/`, `.github/copilot-instructions.md`, `.github/ai-governance/`, `.github/agents/`, `.github/skills/` | high |
+| Hard gate commands | `CLAUDE.md`, `.github/copilot-instructions.md`, and existing scripts under `scripts/` | medium; commands should still be run for each closure claim |
+| Authority boundaries | `CLAUDE.md`, module structure, and public `app/api/` package convention | high |
+| Consumer universe defaults | Module structure, `ui_web/` federation pattern, `ops/`, `scripts/`, docs and test directories | medium |
+| Risk level defaults | Repo architecture rules, audit/export/governance patterns, and closure verification policy | medium |
+
 ## Code-Doc Truth Sync
 
 Every DAG plan that changes code, contracts, validation behavior, operator workflow, public API, UI/user-visible behavior, configuration behavior, or AI customization must assess:
@@ -109,6 +135,52 @@ Common authority boundaries in this repository:
 - Forecast owner: `forecast/` public API and domain calculators.
 - Velocity owner: `velocity/` public API and calculators.
 - Pull-request owner: `pull_requests/` public API and policy/review gates.
+- Jira sync owner: `jira_sync/` fetches Jira data, owns sync cursors/status, and exposes sync health through public APIs and management commands.
+- Jira history owner: `jira_history/` persists local issue snapshots, transitions, and history artifacts behind its public API.
+- Bug metrics owner: `bug_metrics/` owns Jira scope config, bug trend calculation artifacts, evidence/export, chart catalog, renderer decision, audit, and AI chart governance.
 - UI federation owner: `ui_web/facades/`, `ui_web/views/`, and `ui_web/templates/`.
 - Configuration owner: `metrics/settings/defaults_metrics.py`, module `config_loader.py`, and containers.
 - Tracker integration owner: module `out/` repositories and `sd-metrics-lib` integration.
+
+## Consumer Universe Defaults
+
+When building a DAG plan in this repository, evaluate these concrete consumer categories before implementation:
+
+| Category | Common Metrics Surfaces |
+| --- | --- |
+| public API | `*/app/api/`, module `container.py`, cross-module API repository adapters |
+| internal service/facade | `ui_web/facades/`, domain services, convertors, utility registries |
+| UI route/template/component | `ui_web/urls.py`, `ui_web/views/`, `ui_web/templates/`, `ui_web/static/` |
+| export/report | CSV/export APIs, bug evidence export, report scripts, generated evidence files |
+| audit/log/event | audit models, bug trend governance events, operator-facing state transitions |
+| validation script | `scripts/`, Grafana validators, file-size and whitespace checks |
+| migration/schema | Django `models.py`, migrations, persisted DTO compatibility |
+| background job/scheduler | management commands, sync commands, demo/start scripts |
+| cache/index/search | `state/` caches, task search cache, query/result cache code |
+| external artifact | `ops/`, Grafana JSON, Docker files, deployment configs |
+| CLI/admin command | Django management commands, local PowerShell scripts |
+| docs/operator workflow | `docs/`, `README.md`, `CLAUDE.md`, `.github/copilot-instructions.md` |
+| test double/fake/fixture | module-local `tests/`, mocks, fixtures, builder helpers |
+
+Each category should be marked `applies`, `not-applies`, or `deferred-with-trigger` in the plan. A category marked `not-applies` needs a reason when the changed authority is high risk.
+
+## Risk Level Defaults
+
+Default to `high` risk when a changed authority affects any of these Metrics surfaces:
+
+- module public APIs under `*/app/api/`;
+- persisted Django models, migrations, or calculation artifacts;
+- config semantics, hashes, or environment/default behavior;
+- evidence list, export, audit, permissions, or governance state;
+- Jira sync/history, bug trend calculation artifacts, evidence membership, chart catalog, renderer decisions, or AI chart governance;
+- external artifacts under `ops/`, deployment scripts, or validation scripts;
+- cross-module routing through `ui_web` facades/views/templates;
+- tracker integration behavior or any live/saved source data boundary.
+
+Use `normal` only when the authority is internal to one module and has no export, audit, persistence, config, or cross-module consumer. Use `low` only for text-only or display-only changes with no behavior or contract impact.
+
+## Initialization Follow-ups
+
+- No current `TBD` entries.
+- Re-run discovery if source roots, CI, validation commands, module boundaries, or deployment artifacts change substantially.
+- Before any closure claim, run or explicitly account for the hard gate commands relevant to the touched owner paths.

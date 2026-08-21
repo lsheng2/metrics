@@ -1,0 +1,5 @@
+{
+  "max_review_rounds": 20,
+  "preferred_model": "Intel GenAI GPT-5.5 (azure)",
+  "reviewer_agent": "Architect Planner Reviewer"
+}

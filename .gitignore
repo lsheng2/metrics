@@ -1,6 +1,7 @@
 # IDE/AI files
 .idea
 .claude
+.github/skills/lsheng2-coding/*.receipts.json
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
