@@ -866,9 +866,9 @@ python manage.py check
 
 | Surface | Status | Reason |
 | --- | --- | --- |
-| `docs/mvp-bug-trend-architecture-spec.md` | deferred-with-trigger | It records the current Django MVP semantic-owner model. Update it only if the Grafana spike is accepted as the replacement target. |
+| `docs/bug-trend-architecture-spec.md` | deferred-with-trigger | It records the current Django MVP semantic-owner model. Update it only if the Grafana spike is accepted as the replacement target. |
 | `docs/architecture-manual.md` | deferred-with-trigger | It remains the baseline architecture manual. Add a pointer after fact-table/Grafana spike moves beyond proposal. |
 | `.github/copilot-instructions.md` | deferred-with-trigger | It still routes current MVP work through `jira_scope_config`; change only after implementation changes the stable owner. |
 | `README.md` | no-doc-change | No user setup or runtime command changes in this document-only step. |
 
-Until `W2.N1` passes Grafana parity review and `.github/copilot-instructions.md` plus `docs/mvp-bug-trend-architecture-spec.md` are updated, the existing Django MVP owner model remains the implementation authority.
+Until `W2.N1` passes Grafana parity review and `.github/copilot-instructions.md` plus `docs/bug-trend-architecture-spec.md` are updated, the existing Django MVP owner model remains the implementation authority.

@@ -20,7 +20,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 
 ## Intel Jira MVP Routing
 
-1. Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Source docs: `docs/implementation-start.md`, `docs/architecture-manual.md`, and `docs/mvp-bug-trend-architecture-spec.md`.
+1. Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Source docs: `docs/implementation-start.md`, `docs/architecture-manual.md`, and `docs/bug-trend-architecture-spec.md`.
 2. M0 Intel Jira Server/Data Center PAT connectivity has passed; preserve it and do not leak credentials.
 3. Next architecture gate is M1 durable Jira history: cursor, issue, snapshot, transition, calculation-run, bucket, and bucket-membership artifacts before chart polish.
 4. `jira_scope_config` is the single authority for project-specific Jira semantics. Do not move workflow status, severity, component, milestone, or bug-type truth into global env vars or hardcoded calculators.

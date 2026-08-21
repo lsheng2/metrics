@@ -24,9 +24,9 @@ Equivalent command sequence:
 
 ```powershell
 & .venv\Scripts\python.exe manage.py migrate
-& .venv\Scripts\python.exe manage.py seed_bug_trend_demo
-& scripts\demo_start_backend.ps1 -Workspace (Get-Location)
-& scripts\demo_open_bug_trend.ps1
+& .venv\Scripts\python.exe manage.py seed_bug_trend_sample
+& scripts\local_start_backend.ps1 -Workspace (Get-Location)
+& scripts\local_open_bug_trend.ps1
 ```
 
 ## C0 Reference UI Runtime Check

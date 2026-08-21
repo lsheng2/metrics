@@ -688,7 +688,7 @@ Scope baseline at plan creation:
 ```text
 baseline_commit: 4511c78c346ddd5551d1cff5978266150f64a16c
 dirty_paths:
-  - docs/mvp-bug-trend-architecture-spec.md
+  - docs/bug-trend-architecture-spec.md
 ```
 
 ### Contract Registry
@@ -728,7 +728,7 @@ flowchart TD
 
 | id | depends_on | owner_paths | authority_boundary | contracts | validation | exit_criteria | parallel_policy |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `P0` | [] | `docs/mvp-bug-trend-architecture-spec.md` | Architecture plan | all | Architect/reviewer signoff | Plan contracts, graph, nodes, and ledger agree. | serial |
+| `P0` | [] | `docs/bug-trend-architecture-spec.md` | Architecture plan | all | Architect/reviewer signoff | Plan contracts, graph, nodes, and ledger agree. | serial |
 | `W1.N1` | [`P0`] | `bug_metrics/`, `metrics/settings/`, `docs/` | Scope configuration authority | `SCOPE-1`, `SEC-1` | Model/config unit tests; settings check | Saved scope stores JQL, lifecycle mappings, severity mappings, field mappings, display fields, and semantic config version hash. | serial |
 | `W1.N2` | [`P0`] | `jira_sync/`, `docs/` | Sync state authority | `SYNC-1`, `COV-1` | Model tests; idempotent cursor and coverage tests | Cursor records last successful sync, safe updated cutoff, and reliable history coverage per scope. | parallel with `W1.N1` only if model migrations do not conflict |
 | `W2.N1` | [`W1.N1`, `W1.N2`] | `jira_history/`, `docs/` | Durable Jira history | `SYNC-1`, `EVIDENCE-1`, `COV-1` | Snapshot/transition/calculation-run/bucket/bucket-membership persistence tests | Raw snapshots, normalized issues, transitions, calculation runs, bucket artifacts, and bucket membership artifacts are idempotently stored. | serial |
@@ -776,7 +776,7 @@ Run the browser UI validation gate before `CLOSE.R`. If Playwright or an equival
 
 | Surface | Status | Trigger |
 | --- | --- | --- |
-| `docs/mvp-bug-trend-architecture-spec.md` | update-required | Every DAG node changes this ledger or exits with evidence. |
+| `docs/bug-trend-architecture-spec.md` | update-required | Every DAG node changes this ledger or exits with evidence. |
 | `README.md` | update-required | When user-facing setup, URLs, or operation commands are added. |
 | `docs/architecture-manual.md` | update-required | When module boundaries or MVP ownership paths change. |
 | `CLAUDE.md` | deferred-with-trigger | Update only if the baseline architecture rules change, not for feature-local details. |

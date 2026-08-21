@@ -8,7 +8,7 @@ This folder is the validation source of truth for the Jira/Grafana Bug Trend MVP
 | --- | --- |
 | [test-strategy.md](test-strategy.md) | Overall validation strategy, risk model, layers, and coverage policy. |
 | [ai-validation-operating-model.md](ai-validation-operating-model.md) | Long-term AI-assisted validation model: change classification, gate profiles, finding expansion, and closure wording. |
-| [jira-grafana-mvp-test-plan.md](jira-grafana-mvp-test-plan.md) | Execution plan for Jira/Grafana MVP validation from ingredient tests through runtime evidence. |
+| [jira-grafana-test-plan.md](jira-grafana-test-plan.md) | Execution plan for Jira/Grafana validation from ingredient tests through runtime evidence. |
 | [test-case-catalog.md](test-case-catalog.md) | Categorized inventory of existing and planned test cases mapped to code paths and contracts. |
 | [gate-and-ci-plan.md](gate-and-ci-plan.md) | Local gates, full gates, proposed CI jobs, and merge-blocking policy. |
 | [e2e-runtime-runbook.md](e2e-runtime-runbook.md) | Browser, Grafana, C0, and C1 runtime validation runbook. |

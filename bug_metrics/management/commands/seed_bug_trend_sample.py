@@ -8,11 +8,11 @@ from jira_history.models import JiraIssue, JiraTransition
 
 
 class Command(BaseCommand):
-    help = 'Seed local mock data for the bug trend dashboard demo.'
+    help = 'Seed local sample data for the bug trend dashboard.'
 
     def handle(self, *args, **options):
         scope, _ = JiraScopeConfig.objects.update_or_create(
-            name='Demo STDEL Bug Trend',
+            name='Local STDEL Bug Trend',
             defaults={
                 'ip': 'NVU',
                 'project_label': 'STDEL',
@@ -37,12 +37,12 @@ class Command(BaseCommand):
 
         coverage_start = date(2025, 4, 7)
         coverage_end = date(2026, 8, 9)
-        self._create_demo_history(scope, coverage_start, coverage_end)
+        self._create_sample_history(scope, coverage_start, coverage_end)
 
         bug_metrics_container.bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)
-        self.stdout.write(self.style.SUCCESS(f'Seeded bug trend demo scope {scope.id}: {scope.name}'))
+        self.stdout.write(self.style.SUCCESS(f'Seeded bug trend local sample scope {scope.id}: {scope.name}'))
 
-    def _create_demo_history(self, scope, coverage_start, coverage_end):
+    def _create_sample_history(self, scope, coverage_start, coverage_end):
         issue_records = []
         open_issue_keys = []
         issue_number = 9000

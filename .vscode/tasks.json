@@ -9,28 +9,28 @@
     },
     "tasks": [
         {
-            "label": "Demo: Migrate Database",
+            "label": "Local: Migrate Database",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $python = Join-Path $workspace '.venv\\Scripts\\python.exe'; & $python manage.py migrate",
             "problemMatcher": []
         },
         {
-            "label": "Demo: Seed Bug Trend Mock Data",
+            "label": "Local: Seed Bug Trend Sample Data",
             "type": "shell",
-            "command": "$workspace = '${workspaceFolder}'; $python = Join-Path $workspace '.venv\\Scripts\\python.exe'; & $python manage.py seed_bug_trend_demo",
-            "dependsOn": "Demo: Migrate Database",
+            "command": "$workspace = '${workspaceFolder}'; $python = Join-Path $workspace '.venv\\Scripts\\python.exe'; & $python manage.py seed_bug_trend_sample",
+            "dependsOn": "Local: Migrate Database",
             "problemMatcher": []
         },
         {
             "label": "Backend: Start Django",
             "type": "shell",
-            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\demo_start_backend.ps1'; & $script -Workspace $workspace",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\local_start_backend.ps1'; & $script -Workspace $workspace",
             "problemMatcher": []
         },
         {
             "label": "Backend: Stop Django",
             "type": "shell",
-            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\demo_stop_backend.ps1'; & $script",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\local_stop_backend.ps1'; & $script",
             "problemMatcher": []
         },
         {
@@ -42,13 +42,13 @@
         {
             "label": "Frontend: Open Bug Trend",
             "type": "shell",
-            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\demo_open_bug_trend.ps1'; & $script",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\local_open_bug_trend.ps1'; & $script",
             "problemMatcher": []
         },
         {
             "label": "Frontend: Stop Bug Trend",
             "type": "shell",
-            "command": "Write-Host 'Frontend is served by Django; stop Backend: Stop Django to stop the demo server.'",
+            "command": "Write-Host 'Frontend is served by Django; stop Backend: Stop Django to stop the local server.'",
             "problemMatcher": []
         },
         {

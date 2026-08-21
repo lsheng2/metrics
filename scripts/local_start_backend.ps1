@@ -6,9 +6,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $python = Join-Path $Workspace '.venv\Scripts\python.exe'
-$pidFile = Join-Path $env:TEMP 'metrics-django-demo-8002.pid'
-$outLog = Join-Path $env:TEMP 'metrics-django-demo-8002.out.log'
-$errLog = Join-Path $env:TEMP 'metrics-django-demo-8002.err.log'
+$pidFile = Join-Path $env:TEMP 'metrics-django-local-8002.pid'
+$outLog = Join-Path $env:TEMP 'metrics-django-local-8002.out.log'
+$errLog = Join-Path $env:TEMP 'metrics-django-local-8002.err.log'
 $url = 'http://127.0.0.1:' + $Port + '/bug-trend/?begin=2025-04-07&end=2026-08-09'
 
 if (-not (Test-Path $python)) {

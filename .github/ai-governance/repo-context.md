@@ -6,7 +6,7 @@ Status: active BKM.
 
 This is a Django modular monolith for software delivery metrics. It integrates Jira, Azure DevOps, Bitbucket/Azure Repos, and `sd-metrics-lib` to render task, forecast, velocity, and pull-request dashboards.
 
-Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Keep the detailed MVP truth in `docs/implementation-start.md`, `docs/architecture-manual.md`, and `docs/mvp-bug-trend-architecture-spec.md`; this BKM is only a routing summary.
+Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Keep the detailed MVP truth in `docs/implementation-start.md`, `docs/architecture-manual.md`, and `docs/bug-trend-architecture-spec.md`; this BKM is only a routing summary.
 
 ## Modules
 

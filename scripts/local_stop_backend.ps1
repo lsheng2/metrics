@@ -2,7 +2,7 @@ param(
     [int]$Port = 8002
 )
 
-$pidFile = Join-Path $env:TEMP 'metrics-django-demo-8002.pid'
+$pidFile = Join-Path $env:TEMP 'metrics-django-local-8002.pid'
 $processIds = @()
 
 if (Test-Path $pidFile) {

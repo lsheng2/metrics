@@ -52,7 +52,7 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLife
     specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath)
 
     run([python_executable, "manage.py", "migrate"], workspace)
-    run([python_executable, "manage.py", "seed_bug_trend_demo"], workspace)
+    run([python_executable, "manage.py", "seed_bug_trend_sample"], workspace)
     run([
         python_executable,
         "scripts/validate_grafana_artifacts.py",

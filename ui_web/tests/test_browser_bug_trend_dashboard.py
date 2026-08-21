@@ -52,6 +52,7 @@ class TestBugTrendDashboardBrowser(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
         nonblank_pixels, evidence_text, chart_config = self._render_chart_and_click_evidence(response, evidence_response)
 
@@ -147,6 +148,7 @@ class TestBugTrendDashboardBrowser(TestCase):
             'end': '2026-08-16',
             'bucket': str(first_bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
         nonblank_pixels, evidence_text, chart_config = self._render_chart_and_click_evidence(response, evidence_response)
 
@@ -172,6 +174,7 @@ class TestBugTrendDashboardBrowser(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
         nonblank_pixels, evidence_text, chart_config = self._render_chart_and_click_evidence(response, evidence_response)
 
