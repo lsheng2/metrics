@@ -18,6 +18,19 @@ class TestBugTrendChartCatalogApi(TestCase):
         self.assertEqual('bucket_series', chart.evidence_contract.capability)
         self.assertEqual('bug_trend_bucket_issue', chart.evidence_contract.membership_source)
         self.assertIn('owner', chart.evidence_contract.allowed_list_filters)
+        self.assertEqual('default_bug_trend_bucket_series', chart.chart_spec['evidence_contract_id'])
+        self.assertIn('all_open_bugs', chart.chart_spec['series'])
+
+    def test_shouldAcceptDefaultBugTrendChartForPublishValidation(self):
+        # Given
+        chart = BugTrendChartDefinition.objects.get(chart_id='default_bug_trend')
+
+        # When
+        result = bug_trend_api.validate_chart_for_publish(chart)
+
+        # Then
+        self.assertTrue(result.valid)
+        self.assertEqual([], result.errors)
 
     def test_shouldRejectPublishedChartWithUnapprovedEvidenceMembershipSource(self):
         # Given
@@ -41,6 +54,7 @@ class TestBugTrendChartCatalogApi(TestCase):
             integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
             evidence_contract=contract,
             status=BugTrendChartDefinition.STATUS_DRAFT,
+            chart_spec={'evidence_contract_id': 'unsafe_contract', 'series': ['all_open_bugs']},
         )
 
         # When
@@ -49,6 +63,63 @@ class TestBugTrendChartCatalogApi(TestCase):
         # Then
         self.assertFalse(result.valid)
         self.assertIn('Evidence contract must use an approved Metrics-owned membership source.', result.errors)
+
+    def test_shouldRejectPublishedChartWhenSpecEvidenceContractConflictsWithCatalogContract(self):
+        # Given
+        contract = BugTrendEvidenceContract.objects.get(contract_id='default_bug_trend_bucket_series')
+        chart = BugTrendChartDefinition.objects.create(
+            chart_id='conflicting_spec_chart',
+            title='Conflicting Spec Chart',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract=contract,
+            chart_spec={'evidence_contract_id': 'different_contract', 'series': ['all_open_bugs']},
+        )
+
+        # When
+        result = bug_trend_api.validate_chart_for_publish(chart)
+
+        # Then
+        self.assertFalse(result.valid)
+        self.assertIn('Chart spec evidence contract must match the catalog evidence contract.', result.errors)
+
+    def test_shouldRejectPublishedChartWhenSpecContainsDirectDataSourceLogic(self):
+        # Given
+        contract = BugTrendEvidenceContract.objects.get(contract_id='default_bug_trend_bucket_series')
+        chart = BugTrendChartDefinition.objects.create(
+            chart_id='direct_source_spec_chart',
+            title='Direct Source Spec Chart',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract=contract,
+            chart_spec={'evidence_contract_id': 'default_bug_trend_bucket_series', 'query': 'select * from jira_issue'},
+        )
+
+        # When
+        result = bug_trend_api.validate_chart_for_publish(chart)
+
+        # Then
+        self.assertFalse(result.valid)
+        self.assertIn('Chart specs must not include SQL, secrets, or direct data-source logic.', result.errors)
+
+    def test_shouldRejectBucketSeriesPublishedChartWhenSpecOmitsSeries(self):
+        # Given
+        contract = BugTrendEvidenceContract.objects.get(contract_id='default_bug_trend_bucket_series')
+        chart = BugTrendChartDefinition.objects.create(
+            chart_id='empty_series_spec_chart',
+            title='Empty Series Spec Chart',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract=contract,
+            chart_spec={'evidence_contract_id': 'default_bug_trend_bucket_series'},
+        )
+
+        # When
+        result = bug_trend_api.validate_chart_for_publish(chart)
+
+        # Then
+        self.assertFalse(result.valid)
+        self.assertIn('Chart specs with ticket evidence must declare at least one series.', result.errors)
 
     def test_shouldRequireUnsupportedReasonForSummaryOnlyChart(self):
         # Given

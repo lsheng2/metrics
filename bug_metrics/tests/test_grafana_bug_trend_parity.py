@@ -1,3 +1,5 @@
+import pytest
+
 from scripts.compare_grafana_bug_trend_parity import chart_id_from, chart_target_from
 
 
@@ -17,7 +19,7 @@ def test_shouldReadChartIdFromGrafanaArtifactTarget():
     assert chart_id_from(chart_target) == 'ai_open_only'
 
 
-def test_shouldDefaultChartIdWhenGrafanaArtifactTargetOmitsOptionalChartId():
+def test_shouldRejectGrafanaArtifactTargetWhenRequiredChartIdIsOmitted():
     artifact = {
         'panels': [
             {
@@ -30,4 +32,5 @@ def test_shouldDefaultChartIdWhenGrafanaArtifactTargetOmitsOptionalChartId():
 
     chart_target = chart_target_from(artifact)
 
-    assert chart_id_from(chart_target) == 'default_bug_trend'
+    with pytest.raises(SystemExit, match='FAIL chart-data target must declare chart_id'):
+        chart_id_from(chart_target)

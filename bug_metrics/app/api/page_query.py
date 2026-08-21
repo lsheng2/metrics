@@ -97,7 +97,7 @@ class BugTrendPageQueryService:
 
         mismatches = []
         for bucket in buckets:
-            expected_counts = self._expected_counts(scope, bucket)
+            expected_counts = self._expected_counts(scope, bucket, state.allowed_series_names)
             for series_name, expected_count in expected_counts.items():
                 actual_count = counts_by_bucket_and_series.get((str(bucket.id), series_name), 0)
                 if actual_count != expected_count:
@@ -119,8 +119,12 @@ class BugTrendPageQueryService:
             source_coverage_end__gte=state.end,
         ).first()
 
-    def _expected_counts(self, scope, bucket) -> Dict[str, int]:
-        return {series.series_name: series.count_value(bucket) for series in active_bug_trend_series(scope)}
+    def _expected_counts(self, scope, bucket, allowed_series_names: List[str]) -> Dict[str, int]:
+        series_definitions = active_bug_trend_series(scope)
+        if allowed_series_names:
+            allowed_names = set(allowed_series_names)
+            series_definitions = [series for series in series_definitions if series.series_name in allowed_names]
+        return {series.series_name: series.count_value(bucket) for series in series_definitions}
 
     def _chart_memberships(self, run, state: BugTrendPageQueryState, include_selection: bool = True):
         memberships = BugTrendBucketIssue.objects.filter(

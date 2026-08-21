@@ -8,10 +8,10 @@ from ..container import ui_web_container
 from .graceful_template_view import GracefulTemplateView
 
 
-CHART_DATA_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end'})
-CHART_DATA_OPTIONAL_PARAMS = frozenset({'chart_id'})
-EVIDENCE_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end', 'run'})
-EVIDENCE_OPTIONAL_PARAMS = frozenset({'bucket', 'series', 'owner', 'status', 'severity', 'component', 'text', 'chart_id'})
+CHART_DATA_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end', 'chart_id'})
+CHART_DATA_OPTIONAL_PARAMS = frozenset()
+EVIDENCE_REQUIRED_PARAMS = frozenset({'scope_id', 'begin', 'end', 'run', 'chart_id'})
+EVIDENCE_OPTIONAL_PARAMS = frozenset({'bucket', 'series', 'owner', 'status', 'severity', 'component', 'text'})
 
 
 def validate_query_contract(request, required_params, optional_params):
@@ -112,6 +112,12 @@ class BugTrendEvidenceView(GracefulTemplateView):
         super().__init__(**kwargs)
         self.bug_trend_facade = ui_web_container.bug_trend_facade
 
+    def get(self, request, *args, **kwargs):
+        invalid_response = validate_query_contract(request, EVIDENCE_REQUIRED_PARAMS, EVIDENCE_OPTIONAL_PARAMS)
+        if invalid_response:
+            return invalid_response
+        return super().get(request, *args, **kwargs)
+
     def populate_context(self, context, **kwargs):
         begin, end = self._date_range()
         evidence = self.bug_trend_facade.get_evidence_data(
@@ -126,7 +132,7 @@ class BugTrendEvidenceView(GracefulTemplateView):
             severity=self.request.GET.get('severity', ''),
             component=self.request.GET.get('component', ''),
             text=self.request.GET.get('text', ''),
-            active_chart_id=self.request.GET.get('chart_id', 'default_bug_trend'),
+            active_chart_id=self.request.GET.get('chart_id'),
         )
         context['evidence'] = evidence
 
@@ -159,7 +165,7 @@ class BugTrendEvidenceExportView(GracefulTemplateView):
                 severity=request.GET.get('severity', ''),
                 component=request.GET.get('component', ''),
                 text=request.GET.get('text', ''),
-                active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
+                active_chart_id=request.GET.get('chart_id'),
             )
         except (ObjectDoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
@@ -239,7 +245,7 @@ class BugTrendChartDataApiView(GracefulTemplateView):
             return invalid_response
         try:
             begin, end = self._date_range()
-            chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end, request.GET.get('chart_id', 'default_bug_trend'))
+            chart_data = self.bug_trend_facade.get_chart_data(int(request.GET.get('scope_id')), begin, end, request.GET.get('chart_id'))
         except (ObjectDoesNotExist, ValueError) as error:
             return chart_id_error_response(error)
         return JsonResponse(self.bug_trend_facade.get_chart_payload(chart_data))
@@ -273,7 +279,7 @@ class BugTrendEvidenceApiView(GracefulTemplateView):
                 severity=request.GET.get('severity', ''),
                 component=request.GET.get('component', ''),
                 text=request.GET.get('text', ''),
-                active_chart_id=request.GET.get('chart_id', 'default_bug_trend'),
+                active_chart_id=request.GET.get('chart_id'),
             )
         except (ObjectDoesNotExist, ValueError) as error:
             return chart_id_error_response(error)

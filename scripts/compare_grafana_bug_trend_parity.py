@@ -100,7 +100,10 @@ def chart_target_from(artifact):
 def chart_id_from(chart_target):
     target_path = chart_target.get('path') or chart_target.get('url', '')
     params = dict(parse_qsl(urlparse(target_path).query, keep_blank_values=True))
-    return params.get('chart_id') or 'default_bug_trend'
+    chart_id = params.get('chart_id')
+    if not chart_id:
+        raise SystemExit('FAIL chart-data target must declare chart_id')
+    return chart_id
 
 
 def compare_artifact_contract(chart_target, artifact, payload):
@@ -109,10 +112,10 @@ def compare_artifact_contract(chart_target, artifact, payload):
     if urlparse(target_path).path != '/api/bug-trend/chart-data/':
         mismatches.append(f'artifact target path is not chart-data: {target_path}')
     target_params = {name for name, _ in parse_qsl(urlparse(target_path).query, keep_blank_values=True)}
-    required_params = {'scope_id', 'begin', 'end'}
-    allowed_params = required_params | {'chart_id'}
+    required_params = {'scope_id', 'begin', 'end', 'chart_id'}
+    allowed_params = required_params
     if not required_params.issubset(target_params) or target_params - allowed_params:
-        mismatches.append(f'artifact chart target params must include scope_id/begin/end and only approved optionals, found {sorted(target_params)}')
+        mismatches.append(f'artifact chart target params must include scope_id/begin/end/chart_id and no extra params, found {sorted(target_params)}')
 
     points = payload.get('points', [])
     if not points:

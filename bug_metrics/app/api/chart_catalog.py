@@ -65,6 +65,8 @@ class ChartPublishResult:
 
 
 class ChartCatalogService:
+    APPROVED_GOVERNANCE_MODES = {'personal', 'cloud'}
+
     def list_enabled_charts(self) -> List[ChartDefinition]:
         charts = BugTrendChartDefinition.objects.select_related('evidence_contract').filter(
             enabled=True,
@@ -82,6 +84,7 @@ class ChartCatalogService:
         if chart.integration_route not in {BugTrendChartDefinition.ROUTE_REFERENCE, BugTrendChartDefinition.ROUTE_C_STOCK, BugTrendChartDefinition.ROUTE_C_PLUGIN}:
             errors.append('Integration route is not approved.')
         errors.extend(self._validate_evidence_contract(chart.evidence_contract))
+        errors.extend(self._validate_chart_spec(chart.chart_spec, chart.evidence_contract))
         return ChartValidationResult(not errors, errors)
 
     def record_renderer_route_decision(self, chart_id: str, same_page_evidence_required: bool,
@@ -110,11 +113,11 @@ class ChartCatalogService:
         return self._to_decision_result(decision)
 
     def create_ai_chart_draft(self, request: AiChartDraftRequest) -> ChartDefinition:
-        errors = self._validate_ai_spec(request.spec, request.evidence_contract_id)
+        contract = BugTrendEvidenceContract.objects.get(contract_id=request.evidence_contract_id)
+        errors = self._validate_chart_spec(request.spec, contract)
         if errors:
             self._record_chart_audit('chart_validation_failed', request.actor, request.chart_id, {'errors': errors})
             raise ValueError(errors)
-        contract = BugTrendEvidenceContract.objects.get(contract_id=request.evidence_contract_id)
         self._record_chart_audit('chart_draft_created', request.actor, request.chart_id, {'renderer_type': request.renderer_type, 'integration_route': request.integration_route})
         chart = BugTrendChartDefinition.objects.create(
             chart_id=request.chart_id,
@@ -140,6 +143,8 @@ class ChartCatalogService:
         return self._to_definition(chart)
 
     def publish_chart(self, chart_id: str, actor: str, governance_mode: str) -> ChartPublishResult:
+        if governance_mode not in self.APPROVED_GOVERNANCE_MODES:
+            raise ValueError('Chart publish governance mode is not approved.')
         chart = BugTrendChartDefinition.objects.get(chart_id=chart_id)
         validation = self.validate_chart_for_publish(chart)
         if not validation.valid:
@@ -185,26 +190,28 @@ class ChartCatalogService:
             errors.append('Bucket-series evidence requires a series dimension.')
         return errors
 
-    def _validate_ai_spec(self, spec: dict, evidence_contract_id: str) -> List[str]:
+    def _validate_chart_spec(self, spec: dict, evidence_contract: BugTrendEvidenceContract) -> List[str]:
         errors = []
         forbidden_fragments = ['select ', ' from ', ' join ', 'token', 'password', 'secret', 'pat', 'api_key']
         spec_text = str(spec).lower()
         for fragment in forbidden_fragments:
             if fragment in spec_text:
-                errors.append('AI chart specs must not include SQL, secrets, or direct data-source logic.')
+                errors.append('Chart specs must not include SQL, secrets, or direct data-source logic.')
                 break
         if 'evidence_contract_id' not in spec:
-            errors.append('AI chart specs must reference a Metrics evidence contract.')
-        elif spec.get('evidence_contract_id') != evidence_contract_id:
-            errors.append('AI chart spec evidence contract must match the catalog evidence contract.')
+            errors.append('Chart specs must reference a Metrics evidence contract.')
+        elif spec.get('evidence_contract_id') != evidence_contract.contract_id:
+            errors.append('Chart spec evidence contract must match the catalog evidence contract.')
         series = spec.get('series', [])
+        if evidence_contract.capability != BugTrendEvidenceContract.CAPABILITY_SUMMARY_ONLY and not series:
+            errors.append('Chart specs with ticket evidence must declare at least one series.')
         if series and (not isinstance(series, list) or any(not isinstance(item, str) for item in series)):
-            errors.append('AI chart specs series must be a list of series names.')
+            errors.append('Chart specs series must be a list of series names.')
         elif series:
             known_series = {item.series_name for item in BUG_TREND_SERIES}
             unknown_series = sorted(set(series) - known_series)
             if unknown_series:
-                errors.append(f'AI chart specs reference unknown Bug Trend series: {", ".join(unknown_series)}.')
+                errors.append(f'Chart specs reference unknown Bug Trend series: {", ".join(unknown_series)}.')
         return errors
 
     def _to_definition(self, chart: BugTrendChartDefinition) -> ChartDefinition:

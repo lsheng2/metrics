@@ -78,6 +78,28 @@ class TestBugTrendChartSelectorViews(TestCase):
         self.assertIn('Summary-only chart has no ticket evidence.', content)
         self.assertNotIn('Evidence tickets for visible range', content)
 
+    def test_shouldNotFallbackToDefaultSeriesForSummaryOnlySelectedChart(self):
+        # Given
+        scope, run, bucket = self._seed_open_and_fixed_memberships()
+        bucket.open_count = 1
+        bucket.fixed_or_closed_count = 1
+        bucket.save()
+        self._publish_summary_only_chart()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'summary_only_chart',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([], payload['datasets'])
+        self.assertEqual([], payload['points'])
+
     def _seed_open_and_fixed_memberships(self):
         scope = JiraScopeConfig.objects.create(
             name='STDEL selected series',

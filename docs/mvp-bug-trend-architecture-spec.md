@@ -613,7 +613,7 @@ Responsibilities:
 URL:
 
 ```text
-/partials/bug-trend/evidence/?scope_id=<scope_id>&run=<calculation_run_id>&begin=<begin>&end=<end>&bucket=<bucket_id>&series=<series>
+/partials/bug-trend/evidence/?scope_id=<scope_id>&run=<calculation_run_id>&begin=<begin>&end=<end>&bucket=<bucket_id>&series=<series>&chart_id=<chart_id>
 ```
 
 Responsibilities:

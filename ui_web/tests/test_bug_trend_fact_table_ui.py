@@ -62,6 +62,7 @@ class TestBugTrendFactTableUi(TestCase):
             'run': str(run.id),
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -84,6 +85,7 @@ class TestBugTrendFactTableUi(TestCase):
             'begin': '2026-08-03',
             'end': '2026-08-09',
             'owner': 'Alice',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -131,6 +133,7 @@ class TestBugTrendFactTableUi(TestCase):
             'begin': '2026-08-03',
             'end': '2026-08-09',
             'owner': 'Nobody',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -154,6 +157,7 @@ class TestBugTrendFactTableUi(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'all_open_bugs',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -171,6 +175,7 @@ class TestBugTrendFactTableUi(TestCase):
             'scope_id': scope.id,
             'begin': '2026-08-03',
             'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -439,6 +444,7 @@ class TestBugTrendFactTableUi(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -459,6 +465,7 @@ class TestBugTrendFactTableUi(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -479,6 +486,7 @@ class TestBugTrendFactTableUi(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then

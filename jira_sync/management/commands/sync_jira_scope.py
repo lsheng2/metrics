@@ -28,6 +28,7 @@ class Command(BaseCommand):
         coverage_end = self._parse_date(options['coverage_end'])
         cursor = self._claim_cursor(scope, coverage_start, coverage_end, options['full'])
         materializer = JiraIssuePayloadMaterializer()
+        calculation_started = False
 
         try:
             adapter = JiraScopeIssueAdapter(create_jira_client(settings))
@@ -46,7 +47,9 @@ class Command(BaseCommand):
                     updated_at = materializer.store_issue(history_api, scope, issue_payload, is_in_current_scope=True)
                     latest_updated_at = max(latest_updated_at, updated_at) if latest_updated_at else updated_at
 
+                calculation_started = True
                 calculation_run = bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)
+                calculation_started = False
                 cursor.status = JiraSyncCursor.STATUS_SUCCESS
                 cursor.last_successful_sync_at = timezone.now()
                 cursor.last_jira_updated_cutoff = latest_updated_at
@@ -57,6 +60,8 @@ class Command(BaseCommand):
                 cursor.save()
             self.stdout.write(self.style.SUCCESS(f'Synced Jira scope {scope.id}: {len(current_issues)} issues'))
         except Exception as error:
+            if calculation_started:
+                bug_trend_api.record_failed_calculation(scope.id, coverage_start, coverage_end)
             cursor.status = JiraSyncCursor.STATUS_FAILED
             cursor.last_error = str(error)
             cursor.save(update_fields=['status', 'last_error', 'updated_at'])

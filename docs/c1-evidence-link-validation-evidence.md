@@ -2,7 +2,7 @@
 
 日期：2026-08-20
 
-本文件记录 Grafana stock dashboard data link 到 Metrics evidence API 的验证结果。执行前保持 pending；`scripts/check_c1_evidence_link_evidence.py --evidence docs/c1-evidence-link-validation-evidence.md` 必须拒绝 pending 状态。
+本文件记录 Grafana stock dashboard data link 到 Metrics evidence API 的验证结果。当前记录已完成并通过；如果任一节点回到 pending/failed、payload 未捕获、`chart_id` 缺失或链接字段不一致，`scripts/check_c1_evidence_link_evidence.py --evidence docs/c1-evidence-link-validation-evidence.md` 必须失败。
 
 | node_id | status | command_or_manual_step | result | observed_grafana_url | payload_state | resolved_link_url | scope_id | begin | end | run | bucket | series | chart_id | reference_selection_title | linked_selection_title | reference_row_count | linked_row_count | decision_verdict | residual_risk |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

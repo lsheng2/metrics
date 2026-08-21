@@ -102,3 +102,22 @@ class TestAiChartGovernance(TestCase):
         chart = BugTrendChartDefinition.objects.get(chart_id='ai_cloud_chart')
         self.assertFalse(chart.enabled)
         self.assertNotIn('ai_cloud_chart', [item.chart_id for item in bug_trend_api.list_enabled_charts()])
+
+    def test_shouldRejectUnknownPublishGovernanceMode(self):
+        # Given
+        draft = bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
+            chart_id='ai_unknown_mode_chart',
+            title='AI Unknown Mode Chart',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract_id='default_bug_trend_bucket_series',
+            spec={'evidence_contract_id': 'default_bug_trend_bucket_series', 'series': ['all_open_bugs']},
+            actor='local_operator',
+        ))
+
+        # When / Then
+        with self.assertRaises(ValueError):
+            bug_trend_api.publish_chart(draft.chart_id, actor='local_operator', governance_mode='enterprise')
+        chart = BugTrendChartDefinition.objects.get(chart_id='ai_unknown_mode_chart')
+        self.assertFalse(chart.enabled)
+        self.assertEqual(BugTrendChartDefinition.STATUS_DRAFT, chart.status)

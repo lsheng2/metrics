@@ -4,12 +4,12 @@
   ],
   "api_surfaces": {
     "/api/bug-trend/chart-data/": {
-      "required_query_params": ["scope_id", "begin", "end"],
-      "optional_query_params": ["chart_id"]
+      "required_query_params": ["scope_id", "begin", "end", "chart_id"],
+      "optional_query_params": []
     },
     "/api/bug-trend/evidence/": {
-      "required_query_params": ["scope_id", "begin", "end", "run"],
-      "optional_query_params": ["bucket", "series", "owner", "status", "severity", "component", "text", "chart_id"]
+      "required_query_params": ["scope_id", "begin", "end", "run", "chart_id"],
+      "optional_query_params": ["bucket", "series", "owner", "status", "severity", "component", "text"]
     }
   },
   "sql_views": [],

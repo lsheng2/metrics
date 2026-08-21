@@ -40,7 +40,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
                         {
                             'datasource': {'uid': 'metrics-bug-trend-api'},
                             'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end'}
+                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end&chart_id=default_bug_trend'}
                             ],
                         }
                     ]
@@ -67,7 +67,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
                             'datasource': {'uid': 'metrics-bug-trend-api'},
                             'targets': [
                                 {
-                                    'path': '/api/bug-trend/evidence/?scope_id=$scope&begin=$begin&end=$end&run=$run&bucket=$bucket&series=$series'
+                                    'path': '/api/bug-trend/evidence/?scope_id=$scope&begin=$begin&end=$end&run=$run&bucket=$bucket&series=$series&chart_id=default_bug_trend'
                                 }
                             ],
                         }

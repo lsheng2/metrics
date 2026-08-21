@@ -16,6 +16,7 @@ class TestBugTrendApiContracts(TestCase):
             'scope_id': scope.id,
             'begin': 'not-date',
             'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -32,6 +33,7 @@ class TestBugTrendApiContracts(TestCase):
             'run': str(run.id),
             'begin': '2026-08-03',
             'end': 'not-date',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -48,11 +50,59 @@ class TestBugTrendApiContracts(TestCase):
             'run': str(run.id),
             'begin': 'not-date',
             'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
         self.assertEqual(400, response.status_code)
         self.assertEqual('begin must be an ISO date.', response.json()['error'])
+
+    def test_shouldRejectChartDataApiWhenChartIdIsMissing(self):
+        # Given
+        scope, _ = self._seed_run()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(['chart_id'], response.json()['missing_params'])
+
+    def test_shouldRejectEvidenceApiWhenChartIdIsMissing(self):
+        # Given
+        scope, run = self._seed_run()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(['chart_id'], response.json()['missing_params'])
+
+    def test_shouldRejectEvidenceExportWhenChartIdIsMissing(self):
+        # Given
+        scope, run = self._seed_run()
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_evidence_export'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(['chart_id'], response.json()['missing_params'])
 
     def _seed_run(self):
         scope = JiraScopeConfig.objects.create(

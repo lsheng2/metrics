@@ -3,6 +3,8 @@ from datetime import date, datetime, timezone
 from django.test import TestCase
 
 from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilters, bug_trend_api
+from bug_metrics.app.api.chart_catalog import AiChartDraftRequest
+from bug_metrics.models import BugTrendChartDefinition
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
 
 
@@ -125,6 +127,37 @@ class TestBugTrendPageQueryState(TestCase):
                 date(2026, 8, 9),
                 calculation_run_id=str(run.id),
                 list_filters=BugTrendTicketListFilters(owner='Alice'),
+            )
+        )
+
+        # Then
+        self.assertTrue(sync_result.is_consistent)
+        self.assertEqual([], sync_result.mismatches)
+
+    def test_shouldValidateChartListSyncWithinSelectedChartSeriesOnly(self):
+        # Given
+        scope = self._create_scope()
+        run = self._create_run(scope, date(2026, 8, 1), date(2026, 8, 31))
+        bucket = self._create_bucket(scope, run, date(2026, 8, 3), date(2026, 8, 9), open_count=1, fixed_or_closed_count=1)
+        self._create_membership(scope, run, bucket, 'all_open_bugs', 'STDEL-4051')
+        draft = bug_trend_api.create_ai_chart_draft(AiChartDraftRequest(
+            chart_id='ai_open_sync_only',
+            title='AI Open Sync Only',
+            renderer_type=BugTrendChartDefinition.RENDERER_CHARTJS,
+            integration_route=BugTrendChartDefinition.ROUTE_REFERENCE,
+            evidence_contract_id='default_bug_trend_bucket_series',
+            spec={'evidence_contract_id': 'default_bug_trend_bucket_series', 'series': ['all_open_bugs']},
+        ))
+        bug_trend_api.publish_chart(draft.chart_id)
+
+        # When
+        sync_result = bug_trend_api.validate_chart_list_sync(
+            BugTrendPageQueryState(
+                scope.id,
+                date(2026, 8, 3),
+                date(2026, 8, 9),
+                calculation_run_id=str(run.id),
+                active_chart_id='ai_open_sync_only',
             )
         )
 

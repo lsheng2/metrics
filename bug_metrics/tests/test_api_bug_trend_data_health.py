@@ -1,9 +1,22 @@
 from datetime import date, datetime, timezone
+from dataclasses import dataclass
+from unittest.mock import patch
 
 from django.test import TestCase
 
 from bug_metrics.app.api import bug_trend_api
 from bug_metrics.models import BugTrendCalculationRun, JiraScopeConfig
+
+
+@dataclass(slots=True)
+class FailingJiraHistoryApi:
+    def list_issues(self, scope):
+        raise RuntimeError('history unavailable')
+
+
+@dataclass(slots=True)
+class FakeJiraHistoryContainer:
+    jira_history_api: FailingJiraHistoryApi
 
 
 class TestBugTrendCalculationHealthApi(TestCase):
@@ -47,6 +60,21 @@ class TestBugTrendCalculationHealthApi(TestCase):
         self.assertEqual(scope.id, result[0].scope_id)
         self.assertEqual('no_run', result[0].status)
         self.assertEqual('missing', result[0].freshness_status)
+
+    def test_shouldMarkCalculationRunFailedWhenHistoryMaterializationFails(self):
+        # Given
+        scope = self._create_scope('STDEL failed producer')
+        fake_container = FakeJiraHistoryContainer(FailingJiraHistoryApi())
+
+        # When
+        with patch('bug_metrics.app.api.calculation.jira_history_container', fake_container):
+            with self.assertRaises(RuntimeError):
+                bug_trend_api.recalculate_scope(scope.id, date(2026, 8, 1), date(2026, 8, 31))
+
+        # Then
+        run = BugTrendCalculationRun.objects.get(scope=scope)
+        self.assertEqual(BugTrendCalculationRun.STATUS_FAILED, run.status)
+        self.assertIsNotNone(run.completed_at)
 
     def _create_scope(self, name):
         return JiraScopeConfig.objects.create(

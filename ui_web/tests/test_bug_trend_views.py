@@ -91,6 +91,7 @@ class TestBugTrendViews(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then
@@ -113,6 +114,7 @@ class TestBugTrendViews(TestCase):
             'end': '2026-08-09',
             'bucket': str(bucket.id),
             'series': 'fixed_or_closed_bugs',
+            'chart_id': 'default_bug_trend',
         })
 
         # Then

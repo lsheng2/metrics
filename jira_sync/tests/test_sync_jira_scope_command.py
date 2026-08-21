@@ -3,7 +3,7 @@ from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -13,6 +13,15 @@ from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalc
 from jira_history.models import JiraIssue, JiraIssueSnapshot, JiraTransition
 from jira_sync.models import JiraSyncCursor
 from jira_sync.out.jira_scope_issue_adapter import JiraScopeIssueAdapter
+
+
+class FailingCalculationJiraHistoryApi:
+    def list_issues(self, scope):
+        raise RuntimeError('calculation history unavailable')
+
+
+class FailingCalculationJiraHistoryContainer:
+    jira_history_api = FailingCalculationJiraHistoryApi()
 
 
 class TestSyncJiraScopeCommand(TestCase):
@@ -191,6 +200,33 @@ class TestSyncJiraScopeCommand(TestCase):
         self.assertEqual(datetime(2026, 8, 3, tzinfo=timezone.utc).date(), cursor.earliest_reliable_bucket_start)
         self.assertEqual(datetime(2026, 8, 9, tzinfo=timezone.utc).date(), cursor.latest_reliable_bucket_end)
         self.assertTrue(JiraIssue.objects.filter(scope=scope, issue_key='STABLE-1').exists())
+
+    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
+    def test_shouldPersistFailedCalculationRunWhenRecalculationRollsBackSyncTransaction(self, adapter_class, create_jira_client):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL failed calculation artifact',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+        )
+        adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
+
+        # When / Then
+        with patch('bug_metrics.app.api.calculation.jira_history_container', FailingCalculationJiraHistoryContainer()):
+            with self.assertRaises(RuntimeError):
+                call_command(
+                    'sync_jira_scope',
+                    str(scope.id),
+                    '--coverage-start', '2026-08-03',
+                    '--coverage-end', '2026-08-09',
+                    stdout=StringIO(),
+                )
+
+        failed_run = BugTrendCalculationRun.objects.get(scope=scope)
+        self.assertEqual(BugTrendCalculationRun.STATUS_FAILED, failed_run.status)
+        self.assertEqual(date(2026, 8, 3), failed_run.source_coverage_start)
+        self.assertEqual(date(2026, 8, 9), failed_run.source_coverage_end)
 
     def test_shouldRejectIncrementalSyncWhenScopeConfigChangedSinceMaterialization(self):
         # Given
