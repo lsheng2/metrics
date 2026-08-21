@@ -58,21 +58,27 @@
             "problemMatcher": []
         },
         {
-            "label": "Demo: Start E2E Bug Trend",
-            "dependsOrder": "sequence",
-            "dependsOn": ["Demo: Seed Bug Trend Mock Data", "Backend: Start Django", "Frontend: Open Bug Trend"],
+            "label": "E2E: Start Bug Trend",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_bug_trend.ps1'; & $script -Workspace $workspace",
             "problemMatcher": []
         },
         {
-            "label": "Demo: Stop E2E Bug Trend",
-            "dependsOrder": "sequence",
-            "dependsOn": ["Frontend: Stop Bug Trend", "Backend: Stop Django"],
+            "label": "E2E: Stop Bug Trend",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_stop_bug_trend.ps1'; & $script -Workspace $workspace",
             "problemMatcher": []
         },
         {
-            "label": "Demo: Restart E2E Bug Trend",
+            "label": "E2E: Stop Bug Trend (Force By Port)",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_stop_bug_trend.ps1'; & $script -Workspace $workspace -ForceByPort",
+            "problemMatcher": []
+        },
+        {
+            "label": "E2E: Restart Bug Trend",
             "dependsOrder": "sequence",
-            "dependsOn": ["Demo: Stop E2E Bug Trend", "Demo: Start E2E Bug Trend"],
+            "dependsOn": ["E2E: Stop Bug Trend", "E2E: Start Bug Trend"],
             "problemMatcher": []
         }
     ]

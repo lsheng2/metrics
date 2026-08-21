@@ -1,0 +1,27 @@
+{
+  "project_name": "metrics-bug-trend",
+  "services": [
+    {
+      "name": "django",
+      "preferred_ports": [8002, 8012, 8022, 8032, 8042],
+      "command": ["{python}", "manage.py", "runserver", "{host}:{port}", "--noreload"],
+      "host": "127.0.0.1",
+      "cwd": "{workspace}",
+      "health_url": "http://{host}:{port}/",
+      "startup_timeout_seconds": 30,
+      "graceful_timeout_seconds": 5,
+      "port_release_timeout_seconds": 2
+    },
+    {
+      "name": "grafana",
+      "preferred_ports": [3001, 3011, 3021, 3031, 3051],
+      "command": ["{grafana_bin}", "server", "--homepath", "{grafana_homepath}", "--config", "{grafana_config}"],
+      "host": "127.0.0.1",
+      "cwd": "{workspace}",
+      "health_url": "http://{host}:{port}/api/health",
+      "startup_timeout_seconds": 30,
+      "graceful_timeout_seconds": 5,
+      "port_release_timeout_seconds": 2
+    }
+  ]
+}
