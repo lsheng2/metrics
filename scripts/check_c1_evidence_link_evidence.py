@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import parse_qsl, urlparse
 
 
 NODE_IDS = ("C1.N1", "C1.N2", "C1.N3", "C1.N4")
@@ -14,7 +15,7 @@ VALID_VERDICTS = {"c_stock_linked_evidence_supported", "c_stock_non_evidence_onl
 
 BASE_REQUIRED = frozenset({"status", "command_or_manual_step", "result", "residual_risk"})
 PAGE_REQUIRED = frozenset({"observed_grafana_url", "scope_id", "begin", "end"})
-PAYLOAD_REQUIRED = frozenset({"payload_state", "run", "bucket", "series"})
+PAYLOAD_REQUIRED = frozenset({"payload_state", "run", "bucket", "series", "chart_id"})
 PARITY_REQUIRED = frozenset({"reference_selection_title", "linked_selection_title", "reference_row_count", "linked_row_count"})
 
 REQUIRED_FIELDS_BY_NODE = {
@@ -86,6 +87,7 @@ def validate_records(records: list[dict[str, str]]) -> list[Finding]:
             continue
         findings.extend(validate_required_fields(node_id, record))
         findings.extend(validate_field_values(node_id, record))
+        findings.extend(validate_resolved_link_query(node_id, record))
     if all(node_id in records_by_node for node_id in NODE_IDS):
         findings.extend(validate_cross_node_consistency(records_by_node))
     return findings
@@ -110,6 +112,22 @@ def validate_field_values(node_id: str, record: dict[str, str]) -> list[Finding]
     verdict = record.get("decision_verdict", "").strip()
     if verdict and verdict not in VALID_VERDICTS:
         findings.append(Finding(f"{node_id} invalid decision_verdict: {verdict}"))
+    return findings
+
+
+def validate_resolved_link_query(node_id: str, record: dict[str, str]) -> list[Finding]:
+    if node_id not in {"C1.N2", "C1.N3"} or record.get("payload_state", "").strip() != "payload_captured":
+        return []
+    resolved_link_url = record.get("resolved_link_url", "").strip()
+    if not resolved_link_url:
+        return [Finding(f"{node_id} missing required field: resolved_link_url")]
+    query = dict(parse_qsl(urlparse(resolved_link_url).query, keep_blank_values=True))
+    findings: list[Finding] = []
+    for field in ("scope_id", "begin", "end", "run", "bucket", "series", "chart_id"):
+        expected = record.get(field, "").strip()
+        actual = query.get(field, "").strip()
+        if actual != expected:
+            findings.append(Finding(f"{node_id} resolved_link_url {field}={actual or '<empty>'} does not match evidence field {expected or '<empty>'}"))
     return findings
 
 

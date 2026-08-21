@@ -10,9 +10,9 @@ def write_evidence(tmp_path, *, v1_status="passed", v2_status="passed", v3_statu
             [
                 "| node_id | status | command_or_manual_step | exit_code_or_result | scope_id | begin | end | calculation_run_id | observed_url | evidence_before_after | grafana_runtime_state | residual_risk | closure_verdict |",
                 "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-                f"| C0.V1 | {v1_status} | playwright bug trend click | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 | http://127.0.0.1:8002/bug-trend/ | 224 to 7 to 224 |  | none |  |",
+                f"| C0.V1 | {v1_status} | playwright bug trend click | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 | http://127.0.0.1:8002/bug-trend/?scope_id=131600&begin=2026-06-01&end=2026-08-09 | 224 to 7 to 224 |  | none |  |",
                 f"| C0.V2 | {v2_status} | api runtime probe | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 |  |  |  | none |  |",
-                f"| C0.V3 | {v3_status} | grafana provision smoke | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 | http://127.0.0.1:3000/d/bug-trend |  | {grafana_state} | {residual_risk} |  |",
+                f"| C0.V3 | {v3_status} | grafana provision smoke | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 | http://127.0.0.1:3000/d/bug-trend?var-scope_id=131600&var-begin=2026-06-01&var-end=2026-08-09 |  | {grafana_state} | {residual_risk} |  |",
                 f"| C0.V4 | {v4_status} | evidence checker | exit 0 |  |  |  |  |  |  | {grafana_state} | {residual_risk} | {closure_verdict} |",
             ]
         ),
@@ -123,3 +123,23 @@ def test_checkerAcceptsPartialClosureWhenGrafanaRuntimeIsUnavailable(tmp_path):
     findings = validate_evidence_file(evidence)
 
     assert findings == []
+
+
+def test_checkerRejectsReferenceUiUrlWhenQueryDoesNotMatchEvidenceFields(tmp_path):
+    evidence = write_evidence(tmp_path)
+    text = evidence.read_text(encoding="utf-8").replace("begin=2026-06-01", "begin=2025-04-07", 1)
+    evidence.write_text(text, encoding="utf-8")
+
+    findings = validate_evidence_file(evidence)
+
+    assert any("C0.V1 observed_url begin=2025-04-07" in finding.message for finding in findings)
+
+
+def test_checkerRejectsGrafanaUrlWhenVariableDoesNotMatchEvidenceFields(tmp_path):
+    evidence = write_evidence(tmp_path)
+    text = evidence.read_text(encoding="utf-8").replace("var-scope_id=131600", "var-scope_id=999")
+    evidence.write_text(text, encoding="utf-8")
+
+    findings = validate_evidence_file(evidence)
+
+    assert any("C0.V3 observed_url var-scope_id=999" in finding.message for finding in findings)

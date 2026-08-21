@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import parse_qsl, urlparse
 
 
 NODE_IDS = ("C0.V1", "C0.V2", "C0.V3", "C0.V4")
@@ -86,6 +87,7 @@ def validate_records(records: list[dict[str, str]]) -> list[Finding]:
             continue
         findings.extend(validate_required_fields(node_id, record))
         findings.extend(validate_field_values(node_id, record))
+        findings.extend(validate_observed_url_query(node_id, record))
     if all(node_id in records_by_node for node_id in ("C0.V3", "C0.V4")):
         findings.extend(validate_closure_consistency(records_by_node["C0.V3"], records_by_node["C0.V4"]))
     if all(node_id in records_by_node for node_id in NODE_IDS):
@@ -112,6 +114,26 @@ def validate_field_values(node_id: str, record: dict[str, str]) -> list[Finding]
     closure_verdict = record.get("closure_verdict", "").strip()
     if closure_verdict and closure_verdict not in VALID_CLOSURE_VERDICTS:
         findings.append(Finding(f"{node_id} invalid closure_verdict: {closure_verdict}"))
+    return findings
+
+
+def validate_observed_url_query(node_id: str, record: dict[str, str]) -> list[Finding]:
+    observed_url = record.get("observed_url", "").strip()
+    if node_id == "C0.V1" and observed_url:
+        return validate_query_fields(node_id, observed_url, record, (("scope_id", "scope_id"), ("begin", "begin"), ("end", "end")))
+    if node_id == "C0.V3" and observed_url:
+        return validate_query_fields(node_id, observed_url, record, (("var-scope_id", "scope_id"), ("var-begin", "begin"), ("var-end", "end")))
+    return []
+
+
+def validate_query_fields(node_id: str, observed_url: str, record: dict[str, str], fields: tuple[tuple[str, str], ...]) -> list[Finding]:
+    query = dict(parse_qsl(urlparse(observed_url).query, keep_blank_values=True))
+    findings: list[Finding] = []
+    for query_field, record_field in fields:
+        expected = record.get(record_field, "").strip()
+        actual = query.get(query_field, "").strip()
+        if actual != expected:
+            findings.append(Finding(f"{node_id} observed_url {query_field}={actual or '<empty>'} does not match evidence field {record_field}={expected or '<empty>'}"))
     return findings
 
 

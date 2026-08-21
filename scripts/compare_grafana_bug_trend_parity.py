@@ -33,15 +33,18 @@ def main() -> None:
     from bug_metrics.container import bug_metrics_container
     from bug_metrics.models import BugTrendCalculationRun
 
-    chart_definition = bug_metrics_container.bug_trend_api.get_chart_definition('default_bug_trend')
+    artifact = json.loads((repo_root / args.artifact).read_text(encoding='utf-8'))
+    chart_target = chart_target_from(artifact)
+    chart_id = chart_id_from(chart_target)
+    chart_definition = bug_metrics_container.bug_trend_api.get_chart_definition(chart_id)
     if chart_definition.evidence_contract.capability != 'bucket_series':
-        print('FAIL default_bug_trend must keep bucket_series evidence capability')
+        print(f'FAIL {chart_id} must keep bucket_series evidence capability for Grafana parity')
         raise SystemExit(1)
 
     run = BugTrendCalculationRun.objects.select_related('scope').get(id=args.calculation_run_id)
     begin = date.fromisoformat(args.begin) if args.begin else run.source_coverage_start
     end = date.fromisoformat(args.end) if args.end else run.source_coverage_end
-    expected_chart = bug_metrics_container.bug_trend_api.get_chart_for_run(str(run.id), begin, end)
+    expected_chart = bug_metrics_container.bug_trend_api.get_chart_for_run(str(run.id), begin, end, chart_id)
     expected_payload = {
         'scope_id': expected_chart.scope_id,
         'calculation_run_id': expected_chart.calculation_run_id,
@@ -58,9 +61,6 @@ def main() -> None:
         ],
         'unavailable_reason': expected_chart.unavailable_reason,
     }
-    artifact = json.loads((repo_root / args.artifact).read_text(encoding='utf-8'))
-    chart_target = chart_target_from(artifact)
-    chart_id = chart_id_from(chart_target)
     response = Client().get(reverse('ui_web:bug_trend_chart_data_api'), {
         'scope_id': run.scope_id,
         'begin': begin.isoformat(),
@@ -71,16 +71,6 @@ def main() -> None:
         print(f'FAIL chart API returned HTTP {response.status_code}')
         raise SystemExit(1)
     actual_payload = response.json()
-    expected_chart = bug_metrics_container.bug_trend_api.get_chart_for_run(str(run.id), begin, end, chart_id)
-    expected_payload['datasets'] = [
-        {
-            'series_name': dataset.series_name,
-            'type': dataset.chart_type,
-            'values': dataset.values,
-            'color': dataset.color,
-        }
-        for dataset in expected_chart.datasets
-    ]
     mismatches = compare_payloads(expected_payload, actual_payload)
     mismatches.extend(compare_artifact_contract(chart_target, artifact, actual_payload))
     for mismatch in mismatches:
