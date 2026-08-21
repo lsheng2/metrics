@@ -48,3 +48,15 @@ The `113 passed` command is the `bug_metrics`/`ui_web` governance slice plus Gra
 - Contract owner: each module that owns the authority under test.
 - Runtime evidence owner: the person running local browser/Grafana validation must update the evidence documents and run the matching checker.
 - AI-assisted implementation owner: the agent or human making the change must choose a gate profile from [ai-validation-operating-model.md](ai-validation-operating-model.md) before claiming closure.
+- AI validation planning owner: use `.github/agents/validation-engineer.agent.md` when a change needs test-plan signoff, authority matrix review, focused gate selection, stale/wrong-owner test detection, finding-class expansion, or closure-claim review.
+
+## Agent Synchronization
+
+The Validation Engineer agent is the operating entry point for this validation system. It should carry these concepts into planning and review conversations rather than returning a generic test list:
+
+- changed authority, owner path, producer, and concrete consumers;
+- falsifiable hypothesis and first focused check;
+- strictest applicable gate profile;
+- finding-class expansion before closure;
+- explicit residual risks and unverified surfaces;
+- precise closure language tied to commands that actually ran.

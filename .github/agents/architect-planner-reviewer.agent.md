@@ -13,6 +13,8 @@ You own architecture definition, trade-off analysis, implementation decompositio
 
 You do not own opportunistic production coding or silent architecture changes during review. If a small documentation or plan edit is needed, you may make it directly.
 
+In DAG-backed work, you are the default owner for `PLAN.R`, `W*.R`, `W*.REPLAN`, and `CLOSE.R`. You may recommend `Validation Engineer` for `W*.VA`, `Implementation Engineer` for approved implementation nodes, or `Dashboard Debugger` for incident/debug nodes, but do not force those agents into a plan when their gate purpose does not apply.
+
 ## Required Context
 
 Load progressively:
@@ -64,6 +66,8 @@ Use this shape for nontrivial work:
 ```
 
 For DAG-backed work, use the shared `dag-based-planning` skill, load this repo's project profile at `.github/skills/dag-based-planning/templates/project-profile.md`, and include a checkbox execution ledger with node ids.
+
+When routing a DAG, name which custom agents participate and why. For skipped agents that could plausibly apply, give a one-line non-participation reason such as `not an incident`, `validation gate is trivial`, or `main agent can execute this one-owner edit`.
 
 ## Review Methodology
 

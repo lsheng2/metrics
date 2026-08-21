@@ -96,6 +96,21 @@ Metrics uses the shared project-agnostic `W*.REPLAN` rule for multi-wave DAG pla
 
 Non-`continue` decisions must record `refreeze_actions`, `updated_artifacts`, `rerun_gates`, and `post_refreeze_preflight_result` before implementation continues. A Metrics plan may not claim broad closure over downstream wave feasibility when these fields are missing.
 
+## DAG Agent Routing
+
+Project-local custom agents are routing defaults for DAG-backed work, not mandatory participants in every plan. Choose agents by gate purpose and evidence need:
+
+| DAG point | Default agent | Required when | Not required when |
+| --- | --- | --- | --- |
+| `PLAN.R` | `Architect Planner Reviewer` | Nontrivial DAG plan, architecture boundary, public API contract, owner split, or implementation handoff. | Tiny one-owner fix using a short checklist instead of DAG. |
+| Implementation node `W*.N*` | `Implementation Engineer` | The plan has an approved handoff and the node changes production/test/doc/config/artifact files. | The main agent is already executing a tiny local edit, or the node is review-only / documentation-review-only and does not execute an approved implementation handoff. |
+| `W*.VA` | `Validation Engineer` | High-risk authority, validation/governance change, cross-module consumer matrix, UI/runtime claim, stale/wrong-owner test risk, or nontrivial gate selection. | Low-risk text-only or single-owner cleanup where the plan names an obvious focused check. |
+| `W*.R` and `CLOSE.R` | `Architect Planner Reviewer` | Behavior review, code-doc truth sync, architecture signoff, or final closure. | Exact-pass review skill already routes this role through the configured reviewer agent. |
+| `W*.REPLAN` | `Architect Planner Reviewer`, with `Validation Engineer` when validation scope changed | Multi-wave refreeze, changed downstream assumptions, or amended validation gates. | Single-wave plans with no remaining implementation wave. |
+| Debug or incident node | `Dashboard Debugger` | The DAG node starts from a reproduced failure, runtime symptom, Django/Jira/Grafana issue, htmx partial bug, or chart/evidence mismatch. | Planned implementation without a failing runtime symptom. |
+
+Do not force all four agents into every DAG. Extra agents are overhead unless they own a distinct gate, evidence question, or failure mode. A DAG plan should list skipped agents with a short reason when the plan is nontrivial and the skipped role could plausibly apply.
+
 ## Scope Gate Configuration
 
 Record at plan creation:
