@@ -13,7 +13,7 @@ from urllib.parse import parse_qsl, urlparse
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Compare Bug Trend JSON API output with run-pinned Metrics chart data.')
+    parser = argparse.ArgumentParser(description='Compare Bug Trend JSON API output with run-selected reference Metrics chart data.')
     parser.add_argument('--calculation-run-id', required=True)
     parser.add_argument('--artifact', default='ops/grafana/bug_trend_dashboard.json')
     parser.add_argument('--begin', default='')
