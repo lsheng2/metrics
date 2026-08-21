@@ -82,6 +82,20 @@ $python = Join-Path (Get-Location) '.venv/Scripts/python.exe'
 
 Focused test commands are examples only. Each DAG node must name the focused tests for its actual owner path before using them as closure evidence.
 
+## Rolling-Horizon Refreeze Gates
+
+Metrics uses the shared project-agnostic `W*.REPLAN` rule for multi-wave DAG plans: every implementation wave followed by another implementation wave needs a `W*.REPLAN` node after the wave behavior review, and the next implementation wave must depend on that replan node.
+
+- Replan node kind or label vocabulary: use `replan-review` in checker inputs and `W*.REPLAN` in plan prose, Mermaid graphs, and ledgers.
+- Checker command or review procedure that proves every implementation wave followed by another implementation wave has `W*.REPLAN`: run the copied/adapted DAG checker template with a real plan input passed through `--plan`, or record an explicit plan preflight row that checks node table, Mermaid graph, and ledger dependencies against `W*.REPLAN`. `--sample` mode is only a template self-check and is not closure evidence.
+- Checker command or review procedure that proves the next implementation wave depends on the previous `W*.REPLAN`: run the copied/adapted DAG checker template with a real plan input passed through `--plan`, or record a preflight row naming the first node of the next wave and its `depends_on` edge. `--sample` mode is only a template self-check and is not closure evidence.
+- Approved command/result shape for downstream predicate checks: project-profile-approved commands such as focused `python -m pytest ... -q`, `python manage.py check`, `python scripts/check_file_size_limits.py --include-untracked`, `python scripts/check_diff_whitespace.py --include-untracked`, or a plan-specific grep/query; record exact command and `PASS`/`FAIL` result.
+- Approved artifact roots for `updated_artifacts` in non-`continue` decisions: existing plan-owned repo-relative paths under `docs/`, `.github/`, module-local `tests/`, `scripts/`, `ops/`, or the touched module owner paths declared by the replan node.
+- Approved gate node ids or command patterns for `rerun_gates`: DAG gate node ids such as `W*.PREFLIGHT`, `W*.VA`, `W*.R`, `CLOSE.PREFLIGHT`, `CLOSE.R`, or project-profile-approved commands listed in this profile and the plan.
+- Required post-refreeze preflight command/result shape: exact preflight command or method plus `result: PASS`; for plans with copied checker templates, prefer `python path/to/dag-checker-template.py --plan path/to/checker-input.json`.
+
+Non-`continue` decisions must record `refreeze_actions`, `updated_artifacts`, `rerun_gates`, and `post_refreeze_preflight_result` before implementation continues. A Metrics plan may not claim broad closure over downstream wave feasibility when these fields are missing.
+
 ## Scope Gate Configuration
 
 Record at plan creation:
@@ -112,6 +126,7 @@ This profile was hand-maintained for the Metrics repository before the shared `d
 | Test roots | Module-local `tests/` directories present in source roots | high |
 | Doc truth roots | `CLAUDE.md`, `README.md`, `docs/`, `.github/copilot-instructions.md`, `.github/ai-governance/`, `.github/agents/`, `.github/skills/` | high |
 | Hard gate commands | `CLAUDE.md`, `.github/copilot-instructions.md`, and existing scripts under `scripts/` | medium; commands should still be run for each closure claim |
+| Rolling-horizon refreeze gates | Shared `dag-based-planning` skill core and Metrics hard gate commands in this profile | medium; copied plan checkers must be adapted per plan before used as closure gates |
 | Authority boundaries | `CLAUDE.md`, module structure, and public `app/api/` package convention | high |
 | Consumer universe defaults | Module structure, `ui_web/` federation pattern, `ops/`, `scripts/`, docs and test directories | medium |
 | Risk level defaults | Repo architecture rules, audit/export/governance patterns, and closure verification policy | medium |
