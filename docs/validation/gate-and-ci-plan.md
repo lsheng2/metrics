@@ -2,6 +2,8 @@
 
 ## Gate Classes
 
+The gate classes below are the concrete command layer for the AI-assisted operating model in [ai-validation-operating-model.md](ai-validation-operating-model.md). New AI-assisted changes should first classify the change, then run the matching gate profile.
+
 | Gate Class | When To Run | Required Commands | Blocks Merge |
 | --- | --- | --- | --- |
 | Focused owner gate | After every code change in a module or script. | The smallest relevant `pytest` command for touched owner paths. | Yes. |

@@ -4,6 +4,8 @@
 
 Validate the Jira/Grafana Bug Trend MVP governance plan from ingredient-level behavior to runtime UI evidence, while preserving the core architecture rule: Metrics owns Jira scope semantics, calculation artifacts, evidence contracts, chart catalog, audit, renderer decisions, and AI chart governance. Grafana and AI are consumers or proposal sources, not semantic owners.
 
+For long-running AI-assisted implementation work, use [ai-validation-operating-model.md](ai-validation-operating-model.md) to choose the validation gate profile before editing and to phrase closure claims after validation.
+
 ## Scope
 
 This strategy covers:
@@ -66,3 +68,7 @@ A Jira/Grafana MVP change can be closed only when all of the following are true:
 5. Browser-level behavior is covered either by automated Playwright tests or by a C0/C1 evidence record checked by script.
 6. `python manage.py check`, file-size, and whitespace gates pass for nontrivial changes.
 7. Broad closure claims name unverified residual risks, especially when runtime Grafana cannot be run in CI.
+
+## AI-Assisted Closure Addendum
+
+Every AI-assisted feature or fix must record the selected gate profile: `focused`, `feature`, `feature-ui`, `artifact`, `governance`, `runtime`, or `release`. If a test or reviewer finds a defect, the next fix must expand the failure class across sibling entry points before claiming closure.

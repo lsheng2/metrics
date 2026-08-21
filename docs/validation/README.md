@@ -7,6 +7,7 @@ This folder is the validation source of truth for the Jira/Grafana Bug Trend MVP
 | Document | Purpose |
 | --- | --- |
 | [test-strategy.md](test-strategy.md) | Overall validation strategy, risk model, layers, and coverage policy. |
+| [ai-validation-operating-model.md](ai-validation-operating-model.md) | Long-term AI-assisted validation model: change classification, gate profiles, finding expansion, and closure wording. |
 | [jira-grafana-mvp-test-plan.md](jira-grafana-mvp-test-plan.md) | Execution plan for Jira/Grafana MVP validation from ingredient tests through runtime evidence. |
 | [test-case-catalog.md](test-case-catalog.md) | Categorized inventory of existing and planned test cases mapped to code paths and contracts. |
 | [gate-and-ci-plan.md](gate-and-ci-plan.md) | Local gates, full gates, proposed CI jobs, and merge-blocking policy. |
@@ -46,3 +47,4 @@ The `113 passed` command is the `bug_metrics`/`ui_web` governance slice plus Gra
 - Test strategy owner: validation architecture for the Metrics dashboard.
 - Contract owner: each module that owns the authority under test.
 - Runtime evidence owner: the person running local browser/Grafana validation must update the evidence documents and run the matching checker.
+- AI-assisted implementation owner: the agent or human making the change must choose a gate profile from [ai-validation-operating-model.md](ai-validation-operating-model.md) before claiming closure.
