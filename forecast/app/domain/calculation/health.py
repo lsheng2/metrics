@@ -19,7 +19,7 @@ class HealthStatusCalculator:
 
         ratio = spent_seconds / estimation_seconds
 
-        if ratio <= 0.8:
+        if ratio <= 1.0:
             return HealthStatus.GREEN
         elif ratio <= 1.4:
             return HealthStatus.YELLOW
