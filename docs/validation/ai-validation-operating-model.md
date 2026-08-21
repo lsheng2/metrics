@@ -148,19 +148,7 @@ Runtime evidence must be regenerated or explicitly revalidated when live URLs, G
 
 Use before merge to default branch or broad release claims.
 
-Minimum gates:
-
-```powershell
-& .venv\Scripts\python.exe -m pytest -q
-& .venv\Scripts\python.exe -m pytest bug_metrics\tests jira_history\tests jira_sync\tests pull_requests\tests -q
-& .venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
-& .venv\Scripts\python.exe -m pytest ui_web\tests\test_browser_bug_trend_dashboard.py -q
-& .venv\Scripts\python.exe scripts\check_c0_validation_evidence.py --evidence docs\c0-validation-closure-evidence.md
-& .venv\Scripts\python.exe scripts\check_c1_evidence_link_evidence.py --evidence docs\c1-evidence-link-validation-evidence.md
-& .venv\Scripts\python.exe manage.py check
-& .venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
-& .venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
-```
+Minimum gates: run the `Release Gate` defined in [gate-and-ci-plan.md](gate-and-ci-plan.md). That document is the command authority for release validation.
 
 ## Finding-Class Expansion
 
@@ -185,7 +173,8 @@ Use precise claims:
 - `focused gate passed` means the touched owner test passed.
 - `MVP governance gate passed` means the commands in [gate-and-ci-plan.md](gate-and-ci-plan.md) passed for the Jira/Grafana scope.
 - `runtime evidence passed` means the C0/C1 evidence docs were current and their checkers passed.
-- `full repository gate passed` means default pytest, explicit non-`pytest.ini` roots, Django check, artifact checks, browser tests, and hygiene gates passed.
+- `full local gate passed` means default pytest, explicit non-`pytest.ini` roots, Django check, and hygiene gates passed.
+- `release gate passed` means the `Release Gate` in [gate-and-ci-plan.md](gate-and-ci-plan.md) passed, including full local, artifact, browser, and runtime evidence gates.
 
 Do not say `all tests passed` unless both default pytest and explicit excluded roots were run and passed in the same closure window. Do not say `Grafana runtime validated` when only static artifact validation or evidence-document checking ran.
 

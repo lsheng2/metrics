@@ -15,10 +15,11 @@ VALID_CLOSURE_VERDICTS = {"full_c0_runtime_closure", "partial_c0_static_api_refe
 
 BASE_REQUIRED_FIELDS = frozenset({"status", "command_or_manual_step", "exit_code_or_result", "residual_risk"})
 CONTEXT_REQUIRED_FIELDS = frozenset({"scope_id", "begin", "end", "calculation_run_id"})
+API_REQUIRED_FIELDS = frozenset({"chart_data_url", "evidence_url", "bucket", "series", "chart_id"})
 
 REQUIRED_FIELDS_BY_NODE = {
     "C0.V1": BASE_REQUIRED_FIELDS | CONTEXT_REQUIRED_FIELDS | frozenset({"observed_url", "evidence_before_after"}),
-    "C0.V2": BASE_REQUIRED_FIELDS | CONTEXT_REQUIRED_FIELDS,
+    "C0.V2": BASE_REQUIRED_FIELDS | CONTEXT_REQUIRED_FIELDS | API_REQUIRED_FIELDS,
     "C0.V3": BASE_REQUIRED_FIELDS | CONTEXT_REQUIRED_FIELDS | frozenset({"observed_url", "grafana_runtime_state"}),
     "C0.V4": BASE_REQUIRED_FIELDS | frozenset({"grafana_runtime_state", "closure_verdict"}),
 }
@@ -88,6 +89,7 @@ def validate_records(records: list[dict[str, str]]) -> list[Finding]:
         findings.extend(validate_required_fields(node_id, record))
         findings.extend(validate_field_values(node_id, record))
         findings.extend(validate_observed_url_query(node_id, record))
+        findings.extend(validate_api_urls(node_id, record))
     if all(node_id in records_by_node for node_id in ("C0.V3", "C0.V4")):
         findings.extend(validate_closure_consistency(records_by_node["C0.V3"], records_by_node["C0.V4"]))
     if all(node_id in records_by_node for node_id in NODE_IDS):
@@ -124,6 +126,19 @@ def validate_observed_url_query(node_id: str, record: dict[str, str]) -> list[Fi
     if node_id == "C0.V3" and observed_url:
         return validate_query_fields(node_id, observed_url, record, (("var-scope_id", "scope_id"), ("var-begin", "begin"), ("var-end", "end")))
     return []
+
+
+def validate_api_urls(node_id: str, record: dict[str, str]) -> list[Finding]:
+    if node_id != "C0.V2":
+        return []
+    findings: list[Finding] = []
+    chart_data_url = record.get("chart_data_url", "").strip()
+    if chart_data_url:
+        findings.extend(validate_query_fields(node_id, chart_data_url, record, (("scope_id", "scope_id"), ("begin", "begin"), ("end", "end"), ("chart_id", "chart_id"))))
+    evidence_url = record.get("evidence_url", "").strip()
+    if evidence_url:
+        findings.extend(validate_query_fields(node_id, evidence_url, record, (("scope_id", "scope_id"), ("begin", "begin"), ("end", "end"), ("run", "calculation_run_id"), ("bucket", "bucket"), ("series", "series"), ("chart_id", "chart_id"))))
+    return findings
 
 
 def validate_query_fields(node_id: str, observed_url: str, record: dict[str, str], fields: tuple[tuple[str, str], ...]) -> list[Finding]:

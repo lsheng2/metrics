@@ -22,7 +22,7 @@ Last verified on 2026-08-21 in the local workspace:
 # 113 passed
 
 & .venv\Scripts\python.exe -m pytest jira_history\tests\test_api_scope_audit_facts.py jira_sync\tests\test_api_jira_sync_data_health.py jira_sync\tests\test_sync_jira_scope_command.py bug_metrics\tests\test_c0_validation_evidence_checker.py bug_metrics\tests\test_c1_evidence_link_checker.py bug_metrics\tests\test_grafana_bug_trend_parity.py -q
-# Additional non-pytest.ini MVP roots and evidence-checker tests must pass before closure
+# 37 passed
 
 & .venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
 # PASS grafana artifacts checked=1

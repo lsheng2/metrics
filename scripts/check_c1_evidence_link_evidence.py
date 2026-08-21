@@ -87,6 +87,7 @@ def validate_records(records: list[dict[str, str]]) -> list[Finding]:
             continue
         findings.extend(validate_required_fields(node_id, record))
         findings.extend(validate_field_values(node_id, record))
+        findings.extend(validate_grafana_page_query(node_id, record))
         findings.extend(validate_resolved_link_query(node_id, record))
     if all(node_id in records_by_node for node_id in NODE_IDS):
         findings.extend(validate_cross_node_consistency(records_by_node))
@@ -112,6 +113,22 @@ def validate_field_values(node_id: str, record: dict[str, str]) -> list[Finding]
     verdict = record.get("decision_verdict", "").strip()
     if verdict and verdict not in VALID_VERDICTS:
         findings.append(Finding(f"{node_id} invalid decision_verdict: {verdict}"))
+    return findings
+
+
+def validate_grafana_page_query(node_id: str, record: dict[str, str]) -> list[Finding]:
+    if node_id not in {"C1.N2", "C1.N3"} or record.get("payload_state", "").strip() != "payload_captured":
+        return []
+    observed_grafana_url = record.get("observed_grafana_url", "").strip()
+    if not observed_grafana_url:
+        return [Finding(f"{node_id} missing required field: observed_grafana_url")]
+    query = dict(parse_qsl(urlparse(observed_grafana_url).query, keep_blank_values=True))
+    findings: list[Finding] = []
+    for query_field, evidence_field in (("var-scope_id", "scope_id"), ("var-begin", "begin"), ("var-end", "end")):
+        expected = record.get(evidence_field, "").strip()
+        actual = query.get(query_field, "").strip()
+        if actual != expected:
+            findings.append(Finding(f"{node_id} observed_grafana_url {query_field}={actual or '<empty>'} does not match evidence field {expected or '<empty>'}"))
     return findings
 
 

@@ -10,7 +10,8 @@ The gate classes below are the concrete command layer for the AI-assisted operat
 | Jira/Grafana MVP governance gate | Before claiming MVP closure or pushing governance changes. | Focused suite listed below, Grafana validator, `manage.py check`. | Yes. |
 | Browser gate | For chart, htmx, template, evidence interaction, or visual rendering changes. | `ui_web/tests/test_browser_bug_trend_dashboard.py`. | Yes when UI behavior changed. |
 | Runtime evidence gate | When claiming local C0/C1 runtime closure. | C0/C1 checker scripts after evidence docs are updated. | Yes for runtime closure claims. |
-| Full repository gate | Before merge to default branch or release branch. | Full pytest, Django check, hygiene scripts. | Yes. |
+| Full local gate | Before broad local closure claims. | Default pytest, explicit non-`pytest.ini` roots, Django check, hygiene scripts. | Yes. |
+| Release gate | Before merge to default branch or release branch. | Full local gate plus Grafana artifact, browser, and runtime evidence gates. | Yes. |
 | Exact-pass review gate | For architecture/governance-heavy changes or explicit user request. | `lsheng2-coding-review` gate with required clean passes. | Yes when requested or declared in plan. |
 
 ## Local MVP Governance Gate
@@ -24,7 +25,7 @@ Run this before saying the Jira/Grafana MVP governance plan is still green. The 
 & .venv\Scripts\python.exe manage.py check
 ```
 
-Current observed result on 2026-08-21: `113 passed`, Grafana validator PASS, Django check PASS.
+Current observed result on 2026-08-21: first pytest command `113 passed`; second pytest command `37 passed`; Grafana validator PASS; Django check PASS.
 
 ## Browser And Runtime Gate
 
@@ -41,13 +42,28 @@ Current observed result on 2026-08-21: `4 passed`, C0 checker PASS, C1 checker P
 ```powershell
 & .venv\Scripts\python.exe -m pytest -q
 & .venv\Scripts\python.exe -m pytest bug_metrics\tests jira_history\tests jira_sync\tests pull_requests\tests -q
-& .venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
 & .venv\Scripts\python.exe manage.py check
 & .venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
 & .venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
 ```
 
 The second pytest command is explicit because `pytest.ini` does not include all module-local test roots.
+
+## Release Gate
+
+Use this before merge to the default branch, release branches, or broad release-readiness claims.
+
+```powershell
+& .venv\Scripts\python.exe -m pytest -q
+& .venv\Scripts\python.exe -m pytest bug_metrics\tests jira_history\tests jira_sync\tests pull_requests\tests -q
+& .venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
+& .venv\Scripts\python.exe -m pytest ui_web\tests\test_browser_bug_trend_dashboard.py -q
+& .venv\Scripts\python.exe scripts\check_c0_validation_evidence.py --evidence docs\c0-validation-closure-evidence.md
+& .venv\Scripts\python.exe scripts\check_c1_evidence_link_evidence.py --evidence docs\c1-evidence-link-validation-evidence.md
+& .venv\Scripts\python.exe manage.py check
+& .venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
+& .venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
+```
 
 ## Proposed CI Jobs
 
@@ -87,7 +103,7 @@ Commands:
 & .venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
 ```
 
-Run-pinned Grafana parity is a local/runtime gate unless CI seeds a known `BugTrendCalculationRun` id:
+Run-selected reference parity is a local/runtime gate unless CI seeds a known `BugTrendCalculationRun` id. The script uses the provided run as the expected reference and rejects mismatched API payload `calculation_run_id` or chart data:
 
 ```powershell
 & .venv\Scripts\python.exe scripts\compare_grafana_bug_trend_parity.py --calculation-run-id <run-id> --artifact ops\grafana\bug_trend_dashboard.json --begin <begin> --end <end>

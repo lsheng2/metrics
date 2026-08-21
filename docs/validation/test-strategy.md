@@ -27,7 +27,8 @@ This strategy does not cover unrelated velocity, forecast, task board, or pull-r
 | Artifact/governance | Validate Grafana artifacts, C0/C1 evidence records, file hygiene, and docs-gates. | `scripts/validate_grafana_artifacts.py`, `scripts/check_c0_validation_evidence.py`, `scripts/check_c1_evidence_link_evidence.py`, hygiene scripts | External artifacts cannot bypass Metrics-owned APIs or omit required evidence parameters. |
 | Browser/UI | Validate user-visible chart/evidence behavior and Chart.js rendering. | `ui_web/tests/test_browser_bug_trend_dashboard.py`, local browser smoke | Dashboard renders nonblank charts, evidence state changes correctly, unavailable states are visible. |
 | Runtime Grafana | Validate local Grafana dashboard render and link-out evidence behavior. | `docs/c0-validation-closure-evidence.md`, `docs/c1-evidence-link-validation-evidence.md` plus checkers | Runtime evidence documents contain passed records and checker scripts reject stale/pending claims. |
-| Full repository | Detect broad regressions outside the MVP slice. | `python -m pytest`, `python manage.py check` | All configured pytest roots and Django checks pass before merge. |
+| Full local | Detect broad regressions outside the MVP slice. | [gate-and-ci-plan.md](gate-and-ci-plan.md) `Full Local Gate` | Default pytest, explicit non-`pytest.ini` roots, Django check, and hygiene gates pass. |
+| Release | Validate merge/release readiness. | [gate-and-ci-plan.md](gate-and-ci-plan.md) `Release Gate` | Full local, artifact, browser, and runtime evidence gates pass. |
 
 ## Risk Model
 

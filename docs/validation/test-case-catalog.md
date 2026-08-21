@@ -35,7 +35,7 @@ This catalog groups existing and planned test cases by validation layer. Test co
 | --- | --- | --- |
 | Grafana data surface contract | `bug_metrics/tests/test_grafana_data_surface_contract.py` | Accepts committed artifact, rejects unapproved params, missing required params, unapproved path, external host, hardcoded semantics, raw Jira reads, SQL, unapproved datasource, empty artifact root. |
 | Grafana artifact validation | `scripts/validate_grafana_artifacts.py` | Validates committed JSON artifacts against `docs/grafana-approved-data-surfaces.json`. |
-| Grafana parity | `scripts/compare_grafana_bug_trend_parity.py`, `bug_metrics/tests/test_grafana_bug_trend_parity.py` | Run-pinned local/runtime command that compares artifact-declared chart target with Metrics chart API using artifact `chart_id`; unit coverage verifies artifact `chart_id` extraction and default behavior. |
+| Grafana parity | `scripts/compare_grafana_bug_trend_parity.py`, `bug_metrics/tests/test_grafana_bug_trend_parity.py` | Run-selected reference parity command that compares artifact-declared chart target with Metrics chart API using artifact `chart_id`; unit coverage verifies artifact `chart_id` extraction and default behavior. |
 | Approved data surface | `docs/grafana-approved-data-surfaces.json` | Declares allowed Metrics API paths and optional `chart_id` for chart-data. |
 
 ## Browser And Runtime Tests

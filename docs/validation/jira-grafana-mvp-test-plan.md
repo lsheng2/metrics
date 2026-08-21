@@ -9,7 +9,7 @@ Latest local validation snapshot:
 | Gate | Result |
 | --- | --- |
 | Focused Bug Metrics/UI/Grafana governance pytest slice | `113 passed` |
-| Additional non-`pytest.ini` MVP roots and checker tests | Required before closure; see W0 and W3 commands. |
+| Additional non-`pytest.ini` MVP roots and checker tests | `37 passed` |
 | Grafana artifact validator | `PASS grafana artifacts checked=1` |
 | Django system check | `System check identified no issues` |
 | Playwright Bug Trend browser tests | `4 passed` |
@@ -78,7 +78,7 @@ Required commands:
 & .venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
 ```
 
-Run-pinned parity command, required when claiming live local Grafana parity for a seeded or real calculation run:
+Run-selected reference parity command, required when claiming live local Grafana parity for a seeded or real calculation run. The script uses the supplied run as the expected reference and verifies the chart-data API response selects the same calculation run and chart payload:
 
 ```powershell
 & .venv\Scripts\python.exe scripts\compare_grafana_bug_trend_parity.py --calculation-run-id <run-id> --artifact ops\grafana\bug_trend_dashboard.json --begin <begin> --end <end>
@@ -115,19 +115,11 @@ Exit criteria:
 - C0 evidence proves real local runtime reference UI and Grafana render checks were performed.
 - C1 evidence proves Grafana link-out evidence resolves to Metrics evidence rows with matching row count/title.
 
-### W4 - Full Repository Gate
+### W4 - Full Local And Release Gates
 
-Required commands:
+Use [gate-and-ci-plan.md](gate-and-ci-plan.md) as the command authority for `Full Local Gate` and `Release Gate`. Do not copy a separate release command list into this plan; this prevents full/release gates from drifting across validation documents.
 
-```powershell
-& .venv\Scripts\python.exe -m pytest -q
-& .venv\Scripts\python.exe -m pytest bug_metrics\tests jira_history\tests jira_sync\tests pull_requests\tests -q
-& .venv\Scripts\python.exe manage.py check
-& .venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
-& .venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
-```
-
-Important note: `pytest.ini` currently includes `tasks/tests`, `forecast/tests`, `velocity/tests`, and `ui_web/tests`. It does not include every app-specific test root. CI and local full gates must explicitly run `bug_metrics/tests`, `jira_history/tests`, `jira_sync/tests`, and `pull_requests/tests`.
+Important note: `pytest.ini` currently includes `tasks/tests`, `forecast/tests`, `velocity/tests`, and `ui_web/tests`. It does not include every app-specific test root. CI and local full gates must explicitly run `bug_metrics/tests`, `jira_history/tests`, `jira_sync/tests`, and `pull_requests/tests` as defined in [gate-and-ci-plan.md](gate-and-ci-plan.md).
 
 ## Release Blocking Criteria
 

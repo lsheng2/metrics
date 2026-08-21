@@ -8,8 +8,8 @@ def write_evidence(tmp_path, *, n1_status='passed', n2_status='passed', n3_statu
             '| node_id | status | command_or_manual_step | result | observed_grafana_url | payload_state | resolved_link_url | scope_id | begin | end | run | bucket | series | chart_id | reference_selection_title | linked_selection_title | reference_row_count | linked_row_count | decision_verdict | residual_risk |',
             '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
             f'| C1.N1 | {n1_status} | artifact validator link check | exit 0 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | none |',
-            f'| C1.N2 | {n2_status} | Grafana rendered link inspection | resolved link captured | http://127.0.0.1:3001/d/metrics-bug-trend-c-stock/metrics-bug-trend-c-stock-spike | {payload_state} | http://127.0.0.1:8002/api/bug-trend/evidence/?scope_id=3&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend | 3 | 2026-06-01 | 2026-08-09 | run-1 | bucket-1 | all_open_bugs | default_bug_trend |  |  |  |  |  | none |',
-            f'| C1.N3 | {n3_status} | request resolved link target | row count compared | http://127.0.0.1:3001/d/metrics-bug-trend-c-stock/metrics-bug-trend-c-stock-spike | {payload_state} | http://127.0.0.1:8002/api/bug-trend/evidence/?scope_id=3&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend | 3 | 2026-06-01 | 2026-08-09 | run-1 | bucket-1 | all_open_bugs | default_bug_trend | {reference_title} | {linked_title} | {reference_count} | {linked_count} |  | none |',
+            f'| C1.N2 | {n2_status} | Grafana rendered link inspection | resolved link captured | http://127.0.0.1:3001/d/metrics-bug-trend-c-stock/metrics-bug-trend-c-stock-spike?var-scope_id=3&var-begin=2026-06-01&var-end=2026-08-09 | {payload_state} | http://127.0.0.1:8002/api/bug-trend/evidence/?scope_id=3&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend | 3 | 2026-06-01 | 2026-08-09 | run-1 | bucket-1 | all_open_bugs | default_bug_trend |  |  |  |  |  | none |',
+            f'| C1.N3 | {n3_status} | request resolved link target | row count compared | http://127.0.0.1:3001/d/metrics-bug-trend-c-stock/metrics-bug-trend-c-stock-spike?var-scope_id=3&var-begin=2026-06-01&var-end=2026-08-09 | {payload_state} | http://127.0.0.1:8002/api/bug-trend/evidence/?scope_id=3&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend | 3 | 2026-06-01 | 2026-08-09 | run-1 | bucket-1 | all_open_bugs | default_bug_trend | {reference_title} | {linked_title} | {reference_count} | {linked_count} |  | none |',
             f'| C1.N4 | {n4_status} | C1 evidence checker | checker passed |  | {payload_state} |  |  |  |  |  |  |  |  |  |  |  |  | {verdict} | {residual_risk} |',
         ]),
         encoding='utf-8',
@@ -79,6 +79,16 @@ def test_checkerRejectsLinkedEvidenceWhenResolvedLinkDoesNotMatchEvidenceFields(
     findings = validate_evidence_file(evidence)
 
     assert any('resolved_link_url series=fixed_or_closed_bugs' in finding.message for finding in findings)
+
+
+def test_checkerRejectsLinkedEvidenceWhenGrafanaPageVariablesDoNotMatchEvidenceFields(tmp_path):
+    evidence = write_evidence(tmp_path)
+    text = evidence.read_text(encoding='utf-8').replace('var-scope_id=3', 'var-scope_id=99')
+    evidence.write_text(text, encoding='utf-8')
+
+    findings = validate_evidence_file(evidence)
+
+    assert any('observed_grafana_url var-scope_id=99' in finding.message for finding in findings)
 
 
 def test_checkerAcceptsNonEvidenceOnlyWhenPayloadUnavailable(tmp_path):
