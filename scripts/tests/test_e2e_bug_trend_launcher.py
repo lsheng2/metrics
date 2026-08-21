@@ -49,8 +49,8 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
     calls = []
 
     class FakeLifecycle:
-        def stop_all(self, graceful_timeout_seconds):
-            calls.append(("stop_all", graceful_timeout_seconds))
+        def prepare_startup(self, service_specs, graceful_timeout_seconds=5.0, force_by_port=False):
+            calls.append(("prepare_startup", tuple(spec.name for spec in service_specs), graceful_timeout_seconds, force_by_port))
 
         def resolve_plan(self, specs):
             calls.append(("resolve_plan", tuple(spec.name for spec in specs)))
@@ -68,6 +68,7 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
             "service_config": str(tmp_path / "services.json"),
             "django_ports": "",
             "grafana_ports": "",
+            "force_by_port": True,
             "scope_id": "7",
             "begin": "2026-01-01",
             "end": "2026-02-01",
@@ -77,7 +78,7 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
     monkeypatch.setattr(e2e_bug_trend, "resolve_grafana_bin", lambda configured: "grafana")
     monkeypatch.setattr(e2e_bug_trend, "resolve_grafana_homepath", lambda configured, grafana_bin: str(tmp_path))
     monkeypatch.setattr(e2e_bug_trend, "load_specs", lambda *values, **kwargs: {"django": django_spec, "grafana": grafana_spec})
-    monkeypatch.setattr(e2e_bug_trend, "run", lambda command, workspace: None)
+    monkeypatch.setattr(e2e_bug_trend, "run", lambda command, workspace: calls.append(("run", tuple(command))))
     monkeypatch.setattr(e2e_bug_trend, "write_runtime_grafana_config", lambda workspace, grafana_port: tmp_path / f"grafana-{grafana_port}.ini")
     monkeypatch.setattr(e2e_bug_trend, "configure_grafana_datasource", lambda grafana_port, django_port: calls.append(("datasource", grafana_port, django_port)))
     monkeypatch.setattr(e2e_bug_trend, "import_grafana_dashboard", lambda workspace, grafana_port, scope_id, begin, end: None)
@@ -87,6 +88,8 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
 
     e2e_bug_trend.start_runtime(args, tmp_path, FakeLifecycle())
 
+    assert calls[0] == ("prepare_startup", ("django", "grafana"), 5.0, True)
+    assert calls[1] == ("run", (sys.executable, "manage.py", "migrate"))
     assert ("resolve_plan", ("django", "grafana")) in calls
     assert ("start_service", "django", 9100) in calls
     assert ("start_service", "grafana", 9200) in calls

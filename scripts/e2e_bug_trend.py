@@ -51,6 +51,8 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLife
     python_executable = sys.executable
     specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath)
 
+    lifecycle.prepare_startup(tuple(specs.values()), graceful_timeout_seconds=5.0, force_by_port=args.force_by_port)
+
     run([python_executable, "manage.py", "migrate"], workspace)
     run([python_executable, "manage.py", "seed_bug_trend_sample"], workspace)
     run([
@@ -62,8 +64,6 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLife
         "docs/grafana-approved-data-surfaces.json",
     ], workspace)
     run([python_executable, "manage.py", "check"], workspace)
-
-    lifecycle.stop_all(graceful_timeout_seconds=5.0)
 
     django_spec = specs["django"]
     grafana_probe_spec = specs["grafana"]

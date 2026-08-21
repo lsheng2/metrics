@@ -19,7 +19,7 @@
       "host": "127.0.0.1",
       "cwd": "{workspace}",
       "health_url": "http://{host}:{port}/api/health",
-      "startup_timeout_seconds": 30,
+      "startup_timeout_seconds": 90,
       "graceful_timeout_seconds": 5,
       "port_release_timeout_seconds": 2
     }

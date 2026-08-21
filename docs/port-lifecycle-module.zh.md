@@ -45,6 +45,7 @@ scripts/e2e_stop_bug_trend.ps1
 | `PortLifecycle(...)`                                                                          | class   | 创建一个 project instance 的 lifecycle context。                                                             | `project_name`, `workspace`, `instance_name`, `state_directory`, `pid_directory`, `log_directory`                       | `PortLifecycle`                |
 | `resolve_port(spec)`                                                                          | method  | 从一个 service 的 preferred ports 中选择第一个可用端口；如果 state 里已有 live owned process，会复用原端口。 | `ServiceSpec`                                                                                                                     | `int` port                     |
 | `resolve_plan(specs)`                                                                         | method  | 为多个 services 一次性解析端口。                                                                             | `Sequence[ServiceSpec]`                                                                                                           | `dict[str, int]`               |
+| `prepare_startup(service_specs, force_by_port=False, ...)`                                    | method  | 启动前统一释放当前 instance 的 owned services；需要接管端口时再显式清理候选端口上的 listener。               | `service_specs`, `graceful_timeout_seconds`, `force_by_port`, `force_graceful_timeout_seconds`                                    | `list[StopResult]`             |
 | `start_service(spec, port=None)`                                                              | method  | 启动 service、等待 readiness、写 state/pid/log/launch authority。                                            | `ServiceSpec`, optional `port`                                                                                                  | `ServiceState`                 |
 | `stop_service(name, graceful_timeout_seconds=5.0)`                                            | method  | 停止 state 中登记的单个 owned service。                                                                      | `name`, `graceful_timeout_seconds`                                                                                              | `StopResult`                   |
 | `stop_all(graceful_timeout_seconds=5.0)`                                                      | method  | 停止当前 instance 的所有 owned services，并清理 state。                                                      | `graceful_timeout_seconds`                                                                                                        | `list[StopResult]`             |
@@ -76,11 +77,11 @@ scripts/e2e_stop_bug_trend.ps1
 
 | 命令                                                     | 用途                                       |
 | -------------------------------------------------------- | ------------------------------------------ |
-| `python scripts/e2e_bug_trend.py start`                | 启动 Bug Trend E2E runtime，自动选择端口。 |
+| `python scripts/e2e_bug_trend.py start [--force-by-port]` | 启动 Bug Trend E2E runtime，自动选择端口；可在写 DB 前接管候选端口。 |
 | `python scripts/e2e_bug_trend.py stop`                 | 安全停止 owned E2E services。              |
 | `python scripts/e2e_bug_trend.py restart`              | stop 后重新 start。                        |
 | `python scripts/e2e_bug_trend.py stop --force-by-port` | 显式按候选端口兜底清理。                   |
-| `scripts/e2e_start_bug_trend.ps1`                      | Windows/VS Code task wrapper。             |
+| `scripts/e2e_start_bug_trend.ps1 [-ForceByPort]`       | Windows/VS Code task wrapper。             |
 | `scripts/e2e_stop_bug_trend.ps1 [-ForceByPort]`        | Windows/VS Code task wrapper。             |
 
 ## 核心概念

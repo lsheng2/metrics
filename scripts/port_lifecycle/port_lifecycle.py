@@ -116,6 +116,25 @@ class PortLifecycle:
             raise
         return state
 
+    def prepare_startup(
+        self,
+        service_specs: Sequence[ServiceSpec],
+        graceful_timeout_seconds: float = 5.0,
+        force_by_port: bool = False,
+        force_graceful_timeout_seconds: float = 0.5,
+        port_process_resolver: Callable[[str, int], Sequence[int]] = get_listening_process_ids,
+    ) -> list[StopResult]:
+        results = self.stop_all(graceful_timeout_seconds=graceful_timeout_seconds)
+        if force_by_port:
+            results.extend(
+                self.force_stop_by_ports(
+                    service_specs,
+                    graceful_timeout_seconds=force_graceful_timeout_seconds,
+                    port_process_resolver=port_process_resolver,
+                )
+            )
+        return results
+
     def wait_ready(self, spec: ServiceSpec, port: int, process: subprocess.Popen[bytes] | None = None) -> None:
         deadline = time.monotonic() + spec.startup_timeout_seconds
         health_url = spec.health_url.format(port=port, host=spec.host, workspace=str(self.workspace)) if spec.health_url else None

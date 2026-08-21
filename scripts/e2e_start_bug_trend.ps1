@@ -1,5 +1,6 @@
 param(
-    [string]$Workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+    [string]$Workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
+    [switch]$ForceByPort
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,4 +10,9 @@ if (-not (Test-Path $python)) {
     $python = 'python'
 }
 
-& $python (Join-Path $Workspace 'scripts\e2e_bug_trend.py') start --workspace $Workspace
+$arguments = @((Join-Path $Workspace 'scripts\e2e_bug_trend.py'), 'start', '--workspace', $Workspace)
+if ($ForceByPort) {
+    $arguments += '--force-by-port'
+}
+
+& $python @arguments

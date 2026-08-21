@@ -60,7 +60,7 @@
         {
             "label": "E2E: Start Bug Trend",
             "type": "shell",
-            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_bug_trend.ps1'; & $script -Workspace $workspace",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_bug_trend.ps1'; & $script -Workspace $workspace -ForceByPort",
             "problemMatcher": []
         },
         {

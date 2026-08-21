@@ -234,6 +234,78 @@ def test_force_stop_by_ports_uses_project_supplied_resolver(tmp_path):
             wait_process_exit(process.pid, 2.0)
 
 
+def test_prepare_startup_stops_owned_services(tmp_path):
+    lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
+    port = find_free_port()
+    spec = http_server_spec(tmp_path, [port])
+
+    state = lifecycle.start_service(spec, port=port)
+
+    results = lifecycle.prepare_startup((spec,), graceful_timeout_seconds=0.1)
+
+    assert any(result.pid == state.pid and result.stopped for result in results)
+    assert not process_exists(state.pid)
+
+
+def test_prepare_startup_does_not_force_stop_unowned_ports_by_default(tmp_path):
+    lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
+    port = find_free_port()
+    process = subprocess.Popen(
+        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
+        cwd=tmp_path,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=creation_flags(),
+    )
+    try:
+        wait_until_listening(port)
+        spec = ServiceSpec.from_values("web", [port], [])
+
+        results = lifecycle.prepare_startup(
+            (spec,),
+            graceful_timeout_seconds=0.1,
+            port_process_resolver=lambda host, candidate: [process.pid],
+        )
+
+        assert results == []
+        assert process_exists(process.pid)
+    finally:
+        if process_exists(process.pid):
+            kill_process(process.pid)
+            wait_process_exit(process.pid, 2.0)
+
+
+def test_prepare_startup_force_stops_unowned_ports_when_requested(tmp_path):
+    lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
+    port = find_free_port()
+    process = subprocess.Popen(
+        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
+        cwd=tmp_path,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=creation_flags(),
+    )
+    try:
+        wait_until_listening(port)
+        spec = ServiceSpec.from_values("web", [port], [])
+
+        results = lifecycle.prepare_startup(
+            (spec,),
+            graceful_timeout_seconds=0.1,
+            force_by_port=True,
+            port_process_resolver=lambda host, candidate: [process.pid],
+        )
+
+        assert len(results) == 1
+        assert results[0].stopped
+        assert results[0].reason.startswith("force_by_port:")
+        assert not process_exists(process.pid)
+    finally:
+        if process_exists(process.pid):
+            kill_process(process.pid)
+            wait_process_exit(process.pid, 2.0)
+
+
 def test_stop_service_reports_stop_command_success(monkeypatch, tmp_path):
     lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
     lifecycle.write_state(
