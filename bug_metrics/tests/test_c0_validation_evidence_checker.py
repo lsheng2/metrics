@@ -11,7 +11,7 @@ def write_evidence(tmp_path, *, v1_status="passed", v2_status="passed", v3_statu
                 "| node_id | status | command_or_manual_step | exit_code_or_result | scope_id | begin | end | calculation_run_id | observed_url | chart_data_url | evidence_url | bucket | series | chart_id | evidence_before_after | grafana_runtime_state | residual_risk | closure_verdict |",
                 "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
                 f"| C0.V1 | {v1_status} | playwright bug trend click | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 | http://127.0.0.1:8002/bug-trend/?scope_id=131600&begin=2026-06-01&end=2026-08-09 |  |  |  |  |  | 224 to 7 to 224 |  | none |  |",
-                f"| C0.V2 | {v2_status} | api runtime probe | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 |  | http://127.0.0.1:8002/api/bug-trend/chart-data/?scope_id=131600&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend | http://127.0.0.1:8002/api/bug-trend/evidence/?scope_id=131600&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend | bucket-1 | all_open_bugs | default_bug_trend |  |  | none |  |",
+                f"| C0.V2 | {v2_status} | api runtime probe | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 |  | http://127.0.0.1:8002/api/charts/data/?scope_id=131600&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend | http://127.0.0.1:8002/api/charts/evidence/?scope_id=131600&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend | bucket-1 | all_open_bugs | default_bug_trend |  |  | none |  |",
                 f"| C0.V3 | {v3_status} | grafana provision smoke | exit 0 | 131600 | 2026-06-01 | 2026-08-09 | run-1 | http://127.0.0.1:3000/d/bug-trend?var-scope_id=131600&var-begin=2026-06-01&var-end=2026-08-09 |  |  |  |  |  |  | {grafana_state} | {residual_risk} |  |",
                 f"| C0.V4 | {v4_status} | evidence checker | exit 0 |  |  |  |  |  |  |  |  |  |  |  | {grafana_state} | {residual_risk} | {closure_verdict} |",
             ]
@@ -147,7 +147,7 @@ def test_checkerRejectsGrafanaUrlWhenVariableDoesNotMatchEvidenceFields(tmp_path
 
 def test_checkerRejectsPassedApiEvidenceWhenEvidenceUrlIsMissing(tmp_path):
     evidence = write_evidence(tmp_path)
-    text = evidence.read_text(encoding="utf-8").replace("http://127.0.0.1:8002/api/bug-trend/evidence/?scope_id=131600&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend", "")
+    text = evidence.read_text(encoding="utf-8").replace("http://127.0.0.1:8002/api/charts/evidence/?scope_id=131600&begin=2026-06-01&end=2026-08-09&run=run-1&bucket=bucket-1&series=all_open_bugs&chart_id=default_bug_trend", "")
     evidence.write_text(text, encoding="utf-8")
 
     findings = validate_evidence_file(evidence)

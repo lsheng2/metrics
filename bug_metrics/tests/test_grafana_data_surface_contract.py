@@ -35,12 +35,36 @@ class TestGrafanaDataSurfaceContract(TestCase):
             artifact_root = Path(temp_dir)
             self._write_artifact(
                 artifact_root,
+                self._evidence_link_artifact(),
+            )
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertEqual([], findings)
+
+    def test_shouldRejectChartDataRenderTargetWithoutMetricsContract(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            self._write_artifact(
+                artifact_root,
                 {
                     'panels': [
                         {
                             'datasource': {'uid': 'metrics-bug-trend-api'},
                             'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end&chart_id=default_bug_trend'}
+                                {
+                                    'url': '/api/charts/data/?scope_id=$scope&begin=$begin&end=$end&chart_id=default_bug_trend',
+                                    'root_selector': '$.points',
+                                    'columns': [
+                                        {'selector': 'label', 'text': 'label'},
+                                        {'selector': 'value', 'text': 'value'},
+                                    ],
+                                }
                             ],
                         }
                     ]
@@ -53,7 +77,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
             )
 
         # Then
-        self.assertEqual([], findings)
+        self.assertTrue(any('must declare metricsContract' in finding.message for finding in findings))
 
     def test_shouldAcceptGrafanaEvidenceArtifactUsingApprovedMetricsApiWithSelectionParams(self):
         # Given
@@ -67,7 +91,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
                             'datasource': {'uid': 'metrics-bug-trend-api'},
                             'targets': [
                                 {
-                                    'path': '/api/bug-trend/evidence/?scope_id=$scope&begin=$begin&end=$end&run=$run&bucket=$bucket&series=$series&chart_id=default_bug_trend'
+                                    'path': '/api/charts/evidence/?scope_id=$scope&begin=$begin&end=$end&run=$run&bucket=$bucket&series=$series&chart_id=default_bug_trend'
                                 }
                             ],
                         }
@@ -121,7 +145,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
             artifact_root = Path(temp_dir)
             artifact = self._evidence_link_artifact()
             artifact['panels'][0]['fieldConfig']['defaults']['links'][0]['url'] = (
-                '/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&run=${__data.fields.run}'
+                '/api/charts/evidence/?scope_id=$scope_id&begin=$begin&end=$end&run=${__data.fields.run}'
                 '&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}'
             )
             self._write_artifact(artifact_root, artifact)
@@ -134,6 +158,103 @@ class TestGrafanaDataSurfaceContract(TestCase):
         # Then
         self.assertTrue(any('does not reference ${__data.fields.calculation_run_id}' in finding.message for finding in findings))
         self.assertTrue(any('must map run via run=${__data.fields.calculation_run_id}' in finding.message for finding in findings))
+
+    def test_shouldRejectWideRenderArtifactThatUsesGenericLabelColumn(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            artifact = self._evidence_link_artifact()
+            artifact['panels'][0]['targets'][0]['columns'][0] = {'selector': 'label', 'text': 'label'}
+            self._write_artifact(artifact_root, artifact)
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertTrue(any('must not use generic label column' in finding.message for finding in findings))
+
+    def test_shouldRejectChartDataArtifactUsingUnapprovedRenderRoot(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            artifact = self._evidence_link_artifact()
+            artifact['panels'][0]['targets'][0]['root_selector'] = '$.points'
+            artifact['panels'][0]['targets'][0]['metricsContract']['root'] = 'points'
+            self._write_artifact(artifact_root, artifact)
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertTrue(any('render root' in finding.message and 'not approved' in finding.message for finding in findings))
+
+    def test_shouldRejectChartDataArtifactUsingUnapprovedRenderShape(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            artifact = self._evidence_link_artifact()
+            artifact['panels'][0]['targets'][0]['metricsContract']['shape'] = 'single_bug_trend_only'
+            self._write_artifact(artifact_root, artifact)
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertTrue(any('render shape' in finding.message and 'not approved' in finding.message for finding in findings))
+
+    def test_shouldRejectChartDataArtifactUsingUnapprovedContractVersion(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            artifact = self._evidence_link_artifact()
+            artifact['panels'][0]['targets'][0]['metricsContract']['contractVersion'] = '9.9'
+            self._write_artifact(artifact_root, artifact)
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertTrue(any('contractVersion' in finding.message and 'not approved' in finding.message for finding in findings))
+
+    def test_shouldRejectChartDataArtifactWhenContractChartIdDoesNotMatchTarget(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            artifact = self._evidence_link_artifact()
+            artifact['panels'][0]['targets'][0]['metricsContract']['chartId'] = 'other_chart'
+            self._write_artifact(artifact_root, artifact)
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertTrue(any('metricsContract chartId must match target chart_id' in finding.message for finding in findings))
+
+    def test_shouldRejectWideRenderArtifactWithNoValueFields(self):
+        # Given
+        with tempfile.TemporaryDirectory() as temp_dir:
+            artifact_root = Path(temp_dir)
+            artifact = self._evidence_link_artifact()
+            artifact['panels'][0]['targets'][0]['metricsContract']['valueFields'] = []
+            self._write_artifact(artifact_root, artifact)
+
+            # When
+            findings = validate_grafana_artifacts.validate_artifact_root(
+                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
+            )
+
+        # Then
+        self.assertTrue(any('valueFields must not be empty' in finding.message for finding in findings))
 
     def test_shouldRejectGrafanaArtifactWhenEvidenceLinkOmitsChartId(self):
         # Given
@@ -151,316 +272,6 @@ class TestGrafanaDataSurfaceContract(TestCase):
         # Then
         self.assertTrue(any('evidence link URL must include chart_id' in finding.message for finding in findings))
 
-
-    def test_shouldRejectChartDataArtifactWithEvidenceOnlyParams(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end&run=$run'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('unapproved Metrics API query params' in finding.message for finding in findings))
-
-    def test_shouldRejectChartDataArtifactMissingRequiredParams(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('missing required Metrics API query params' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithQueryAndNoExplicitDatasource(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('has no explicit approved datasource' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithUnapprovedApiPathPrefixCollision(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [
-                                {'path': '/api/bug-trend/chart-data/internal-secret/?scope_id=$scope&begin=$begin&end=$end'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('unapproved Metrics API path' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithUnapprovedFullUrlApiPath(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'targets': [
-                                {'url': 'http://metrics.local/api/bug-trend/chart-data/internal-secret/?scope_id=$scope&begin=$begin&end=$end'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('has no explicit approved datasource' in finding.message for finding in findings))
-        self.assertTrue(any('unapproved Metrics API path' in finding.message for finding in findings))
-        self.assertTrue(any('must be a relative path' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithExternalHostEvenWhenApiPathIsApproved(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [
-                                {'url': 'https://evil.example/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('must be a relative path' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithHardcodedSemanticQueryParams(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end&status=Fixed&priority=P1-Stopper'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('unapproved Metrics API query params' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactThatReadsRawJiraTables(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [{'rawSql': 'SELECT key FROM jira_history_jiraissue'}],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('SQL datasource disabled for current phase' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactThatDuplicatesLifecycleSemantics(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [
-                                {
-                                    'rawSql': "SELECT CASE WHEN status = 'Fixed' THEN 1 ELSE 0 END FROM bug_trend_bucket_fact_v1"
-                                }
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('SQL datasource disabled for current phase' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithSqlQueryEvenWithoutTables(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'metrics-bug-trend-api'},
-                            'targets': [{'rawSql': 'SELECT 1 AS value'}],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('SQL datasource disabled for current phase' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithUnapprovedDatasource(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': {'uid': 'default-postgres'},
-                            'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('unapproved datasource uid' in finding.message for finding in findings))
-
-    def test_shouldRejectGrafanaArtifactWithUnapprovedStringDatasource(self):
-        # Given
-        with tempfile.TemporaryDirectory() as temp_dir:
-            artifact_root = Path(temp_dir)
-            self._write_artifact(
-                artifact_root,
-                {
-                    'panels': [
-                        {
-                            'datasource': 'default-postgres',
-                            'targets': [
-                                {'path': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end'}
-                            ],
-                        }
-                    ]
-                },
-            )
-
-            # When
-            findings = validate_grafana_artifacts.validate_artifact_root(
-                artifact_root, validate_grafana_artifacts.load_allowlist(ALLOWLIST_PATH)
-            )
-
-        # Then
-        self.assertTrue(any('unapproved datasource uid' in finding.message for finding in findings))
 
     def test_shouldRejectEmptyArtifactRoot(self):
         # Given
@@ -486,15 +297,28 @@ class TestGrafanaDataSurfaceContract(TestCase):
                     'datasource': {'uid': 'metrics-bug-trend-api'},
                     'targets': [
                         {
-                            'url': '/api/bug-trend/chart-data/?scope_id=$scope&begin=$begin&end=$end&chart_id=default_bug_trend',
+                            'url': '/api/charts/data/?scope_id=$scope&begin=$begin&end=$end&chart_id=default_bug_trend',
+                            'root_selector': '$.grafana_rows',
                             'columns': [
-                                {'selector': 'label', 'text': 'label'},
+                                {'selector': 'bucket_label', 'text': 'bucket_label'},
+                                {'selector': 'bucket_start', 'text': 'bucket_start'},
+                                {'selector': 'bucket_end', 'text': 'bucket_end'},
+                                {'selector': 'bucket_granularity', 'text': 'bucket_granularity'},
                                 {'selector': 'calculation_run_id', 'text': 'calculation_run_id'},
                                 {'selector': 'bucket_id', 'text': 'bucket_id'},
-                                {'selector': 'series_name', 'text': 'series_name'},
+                                {'selector': 'all_open_bugs', 'text': 'all_open_bugs'},
+                                {'selector': 'fixed_or_closed_bugs', 'text': 'fixed_or_closed_bugs'},
                             ],
                             'metricsContract': {
-                                'evidenceLinkFields': ['calculation_run_id', 'bucket_id', 'series_name'],
+                                'chartId': 'default_bug_trend',
+                                'contractVersion': '0.1',
+                                'root': 'grafana_rows',
+                                'shape': 'wide_bucket_series',
+                                'categoryField': 'bucket_label',
+                                'requiredFields': ['calculation_run_id', 'bucket_id', 'bucket_label', 'bucket_start', 'bucket_end', 'bucket_granularity'],
+                                'valueFields': ['all_open_bugs', 'fixed_or_closed_bugs'],
+                                'evidenceLinkFields': ['calculation_run_id', 'bucket_id'],
+                                'seriesFieldSource': '__field.name',
                             },
                         }
                     ],
@@ -502,7 +326,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
                         'defaults': {
                             'links': [
                                 {
-                                    'url': '/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}'
+                                    'url': '/api/charts/evidence/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}'
                                 }
                             ]
                         }

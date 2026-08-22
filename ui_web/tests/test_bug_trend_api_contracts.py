@@ -12,7 +12,7 @@ class TestBugTrendApiContracts(TestCase):
         scope, _ = self._seed_run()
 
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+        response = self.client.get(reverse('ui_web:chart_data_api'), {
             'scope_id': scope.id,
             'begin': 'not-date',
             'end': '2026-08-09',
@@ -28,7 +28,7 @@ class TestBugTrendApiContracts(TestCase):
         scope, run = self._seed_run()
 
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+        response = self.client.get(reverse('ui_web:chart_evidence_api'), {
             'scope_id': scope.id,
             'run': str(run.id),
             'begin': '2026-08-03',
@@ -62,7 +62,7 @@ class TestBugTrendApiContracts(TestCase):
         scope, _ = self._seed_run()
 
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+        response = self.client.get(reverse('ui_web:chart_data_api'), {
             'scope_id': scope.id,
             'begin': '2026-08-03',
             'end': '2026-08-09',
@@ -77,7 +77,7 @@ class TestBugTrendApiContracts(TestCase):
         scope, run = self._seed_run()
 
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+        response = self.client.get(reverse('ui_web:chart_evidence_api'), {
             'scope_id': scope.id,
             'run': str(run.id),
             'begin': '2026-08-03',

@@ -30,44 +30,90 @@
     {
       "id": 1,
       "title": "Bug Trend",
-      "type": "barchart",
+      "type": "timeseries",
+      "gridPos": {"h": 16, "w": 24, "x": 0, "y": 0},
       "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "metrics-bug-trend-api"},
       "targets": [
         {
           "refId": "A",
+          "datasource": {"type": "yesoreyeram-infinity-datasource", "uid": "metrics-bug-trend-api"},
           "type": "json",
           "source": "url",
           "parser": "backend",
           "format": "table",
           "url_options": {"method": "GET"},
-          "url": "/api/bug-trend/chart-data/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend",
-          "root_selector": "$.points",
+          "url": "/api/charts/data/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend",
+          "root_selector": "$.grafana_rows",
           "columns": [
-            {"selector": "label", "text": "label", "type": "string"},
-            {"selector": "series_name", "text": "series_name", "type": "string"},
-            {"selector": "value", "text": "value", "type": "number"},
+            {"selector": "bucket_label", "text": "bucket_label", "type": "string"},
+            {"selector": "bucket_start", "text": "bucket_start", "type": "timestamp"},
+            {"selector": "bucket_end", "text": "bucket_end", "type": "string"},
+            {"selector": "bucket_granularity", "text": "bucket_granularity", "type": "string"},
             {"selector": "calculation_run_id", "text": "calculation_run_id", "type": "string"},
             {"selector": "bucket_id", "text": "bucket_id", "type": "string"},
-            {"selector": "type", "text": "type", "type": "string"},
-            {"selector": "color", "text": "color", "type": "string"}
+            {"selector": "all_open_bugs", "text": "all_open_bugs", "type": "number"},
+            {"selector": "all_open_critical_high", "text": "all_open_critical_high", "type": "number"},
+            {"selector": "new_critical_high", "text": "new_critical_high", "type": "number"},
+            {"selector": "new_medium_low", "text": "new_medium_low", "type": "number"},
+            {"selector": "fixed_or_closed_bugs", "text": "fixed_or_closed_bugs", "type": "number"}
           ],
           "metricsContract": {
-            "root": "points",
-            "requiredFields": ["calculation_run_id", "bucket_id", "series_name", "label", "value"],
-            "evidenceLinkFields": ["calculation_run_id", "bucket_id", "series_name"]
+            "chartId": "default_bug_trend",
+            "contractVersion": "0.1",
+            "root": "grafana_rows",
+            "shape": "wide_bucket_series",
+            "categoryField": "bucket_label",
+            "requiredFields": ["calculation_run_id", "bucket_id", "bucket_label", "bucket_start", "bucket_end", "bucket_granularity"],
+            "valueFields": ["all_open_bugs", "all_open_critical_high", "new_critical_high", "new_medium_low", "fixed_or_closed_bugs"],
+            "evidenceLinkFields": ["calculation_run_id", "bucket_id"],
+            "seriesFieldSource": "__field.name"
           }
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 1,
+            "fillOpacity": 45,
+            "spanNulls": false,
+            "showPoints": "never"
+          },
           "links": [
             {
               "title": "Open Metrics evidence",
-              "url": "/api/bug-trend/evidence/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__data.fields.series_name}"
+              "url": "/api/charts/evidence/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}"
             }
           ]
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "all_open_bugs"},
+            "properties": [{"id": "custom.drawStyle", "value": "line"}, {"id": "custom.lineWidth", "value": 2}, {"id": "custom.fillOpacity", "value": 0}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "all_open_critical_high"},
+            "properties": [{"id": "custom.drawStyle", "value": "line"}, {"id": "custom.lineWidth", "value": 2}, {"id": "custom.fillOpacity", "value": 0}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "bucket_end"},
+            "properties": [{"id": "custom.hideFrom", "value": {"legend": true, "tooltip": true, "viz": true}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "bucket_granularity"},
+            "properties": [{"id": "custom.hideFrom", "value": {"legend": true, "tooltip": true, "viz": true}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "calculation_run_id"},
+            "properties": [{"id": "custom.hideFrom", "value": {"legend": true, "tooltip": true, "viz": true}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "bucket_id"},
+            "properties": [{"id": "custom.hideFrom", "value": {"legend": true, "tooltip": true, "viz": true}}]
+          }
+        ]
       },
       "options": {
         "legend": {"displayMode": "list", "placement": "bottom"},

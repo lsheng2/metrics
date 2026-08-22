@@ -54,6 +54,6 @@ urlpatterns = [
     path(_base_prefix + 'partials/team-velocity/tasks/', TeamVelocityTasksView.as_view(), name='team_velocity_tasks'),
     path(_base_prefix + 'partials/bug-trend/evidence/', BugTrendEvidenceView.as_view(), name='bug_trend_evidence'),
      path(_base_prefix + 'bug-trend/evidence/export/', BugTrendEvidenceExportView.as_view(), name='bug_trend_evidence_export'),
-     path(_base_prefix + 'api/bug-trend/chart-data/', BugTrendChartDataApiView.as_view(), name='bug_trend_chart_data_api'),
-     path(_base_prefix + 'api/bug-trend/evidence/', BugTrendEvidenceApiView.as_view(), name='bug_trend_evidence_api'),
+     path(_base_prefix + 'api/charts/data/', BugTrendChartDataApiView.as_view(), name='chart_data_api'),
+     path(_base_prefix + 'api/charts/evidence/', BugTrendEvidenceApiView.as_view(), name='chart_evidence_api'),
 ]

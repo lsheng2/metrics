@@ -26,7 +26,7 @@
 2. Metrics API 可以访问：
 
 ```powershell
-curl.exe --noproxy 127.0.0.1 "http://127.0.0.1:8002/api/bug-trend/chart-data/?scope_id=3&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend"
+curl.exe --noproxy 127.0.0.1 "http://127.0.0.1:8002/api/charts/data/?scope_id=3&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend"
 ```
 
 3. Grafana OSS 已安装。本机验证使用 Grafana `13.2.0` 已通过。
@@ -202,7 +202,7 @@ http://127.0.0.1:3001/d/metrics-bug-trend-c-stock/metrics-bug-trend-c-stock-spik
 5. Grafana datasource proxy 是否能访问 Metrics API：
 
 ```powershell
-curl.exe --noproxy 127.0.0.1 -u admin:admin "http://127.0.0.1:3001/api/datasources/proxy/uid/metrics-bug-trend-api/api/bug-trend/chart-data/?scope_id=3&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend"
+curl.exe --noproxy 127.0.0.1 -u admin:admin "http://127.0.0.1:3001/api/datasources/proxy/uid/metrics-bug-trend-api/api/charts/data/?scope_id=3&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend"
 ```
 
 ### 浏览器里看到 Sign in

@@ -130,7 +130,7 @@ def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_
                 "dashboard": {
                     "panels": [
                         {
-                            "targets": [{"url": "/api/bug-trend/chart-data/?chart_id=default_bug_trend"}],
+                            "targets": [{"url": "/api/charts/data/?chart_id=default_bug_trend"}],
                             "fieldConfig": {"defaults": {"links": [{"url": "/bug-trend/evidence/?chart_id=default_bug_trend"}]}}
                         }
                     ]
@@ -153,7 +153,7 @@ def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_
     datasource_payload = json_requests[0][2]
     assert json_requests[0][1] == f"http://127.0.0.1:{grafana_port}/api/datasources/uid/metrics-bug-trend-api"
     assert datasource_payload["url"] == f"http://127.0.0.1:{django_port}"
-    assert any(f"127.0.0.1:{django_port}/api/bug-trend/chart-data/" in url for url, auth in http_checks)
+    assert any(f"127.0.0.1:{django_port}/api/charts/data/" in url for url, auth in http_checks)
     assert any(f"127.0.0.1:{grafana_port}/api/datasources/proxy/" in url for url, auth in http_checks)
     assert dashboard_url.startswith(f"http://127.0.0.1:{grafana_port}/")
     summary = json.loads((tmp_path / "state" / "e2e" / "bug_trend_ports.json").read_text(encoding="utf-8"))

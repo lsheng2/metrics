@@ -454,6 +454,7 @@ ChartDefinition
 | P0d Scope Config draft/activate | 用户可维护项目语义。 | draft 编辑、activate、config hash、recalculate 提示。 | cloud 审批 UI 仅预留接口。 | 新 scope 无需改代码可生成 Bug Trend。 |
 | P1 Chart/list filters + export | 用户能做实际分析和带走证据。 | chart filters、list-local filters、audit-backed evidence export。 | 不做自定义图表。 | Export 行数等于当前 evidence result。 |
 | P1 Data Health | Maintainer 能定位生产问题。 | Jira connectivity、sync/calculation status、failed/warning scopes。 | 不做自动恢复。 | Data Health 可定位最近失败 run。 |
+| P1C User-triggered sync/recalculate | 用户能从产品入口刷新当前 scope 的 Jira 数据和 Bug Trend 计算。 | Scope Config/Bug Trend/Data Health 上的显式 Sync/Recalculate 操作、bounded request DTO、cursor/run 状态回显、并发保护。 | 不做后台队列、定时调度、自动恢复、Grafana 写操作。 | 点击当前 scope 的刷新操作后，系统通过 `jira_sync` owner 执行 sync，通过 `bug_metrics` owner 执行 recalculate，并在 UI 显示 running/success/failed 状态。 |
 | P2 Minimal Chart Catalog | 支持多图入口但不扩大主路径。 | ChartDefinition、EvidenceContract、Chart selector，一个 built-in chart。 | 不做 multi-panel layout。 | 切换 chart 清除旧 selection 并重载 evidence。 |
 | P2 C-stock Grafana feasibility | 验证是否可以直接让 stock Grafana 成为主图表路径。 | Grafana 主图、变量/time range 同步、与 Chart.js 数字比对、click/data-link 到 evidence 可行性。 | 不承诺 stock Grafana 覆盖全部 PRD。 | 同一 PageQueryState 下 Grafana 与 reference chart 一致，并明确 event/evidence gate 是否通过。 |
 | P2/P3 C-plugin spike | 当 C-stock 不满足 evidence 联动时，验证 Grafana App/Scenes 主页面。 | Grafana App/Scenes 内实现 chart selector、active chart state、evidence list 调 Metrics API。 | 不迁移 Jira sync/indicator/evidence ownership 到 Grafana。 | Grafana app 可以在同一页面完成 chart + evidence 联动。 |
@@ -744,6 +745,267 @@ UI smoke criteria for `CLOSE.R`:
 1. Open `/bug-trend/scope-config/?scope_id=<saved>` and verify the editor renders saved config and recalculation guidance.
 2. Apply an evidence list filter, trigger export, and verify the exported row count matches the current evidence result.
 3. Open `/bug-trend/data-health/` and verify sync/calculation health tables render without starting sync, recalculation, or recovery actions.
+
+## P1C User-triggered Sync/Recalculate DAG
+
+P1C 是当前产品化 demo 的下一步：把已经存在的 operator command 能力收敛成 Metrics UI/API 的显式用户操作。用户可以针对当前 saved scope 和日期范围触发一次 bounded sync/recalculate，并在 Bug Trend、Scope Config、Data Health 中看到同一个 owner 产生的状态。P1C 不改变核心原则：dashboard page load 仍然只读本地 durable artifacts，`jira_sync` 仍然是 Jira fetch/cursor/status owner，`bug_metrics` 仍然是 calculation run/freshness/evidence owner，`ui_web` 只提交请求和显示结果。
+
+### P1C Scope Baseline
+
+| Field | Value |
+| --- | --- |
+| profile_source | `repo-local` |
+| baseline_head | `35c84f447c9486cfc9fc3b667d3bca4c5349f40b` |
+| pre_existing_dirty_paths | none at plan creation |
+| planned_owner_paths | `jira_sync/app/api/`, `jira_sync/management/commands/sync_jira_scope.py`, `jira_sync/tests/`, `bug_metrics/app/api/`, `bug_metrics/tests/`, `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/templates/`, `ui_web/urls.py`, `ui_web/tests/`, `docs/bug-trend-dashboard-product-requirements.zh.md`, `docs/architecture-manual.md`, `docs/implementation-start.md` |
+| excluded_paths | Grafana JSON, Chart Catalog, AI chart pipeline, scheduler/queue infrastructure remain outside P1C unless this plan is revised. |
+
+### P1C Design
+
+The implementation should introduce a small application-level operation API rather than invoking the management command from a Django view. The management command may be refactored to reuse that API, so CLI and UI share one owner path and one set of invariants.
+
+Request shape:
+
+| Field | Owner | Required behavior |
+| --- | --- | --- |
+| `scope_id` | `bug_metrics` resolves saved scope; `jira_sync` consumes the resolved scope | Must reference an existing saved `JiraScopeConfig`. |
+| `coverage_start` / `coverage_end` | request DTO validated by `jira_sync.app.api` | ISO dates, `coverage_start <= coverage_end`, no silent default in POST path. |
+| `full_sync` | `jira_sync.app.api` | Required when current cursor cannot safely expand coverage or config hash changed since materialization. |
+| `requested_by` | `ui_web` supplies non-secret actor string | Stored only in audit/status surface if implemented; never a credential. |
+| `trigger_source` | `ui_web` route/action | Values like `bug_trend_page`, `scope_config`, `data_health`; used only for audit/debug display. |
+
+Execution shape:
+
+1. `ui_web` validates CSRF/session form mechanics and sends a bounded sync request to a facade.
+2. The facade calls a `jira_sync` public API such as `run_scope_sync(request)` or `trigger_scope_sync(request)`.
+3. `jira_sync` claims the cursor, enforces running/config/coverage guards, fetches Jira through its adapter, persists issue payloads through `jira_history`, and calls `bug_metrics.recalculate_scope` for the same requested coverage range.
+4. `bug_metrics` records successful or failed calculation runs exactly as the current command path does.
+5. The response redirects or htmx-swaps to a status summary sourced from `jira_sync.list_sync_health()` and `bug_metrics.list_calculation_health()`, not from local template flags.
+
+P1C intentionally keeps execution synchronous for the first productized slice because the existing command is synchronous and already has cursor-level running protection. If runtime proves too slow for request/response, the follow-up is a queue/scheduler DAG, not a silent half-async rewrite inside the view.
+
+### P1C Web UI Sketch
+
+The UI sketch is intentionally low fidelity. It captures layout, controls, feedback states, and owner boundaries before visual polish. Implementation must keep the existing Metrics dashboard style: semantic HTML, Bulma components, htmx partial refresh, and no React-style frontend architecture.
+
+#### Bug Trend Page Refresh Panel
+
+```text
++--------------------------------------------------------------------------------+
+| Bug Trend Indicator                                                            |
+| Scope [ STDEL Graphics  v ]  Chart [ Default Bug Trend v ]                     |
+| Date  [ 2026-06-01 ] to [ 2026-08-09 ]                         [ Refresh ]     |
+|                                                                                |
+| Data state                                                                     |
+| +----------------------+----------------------+------------------------------+ |
+| | Last sync            | Last calculation     | Current config              | |
+| | success, 10:42       | success, run #128    | fresh, hash abc123          | |
+| +----------------------+----------------------+------------------------------+ |
+|                                                                                |
+| [Sync and recalculate current scope] [Full sync]                               |
+| Helper text: Uses saved scope config and selected date range.                  |
+|                                                                                |
+| Chart.js Bug Trend chart                                                       |
+|                                                                                |
+| Evidence list / filters / export                                               |
++--------------------------------------------------------------------------------+
+```
+
+Behavior rules:
+
+| UI element | Owner contract | Required behavior |
+| --- | --- | --- |
+| `Sync and recalculate current scope` button | `INV-P1C-SYNC-OPERATION-AUTHORITY` | POSTs to the UI trigger route; view/facade calls only the `jira_sync` public operation. |
+| `Full sync` checkbox | `INV-P1C-BOUNDED-RANGE-REQUEST` | Sends explicit full/incremental intent; unsafe incremental requests are refused before Jira fetch. |
+| Data state cards | `INV-P1C-STATUS-FEEDBACK` | Render from `jira_sync` and `bug_metrics` health APIs after reload or htmx swap. |
+| Chart/evidence below the panel | `INV-P1C-NO-PAGELOAD-LIVE-JIRA` | Continue reading local durable artifacts; no refresh happens unless the user clicks the explicit action. |
+
+#### Scope Config Refresh Prompt
+
+```text
++--------------------------------------------------------------------------------+
+| Bug Trend Scope Config                                                         |
+| Scope: STDEL Graphics                                                          |
+|                                                                                |
+| [Saved] Semantic config changed                                                |
+| Recalculate this scope before using existing Bug Trend runs as current evidence.|
+|                                                                                |
+| Coverage range                                                                 |
+| [ 2026-06-01 ] to [ 2026-08-09 ]      [Sync and recalculate] [Full sync]       |
+|                                                                                |
+| Config editor fields                                                           |
+| - JQL                                                                          |
+| - Bug type values                                                              |
+| - Lifecycle mappings                                                           |
+| - Severity mappings                                                            |
++--------------------------------------------------------------------------------+
+```
+
+Behavior rules:
+
+| UI element | Owner contract | Required behavior |
+| --- | --- | --- |
+| Recalculate prompt | `INV-P1C-CALCULATION-CHAIN` | Appears when saved config hash makes current runs stale; disappears only after a matching successful recalculation. |
+| Coverage range fields | `INV-P1C-BOUNDED-RANGE-REQUEST` | Use explicit dates; no hidden default in POST. |
+| Config editor | `INV-P0D-SAVED-SCOPE-CONFIG-AUTHORITY` | Remains the semantic owner path; sync action does not create another config truth. |
+
+#### Data Health Operation Row
+
+```text
++--------------------------------------------------------------------------------+
+| Data Health                                                                    |
+| Summary: 4 scopes, 1 stale, 0 failed syncs, 0 failed calculations              |
+|                                                                                |
+| Jira Sync Health                                                               |
+| +-------+----------+----------------+----------------+----------------------+ |
+| | Scope | Status   | Last sync      | Coverage       | Action               | |
+| | STDEL | stale    | 2026-08-21     | 06-01..08-09   | [Sync/Recalculate]   | |
+| | GFX   | success  | 2026-08-21     | 06-01..08-09   | [Sync/Recalculate]   | |
+| +-------+----------+----------------+----------------+----------------------+ |
+|                                                                                |
+| Calculation Health                                                             |
+| +-------+----------+-----------+-------------+------------------------------+ |
+| | Scope | Status   | Run       | Freshness   | Last error                   | |
+| | STDEL | success  | #128      | stale_config|                              | |
+| +-------+----------+-----------+-------------+------------------------------+ |
++--------------------------------------------------------------------------------+
+```
+
+Behavior rules:
+
+| UI element | Owner contract | Required behavior |
+| --- | --- | --- |
+| Per-scope action | `INV-P1C-SYNC-OPERATION-AUTHORITY` | Triggers the same route/service as the Bug Trend page; no Data Health-specific sync implementation. |
+| Status and errors | `INV-P1C-STATUS-FEEDBACK` | Come from persisted cursor/run health and survive reload. |
+| Page load | `INV-P1C-NO-PAGELOAD-LIVE-JIRA` | Remains read-only; no automatic recovery, token validation, sync, or recalculation. |
+
+#### Interaction States
+
+| State | UI response | Required backend truth |
+| --- | --- | --- |
+| Ready | Button enabled; latest sync/calculation summary visible. | Cursor is not `running`; current scope exists. |
+| Running | Button disabled or replaced by htmx loading state; status panel says running. | `JiraSyncCursor.status=running`. |
+| Success | Status panel shows latest successful sync and calculation run. | Cursor success and matching calculation run exist for requested range/config hash. |
+| Failed sync | Error banner links to Data Health; chart remains stale/unavailable as appropriate. | Cursor failed with `last_error`; no UI-local success override. |
+| Failed calculation | Error banner links to Data Health; stale evidence is not presented as current. | Failed calculation run is recorded by `bug_metrics`. |
+| Unsafe incremental request | Form-level error asks for `Full sync`. | Cursor/history/run counts unchanged; no Jira fetch. |
+
+### P1C Code-doc Truth Sync
+
+| Surface | Status | Reason |
+| --- | --- | --- |
+| `docs/bug-trend-dashboard-product-requirements.zh.md` | update-required | This section owns the P1C design, contracts, DAG, ledger, and validation commands. |
+| `docs/architecture-manual.md` | update-required | Must describe user-triggered sync as a `jira_sync` public API operation and preserve dashboard local-artifact rendering. |
+| `docs/implementation-start.md` | update-required | Must add operator workflow for refreshing a saved scope from the product UI/API. |
+| `README.md` | deferred-with-trigger | Update only if P1C changes local startup/demo instructions or published operator commands. |
+| `.github/copilot-instructions.md`, `.github/ai-governance/` | no-doc-change | Existing module-boundary and validation rules already cover this change. |
+
+### P1C Contract Registry
+
+| Contract | Owner | Consumers | risk_level | Disconfirming check |
+| --- | --- | --- | --- | --- |
+| `INV-P1C-SYNC-OPERATION-AUTHORITY` | `jira_sync.app.api` sync operation service | UI facade/view, management command | high | Tests fail if the UI invokes Django management command internals, Jira adapters, `jira_history`, or `bug_metrics.recalculate_scope` directly instead of the `jira_sync` public operation. |
+| `INV-P1C-BOUNDED-RANGE-REQUEST` | `jira_sync.app.api` request DTO and guards | UI forms, command arguments, browser tests | high | Tests fail if missing dates, invalid ranges, config-hash mismatch, unsafe incremental range expansion, or concurrent running cursor can start a sync. |
+| `INV-P1C-CALCULATION-CHAIN` | `jira_sync.app.api` orchestrates; `bug_metrics.app.api` calculates | Bug Trend chart, Scope Config prompt, Data Health | high | Tests fail if a successful sync does not create/update a matching `BugTrendCalculationRun`, or if calculation failure is not recorded and exposed as failed health. |
+| `INV-P1C-STATUS-FEEDBACK` | `jira_sync.list_sync_health()` and `bug_metrics.list_calculation_health()` | Bug Trend page, Scope Config page, Data Health page | high | View/browser tests fail if post-trigger UI status is derived from request-local flags instead of persisted cursor/run health. |
+| `INV-P1C-NO-PAGELOAD-LIVE-JIRA` | `ui_web` Bug Trend/Data Health GET routes | dashboard users, Grafana consumers | high | Tests fail if opening `/bug-trend/`, `/data-health/`, chart-data API, or evidence API triggers Jira fetch, sync, recalculation, or command execution. |
+
+### P1C Contract Propagation Matrix
+
+| contract_id | authority_field | producer_paths | consumer_paths | required_behavior | negative_check | non_goal_paths |
+| --- | --- | --- | --- | --- | --- | --- |
+| `INV-P1C-SYNC-OPERATION-AUTHORITY` | `run_scope_sync` operation boundary | `jira_sync/app/api/`, `jira_sync/management/commands/sync_jira_scope.py` | `ui_web/facades/`, `ui_web/views/`, `jira_sync/tests/`, `ui_web/tests/` | CLI and UI both reuse `jira_sync` public operation; only `jira_sync` talks to Jira adapter and `jira_history`. | Patch/spy tests make direct UI calls to command internals or adapters impossible; grep review confirms no direct import of `sync_jira_scope.Command` in `ui_web`. | Grafana remains read-only and does not trigger sync. |
+| `INV-P1C-BOUNDED-RANGE-REQUEST` | `scope_id`, `coverage_start`, `coverage_end`, `full_sync` | `jira_sync/app/api/` request DTO | `ui_web/templates/`, `ui_web/views/`, command arguments, browser test fixtures | Every trigger supplies explicit range and full/incremental intent; unsafe range/config states are refused before Jira fetch. | Tests assert missing/invalid dates and unsafe incremental expansion return errors and leave cursor/history/run counts unchanged. | Scheduled default ranges are deferred to scheduler DAG. |
+| `INV-P1C-CALCULATION-CHAIN` | calculation run for requested coverage | `jira_sync/app/api/`, `bug_metrics/app/api/calculation.py` | Bug Trend chart API, evidence API, Data Health, Scope Config prompt | A completed operation updates cursor success and calculation health for the same scope/range/config hash. | Failure injection around `bug_metrics.recalculate_scope` records failed calculation and failed cursor without presenting fresh chart evidence. | Chart Catalog semantics do not change. |
+| `INV-P1C-STATUS-FEEDBACK` | persisted cursor/run status | `jira_sync/app/api/__init__.py`, `bug_metrics/app/api/` health APIs | `ui_web/facades/data_health_facade.py`, Bug Trend facade/view/template, Scope Config template, Data Health template | UI shows running/success/failed/stale based on persisted owner APIs after trigger. | View tests reload after trigger and assert status survives a new request; request-local success messages alone are insufficient. | Authentication/actor identity beyond local operator placeholder is deferred. |
+| `INV-P1C-NO-PAGELOAD-LIVE-JIRA` | GET routes are read-only | `ui_web/views/`, `ui_web/facades/` | browser tests, chart-data/evidence APIs, Grafana C-stock dashboard | GET/load/render paths read local artifacts only; only explicit POST/action triggers sync. | Tests patch Jira client creation and fail if GET pages or Grafana APIs call it. | Manual CLI sync remains allowed. |
+
+### P1C Consumer Universe Checklist
+
+| Category | Status | Reason |
+| --- | --- | --- |
+| public API | applies | `jira_sync.app.api` gets the operation boundary; `bug_metrics.app.api` remains calculation owner. |
+| internal service/facade | applies | `ui_web` facade submits operation and reads health APIs. |
+| UI route/template/component | applies | Bug Trend, Scope Config, and Data Health need trigger/status surfaces. |
+| export/report | not-applies | Evidence export remains read-only over existing query result. |
+| audit/log/event | applies | P1C should at least preserve cursor/run failure details; richer audit actor is optional but must not hold secrets. |
+| validation script | not-applies | Existing Grafana validators stay read-only; no new script is required unless implementation adds one. |
+| migration/schema | deferred-with-trigger | Required only if operation audit requires a new persisted event model. Cursor/run models already exist. |
+| background job/scheduler | not-applies | P1C is explicit synchronous action; queue/scheduler is future work. |
+| cache/index/search | not-applies | No task search cache or index changes. |
+| external artifact | not-applies | Grafana C-stock remains read-only and link-out only. |
+| CLI/admin command | applies | `sync_jira_scope` should reuse the same operation boundary. |
+| docs/operator workflow | applies | Architecture and implementation docs must describe the explicit refresh workflow. |
+| test double/fake/fixture | applies | Existing Jira adapter mocks and browser seeded data need coverage for operation success/failure. |
+
+### P1C DAG Nodes
+
+| id | depends_on | owner_paths | authority_boundary | contracts | contract_coverage | negative_cases | sibling_entry_points | validation | exit_criteria | parallel_policy |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| P1C.PLAN.R - Review operation design | [] | `docs/bug-trend-dashboard-product-requirements.zh.md` | Planning authority | all P1C contracts | Confirms producer/consumer matrix, risk levels, and GET/POST split before code. | Missing owner, missing consumer, or UI-owned sync truth blocks implementation. | Existing command path included as required sibling. | Architect Planner Reviewer plan review. | Plan approved or amended before code starts. | serial |
+| P1C.N1 - Extract sync operation API | [P1C.PLAN.R] | `jira_sync/app/api/`, `jira_sync/management/commands/sync_jira_scope.py`, `jira_sync/tests/` | `jira_sync` owns sync operation and cursor guards. | `INV-P1C-SYNC-OPERATION-AUTHORITY`, `INV-P1C-BOUNDED-RANGE-REQUEST`, `INV-P1C-CALCULATION-CHAIN` | Produces shared operation, request DTO, cursor claim rules, and command reuse. | Concurrent running cursor, invalid date range, config-hash mismatch, unsafe incremental expansion, calculation failure. | Management command must call the new operation; no duplicate orchestration remains in command only. | `python -m pytest jira_sync/tests/test_sync_jira_scope_command.py jira_sync/tests/test_api_user_triggered_sync.py -q` | CLI behavior stays green and new API operation can run success/failure paths with mocked Jira. | serial |
+| P1C.N2 - Add UI trigger facade and routes | [P1C.N1] | `ui_web/data/`, `ui_web/facades/`, `ui_web/views/`, `ui_web/urls.py`, `ui_web/tests/` | `ui_web` submits explicit POST/action and renders API-owned result. | `INV-P1C-STATUS-FEEDBACK`, `INV-P1C-NO-PAGELOAD-LIVE-JIRA`, `INV-P1C-BOUNDED-RANGE-REQUEST` | Consumes operation API; produces POST route or htmx action; preserves read-only GET routes. | GET pages must not create Jira client; missing/invalid dates display bounded error; failed operation shows persisted health. | Scope Config, Bug Trend, and Data Health entry points included or explicitly linked to one trigger route. | `python -m pytest ui_web/tests/test_bug_trend_user_triggered_sync_views.py ui_web/tests/test_data_health_views.py ui_web/tests/test_bug_trend_scope_config_views.py -q` | User can trigger refresh from a product route; refreshed status comes from cursor/run APIs after reload. | serial |
+| P1C.N3 - Render operation controls and status | [P1C.N2] | `ui_web/templates/`, `ui_web/tests/` | Templates display action controls and persisted owner health. | `INV-P1C-STATUS-FEEDBACK`, `INV-P1C-NO-PAGELOAD-LIVE-JIRA` | Produces controls on Scope Config/Bug Trend/Data Health or one shared partial linked from all three; consumes existing health data. | No hidden auto-submit on page load; no stale success banner after failed persisted status; no Grafana trigger. | Evidence export remains read-only and not a trigger. | Focused view/browser tests for explicit action and safe GET. | Operator sees how to refresh current scope and can distinguish running/success/failed after action. | serial |
+| P1C.N4 - Update operator docs | [P1C.N2] | `docs/architecture-manual.md`, `docs/implementation-start.md`, `docs/bug-trend-dashboard-product-requirements.zh.md` | Docs truth owner | all P1C contracts | Documents operation boundary, synchronous-first policy, and non-goals. | Docs must not claim page-load live Jira query, auto-recovery, or Grafana-triggered sync. | Existing local scripts remain startup helpers, not product operation authority. | Doc grep for prohibited claims plus review. | Docs match implemented route/API behavior. | serial |
+| P1C.VA - Validation architecture signoff | [P1C.N1, P1C.N2, P1C.N3, P1C.N4] | `jira_sync/tests/`, `bug_metrics/tests/`, `ui_web/tests/`, `docs/` | Validation owner | all P1C contracts | Confirms tests cover command, API, UI, GET read-only, and failure persistence. | Any contract with no executable disconfirming check reopens the owning node. | Browser test included if UI control is rendered. | Validation Engineer or equivalent focused validation review. | Validation set is accepted before closure gates. | serial |
+| P1C.CLOSE - Closure gates | [P1C.VA] | `jira_sync/tests/`, `bug_metrics/tests/`, `ui_web/tests/`, `docs/`, `scripts/` | Closure evidence owner | all P1C contracts | Runs focused tests plus repo hard gates. | Gate checking zero files, skipped browser path, or dirty undeclared files blocks closure. | Full Release Gate may be run for release candidate, but focused gates are required first. | Focused tests, browser Bug Trend gate, `manage.py check`, file-size, whitespace, Grafana artifact validator. | P1C can be committed with bounded residual risks named. | serial |
+
+```mermaid
+flowchart TD
+  P1CPLANR["P1C.PLAN.R Review operation design"]
+  P1CN1["P1C.N1 Extract sync operation API"]
+  P1CN2["P1C.N2 Add UI trigger facade and routes"]
+  P1CN3["P1C.N3 Render operation controls and status"]
+  P1CN4["P1C.N4 Update operator docs"]
+  P1CVA["P1C.VA Validation architecture signoff"]
+  P1CCLOSE["P1C.CLOSE Closure gates"]
+
+  P1CPLANR --> P1CN1
+  P1CN1 --> P1CN2
+  P1CN2 --> P1CN3
+  P1CN2 --> P1CN4
+  P1CN1 --> P1CVA
+  P1CN2 --> P1CVA
+  P1CN3 --> P1CVA
+  P1CN4 --> P1CVA
+  P1CVA --> P1CCLOSE
+```
+
+### P1C Execution Ledger
+
+- [ ] P1C.PLAN.R - Review operation design.
+- [ ] P1C.N1 - Extract sync operation API.
+- [ ] P1C.N2 - Add UI trigger facade and routes.
+- [ ] P1C.N3 - Render operation controls and status.
+- [ ] P1C.N4 - Update operator docs.
+- [ ] P1C.VA - Validation architecture signoff.
+- [ ] P1C.CLOSE - Closure gates.
+
+### P1C Planned Focused Tests
+
+| Node | Planned focused tests | Existing regression to keep green |
+| --- | --- | --- |
+| P1C.N1 | `jira_sync\tests\test_api_user_triggered_sync.py` | `jira_sync\tests\test_sync_jira_scope_command.py`, `bug_metrics\tests\test_api_bug_trend_contracts.py` |
+| P1C.N2 | `ui_web\tests\test_bug_trend_user_triggered_sync_views.py` | `ui_web\tests\test_bug_trend_views.py`, `ui_web\tests\test_data_health_views.py` |
+| P1C.N3 | `ui_web\tests\test_browser_bug_trend_dashboard.py` or a focused browser test added beside it | `ui_web\tests\test_bug_trend_scope_config_views.py`, `ui_web\tests\test_bug_trend_fact_table_ui.py` |
+| P1C.N4 | Doc grep/review, no standalone unit test expected | `scripts\check_diff_whitespace.py`, file-size gate |
+
+### P1C Validation Commands
+
+```powershell
+.venv\Scripts\python.exe -m pytest jira_sync\tests\test_sync_jira_scope_command.py jira_sync\tests\test_api_user_triggered_sync.py -q
+.venv\Scripts\python.exe -m pytest ui_web\tests\test_bug_trend_user_triggered_sync_views.py ui_web\tests\test_data_health_views.py ui_web\tests\test_bug_trend_scope_config_views.py -q
+.venv\Scripts\python.exe -m pytest ui_web\tests\test_browser_bug_trend_dashboard.py -q
+.venv\Scripts\python.exe -m pytest bug_metrics\tests\test_api_bug_trend_contracts.py ui_web\tests\test_bug_trend_views.py ui_web\tests\test_bug_trend_fact_table_ui.py -q
+.venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist docs\grafana-approved-data-surfaces.json
+.venv\Scripts\python.exe manage.py check
+.venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
+.venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
+```
+
+### P1C Review Gates
+
+`PLAN.R` must approve the operation boundary before implementation: no UI-owned Jira client, no direct command invocation from views, no page-load live Jira query, and no Grafana-triggered sync. `P1C.VA` must approve that every high-risk contract has an executable negative check. `P1C.CLOSE` must review the final implementation after focused validation and must explicitly answer whether synchronous execution remains acceptable or whether a queue/scheduler follow-up DAG is required.
 
 ## P2/P3 Long-run Continuation DAG
 

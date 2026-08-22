@@ -35,6 +35,7 @@ class FakeRunMetadata:
 class FakeChart:
     chart_id: str
     scope_id: int
+    contract_version: str
     calculation_run_id: str
     labels: list
     bucket_ids: list
@@ -42,6 +43,9 @@ class FakeChart:
     unavailable_reason: str = ''
     run_metadata: FakeRunMetadata = None
     current_evidence_available: bool = True
+    bucket_starts: list = None
+    bucket_ends: list = None
+    bucket_granularity: str = 'weekly'
 
 
 class FakeBugTrendApi:
@@ -52,10 +56,13 @@ class FakeBugTrendApi:
         return FakeChart(
             chart_id=chart_id,
             scope_id=scope_id,
+            contract_version='0.1',
             calculation_run_id='run-123',
             labels=['26WW32'],
             bucket_ids=['bucket-123'],
             datasets=[FakeDataset('all_open_bugs', 'line', [8], '#f2c94c')],
+            bucket_starts=['2026-08-03'],
+            bucket_ends=['2026-08-09'],
             run_metadata=FakeRunMetadata(
                 'run-123',
                 'run-hash',
@@ -90,6 +97,20 @@ class TestBugTrendFacade(TestCase):
         # Then
         self.assertIn('run-123', chart_json)
         self.assertIn('default_bug_trend', chart_json)
+        self.assertIn('0.1', chart_json)
         self.assertIn('bucket-123', chart_json)
         self.assertIn('all_open_bugs', chart_json)
         self.assertIn('fresh', chart_json)
+        self.assertIn('grafana_rows', chart_json)
+        self.assertIn('bucket_label', chart_json)
+
+    def test_shouldExposeChartContractVersionInPayload(self):
+        # Given
+        facade = BugTrendFacade(FakeBugTrendApi())
+
+        # When
+        chart = facade.get_chart_data(7, None, None)
+        payload = facade.get_chart_payload(chart)
+
+        # Then
+        self.assertEqual('0.1', payload['contract_version'])

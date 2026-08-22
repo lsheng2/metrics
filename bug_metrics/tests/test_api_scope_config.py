@@ -24,7 +24,6 @@ class TestScopeConfigApi(TestCase):
     def test_shouldValidateRequiredFieldsAndSemanticShapesBeforeSave(self):
         # Given
         config = self._scope_config(name='', jql='', bucket_granularity='monthly')
-        config.critical_high_values = 'P1-Critical'
 
         # When
         result = bug_trend_api.validate_scope_config(config)
@@ -34,7 +33,39 @@ class TestScopeConfigApi(TestCase):
         self.assertEqual('Scope name is required.', result.errors['name'])
         self.assertEqual('JQL is required.', result.errors['jql'])
         self.assertEqual('Bucket granularity must be daily or weekly.', result.errors['bucket_granularity'])
-        self.assertEqual('Value must be a list of strings.', result.errors['critical_high_values'])
+
+    def test_shouldNormalizeSemanticListsWhenSavingScopeConfig(self):
+        # Given
+        config = self._scope_config(name='STDEL normalized')
+        config.critical_high_values = [r'P1-Critical\nP2-High', 'Critical, High', 'P2-High']
+        config.medium_low_values = 'P3-Medium\nP4-Low'
+        config.fixed_status_values = [r'Fixed\nResolved\nDone']
+
+        # When
+        saved = bug_trend_api.save_scope_config(config)
+        scope = JiraScopeConfig.objects.get(id=saved.id)
+
+        # Then
+        self.assertEqual(['P1-Critical', 'P2-High', 'Critical', 'High'], scope.critical_high_values)
+        self.assertEqual(['P3-Medium', 'P4-Low'], scope.medium_low_values)
+        self.assertEqual(['Fixed', 'Resolved', 'Done'], scope.fixed_status_values)
+        self.assertEqual(scope.critical_high_values, saved.critical_high_values)
+
+    def test_shouldNormalizeSemanticListsWhenSavingModelDirectly(self):
+        # Given / When
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL direct normalized',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            fixed_status_values=[r'Fixed\nResolved\nDone'],
+            critical_high_values=[r'P1-Critical\nP2-High'],
+            medium_low_values=['P3-Medium,P4-Low'],
+        )
+
+        # Then
+        self.assertEqual(['Fixed', 'Resolved', 'Done'], scope.fixed_status_values)
+        self.assertEqual(['P1-Critical', 'P2-High'], scope.critical_high_values)
+        self.assertEqual(['P3-Medium', 'P4-Low'], scope.medium_low_values)
 
     def test_shouldNotPersistDraftValidationBeforeExplicitSave(self):
         # Given

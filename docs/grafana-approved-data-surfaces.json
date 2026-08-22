@@ -3,11 +3,14 @@
     "metrics-bug-trend-api"
   ],
   "api_surfaces": {
-    "/api/bug-trend/chart-data/": {
+    "/api/charts/data/": {
       "required_query_params": ["scope_id", "begin", "end", "chart_id"],
-      "optional_query_params": []
+      "optional_query_params": [],
+      "approved_contract_versions": ["0.1"],
+      "approved_render_roots": ["grafana_rows"],
+      "approved_render_shapes": ["wide_bucket_series"]
     },
-    "/api/bug-trend/evidence/": {
+    "/api/charts/evidence/": {
       "required_query_params": ["scope_id", "begin", "end", "run", "chart_id"],
       "optional_query_params": ["bucket", "series", "owner", "status", "severity", "component", "text"]
     }

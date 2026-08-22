@@ -23,7 +23,7 @@ class TestBugTrendChartSelectorViews(TestCase):
         bug_trend_api.publish_chart(draft.chart_id)
 
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_evidence_api'), {
+        response = self.client.get(reverse('ui_web:chart_evidence_api'), {
             'scope_id': scope.id,
             'run': str(run.id),
             'begin': '2026-08-03',
@@ -87,7 +87,7 @@ class TestBugTrendChartSelectorViews(TestCase):
         self._publish_summary_only_chart()
 
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_chart_data_api'), {
+        response = self.client.get(reverse('ui_web:chart_data_api'), {
             'scope_id': scope.id,
             'begin': '2026-08-03',
             'end': '2026-08-09',

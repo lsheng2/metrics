@@ -8,7 +8,7 @@ def test_shouldReadChartIdFromGrafanaArtifactTarget():
         'panels': [
             {
                 'targets': [
-                    {'path': '/api/bug-trend/chart-data/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=ai_open_only'}
+                    {'path': '/api/charts/data/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=ai_open_only'}
                 ]
             }
         ]
@@ -24,7 +24,7 @@ def test_shouldRejectGrafanaArtifactTargetWhenRequiredChartIdIsOmitted():
         'panels': [
             {
                 'targets': [
-                    {'path': '/api/bug-trend/chart-data/?scope_id=$scope_id&begin=$begin&end=$end'}
+                    {'path': '/api/charts/data/?scope_id=$scope_id&begin=$begin&end=$end'}
                 ]
             }
         ]

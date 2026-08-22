@@ -21,10 +21,14 @@ class BugTrendChartOption:
 class BugTrendChartData:
     chart_id: str
     scope_id: int
+    contract_version: str
     calculation_run_id: str
     labels: List[str]
     bucket_ids: List[str]
     datasets: List[dict]
+    bucket_starts: List[str] = None
+    bucket_ends: List[str] = None
+    bucket_granularity: str = ''
     unavailable_reason: str = ''
     run_metadata: dict = None
     current_evidence_available: bool = False

@@ -2,7 +2,7 @@ import json
 from datetime import date
 
 from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilters
-from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, saved_scope_config_from_dict
+from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, normalize_scope_list_values, saved_scope_config_from_dict
 
 from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
 
@@ -37,6 +37,7 @@ class BugTrendFacade:
         return BugTrendChartData(
             chart_id=chart_id,
             scope_id=chart.scope_id,
+            contract_version=chart.contract_version,
             calculation_run_id=chart.calculation_run_id or '',
             labels=chart.labels,
             bucket_ids=chart.bucket_ids,
@@ -49,6 +50,9 @@ class BugTrendFacade:
                 }
                 for dataset in chart.datasets
             ],
+            bucket_starts=chart.bucket_starts or [],
+            bucket_ends=chart.bucket_ends or [],
+            bucket_granularity=chart.bucket_granularity or '',
             unavailable_reason=chart.unavailable_reason,
             run_metadata=self._run_metadata_payload(chart.run_metadata),
             current_evidence_available=chart.current_evidence_available,
@@ -64,24 +68,57 @@ class BugTrendFacade:
                 points.append({
                     'calculation_run_id': chart_data.calculation_run_id,
                     'bucket_id': chart_data.bucket_ids[index],
+                    'bucket_label': chart_data.labels[index],
+                    'bucket_start': self._bucket_value(chart_data.bucket_starts, index),
+                    'bucket_end': self._bucket_value(chart_data.bucket_ends, index),
+                    'bucket_granularity': chart_data.bucket_granularity,
                     'series_name': dataset['series_name'],
+                    'series_label': self._series_label(dataset['series_name']),
                     'label': chart_data.labels[index],
                     'value': value,
                     'type': dataset['type'],
                     'color': dataset['color'],
                 })
+        grafana_rows = self._grafana_rows(chart_data)
         return {
             'scope_id': chart_data.scope_id,
             'chart_id': chart_data.chart_id,
+            'contract_version': chart_data.contract_version,
             'calculation_run_id': chart_data.calculation_run_id,
             'labels': chart_data.labels,
             'bucket_ids': chart_data.bucket_ids,
+            'bucket_starts': chart_data.bucket_starts,
+            'bucket_ends': chart_data.bucket_ends,
+            'bucket_granularity': chart_data.bucket_granularity,
             'datasets': chart_data.datasets,
             'points': points,
+            'grafana_rows': grafana_rows,
             'unavailable_reason': chart_data.unavailable_reason,
             'run_metadata': chart_data.run_metadata or {},
             'current_evidence_available': chart_data.current_evidence_available,
         }
+
+    def _grafana_rows(self, chart_data: BugTrendChartData) -> list[dict]:
+        rows = []
+        for index, bucket_id in enumerate(chart_data.bucket_ids):
+            row = {
+                'calculation_run_id': chart_data.calculation_run_id,
+                'bucket_id': bucket_id,
+                'bucket_label': chart_data.labels[index],
+                'bucket_start': self._bucket_value(chart_data.bucket_starts, index),
+                'bucket_end': self._bucket_value(chart_data.bucket_ends, index),
+                'bucket_granularity': chart_data.bucket_granularity,
+            }
+            for dataset in chart_data.datasets:
+                row[dataset['series_name']] = dataset['values'][index]
+            rows.append(row)
+        return rows
+
+    def _bucket_value(self, values: list, index: int) -> str:
+        return values[index] if values and index < len(values) else ''
+
+    def _series_label(self, series_name: str) -> str:
+        return series_name.replace('_', ' ').title()
 
     def _run_metadata_payload(self, run_metadata) -> dict:
         if not run_metadata:
@@ -237,5 +274,4 @@ class BugTrendFacade:
         return saved_scope_config_from_dict(payload)
 
     def _parse_list_field(self, value: str) -> list[str]:
-        normalized = value.replace('\r\n', '\n').replace(',', '\n')
-        return [item.strip() for item in normalized.split('\n') if item.strip()]
+        return normalize_scope_list_values(value)

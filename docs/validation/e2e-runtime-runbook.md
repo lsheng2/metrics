@@ -53,13 +53,13 @@ Validate live Metrics APIs:
 1. Request chart data:
 
 ```powershell
-curl.exe --noproxy 127.0.0.1 "http://127.0.0.1:8002/api/bug-trend/chart-data/?scope_id=<scope>&begin=<begin>&end=<end>&chart_id=default_bug_trend"
+curl.exe --noproxy 127.0.0.1 "http://127.0.0.1:8002/api/charts/data/?scope_id=<scope>&begin=<begin>&end=<end>&chart_id=default_bug_trend"
 ```
 
 2. Request evidence for a selected run/bucket/series:
 
 ```powershell
-curl.exe --noproxy 127.0.0.1 "http://127.0.0.1:8002/api/bug-trend/evidence/?scope_id=<scope>&begin=<begin>&end=<end>&run=<run>&bucket=<bucket>&series=<series>&chart_id=default_bug_trend"
+curl.exe --noproxy 127.0.0.1 "http://127.0.0.1:8002/api/charts/evidence/?scope_id=<scope>&begin=<begin>&end=<end>&run=<run>&bucket=<bucket>&series=<series>&chart_id=default_bug_trend"
 ```
 
 3. Confirm malformed dates return 400, not 500.
@@ -73,9 +73,9 @@ Validate Grafana as a link-out renderer:
 1. Open the committed Grafana dashboard.
 2. Set variables for `scope_id`, `begin`, and `end`.
 3. Confirm the panel renders data and does not show `No data`.
-4. Confirm the panel data target calls `/api/bug-trend/chart-data/` with `chart_id=default_bug_trend` or the intended catalog chart id.
+4. Confirm the panel data target calls `/api/charts/data/` with `chart_id=default_bug_trend` or the intended catalog chart id.
 5. Resolve a data link for a chart point.
-6. Confirm the resolved link points to `/api/bug-trend/evidence/` and carries `scope_id`, `begin`, `end`, `run`, `bucket`, `series`, and `chart_id`.
+6. Confirm the resolved link points to `/api/charts/evidence/` and carries `scope_id`, `begin`, `end`, `run`, `bucket`, `series`, and `chart_id`.
 7. Record the result in `docs/c1-evidence-link-validation-evidence.md`.
 8. Run:
 

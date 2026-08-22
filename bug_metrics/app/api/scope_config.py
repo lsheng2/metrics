@@ -1,22 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from bug_metrics.models import BugTrendAuditEvent, JiraScopeConfig
+from bug_metrics.models import BugTrendAuditEvent, JiraScopeConfig, SCOPE_SEMANTIC_LIST_FIELD_NAMES, normalize_scope_list_values
 
 
-SEMANTIC_LIST_FIELDS = (
-    'bug_type_values',
-    'open_status_values',
-    'fixed_status_values',
-    'closed_status_values',
-    'terminal_excluded_status_values',
-    'fixed_resolution_values',
-    'closed_resolution_values',
-    'reopen_status_values',
-    'critical_high_values',
-    'medium_low_values',
-    'display_fields',
-)
+SEMANTIC_LIST_FIELDS = SCOPE_SEMANTIC_LIST_FIELD_NAMES
 
 SEMANTIC_TEXT_FIELDS = (
     'jql',
@@ -80,6 +68,7 @@ class ScopeConfigService:
         return self._to_saved_scope_config(JiraScopeConfig.objects.get(id=scope_id))
 
     def validate_scope_config(self, config: SavedScopeConfig) -> ScopeConfigValidationResult:
+        config = normalize_saved_scope_config(config)
         errors = {}
         if not config.name.strip():
             errors['name'] = 'Scope name is required.'
@@ -92,6 +81,7 @@ class ScopeConfigService:
         return ScopeConfigValidationResult(not errors, errors)
 
     def save_scope_config(self, config: SavedScopeConfig) -> SavedScopeConfig:
+        config = normalize_saved_scope_config(config)
         validation = self.validate_scope_config(config)
         if not validation.valid:
             raise ValueError(validation.errors)
@@ -183,26 +173,32 @@ def saved_scope_config_from_dict(payload: Dict[str, Any]) -> SavedScopeConfig:
         ip=payload.get('ip', ''),
         project_label=payload.get('project_label', ''),
         jql=payload.get('jql', ''),
-        bug_type_values=payload.get('bug_type_values', []),
-        open_status_values=payload.get('open_status_values', []),
-        fixed_status_values=payload.get('fixed_status_values', []),
-        closed_status_values=payload.get('closed_status_values', []),
-        terminal_excluded_status_values=payload.get('terminal_excluded_status_values', []),
-        fixed_resolution_values=payload.get('fixed_resolution_values', []),
-        closed_resolution_values=payload.get('closed_resolution_values', []),
-        reopen_status_values=payload.get('reopen_status_values', []),
+        bug_type_values=normalize_scope_list_values(payload.get('bug_type_values', [])),
+        open_status_values=normalize_scope_list_values(payload.get('open_status_values', [])),
+        fixed_status_values=normalize_scope_list_values(payload.get('fixed_status_values', [])),
+        closed_status_values=normalize_scope_list_values(payload.get('closed_status_values', [])),
+        terminal_excluded_status_values=normalize_scope_list_values(payload.get('terminal_excluded_status_values', [])),
+        fixed_resolution_values=normalize_scope_list_values(payload.get('fixed_resolution_values', [])),
+        closed_resolution_values=normalize_scope_list_values(payload.get('closed_resolution_values', [])),
+        reopen_status_values=normalize_scope_list_values(payload.get('reopen_status_values', [])),
         severity_field=payload.get('severity_field', ''),
-        critical_high_values=payload.get('critical_high_values', []),
-        medium_low_values=payload.get('medium_low_values', []),
+        critical_high_values=normalize_scope_list_values(payload.get('critical_high_values', [])),
+        medium_low_values=normalize_scope_list_values(payload.get('medium_low_values', [])),
         component_field=payload.get('component_field', ''),
         owner_field=payload.get('owner_field', 'assignee'),
         team_field=payload.get('team_field', ''),
         milestone_field=payload.get('milestone_field', ''),
         fix_version_field=payload.get('fix_version_field', ''),
         package_version_field=payload.get('package_version_field', ''),
-        display_fields=payload.get('display_fields', []),
+        display_fields=normalize_scope_list_values(payload.get('display_fields', [])),
         timezone=payload.get('timezone', 'UTC'),
         bucket_granularity=payload.get('bucket_granularity', JiraScopeConfig.GRANULARITY_WEEKLY),
         enabled=payload.get('enabled', False),
         config_version_hash=payload.get('config_version_hash', ''),
     )
+
+
+def normalize_saved_scope_config(config: SavedScopeConfig) -> SavedScopeConfig:
+    for field_name in SEMANTIC_LIST_FIELDS:
+        setattr(config, field_name, normalize_scope_list_values(getattr(config, field_name)))
+    return config

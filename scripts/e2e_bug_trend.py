@@ -285,10 +285,10 @@ def import_grafana_dashboard(workspace: Path, grafana_port: int, scope_id: str, 
 
 
 def validate_runtime(workspace: Path, grafana_port: int, django_port: int, scope_id: str, begin: str, end: str) -> None:
-    assert_http_ok(f"http://127.0.0.1:{django_port}/api/bug-trend/chart-data/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend")
+    assert_http_ok(f"http://127.0.0.1:{django_port}/api/charts/data/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend")
     assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/datasources/uid/metrics-bug-trend-api", auth=True)
     assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/plugins/yesoreyeram-infinity-datasource/settings", auth=True)
-    assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/datasources/proxy/uid/metrics-bug-trend-api/api/bug-trend/chart-data/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend", auth=True)
+    assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/datasources/proxy/uid/metrics-bug-trend-api/api/charts/data/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend", auth=True)
     dashboard = request_json("GET", f"http://127.0.0.1:{grafana_port}/api/dashboards/uid/metrics-bug-trend-c-stock")
     target_url = dashboard["dashboard"]["panels"][0]["targets"][0]["url"]
     link_url = dashboard["dashboard"]["panels"][0]["fieldConfig"]["defaults"]["links"][0]["url"]

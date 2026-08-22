@@ -13,6 +13,40 @@ def _empty_dict():
     return {}
 
 
+SCOPE_SEMANTIC_LIST_FIELD_NAMES = (
+    'bug_type_values',
+    'open_status_values',
+    'fixed_status_values',
+    'closed_status_values',
+    'terminal_excluded_status_values',
+    'fixed_resolution_values',
+    'closed_resolution_values',
+    'reopen_status_values',
+    'critical_high_values',
+    'medium_low_values',
+    'display_fields',
+)
+
+
+def normalize_scope_list_values(value):
+    if value is None:
+        return []
+    if isinstance(value, str):
+        raw_items = [value]
+    else:
+        raw_items = list(value)
+    normalized = []
+    for raw_item in raw_items:
+        if raw_item is None:
+            continue
+        raw_text = str(raw_item).replace('\\r\\n', '\n').replace('\\n', '\n').replace('\\r', '\n')
+        for item in raw_text.replace('\r\n', '\n').replace('\r', '\n').replace(',', '\n').split('\n'):
+            text = item.strip()
+            if text and text not in normalized:
+                normalized.append(text)
+    return normalized
+
+
 class JiraScopeConfig(models.Model):
     GRANULARITY_DAILY = 'daily'
     GRANULARITY_WEEKLY = 'weekly'
@@ -52,30 +86,35 @@ class JiraScopeConfig(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        self.normalize_semantic_lists()
         self.config_version_hash = self.calculate_config_version_hash()
         super().save(*args, **kwargs)
+
+    def normalize_semantic_lists(self):
+        for field_name in SCOPE_SEMANTIC_LIST_FIELD_NAMES:
+            setattr(self, field_name, normalize_scope_list_values(getattr(self, field_name)))
 
     def calculate_config_version_hash(self) -> str:
         payload = {
             'jql': self.jql,
-            'bug_type_values': self.bug_type_values,
-            'open_status_values': self.open_status_values,
-            'fixed_status_values': self.fixed_status_values,
-            'closed_status_values': self.closed_status_values,
-            'terminal_excluded_status_values': self.terminal_excluded_status_values,
-            'fixed_resolution_values': self.fixed_resolution_values,
-            'closed_resolution_values': self.closed_resolution_values,
-            'reopen_status_values': self.reopen_status_values,
+            'bug_type_values': normalize_scope_list_values(self.bug_type_values),
+            'open_status_values': normalize_scope_list_values(self.open_status_values),
+            'fixed_status_values': normalize_scope_list_values(self.fixed_status_values),
+            'closed_status_values': normalize_scope_list_values(self.closed_status_values),
+            'terminal_excluded_status_values': normalize_scope_list_values(self.terminal_excluded_status_values),
+            'fixed_resolution_values': normalize_scope_list_values(self.fixed_resolution_values),
+            'closed_resolution_values': normalize_scope_list_values(self.closed_resolution_values),
+            'reopen_status_values': normalize_scope_list_values(self.reopen_status_values),
             'severity_field': self.severity_field,
-            'critical_high_values': self.critical_high_values,
-            'medium_low_values': self.medium_low_values,
+            'critical_high_values': normalize_scope_list_values(self.critical_high_values),
+            'medium_low_values': normalize_scope_list_values(self.medium_low_values),
             'component_field': self.component_field,
             'owner_field': self.owner_field,
             'team_field': self.team_field,
             'milestone_field': self.milestone_field,
             'fix_version_field': self.fix_version_field,
             'package_version_field': self.package_version_field,
-            'display_fields': self.display_fields,
+            'display_fields': normalize_scope_list_values(self.display_fields),
             'timezone': self.timezone,
             'bucket_granularity': self.bucket_granularity,
         }

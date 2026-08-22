@@ -312,6 +312,64 @@ class TestBugTrendChartContract(TestCase):
         new_medium_low = next(dataset for dataset in chart.datasets if dataset.series_name == 'new_medium_low')
         self.assertEqual([1], new_medium_low.values)
 
+    def test_shouldNormalizeMultilineScopeSemanticsBeforeCalculatingSeries(self):
+        # Given
+        scope = self._create_scope()
+        scope.critical_high_values = [r'P1-Critical\nP2-High']
+        scope.medium_low_values = [r'P3-Medium\nP4-Low']
+        scope.fixed_status_values = [r'Fixed\nResolved\nDone']
+        scope.save()
+        JiraIssue.objects.create(
+            scope=scope,
+            issue_key='STDEL-3003',
+            summary='Critical bug from multiline config',
+            issue_type='Bug',
+            status='Open',
+            severity_value='P1-Critical',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+        )
+        JiraIssue.objects.create(
+            scope=scope,
+            issue_key='STDEL-3004',
+            summary='Medium bug from multiline config',
+            issue_type='Bug',
+            status='Open',
+            severity_value='P4-Low',
+            created_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        )
+        JiraIssue.objects.create(
+            scope=scope,
+            issue_key='STDEL-3005',
+            summary='Resolved bug from multiline config',
+            issue_type='Bug',
+            status='Resolved',
+            severity_value='P3-Medium',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 6, tzinfo=timezone.utc),
+        )
+        JiraTransition.objects.create(
+            scope=scope,
+            issue_key='STDEL-3005',
+            transitioned_at=datetime(2026, 8, 6, tzinfo=timezone.utc),
+            field='status',
+            from_value='Open',
+            to_value='Resolved',
+        )
+
+        # When
+        bug_trend_api.recalculate_scope(scope.id, date(2026, 8, 3), date(2026, 8, 9))
+        chart = bug_trend_api.get_chart(scope.id, date(2026, 8, 3), date(2026, 8, 9))
+
+        # Then
+        values_by_series = {dataset.series_name: dataset.values for dataset in chart.datasets}
+        self.assertEqual([2], values_by_series['all_open_bugs'])
+        self.assertEqual([1], values_by_series['all_open_critical_high'])
+        self.assertEqual([1], values_by_series['new_critical_high'])
+        self.assertEqual([2], values_by_series['new_medium_low'])
+        self.assertEqual([-1], values_by_series['fixed_or_closed_bugs'])
+
     def test_shouldUseScopeTimezoneForBucketAssignment(self):
         # Given
         scope = self._create_scope()
