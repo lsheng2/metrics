@@ -139,6 +139,7 @@ def process_exists_windows(pid: int) -> bool:
 
 def terminate_process(pid: int) -> None:
     if sys.platform == "win32":
+        terminate_process_tree_windows(pid, force=False)
         return
     try:
         os.kill(pid, signal.SIGTERM)
@@ -148,7 +149,7 @@ def terminate_process(pid: int) -> None:
 
 def kill_process(pid: int) -> None:
     if sys.platform == "win32":
-        terminate_process_windows(pid)
+        terminate_process_tree_windows(pid, force=True)
         return
     kill_signal = getattr(signal, "SIGKILL", signal.SIGTERM)
     try:
@@ -166,6 +167,15 @@ def terminate_process_windows(pid: int) -> None:
         ctypes.windll.kernel32.TerminateProcess(handle, 1)
     finally:
         ctypes.windll.kernel32.CloseHandle(handle)
+
+
+def terminate_process_tree_windows(pid: int, force: bool) -> None:
+    command = ["taskkill", "/PID", str(int(pid)), "/T"]
+    if force:
+        command.append("/F")
+    completed = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    if completed.returncode != 0 and force:
+        terminate_process_windows(pid)
 
 
 def wait_process_exit(pid: int, timeout_seconds: float) -> bool:

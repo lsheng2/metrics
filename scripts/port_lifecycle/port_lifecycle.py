@@ -333,6 +333,45 @@ class PortLifecycle:
                 callback(event)
         return events
 
+    def diagnose_services(
+        self,
+        service_specs: Sequence[ServiceSpec],
+        port_process_resolver: Callable[[str, int], Sequence[int]] = get_listening_process_ids,
+    ) -> list[dict[str, object]]:
+        state = self.read_state()
+        diagnostics = []
+        for spec in service_specs:
+            service = state.get(spec.name)
+            registered_port = int(service["port"]) if service and service.get("port") is not None else None
+            registered_pid = int(service["pid"]) if service and service.get("pid") is not None else None
+            process_running = process_exists(registered_pid) if registered_pid is not None else False
+            command = tuple(str(part) for part in service.get("command", ())) if service else ()
+            command_matches = process_matches_command(registered_pid, command) if registered_pid is not None and process_running and command else None
+            health_url = str(service.get("health_url") or "") if service else ""
+            health_reachable = http_status_ok(health_url) if health_url else None
+            listener_pids = {str(port): list(port_process_resolver(spec.host, port)) for port in spec.preferred_ports}
+            status = self._diagnostic_status(service, process_running, command_matches, health_reachable)
+            diagnostics.append(
+                {
+                    "project": self.project_name,
+                    "instance": self.instance_name,
+                    "service": spec.name,
+                    "status": status,
+                    "registered": service is not None,
+                    "registered_pid": registered_pid,
+                    "registered_port": registered_port,
+                    "process_running": process_running,
+                    "command_matches": command_matches,
+                    "health_url": health_url,
+                    "health_reachable": health_reachable,
+                    "authority_file": str(self._authority_file(spec.name)),
+                    "authority_exists": self._authority_file(spec.name).exists(),
+                    "preferred_ports": list(spec.preferred_ports),
+                    "listener_pids_by_port": listener_pids,
+                }
+            )
+        return diagnostics
+
     def stop_orphaned_pid_files(self, graceful_timeout_seconds: float = 5.0) -> list[StopResult]:
         results: list[StopResult] = []
         known_services = set(self.read_state().keys())
@@ -436,6 +475,19 @@ class PortLifecycle:
         if details:
             event.update(details)
         return event
+
+    def _diagnostic_status(self, service: Mapping[str, object] | None, process_running: bool, command_matches: bool | None, health_reachable: bool | None) -> str:
+        if service is None:
+            return "not_registered"
+        if not process_running:
+            return "pid_missing"
+        if command_matches is None:
+            return "identity_unknown"
+        if command_matches is False:
+            return "identity_mismatch"
+        if health_reachable is False:
+            return "health_unreachable"
+        return "ok"
 
     def _pid_file(self, name: str, port: int) -> Path:
         return self.pid_directory / f"{self.project_name}-{self.instance_name}-{name}-{port}.pid"

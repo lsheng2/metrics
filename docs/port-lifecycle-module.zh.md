@@ -48,6 +48,7 @@ scripts/e2e_stop_bug_trend.ps1
 | `prepare_startup(service_specs, force_by_port=False, ...)`                                    | method  | 启动前统一释放当前 instance 的 owned services；需要接管端口时再显式清理候选端口上的 listener。               | `service_specs`, `graceful_timeout_seconds`, `force_by_port`, `force_graceful_timeout_seconds`                                    | `list[StopResult]`             |
 | `restart_services(service_specs, force_by_port=False, ...)`                                  | method  | 标准 restart 编排：prepare startup、resolve ports、start services，并为每一步写 timing ledger。               | `service_specs`, timeout fields, `force_by_port`, optional `run_id`, `after_prepare`, `before_start`                              | `RestartResult`                |
 | `profile_step(label, callback, run_id=None, prefix=...)`                                     | method  | 标准化启动/诊断 profiling：打印耗时并追加 `startup-ledger.jsonl`。                                             | `label`, callable, optional `run_id`, log prefix                                                                                  | callback return value          |
+| `diagnose_services(service_specs, ...)`                                                      | method  | 标准化诊断：汇总 state、PID、command identity、health、authority file、preferred port listeners。              | `service_specs`, optional port resolver                                                                                           | `list[dict[str, object]]`      |
 | `start_service(spec, port=None)`                                                              | method  | 启动 service、等待 readiness、写 state/pid/log/launch authority。                                            | `ServiceSpec`, optional `port`                                                                                                  | `ServiceState`                 |
 | `stop_service(name, graceful_timeout_seconds=5.0)`                                            | method  | 停止 state 中登记的单个 owned service。                                                                      | `name`, `graceful_timeout_seconds`                                                                                              | `StopResult`                   |
 | `stop_all(graceful_timeout_seconds=5.0)`                                                      | method  | 停止当前 instance 的所有 owned services，并清理 state。                                                      | `graceful_timeout_seconds`                                                                                                        | `list[StopResult]`             |
@@ -88,6 +89,7 @@ scripts/e2e_stop_bug_trend.ps1
 | `scripts/e2e_start_bug_trend.ps1 [-ForceByPort]`       | Windows/VS Code task wrapper。             |
 | `scripts/e2e_stop_bug_trend.ps1 [-ForceByPort]`        | Windows/VS Code task wrapper。             |
 | `scripts/e2e_restart_bug_trend.ps1 [-ForceByPort]`     | Windows/VS Code restart wrapper，调用脚本级 restart。 |
+| `python scripts/port_lifecycle_cli.py doctor --service-config <path> --workspace <path>` | 通用诊断命令；可加 `--json` 或 `--fail-on-problem`。 |
 
 ## 核心概念
 
@@ -159,6 +161,38 @@ state/port-lifecycle/startup-ledger.jsonl
 这两个 hook 内部仍应使用 `profile_step(..., run_id=<same run id>)` 包住耗时步骤，保证同一轮 start/restart 可以从 `startup-ledger.jsonl` 按 `run_id` 聚合。
 
 ledger 记录 service、pid、port、是否 force、原因和时间。它用于区分“我们主动 stop”与“服务意外消失”，也方便后续 watchdog 或诊断页面复用。
+
+## Doctor 诊断命令
+
+`doctor` 是 port lifecycle 的中立诊断入口，不依赖 VS Code terminal 状态。它读取 service spec 和 lifecycle state，并检查：
+
+- state 中是否登记 service、pid、port；
+- 登记 PID 是否仍存在；
+- command line 是否仍匹配启动命令；
+- health URL 是否可达；
+- launch authority 文件是否存在；
+- preferred ports 当前 listener PID。
+
+Bug Trend E2E 示例：
+
+```powershell
+.venv\Scripts\python.exe scripts\port_lifecycle_cli.py doctor `
+    --workspace . `
+    --service-config scripts\e2e_bug_trend.services.json `
+    --state-directory state\e2e\port-lifecycle `
+    --json
+```
+
+常见状态：
+
+| status               | 含义                                  |
+| -------------------- | ------------------------------------- |
+| `ok`               | state、PID、identity、health 均正常。 |
+| `not_registered`   | service 未出现在 lifecycle state。    |
+| `pid_missing`      | state 中有 PID，但进程已不存在。      |
+| `identity_unknown` | PID 存在，但 state 缺少可验证 command identity。 |
+| `identity_mismatch` | PID 存在但 command line 不匹配。      |
+| `health_unreachable` | PID/identity 看起来正常，但 health URL 不可达。 |
 
 ## 端口选择策略
 

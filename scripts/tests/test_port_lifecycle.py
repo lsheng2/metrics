@@ -13,6 +13,7 @@ if str(ROOT / "scripts") not in sys.path:
 
 import port_lifecycle.port_lifecycle as lifecycle_module
 from port_lifecycle import PortLifecycle, ServiceSpec, is_port_available, load_project_name, load_service_specs, process_exists
+from port_lifecycle import platform_ops
 from port_lifecycle.platform_ops import creation_flags, kill_process, wait_process_exit
 
 
@@ -198,6 +199,62 @@ def test_check_services_detects_listener_identity_change(tmp_path):
         assert any(event["kind"] == "listener_identity_changed" for event in events)
     finally:
         lifecycle.stop_service("web", graceful_timeout_seconds=0.1)
+
+
+def test_diagnose_services_reports_state_listener_and_health(monkeypatch, tmp_path):
+    lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
+    spec = ServiceSpec.from_values("web", [8001, 8002], [sys.executable, "server.py"])
+    lifecycle.write_state(
+        {
+            "web": {
+                "port": 8001,
+                "pid": 12345,
+                "command": [sys.executable, "server.py"],
+                "health_url": "http://127.0.0.1:8001/health",
+            }
+        }
+    )
+
+    monkeypatch.setattr(lifecycle_module, "process_exists", lambda pid: pid == 12345)
+    monkeypatch.setattr(lifecycle_module, "process_matches_command", lambda pid, command: True)
+    monkeypatch.setattr(lifecycle_module, "http_status_ok", lambda url: True)
+
+    diagnostics = lifecycle.diagnose_services((spec,), port_process_resolver=lambda host, port: [100 + port])
+
+    assert diagnostics[0]["status"] == "ok"
+    assert diagnostics[0]["registered"] is True
+    assert diagnostics[0]["process_running"] is True
+    assert diagnostics[0]["command_matches"] is True
+    assert diagnostics[0]["health_reachable"] is True
+    assert diagnostics[0]["listener_pids_by_port"] == {"8001": [8101], "8002": [8102]}
+
+
+def test_diagnose_services_reports_missing_registration(tmp_path):
+    lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
+    spec = ServiceSpec.from_values("web", [8001], [sys.executable, "server.py"])
+
+    diagnostics = lifecycle.diagnose_services((spec,), port_process_resolver=lambda host, port: [])
+
+    assert diagnostics[0]["status"] == "not_registered"
+    assert diagnostics[0]["registered"] is False
+    assert diagnostics[0]["registered_pid"] is None
+
+
+def test_windows_terminate_process_uses_taskkill_tree(monkeypatch):
+    calls = []
+
+    def fake_run(command, stdout, stderr, check):
+        calls.append((command, stdout, stderr, check))
+        return type("Completed", (), {"returncode": 0})()
+
+    monkeypatch.setattr(platform_ops.sys, "platform", "win32")
+    monkeypatch.setattr(platform_ops.subprocess, "run", fake_run)
+
+    platform_ops.terminate_process(12345)
+    platform_ops.kill_process(67890)
+
+    assert calls[0][0] == ["taskkill", "/PID", "12345", "/T"]
+    assert calls[1][0] == ["taskkill", "/PID", "67890", "/T", "/F"]
 
 
 def test_state_roundtrip(tmp_path):
