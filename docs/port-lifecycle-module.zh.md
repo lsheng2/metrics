@@ -46,6 +46,8 @@ scripts/e2e_stop_bug_trend.ps1
 | `resolve_port(spec)`                                                                          | method  | 从一个 service 的 preferred ports 中选择第一个可用端口；如果 state 里已有 live owned process，会复用原端口。 | `ServiceSpec`                                                                                                                     | `int` port                     |
 | `resolve_plan(specs)`                                                                         | method  | 为多个 services 一次性解析端口。                                                                             | `Sequence[ServiceSpec]`                                                                                                           | `dict[str, int]`               |
 | `prepare_startup(service_specs, force_by_port=False, ...)`                                    | method  | 启动前统一释放当前 instance 的 owned services；需要接管端口时再显式清理候选端口上的 listener。               | `service_specs`, `graceful_timeout_seconds`, `force_by_port`, `force_graceful_timeout_seconds`                                    | `list[StopResult]`             |
+| `restart_services(service_specs, force_by_port=False, ...)`                                  | method  | 标准 restart 编排：prepare startup、resolve ports、start services，并为每一步写 timing ledger。               | `service_specs`, timeout fields, `force_by_port`, optional `run_id`, `after_prepare`, `before_start`                              | `RestartResult`                |
+| `profile_step(label, callback, run_id=None, prefix=...)`                                     | method  | 标准化启动/诊断 profiling：打印耗时并追加 `startup-ledger.jsonl`。                                             | `label`, callable, optional `run_id`, log prefix                                                                                  | callback return value          |
 | `start_service(spec, port=None)`                                                              | method  | 启动 service、等待 readiness、写 state/pid/log/launch authority。                                            | `ServiceSpec`, optional `port`                                                                                                  | `ServiceState`                 |
 | `stop_service(name, graceful_timeout_seconds=5.0)`                                            | method  | 停止 state 中登记的单个 owned service。                                                                      | `name`, `graceful_timeout_seconds`                                                                                              | `StopResult`                   |
 | `stop_all(graceful_timeout_seconds=5.0)`                                                      | method  | 停止当前 instance 的所有 owned services，并清理 state。                                                      | `graceful_timeout_seconds`                                                                                                        | `list[StopResult]`             |
@@ -58,11 +60,13 @@ scripts/e2e_stop_bug_trend.ps1
 
 ### Data Models
 
-| Model            | 用途                         | 关键字段                                                                                                                |
-| ---------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `ServiceSpec`  | service 声明。               | `name`, `preferred_ports`, `command`, `stop_command`, `health_url`, `listener_identity_url`, timeout fields |
-| `ServiceState` | service 启动后的实际状态。   | `name`, `host`, `port`, `pid`, `command`, `stdout_log`, `stderr_log`, `launch_authority_file`           |
-| `StopResult`   | stop/force-stop 的审计结果。 | `name`, `port`, `pid`, `stopped`, `forced`, `reason`                                                        |
+| Model                 | 用途                         | 关键字段                                                                                                                |
+| --------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `ServiceSpec`       | service 声明。               | `name`, `preferred_ports`, `command`, `stop_command`, `health_url`, `listener_identity_url`, timeout fields |
+| `ServiceState`      | service 启动后的实际状态。   | `name`, `host`, `port`, `pid`, `command`, `stdout_log`, `stderr_log`, `launch_authority_file`           |
+| `StopResult`        | stop/force-stop 的审计结果。 | `name`, `port`, `pid`, `stopped`, `forced`, `reason`                                                        |
+| `LifecycleStepTiming` | 单个 lifecycle step 的耗时。 | `label`, `elapsed_seconds`, `status`                                                                          |
+| `RestartResult`     | 标准 restart 的汇总结果。     | `run_id`, `stop_results`, `port_plan`, `service_states`, `timings`                                  |
 
 ### Platform Helpers
 
@@ -83,6 +87,7 @@ scripts/e2e_stop_bug_trend.ps1
 | `python scripts/e2e_bug_trend.py stop --force-by-port` | 显式按候选端口兜底清理。                   |
 | `scripts/e2e_start_bug_trend.ps1 [-ForceByPort]`       | Windows/VS Code task wrapper。             |
 | `scripts/e2e_stop_bug_trend.ps1 [-ForceByPort]`        | Windows/VS Code task wrapper。             |
+| `scripts/e2e_restart_bug_trend.ps1 [-ForceByPort]`     | Windows/VS Code restart wrapper，调用脚本级 restart。 |
 
 ## 核心概念
 
@@ -131,6 +136,27 @@ state/port-lifecycle/launch-authority/<project>-<instance>-<service>.json
 ```text
 state/port-lifecycle/termination-ledger.jsonl
 ```
+
+启动、restart 和诊断 step 会追加：
+
+```text
+state/port-lifecycle/startup-ledger.jsonl
+```
+
+每行是一个 JSON object，至少包含：
+
+```json
+{"event":"step_timing","label":"start:grafana","elapsed_seconds":7.3,"status":"completed"}
+```
+
+项目级 launcher 可以直接使用 `PortLifecycle.profile_step(...)` 包住业务前置步骤，例如 migration、fixture seed、artifact validation、runtime smoke test。这样 terminal 输出和 JSONL 证据共用同一个 timing source，不需要每个项目手写 profiling 机制。
+
+当 launcher 需要在标准 restart 中插入业务步骤时，使用 `restart_services(...)` 的 hooks：
+
+- `after_prepare(stop_results)`：在 owned services / force-by-port cleanup 后执行，适合 migration、fixture seed、artifact validation 等启动前步骤。
+- `before_start(port_plan, service_specs)`：在端口解析后、service 启动前执行，适合根据实际端口写 runtime config，并返回最终要启动的 `ServiceSpec` 序列。
+
+这两个 hook 内部仍应使用 `profile_step(..., run_id=<same run id>)` 包住耗时步骤，保证同一轮 start/restart 可以从 `startup-ledger.jsonl` 按 `run_id` 聚合。
 
 ledger 记录 service、pid、port、是否 force、原因和时间。它用于区分“我们主动 stop”与“服务意外消失”，也方便后续 watchdog 或诊断页面复用。
 

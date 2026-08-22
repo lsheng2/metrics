@@ -77,8 +77,8 @@
         },
         {
             "label": "E2E: Restart Bug Trend",
-            "dependsOrder": "sequence",
-            "dependsOn": ["E2E: Stop Bug Trend", "E2E: Start Bug Trend"],
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_restart_bug_trend.ps1'; & $script -Workspace $workspace -ForceByPort",
             "problemMatcher": []
         }
     ]

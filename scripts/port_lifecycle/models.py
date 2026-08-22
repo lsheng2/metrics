@@ -78,3 +78,19 @@ class StopResult:
     stopped: bool
     forced: bool
     reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class LifecycleStepTiming:
+    label: str
+    elapsed_seconds: float
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
+class RestartResult:
+    run_id: str
+    stop_results: tuple[StopResult, ...]
+    port_plan: Mapping[str, int]
+    service_states: tuple[ServiceState, ...]
+    timings: tuple[LifecycleStepTiming, ...]

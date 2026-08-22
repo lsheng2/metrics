@@ -306,6 +306,61 @@ def test_prepare_startup_force_stops_unowned_ports_when_requested(tmp_path):
             wait_process_exit(process.pid, 2.0)
 
 
+def test_profile_step_writes_startup_ledger(tmp_path):
+    lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
+
+    result = lifecycle.profile_step("sample_step", lambda: "done", run_id="run-1")
+
+    assert result == "done"
+    record = json.loads(lifecycle.startup_ledger.read_text(encoding="utf-8").splitlines()[-1])
+    assert record["event"] == "step_timing"
+    assert record["label"] == "sample_step"
+    assert record["run_id"] == "run-1"
+    assert record["status"] == "completed"
+    assert record["elapsed_seconds"] >= 0
+
+
+def test_restart_services_records_standard_timing(monkeypatch, tmp_path):
+    lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
+    api = ServiceSpec.from_values("api", [8100], [sys.executable, "api.py"])
+    ui = ServiceSpec.from_values("ui", [8200], [sys.executable, "ui.py"])
+    stop_result = lifecycle_module.StopResult("api", 8100, 123, True, False, "terminated")
+    calls = []
+
+    def fake_prepare_startup(service_specs, graceful_timeout_seconds=5.0, force_by_port=False, force_graceful_timeout_seconds=0.5, port_process_resolver=None):
+        calls.append(("prepare_startup", tuple(spec.name for spec in service_specs), force_by_port))
+        return [stop_result]
+
+    def fake_resolve_plan(service_specs):
+        calls.append(("resolve_plan", tuple(spec.name for spec in service_specs)))
+        return {"api": 8100, "ui": 8200}
+
+    def fake_start_service(spec, port=None):
+        calls.append(("start_service", spec.name, port))
+        return lifecycle_module.ServiceState(spec.name, spec.host, int(port), 999, tuple(spec.command), "now", "out", "err", "authority", (), None, None, None, 0.0)
+
+    monkeypatch.setattr(lifecycle, "prepare_startup", fake_prepare_startup)
+    monkeypatch.setattr(lifecycle, "resolve_plan", fake_resolve_plan)
+    monkeypatch.setattr(lifecycle, "start_service", fake_start_service)
+
+    result = lifecycle.restart_services((api, ui), force_by_port=True, run_id="restart-1")
+
+    assert result.run_id == "restart-1"
+    assert result.stop_results == (stop_result,)
+    assert result.port_plan == {"api": 8100, "ui": 8200}
+    assert [state.name for state in result.service_states] == ["api", "ui"]
+    assert [timing.label for timing in result.timings] == ["prepare_startup", "resolve_ports", "start:api", "start:ui"]
+    assert calls == [
+        ("prepare_startup", ("api", "ui"), True),
+        ("resolve_plan", ("api", "ui")),
+        ("start_service", "api", 8100),
+        ("start_service", "ui", 8200),
+    ]
+    ledger_records = [json.loads(line) for line in lifecycle.startup_ledger.read_text(encoding="utf-8").splitlines()]
+    assert [record["label"] for record in ledger_records] == ["prepare_startup", "resolve_ports", "start:api", "start:ui"]
+    assert {record["run_id"] for record in ledger_records} == {"restart-1"}
+
+
 def test_stop_service_reports_stop_command_success(monkeypatch, tmp_path):
     lifecycle = PortLifecycle("test-project", tmp_path, state_directory=tmp_path / "state")
     lifecycle.write_state(

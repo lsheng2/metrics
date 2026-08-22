@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta, timezone
 
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from bug_metrics.container import bug_metrics_container
 from bug_metrics.models import JiraScopeConfig
@@ -11,35 +12,36 @@ class Command(BaseCommand):
     help = 'Seed local sample data for the bug trend dashboard.'
 
     def handle(self, *args, **options):
-        scope, _ = JiraScopeConfig.objects.update_or_create(
-            name='Local STDEL Bug Trend',
-            defaults={
-                'ip': 'NVU',
-                'project_label': 'STDEL',
-                'jql': 'project = STDEL AND issuetype = Bug',
-                'bug_type_values': ['Bug'],
-                'open_status_values': ['Open'],
-                'fixed_status_values': ['Fixed'],
-                'closed_status_values': ['Closed'],
-                'fixed_resolution_values': ['Fixed'],
-                'severity_field': 'priority',
-                'critical_high_values': ['P1-Critical', 'P2-High'],
-                'medium_low_values': ['P3-Medium'],
-                'component_field': 'components',
-                'owner_field': 'assignee',
-                'bucket_granularity': JiraScopeConfig.GRANULARITY_WEEKLY,
-                'enabled': True,
-            },
-        )
-        scope.jira_issues.all().delete()
-        scope.jira_transitions.all().delete()
-        scope.calculation_runs.all().delete()
+        with transaction.atomic():
+            scope, _ = JiraScopeConfig.objects.update_or_create(
+                name='Local STDEL Bug Trend',
+                defaults={
+                    'ip': 'NVU',
+                    'project_label': 'STDEL',
+                    'jql': 'project = STDEL AND issuetype = Bug',
+                    'bug_type_values': ['Bug'],
+                    'open_status_values': ['Open'],
+                    'fixed_status_values': ['Fixed'],
+                    'closed_status_values': ['Closed'],
+                    'fixed_resolution_values': ['Fixed'],
+                    'severity_field': 'priority',
+                    'critical_high_values': ['P1-Critical', 'P2-High'],
+                    'medium_low_values': ['P3-Medium'],
+                    'component_field': 'components',
+                    'owner_field': 'assignee',
+                    'bucket_granularity': JiraScopeConfig.GRANULARITY_WEEKLY,
+                    'enabled': True,
+                },
+            )
+            scope.jira_issues.all().delete()
+            scope.jira_transitions.all().delete()
+            scope.calculation_runs.all().delete()
 
-        coverage_start = date(2025, 4, 7)
-        coverage_end = date(2026, 8, 9)
-        self._create_sample_history(scope, coverage_start, coverage_end)
+            coverage_start = date(2025, 4, 7)
+            coverage_end = date(2026, 8, 9)
+            self._create_sample_history(scope, coverage_start, coverage_end)
 
-        bug_metrics_container.bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)
+            bug_metrics_container.bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)
         self.stdout.write(self.style.SUCCESS(f'Seeded bug trend local sample scope {scope.id}: {scope.name}'))
 
     def _create_sample_history(self, scope, coverage_start, coverage_end):
@@ -87,12 +89,17 @@ class Command(BaseCommand):
             week_index += 1
             week_start += timedelta(days=7)
 
+        issue_objects = []
+        transition_objects = []
         for record in issue_records:
             if record['fixed_at']:
-                self._create_issue(scope, record['issue_key'], record['summary'], 'Fixed', 'Fixed', record['priority'], record['created_at'], record['fixed_at'])
-                self._create_transition(scope, record['issue_key'], record['fixed_at'], 'Open', 'Fixed')
+                issue_objects.append(self._issue(scope, record['issue_key'], record['summary'], 'Fixed', 'Fixed', record['priority'], record['created_at'], record['fixed_at']))
+                transition_objects.append(self._transition(scope, record['issue_key'], record['fixed_at'], 'Open', 'Fixed'))
             else:
-                self._create_issue(scope, record['issue_key'], record['summary'], 'Open', '', record['priority'], record['created_at'], record['created_at'])
+                issue_objects.append(self._issue(scope, record['issue_key'], record['summary'], 'Open', '', record['priority'], record['created_at'], record['created_at']))
+
+        JiraIssue.objects.bulk_create(issue_objects, batch_size=1000)
+        JiraTransition.objects.bulk_create(transition_objects, batch_size=1000)
 
     def _medium_count_for_week(self, week_index):
         if week_index < 8:
@@ -132,8 +139,8 @@ class Command(BaseCommand):
             return 16
         return 24
 
-    def _create_issue(self, scope, issue_key, summary, status, resolution, priority, created_at, updated_at):
-        JiraIssue.objects.create(
+    def _issue(self, scope, issue_key, summary, status, resolution, priority, created_at, updated_at):
+        return JiraIssue(
             scope=scope,
             issue_key=issue_key,
             summary=summary,
@@ -150,8 +157,8 @@ class Command(BaseCommand):
             is_in_current_scope=True,
         )
 
-    def _create_transition(self, scope, issue_key, changed_at, from_status, to_status):
-        JiraTransition.objects.create(
+    def _transition(self, scope, issue_key, changed_at, from_status, to_status):
+        return JiraTransition(
             scope=scope,
             issue_key=issue_key,
             transitioned_at=changed_at,

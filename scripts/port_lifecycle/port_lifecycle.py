@@ -5,13 +5,16 @@ import os
 import subprocess
 import sys
 import time
+import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Mapping, Sequence
+from typing import Callable, Mapping, Sequence, TypeVar
 
-from .models import ServiceSpec, ServiceState, StopResult
+from .models import LifecycleStepTiming, RestartResult, ServiceSpec, ServiceState, StopResult
 from .platform_ops import creation_flags, get_listening_process_ids, http_probe, http_status_ok, is_port_available, kill_process, process_exists, process_matches_command, terminate_process, wait_port_available, wait_process_exit
+
+T = TypeVar("T")
 
 
 class PortLifecycle:
@@ -32,6 +35,7 @@ class PortLifecycle:
         self.log_directory = Path(log_directory) if log_directory else self.state_directory / "logs"
         self.authority_directory = self.state_directory / "launch-authority"
         self.termination_ledger = self.state_directory / "termination-ledger.jsonl"
+        self.startup_ledger = self.state_directory / "startup-ledger.jsonl"
         self.state_file = self.state_directory / f"{self.project_name}-{self.instance_name}.json"
         self.state_directory.mkdir(parents=True, exist_ok=True)
         self.pid_directory.mkdir(parents=True, exist_ok=True)
@@ -134,6 +138,61 @@ class PortLifecycle:
                 )
             )
         return results
+
+    def restart_services(
+        self,
+        service_specs: Sequence[ServiceSpec],
+        graceful_timeout_seconds: float = 5.0,
+        force_by_port: bool = False,
+        force_graceful_timeout_seconds: float = 0.5,
+        port_process_resolver: Callable[[str, int], Sequence[int]] = get_listening_process_ids,
+        run_id: str | None = None,
+        after_prepare: Callable[[Sequence[StopResult]], None] | None = None,
+        before_start: Callable[[Mapping[str, int], Sequence[ServiceSpec]], Sequence[ServiceSpec]] | None = None,
+    ) -> RestartResult:
+        restart_run_id = run_id or str(uuid.uuid4())
+        timings: list[LifecycleStepTiming] = []
+        active_specs = tuple(service_specs)
+
+        stop_results, timing = self._profile_step(
+            "prepare_startup",
+            lambda: self.prepare_startup(
+                active_specs,
+                graceful_timeout_seconds=graceful_timeout_seconds,
+                force_by_port=force_by_port,
+                force_graceful_timeout_seconds=force_graceful_timeout_seconds,
+                port_process_resolver=port_process_resolver,
+            ),
+            run_id=restart_run_id,
+        )
+        timings.append(timing)
+        if after_prepare:
+            after_prepare(stop_results)
+
+        port_plan, timing = self._profile_step("resolve_ports", lambda: self.resolve_plan(active_specs), run_id=restart_run_id)
+        timings.append(timing)
+        if before_start:
+            active_specs = tuple(before_start(port_plan, active_specs))
+
+        service_states = []
+        for spec in active_specs:
+            if spec.name not in port_plan:
+                raise RuntimeError(f"Restart service {spec.name} has no resolved port")
+            state, timing = self._profile_step(f"start:{spec.name}", lambda spec=spec: self.start_service(spec, port=port_plan[spec.name]), run_id=restart_run_id)
+            timings.append(timing)
+            service_states.append(state)
+
+        return RestartResult(
+            run_id=restart_run_id,
+            stop_results=tuple(stop_results),
+            port_plan=port_plan,
+            service_states=tuple(service_states),
+            timings=tuple(timings),
+        )
+
+    def profile_step(self, label: str, callback: Callable[[], T], run_id: str | None = None, prefix: str = "PortLifecycle timing") -> T:
+        result, _ = self._profile_step(label, callback, run_id=run_id, prefix=prefix)
+        return result
 
     def wait_ready(self, spec: ServiceSpec, port: int, process: subprocess.Popen[bytes] | None = None) -> None:
         deadline = time.monotonic() + spec.startup_timeout_seconds
@@ -303,6 +362,23 @@ class PortLifecycle:
         with self.termination_ledger.open("a", encoding="utf-8") as ledger:
             ledger.write(json.dumps(record, sort_keys=True) + "\n")
 
+    def write_startup_record(self, label: str, elapsed_seconds: float, status: str, run_id: str | None = None, details: Mapping[str, object] | None = None) -> None:
+        record = {
+            "project": self.project_name,
+            "instance": self.instance_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": "step_timing",
+            "label": label,
+            "elapsed_seconds": round(elapsed_seconds, 3),
+            "status": status,
+        }
+        if run_id:
+            record["run_id"] = run_id
+        if details:
+            record["details"] = dict(details)
+        with self.startup_ledger.open("a", encoding="utf-8") as ledger:
+            ledger.write(json.dumps(record, sort_keys=True) + "\n")
+
     def read_state(self) -> dict[str, dict[str, object]]:
         if not self.state_file.exists():
             return {}
@@ -322,6 +398,22 @@ class PortLifecycle:
         state = self.read_state()
         state[service_state.name] = asdict(service_state)
         self.write_state(state)
+
+    def _profile_step(self, label: str, callback: Callable[[], T], run_id: str | None = None, prefix: str = "PortLifecycle timing") -> tuple[T, LifecycleStepTiming]:
+        started_at = time.perf_counter()
+        try:
+            result = callback()
+        except Exception as error:
+            elapsed_seconds = time.perf_counter() - started_at
+            timing = LifecycleStepTiming(label=label, elapsed_seconds=elapsed_seconds, status="failed")
+            self.write_startup_record(label, elapsed_seconds, "failed", run_id=run_id, details={"error": type(error).__name__})
+            print(f"{prefix} {label}: {elapsed_seconds:.2f}s failed")
+            raise
+        elapsed_seconds = time.perf_counter() - started_at
+        timing = LifecycleStepTiming(label=label, elapsed_seconds=elapsed_seconds, status="completed")
+        self.write_startup_record(label, elapsed_seconds, "completed", run_id=run_id)
+        print(f"{prefix} {label}: {elapsed_seconds:.2f}s")
+        return result, timing
 
     def _run_stop_command(self, stop_command: tuple[str, ...], port: int, host: str) -> None:
         command = tuple(part.format(port=port, host=host, workspace=str(self.workspace)) for part in stop_command)

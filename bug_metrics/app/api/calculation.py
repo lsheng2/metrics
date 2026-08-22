@@ -101,23 +101,27 @@ class BugTrendCalculationService:
         issue_by_key = {issue.issue_key: issue for issue in issues}
         for series in active_bug_trend_series(scope):
             issue_keys = memberships_by_series[series.series_name]
+            memberships = []
             for issue_key in sorted(issue_keys):
                 issue = issue_by_key[issue_key]
-                BugTrendBucketIssue.objects.create(
-                    scope=scope,
-                    bucket=bucket,
-                    calculation_run=run,
-                    series_name=series.series_name,
-                    issue_key=issue_key,
-                    summary=issue.summary,
-                    status=issue.status,
-                    severity_value=issue.severity_value,
-                    owner_value=issue.owner_value,
-                    component_value=issue.component_value,
-                    created_at=issue.created_at,
-                    updated_at=issue.updated_at,
-                    extra_fields_json={field_name: self._display_field_value(issue.raw_fields_json.get(field_name)) for field_name in scope.display_fields},
+                memberships.append(
+                    BugTrendBucketIssue(
+                        scope=scope,
+                        bucket=bucket,
+                        calculation_run=run,
+                        series_name=series.series_name,
+                        issue_key=issue_key,
+                        summary=issue.summary,
+                        status=issue.status,
+                        severity_value=issue.severity_value,
+                        owner_value=issue.owner_value,
+                        component_value=issue.component_value,
+                        created_at=issue.created_at,
+                        updated_at=issue.updated_at,
+                        extra_fields_json={field_name: self._display_field_value(issue.raw_fields_json.get(field_name)) for field_name in scope.display_fields},
+                    )
                 )
+            BugTrendBucketIssue.objects.bulk_create(memberships, batch_size=1000)
 
     def _new_issue_keys(self, scope, issues, bucket_start, bucket_end, critical: bool):
         return {

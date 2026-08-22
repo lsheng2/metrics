@@ -7,11 +7,21 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
+from typing import Callable, Mapping, Protocol, Sequence, TypeVar
 
 from port_lifecycle import PortLifecycle, ServiceSpec, load_project_name, load_service_specs
+
+T = TypeVar("T")
+
+
+class LifecycleProfiler(Protocol):
+    def profile_step(self, label: str, callback: Callable[[], T], run_id: str | None = None, prefix: str = "PortLifecycle timing") -> T:
+        ...
 
 
 def main() -> None:
@@ -38,62 +48,79 @@ def main() -> None:
         instance_name=args.instance,
         state_directory=workspace / "state" / "e2e" / "port-lifecycle",
     )
+    run_id = str(uuid.uuid4())
 
-    if args.action in {"stop", "restart"}:
-        stop_runtime(lifecycle, args)
-    if args.action in {"start", "restart"}:
-        start_runtime(args, workspace, lifecycle)
+    if args.action == "stop":
+        stop_runtime(lifecycle, args, run_id)
+    else:
+        start_runtime(args, workspace, lifecycle, run_id)
 
 
-def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLifecycle) -> None:
+def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLifecycle, run_id: str | None = None) -> None:
     grafana_bin = resolve_grafana_bin(args.grafana_bin)
     grafana_homepath = resolve_grafana_homepath(args.grafana_homepath, grafana_bin)
     python_executable = sys.executable
     specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath)
 
-    lifecycle.prepare_startup(tuple(specs.values()), graceful_timeout_seconds=5.0, force_by_port=args.force_by_port)
+    def after_prepare(stop_results: Sequence[object]) -> None:
+        print_stop_results(stop_results)
+        profile_step(lifecycle, "migrate", lambda: run([python_executable, "manage.py", "migrate"], workspace), run_id=run_id)
+        profile_step(lifecycle, "seed_bug_trend_sample", lambda: run([python_executable, "manage.py", "seed_bug_trend_sample"], workspace), run_id=run_id)
+        profile_step(
+            lifecycle,
+            "validate_grafana_artifacts",
+            lambda: run([
+                python_executable,
+                "scripts/validate_grafana_artifacts.py",
+                "--artifact-root",
+                "ops/grafana",
+                "--allowlist",
+                "docs/grafana-approved-data-surfaces.json",
+            ], workspace),
+            run_id=run_id,
+        )
+        profile_step(lifecycle, "django_check", lambda: run([python_executable, "manage.py", "check"], workspace), run_id=run_id)
 
-    run([python_executable, "manage.py", "migrate"], workspace)
-    run([python_executable, "manage.py", "seed_bug_trend_sample"], workspace)
-    run([
-        python_executable,
-        "scripts/validate_grafana_artifacts.py",
-        "--artifact-root",
-        "ops/grafana",
-        "--allowlist",
-        "docs/grafana-approved-data-surfaces.json",
-    ], workspace)
-    run([python_executable, "manage.py", "check"], workspace)
+    def before_start(port_plan: Mapping[str, int], service_specs: Sequence[ServiceSpec]) -> Sequence[ServiceSpec]:
+        django_port = port_plan["django"]
+        grafana_port = port_plan["grafana"]
+        runtime_grafana_config = profile_step(lifecycle, "write_grafana_config", lambda: write_runtime_grafana_config(workspace, grafana_port), run_id=run_id)
+        runtime_specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath, grafana_config=runtime_grafana_config)
+        print(f"E2E selected ports: Django={django_port}, Grafana={grafana_port}")
+        return (runtime_specs["django"], runtime_specs["grafana"])
 
-    django_spec = specs["django"]
-    grafana_probe_spec = specs["grafana"]
-    port_plan = lifecycle.resolve_plan((django_spec, grafana_probe_spec))
-    django_port = port_plan["django"]
-    grafana_port = port_plan["grafana"]
-    runtime_grafana_config = write_runtime_grafana_config(workspace, grafana_port)
-    specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath, grafana_config=runtime_grafana_config)
-    grafana_spec = specs["grafana"]
+    restart_result = lifecycle.restart_services(
+        tuple(specs.values()),
+        graceful_timeout_seconds=5.0,
+        force_by_port=args.force_by_port,
+        run_id=run_id,
+        after_prepare=after_prepare,
+        before_start=before_start,
+    )
+    django_port = restart_result.port_plan["django"]
+    grafana_port = restart_result.port_plan["grafana"]
 
-    print(f"E2E selected ports: Django={django_port}, Grafana={grafana_port}")
-    lifecycle.start_service(django_spec, port=django_port)
-    lifecycle.start_service(grafana_spec, port=grafana_port)
-
-    configure_grafana_datasource(grafana_port, django_port)
-    import_grafana_dashboard(workspace, grafana_port, args.scope_id, args.begin, args.end)
-    validate_runtime(workspace, grafana_port, django_port, args.scope_id, args.begin, args.end)
+    profile_step(lifecycle, "configure_grafana_datasource", lambda: configure_grafana_datasource(grafana_port, django_port), run_id=run_id)
+    profile_step(lifecycle, "import_grafana_dashboard", lambda: import_grafana_dashboard(workspace, grafana_port, args.scope_id, args.begin, args.end), run_id=run_id)
+    profile_step(lifecycle, "validate_runtime", lambda: validate_runtime(workspace, grafana_port, django_port, args.scope_id, args.begin, args.end), run_id=run_id)
 
     dashboard_url = grafana_dashboard_url(grafana_port, args.scope_id, args.begin, args.end)
-    write_e2e_summary(workspace, django_port, grafana_port, dashboard_url)
-    open_browser(dashboard_url)
+    profile_step(lifecycle, "write_e2e_summary", lambda: write_e2e_summary(workspace, django_port, grafana_port, dashboard_url), run_id=run_id)
+    profile_step(lifecycle, "open_browser", lambda: open_browser(dashboard_url), run_id=run_id)
     print(f"E2E Bug Trend is ready: {dashboard_url}")
 
 
-def stop_runtime(lifecycle: PortLifecycle, args: argparse.Namespace) -> None:
-    results = lifecycle.stop_all(graceful_timeout_seconds=5.0)
+def stop_runtime(lifecycle: PortLifecycle, args: argparse.Namespace, run_id: str | None = None) -> None:
+    results = profile_step(lifecycle, "stop_registered_services", lambda: lifecycle.stop_all(graceful_timeout_seconds=5.0), run_id=run_id)
     if args.force_by_port:
-        results.extend(lifecycle.force_stop_by_ports(force_stop_specs(args), graceful_timeout_seconds=0.5))
+        results.extend(profile_step(lifecycle, "force_stop_by_ports", lambda: lifecycle.force_stop_by_ports(force_stop_specs(args), graceful_timeout_seconds=0.5), run_id=run_id))
+    print_stop_results(results, empty_message="No E2E services registered.")
+
+
+def print_stop_results(results: Sequence[object], empty_message: str = "") -> None:
     if not results:
-        print("No E2E services registered.")
+        if empty_message:
+            print(empty_message)
         return
     for result in results:
         status = "stopped" if result.stopped else result.reason
@@ -148,6 +175,21 @@ def replace_ports(spec: ServiceSpec, ports: tuple[int, ...]) -> ServiceSpec:
 
 def run(command: list[str], workspace: Path) -> None:
     subprocess.run(command, cwd=workspace, check=True)
+
+
+def timed_step(label: str, callback: Callable[[], T]) -> T:
+    started_at = time.perf_counter()
+    try:
+        return callback()
+    finally:
+        elapsed_seconds = time.perf_counter() - started_at
+        print(f"E2E timing {label}: {elapsed_seconds:.2f}s")
+
+
+def profile_step(lifecycle: LifecycleProfiler, label: str, callback: Callable[[], T], run_id: str | None = None) -> T:
+    if hasattr(lifecycle, "profile_step"):
+        return lifecycle.profile_step(label, callback, run_id=run_id, prefix="E2E timing")
+    return timed_step(label, callback)
 
 
 def parse_ports(value: str) -> tuple[int, ...]:

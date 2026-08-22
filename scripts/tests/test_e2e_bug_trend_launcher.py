@@ -10,7 +10,7 @@ if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
 import e2e_bug_trend
-from port_lifecycle import ServiceSpec
+from port_lifecycle import ServiceSpec, ServiceState
 
 
 def test_bug_trend_load_specs_uses_json_ports_unless_cli_overrides(tmp_path):
@@ -49,15 +49,27 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
     calls = []
 
     class FakeLifecycle:
-        def prepare_startup(self, service_specs, graceful_timeout_seconds=5.0, force_by_port=False):
-            calls.append(("prepare_startup", tuple(spec.name for spec in service_specs), graceful_timeout_seconds, force_by_port))
+        def profile_step(self, label, callback, run_id=None, prefix="PortLifecycle timing"):
+            calls.append(("profile_step", label, run_id, prefix))
+            return callback()
 
-        def resolve_plan(self, specs):
-            calls.append(("resolve_plan", tuple(spec.name for spec in specs)))
-            return {"django": 9100, "grafana": 9200}
-
-        def start_service(self, spec, port=None):
-            calls.append(("start_service", spec.name, port))
+        def restart_services(self, service_specs, graceful_timeout_seconds=5.0, force_by_port=False, run_id=None, after_prepare=None, before_start=None):
+            calls.append(("restart_services", tuple(spec.name for spec in service_specs), graceful_timeout_seconds, force_by_port, run_id))
+            after_prepare([])
+            port_plan = {"django": 9100, "grafana": 9200}
+            runtime_specs = tuple(before_start(port_plan, service_specs))
+            calls.append(("runtime_specs", tuple(spec.name for spec in runtime_specs)))
+            return type(
+                "RestartResult",
+                (),
+                {
+                    "port_plan": port_plan,
+                    "service_states": (
+                        ServiceState("django", "127.0.0.1", 9100, 1, (), "now", "out", "err", "authority", (), None, None, None, 0.0),
+                        ServiceState("grafana", "127.0.0.1", 9200, 2, (), "now", "out", "err", "authority", (), None, None, None, 0.0),
+                    ),
+                },
+            )()
 
     args = type(
         "Args",
@@ -86,13 +98,13 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
     monkeypatch.setattr(e2e_bug_trend, "write_e2e_summary", lambda workspace, django_port, grafana_port, dashboard_url: calls.append(("summary", django_port, grafana_port, dashboard_url)))
     monkeypatch.setattr(e2e_bug_trend, "open_browser", lambda url: None)
 
-    e2e_bug_trend.start_runtime(args, tmp_path, FakeLifecycle())
+    e2e_bug_trend.start_runtime(args, tmp_path, FakeLifecycle(), run_id="run-1")
 
-    assert calls[0] == ("prepare_startup", ("django", "grafana"), 5.0, True)
-    assert calls[1] == ("run", (sys.executable, "manage.py", "migrate"))
-    assert ("resolve_plan", ("django", "grafana")) in calls
-    assert ("start_service", "django", 9100) in calls
-    assert ("start_service", "grafana", 9200) in calls
+    assert calls[0] == ("restart_services", ("django", "grafana"), 5.0, True, "run-1")
+    assert ("profile_step", "migrate", "run-1", "E2E timing") in calls
+    assert ("profile_step", "seed_bug_trend_sample", "run-1", "E2E timing") in calls
+    assert ("profile_step", "write_grafana_config", "run-1", "E2E timing") in calls
+    assert ("runtime_specs", ("django", "grafana")) in calls
     assert ("datasource", 9200, 9100) in calls
 
 
