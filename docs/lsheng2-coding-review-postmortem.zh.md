@@ -2,6 +2,8 @@
 
 日期：2026-08-20
 
+> 状态更新（2026-08-22）：本文是历史复盘和升级动机记录，不再是三个 skill 的当前用户手册或架构手册。当前 shared skill 手册分别位于用户级安装目录的 `README.md`、`USER_MANUAL.md`、`ARCHITECTURE.md`、`SKILL.md`；本项目只保留 repo-local truth：`.github/skills/lsheng2-coding/config.json`、`.github/skills/lsheng2-coding/review-rules/dag-plan-doc-review.md`、`.github/skills/lsheng2-dag-based-planning/templates/project-profile.md`、`.github/custom-agents.md` 和 `.github/agents/*.agent.md`。
+
 ## 背景
 
 本次复盘来自 Bug Trend P0d 到 P3 长跑实现后的 `lsheng2-coding-review` exact-pass review。该 review 要求最后取得 2 个连续 clean pass。最终 gate 完成，但过程经历了 9 次 reviewer pass，其中 7 次 FAIL、2 次 PASS，累计发现 `P1=5`、`P2=6`、`P3=1`。

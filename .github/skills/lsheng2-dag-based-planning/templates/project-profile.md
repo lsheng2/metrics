@@ -2,12 +2,10 @@
 
 Everything repository-specific lives here so the DAG workflow stays portable.
 
-Compatibility note: the canonical profile for current workflows is `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md`. This legacy path is retained only for older local instructions or agents that have not migrated yet.
-
 ## Identity
 
 - Project: Metrics Django dashboard.
-- Profile source: repo-local.
+- Profile source: repo-local; migrated from the legacy `.github/skills/dag-based-planning/templates/project-profile.md` path for the renamed `lsheng2-dag-based-planning` skill.
 - Plan location: `docs/` for stable architecture or implementation plans; `.github/` for AI workflow/customization changes.
 - Shell: PowerShell on Windows.
 - Runtime: Python from the active environment; project commands use `python manage.py ...` and `python -m pytest ...`.
@@ -134,7 +132,7 @@ Do not add unrelated dirty files to a plan after implementation starts. Either r
 
 ## Discovery Evidence
 
-This profile was hand-maintained for the Metrics repository before the shared `dag-based-planning` skill was split into a global core plus repo-local profile. Treat the evidence below as the current audit trail for profile facts.
+This canonical profile was migrated from the mature legacy project profile at `.github/skills/dag-based-planning/templates/project-profile.md` after the shared skill was renamed to `lsheng2-dag-based-planning`. Treat the evidence below as the current audit trail for profile facts.
 
 | Profile Area | Evidence Used | Confidence |
 | --- | --- | --- |
@@ -143,7 +141,8 @@ This profile was hand-maintained for the Metrics repository before the shared `d
 | Test roots | Module-local `tests/` directories present in source roots | high |
 | Doc truth roots | `CLAUDE.md`, `README.md`, `docs/`, `.github/copilot-instructions.md`, `.github/ai-governance/`, `.github/agents/`, `.github/skills/` | high |
 | Hard gate commands | `CLAUDE.md`, `.github/copilot-instructions.md`, and existing scripts under `scripts/` | medium; commands should still be run for each closure claim |
-| Rolling-horizon refreeze gates | Shared `dag-based-planning` skill core and Metrics hard gate commands in this profile | medium; copied plan checkers must be adapted per plan before used as closure gates |
+| Rolling-horizon refreeze gates | Shared `lsheng2-dag-based-planning` skill core and Metrics hard gate commands in this profile | medium; copied plan checkers must be adapted per plan before used as closure gates |
+| DAG agent routing | `.github/custom-agents.md` and `.github/agents/*.agent.md` | high |
 | Authority boundaries | `CLAUDE.md`, module structure, and public `app/api/` package convention | high |
 | Consumer universe defaults | Module structure, `ui_web/` federation pattern, `ops/`, `scripts/`, docs and test directories | medium |
 | Risk level defaults | Repo architecture rules, audit/export/governance patterns, and closure verification policy | medium |
@@ -214,5 +213,6 @@ Use `normal` only when the authority is internal to one module and has no export
 ## Initialization Follow-ups
 
 - No current `TBD` entries.
+- Keep the legacy `.github/skills/dag-based-planning/templates/project-profile.md` path only as a compatibility copy unless the project intentionally updates older agent references.
 - Re-run discovery if source roots, CI, validation commands, module boundaries, or deployment artifacts change substantially.
 - Before any closure claim, run or explicitly account for the hard gate commands relevant to the touched owner paths.

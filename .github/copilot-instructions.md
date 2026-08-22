@@ -7,7 +7,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 1. Root `CLAUDE.md` for architecture, testing, frontend, and configuration rules.
 2. `.github/ai-governance/README.md` and the matching BKM file when the task touches coding flow, validation, shell commands, comments, or closure claims.
 3. Target module files and nearby tests before editing.
-4. Shared `dag-based-planning` skill plus `.github/skills/dag-based-planning/templates/project-profile.md` when a task needs DAG-backed planning, multi-agent handoff, or review gates.
+4. Shared `lsheng2-dag-based-planning` skill plus `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` when a task needs DAG-backed planning, multi-agent handoff, or review gates.
 
 ## Stable Repo Truths
 
@@ -42,7 +42,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 2. Use `.github/agents/implementation-engineer.agent.md` to execute approved handoffs.
 3. Use `.github/agents/validation-engineer.agent.md` for test-plan signoff and stale/wrong-owner test review.
 4. Use `.github/agents/dashboard-debugger.agent.md` for runtime debugging across Django, tracker adapters, htmx partials, and templates.
-5. Use the shared `dag-based-planning` skill with `.github/skills/dag-based-planning/templates/project-profile.md` for dependency-aware plans and multi-agent execution ledgers.
+5. Use the shared `lsheng2-dag-based-planning` skill with `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` for dependency-aware plans and multi-agent execution ledgers. The older `.github/skills/dag-based-planning/templates/project-profile.md` path is compatibility-only.
 6. Use `.github/skills/drawio/` for complex architecture diagrams.
 7. Use `.github/ai-governance/` as the local BKM library for repeatable AI coding practices.
 

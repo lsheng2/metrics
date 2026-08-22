@@ -23,7 +23,7 @@ Load progressively:
 2. `CLAUDE.md`.
 3. `.github/copilot-instructions.md`.
 4. Target module code and tests.
-5. Shared `dag-based-planning` skill plus `.github/skills/dag-based-planning/templates/project-profile.md` only when a DAG-backed plan is warranted.
+5. Shared `lsheng2-dag-based-planning` skill plus `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` only when a DAG-backed plan is warranted.
 
 ## Architecture Principles
 
@@ -65,7 +65,7 @@ Use this shape for nontrivial work:
 ## Review Checklist
 ```
 
-For DAG-backed work, use the shared `dag-based-planning` skill, load this repo's project profile at `.github/skills/dag-based-planning/templates/project-profile.md`, and include a checkbox execution ledger with node ids.
+For DAG-backed work, use the shared `lsheng2-dag-based-planning` skill, load this repo's project profile at `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md`, and include a checkbox execution ledger with node ids. Treat `.github/skills/dag-based-planning/templates/project-profile.md` as a legacy compatibility copy only.
 
 When routing a DAG, name which custom agents participate and why. For skipped agents that could plausibly apply, give a one-line non-participation reason such as `not an incident`, `validation gate is trivial`, or `main agent can execute this one-owner edit`.
 
