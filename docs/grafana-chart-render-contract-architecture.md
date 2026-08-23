@@ -43,6 +43,7 @@ Grafana dashboard 必须消费 Metrics 拥有的图表契约，而不是在 Graf
 | 想理解什么 | Reference | 重点看什么 |
 | ---------- | --------- | ---------- |
 | 当前 Grafana chart spec 的逐字段解释 | [grafana-bug-trend-chart-spec-reference.zh.md](grafana-bug-trend-chart-spec-reference.zh.md) | `bug_trend_dashboard.json` 每块含义、最终图形映射、每个数据域来源。 |
+| AI 生成 Grafana spec 的 Chart Spec Catalog backlog/spec | [backlog/chart-spec-catalog.md](backlog/chart-spec-catalog.md) | AI 只能选择 catalog entry 和填受控字段，不能自由生成完整 Grafana JSON。 |
 | Grafana stock dashboard 如何声明 chart spec | [../ops/grafana/bug_trend_dashboard.json](../ops/grafana/bug_trend_dashboard.json) | target 的 `url`、`root_selector`、`columns`、`metricsContract`、data link。 |
 | 哪些 API/root/shape 被批准给 Grafana 使用 | [grafana-approved-data-surfaces.json](grafana-approved-data-surfaces.json) | approved data surfaces、allowed roots、allowed shapes、evidence capability。 |
 | Grafana artifact 的机器 gate | [../scripts/validate_grafana_artifacts.py](../scripts/validate_grafana_artifacts.py) | 如何拒绝缺失 `metricsContract`、错误 root、错误 shape、SQL、未批准字段。 |
@@ -359,6 +360,8 @@ Wide render rows 的 evidence data link 通过被点击的 numeric field name �
 ## AI Contract
 
 AI 生成的 Grafana 描述只是 draft，不是可直接部署的 artifact。AI-generated chart 在发布前必须通过与人工 Grafana JSON 相同的 validator。
+
+更完整的生成约束见 [backlog/chart-spec-catalog.md](backlog/chart-spec-catalog.md) 的 `Spec: Chart Spec Catalog` 章节。该 catalog 是 AI 生成 Grafana spec 的轨道：AI 只能选择已注册的 chart family/shape/template，并填 `chart_id`、`title`、`value_fields`、style hints 等受控字段；完整 datasource、endpoint、root、shape、evidence policy 和 validator 规则由 Metrics-owned catalog/template 决定。
 
 AI chart draft 必须声明：
 

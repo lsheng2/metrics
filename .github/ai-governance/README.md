@@ -11,6 +11,7 @@ Use these files as small, focused references rather than loading every policy fo
 | `shell-execution-policy.md` | Running terminal commands, especially on Windows |
 | `closure-verification-policy.md` | Claiming a class of work is complete or review-ready |
 | `code-comment-policy.md` | Adding, removing, or reviewing production comments |
+| `backlog-management-policy.md` | Capturing deferred work, backlog triage, and promotion to DAG planning |
 | `repo-context.md` | Needing a short machine-facing project summary |
 
 Keep this layer compact. Stable project architecture still lives in `CLAUDE.md` and `docs/`.

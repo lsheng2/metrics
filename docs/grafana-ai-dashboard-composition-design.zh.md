@@ -719,42 +719,11 @@ Metrics 推荐职责：
 6. 把新 chart 暴露到 Metrics-governed chart selector、Grafana App chart selector 或受控 chart surface。
 7. 管理 evidence list、export、audit、权限和回滚。
 
-### AI chart lifecycle
+## Chart Spec Catalog：AI 生成 Grafana Spec 的轨道
 
-AI-generated chart 必须有明确生命周期。`personal` 模式可以在 validator 通过后直接个人发布；`cloud` 模式需要审批后才能进入公共 chart selector 或 Grafana provisioning。
+这条未来工作已经迁移到 backlog：见 [backlog/chart-spec-catalog.md](backlog/chart-spec-catalog.md)。
 
-```text
-requested
-  -> generated
-  -> validation_failed | draft
-  -> previewed
-  -> personal: published
-  -> cloud: pending_approval -> approved | rejected -> published
-  -> disabled | rolled_back | archived
-```
-
-| 状态 | Owner | 用户可见性 | 要求 |
-| --- | --- | --- | --- |
-| `requested` | user / Metrics UI | 请求者可见。 | 记录 prompt 摘要、scope、time range，不记录 secret。 |
-| `generated` | AI-base | 请求者可见。 | 产出 candidate spec，不写生产 dashboard。 |
-| `validation_failed` | Metrics validator | 请求者和 maintainer 可见。 | 显示错误和可修复建议。 |
-| `draft` | chart author | 作者可见。 | 可 preview，不进入 shared selector。 |
-| `previewed` | chart author | 作者可见。 | 使用受控 sample/PageQueryState 预览。 |
-| `pending_approval` | chart author / approver | approver 和 maintainer 可见。 | cloud 模式下提交审批后进入该状态。 |
-| `approved` | chart approver/admin | cloud 模式需要。 | 审批人确认 spec、evidence、权限和 Grafana renderer。 |
-| `rejected` | chart approver/admin | 作者、approver 和 maintainer 可见。 | 显示拒绝原因，可回到 draft 修改。 |
-| `published` | Metrics Chart Catalog | 授权用户可见。 | published version 不可原地修改。 |
-| `disabled` / `rolled_back` / `archived` | maintainer/approver | 按权限可见。 | 保留 audit 和历史版本。 |
-
-`personal` 模式可以在 validator 通过后从 `draft` 或 `previewed` 直接进入个人 `published`，但不能跳过 audit。`cloud` 模式必须经过 `pending_approval` 和 `approved` 后才能进入 shared `published` 或 Grafana provisioning。
-
-阻止发布的条件：
-
-1. 使用未批准 datasource、任意业务 SQL 或外部 URL。
-2. 引入新的 bug/fixed/critical/high 语义但没有 IndicatorDefinition。
-3. 声称支持 evidence，但没有可验证 EvidenceContract。
-4. Grafana renderer 不能映射 PageQueryState 或缺少 fallback。
-5. scope/time range 权限不合法。
+该 backlog 记录现在是 `Chart Spec Catalog` 的 canonical deferred spec。这里不再保留完整设计正文，避免 backlog 记录和架构设计文档之间出现双写漂移。
 
 ## 自然语言生成图表示例流程
 
