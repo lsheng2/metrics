@@ -1,0 +1,18 @@
+{% if scope_metadata %}
+    {% if scope_metadata.warnings %}
+        <div class="notification is-warning is-light">
+            {% for warning in scope_metadata.warnings %}
+                <p>{{ warning }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% if scope_metadata.options %}
+        {% with options=scope_metadata.options %}
+            {% include "partials/bug_trend_scope_metadata_options.html" %}
+        {% endwith %}
+    {% elif scope_metadata.projects or scope_metadata.item_types or scope_metadata.statuses or scope_metadata.resolutions or scope_metadata.priorities or scope_metadata.fields or scope_metadata.components or scope_metadata.versions %}
+        {% with options=scope_metadata %}
+            {% include "partials/bug_trend_scope_metadata_options.html" %}
+        {% endwith %}
+    {% endif %}
+{% endif %}

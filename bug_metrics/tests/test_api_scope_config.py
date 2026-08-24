@@ -132,6 +132,31 @@ class TestScopeConfigApi(TestCase):
         self.assertFalse(event.request_summary['was_enabled'])
         self.assertEqual(activated.config_version_hash, event.request_summary['current_config_version_hash'])
 
+    def test_shouldListDisabledScopeConfigsForOperatorLibrary(self):
+        # Given
+        bug_trend_api.save_scope_config(self._scope_config(name='STDEL disabled library', enabled=False))
+        bug_trend_api.save_scope_config(self._scope_config(name='STDEL enabled library', enabled=True))
+
+        # When
+        scopes = bug_trend_api.list_scope_configs()
+
+        # Then
+        self.assertEqual(['STDEL disabled library', 'STDEL enabled library'], [scope.name for scope in scopes])
+
+    def test_shouldDisableScopeWithoutDeletingPersistedConfig(self):
+        # Given
+        saved = bug_trend_api.save_scope_config(self._scope_config(name='STDEL disable action', enabled=True))
+
+        # When
+        disabled = bug_trend_api.disable_scope_config(saved.id)
+
+        # Then
+        self.assertFalse(disabled.enabled)
+        self.assertEqual([], [scope.name for scope in bug_trend_api.list_enabled_scopes()])
+        self.assertEqual('STDEL disable action', bug_trend_api.get_scope_config(saved.id).name)
+        event = BugTrendAuditEvent.objects.get(event_type='scope_disabled', scope_id=saved.id)
+        self.assertTrue(event.request_summary['was_enabled'])
+
     def test_shouldNotLoadDisabledScopeThroughChartScopeLookupBeforeActivation(self):
         # Given
         saved = bug_trend_api.save_scope_config(self._scope_config(name='STDEL disabled', enabled=False))

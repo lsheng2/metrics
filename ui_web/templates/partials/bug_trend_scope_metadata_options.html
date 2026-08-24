@@ -1,0 +1,13 @@
+<div class="content is-small">
+    <p class="has-text-weight-semibold">Discovered metadata</p>
+    <div class="tags">
+        {% for project in options.projects %}<span class="tag is-link is-light">Project: {{ project.name }}</span>{% endfor %}
+        {% for item_type in options.item_types %}<span class="tag is-info is-light">Type: {{ item_type.name }}</span>{% endfor %}
+        {% for status in options.statuses %}<span class="tag is-light">Status: {{ status.name }}</span>{% endfor %}
+        {% for priority in options.priorities %}<span class="tag is-danger is-light">Priority: {{ priority.name }}</span>{% endfor %}
+        {% for resolution in options.resolutions %}<span class="tag is-success is-light">Resolution: {{ resolution.name }}</span>{% endfor %}
+        {% for field in options.fields %}<span class="tag is-link is-light">Field: {{ field.label }}</span>{% endfor %}
+        {% for component in options.components %}<span class="tag is-primary is-light">Component: {{ component.name }}</span>{% endfor %}
+        {% for version in options.versions %}<span class="tag is-warning is-light">Version: {{ version.name }}</span>{% endfor %}
+    </div>
+</div>

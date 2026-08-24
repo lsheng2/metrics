@@ -192,6 +192,25 @@ class BugTrendScopeAuditView(GracefulTemplateView):
         context['build_page_title'] = 'Bug Trend Scope Audit'
 
 
+class BugTrendScopeLibraryView(GracefulTemplateView):
+    template_name = 'bug_trend_scope_library.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action')
+        scope_id = request.POST.get('scope_id')
+        if action == 'disable' and scope_id and scope_id.isdecimal():
+            self.bug_trend_facade.disable_scope_config(int(scope_id))
+        return redirect('ui_web:bug_trend_scope_library')
+
+    def populate_context(self, context, **kwargs):
+        context['scopes'] = self.bug_trend_facade.get_scope_library()
+        context['build_page_title'] = 'Bug Trend Scope Library'
+
+
 class BugTrendScopeConfigView(GracefulTemplateView):
     template_name = 'bug_trend_scope_config.html'
 
@@ -200,6 +219,11 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         self.bug_trend_facade = ui_web_container.bug_trend_facade
 
     def post(self, request, *args, **kwargs):
+        if request.POST.get('action') == 'discard':
+            scope_id = request.POST.get('id')
+            if scope_id and scope_id.isdecimal():
+                return redirect(f'{request.path}?scope_id={scope_id}')
+            return redirect(f'{request.path}?mode=new')
         try:
             saved, hash_changed = self.bug_trend_facade.save_scope_config(request.POST)
         except ValueError as error:
@@ -212,6 +236,21 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         return response
 
     def populate_context(self, context, **kwargs):
+        mode = self.request.GET.get('mode')
+        duplicate_id = self.request.GET.get('duplicate_scope_id')
+        if mode == 'new':
+            context['config'] = self.bug_trend_facade.new_scope_config()
+            context['editor_mode'] = 'new'
+            context['scope_metadata'] = self._metadata_options(context['config'])
+            context['build_page_title'] = 'New Bug Trend Scope'
+            return
+        if duplicate_id and duplicate_id.isdecimal():
+            context['config'] = self.bug_trend_facade.duplicate_scope_config(int(duplicate_id))
+            context['editor_mode'] = 'duplicate'
+            context['source_scope_id'] = duplicate_id
+            context['scope_metadata'] = self._metadata_options(context['config'])
+            context['build_page_title'] = 'Duplicate Bug Trend Scope'
+            return
         scope_id = self.request.GET.get('scope_id')
         if not scope_id or not scope_id.isdecimal():
             context['config'] = None
@@ -224,15 +263,53 @@ class BugTrendScopeConfigView(GracefulTemplateView):
             self.request.GET.get('add_value', ''),
         )
         context['config'] = config
+        context['editor_mode'] = 'edit'
         context['saved'] = self.request.GET.get('saved') == '1'
         context['hash_changed'] = self.request.GET.get('hash_changed') == '1'
+        context['scope_metadata'] = self._metadata_options(config)
         context['build_page_title'] = 'Bug Trend Scope Config'
+
+    def _metadata_options(self, config):
+        if self.request.GET.get('refresh_metadata') != '1':
+            return None
+        selected_projects = self._selected_projects()
+        return self.bug_trend_facade.get_scope_metadata_options(config, selected_projects)
+
+    def _selected_projects(self):
+        return selected_projects_from_query(self.request.GET)
 
     def render_to_response(self, context, **response_kwargs):
         if context.get('scope_config_errors') and context.get('config') is None:
             response_kwargs.setdefault('status', 400)
         return super().render_to_response(context, **response_kwargs)
 
+
+class BugTrendScopeMetadataView(GracefulTemplateView):
+    template_name = 'partials/bug_trend_scope_metadata.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def populate_context(self, context, **kwargs):
+        scope_id = self.request.GET.get('id') or self.request.GET.get('scope_id')
+        has_draft_payload = any(self.request.GET.get(field_name) for field_name in ['name', 'jql', 'bug_type_values'])
+        if scope_id and scope_id.isdecimal() and not has_draft_payload:
+            config = self.bug_trend_facade.get_scope_config(int(scope_id))
+        else:
+            config = self.bug_trend_facade.scope_config_from_post(self.request.GET)
+        selected_projects = selected_projects_from_query(self.request.GET)
+        context['scope_metadata'] = self.bug_trend_facade.get_scope_metadata_options(config, selected_projects)
+
+
+def selected_projects_from_query(query_data):
+    selected_projects = []
+    for raw_value in query_data.getlist('selected_project') + query_data.getlist('selected_projects'):
+        for value in str(raw_value).replace(',', '\n').split('\n'):
+            project = value.strip()
+            if project and project not in selected_projects:
+                selected_projects.append(project)
+    return selected_projects
 
 class BugTrendChartDataApiView(GracefulTemplateView):
     def __init__(self, **kwargs):

@@ -1,13 +1,138 @@
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
 
 from bug_metrics.models import BugTrendCalculationRun, JiraScopeConfig
+from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
 from jira_history.models import JiraIssue
 
 
+class FakeScopeMetadataFacade:
+    def __init__(self):
+        self.selected_projects = []
+
+    def get_scope_config(self, scope_id):
+        from bug_metrics.app.api import bug_trend_api
+        return bug_trend_api.get_scope_config(scope_id)
+
+    def scope_config_from_post(self, post_data):
+        from ui_web.facades.bug_trend_facade import BugTrendFacade
+        from bug_metrics.app.api import bug_trend_api
+        return BugTrendFacade(bug_trend_api).scope_config_from_post(post_data)
+
+    def get_scope_metadata_options(self, config, selected_projects=None):
+        self.selected_projects.append(selected_projects or [])
+        return {'warnings': ['Metadata refresh failed: offline'], 'options': None}
+
+
+class FakeSuccessfulScopeMetadataFacade(FakeScopeMetadataFacade):
+    def get_scope_metadata_options(self, config, selected_projects=None):
+        self.selected_projects.append(selected_projects or [])
+        return ScopeConfigOptions(
+            projects=[TrackerOption('STDEL', 'STDEL')],
+            item_types=[TrackerOption('1', 'Bug')],
+            fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
+        )
+
+
+class FakePartialScopeMetadataFacade(FakeScopeMetadataFacade):
+    def get_scope_metadata_options(self, config, selected_projects=None):
+        self.selected_projects.append(selected_projects or [])
+        return {
+            'warnings': ['Unable to load component metadata'],
+            'options': ScopeConfigOptions(
+                projects=[TrackerOption('STDEL', 'STDEL')],
+                fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
+            ),
+        }
+
+
 class TestBugTrendScopeConfigViews(TestCase):
+    def test_shouldRenderScopeLibraryWithCreateEditDuplicateAndDisableActions(self):
+        # Given
+        enabled_scope = JiraScopeConfig.objects.create(
+            name='STDEL enabled library',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        JiraScopeConfig.objects.create(
+            name='STDEL draft library',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=False,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('New scope', content)
+        self.assertIn('STDEL enabled library', content)
+        self.assertIn('STDEL draft library', content)
+        self.assertIn(f'?scope_id={enabled_scope.id}', content)
+        self.assertIn(f'?duplicate_scope_id={enabled_scope.id}', content)
+        self.assertIn('Disable', content)
+        self.assertIn('data-confirm="Disable this scope?', content)
+
+    def test_shouldDisableScopeFromLibraryWithoutDeletingConfig(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL disable from library',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_library'), {'action': 'disable', 'scope_id': str(scope.id)})
+        scope.refresh_from_db()
+
+        # Then
+        self.assertEqual(302, response.status_code)
+        self.assertFalse(scope.enabled)
+        self.assertTrue(JiraScopeConfig.objects.filter(id=scope.id).exists())
+
+    def test_shouldRenderNewScopeEditorWithoutExistingScopeId(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'mode': 'new'})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Save draft', content)
+        self.assertIn('Save and enable', content)
+        self.assertIn('Discard changes', content)
+        self.assertIn('data-dirty-form', content)
+        self.assertIn('hx-include="closest form"', content)
+        self.assertIn('value=""', content)
+        self.assertNotIn('Scope Audit', content)
+
+    def test_shouldRenderDuplicateEditorAsDisabledDraftWithoutMutatingSource(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL source duplicate',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'duplicate_scope_id': str(scope.id)})
+        scope.refresh_from_db()
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('STDEL source duplicate copy', content)
+        self.assertIn('Save draft', content)
+        self.assertNotIn('Scope Audit', content)
+        self.assertTrue(scope.enabled)
+
     def test_shouldLinkUnmappedAuditSeverityIntoConfigEditorWithoutSaving(self):
         # Given
         scope = JiraScopeConfig.objects.create(
@@ -77,6 +202,23 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('Scope config saved.', content)
         self.assertIn('Semantic config changed. Recalculate this scope before using existing Bug Trend runs as current evidence.', content)
 
+    def test_shouldRenderExistingEnabledScopeSaveAsChangesNotDraft(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL enabled edit label',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'scope_id': str(scope.id)})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Save changes', content)
+
     def test_shouldRenderValidationErrorsWhenScopeConfigPostIsInvalid(self):
         # Given
         first_scope = JiraScopeConfig.objects.create(
@@ -103,7 +245,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('name: Scope name must be unique.', content)
         self.assertEqual('STDEL editable', second_scope.name)
 
-    def test_shouldRenderValidationErrorsWhenScopeConfigPostHasNoId(self):
+    def test_shouldCreateDraftScopeWhenScopeConfigPostHasNoId(self):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL editable no id',
@@ -112,15 +254,18 @@ class TestBugTrendScopeConfigViews(TestCase):
         )
         payload = self._post_payload(scope, 'P2-High')
         payload['id'] = ''
+        payload['name'] = 'STDEL created from form'
+        payload['action'] = 'save_draft'
 
         # When
-        response = self.client.post(reverse('ui_web:bug_trend_scope_config'), payload)
+        response = self.client.post(reverse('ui_web:bug_trend_scope_config'), payload, follow=True)
 
         # Then
         content = response.content.decode()
-        self.assertEqual(400, response.status_code)
-        self.assertIn('Scope config was not saved.', content)
-        self.assertIn('id: Scope id is required.', content)
+        self.assertEqual(200, response.status_code)
+        created = JiraScopeConfig.objects.get(name='STDEL created from form')
+        self.assertFalse(created.enabled)
+        self.assertIn('Scope config saved.', content)
 
     def test_shouldRenderValidationErrorsWhenScopeConfigPostHasMalformedId(self):
         # Given
@@ -139,7 +284,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         content = response.content.decode()
         self.assertEqual(400, response.status_code)
         self.assertIn('Scope config was not saved.', content)
-        self.assertIn('id: Scope id is required.', content)
+        self.assertIn('id: Scope id must be numeric.', content)
 
     def test_shouldRenderValidationErrorsWhenScopeConfigGetHasMalformedScopeId(self):
         # When
@@ -151,6 +296,109 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('Scope config was not saved.', content)
         self.assertIn('scope_id: A valid scope id is required.', content)
         self.assertNotIn('Save scope config', content)
+
+    def test_shouldRefreshMetadataWithoutSavingScopeConfig(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL metadata refresh',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+        )
+        original_hash = scope.config_version_hash
+
+        # When
+        with patch('ui_web.views.bug_trend_view.ui_web_container') as container:
+            container.bug_trend_facade = FakeScopeMetadataFacade()
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {
+                'id': str(scope.id),
+                'name': scope.name,
+                'jql': 'project = STDEL AND issuetype = Bug AND component = Emulation',
+                'bug_type_values': 'Bug',
+            })
+        scope.refresh_from_db()
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(original_hash, scope.config_version_hash)
+        self.assertIn('Metadata refresh failed:', content)
+
+    def test_shouldPassCommaSeparatedSelectedProjectsToMetadataRefresh(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL metadata selected projects',
+            jql='filter = 131600',
+            bug_type_values=['Bug'],
+        )
+        facade = FakeScopeMetadataFacade()
+
+        # When
+        with patch('ui_web.views.bug_trend_view.ui_web_container') as container:
+            container.bug_trend_facade = facade
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {
+                'scope_id': str(scope.id),
+                'selected_projects': '131600, STDEL',
+            })
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([['131600', 'STDEL']], facade.selected_projects)
+
+    def test_shouldPassRepeatedSelectedProjectValuesToMetadataRefresh(self):
+        # Given
+        facade = FakeScopeMetadataFacade()
+
+        # When
+        with patch('ui_web.views.bug_trend_view.ui_web_container') as container:
+            container.bug_trend_facade = facade
+            response = self.client.get(
+                reverse('ui_web:bug_trend_scope_metadata'),
+                [('jql', 'filter = 131600'), ('bug_type_values', 'Bug'), ('selected_project', '131600'), ('selected_project', 'STDEL')],
+            )
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([['131600', 'STDEL']], facade.selected_projects)
+
+    def test_shouldRenderDiscoveredFieldOptionsInMetadataPartial(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL metadata fields',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_view.ui_web_container') as container:
+            container.bug_trend_facade = FakeSuccessfulScopeMetadataFacade()
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {'scope_id': str(scope.id)})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Project: STDEL', content)
+        self.assertIn('Type: Bug', content)
+        self.assertIn('Field: Severity (customfield_12345)', content)
+
+    def test_shouldRenderMetadataWarningsAlongsideDiscoveredOptions(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL partial metadata',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_view.ui_web_container') as container:
+            container.bug_trend_facade = FakePartialScopeMetadataFacade()
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {'scope_id': str(scope.id)})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Unable to load component metadata', content)
+        self.assertIn('Project: STDEL', content)
+        self.assertIn('Field: Severity (customfield_12345)', content)
 
 
     def _post_payload(self, scope, critical_high_values):

@@ -107,7 +107,10 @@ class UiWebContainer:
     @property
     def bug_trend_facade(self) -> BugTrendFacade:
         if self._bug_trend_facade is None:
-            self._bug_trend_facade = BugTrendFacade(bug_metrics_container.bug_trend_api)
+            self._bug_trend_facade = BugTrendFacade(
+                bug_metrics_container.bug_trend_api,
+                jira_sync_container.scope_metadata_api,
+            )
         return self._bug_trend_facade
 
     @property

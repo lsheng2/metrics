@@ -64,6 +64,9 @@ class SavedScopeConfig:
 
 
 class ScopeConfigService:
+    def list_scope_configs(self) -> List[SavedScopeConfig]:
+        return [self._to_saved_scope_config(scope) for scope in JiraScopeConfig.objects.order_by('ip', 'project_label', 'name')]
+
     def get_scope_config(self, scope_id: int) -> SavedScopeConfig:
         return self._to_saved_scope_config(JiraScopeConfig.objects.get(id=scope_id))
 
@@ -103,6 +106,17 @@ class ScopeConfigService:
         scope.enabled = True
         scope.save(update_fields=['enabled', 'config_version_hash', 'updated_at'])
         self._record_scope_audit('scope_activated', scope, {
+            'was_enabled': was_enabled,
+            'current_config_version_hash': scope.config_version_hash,
+        })
+        return self._to_saved_scope_config(scope)
+
+    def disable_scope_config(self, scope_id: int) -> SavedScopeConfig:
+        scope = JiraScopeConfig.objects.get(id=scope_id)
+        was_enabled = scope.enabled
+        scope.enabled = False
+        scope.save(update_fields=['enabled', 'config_version_hash', 'updated_at'])
+        self._record_scope_audit('scope_disabled', scope, {
             'was_enabled': was_enabled,
             'current_config_version_hash': scope.config_version_hash,
         })

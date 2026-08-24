@@ -49,7 +49,13 @@ class FakeChart:
 
 
 class FakeBugTrendApi:
+    def __init__(self):
+        self.saved_configs = []
+
     def list_enabled_scopes(self):
+        return [FakeScope(7, 'STDEL emulation', 'NVU', 'STDEL')]
+
+    def list_scope_configs(self):
         return [FakeScope(7, 'STDEL emulation', 'NVU', 'STDEL')]
 
     def get_chart(self, scope_id, begin, end, chart_id='default_bug_trend'):
@@ -74,6 +80,58 @@ class FakeBugTrendApi:
             ),
         )
 
+    def get_scope_config(self, scope_id):
+        return self._scope_config(scope_id, enabled=True)
+
+    def save_scope_config(self, config):
+        config.id = config.id or 42
+        config.config_version_hash = 'new-hash'
+        self.saved_configs.append(config)
+        return config
+
+    def disable_scope_config(self, scope_id):
+        return self._scope_config(scope_id, enabled=False)
+
+    def _scope_config(self, scope_id, enabled):
+        from bug_metrics.app.api.scope_config import SavedScopeConfig
+        return SavedScopeConfig(
+            id=scope_id,
+            name='STDEL emulation',
+            ip='NVU',
+            project_label='STDEL',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            open_status_values=['New'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            terminal_excluded_status_values=[],
+            fixed_resolution_values=[],
+            closed_resolution_values=[],
+            reopen_status_values=[],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            component_field='components',
+            owner_field='assignee',
+            team_field='',
+            milestone_field='',
+            fix_version_field='fixVersions',
+            package_version_field='',
+            display_fields=[],
+            timezone='UTC',
+            bucket_granularity='weekly',
+            enabled=enabled,
+            config_version_hash='old-hash',
+        )
+
+
+class FailingScopeMetadataApi:
+    def discover_scope_options(self, *args, **kwargs):
+        raise RuntimeError('metadata discovery must not run')
+
+    def discover_field_values(self, *args, **kwargs):
+        raise RuntimeError('metadata discovery must not run')
+
 
 class TestBugTrendFacade(TestCase):
     def test_shouldExposeSavedScopeOptions(self):
@@ -85,6 +143,112 @@ class TestBugTrendFacade(TestCase):
 
         # Then
         self.assertEqual('NVU / STDEL / STDEL emulation', options[0].label)
+
+    def test_shouldExposeAllScopeConfigsForLibrary(self):
+        # Given
+        facade = BugTrendFacade(FakeBugTrendApi())
+
+        # When
+        scopes = facade.get_scope_library()
+
+        # Then
+        self.assertEqual('STDEL emulation', scopes[0].name)
+
+    def test_shouldCreateDraftScopeWithoutExistingId(self):
+        # Given
+        bug_trend_api = FakeBugTrendApi()
+        facade = BugTrendFacade(bug_trend_api)
+
+        # When
+        saved, hash_changed = facade.save_scope_config({
+            'id': '',
+            'name': 'STDEL new',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'jql': 'project = STDEL AND issuetype = Bug',
+            'bug_type_values': 'Bug',
+            'bucket_granularity': 'weekly',
+            'action': 'save_draft',
+        })
+
+        # Then
+        self.assertEqual(42, saved.id)
+        self.assertFalse(saved.enabled)
+        self.assertTrue(hash_changed)
+
+    def test_shouldCreateEnabledScopeWhenOperatorChoosesSaveAndEnable(self):
+        # Given
+        bug_trend_api = FakeBugTrendApi()
+        facade = BugTrendFacade(bug_trend_api)
+
+        # When
+        saved, _ = facade.save_scope_config({
+            'id': '',
+            'name': 'STDEL enabled',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'jql': 'project = STDEL AND issuetype = Bug',
+            'bug_type_values': 'Bug',
+            'bucket_granularity': 'weekly',
+            'action': 'save_enable',
+        })
+
+        # Then
+        self.assertTrue(saved.enabled)
+
+    def test_shouldSaveDraftWithoutDisablingExistingEnabledScope(self):
+        # Given
+        bug_trend_api = FakeBugTrendApi()
+        facade = BugTrendFacade(bug_trend_api)
+
+        # When
+        saved, _ = facade.save_scope_config({
+            'id': '7',
+            'name': 'STDEL emulation',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'jql': 'project = STDEL AND issuetype = Bug',
+            'bug_type_values': 'Bug',
+            'bucket_granularity': 'weekly',
+            'enabled': 'on',
+            'action': 'save_draft',
+        })
+
+        # Then
+        self.assertTrue(saved.enabled)
+
+    def test_shouldPreserveExistingEnabledStateWhenCheckboxIsMissing(self):
+        # Given
+        bug_trend_api = FakeBugTrendApi()
+        facade = BugTrendFacade(bug_trend_api)
+
+        # When
+        saved, _ = facade.save_scope_config({
+            'id': '7',
+            'name': 'STDEL emulation',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'jql': 'project = STDEL AND issuetype = Bug',
+            'bug_type_values': 'Bug',
+            'bucket_granularity': 'weekly',
+            'action': 'save_draft',
+        })
+
+        # Then
+        self.assertTrue(saved.enabled)
+
+    def test_shouldDuplicateScopeAsDisabledDraft(self):
+        # Given
+        facade = BugTrendFacade(FakeBugTrendApi())
+
+        # When
+        duplicate = facade.duplicate_scope_config(7)
+
+        # Then
+        self.assertIsNone(duplicate.id)
+        self.assertEqual('STDEL emulation copy', duplicate.name)
+        self.assertFalse(duplicate.enabled)
+        self.assertEqual(['Bug'], duplicate.bug_type_values)
 
     def test_shouldReturnChartJsonWithRunAndBucketIds(self):
         # Given
@@ -103,6 +267,16 @@ class TestBugTrendFacade(TestCase):
         self.assertIn('fresh', chart_json)
         self.assertIn('grafana_rows', chart_json)
         self.assertIn('bucket_label', chart_json)
+
+    def test_shouldNotUseMetadataDiscoveryForRuntimeChartData(self):
+        # Given
+        facade = BugTrendFacade(FakeBugTrendApi(), FailingScopeMetadataApi())
+
+        # When
+        chart = facade.get_chart_data(7, None, None)
+
+        # Then
+        self.assertEqual('run-123', chart.calculation_run_id)
 
     def test_shouldExposeChartContractVersionInPayload(self):
         # Given

@@ -127,6 +127,8 @@ METRICS_STORY_POINT_CUSTOM_FIELD_ID=customfield_10016
 
 For Jira Server/Data Center with a personal access token, set `METRICS_JIRA_AUTH_MODE=server_pat`, omit `METRICS_JIRA_EMAIL`, and use the PAT as `METRICS_JIRA_API_TOKEN`. If your corporate TLS chain is not trusted by Python, prefer `METRICS_JIRA_CA_BUNDLE=C:/path/to/corporate-ca-bundle.pem`; set `METRICS_JIRA_VERIFY_SSL=false` only for local troubleshooting.
 
+Bug Trend scope management is available from `Bug Trend` -> `Scope Library`. The library lists saved scopes, creates disabled drafts, duplicates existing scopes, disables scopes without deleting history, and opens the Scope Config editor. In the editor, use `Refresh metadata` to load Jira project/type/status/field candidates for the current draft without saving it. `Save draft` creates a disabled draft for new or duplicated scopes, `Save changes` preserves the current enabled state for existing scopes, `Save and enable` makes a scope selectable after validation, and `Disable` is the explicit action that removes an existing scope from the dashboard selector while preserving history.
+
 **For Azure DevOps:**
 ```bash
 # Edit .env file

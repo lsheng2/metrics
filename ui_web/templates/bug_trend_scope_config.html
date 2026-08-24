@@ -6,15 +6,32 @@
 <article class="block">
     <nav class="breadcrumb" aria-label="breadcrumbs">
         <ul>
-            <li><a href="{% url 'ui_web:bug_trend' %}{% if config %}?scope_id={{ config.id }}{% endif %}">Bug Trend</a></li>
-            {% if config %}
+            <li><a href="{% url 'ui_web:bug_trend' %}{% if config.id %}?scope_id={{ config.id }}{% endif %}">Bug Trend</a></li>
+            <li><a href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></li>
+            {% if config.id %}
                 <li><a href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ config.id }}">Scope Audit</a></li>
             {% endif %}
             <li class="is-active"><a href="#" aria-current="page">Scope Config</a></li>
         </ul>
     </nav>
 
-    <h2 class="title is-3">Bug Trend Scope Config</h2>
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-3">Bug Trend Scope Config</h2>
+                {% if editor_mode == 'new' %}
+                    <p class="subtitle is-6">New scope draft</p>
+                {% elif editor_mode == 'duplicate' %}
+                    <p class="subtitle is-6">Duplicate scope draft</p>
+                {% else %}
+                    <p class="subtitle is-6">Editing persisted scope {{ config.name }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="level-right">
+            <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Back to library</a>
+        </div>
+    </div>
     {% if saved %}
         <div class="notification is-success is-light">
             <p class="has-text-weight-semibold">Scope config saved.</p>
@@ -33,9 +50,13 @@
     {% endif %}
 
     {% if config %}
-    <form class="box" method="post">
+    <form class="box" method="post" data-dirty-form>
         {% csrf_token %}
-        <input type="hidden" name="id" value="{{ config.id }}">
+        <input type="hidden" name="id" value="{{ config.id|default:'' }}">
+        <div class="notification is-info is-light">
+            <p class="has-text-weight-semibold">Workflow order</p>
+            <p>Start with identity and Project + Issue Type, refresh metadata, then refine workflow semantics and advanced fields. Raw text remains available as fallback.</p>
+        </div>
         <div class="columns">
             <div class="column">
                 <label class="label" for="scope-name">Name</label>
@@ -54,6 +75,26 @@
             <label class="label" for="scope-jql">JQL</label>
             <textarea class="textarea" id="scope-jql" name="jql" required>{{ config.jql }}</textarea>
         </div>
+        <section class="box has-background-light">
+            <div class="level">
+                <div class="level-left">
+                    <div>
+                        <h3 class="title is-5">Metadata options</h3>
+                        <p class="is-size-7">Refresh uses the current persisted scope or draft values. It does not save config.</p>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <button class="button is-small" type="button"
+                            hx-get="{% url 'ui_web:bug_trend_scope_metadata' %}"
+                            hx-include="closest form"
+                            hx-target="#scope-metadata-options"
+                            hx-swap="innerHTML">Refresh metadata</button>
+                </div>
+            </div>
+            <div id="scope-metadata-options">
+                {% include "partials/bug_trend_scope_metadata.html" %}
+            </div>
+        </section>
         <div class="columns">
             <div class="column">
                 <label class="label" for="scope-bug-types">Bug type values</label>
@@ -134,13 +175,26 @@
         <input type="hidden" name="package_version_field" value="{{ config.package_version_field }}">
         <input type="hidden" name="display_fields" value="{{ config.display_fields|join:', ' }}">
         <input type="hidden" name="timezone" value="{{ config.timezone }}">
-        <label class="checkbox mb-4">
-            <input type="checkbox" name="enabled" {% if config.enabled %}checked{% endif %}>
-            Enabled
-        </label>
+        <div class="mb-4">
+            <span class="label">Dashboard status</span>
+            {% if config.enabled %}
+                <span class="tag is-success is-light">Enabled</span>
+            {% else %}
+                <span class="tag is-warning is-light">Draft</span>
+            {% endif %}
+            <p class="is-size-7">Use Save and enable to publish a scope. Use Disable from Scope Library to remove an existing scope from the dashboard selector.</p>
+        </div>
+        <div class="notification is-warning is-light is-hidden" data-dirty-banner>
+            Unsaved changes are local to this editor until you save. Use Discard changes to reload the persisted baseline.
+        </div>
         <div class="buttons">
-            <button class="button is-primary" type="submit">Save scope config</button>
-            <a class="button" href="{% url 'ui_web:bug_trend' %}?scope_id={{ config.id }}">Back to Bug Trend</a>
+            <button class="button" type="submit" name="action" value="save_draft">{% if config.id %}Save changes{% else %}Save draft{% endif %}</button>
+            <button class="button is-primary" type="submit" name="action" value="save_enable">Save and enable</button>
+            <button class="button is-warning is-light" type="submit" name="action" value="discard">Discard changes</button>
+            <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}" data-dirty-guard>Back to library</a>
+            {% if config.id %}
+                <a class="button" href="{% url 'ui_web:bug_trend' %}?scope_id={{ config.id }}" data-dirty-guard>Back to Bug Trend</a>
+            {% endif %}
         </div>
         <p class="is-size-7">Config hash: {{ config.config_version_hash }}</p>
     </form>

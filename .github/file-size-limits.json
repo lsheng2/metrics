@@ -20,6 +20,14 @@
       "rationale": "AI governance JSON should remain reviewable and should not hide large policy bodies."
     },
     {
+      "name": "docs-markdown",
+      "patterns": [
+        "docs/**/*.md"
+      ],
+      "max_lines": 1200,
+      "rationale": "Architecture and planning documents can be longer than AI guidance files, but should remain bounded enough for review gates to inspect them explicitly."
+    },
+    {
       "name": "python-test",
       "patterns": [
         "**/tests/**/*.py",

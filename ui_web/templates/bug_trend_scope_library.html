@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Bug Trend Scope Library{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:bug_trend' %}">Bug Trend</a></li>
+            <li class="is-active"><a href="#" aria-current="page">Scope Library</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-3">Scope Library</h2>
+                <p class="subtitle is-6">Manage saved Jira scopes before they appear on the dashboard.</p>
+            </div>
+        </div>
+        <div class="level-right">
+            <a class="button is-primary" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new">New scope</a>
+        </div>
+    </div>
+
+    <div class="table-container box">
+        <table class="table is-fullwidth is-hoverable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>IP</th>
+                    <th>Project</th>
+                    <th>Status</th>
+                    <th>Config hash</th>
+                    <th class="has-text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scope in scopes %}
+                    <tr>
+                        <td>{{ scope.name }}</td>
+                        <td>{{ scope.ip|default:"-" }}</td>
+                        <td>{{ scope.project_label|default:"-" }}</td>
+                        <td>
+                            {% if scope.enabled %}
+                                <span class="tag is-success is-light">Enabled</span>
+                            {% else %}
+                                <span class="tag is-warning is-light">Draft</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ scope.config_version_hash|slice:":12" }}</code></td>
+                        <td>
+                            <div class="buttons is-justify-content-flex-end">
+                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
+                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
+                                {% if scope.enabled %}
+                                    <form method="post" data-confirm="Disable this scope? Historical runs and evidence will be preserved.">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                        <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Disable</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">No scopes saved yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</article>
+{% endblock %}

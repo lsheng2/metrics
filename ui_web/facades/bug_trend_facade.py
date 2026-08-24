@@ -3,13 +3,15 @@ from datetime import date
 
 from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilters
 from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, normalize_scope_list_values, saved_scope_config_from_dict
+from bug_metrics.models import JiraScopeConfig
 
 from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
 
 
 class BugTrendFacade:
-    def __init__(self, bug_trend_api):
+    def __init__(self, bug_trend_api, scope_metadata_api=None):
         self._bug_trend_api = bug_trend_api
+        self._scope_metadata_api = scope_metadata_api
 
     def get_scope_options(self):
         return [
@@ -20,6 +22,9 @@ class BugTrendFacade:
             )
             for scope in self._bug_trend_api.list_enabled_scopes()
         ]
+
+    def get_scope_library(self):
+        return self._bug_trend_api.list_scope_configs()
 
     def get_chart_options(self):
         return [
@@ -250,11 +255,75 @@ class BugTrendFacade:
                 setattr(config, add_field, values)
         return config
 
+    def new_scope_config(self) -> SavedScopeConfig:
+        return saved_scope_config_from_dict({
+            'id': None,
+            'name': '',
+            'ip': '',
+            'project_label': '',
+            'jql': '',
+            'owner_field': 'assignee',
+            'timezone': 'UTC',
+            'bucket_granularity': JiraScopeConfig.GRANULARITY_WEEKLY,
+            'enabled': False,
+        })
+
+    def duplicate_scope_config(self, scope_id: int) -> SavedScopeConfig:
+        source = self._bug_trend_api.get_scope_config(scope_id)
+        return SavedScopeConfig(
+            id=None,
+            name=f'{source.name} copy',
+            ip=source.ip,
+            project_label=source.project_label,
+            jql=source.jql,
+            bug_type_values=list(source.bug_type_values),
+            open_status_values=list(source.open_status_values),
+            fixed_status_values=list(source.fixed_status_values),
+            closed_status_values=list(source.closed_status_values),
+            terminal_excluded_status_values=list(source.terminal_excluded_status_values),
+            fixed_resolution_values=list(source.fixed_resolution_values),
+            closed_resolution_values=list(source.closed_resolution_values),
+            reopen_status_values=list(source.reopen_status_values),
+            severity_field=source.severity_field,
+            critical_high_values=list(source.critical_high_values),
+            medium_low_values=list(source.medium_low_values),
+            component_field=source.component_field,
+            owner_field=source.owner_field,
+            team_field=source.team_field,
+            milestone_field=source.milestone_field,
+            fix_version_field=source.fix_version_field,
+            package_version_field=source.package_version_field,
+            display_fields=list(source.display_fields),
+            timezone=source.timezone,
+            bucket_granularity=source.bucket_granularity,
+            enabled=False,
+            config_version_hash='',
+        )
+
+    def disable_scope_config(self, scope_id: int):
+        return self._bug_trend_api.disable_scope_config(scope_id)
+
+    def get_scope_metadata_options(self, config: SavedScopeConfig, selected_projects: list[str] = None):
+        if self._scope_metadata_api is None:
+            return None
+        try:
+            return self._scope_metadata_api.discover_scope_options('jira', config.jql, selected_projects or [], config.bug_type_values, refresh=True)
+        except Exception as error:
+            return {'warnings': [f'Metadata refresh failed: {error}']}
+
     def save_scope_config(self, post_data) -> tuple[SavedScopeConfig, bool]:
         config = self.scope_config_from_post(post_data)
-        if config.id is None:
-            raise ValueError({'id': 'Scope id is required.'})
-        original_hash = self._bug_trend_api.get_scope_config(config.id).config_version_hash
+        if post_data.get('id') and config.id is None:
+            raise ValueError({'id': 'Scope id must be numeric.'})
+        persisted = self._bug_trend_api.get_scope_config(config.id) if config.id else None
+        original_hash = persisted.config_version_hash if persisted else ''
+        action = post_data.get('action')
+        if action == 'save_enable':
+            config.enabled = True
+        elif config.id is not None and persisted is not None:
+            config.enabled = persisted.enabled
+        elif action == 'save_draft' and config.id is None:
+            config.enabled = False
         saved = self._bug_trend_api.save_scope_config(config)
         return saved, saved.config_version_hash != original_hash
 

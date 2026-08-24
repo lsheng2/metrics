@@ -37,6 +37,9 @@ class ApiForBugTrend:
     def list_enabled_scopes(self) -> List[JiraScopeConfig]:
         return list(JiraScopeConfig.objects.filter(enabled=True).order_by('ip', 'project_label', 'name'))
 
+    def list_scope_configs(self) -> List[SavedScopeConfig]:
+        return self._scope_config_service.list_scope_configs()
+
     def get_scope(self, scope_id: int) -> JiraScopeConfig:
         return JiraScopeConfig.objects.get(id=scope_id, enabled=True)
 
@@ -51,6 +54,9 @@ class ApiForBugTrend:
 
     def activate_scope_config(self, scope_id: int) -> SavedScopeConfig:
         return self._scope_config_service.activate_scope_config(scope_id)
+
+    def disable_scope_config(self, scope_id: int) -> SavedScopeConfig:
+        return self._scope_config_service.disable_scope_config(scope_id)
 
     def list_calculation_health(self) -> List[BugTrendCalculationHealth]:
         return self._calculation_health_service.list_calculation_health()

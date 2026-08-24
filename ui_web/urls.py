@@ -7,7 +7,7 @@ from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
-from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEvidenceExportView, BugTrendScopeAuditView, BugTrendScopeConfigView, BugTrendChartDataApiView, BugTrendEvidenceApiView
+from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEvidenceExportView, BugTrendScopeAuditView, BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView, BugTrendChartDataApiView, BugTrendEvidenceApiView
 from .views.data_health_view import DataHealthView
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
@@ -32,6 +32,7 @@ urlpatterns = [
     path(_base_prefix + 'bug-trend/', BugTrendView.as_view(), name='bug_trend'),
      path(_base_prefix + 'data-health/', DataHealthView.as_view(), name='data_health'),
      path(_base_prefix + 'bug-trend/scope-audit/', BugTrendScopeAuditView.as_view(), name='bug_trend_scope_audit'),
+     path(_base_prefix + 'bug-trend/scopes/', BugTrendScopeLibraryView.as_view(), name='bug_trend_scope_library'),
      path(_base_prefix + 'bug-trend/scope-config/', BugTrendScopeConfigView.as_view(), name='bug_trend_scope_config'),
 
     # Partials for HTMX
@@ -53,6 +54,7 @@ urlpatterns = [
     path(_base_prefix + 'partials/team-velocity/sp-chart/', TeamStoryPointsChartView.as_view(), name='team_sp_chart'),
     path(_base_prefix + 'partials/team-velocity/tasks/', TeamVelocityTasksView.as_view(), name='team_velocity_tasks'),
     path(_base_prefix + 'partials/bug-trend/evidence/', BugTrendEvidenceView.as_view(), name='bug_trend_evidence'),
+     path(_base_prefix + 'partials/bug-trend/scope-metadata/', BugTrendScopeMetadataView.as_view(), name='bug_trend_scope_metadata'),
      path(_base_prefix + 'bug-trend/evidence/export/', BugTrendEvidenceExportView.as_view(), name='bug_trend_evidence_export'),
      path(_base_prefix + 'api/charts/data/', BugTrendChartDataApiView.as_view(), name='chart_data_api'),
      path(_base_prefix + 'api/charts/evidence/', BugTrendEvidenceApiView.as_view(), name='chart_evidence_api'),

@@ -106,6 +106,70 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    function initializeDirtyForms() {
+        document.querySelectorAll('[data-dirty-form]').forEach(form => {
+            const banner = form.querySelector('[data-dirty-banner]');
+            const fields = Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
+                .filter(field => field.type !== 'hidden' && field.type !== 'submit');
+
+            fields.forEach(field => {
+                field.dataset.initialValue = field.type === 'checkbox' ? String(field.checked) : field.value;
+            });
+
+            function markDirtyFields() {
+                let formIsDirty = false;
+                fields.forEach(field => {
+                    const currentValue = field.type === 'checkbox' ? String(field.checked) : field.value;
+                    const fieldIsDirty = currentValue !== field.dataset.initialValue;
+                    formIsDirty = formIsDirty || fieldIsDirty;
+                    const label = field.id ? form.querySelector(`label[for="${field.id}"]`) : null;
+                    if (!label) {
+                        return;
+                    }
+                    let marker = label.querySelector('[data-dirty-marker]');
+                    if (fieldIsDirty && !marker) {
+                        marker = document.createElement('span');
+                        marker.className = 'tag is-warning is-light ml-2';
+                        marker.dataset.dirtyMarker = 'true';
+                        marker.textContent = 'Modified';
+                        label.appendChild(marker);
+                    }
+                    if (!fieldIsDirty && marker) {
+                        marker.remove();
+                    }
+                });
+                if (banner) {
+                    banner.classList.toggle('is-hidden', !formIsDirty);
+                }
+                form.dataset.dirty = String(formIsDirty);
+            }
+
+            fields.forEach(field => {
+                field.addEventListener('input', markDirtyFields);
+                field.addEventListener('change', markDirtyFields);
+            });
+
+            form.querySelectorAll('[data-dirty-guard]').forEach(link => {
+                link.addEventListener('click', event => {
+                    if (form.dataset.dirty === 'true' && !window.confirm('Discard unsaved changes?')) {
+                        event.preventDefault();
+                    }
+                });
+            });
+        });
+    }
+
+    function initializeConfirmForms() {
+        document.querySelectorAll('form[data-confirm]').forEach(form => {
+            form.addEventListener('submit', event => {
+                const message = form.dataset.confirm;
+                if (message && !window.confirm(message)) {
+                    event.preventDefault();
+                }
+            });
+        });
+    }
     
     let activeRequestCount = 0;
 
@@ -164,6 +228,8 @@ document.addEventListener('DOMContentLoaded', function() {
         toggle.addEventListener('click', handleMenuToggle);
     });
     expandInitialActiveMenus();
+    initializeDirtyForms();
+    initializeConfirmForms();
     
     document.querySelectorAll('.menu-list a').forEach(link => {
         link.addEventListener('click', function(e) {
