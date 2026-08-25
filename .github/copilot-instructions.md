@@ -17,6 +17,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 4. UI code uses semantic HTML, Bulma, htmx, and Chart.js. Avoid React-style frontend architecture.
 5. External tracker behavior should reuse `sd-metrics-lib` where practical.
 6. Secrets belong in `.env` or deployment environment variables and must not be committed or pasted into docs, tests, or chat output.
+7. Multi-provider first: Jira is the first rich work-item provider, not the platform boundary. New tracker/work-item/AI workflow designs must separate provider-neutral contracts, facts, scopes, action plans, audit, and UI flows from provider-specific adapters such as Jira, GitHub, Azure DevOps, or future systems. Do not create parallel product modules per provider unless the module owns external integration details only.
 
 ## Intel Jira MVP Routing
 
@@ -26,6 +27,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 4. `jira_scope_config` is the single authority for project-specific Jira semantics. Do not move workflow status, severity, component, milestone, or bug-type truth into global env vars or hardcoded calculators.
 5. Bug trend pages must read local durable history/aggregate artifacts, not live-query Jira on every dashboard render. Drilldown must use the same `calculation_run_id` as the clicked chart bucket.
 6. Planned owner boundaries: `jira_sync` fetches/cursors/status, `jira_history` persists issues/snapshots/transitions, `bug_metrics` owns scope config and trend buckets, and `ui_web` renders views/partials/charts.
+7. For new scope/onboarding/provider work, prefer provider-neutral names such as `Provider`, `WorkItem`, `Space`, `ItemType`, `State`, `ReleaseTarget`, `ProviderQuery`, and `ProviderActionPlan`; keep Jira terms like JQL, project, issue type, status, and fix version inside the Jira adapter or Jira-specific UI hints.
 
 ## Implementation Rules
 

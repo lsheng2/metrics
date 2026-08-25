@@ -37,6 +37,8 @@ Planned MVP owner additions:
 6. Secrets stay in `.env` or deployment environment variables and must not appear in committed files, docs, tests, or chat output.
 7. `jira_scope_config` is the single authority for project-specific bug trend semantics; environment variables own connectivity only.
 8. Bug trend dashboards read durable local history and aggregate artifacts, not live Jira queries on every page load.
+9. Multi-provider first: Jira is the first rich work-item provider, not the architecture boundary. New tracker/work-item/AI workflow designs must define provider-neutral contracts and UI semantics first, then implement Jira, GitHub, Azure DevOps, or other systems as adapters with declared capabilities.
+10. Do not create parallel product surfaces per provider. Shared concepts such as connection profile, work-item facts, metadata discovery, scope query/filter, action plan, approval/audit, and dashboard consumption belong in provider-neutral contracts; provider-specific modules own only external API quirks, auth, pagination, field identity, and sync implementation.
 
 ## Common Validation
 
@@ -57,3 +59,4 @@ python scripts/check_diff_whitespace.py --include-untracked
 6. Do not hardcode Intel Jira status names globally. Example workflows belong in saved scope config records.
 7. If no severity mapping exists for a scope, hide critical/high series instead of guessing severity.
 8. Chart buckets and drilldown issue rows must share the same `calculation_run_id`; do not reconstruct drilldown membership from mutable current issue state.
+9. Avoid naming new shared abstractions `Jira*` unless the abstraction truly cannot apply to GitHub, Azure DevOps, or another work-item provider. Prefer `Provider*`, `WorkItem*`, `Tracker*`, or provider-neutral domain names and put Jira vocabulary in adapter-local code or UI helper text.
