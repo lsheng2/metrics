@@ -14,7 +14,7 @@
   - `scripts/validate_grafana_artifacts.py --artifact-root ops/grafana --allowlist openspec/docs/current-baseline/grafana-approved-data-surfaces.json`，结果为 `PASS grafana artifacts checked=2`。
   - `manage.py check`，结果为 `System check identified no issues`。
   - Grafana datasource setup for `metrics-bug-trend-api`。
-  - `ops/grafana/provider_parity_dashboard.json` import，dashboard uid 为 `metrics-provider-parity-dashboard`。
+- `ops/grafana/provider_parity_dashboard.json` import，dashboard uid 为 `ip-quality-dashboard`。
   - Direct Metrics API 与 Grafana datasource proxy API runtime checks。
   - Playwright visible dashboard validation：`QUALITY`、`EXECUTION`、`EFFICIENCY` section 与 representative parity panels 可见，且 Grafana chart canvas 非空。
 - Screenshot evidence: `state/e2e/provider_parity_dashboard.png`。

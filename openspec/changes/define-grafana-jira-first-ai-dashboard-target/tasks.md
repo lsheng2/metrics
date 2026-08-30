@@ -100,3 +100,9 @@
 - [x] 11.1 Document that HSD-ES browser SSO does not configure the Django backend, and define the interim seed-backed aggregate path separately from live HSD-ES sync readiness.
 - [x] 11.2 Add a local normalized HSD-ES seed fact source for `nvu-ttl-hsdes` and verify the public provider chart API returns supported `component_bug` Grafana rows with HSD-ES provenance.
 - [x] 11.3 Refresh the local Grafana runtime and verify the selected HSD-ES profile displays a non-empty chart while remaining explicit about live sync limitations.
+
+## 12. Dashboard Range Control Clarity
+
+- [x] 12.1 Add a visible Grafana explanation for `Range Mode`, `Begin WW` / `End WW`, and the Grafana browser time picker relationship.
+- [x] 12.2 Add `range_mode=ww/date` to approved provider chart data/evidence requests and verify `Date` mode uses Grafana `${__from}` / `${__to}` dates for backend filtering.
+- [x] 12.3 Verify HSD-ES date-mode requests do not reuse WW-keyed aggregate artifacts when the browser date window differs from the WW variables.

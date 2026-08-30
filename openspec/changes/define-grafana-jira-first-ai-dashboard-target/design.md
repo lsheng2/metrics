@@ -79,10 +79,13 @@ The dashboard query state should converge on:
 
 ```text
 provider_id
+range_mode
 space_id or product_scope
 release_target or milestone
 begin_ww
 end_ww
+begin_date optional
+end_date optional
 calculation_run_id or fact_snapshot_id
 chart_id
 chart_version
@@ -104,7 +107,9 @@ Runtime filters have two classes:
 | `space_id` / IP | selected profile static label or future field binding | may be overridden only as explicit runtime scope override |
 | `release_target` / project | selected profile static label or future field binding | may be overridden only as explicit runtime scope override |
 | `milestone` | selected profile static label or future field binding | may be overridden only as explicit runtime scope override |
+| `range_mode` | dashboard runtime selection | chooses whether backend data range comes from WW variables or Grafana browser date range |
 | `begin_ww` / `end_ww` | dashboard runtime selection | normal time-window filter, not a profile identity change |
+| `begin_date` / `end_date` | Grafana native time picker macros | used by Metrics only when `range_mode=date`; ignored for backend filtering when `range_mode=ww` |
 
 If a richer Grafana App/Scenes or Metrics profile editor is introduced, overridden profile-derived fields should be visually marked and should offer `save as new profile` or controlled `update profile` flows. Stock Grafana may implement the first step by hiding derived fields from normal variable controls and passing only `profile_id` plus runtime filters to Metrics APIs.
 
@@ -113,6 +118,15 @@ Stock Grafana should still make the derived values visible. The dashboard should
 `configuration_required` is intentionally broader than "needs login". For HSD-ES it can mean the operator still needs to validate SSO/service-account access, saved-query visibility, article detail permissions, lookup group metadata and chart-level native field bindings. When the selected profile has a known HSD-ES saved-query target, Metrics should emit an action label and URL in the readiness payload. Grafana may render that as a hyperlink such as "Open HSD-ES saved query / sign in"; the link is an access/configuration check entry point, not a guarantee that authentication alone will unlock aggregates.
 
 The stock dashboard does not provide profile override editing. If an old URL still carries stale `var-space_id`, `var-release_target` or `var-milestone` parameters, those values should be ignored by stock dashboard panel requests. A later App/Scenes or Metrics profile editor can add editable fields; at that point it must mark overridden values and provide a save-as-new-profile or controlled update path.
+
+Grafana's native time picker remains date/time based, while the legacy reference dashboard and many IP-quality workflows use work-week ranges. The stock dashboard therefore exposes `range_mode`:
+
+| Range mode | Backend data range owner | Grafana browser time picker role |
+| --- | --- | --- |
+| `ww` | Metrics resolves `begin_ww` / `end_ww` into calendar dates and filters aggregates by that range. | Display-window control only; operators should keep it wide enough to include returned bucket dates. |
+| `date` | Metrics uses `${__from:date:YYYY-MM-DD}` / `${__to:date:YYYY-MM-DD}` passed as `begin_date` / `end_date`. | Both display-window control and backend data-range control. |
+
+Date mode must not reuse a cached artifact solely because stale `begin_ww` / `end_ww` URL variables match an existing materialized artifact. WW-keyed artifacts are valid for `range_mode=ww`; `range_mode=date` should rebuild from latest provider facts, or return a clear unavailable/configuration state if facts are unavailable.
 
 ### Decision 4: Use approved aggregate artifacts for Grafana
 

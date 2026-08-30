@@ -81,6 +81,10 @@ Grafana dashboard SHALL 使用 provider-neutral query state 来表达 scope，�
 - **WHEN** Grafana renders a normal selected-profile chart from `profile_id`
 - **THEN** chart value fields SHALL use provider-neutral metric names such as `component_bug_count` or `all_open_bugs`, SHALL NOT declare both `jira_*` and `hsdes_*` value fields in the same selected-profile panel, and SHALL keep provenance fields such as `provider_id`, `profile_id` and `mapping_version` as metadata rather than plotted numeric series
 
+#### Scenario: Categorical quality charts render category dimensions on the x-axis
+- **WHEN** Grafana renders `component_bug`
+- **THEN** the panel SHALL use a provider-neutral component/category label such as `component_label` as the chart category field instead of using the selected date or WW bucket label as the x-axis
+
 #### Scenario: Local Grafana runtime is refreshed after provider contract changes
 - **WHEN** the Metrics provider aggregate code, HSD-ES seed facts, or Grafana dashboard artifact changes during local validation
 - **THEN** the local Django backend SHALL be restarted and the Grafana dashboard SHALL be re-imported before the operator evaluates whether the selected HSD-ES profile has chart data
@@ -92,6 +96,21 @@ Grafana dashboard SHALL 使用 provider-neutral query state 来表达 scope，�
 #### Scenario: Override-capable UI marks changed profile defaults
 - **WHEN** a future Grafana App/Scenes or Metrics profile editor allows users to override profile-derived fields
 - **THEN** each overridden field SHALL be visually marked as an override, SHALL retain the selected `profile_id` as provenance, and SHALL offer a controlled path to save the override as a new profile or approved profile update
+
+### Requirement: Dashboard range mode is explicit
+Grafana dashboard SHALL clearly distinguish the Metrics backend data range from Grafana's native browser time picker, and SHALL provide a selected range mode so users can align the two concepts intentionally.
+
+#### Scenario: Dashboard explains the two date-period controls
+- **WHEN** 用户查看 dashboard 顶部 controls
+- **THEN** Grafana SHALL render explanatory text stating that `Work Week` mode uses `Begin WW` / `End WW` for backend data while the Grafana time picker controls the visible display window, and that `Date` mode uses the Grafana time picker dates for backend data while `Begin WW` / `End WW` are ignored by the API
+
+#### Scenario: User chooses Work Week mode
+- **WHEN** `range_mode=ww`
+- **THEN** Grafana SHALL pass `begin_ww` and `end_ww` to Metrics chart/evidence APIs, and Metrics SHALL resolve the backend range from those WW values while preserving the browser time picker as a Grafana display-window control
+
+#### Scenario: User chooses Date mode
+- **WHEN** `range_mode=date`
+- **THEN** Grafana SHALL pass `${__from:date:YYYY-MM-DD}` and `${__to:date:YYYY-MM-DD}` as `begin_date` and `end_date`, and Metrics SHALL resolve the backend range from those calendar dates rather than from `begin_ww` / `end_ww`
 
 ### Requirement: Grafana panels are backed by chart recipes
 每个 Grafana parity panel SHALL have a Metrics-owned chart recipe and provider binding that defines semantic metric, required fields, series contract, evidence capability and support status per provider.

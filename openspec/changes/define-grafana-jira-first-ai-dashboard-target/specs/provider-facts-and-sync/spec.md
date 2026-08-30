@@ -53,6 +53,10 @@
 - **WHEN** Grafana 请求的 aggregate artifact 与当前 scope、WW range、provider snapshot 或 calculation run 不匹配
 - **THEN** 系统 SHALL 返回 stale or unavailable state，而不是 silently rendering mismatched panel data
 
+#### Scenario: Date-mode request overlaps a WW-keyed cache artifact
+- **WHEN** Grafana requests a provider aggregate with `range_mode=date`
+- **THEN** Metrics SHALL resolve the requested range from `begin_date` and `end_date`, SHALL NOT reuse a cached aggregate artifact only because its `begin_ww` and `end_ww` match stale URL variables, and SHALL rebuild the date-window aggregate from the latest provider facts or return an explicit unavailable/configuration state
+
 ### Requirement: Provider fact records separate canonical, project, and native fields
 Durable facts SHALL expose canonical fields required by dashboard and AI while retaining project-specific fields and provider-native fields as separate payload layers.
 
