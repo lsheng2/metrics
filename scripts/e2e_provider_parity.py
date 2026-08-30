@@ -16,7 +16,7 @@ from port_lifecycle import PortLifecycle, ServiceSpec, load_project_name
 
 T = TypeVar("T")
 
-DASHBOARD_UID = "metrics-provider-parity-dashboard"
+DASHBOARD_UID = "ip-quality-dashboard"
 DATASOURCE_UID = "metrics-bug-trend-api"
 SUPPORTED_STATE = "supported"
 HSDES_CONFIGURATION_REQUIRED_STATE = "configuration_required"
@@ -46,19 +46,29 @@ canvases => canvases.some(canvas => {
 class ProviderParitySettings:
     provider_id: str = ""
     profile_id: str = "chiplet-2a-jira"
+    range_mode: str = "ww"
     space_id: str = "chiplet_ip"
     release_target: str = "chiplet"
     milestone: str = "2a"
     begin_ww: str = "26WW32"
     end_ww: str = "26WW32"
+    begin_date: str = "2026-08-03"
+    end_date: str = "2026-08-09"
     skip_browser: bool = False
 
     def variables(self) -> dict[str, str]:
         return {
             "profile_id": self.profile_id,
+            "range_mode": self.range_mode,
             "begin_ww": self.begin_ww,
             "end_ww": self.end_ww,
         }
+
+    def target_variables(self) -> dict[str, str]:
+        variables = self.variables()
+        variables["{__from:date:YYYY-MM-DD}"] = self.begin_date
+        variables["{__to:date:YYYY-MM-DD}"] = self.end_date
+        return variables
 
     def resolved_provider_id(self) -> str:
         profile_provider_id = PROVIDER_ID_BY_PROFILE.get(self.profile_id, "")
@@ -68,7 +78,7 @@ class ProviderParitySettings:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Start/stop the Provider Parity Grafana E2E runtime.")
+    parser = argparse.ArgumentParser(description="Start/stop the IP Quality Grafana E2E runtime.")
     parser.add_argument("action", choices=("start", "stop", "restart"))
     parser.add_argument("--workspace", default=str(Path(__file__).resolve().parents[1]))
     parser.add_argument("--instance", default="provider-parity")
@@ -80,11 +90,14 @@ def main() -> None:
     parser.add_argument("--force-by-port", action="store_true")
     parser.add_argument("--provider-id", default="")
     parser.add_argument("--profile-id", default="chiplet-2a-jira")
+    parser.add_argument("--range-mode", default="ww")
     parser.add_argument("--space-id", default="chiplet_ip")
     parser.add_argument("--release-target", default="chiplet")
     parser.add_argument("--milestone", default="2a")
     parser.add_argument("--begin-ww", default="26WW32")
     parser.add_argument("--end-ww", default="26WW32")
+    parser.add_argument("--begin-date", default="2026-08-03")
+    parser.add_argument("--end-date", default="2026-08-09")
     parser.add_argument("--skip-browser", action="store_true")
     args = parser.parse_args()
 
@@ -99,11 +112,14 @@ def main() -> None:
     settings = ProviderParitySettings(
         provider_id=args.provider_id,
         profile_id=args.profile_id,
+        range_mode=args.range_mode,
         space_id=args.space_id,
         release_target=args.release_target,
         milestone=args.milestone,
         begin_ww=args.begin_ww,
         end_ww=args.end_ww,
+        begin_date=args.begin_date,
+        end_date=args.end_date,
         skip_browser=args.skip_browser,
     )
 
@@ -164,7 +180,7 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLife
     profile_step(lifecycle, "write_provider_parity_summary", lambda: write_e2e_summary(workspace, django_port, grafana_port, dashboard_url), run_id=run_id)
     if not settings.skip_browser:
         profile_step(lifecycle, "open_browser", lambda: e2e_bug_trend.open_browser(dashboard_url), run_id=run_id)
-    print(f"E2E Provider Parity Dashboard is ready: {dashboard_url}")
+    print(f"E2E IP Quality Dashboard is ready: {dashboard_url}")
 
 
 def profile_step(lifecycle: object, label: str, callback: Callable[[], T], run_id: str | None = None) -> T:
@@ -183,15 +199,23 @@ def import_grafana_dashboard(workspace: Path, grafana_port: int, settings: Provi
             continue
         if variable.get("type") != "custom":
             variable["query"] = value
-        variable["current"] = {"text": value, "value": value}
+        current_text = variable_option_text(variable, value)
+        variable["current"] = {"text": current_text, "value": value}
         for option in variable.get("options", []):
             if isinstance(option, dict):
                 option["selected"] = option.get("value") == value
     request_json(
         "POST",
         f"http://127.0.0.1:{grafana_port}/api/dashboards/db",
-        {"dashboard": dashboard, "overwrite": True, "message": "Import Metrics Provider Parity dashboard"},
+        {"dashboard": dashboard, "overwrite": True, "message": "Import IP Quality dashboard"},
     )
+
+
+def variable_option_text(variable: dict[str, object], value: str) -> str:
+    for option in variable.get("options", []):
+        if isinstance(option, dict) and option.get("value") == value:
+            return str(option.get("text") or value)
+    return value
 
 
 def validate_runtime(workspace: Path, grafana_port: int, django_port: int, settings: ProviderParitySettings) -> None:
@@ -207,7 +231,7 @@ def validate_runtime(workspace: Path, grafana_port: int, django_port: int, setti
             contract = target.get("metricsContract", {})
             if not contract:
                 continue
-            resolved_url = resolve_target_url(target["url"], settings.variables())
+            resolved_url = resolve_target_url(target["url"], settings.target_variables())
             direct_url = f"http://127.0.0.1:{django_port}{resolved_url}"
             proxy_url = f"http://127.0.0.1:{grafana_port}/api/datasources/proxy/uid/{DATASOURCE_UID}{resolved_url}"
             assert_http_ok(direct_url)
@@ -343,7 +367,7 @@ def validate_visible_dashboard(grafana_port: int, dashboard_url: str, workspace:
     try:
         page.goto(dashboard_url, wait_until="domcontentloaded", timeout=90000)
         page.wait_for_function(
-            "document.body && document.body.innerText.includes('QUALITY / Open Bug Trend')",
+            "document.body && document.body.innerText.includes('Open Bug Trend')",
             timeout=60000,
         )
         body_text = page.locator("body").inner_text(timeout=30000)
@@ -367,13 +391,13 @@ def validate_visible_dashboard(grafana_port: int, dashboard_url: str, workspace:
 def assert_visible_dashboard_text(body_text: str) -> None:
     required_labels = (
         "QUALITY",
-        "QUALITY / Open Bug Trend",
-        "QUALITY / Selected Provider States",
+        "Open Bug Trend",
+        "Quality Chart Health",
         "EXECUTION",
-        "EXECUTION / Deferred States",
+        "Execution Metrics Not Mapped Yet",
         "EFFICIENCY",
-        "EFFICIENCY / Open Bug Aging",
-        "EFFICIENCY / Deferred States",
+        "Open Bug Aging",
+        "Efficiency Metrics Not Mapped Yet",
     )
     for label in required_labels:
         if label not in body_text:
@@ -389,7 +413,7 @@ def grafana_dashboard_url(grafana_port: int, settings: ProviderParitySettings) -
         f"var-{name}": value
         for name, value in settings.variables().items()
     })
-    return f"http://127.0.0.1:{grafana_port}/d/{DASHBOARD_UID}/metrics-provider-parity-dashboard?orgId=1&{variables}"
+    return f"http://127.0.0.1:{grafana_port}/d/{DASHBOARD_UID}/ip-quality-dashboard?orgId=1&{variables}"
 
 
 def write_e2e_summary(workspace: Path, django_port: int, grafana_port: int, dashboard_url: str) -> None:

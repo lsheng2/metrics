@@ -14,6 +14,7 @@ class ChartRecipe:
     approved_provider_bindings: frozenset[str]
     approved_value_fields: frozenset[str]
     approved_evidence_capabilities: frozenset[str]
+    approved_category_fields: frozenset[str]
     bucket_grains: frozenset[str]
 
 
@@ -26,6 +27,7 @@ def load_provider_chart_recipes(payload: dict[str, Any]) -> dict[str, ChartRecip
             approved_provider_bindings=frozenset(config.get("approved_provider_bindings", [])),
             approved_value_fields=frozenset(config.get("approved_value_fields", [])),
             approved_evidence_capabilities=frozenset(config.get("approved_evidence_capabilities", [])),
+            approved_category_fields=frozenset(config.get("approved_category_fields", [])),
             bucket_grains=frozenset(config.get("bucket_grains", [])),
         )
         for chart_id, config in payload.items()
@@ -67,6 +69,13 @@ def validate_provider_chart_contract(path, target_path, target_url, metrics_cont
         findings.append(finding(path, f"{target_path} uses valueFields outside approved chart recipe {query_chart_id}: {', '.join(sorted(extra_value_fields))}"))
     if query_chart_id.startswith("daily_"):
         findings.extend(validate_daily_metric_contract(path, target_path, metrics_contract, recipe, finding))
+    category_field = metrics_contract.get("categoryField")
+    if (
+        metrics_contract.get("root") == "grafana_rows"
+        and recipe.approved_category_fields
+        and category_field not in recipe.approved_category_fields
+    ):
+        findings.append(finding(path, f"{target_path} categoryField {category_field!r} is not approved by chart recipe {query_chart_id}"))
     return findings
 
 

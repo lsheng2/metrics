@@ -1,11 +1,11 @@
 {
-  "uid": "metrics-provider-parity-dashboard",
-  "title": "Metrics Provider Parity Dashboard",
+  "uid": "ip-quality-dashboard",
+  "title": "IP Quality Dashboard",
   "schemaVersion": 39,
   "version": 1,
   "tags": [
     "metrics",
-    "provider-parity",
+    "ip-quality",
     "jira-first",
     "hsdes-ready"
   ],
@@ -30,7 +30,30 @@
             "text": "nvu-ttl-hsdes",
             "value": "nvu-ttl-hsdes"
           }
-        ]
+        ],
+        "label": "Profile"
+      },
+      {
+        "name": "range_mode",
+        "type": "custom",
+        "query": "Work Week : ww,Date : date",
+        "current": {
+          "text": "Work Week",
+          "value": "ww"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "Work Week",
+            "value": "ww"
+          },
+          {
+            "selected": false,
+            "text": "Date",
+            "value": "date"
+          }
+        ],
+        "label": "Range Mode"
       },
       {
         "name": "begin_ww",
@@ -39,7 +62,8 @@
         "current": {
           "text": "26WW32",
           "value": "26WW32"
-        }
+        },
+        "label": "Begin WW"
       },
       {
         "name": "end_ww",
@@ -48,16 +72,17 @@
         "current": {
           "text": "26WW32",
           "value": "26WW32"
-        }
+        },
+        "label": "End WW"
       }
     ]
   },
   "panels": [
     {
       "id": 100,
-      "title": "PROFILE / Selected Profile Status",
+      "title": "Profile Status",
       "type": "table",
-      "description": "Shows profile-derived provider and scope values resolved by Metrics. Stock Grafana treats these as selected profile facts; editable overrides and save-as-new-profile belong in the Metrics profile editor or future Grafana App/Scenes surface.",
+      "description": "Selected profile scope labels, source access, and materialized data freshness for this dashboard.",
       "gridPos": {
         "h": 4,
         "w": 24,
@@ -86,94 +111,94 @@
           "root_selector": "$.profile_status_rows",
           "columns": [
             {
-              "selector": "provider_id",
-              "text": "provider_id",
-              "type": "string"
-            },
-            {
-              "selector": "profile_id",
-              "text": "profile_id",
-              "type": "string"
-            },
-            {
-              "selector": "status",
-              "text": "status",
-              "type": "string"
-            },
-            {
               "selector": "data_status",
-              "text": "data_status",
-              "type": "string"
-            },
-            {
-              "selector": "data_status_reason",
-              "text": "data_status_reason",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "ip",
-              "text": "ip",
+              "text": "IP",
               "type": "string"
             },
             {
               "selector": "project_or_product",
-              "text": "project_or_product",
+              "text": "Project",
               "type": "string"
             },
             {
               "selector": "milestone",
-              "text": "milestone",
+              "text": "Milestone",
               "type": "string"
             },
             {
-              "selector": "scope_label_source",
-              "text": "scope_label_source",
-              "type": "string"
-            },
-            {
-              "selector": "source_query_ownership",
-              "text": "source_query_ownership",
-              "type": "string"
-            },
-            {
-              "selector": "source_query_ref",
-              "text": "source_query_ref",
-              "type": "string"
-            },
-            {
-              "selector": "source_query_name",
-              "text": "source_query_name",
-              "type": "string"
-            },
-            {
-              "selector": "mapping_version",
-              "text": "mapping_version",
+              "selector": "cache_age_seconds",
+              "text": "Cache Age",
               "type": "number"
             },
             {
-              "selector": "override_state",
-              "text": "override_state",
-              "type": "string"
-            },
-            {
-              "selector": "save_profile_action",
-              "text": "save_profile_action",
-              "type": "string"
-            },
-            {
               "selector": "auth_action_label",
-              "text": "auth_action_label",
+              "text": "Source",
               "type": "string"
             },
             {
-              "selector": "auth_action_url",
-              "text": "auth_action_url",
+              "selector": "data_status_reason",
+              "text": "Status Detail",
               "type": "string"
             },
             {
               "selector": "blocker_count",
-              "text": "blocker_count",
+              "text": "Blockers",
               "type": "number"
+            },
+            {
+              "selector": "provider_id",
+              "text": "Provider",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "Profile",
+              "type": "string"
+            },
+            {
+              "selector": "source_query_ref",
+              "text": "Source Query",
+              "type": "string"
+            },
+            {
+              "selector": "source_query_name",
+              "text": "Source Query Name",
+              "type": "string"
+            },
+            {
+              "selector": "scope_label_source",
+              "text": "Label Source",
+              "type": "string"
+            },
+            {
+              "selector": "source_query_ownership",
+              "text": "Source Query Owner",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "Mapping Version",
+              "type": "number"
+            },
+            {
+              "selector": "override_state",
+              "text": "Override State",
+              "type": "string"
+            },
+            {
+              "selector": "save_profile_action",
+              "text": "Save Profile",
+              "type": "string"
+            },
+            {
+              "selector": "auth_action_url",
+              "text": "Source Query URL",
+              "type": "string"
             }
           ],
           "metricsContract": {
@@ -236,6 +261,56 @@
                 "value": {
                   "type": "color-text"
                 }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Refresh",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Sign In Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 120
               }
             ]
           },
@@ -246,8 +321,8 @@
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 420
+                "id": "custom.hidden",
+                "value": true
               }
             ]
           },
@@ -269,7 +344,21 @@
               },
               {
                 "id": "custom.width",
-                "value": 180
+                "value": 120
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Open HSD-ES saved query / sign in": {
+                        "text": "Open Source",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -284,6 +373,502 @@
                 "value": true
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "scope_label_source"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source_query_ownership"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source_query_name"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mapping_version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "override_state"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "save_profile_action"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cache_age_seconds"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 95
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ip"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "project_or_product"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "milestone"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Label Source"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Source Query Owner"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Source Query Name"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mapping Version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Override State"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Save Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Source Query URL"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "blocker_count"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blockers"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Source"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open HSD-ES Saved Query",
+                    "url": "${__data.fields.auth_action_url}",
+                    "targetBlank": true
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Open HSD-ES saved query / sign in": {
+                        "text": "Open Source",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "IP"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Project"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Milestone"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status Detail"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source_query_ref"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Source Query"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Refresh",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Sign In Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cache Age"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 95
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
           }
         ]
       },
@@ -296,6 +881,21 @@
       }
     },
     {
+      "id": 101,
+      "title": "Range Controls",
+      "type": "text",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Range Mode** controls which date period drives backend data. **Work Week mode** uses Begin WW / End WW for backend data; Grafana time picker is only the display window. **Date mode** uses the Grafana time picker dates for backend data; Begin WW / End WW are ignored by the API."
+      }
+    },
+    {
       "id": 1,
       "title": "QUALITY",
       "type": "row",
@@ -303,18 +903,18 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 7
       }
     },
     {
       "id": 2,
-      "title": "QUALITY / Component Bug",
+      "title": "Component Bugs by Area",
       "type": "barchart",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 5
+        "y": 8
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -334,57 +934,62 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=component_bug&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=component_bug&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.grafana_rows",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "calculation_run_id",
-              "text": "calculation_run_id",
+              "text": "Run",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             },
-            {
-              "selector": "bucket_label",
-              "text": "bucket_label",
-              "type": "string"
+        {
+          "selector": "component_label",
+          "text": "Component",
+          "type": "string"
+        },
+        {
+          "selector": "bucket_label",
+          "text": "Bucket",
+          "type": "string"
             },
             {
               "selector": "bucket_start",
-              "text": "bucket_start",
+              "text": "Start",
               "type": "timestamp"
             },
             {
               "selector": "bucket_end",
-              "text": "bucket_end",
+              "text": "End",
               "type": "string"
             },
             {
               "selector": "bucket_granularity",
-              "text": "bucket_granularity",
+              "text": "Grain",
               "type": "string"
             },
             {
               "selector": "mapping_version",
-              "text": "mapping_version",
+              "text": "Mapping Version",
               "type": "string"
             },
             {
               "selector": "component_bug_count",
-              "text": "component_bug_count",
+              "text": "Component Bugs",
               "type": "number"
             }
           ],
@@ -392,16 +997,17 @@
             "chartId": "component_bug",
             "contractVersion": "0.2",
             "root": "grafana_rows",
-            "shape": "wide_bucket_series",
-            "categoryField": "bucket_label",
-            "requiredFields": [
-              "provider_id",
-              "profile_id",
-              "calculation_run_id",
-              "fact_snapshot_id",
-              "bucket_label",
-              "bucket_start",
-              "bucket_end",
+        "shape": "wide_bucket_series",
+        "categoryField": "component_label",
+        "requiredFields": [
+          "provider_id",
+          "profile_id",
+          "calculation_run_id",
+          "fact_snapshot_id",
+          "component_label",
+          "bucket_label",
+          "bucket_start",
+          "bucket_end",
               "bucket_granularity",
               "mapping_version"
             ],
@@ -421,21 +1027,244 @@
         }
       ],
       "options": {
+        "xField": "Component",
+        "xTickLabelRotation": 45,
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
         }
+      },
+      "description": "Bug count grouped by component or area for the selected profile and WW range.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calculation_run_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_end"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_granularity"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mapping_version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Run"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bucket"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "End"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Grain"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mapping Version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       }
     },
     {
       "id": 3,
-      "title": "QUALITY / Rolling Valid Bug",
+      "title": "Rolling Valid Bugs",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 5
+        "y": 8
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -455,57 +1284,57 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=rolling_valid_bug&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=rolling_valid_bug&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.grafana_rows",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "calculation_run_id",
-              "text": "calculation_run_id",
+              "text": "Run",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             },
             {
               "selector": "bucket_label",
-              "text": "bucket_label",
+              "text": "Bucket",
               "type": "string"
             },
             {
               "selector": "bucket_start",
-              "text": "bucket_start",
+              "text": "Start",
               "type": "timestamp"
             },
             {
               "selector": "bucket_end",
-              "text": "bucket_end",
+              "text": "End",
               "type": "string"
             },
             {
               "selector": "bucket_granularity",
-              "text": "bucket_granularity",
+              "text": "Grain",
               "type": "string"
             },
             {
               "selector": "mapping_version",
-              "text": "mapping_version",
+              "text": "Mapping Version",
               "type": "string"
             },
             {
               "selector": "rolling_valid_bug_count",
-              "text": "rolling_valid_bug_count",
+              "text": "Rolling Valid Bugs",
               "type": "number"
             }
           ],
@@ -546,17 +1375,238 @@
           "displayMode": "list",
           "placement": "bottom"
         }
+      },
+      "description": "Rolling valid bug intake across the selected data range.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calculation_run_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_end"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_granularity"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mapping_version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Run"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bucket"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "End"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Grain"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mapping Version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       }
     },
     {
       "id": 4,
-      "title": "QUALITY / Open Bug Trend",
+      "title": "Open Bug Trend",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 5
+        "y": 8
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -576,82 +1626,82 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.grafana_rows",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "calculation_run_id",
-              "text": "calculation_run_id",
+              "text": "Run",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             },
             {
               "selector": "bucket_id",
-              "text": "bucket_id",
+              "text": "Bucket",
               "type": "string"
             },
             {
               "selector": "bucket_label",
-              "text": "bucket_label",
+              "text": "Bucket",
               "type": "string"
             },
             {
               "selector": "bucket_start",
-              "text": "bucket_start",
+              "text": "Start",
               "type": "timestamp"
             },
             {
               "selector": "bucket_end",
-              "text": "bucket_end",
+              "text": "End",
               "type": "string"
             },
             {
               "selector": "bucket_granularity",
-              "text": "bucket_granularity",
+              "text": "Grain",
               "type": "string"
             },
             {
               "selector": "mapping_version",
-              "text": "mapping_version",
+              "text": "Mapping Version",
               "type": "string"
             },
             {
               "selector": "all_open_bugs",
-              "text": "all_open_bugs",
+              "text": "All Open Bugs",
               "type": "number"
             },
             {
               "selector": "all_open_critical_high",
-              "text": "all_open_critical_high",
+              "text": "Open Critical/High",
               "type": "number"
             },
             {
               "selector": "new_critical_high",
-              "text": "new_critical_high",
+              "text": "New Critical/High",
               "type": "number"
             },
             {
               "selector": "new_medium_low",
-              "text": "new_medium_low",
+              "text": "New Medium/Low",
               "type": "number"
             },
             {
               "selector": "fixed_or_closed_bugs",
-              "text": "fixed_or_closed_bugs",
+              "text": "Fixed/Closed Bugs",
               "type": "number"
             }
           ],
@@ -706,22 +1756,241 @@
           "links": [
             {
               "title": "View evidence rows",
-              "url": "/api/provider-charts/evidence/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}&fact_snapshot_id=${__data.fields.fact_snapshot_id}",
+              "url": "/api/provider-charts/evidence/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}&fact_snapshot_id=${__data.fields.fact_snapshot_id}&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
               "targetBlank": true
             }
           ]
-        }
-      }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calculation_run_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_end"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_granularity"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mapping_version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Run"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bucket"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "End"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Grain"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mapping Version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "description": "Open bug movement: total open, critical/high open, new bugs, and fixed or closed bugs."
     },
     {
       "id": 5,
-      "title": "QUALITY / Total Bug Trend",
+      "title": "Total Bug Trend",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 13
+        "y": 16
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -741,67 +2010,67 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=total_bug_trend&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=total_bug_trend&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.grafana_rows",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "calculation_run_id",
-              "text": "calculation_run_id",
+              "text": "Run",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             },
             {
               "selector": "bucket_label",
-              "text": "bucket_label",
+              "text": "Bucket",
               "type": "string"
             },
             {
               "selector": "bucket_start",
-              "text": "bucket_start",
+              "text": "Start",
               "type": "timestamp"
             },
             {
               "selector": "bucket_end",
-              "text": "bucket_end",
+              "text": "End",
               "type": "string"
             },
             {
               "selector": "bucket_granularity",
-              "text": "bucket_granularity",
+              "text": "Grain",
               "type": "string"
             },
             {
               "selector": "mapping_version",
-              "text": "mapping_version",
+              "text": "Mapping Version",
               "type": "string"
             },
             {
               "selector": "total_new_bugs",
-              "text": "total_new_bugs",
+              "text": "Total New Bugs",
               "type": "number"
             },
             {
               "selector": "total_open_bugs",
-              "text": "total_open_bugs",
+              "text": "Total Open Bugs",
               "type": "number"
             },
             {
               "selector": "total_fixed_or_closed_bugs",
-              "text": "total_fixed_or_closed_bugs",
+              "text": "Total Fixed/Closed Bugs",
               "type": "number"
             }
           ],
@@ -844,17 +2113,238 @@
           "displayMode": "list",
           "placement": "bottom"
         }
+      },
+      "description": "New, open, and fixed or closed bug totals across the selected data range.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calculation_run_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_end"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_granularity"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mapping_version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Run"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bucket"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "End"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Grain"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mapping Version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       }
     },
     {
       "id": 6,
-      "title": "QUALITY / Daily New Standard Bug Count",
+      "title": "Daily New Standard Bugs",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 13
+        "y": 16
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -874,57 +2364,57 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=daily_new_standard_bug_count&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=daily_new_standard_bug_count&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.grafana_rows",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "calculation_run_id",
-              "text": "calculation_run_id",
+              "text": "Run",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             },
             {
               "selector": "bucket_label",
-              "text": "bucket_label",
+              "text": "Bucket",
               "type": "string"
             },
             {
               "selector": "bucket_start",
-              "text": "bucket_start",
+              "text": "Start",
               "type": "timestamp"
             },
             {
               "selector": "bucket_end",
-              "text": "bucket_end",
+              "text": "End",
               "type": "string"
             },
             {
               "selector": "bucket_granularity",
-              "text": "bucket_granularity",
+              "text": "Grain",
               "type": "string"
             },
             {
               "selector": "mapping_version",
-              "text": "mapping_version",
+              "text": "Mapping Version",
               "type": "string"
             },
             {
               "selector": "new_standard_bugs",
-              "text": "new_standard_bugs",
+              "text": "New Standard Bugs",
               "type": "number"
             }
           ],
@@ -966,17 +2456,238 @@
           "displayMode": "list",
           "placement": "bottom"
         }
+      },
+      "description": "Daily count of newly created standard bugs in the selected data range.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calculation_run_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_end"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_granularity"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mapping_version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Run"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bucket"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "End"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Grain"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mapping Version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       }
     },
     {
       "id": 7,
-      "title": "QUALITY / Selected Provider States",
+      "title": "Quality Chart Health",
       "type": "table",
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 13
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 24
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -996,37 +2707,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1064,37 +2775,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=component_bug&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=component_bug&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1132,37 +2843,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=rolling_valid_bug&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=rolling_valid_bug&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1200,37 +2911,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=total_bug_trend&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=total_bug_trend&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1268,37 +2979,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_aging&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_aging&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1336,37 +3047,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=daily_new_standard_bug_count&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=daily_new_standard_bug_count&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1394,7 +3105,238 @@
             "evidenceLinkFields": []
           }
         }
-      ]
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        }
+      ],
+      "description": "Per-chart materialization status for the quality panels shown above.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 620
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live Synced",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Stale",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Configuration Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 620
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live Synced",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Refresh Recommended",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Configuration Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": 8,
@@ -1404,18 +3346,18 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 30
       }
     },
     {
       "id": 9,
-      "title": "EXECUTION / Deferred States",
+      "title": "Execution Metrics Not Mapped Yet",
       "type": "table",
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 31
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -1435,37 +3377,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=execution_statistics&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=execution_statistics&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1503,37 +3445,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=milestone_schedule&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=milestone_schedule&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1571,37 +3513,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=milestone_progress&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=milestone_progress&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1626,7 +3568,232 @@
             "evidenceLinkFields": []
           }
         }
-      ]
+      ],
+      "description": "Execution and milestone charts are intentionally held until provider-specific execution fields are mapped.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 620
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live Synced",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Stale",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Configuration Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 620
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live Synced",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Refresh Recommended",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Configuration Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": 10,
@@ -1636,18 +3803,18 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 39
       }
     },
     {
       "id": 11,
-      "title": "EFFICIENCY / Open Bug Aging",
+      "title": "Open Bug Aging",
       "type": "barchart",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 31
+        "w": 8,
+        "x": 16,
+        "y": 16
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -1667,72 +3834,72 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_aging&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_aging&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.grafana_rows",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "calculation_run_id",
-              "text": "calculation_run_id",
+              "text": "Run",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             },
             {
               "selector": "bucket_label",
-              "text": "bucket_label",
+              "text": "Bucket",
               "type": "string"
             },
             {
               "selector": "bucket_start",
-              "text": "bucket_start",
+              "text": "Start",
               "type": "timestamp"
             },
             {
               "selector": "bucket_end",
-              "text": "bucket_end",
+              "text": "End",
               "type": "string"
             },
             {
               "selector": "bucket_granularity",
-              "text": "bucket_granularity",
+              "text": "Grain",
               "type": "string"
             },
             {
               "selector": "mapping_version",
-              "text": "mapping_version",
+              "text": "Mapping Version",
               "type": "string"
             },
             {
               "selector": "aging_0_7_days",
-              "text": "aging_0_7_days",
+              "text": "0-7 Days",
               "type": "number"
             },
             {
               "selector": "aging_8_14_days",
-              "text": "aging_8_14_days",
+              "text": "8-14 Days",
               "type": "number"
             },
             {
               "selector": "aging_15_30_days",
-              "text": "aging_15_30_days",
+              "text": "15-30 Days",
               "type": "number"
             },
             {
               "selector": "aging_31_plus_days",
-              "text": "aging_31_plus_days",
+              "text": "31+ Days",
               "type": "number"
             }
           ],
@@ -1776,17 +3943,238 @@
           "displayMode": "list",
           "placement": "bottom"
         }
+      },
+      "description": "Current open bug backlog split by age bucket.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calculation_run_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_end"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bucket_granularity"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mapping_version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Run"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bucket"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "End"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Grain"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mapping Version"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       }
     },
     {
       "id": 12,
-      "title": "EFFICIENCY / Deferred States",
+      "title": "Efficiency Metrics Not Mapped Yet",
       "type": "table",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 31
+        "w": 24,
+        "x": 0,
+        "y": 40
       },
       "datasource": {
         "type": "yesoreyeram-infinity-datasource",
@@ -1806,37 +4194,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=automation_statistics&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=automation_statistics&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1874,37 +4262,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=shift_left_statistics&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=shift_left_statistics&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1942,37 +4330,37 @@
           "url_options": {
             "method": "GET"
           },
-          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=internal_escaped_bugs&chart_version=1",
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=internal_escaped_bugs&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
           "root_selector": "$.provider_series_state",
           "columns": [
             {
               "selector": "provider_id",
-              "text": "provider_id",
+              "text": "Provider",
               "type": "string"
             },
             {
               "selector": "profile_id",
-              "text": "profile_id",
+              "text": "Profile",
               "type": "string"
             },
             {
               "selector": "chart_id",
-              "text": "chart_id",
+              "text": "Chart",
               "type": "string"
             },
             {
               "selector": "status",
-              "text": "status",
+              "text": "Status",
               "type": "string"
             },
             {
               "selector": "reason",
-              "text": "reason",
+              "text": "Reason",
               "type": "string"
             },
             {
               "selector": "fact_snapshot_id",
-              "text": "fact_snapshot_id",
+              "text": "Snapshot",
               "type": "string"
             }
           ],
@@ -1997,7 +4385,232 @@
             "evidenceLinkFields": []
           }
         }
-      ]
+      ],
+      "description": "Automation, shift-left, and escaped-bug charts are intentionally held until provider-specific fields are mapped.",
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profile_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fact_snapshot_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 620
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live Synced",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Stale",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Configuration Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Profile"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Snapshot"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 620
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "live_synced": {
+                        "text": "Live Synced",
+                        "color": "green"
+                      },
+                      "materialized_from_seed_hsdes_facts": {
+                        "text": "Seed Preview",
+                        "color": "yellow"
+                      },
+                      "stale": {
+                        "text": "Refresh Recommended",
+                        "color": "yellow"
+                      },
+                      "configuration_required": {
+                        "text": "Configuration Required",
+                        "color": "red"
+                      },
+                      "deferred": {
+                        "text": "Not Mapped Yet",
+                        "color": "blue"
+                      },
+                      "supported": {
+                        "text": "Ready",
+                        "color": "green"
+                      },
+                      "unavailable": {
+                        "text": "Unavailable",
+                        "color": "red"
+                      },
+                      "failed": {
+                        "text": "Failed",
+                        "color": "red"
+                      },
+                      "running": {
+                        "text": "Refreshing",
+                        "color": "blue"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "time": {

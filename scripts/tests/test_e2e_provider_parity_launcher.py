@@ -13,11 +13,15 @@ import e2e_provider_parity
 
 def test_provider_parity_import_uses_provider_dashboard_and_profile_variables(monkeypatch, tmp_path):
     dashboard = {
-        "uid": "metrics-provider-parity-dashboard",
-        "title": "Metrics Provider Parity Dashboard",
+        "uid": "ip-quality-dashboard",
+        "title": "IP Quality Dashboard",
         "templating": {
             "list": [
                 {"name": "profile_id", "type": "custom", "query": "chiplet-2a-jira,nvu-ttl-hsdes", "current": {}},
+                {"name": "range_mode", "type": "custom", "query": "Work Week : ww,Date : date", "current": {}, "options": [
+                    {"text": "Work Week", "value": "ww"},
+                    {"text": "Date", "value": "date"},
+                ]},
                 {"name": "begin_ww", "query": "", "current": {}},
                 {"name": "end_ww", "query": "", "current": {}},
             ]
@@ -40,19 +44,22 @@ def test_provider_parity_import_uses_provider_dashboard_and_profile_variables(mo
     imported = requests[0][2]["dashboard"]
     variables = {item["name"]: item for item in imported["templating"]["list"]}
     assert requests[0][1] == "http://127.0.0.1:3999/api/dashboards/db"
-    assert imported["uid"] == "metrics-provider-parity-dashboard"
+    assert imported["uid"] == "ip-quality-dashboard"
     assert "provider_id" not in variables
     assert "space_id" not in variables
     assert "release_target" not in variables
     assert "milestone" not in variables
     assert variables["profile_id"]["query"] == "chiplet-2a-jira,nvu-ttl-hsdes"
     assert variables["profile_id"]["current"]["value"] == "chiplet-2a-jira"
+    assert variables["range_mode"]["current"]["text"] == "Work Week"
+    assert variables["range_mode"]["current"]["value"] == "ww"
     assert variables["begin_ww"]["current"]["value"] == "26WW32"
 
     dashboard_url = e2e_provider_parity.grafana_dashboard_url(
         3999,
         e2e_provider_parity.ProviderParitySettings(profile_id="nvu-ttl-hsdes", begin_ww="26WW32", end_ww="26WW32"),
     )
+    assert "/d/ip-quality-dashboard/ip-quality-dashboard" in dashboard_url
     assert "var-profile_id=nvu-ttl-hsdes" in dashboard_url
     assert "var-space_id" not in dashboard_url
     assert "var-release_target" not in dashboard_url
@@ -62,31 +69,31 @@ def test_provider_parity_import_uses_provider_dashboard_and_profile_variables(mo
 def test_provider_parity_runtime_validation_checks_jira_supported_and_deferred_states(monkeypatch, tmp_path):
     dashboard = {
         "dashboard": {
-            "uid": "metrics-provider-parity-dashboard",
+            "uid": "ip-quality-dashboard",
             "panels": [
                 {
-                    "title": "PROFILE / Selected Profile Status",
+                    "title": "Profile Status",
                     "targets": [{
                         "url": "/api/provider-profiles/readiness/?profile_id=$profile_id",
                         "metricsContract": {"shape": "profile_readiness_summary"},
                     }],
                 },
                 {
-                    "title": "QUALITY / Open Bug Trend",
+                    "title": "Open Bug Trend",
                     "targets": [{
                         "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
                         "metricsContract": {"shape": "wide_bucket_series"},
                     }],
                 },
                 {
-                    "title": "QUALITY / Selected Provider States",
+                    "title": "Quality Chart Health",
                     "targets": [{
                         "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
                         "metricsContract": {"shape": "provider_series_state", "providerBinding": "selected_provider_state"},
                     }],
                 },
                 {
-                    "title": "EXECUTION / Deferred States",
+                    "title": "Execution Metrics Not Mapped Yet",
                     "targets": [{
                         "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=execution_statistics&chart_version=1",
                         "metricsContract": {"shape": "provider_series_state", "providerBinding": "first_wave_deferred"},
@@ -110,7 +117,7 @@ def test_provider_parity_runtime_validation_checks_jira_supported_and_deferred_s
     checked_urls = []
 
     def fake_request_json(method, url, payload=None):
-        if url.endswith("/api/dashboards/uid/metrics-provider-parity-dashboard"):
+        if url.endswith("/api/dashboards/uid/ip-quality-dashboard"):
             return dashboard
         if "api/provider-profiles/readiness/" in url:
             return {
@@ -144,36 +151,97 @@ def test_provider_parity_runtime_validation_checks_jira_supported_and_deferred_s
     assert any("127.0.0.1:3999/api/datasources/proxy/uid/metrics-bug-trend-api/api/provider-charts/data/" in url for url, _ in checked_urls)
 
 
+def test_provider_parity_runtime_validation_resolves_grafana_date_macros(monkeypatch, tmp_path):
+    dashboard = {
+        "dashboard": {
+            "uid": "ip-quality-dashboard",
+            "panels": [{
+                "title": "Open Bug Trend",
+                "targets": [{
+                    "url": "/api/provider-charts/data/?profile_id=$profile_id&chart_id=open_bug_trend&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
+                    "metricsContract": {"shape": "wide_bucket_series"},
+                }],
+            }, {
+                "title": "Execution Metrics Not Mapped Yet",
+                "targets": [{
+                    "url": "/api/provider-charts/data/?profile_id=$profile_id&chart_id=execution_statistics&chart_version=1&range_mode=$range_mode&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}",
+                    "metricsContract": {"shape": "provider_series_state", "providerBinding": "first_wave_deferred"},
+                }],
+            }],
+        }
+    }
+    checked_urls = []
+
+    def fake_request_json(method, url, payload=None):
+        if url.endswith("/api/dashboards/uid/ip-quality-dashboard"):
+            return dashboard
+        if "api/provider-charts/data/" in url:
+            checked_urls.append(url)
+            if e2e_provider_parity.query_value(url, "chart_id") == "execution_statistics":
+                return {
+                    "status": "deferred",
+                    "grafana_rows": [],
+                    "provider_series_state": [{"status": "deferred", "reason": "Execution mappings deferred"}],
+                }
+            return {
+                "status": "supported",
+                "grafana_rows": [{"provider_id": "hsdes", "profile_id": "nvu-ttl-hsdes", "all_open_bugs": 3}],
+                "provider_series_state": [{"status": "supported", "reason": ""}],
+            }
+        return {}
+
+    monkeypatch.setattr(e2e_provider_parity, "request_json", fake_request_json)
+    monkeypatch.setattr(e2e_provider_parity, "assert_http_ok", lambda url, auth=False: checked_urls.append(url))
+    monkeypatch.setattr(e2e_provider_parity, "validate_visible_dashboard", lambda *args, **kwargs: None)
+
+    e2e_provider_parity.validate_runtime(
+        tmp_path,
+        3999,
+        8999,
+        e2e_provider_parity.ProviderParitySettings(
+            profile_id="nvu-ttl-hsdes",
+            range_mode="date",
+            begin_date="2026-08-10",
+            end_date="2026-08-16",
+        ),
+    )
+
+    assert all("${__from" not in url for url in checked_urls)
+    assert any("range_mode=date" in url for url in checked_urls)
+    assert any("begin_date=2026-08-10" in url for url in checked_urls)
+    assert any("end_date=2026-08-16" in url for url in checked_urls)
+
+
 def test_provider_parity_runtime_validates_hsdes_through_same_provider_selection(monkeypatch, tmp_path):
     dashboard = {
         "dashboard": {
-            "uid": "metrics-provider-parity-dashboard",
+            "uid": "ip-quality-dashboard",
             "panels": [{
-                "title": "PROFILE / Selected Profile Status",
+                "title": "Profile Status",
                 "targets": [{
                     "url": "/api/provider-profiles/readiness/?profile_id=$profile_id",
                     "metricsContract": {"shape": "profile_readiness_summary"},
                 }],
             }, {
-                "title": "QUALITY / Component Bug",
+                "title": "Component Bugs by Area",
                 "targets": [{
                     "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=component_bug&chart_version=1",
                     "metricsContract": {"shape": "wide_bucket_series"},
                 }],
             }, {
-                "title": "QUALITY / Open Bug Trend",
+                "title": "Open Bug Trend",
                 "targets": [{
                     "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
                     "metricsContract": {"shape": "wide_bucket_series"},
                 }],
             }, {
-                "title": "QUALITY / Selected Provider States",
+                "title": "Quality Chart Health",
                 "targets": [{
                     "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
                     "metricsContract": {"shape": "provider_series_state", "providerBinding": "selected_provider_state"},
                 }],
             }, {
-                "title": "EXECUTION / Deferred States",
+                "title": "Execution Metrics Not Mapped Yet",
                 "targets": [{
                     "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=execution_statistics&chart_version=1",
                     "metricsContract": {"shape": "provider_series_state", "providerBinding": "first_wave_deferred"},
@@ -183,7 +251,7 @@ def test_provider_parity_runtime_validates_hsdes_through_same_provider_selection
     }
 
     def fake_request_json(method, url, payload=None):
-        if url.endswith("/api/dashboards/uid/metrics-provider-parity-dashboard"):
+        if url.endswith("/api/dashboards/uid/ip-quality-dashboard"):
             return dashboard
         if "api/provider-profiles/readiness/" in url:
             return {
@@ -230,7 +298,7 @@ def test_provider_parity_runtime_validates_hsdes_through_same_provider_selection
 def test_supported_payload_rejects_provider_prefixed_grafana_row_fields():
     try:
         e2e_provider_parity.validate_supported_payload(
-            "QUALITY / Component Bug",
+            "Component Bugs by Area",
             {"shape": "wide_bucket_series"},
             {
                 "status": "supported",
@@ -249,16 +317,16 @@ def test_supported_payload_rejects_provider_prefixed_grafana_row_fields():
 
 def test_provider_parity_visible_text_accepts_virtualized_state_tables_when_panel_titles_render():
     body_text = """
-    Metrics Provider Parity Dashboard
+    IP Quality Dashboard
     QUALITY
-    PROFILE / Selected Profile Status
-    QUALITY / Open Bug Trend
-    QUALITY / Selected Provider States
+    Profile Status
+    Open Bug Trend
+    Quality Chart Health
     EXECUTION
-    EXECUTION / Deferred States
+    Execution Metrics Not Mapped Yet
     EFFICIENCY
-    EFFICIENCY / Open Bug Aging
-    EFFICIENCY / Deferred States
+    Open Bug Aging
+    Efficiency Metrics Not Mapped Yet
     """
 
     e2e_provider_parity.assert_visible_dashboard_text(body_text)

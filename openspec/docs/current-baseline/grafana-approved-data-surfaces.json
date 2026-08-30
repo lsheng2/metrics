@@ -52,7 +52,10 @@
         "release_target",
         "milestone",
         "chart_version",
-        "fact_snapshot_id"
+        "fact_snapshot_id",
+        "range_mode",
+        "begin_date",
+        "end_date"
       ],
       "approved_contract_versions": [
         "0.2"
@@ -84,7 +87,10 @@
         "status",
         "severity",
         "component",
-        "text"
+        "text",
+        "range_mode",
+        "begin_date",
+        "end_date"
       ]
     },
     "/api/provider-profiles/readiness/": {
@@ -123,6 +129,9 @@
       "approved_value_fields": [
         "component_bug_count"
       ],
+      "approved_category_fields": [
+        "component_label"
+      ],
       "approved_evidence_capabilities": [
         "range_only",
         "summary_only"
@@ -148,6 +157,9 @@
       ],
       "approved_value_fields": [
         "rolling_valid_bug_count"
+      ],
+      "approved_category_fields": [
+        "bucket_label"
       ],
       "approved_evidence_capabilities": [
         "summary_only"
@@ -177,6 +189,9 @@
         "new_medium_low",
         "fixed_or_closed_bugs"
       ],
+      "approved_category_fields": [
+        "bucket_label"
+      ],
       "approved_evidence_capabilities": [
         "bucket_series",
         "summary_only"
@@ -203,6 +218,9 @@
         "total_new_bugs",
         "total_open_bugs",
         "total_fixed_or_closed_bugs"
+      ],
+      "approved_category_fields": [
+        "bucket_label"
       ],
       "approved_evidence_capabilities": [
         "range_only",
@@ -232,6 +250,9 @@
         "aging_15_30_days",
         "aging_31_plus_days"
       ],
+      "approved_category_fields": [
+        "bucket_label"
+      ],
       "approved_evidence_capabilities": [
         "range_only",
         "summary_only"
@@ -257,6 +278,9 @@
       ],
       "approved_value_fields": [
         "new_standard_bugs"
+      ],
+      "approved_category_fields": [
+        "bucket_label"
       ],
       "approved_evidence_capabilities": [
         "range_only",

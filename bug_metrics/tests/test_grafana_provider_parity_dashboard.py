@@ -24,10 +24,10 @@ class TestGrafanaProviderParityDashboard(TestCase):
 
         # Then
         panels = {panel['title']: panel for panel in artifact['panels']}
-        panel = panels['PROFILE / Selected Profile Status']
+        panel = panels['Profile Status']
         self.assertEqual('table', panel['type'])
         self.assertLess(panel['gridPos']['y'], self._row_panel_y(artifact, 'QUALITY'))
-        self.assertIn('profile-derived', panel['description'])
+        self.assertIn('scope labels', panel['description'])
         target = panel['targets'][0]
         params = self._query_params(target)
         self.assertEqual('/api/provider-profiles/readiness/', urlparse(target['url']).path)
@@ -35,15 +35,68 @@ class TestGrafanaProviderParityDashboard(TestCase):
         self.assertEqual('$.profile_status_rows', target['root_selector'])
         self.assertEqual('0.2', target['metricsContract']['contractVersion'])
         self.assertEqual('profile_readiness_summary', target['metricsContract']['shape'])
+        self.assertEqual(
+            ['data_status', 'ip', 'project_or_product', 'milestone', 'cache_age_seconds', 'auth_action_label'],
+            [column['selector'] for column in self._visible_columns(panel, target)],
+        )
         self.assertIn('provider_id', self._target_columns(target))
         self.assertIn('ip', self._target_columns(target))
         self.assertIn('project_or_product', self._target_columns(target))
         self.assertIn('milestone', self._target_columns(target))
         self.assertIn('data_status_reason', self._target_columns(target))
+        self.assertIn('cache_age_seconds', self._target_columns(target))
         self.assertIn('auth_action_label', self._target_columns(target))
         self.assertIn('auth_action_url', self._target_columns(target))
         self.assertTrue(self._field_override_links(panel, 'auth_action_label'))
         self.assertTrue(any('${__data.fields.auth_action_url}' in link['url'] for link in self._field_override_links(panel, 'auth_action_label')))
+
+    def test_shouldKeepIpQualityDashboardIdentityAndOperationalCopy(self):
+        # Given / When
+        artifact = self._artifact()
+
+        # Then
+        self.assertEqual('IP Quality Dashboard', artifact['title'])
+        self.assertEqual('ip-quality-dashboard', artifact['uid'])
+        panel_text = ' '.join(
+            ' '.join(str(value) for value in (panel.get('title'), panel.get('description')) if value)
+            for panel in artifact['panels']
+        )
+        self.assertNotIn('Provider Parity', panel_text)
+        self.assertNotIn('provider parity', panel_text.lower())
+
+    def test_shouldKeepProfileReadinessPanelCompactAndNonOverlapping(self):
+        # Given / When
+        artifact = self._artifact()
+        panels = {panel['title']: panel for panel in artifact['panels']}
+        panel = panels['Profile Status']
+        target = panel['targets'][0]
+        visible_columns = self._visible_columns(panel, target)
+
+        # Then
+        self.assertLessEqual(panel['gridPos']['h'], self._row_panel_y(artifact, 'QUALITY'))
+        self.assertEqual(
+            ['Status', 'IP', 'Project', 'Milestone', 'Cache Age', 'Source'],
+            [column['text'] for column in visible_columns],
+        )
+        self.assertLessEqual(sum(self._field_width(panel, column) for column in visible_columns), 900)
+        self.assertTrue(self._field_is_hidden(panel, 'data_status_reason'))
+        self.assertEqual('Refresh', self._field_mapping_text(panel, 'data_status', 'stale'))
+        self.assertEqual('Sign In Required', self._field_mapping_text(panel, 'data_status', 'configuration_required'))
+        self.assertEqual('Open Source', self._field_mapping_text(panel, 'Source', 'Open HSD-ES saved query / sign in'))
+
+    def test_shouldKeepQualityDiagnosticsOutOfPrimaryChartGrid(self):
+        # Given / When
+        artifact = self._artifact()
+        panels = {panel['title']: panel for panel in artifact['panels']}
+
+        # Then
+        self.assertLess(panels['Open Bug Aging']['gridPos']['y'], self._row_panel_y(artifact, 'EXECUTION'))
+        self.assertGreater(panels['Quality Chart Health']['gridPos']['y'], panels['Open Bug Aging']['gridPos']['y'])
+        self.assertEqual(24, panels['Quality Chart Health']['gridPos']['w'])
+        self.assertIn(
+            {'id': 'merge', 'options': {}},
+            panels['Quality Chart Health'].get('transformations', []),
+        )
 
     def test_shouldDeclareProviderNeutralVariablesAndReferenceSections(self):
         # Given / When
@@ -51,14 +104,33 @@ class TestGrafanaProviderParityDashboard(TestCase):
 
         # Then
         variables = {item['name']: item for item in artifact['templating']['list']}
-        self.assertEqual({'profile_id', 'begin_ww', 'end_ww'}, set(variables))
+        self.assertEqual({'profile_id', 'range_mode', 'begin_ww', 'end_ww'}, set(variables))
         self.assertEqual('custom', variables['profile_id']['type'])
         self.assertEqual('chiplet-2a-jira,nvu-ttl-hsdes', variables['profile_id']['query'])
+        self.assertEqual('custom', variables['range_mode']['type'])
+        self.assertEqual('Work Week : ww,Date : date', variables['range_mode']['query'])
+        self.assertEqual('ww', variables['range_mode']['current']['value'])
         self.assertEqual(['chiplet-2a-jira', 'nvu-ttl-hsdes'], [option['value'] for option in variables['profile_id']['options']])
         self.assertEqual('chiplet-2a-jira', variables['profile_id']['current']['value'])
         self.assertEqual('26WW32', variables['begin_ww']['current']['value'])
         self.assertEqual('26WW32', variables['end_ww']['current']['value'])
         self.assertEqual(['QUALITY', 'EXECUTION', 'EFFICIENCY'], [panel['title'] for panel in artifact['panels'] if panel['type'] == 'row'])
+
+    def test_shouldExplainRangeModeRelationshipInDashboardCopy(self):
+        # Given / When
+        artifact = self._artifact()
+        panels = {panel['title']: panel for panel in artifact['panels']}
+        panel = panels['Range Controls']
+
+        # Then
+        self.assertEqual('text', panel['type'])
+        content = panel['options']['content']
+        self.assertIn('Work Week mode', content)
+        self.assertIn('Begin WW / End WW', content)
+        self.assertIn('Date mode', content)
+        self.assertIn('Grafana time picker', content)
+        self.assertEqual(4, panel['gridPos']['y'])
+        self.assertLess(panel['gridPos']['y'], self._row_panel_y(artifact, 'QUALITY'))
 
     def test_shouldWireSupportedQualityPanelsToProviderNeutralAggregateSurface(self):
         # Given
@@ -91,8 +163,11 @@ class TestGrafanaProviderParityDashboard(TestCase):
             self.assertEqual('/api/provider-charts/data/', urlparse(target['url']).path)
             self.assertNotIn('provider_id', params)
             self.assertEqual('$profile_id', params['profile_id'])
+            self.assertEqual('$range_mode', params['range_mode'])
             self.assertEqual('$begin_ww', params['begin_ww'])
             self.assertEqual('$end_ww', params['end_ww'])
+            self.assertEqual('${__from:date:YYYY-MM-DD}', params['begin_date'])
+            self.assertEqual('${__to:date:YYYY-MM-DD}', params['end_date'])
             self.assertNotIn('space_id', params)
             self.assertNotIn('release_target', params)
             self.assertNotIn('milestone', params)
@@ -102,6 +177,23 @@ class TestGrafanaProviderParityDashboard(TestCase):
             self.assertEqual(expected_value_fields[params['chart_id']], value_fields)
             self.assertFalse(any(field.startswith(('jira_', 'hsdes_')) for field in value_fields))
             self.assertEqual('string', self._target_column_types(target)['mapping_version'])
+
+    def test_shouldUseComponentNamesAsComponentBugChartCategories(self):
+        # Given
+        artifact = self._artifact()
+        target = next(
+            target
+            for target in self._targets(artifact)
+            if self._query_params(target).get('chart_id') == 'component_bug'
+        )
+
+        # Then
+        self.assertEqual('component_label', target['metricsContract']['categoryField'])
+        self.assertIn('component_label', self._target_columns(target))
+        self.assertEqual('string', self._target_column_types(target)['component_label'])
+        panel = next(panel for panel in artifact['panels'] if panel['title'] == 'Component Bugs by Area')
+        self.assertEqual('Component', panel['options']['xField'])
+        self.assertEqual(45, panel['options']['xTickLabelRotation'])
 
     def test_shouldExposeSelectedProviderAndDeferredStatePanelsThroughProviderSeriesState(self):
         # Given
@@ -185,6 +277,9 @@ class TestGrafanaProviderParityDashboard(TestCase):
         self.assertTrue(all('space_id=$space_id' not in url for url in target_urls))
         self.assertTrue(all('release_target=$release_target' not in url for url in target_urls))
         self.assertTrue(all('milestone=$milestone' not in url for url in target_urls))
+        self.assertTrue(all('range_mode=$range_mode' in url for url in target_urls if '/api/provider-charts/' in url))
+        self.assertTrue(all('begin_date=${__from:date:YYYY-MM-DD}' in url for url in target_urls if '/api/provider-charts/' in url))
+        self.assertTrue(all('end_date=${__to:date:YYYY-MM-DD}' in url for url in target_urls if '/api/provider-charts/' in url))
 
     def test_shouldDeclareEvidenceCapabilityForEveryProviderPanel(self):
         # Given
@@ -293,3 +388,38 @@ class TestGrafanaProviderParityDashboard(TestCase):
                     links.extend(property_item.get('value', []))
             return links
         return []
+
+    def _visible_columns(self, panel, target):
+        return [
+            column
+            for column in target.get('columns', [])
+            if not self._field_is_hidden(panel, column['selector'])
+            and not self._field_is_hidden(panel, column['text'])
+        ]
+
+    def _field_is_hidden(self, panel, field_name):
+        return self._field_property(panel, field_name, 'custom.hidden') is True
+
+    def _field_width(self, panel, column):
+        width = self._field_property(panel, column['selector'], 'custom.width')
+        if width is None:
+            width = self._field_property(panel, column['text'], 'custom.width')
+        return int(width or 120)
+
+    def _field_mapping_text(self, panel, field_name, value):
+        mappings = self._field_property(panel, field_name, 'mappings') or []
+        for mapping in mappings:
+            options = mapping.get('options', {})
+            if value in options:
+                return options[value].get('text')
+        return ''
+
+    def _field_property(self, panel, field_name, property_id):
+        for override in panel.get('fieldConfig', {}).get('overrides', []):
+            matcher = override.get('matcher', {})
+            if matcher.get('id') != 'byName' or matcher.get('options') != field_name:
+                continue
+            for property_item in override.get('properties', []):
+                if property_item.get('id') == property_id:
+                    return property_item.get('value')
+        return None

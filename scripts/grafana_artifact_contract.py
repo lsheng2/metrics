@@ -168,9 +168,12 @@ def validate_wide_bucket_series_contract(path: Path, target_path: str, target: d
         findings.append(Finding(path, f"{target_path} wide_bucket_series root must be grafana_rows"))
     if target.get("root_selector") != "$.grafana_rows":
         findings.append(Finding(path, f"{target_path} wide_bucket_series target must use root_selector $.grafana_rows"))
-    if metrics_contract.get("categoryField") != "bucket_label":
-        findings.append(Finding(path, f"{target_path} wide_bucket_series categoryField must be bucket_label"))
     column_fields = target_fields(target)
+    category_field = metrics_contract.get("categoryField")
+    if not category_field:
+        findings.append(Finding(path, f"{target_path} wide_bucket_series categoryField must not be empty"))
+    elif category_field not in column_fields:
+        findings.append(Finding(path, f"{target_path} wide_bucket_series categoryField must reference a target column"))
     required_fields = set(metrics_contract.get("requiredFields", []))
     value_fields = set(metrics_contract.get("valueFields", []))
     if not value_fields:
