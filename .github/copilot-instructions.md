@@ -21,9 +21,9 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 
 ## Intel Jira MVP Routing
 
-1. Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Source docs: `docs/implementation-start.md`, `docs/architecture-manual.md`, and `docs/bug-trend-architecture-spec.md`.
+1. Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Source docs: `openspec/docs/historical/implementation-start.md`, `openspec/docs/current-baseline/architecture-manual.md`, and `openspec/docs/current-baseline/bug-trend-architecture-spec.md`.
 2. M0 Intel Jira Server/Data Center PAT connectivity has passed; preserve it and do not leak credentials.
-3. Next architecture gate is M1 durable Jira history: cursor, issue, snapshot, transition, calculation-run, bucket, and bucket-membership artifacts before chart polish.
+3. Current baseline specs now live under `openspec/specs/`; durable Jira history, cursor, calculation-run, bucket, and bucket-membership behavior is part of `bug-trend-baseline` and `provider-facts-and-sync`.
 4. `jira_scope_config` is the single authority for project-specific Jira semantics. Do not move workflow status, severity, component, milestone, or bug-type truth into global env vars or hardcoded calculators.
 5. Bug trend pages must read local durable history/aggregate artifacts, not live-query Jira on every dashboard render. Drilldown must use the same `calculation_run_id` as the clicked chart bucket.
 6. Planned owner boundaries: `jira_sync` fetches/cursors/status, `jira_history` persists issues/snapshots/transitions, `bug_metrics` owns scope config and trend buckets, and `ui_web` renders views/partials/charts.
@@ -62,7 +62,7 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 1. `pytest.ini` does not include `pull_requests/tests/`; for pull-request work, run the focused `python -m pytest pull_requests/tests/... -q` command explicitly.
 2. `README.md` and `CLAUDE.md` mention different dev-server ports (`8000` vs `8002`); preserve the command used by the current task or ask before standardizing docs.
 3. Do not simplify Azure PR pagination in `AzurePullRequestRepository`; short/overlapping Azure pages require fixed-stride paging plus de-duplication.
-4. For Intel Jira setup/current-state details, prefer links in `docs/implementation-start.md` and `docs/architecture-manual.md`; never paste `.env` secrets into docs, tests, or chat output.
+4. For Intel Jira setup/current-state details, prefer links in `openspec/docs/historical/implementation-start.md` and `openspec/docs/current-baseline/architecture-manual.md`; never paste `.env` secrets into docs, tests, or chat output.
 5. Do not build or polish bug/feature charts before the durable Jira history and calculation-run artifacts exist and have focused validation.
 
 ## Additional requirements

@@ -2,7 +2,7 @@
 
 This policy defines the lightweight backlog process for AI-assisted work in this repository. It is not a replacement for issue tracking. It is the local BKM for preserving deferred ideas, deciding when they are ready to plan, and preventing AI agents from silently turning future work into active implementation.
 
-All project backlog records live in `docs/backlog/`. Future backlog items must be created there as one Markdown file per item and added to `docs/backlog/README.md`.
+All project backlog records live in `openspec/docs/backlog/`. Future backlog items must be created there as one Markdown file per item and added to `openspec/docs/backlog/README.md`.
 
 ## Purpose
 

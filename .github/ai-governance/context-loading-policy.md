@@ -26,5 +26,5 @@ Status: active BKM.
 
 1. Do not load the whole repo narrative for a one-file fix.
 2. Prefer owning abstractions and nearby tests over broad exploration.
-3. If a stable behavior or public contract changes, check whether `README.md`, `CLAUDE.md`, or `docs/` need truth-sync.
+3. If a stable behavior or public contract changes, check whether `README.md`, `CLAUDE.md`, or `openspec/docs/` need truth-sync.
 4. When in a dirty worktree, separate pre-existing changes from the files owned by the current task.

@@ -5,8 +5,10 @@ Everything repository-specific lives here so the DAG workflow stays portable.
 ## Identity
 
 - Project: Metrics Django dashboard.
-- Profile source: repo-local; migrated from the legacy `.github/skills/dag-based-planning/templates/project-profile.md` path for the renamed `lsheng2-dag-based-planning` skill.
-- Plan location: `docs/` for stable architecture or implementation plans; `.github/` for AI workflow/customization changes.
+- Profile source: repo-local.
+- Agent routing mode: multiagent-configured.
+- Profile history: migrated from the legacy `.github/skills/dag-based-planning/templates/project-profile.md` path for the renamed `lsheng2-dag-based-planning` skill.
+- Plan location: `openspec/docs/` for stable architecture or implementation plans; `.github/` for AI workflow/customization changes.
 - Shell: PowerShell on Windows.
 - Runtime: Python from the active environment; project commands use `python manage.py ...` and `python -m pytest ...`.
 
@@ -30,11 +32,12 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 
 - `.github/agents/`
 - `.github/skills/`
+- `.agents/skills/`
 - `.github/copilot-instructions.md`
 - `.github/file-size-limits.json`
 - `CLAUDE.md`
 - `README.md`
-- `docs/`
+- `openspec/docs/`
 - module-local `tests/`
 - `ui_web/templates/`
 - `ui_web/static/`
@@ -54,12 +57,13 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 
 - `CLAUDE.md`
 - `README.md`
-- `docs/`
+- `openspec/docs/`
 - `.github/copilot-instructions.md`
 - `.github/ai-governance/`
 - `.github/custom-agents.md`
 - `.github/agents/`
 - `.github/skills/`
+- `.agents/skills/`
 
 ## Hard Gate Commands
 
@@ -90,7 +94,7 @@ Metrics uses the shared project-agnostic `W*.REPLAN` rule for multi-wave DAG pla
 - Checker command or review procedure that proves every implementation wave followed by another implementation wave has `W*.REPLAN`: run the copied/adapted DAG checker template with a real plan input passed through `--plan`, or record an explicit plan preflight row that checks node table, Mermaid graph, and ledger dependencies against `W*.REPLAN`. `--sample` mode is only a template self-check and is not closure evidence.
 - Checker command or review procedure that proves the next implementation wave depends on the previous `W*.REPLAN`: run the copied/adapted DAG checker template with a real plan input passed through `--plan`, or record a preflight row naming the first node of the next wave and its `depends_on` edge. `--sample` mode is only a template self-check and is not closure evidence.
 - Approved command/result shape for downstream predicate checks: project-profile-approved commands such as focused `python -m pytest ... -q`, `python manage.py check`, `python scripts/check_file_size_limits.py --include-untracked`, `python scripts/check_diff_whitespace.py --include-untracked`, or a plan-specific grep/query; record exact command and `PASS`/`FAIL` result.
-- Approved artifact roots for `updated_artifacts` in non-`continue` decisions: existing plan-owned repo-relative paths under `docs/`, `.github/`, module-local `tests/`, `scripts/`, `ops/`, or the touched module owner paths declared by the replan node.
+- Approved artifact roots for `updated_artifacts` in non-`continue` decisions: existing plan-owned repo-relative paths under `openspec/docs/`, `.github/`, module-local `tests/`, `scripts/`, `ops/`, or the touched module owner paths declared by the replan node.
 - Approved gate node ids or command patterns for `rerun_gates`: DAG gate node ids such as `W*.PREFLIGHT`, `W*.VA`, `W*.R`, `CLOSE.PREFLIGHT`, `CLOSE.R`, or project-profile-approved commands listed in this profile and the plan.
 - Required post-refreeze preflight command/result shape: exact preflight command or method plus `result: PASS`; for plans with copied checker templates, prefer `python path/to/dag-checker-template.py --plan path/to/checker-input.json`.
 
@@ -139,10 +143,10 @@ This canonical profile was migrated from the mature legacy project profile at `.
 | Identity | `CLAUDE.md`, `README.md`, `metrics/`, Django app roots | high |
 | Source roots | Workspace file tree and module directories: `tasks/`, `forecast/`, `velocity/`, `pull_requests/`, `jira_sync/`, `jira_history/`, `bug_metrics/`, `ui_web/`, `metrics/`, `ops/`, `scripts/` | high |
 | Test roots | Module-local `tests/` directories present in source roots | high |
-| Doc truth roots | `CLAUDE.md`, `README.md`, `docs/`, `.github/copilot-instructions.md`, `.github/ai-governance/`, `.github/agents/`, `.github/skills/` | high |
+| Doc truth roots | `CLAUDE.md`, `README.md`, `openspec/docs/`, `.github/copilot-instructions.md`, `.github/ai-governance/`, `.github/agents/`, `.github/skills/`, `.agents/skills/` | high |
 | Hard gate commands | `CLAUDE.md`, `.github/copilot-instructions.md`, and existing scripts under `scripts/` | medium; commands should still be run for each closure claim |
 | Rolling-horizon refreeze gates | Shared `lsheng2-dag-based-planning` skill core and Metrics hard gate commands in this profile | medium; copied plan checkers must be adapted per plan before used as closure gates |
-| DAG agent routing | `.github/custom-agents.md` and `.github/agents/*.agent.md` | high |
+| DAG agent routing | `.github/custom-agents.md`, `.github/agents/architect-planner-reviewer.agent.md`, `.github/agents/implementation-engineer.agent.md`, `.github/agents/validation-engineer.agent.md`, and `.github/agents/dashboard-debugger.agent.md` | high |
 | Authority boundaries | `CLAUDE.md`, module structure, and public `app/api/` package convention | high |
 | Consumer universe defaults | Module structure, `ui_web/` federation pattern, `ops/`, `scripts/`, docs and test directories | medium |
 | Risk level defaults | Repo architecture rules, audit/export/governance patterns, and closure verification policy | medium |
@@ -151,10 +155,10 @@ This canonical profile was migrated from the mature legacy project profile at `.
 
 Every DAG plan that changes code, contracts, validation behavior, operator workflow, public API, UI/user-visible behavior, configuration behavior, or AI customization must assess:
 
-- Architecture docs: `docs/architecture-manual.md`, `docs/implementation-start.md`, and related docs under `docs/`.
+- Architecture docs: `openspec/docs/current-baseline/architecture-manual.md`, `openspec/docs/historical/implementation-start.md`, and related docs under `openspec/docs/`.
 - README/index surfaces: `README.md` and module-local README/AI context if present.
-- AI guidance and BKM: `CLAUDE.md`, `.github/copilot-instructions.md`, `.github/ai-governance/`, `.github/custom-agents.md`, `.github/agents/`, `.github/skills/`.
-- Validation docs/plans: focused tests and any implementation plan under `docs/`.
+- AI guidance and BKM: `CLAUDE.md`, `.github/copilot-instructions.md`, `.github/ai-governance/`, `.github/custom-agents.md`, `.github/agents/`, `.github/skills/`, `.agents/skills/`.
+- Validation docs/plans: focused tests and any implementation plan under `openspec/docs/`.
 
 Use `update-required`, `no-doc-change`, or `deferred-with-trigger` with owner paths and reason.
 
@@ -190,7 +194,7 @@ When building a DAG plan in this repository, evaluate these concrete consumer ca
 | cache/index/search | `state/` caches, task search cache, query/result cache code |
 | external artifact | `ops/`, Grafana JSON, Docker files, deployment configs |
 | CLI/admin command | Django management commands, local PowerShell scripts |
-| docs/operator workflow | `docs/`, `README.md`, `CLAUDE.md`, `.github/copilot-instructions.md` |
+| docs/operator workflow | `openspec/docs/`, `README.md`, `CLAUDE.md`, `.github/copilot-instructions.md` |
 | test double/fake/fixture | module-local `tests/`, mocks, fixtures, builder helpers |
 
 Each category should be marked `applies`, `not-applies`, or `deferred-with-trigger` in the plan. A category marked `not-applies` needs a reason when the changed authority is high risk.
@@ -212,7 +216,7 @@ Use `normal` only when the authority is internal to one module and has no export
 
 ## Initialization Follow-ups
 
-- No current `TBD` entries.
+- No current unresolved placeholder entries.
 - Keep the legacy `.github/skills/dag-based-planning/templates/project-profile.md` path only as a compatibility copy unless the project intentionally updates older agent references.
 - Re-run discovery if source roots, CI, validation commands, module boundaries, or deployment artifacts change substantially.
 - Before any closure claim, run or explicitly account for the hard gate commands relevant to the touched owner paths.

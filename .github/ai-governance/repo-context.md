@@ -6,7 +6,7 @@ Status: active BKM.
 
 This is a Django modular monolith for software delivery metrics. It integrates Jira, Azure DevOps, Bitbucket/Azure Repos, and `sd-metrics-lib` to render task, forecast, velocity, and pull-request dashboards.
 
-Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Keep the detailed MVP truth in `docs/implementation-start.md`, `docs/architecture-manual.md`, and `docs/bug-trend-architecture-spec.md`; this BKM is only a routing summary.
+Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes. Normative baseline requirements live in `openspec/specs/`; supporting history and architecture notes live under `openspec/docs/`.
 
 ## Modules
 
@@ -54,7 +54,7 @@ python scripts/check_diff_whitespace.py --include-untracked
 1. `pytest.ini` default `testpaths` excludes `pull_requests/tests/`; run pull-request tests explicitly when touching that module.
 2. `README.md` uses `python manage.py runserver 8000`, while `CLAUDE.md` mentions port `8002`. Follow the task's current runtime context unless you are intentionally reconciling the docs.
 3. Azure PR list pagination can return short or overlapping pages. Keep fixed-stride paging and de-duplication in the repository adapter.
-4. Intel Jira MVP setup/current-state notes live in `docs/implementation-start.md` and architecture details live in `docs/architecture-manual.md`; link to those docs instead of copying their content into AI guidance.
+4. Intel Jira MVP setup/current-state notes live under `openspec/docs/historical/`, architecture details live under `openspec/docs/current-baseline/`, and normative requirements live under `openspec/specs/`; link to those docs instead of copying their content into AI guidance.
 5. If a Jira token, PAT, cookie, or Authorization header appears in chat or logs, treat it as exposed and recommend rotation.
 6. Do not hardcode Intel Jira status names globally. Example workflows belong in saved scope config records.
 7. If no severity mapping exists for a scope, hide critical/high series instead of guessing severity.

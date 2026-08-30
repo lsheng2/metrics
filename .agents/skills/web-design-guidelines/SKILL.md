@@ -7,16 +7,20 @@ metadata:
   argument-hint: <file-or-pattern>
 ---
 
-# Web Interface Guidelines
+# Web Design Guidelines Adapter
 
-Review files for compliance with Web Interface Guidelines.
+## Codex-Facing Project Skill
+
+This file is the Codex-facing project entrypoint. It must not be copied into `.github/skills/` as the Copilot source of truth.
+
+For this project, both the Codex-facing and Copilot-facing skill entries use the same upstream Web Interface Guidelines URL below. Keep the two project entrypoints behaviorally aligned, but do not make one agent surface depend on the other.
 
 ## How It Works
 
-1. Fetch the latest guidelines from the source URL below
-2. Read the specified files (or prompt user for files/pattern)
-3. Check against all rules in the fetched guidelines
-4. Output findings in the terse `file:line` format
+1. Fetch the latest guidelines from the source URL below.
+2. Read the specified files or prompt the user for a file or pattern.
+3. Check the selected files against all fetched rules.
+4. Output findings using the terse format required by the fetched guidelines.
 
 ## Guidelines Source
 
@@ -26,14 +30,4 @@ Fetch fresh guidelines before each review:
 https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
 ```
 
-Use WebFetch to retrieve the latest rules. The fetched content contains all the rules and output format instructions.
-
-## Usage
-
-When a user provides a file or pattern argument:
-1. Fetch guidelines from the source URL above
-2. Read the specified files
-3. Apply all rules from the fetched guidelines
-4. Output findings using the format specified in the guidelines
-
-If no files specified, ask the user which files to review.
+Use the available web fetch/search capability to retrieve the latest rules. The fetched content contains all rules and output format instructions.

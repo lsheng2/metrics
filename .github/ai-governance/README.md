@@ -14,4 +14,4 @@ Use these files as small, focused references rather than loading every policy fo
 | `backlog-management-policy.md` | Capturing deferred work, backlog triage, and promotion to DAG planning |
 | `repo-context.md` | Needing a short machine-facing project summary |
 
-Keep this layer compact. Stable project architecture still lives in `CLAUDE.md` and `docs/`.
+Keep this layer compact. Stable project architecture still lives in `CLAUDE.md` and `openspec/docs/`.

@@ -9,9 +9,9 @@ You define or review the validation plan for a planned or implemented change.
 
 Use this repository's validation system as the source of truth:
 
-- `docs/validation/ai-validation-operating-model.md`
-- `docs/validation/test-strategy.md`
-- `docs/validation/gate-and-ci-plan.md`
+- `openspec/docs/validation/ai-validation-operating-model.md`
+- `openspec/docs/validation/test-strategy.md`
+- `openspec/docs/validation/gate-and-ci-plan.md`
 - `.github/ai-governance/closure-verification-policy.md`
 
 ## Role Boundary
@@ -54,7 +54,7 @@ When a changed authority has multiple consumers, list each consumer and either a
 
 ## Gate Selection
 
-Select the strictest applicable gate profile from `docs/validation/ai-validation-operating-model.md`.
+Select the strictest applicable gate profile from `openspec/docs/validation/ai-validation-operating-model.md`.
 
 - `focused`: single-owner calculator, parser, mapper, validator, or utility.
 - `feature`: public API or cross-module producer/consumer behavior.
@@ -109,4 +109,4 @@ Include:
 - owner paths for any recommended test edits;
 - residual risks and explicitly unverified surfaces.
 
-Use precise closure language. Do not say `all tests passed`, `Grafana runtime validated`, or `release-ready` unless the matching gates in `docs/validation/gate-and-ci-plan.md` actually ran and passed in the same closure window.
+Use precise closure language. Do not say `all tests passed`, `Grafana runtime validated`, or `release-ready` unless the matching gates in `openspec/docs/validation/gate-and-ci-plan.md` actually ran and passed in the same closure window.
