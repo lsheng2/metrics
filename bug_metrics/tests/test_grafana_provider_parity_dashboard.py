@@ -129,6 +129,7 @@ class TestGrafanaProviderParityDashboard(TestCase):
         self.assertIn('Begin WW / End WW', content)
         self.assertIn('Date mode', content)
         self.assertIn('Grafana time picker', content)
+        self.assertGreaterEqual(panel['gridPos']['h'], 4)
         self.assertEqual(4, panel['gridPos']['y'])
         self.assertLess(panel['gridPos']['y'], self._row_panel_y(artifact, 'QUALITY'))
 
@@ -148,7 +149,7 @@ class TestGrafanaProviderParityDashboard(TestCase):
             'rolling_valid_bug': {'rolling_valid_bug_count'},
             'open_bug_trend': {'all_open_bugs', 'all_open_critical_high', 'new_critical_high', 'new_medium_low', 'fixed_or_closed_bugs'},
             'total_bug_trend': {'total_new_bugs', 'total_open_bugs', 'total_fixed_or_closed_bugs'},
-            'open_bug_aging': {'aging_0_7_days', 'aging_8_14_days', 'aging_15_30_days', 'aging_31_plus_days'},
+            'open_bug_aging': {'open_bug_count'},
             'daily_new_standard_bug_count': {'new_standard_bugs'},
         }
 
@@ -194,6 +195,24 @@ class TestGrafanaProviderParityDashboard(TestCase):
         panel = next(panel for panel in artifact['panels'] if panel['title'] == 'Component Bugs by Area')
         self.assertEqual('Component', panel['options']['xField'])
         self.assertEqual(45, panel['options']['xTickLabelRotation'])
+        self.assertGreaterEqual(panel['gridPos']['w'], 12)
+
+    def test_shouldUseAgeBucketsAsOpenBugAgingChartCategories(self):
+        # Given
+        artifact = self._artifact()
+        target = next(
+            target
+            for target in self._targets(artifact)
+            if self._query_params(target).get('chart_id') == 'open_bug_aging'
+            and self._target_shape(target) == 'wide_bucket_series'
+        )
+
+        # Then
+        self.assertEqual('age_bucket_label', target['metricsContract']['categoryField'])
+        self.assertEqual({'open_bug_count'}, set(target['metricsContract']['valueFields']))
+        self.assertIn('age_bucket_label', self._target_columns(target))
+        panel = next(panel for panel in artifact['panels'] if panel['title'] == 'Open Bug Aging')
+        self.assertEqual('Age Bucket', panel['options']['xField'])
 
     def test_shouldExposeSelectedProviderAndDeferredStatePanelsThroughProviderSeriesState(self):
         # Given

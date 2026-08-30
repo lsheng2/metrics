@@ -305,6 +305,26 @@ class TestProviderChartApiSurface(TestCase):
             for key in row
         ))
 
+    def test_shouldExposeHsdesOpenBugAgingAsAgeBucketCategoriesForGrafanaSurface(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW35',
+            'chart_id': 'open_bug_aging',
+            'chart_version': '1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('supported', payload['status'])
+        self.assertEqual(
+            ['0-7 Days', '8-14 Days', '15-30 Days', '31+ Days'],
+            [row['age_bucket_label'] for row in payload['grafana_rows']],
+        )
+        self.assertTrue(all('open_bug_count' in row for row in payload['grafana_rows']))
+
     def test_shouldDeriveProviderFromProfileWhenProviderIdIsOmitted(self):
         # Given
         scope = JiraScopeConfig.objects.create(

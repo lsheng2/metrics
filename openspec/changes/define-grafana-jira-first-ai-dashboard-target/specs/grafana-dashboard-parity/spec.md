@@ -85,6 +85,14 @@ Grafana dashboard SHALL 使用 provider-neutral query state 来表达 scope，�
 - **WHEN** Grafana renders `component_bug`
 - **THEN** the panel SHALL use a provider-neutral component/category label such as `component_label` as the chart category field instead of using the selected date or WW bucket label as the x-axis
 
+#### Scenario: Aging distribution charts render age buckets on the x-axis
+- **WHEN** Grafana renders `open_bug_aging`
+- **THEN** the panel SHALL use provider-neutral age bucket labels such as `age_bucket_label` as the chart category field, and SHALL render the measured count as `open_bug_count` instead of using date or WW bucket labels as the primary x-axis
+
+#### Scenario: UI review validates semantic chart axes
+- **WHEN** a UI/UX review is performed for dashboard chart panels
+- **THEN** the review SHALL compare each panel title and business intent against the target API contract, approved category field, Grafana x-axis field and visible rendered axis, and SHALL flag categorical charts that use date or WW buckets unless the title explicitly describes a time trend
+
 #### Scenario: Local Grafana runtime is refreshed after provider contract changes
 - **WHEN** the Metrics provider aggregate code, HSD-ES seed facts, or Grafana dashboard artifact changes during local validation
 - **THEN** the local Django backend SHALL be restarted and the Grafana dashboard SHALL be re-imported before the operator evaluates whether the selected HSD-ES profile has chart data

@@ -245,13 +245,10 @@
         "selected_provider_state"
       ],
       "approved_value_fields": [
-        "aging_0_7_days",
-        "aging_8_14_days",
-        "aging_15_30_days",
-        "aging_31_plus_days"
+        "open_bug_count"
       ],
       "approved_category_fields": [
-        "bucket_label"
+        "age_bucket_label"
       ],
       "approved_evidence_capabilities": [
         "range_only",

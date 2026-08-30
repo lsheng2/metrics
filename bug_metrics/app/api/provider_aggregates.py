@@ -36,6 +36,14 @@ from .series import active_bug_trend_series
 from provider_sync.app.api import ProviderSyncCacheService
 
 
+AGING_BUCKET_LABELS = {
+    'aging_0_7_days': '0-7 Days',
+    'aging_8_14_days': '8-14 Days',
+    'aging_15_30_days': '15-30 Days',
+    'aging_31_plus_days': '31+ Days',
+}
+
+
 class ProviderChartAggregateService:
     def __init__(self, hsdes_seed_fact_repository=None, provider_sync_cache_service=None):
         self._hsdes_seed_fact_repository = hsdes_seed_fact_repository or HsdesSeedFactRepository()
@@ -461,6 +469,21 @@ class ProviderChartAggregateService:
     def _grafana_rows(self, rows):
         grafana_rows = {}
         for aggregate_row in rows:
+            if aggregate_row.chart_id == 'open_bug_aging':
+                grafana_row = self._base_grafana_row(aggregate_row)
+                grafana_row['age_bucket_label'] = AGING_BUCKET_LABELS.get(aggregate_row.series, aggregate_row.series)
+                grafana_row['open_bug_count'] = aggregate_row.value
+                grafana_rows[(
+                    aggregate_row.calculation_run_id,
+                    aggregate_row.bucket_start,
+                    aggregate_row.bucket_end,
+                    aggregate_row.bucket_grain,
+                    aggregate_row.bucket_ww,
+                    aggregate_row.bucket_date,
+                    aggregate_row.series,
+                    tuple(sorted(aggregate_row.dimensions.items())),
+                )] = grafana_row
+                continue
             row_key = (
                 aggregate_row.calculation_run_id,
                 aggregate_row.bucket_start,
@@ -471,29 +494,32 @@ class ProviderChartAggregateService:
                 tuple(sorted(aggregate_row.dimensions.items())),
             )
             if row_key not in grafana_rows:
-                grafana_row = {
-                    'provider_id': aggregate_row.provider_id,
-                    'profile_id': aggregate_row.profile_id,
-                    'source_scope_ref': aggregate_row.source_scope_ref,
-                    'chart_id': aggregate_row.chart_id,
-                    'chart_version': aggregate_row.chart_version,
-                    'calculation_run_id': aggregate_row.calculation_run_id,
-                    'fact_snapshot_id': aggregate_row.fact_snapshot_id,
-                    'bucket_id': aggregate_row.bucket_id,
-                    'bucket_label': aggregate_row.bucket_ww or aggregate_row.bucket_date,
-                    'bucket_start': aggregate_row.bucket_start,
-                    'bucket_end': aggregate_row.bucket_end,
-                    'bucket_granularity': aggregate_row.bucket_grain,
-                    'bucket_ww': aggregate_row.bucket_ww,
-                    'bucket_date': aggregate_row.bucket_date,
-                    'dimensions': aggregate_row.dimensions,
-                    'mapping_version': aggregate_row.mapping_version,
-                    'mapping_version_hash': aggregate_row.mapping_version_hash,
-                }
-                grafana_row.update(self._grafana_render_fields(aggregate_row.chart_id, aggregate_row.dimensions))
-                grafana_rows[row_key] = grafana_row
+                grafana_rows[row_key] = self._base_grafana_row(aggregate_row)
             grafana_rows[row_key][aggregate_row.series] = aggregate_row.value
         return [deepcopy(row) for row in grafana_rows.values()]
+
+    def _base_grafana_row(self, aggregate_row):
+        grafana_row = {
+            'provider_id': aggregate_row.provider_id,
+            'profile_id': aggregate_row.profile_id,
+            'source_scope_ref': aggregate_row.source_scope_ref,
+            'chart_id': aggregate_row.chart_id,
+            'chart_version': aggregate_row.chart_version,
+            'calculation_run_id': aggregate_row.calculation_run_id,
+            'fact_snapshot_id': aggregate_row.fact_snapshot_id,
+            'bucket_id': aggregate_row.bucket_id,
+            'bucket_label': aggregate_row.bucket_ww or aggregate_row.bucket_date,
+            'bucket_start': aggregate_row.bucket_start,
+            'bucket_end': aggregate_row.bucket_end,
+            'bucket_granularity': aggregate_row.bucket_grain,
+            'bucket_ww': aggregate_row.bucket_ww,
+            'bucket_date': aggregate_row.bucket_date,
+            'dimensions': aggregate_row.dimensions,
+            'mapping_version': aggregate_row.mapping_version,
+            'mapping_version_hash': aggregate_row.mapping_version_hash,
+        }
+        grafana_row.update(self._grafana_render_fields(aggregate_row.chart_id, aggregate_row.dimensions))
+        return grafana_row
 
     def _grafana_render_fields(self, chart_id, dimensions):
         if chart_id == 'component_bug':
@@ -501,6 +527,8 @@ class ProviderChartAggregateService:
         return {}
 
     def _normalize_cached_grafana_rows(self, chart_id, rows):
+        if chart_id == 'open_bug_aging':
+            return self._normalize_cached_open_bug_aging_rows(rows)
         normalized_rows = []
         for row in rows:
             normalized_row = deepcopy(row)
@@ -508,6 +536,21 @@ class ProviderChartAggregateService:
             if isinstance(dimensions, dict):
                 normalized_row.update(self._grafana_render_fields(chart_id, dimensions))
             normalized_rows.append(normalized_row)
+        return normalized_rows
+
+    def _normalize_cached_open_bug_aging_rows(self, rows):
+        normalized_rows = []
+        for row in rows:
+            if 'age_bucket_label' in row and 'open_bug_count' in row:
+                normalized_rows.append(deepcopy(row))
+                continue
+            for series, label in AGING_BUCKET_LABELS.items():
+                normalized_row = deepcopy(row)
+                for stale_series in AGING_BUCKET_LABELS:
+                    normalized_row.pop(stale_series, None)
+                normalized_row['age_bucket_label'] = label
+                normalized_row['open_bug_count'] = row.get(series, 0)
+                normalized_rows.append(normalized_row)
         return normalized_rows
 
     def _state_result(self, query, status, reason, source_population, run_metadata=None):
