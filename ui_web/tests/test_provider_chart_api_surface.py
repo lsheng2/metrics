@@ -1,0 +1,402 @@
+from datetime import date, datetime, timezone
+from unittest.mock import patch
+
+from django.test import TestCase
+from django.urls import reverse
+
+from bug_metrics.app.api import bug_trend_api
+from bug_metrics.models import JiraScopeConfig
+from jira_history.models import JiraIssue
+from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
+
+
+class TestProviderChartApiSurface(TestCase):
+    def test_shouldExposeProviderProfileReadinessForGrafanaStatusPanel(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_profile_readiness_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('0.2', payload['contract_version'])
+        self.assertEqual('hsdes', payload['provider_id'])
+        self.assertEqual('nvu-ttl-hsdes', payload['profile_id'])
+        self.assertEqual('seeded_preview', payload['status'])
+        self.assertEqual('NVU', payload['scope_labels']['ip']['value'])
+        self.assertEqual('provider_owned_saved_query', payload['source_query']['ownership_type'])
+        self.assertTrue(payload['blockers'])
+        self.assertEqual('profile_default', payload['profile_status_rows'][0]['override_state'])
+        self.assertIn('HSD-ES seed facts can render supported preview charts', payload['profile_status_rows'][0]['data_status_reason'])
+        self.assertEqual('Open HSD-ES saved query / sign in', payload['profile_status_rows'][0]['auth_action_label'])
+        self.assertEqual('https://hsdes.intel.com/appstore/generalapps/#/pages/community/1607367026?queryId=15017652869', payload['profile_status_rows'][0]['auth_action_url'])
+
+    def test_shouldExposeLiveHsdesCacheStatusAfterSuccessfulSync(self):
+        # Given
+        cache_service = ProviderSyncCacheService()
+        snapshot = cache_service.materialize_snapshot(
+            provider_id='hsdes',
+            profile_id='nvu-ttl-hsdes',
+            source_query={
+                'ownership_type': 'provider_owned_saved_query',
+                'source_query_ref': '15017652869',
+                'source_query_hash': 'source-hash',
+            },
+            field_set_hash='field-hash',
+            mapping_version_hash='mapping-hash',
+            facts=[],
+            raw_payload={'total': 0},
+            freshness_status=ProviderFreshnessStatus.LIVE_SYNCED,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:provider_profile_readiness_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('live_synced', payload['status'])
+        self.assertEqual(str(snapshot.id), payload['sync_cache']['latest_snapshot_id'])
+        self.assertEqual('live_synced', payload['profile_status_rows'][0]['data_status'])
+        self.assertEqual('15017652869', payload['profile_status_rows'][0]['source_query_ref'])
+
+    def test_shouldRenderHsdesChartFromLocalArtifactWhenLiveAdapterFails(self):
+        # Given
+        cache_service = ProviderSyncCacheService()
+        snapshot = cache_service.materialize_snapshot(
+            provider_id='hsdes',
+            profile_id='nvu-ttl-hsdes',
+            source_query={
+                'ownership_type': 'provider_owned_saved_query',
+                'source_query_ref': '15017652869',
+                'source_query_hash': 'source-hash',
+            },
+            field_set_hash='field-hash',
+            mapping_version_hash='mapping-hash',
+            facts=[],
+            raw_payload={'total': 0},
+            freshness_status=ProviderFreshnessStatus.LIVE_SYNCED,
+        )
+        cache_service.store_aggregate_artifact(
+            snapshot=snapshot,
+            chart_id='component_bug',
+            chart_version=1,
+            begin_ww='26WW32',
+            end_ww='26WW32',
+            rows=[],
+            grafana_rows=[{
+                'provider_id': 'hsdes',
+                'profile_id': 'nvu-ttl-hsdes',
+                'bucket_label': '26WW32',
+                'dimensions': {'component': 'fwsw'},
+                'component_bug_count': 4,
+            }],
+            source_population=snapshot.source_query_json,
+            run_metadata={'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED},
+        )
+
+        # When
+        with patch('provider_sync.app.api.hsdes.HsdesHttpClient.execute_saved_query', side_effect=AssertionError('live adapter must not be called')):
+            response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+                'profile_id': 'nvu-ttl-hsdes',
+                'begin_ww': '26WW32',
+                'end_ww': '26WW32',
+                'chart_id': 'component_bug',
+                'chart_version': '1',
+            })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('supported', payload['status'])
+        self.assertEqual(4, payload['grafana_rows'][0]['component_bug_count'])
+
+    def test_shouldExposeProviderChartAggregatesForGrafanaSurface(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='chiplet-2a-jira',
+            ip='chiplet_ip',
+            project_label='chiplet',
+            jql='project = "131600" AND component = "team_int_qemu"',
+            bug_type_values=['Bug'],
+            open_status_values=['Open'],
+            fixed_status_values=['Fixed'],
+            severity_field='priority',
+            critical_high_values=['P1-Stopper'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        JiraIssue.objects.create(
+            scope=scope,
+            issue_key='STDEL-1001',
+            summary='Open stopper bug',
+            issue_type='Bug',
+            status='Open',
+            severity_value='P1-Stopper',
+            component_value='team_int_qemu',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+        )
+        run = bug_trend_api.recalculate_scope(scope.id, date(2026, 8, 3), date(2026, 8, 9))
+
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'provider_id': 'jira',
+            'profile_id': 'chiplet-2a-jira',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('0.2', payload['contract_version'])
+        self.assertEqual('supported', payload['status'])
+        self.assertEqual(str(run.id), payload['grafana_rows'][0]['calculation_run_id'])
+        self.assertEqual('jira', payload['grafana_rows'][0]['provider_id'])
+        self.assertEqual('chiplet-2a-jira', payload['grafana_rows'][0]['profile_id'])
+        self.assertEqual(1, payload['grafana_rows'][0]['all_open_bugs'])
+        self.assertFalse(any(key.startswith(('jira_', 'hsdes_')) for key in payload['grafana_rows'][0]))
+
+    def test_shouldExposeHsdesSeededComponentBugAggregatesForGrafanaSurface(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'component_bug',
+            'chart_version': '1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('0.2', payload['contract_version'])
+        self.assertEqual('hsdes', payload['provider_id'])
+        self.assertEqual('nvu-ttl-hsdes', payload['profile_id'])
+        self.assertEqual('supported', payload['status'])
+        self.assertEqual('materialized_from_seed_hsdes_facts', payload['run_metadata']['freshness_status'])
+        self.assertEqual(2, self._row_value(payload, 'component_bug_count', 'fwsw'))
+        self.assertEqual(1, self._row_value(payload, 'component_bug_count', 'media'))
+        self.assertFalse(any(
+            key.startswith(('jira_', 'hsdes_'))
+            for row in payload['grafana_rows']
+            for key in row
+        ))
+
+    def test_shouldDeriveProviderFromProfileWhenProviderIdIsOmitted(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='chiplet-2a-jira',
+            ip='chiplet_ip',
+            project_label='chiplet',
+            jql='project = "131600" AND component = "team_int_qemu"',
+            bug_type_values=['Bug'],
+            open_status_values=['Open'],
+            fixed_status_values=['Fixed'],
+            severity_field='priority',
+            critical_high_values=['P1-Stopper'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        JiraIssue.objects.create(
+            scope=scope,
+            issue_key='STDEL-1001',
+            summary='Open stopper bug',
+            issue_type='Bug',
+            status='Open',
+            severity_value='P1-Stopper',
+            component_value='team_int_qemu',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+        )
+        bug_trend_api.recalculate_scope(scope.id, date(2026, 8, 3), date(2026, 8, 9))
+
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'profile_id': 'chiplet-2a-jira',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('jira', payload['provider_id'])
+        self.assertEqual('chiplet-2a-jira', payload['profile_id'])
+        self.assertEqual('supported', payload['status'])
+
+    def test_shouldRejectMismatchedExplicitProviderAndProfile(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'provider_id': 'hsdes',
+            'profile_id': 'chiplet-2a-jira',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertIn('does not match selected profile', response.json()['error'])
+
+    def test_shouldExposeProviderChartEvidenceForGrafanaBucketSeriesSelection(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='chiplet-2a-jira',
+            ip='chiplet_ip',
+            project_label='chiplet',
+            jql='project = "131600" AND component = "team_int_qemu"',
+            bug_type_values=['Bug'],
+            open_status_values=['Open'],
+            fixed_status_values=['Fixed'],
+            severity_field='priority',
+            critical_high_values=['P1-Stopper'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        JiraIssue.objects.create(
+            scope=scope,
+            issue_key='STDEL-1001',
+            summary='Open stopper bug',
+            issue_type='Bug',
+            status='Open',
+            severity_value='P1-Stopper',
+            component_value='team_int_qemu',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+        )
+        run = bug_trend_api.recalculate_scope(scope.id, date(2026, 8, 3), date(2026, 8, 9))
+        chart_response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'provider_id': 'jira',
+            'profile_id': 'chiplet-2a-jira',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+        })
+        bucket_id = chart_response.json()['grafana_rows'][0]['bucket_id']
+
+        # When
+        reference_response = self.client.get(reverse('ui_web:chart_evidence_api'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'bucket': bucket_id,
+            'series': 'all_open_bugs',
+        })
+        response = self.client.get(reverse('ui_web:provider_chart_evidence_api'), {
+            'provider_id': 'jira',
+            'profile_id': 'chiplet-2a-jira',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+            'run': str(run.id),
+            'bucket': bucket_id,
+            'series': 'all_open_bugs',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('supported', payload['status'])
+        self.assertEqual('jira', payload['provider_id'])
+        self.assertEqual('chiplet-2a-jira', payload['profile_id'])
+        self.assertEqual('open_bug_trend', payload['chart_id'])
+        self.assertEqual(str(run.id), payload['calculation_run_id'])
+        self.assertEqual(bucket_id, payload['bucket_id'])
+        self.assertEqual('all_open_bugs', payload['provider_series_name'])
+        self.assertEqual(reference_response.json()['selection_title'], payload['selection_title'])
+        self.assertEqual(reference_response.json()['total_count'], payload['total_count'])
+        self.assertEqual(['STDEL-1001'], [row['issue_key'] for row in payload['rows']])
+
+    def test_shouldDeriveProviderFromProfileForProviderChartEvidence(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_evidence_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+            'run': 'run-1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('hsdes', payload['provider_id'])
+        self.assertEqual('nvu-ttl-hsdes', payload['profile_id'])
+        self.assertEqual('configuration_required', payload['status'])
+
+    def test_shouldReturnSummaryOnlyProviderEvidenceStateWithoutRows(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_evidence_api'), {
+            'provider_id': 'jira',
+            'profile_id': 'chiplet-2a-jira',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'execution_statistics',
+            'chart_version': '1',
+            'run': 'run-1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('summary_only', payload['evidence_capability'])
+        self.assertEqual('deferred', payload['status'])
+        self.assertEqual([], payload['rows'])
+        self.assertIn('ticket-level evidence', payload['reason'])
+
+    def test_shouldReturnUnsupportedProviderEvidenceStateWithoutRows(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_evidence_api'), {
+            'provider_id': 'unknown-provider',
+            'profile_id': 'unknown-profile',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+            'run': 'run-1',
+            'bucket': 'bucket-1',
+            'series': 'unknown-provider_all_open_bugs',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('summary_only', payload['evidence_capability'])
+        self.assertEqual('unsupported', payload['status'])
+        self.assertEqual([], payload['rows'])
+
+    def test_shouldRejectNativeQueryParamsOnProviderChartApi(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'provider_id': 'jira',
+            'profile_id': 'chiplet-2a-jira',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'chart_id': 'open_bug_trend',
+            'jql': 'project = 131600',
+        })
+
+        # Then
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(['jql'], response.json()['unknown_params'])
+
+    def _row_value(self, payload, value_field, component):
+        for row in payload['grafana_rows']:
+            if row['dimensions'].get('component') == component:
+                return row.get(value_field)
+        return None

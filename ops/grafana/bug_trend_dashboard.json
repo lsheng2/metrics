@@ -66,6 +66,7 @@
             "requiredFields": ["calculation_run_id", "bucket_id", "bucket_label", "bucket_start", "bucket_end", "bucket_granularity"],
             "valueFields": ["all_open_bugs", "all_open_critical_high", "new_critical_high", "new_medium_low", "fixed_or_closed_bugs"],
             "evidenceLinkFields": ["calculation_run_id", "bucket_id"],
+            "evidenceCapability": "bucket_series",
             "seriesFieldSource": "__field.name"
           }
         }

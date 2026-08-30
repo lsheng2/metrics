@@ -1,0 +1,2007 @@
+{
+  "uid": "metrics-provider-parity-dashboard",
+  "title": "Metrics Provider Parity Dashboard",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": [
+    "metrics",
+    "provider-parity",
+    "jira-first",
+    "hsdes-ready"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "profile_id",
+        "type": "custom",
+        "query": "chiplet-2a-jira,nvu-ttl-hsdes",
+        "current": {
+          "text": "chiplet-2a-jira",
+          "value": "chiplet-2a-jira"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "chiplet-2a-jira",
+            "value": "chiplet-2a-jira"
+          },
+          {
+            "selected": false,
+            "text": "nvu-ttl-hsdes",
+            "value": "nvu-ttl-hsdes"
+          }
+        ]
+      },
+      {
+        "name": "begin_ww",
+        "type": "textbox",
+        "query": "26WW32",
+        "current": {
+          "text": "26WW32",
+          "value": "26WW32"
+        }
+      },
+      {
+        "name": "end_ww",
+        "type": "textbox",
+        "query": "26WW32",
+        "current": {
+          "text": "26WW32",
+          "value": "26WW32"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 100,
+      "title": "PROFILE / Selected Profile Status",
+      "type": "table",
+      "description": "Shows profile-derived provider and scope values resolved by Metrics. Stock Grafana treats these as selected profile facts; editable overrides and save-as-new-profile belong in the Metrics profile editor or future Grafana App/Scenes surface.",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-profiles/readiness/?profile_id=$profile_id",
+          "root_selector": "$.profile_status_rows",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "data_status",
+              "text": "data_status",
+              "type": "string"
+            },
+            {
+              "selector": "data_status_reason",
+              "text": "data_status_reason",
+              "type": "string"
+            },
+            {
+              "selector": "ip",
+              "text": "ip",
+              "type": "string"
+            },
+            {
+              "selector": "project_or_product",
+              "text": "project_or_product",
+              "type": "string"
+            },
+            {
+              "selector": "milestone",
+              "text": "milestone",
+              "type": "string"
+            },
+            {
+              "selector": "scope_label_source",
+              "text": "scope_label_source",
+              "type": "string"
+            },
+            {
+              "selector": "source_query_ownership",
+              "text": "source_query_ownership",
+              "type": "string"
+            },
+            {
+              "selector": "source_query_ref",
+              "text": "source_query_ref",
+              "type": "string"
+            },
+            {
+              "selector": "source_query_name",
+              "text": "source_query_name",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "mapping_version",
+              "type": "number"
+            },
+            {
+              "selector": "override_state",
+              "text": "override_state",
+              "type": "string"
+            },
+            {
+              "selector": "save_profile_action",
+              "text": "save_profile_action",
+              "type": "string"
+            },
+            {
+              "selector": "auth_action_label",
+              "text": "auth_action_label",
+              "type": "string"
+            },
+            {
+              "selector": "auth_action_url",
+              "text": "auth_action_url",
+              "type": "string"
+            },
+            {
+              "selector": "blocker_count",
+              "text": "blocker_count",
+              "type": "number"
+            }
+          ],
+          "metricsContract": {
+            "contractVersion": "0.2",
+            "root": "profile_status_rows",
+            "shape": "profile_readiness_summary",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "status",
+              "data_status",
+              "data_status_reason",
+              "ip",
+              "project_or_product",
+              "milestone",
+              "source_query_ownership",
+              "mapping_version",
+              "override_state",
+              "auth_action_label",
+              "auth_action_url"
+            ],
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": [],
+            "semanticOwner": "metrics"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "data_status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "data_status_reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 420
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "auth_action_label"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open HSD-ES saved query / sign in",
+                    "url": "${__data.fields.auth_action_url}",
+                    "targetBlank": true
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "auth_action_url"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 1,
+      "title": "QUALITY",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      }
+    },
+    {
+      "id": 2,
+      "title": "QUALITY / Component Bug",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 5
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=component_bug&chart_version=1",
+          "root_selector": "$.grafana_rows",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "calculation_run_id",
+              "text": "calculation_run_id",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_label",
+              "text": "bucket_label",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_start",
+              "text": "bucket_start",
+              "type": "timestamp"
+            },
+            {
+              "selector": "bucket_end",
+              "text": "bucket_end",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_granularity",
+              "text": "bucket_granularity",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "mapping_version",
+              "type": "string"
+            },
+            {
+              "selector": "component_bug_count",
+              "text": "component_bug_count",
+              "type": "number"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "component_bug",
+            "contractVersion": "0.2",
+            "root": "grafana_rows",
+            "shape": "wide_bucket_series",
+            "categoryField": "bucket_label",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "calculation_run_id",
+              "fact_snapshot_id",
+              "bucket_label",
+              "bucket_start",
+              "bucket_end",
+              "bucket_granularity",
+              "mapping_version"
+            ],
+            "valueFields": [
+              "component_bug_count"
+            ],
+            "evidenceLinkFields": [],
+            "seriesFieldSource": "__field.name",
+            "semanticOwner": "metrics",
+            "chartRecipeId": "component_bug",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_quality",
+            "calculationOwner": "metrics",
+            "aggregationOwner": "materialized_aggregate",
+            "evidenceCapability": "range_only"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "QUALITY / Rolling Valid Bug",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 5
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=rolling_valid_bug&chart_version=1",
+          "root_selector": "$.grafana_rows",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "calculation_run_id",
+              "text": "calculation_run_id",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_label",
+              "text": "bucket_label",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_start",
+              "text": "bucket_start",
+              "type": "timestamp"
+            },
+            {
+              "selector": "bucket_end",
+              "text": "bucket_end",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_granularity",
+              "text": "bucket_granularity",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "mapping_version",
+              "type": "string"
+            },
+            {
+              "selector": "rolling_valid_bug_count",
+              "text": "rolling_valid_bug_count",
+              "type": "number"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "rolling_valid_bug",
+            "contractVersion": "0.2",
+            "root": "grafana_rows",
+            "shape": "wide_bucket_series",
+            "categoryField": "bucket_label",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "calculation_run_id",
+              "fact_snapshot_id",
+              "bucket_label",
+              "bucket_start",
+              "bucket_end",
+              "bucket_granularity",
+              "mapping_version"
+            ],
+            "valueFields": [
+              "rolling_valid_bug_count"
+            ],
+            "evidenceLinkFields": [],
+            "seriesFieldSource": "__field.name",
+            "semanticOwner": "metrics",
+            "chartRecipeId": "rolling_valid_bug",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_quality",
+            "calculationOwner": "metrics",
+            "aggregationOwner": "materialized_aggregate",
+            "evidenceCapability": "summary_only"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "QUALITY / Open Bug Trend",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 5
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
+          "root_selector": "$.grafana_rows",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "calculation_run_id",
+              "text": "calculation_run_id",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_id",
+              "text": "bucket_id",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_label",
+              "text": "bucket_label",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_start",
+              "text": "bucket_start",
+              "type": "timestamp"
+            },
+            {
+              "selector": "bucket_end",
+              "text": "bucket_end",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_granularity",
+              "text": "bucket_granularity",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "mapping_version",
+              "type": "string"
+            },
+            {
+              "selector": "all_open_bugs",
+              "text": "all_open_bugs",
+              "type": "number"
+            },
+            {
+              "selector": "all_open_critical_high",
+              "text": "all_open_critical_high",
+              "type": "number"
+            },
+            {
+              "selector": "new_critical_high",
+              "text": "new_critical_high",
+              "type": "number"
+            },
+            {
+              "selector": "new_medium_low",
+              "text": "new_medium_low",
+              "type": "number"
+            },
+            {
+              "selector": "fixed_or_closed_bugs",
+              "text": "fixed_or_closed_bugs",
+              "type": "number"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "open_bug_trend",
+            "contractVersion": "0.2",
+            "root": "grafana_rows",
+            "shape": "wide_bucket_series",
+            "categoryField": "bucket_label",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "calculation_run_id",
+              "fact_snapshot_id",
+              "bucket_id",
+              "bucket_label",
+              "bucket_start",
+              "bucket_end",
+              "bucket_granularity",
+              "mapping_version"
+            ],
+            "valueFields": [
+              "all_open_bugs",
+              "all_open_critical_high",
+              "new_critical_high",
+              "new_medium_low",
+              "fixed_or_closed_bugs"
+            ],
+            "evidenceLinkFields": [
+              "calculation_run_id",
+              "bucket_id"
+            ],
+            "seriesFieldSource": "__field.name",
+            "semanticOwner": "metrics",
+            "chartRecipeId": "open_bug_trend",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_quality",
+            "calculationOwner": "metrics",
+            "aggregationOwner": "materialized_aggregate",
+            "evidenceCapability": "bucket_series"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": [
+            {
+              "title": "View evidence rows",
+              "url": "/api/provider-charts/evidence/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}&fact_snapshot_id=${__data.fields.fact_snapshot_id}",
+              "targetBlank": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "QUALITY / Total Bug Trend",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 13
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=total_bug_trend&chart_version=1",
+          "root_selector": "$.grafana_rows",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "calculation_run_id",
+              "text": "calculation_run_id",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_label",
+              "text": "bucket_label",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_start",
+              "text": "bucket_start",
+              "type": "timestamp"
+            },
+            {
+              "selector": "bucket_end",
+              "text": "bucket_end",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_granularity",
+              "text": "bucket_granularity",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "mapping_version",
+              "type": "string"
+            },
+            {
+              "selector": "total_new_bugs",
+              "text": "total_new_bugs",
+              "type": "number"
+            },
+            {
+              "selector": "total_open_bugs",
+              "text": "total_open_bugs",
+              "type": "number"
+            },
+            {
+              "selector": "total_fixed_or_closed_bugs",
+              "text": "total_fixed_or_closed_bugs",
+              "type": "number"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "total_bug_trend",
+            "contractVersion": "0.2",
+            "root": "grafana_rows",
+            "shape": "wide_bucket_series",
+            "categoryField": "bucket_label",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "calculation_run_id",
+              "fact_snapshot_id",
+              "bucket_label",
+              "bucket_start",
+              "bucket_end",
+              "bucket_granularity",
+              "mapping_version"
+            ],
+            "valueFields": [
+              "total_new_bugs",
+              "total_open_bugs",
+              "total_fixed_or_closed_bugs"
+            ],
+            "evidenceLinkFields": [],
+            "seriesFieldSource": "__field.name",
+            "semanticOwner": "metrics",
+            "chartRecipeId": "total_bug_trend",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_quality",
+            "calculationOwner": "metrics",
+            "aggregationOwner": "materialized_aggregate",
+            "evidenceCapability": "range_only"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "QUALITY / Daily New Standard Bug Count",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 13
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=daily_new_standard_bug_count&chart_version=1",
+          "root_selector": "$.grafana_rows",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "calculation_run_id",
+              "text": "calculation_run_id",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_label",
+              "text": "bucket_label",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_start",
+              "text": "bucket_start",
+              "type": "timestamp"
+            },
+            {
+              "selector": "bucket_end",
+              "text": "bucket_end",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_granularity",
+              "text": "bucket_granularity",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "mapping_version",
+              "type": "string"
+            },
+            {
+              "selector": "new_standard_bugs",
+              "text": "new_standard_bugs",
+              "type": "number"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "daily_new_standard_bug_count",
+            "contractVersion": "0.2",
+            "root": "grafana_rows",
+            "shape": "wide_bucket_series",
+            "categoryField": "bucket_label",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "calculation_run_id",
+              "fact_snapshot_id",
+              "bucket_label",
+              "bucket_start",
+              "bucket_end",
+              "bucket_granularity",
+              "mapping_version"
+            ],
+            "valueFields": [
+              "new_standard_bugs"
+            ],
+            "evidenceLinkFields": [],
+            "seriesFieldSource": "__field.name",
+            "semanticOwner": "metrics",
+            "chartRecipeId": "daily_new_standard_bug_count",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_quality",
+            "calculationOwner": "metrics",
+            "aggregationOwner": "materialized_aggregate",
+            "bucketGrain": "day",
+            "evidenceCapability": "range_only"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "QUALITY / Selected Provider States",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 13
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "open_bug_trend",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "open_bug_trend",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_state",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=component_bug&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "component_bug",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "component_bug",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_state",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=rolling_valid_bug&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "rolling_valid_bug",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "rolling_valid_bug",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_state",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=total_bug_trend&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "total_bug_trend",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "total_bug_trend",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_state",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_aging&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "open_bug_aging",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "open_bug_aging",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_state",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=daily_new_standard_bug_count&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "daily_new_standard_bug_count",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "daily_new_standard_bug_count",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_state",
+            "calculationOwner": "metrics",
+            "aggregationOwner": "materialized_aggregate",
+            "bucketGrain": "day",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "EXECUTION",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      }
+    },
+    {
+      "id": 9,
+      "title": "EXECUTION / Deferred States",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=execution_statistics&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "execution_statistics",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "execution_statistics",
+            "chartRecipeVersion": 1,
+            "providerBinding": "first_wave_deferred",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=milestone_schedule&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "milestone_schedule",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "milestone_schedule",
+            "chartRecipeVersion": 1,
+            "providerBinding": "first_wave_deferred",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=milestone_progress&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "milestone_progress",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "milestone_progress",
+            "chartRecipeVersion": 1,
+            "providerBinding": "first_wave_deferred",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "EFFICIENCY",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      }
+    },
+    {
+      "id": 11,
+      "title": "EFFICIENCY / Open Bug Aging",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_aging&chart_version=1",
+          "root_selector": "$.grafana_rows",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "calculation_run_id",
+              "text": "calculation_run_id",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_label",
+              "text": "bucket_label",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_start",
+              "text": "bucket_start",
+              "type": "timestamp"
+            },
+            {
+              "selector": "bucket_end",
+              "text": "bucket_end",
+              "type": "string"
+            },
+            {
+              "selector": "bucket_granularity",
+              "text": "bucket_granularity",
+              "type": "string"
+            },
+            {
+              "selector": "mapping_version",
+              "text": "mapping_version",
+              "type": "string"
+            },
+            {
+              "selector": "aging_0_7_days",
+              "text": "aging_0_7_days",
+              "type": "number"
+            },
+            {
+              "selector": "aging_8_14_days",
+              "text": "aging_8_14_days",
+              "type": "number"
+            },
+            {
+              "selector": "aging_15_30_days",
+              "text": "aging_15_30_days",
+              "type": "number"
+            },
+            {
+              "selector": "aging_31_plus_days",
+              "text": "aging_31_plus_days",
+              "type": "number"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "open_bug_aging",
+            "contractVersion": "0.2",
+            "root": "grafana_rows",
+            "shape": "wide_bucket_series",
+            "categoryField": "bucket_label",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "calculation_run_id",
+              "fact_snapshot_id",
+              "bucket_label",
+              "bucket_start",
+              "bucket_end",
+              "bucket_granularity",
+              "mapping_version"
+            ],
+            "valueFields": [
+              "aging_0_7_days",
+              "aging_8_14_days",
+              "aging_15_30_days",
+              "aging_31_plus_days"
+            ],
+            "evidenceLinkFields": [],
+            "seriesFieldSource": "__field.name",
+            "semanticOwner": "metrics",
+            "chartRecipeId": "open_bug_aging",
+            "chartRecipeVersion": 1,
+            "providerBinding": "selected_provider_quality",
+            "calculationOwner": "metrics",
+            "aggregationOwner": "materialized_aggregate",
+            "evidenceCapability": "range_only"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "EFFICIENCY / Deferred States",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "metrics-bug-trend-api"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=automation_statistics&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "automation_statistics",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "automation_statistics",
+            "chartRecipeVersion": 1,
+            "providerBinding": "first_wave_deferred",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=shift_left_statistics&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "shift_left_statistics",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "shift_left_statistics",
+            "chartRecipeVersion": 1,
+            "providerBinding": "first_wave_deferred",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "metrics-bug-trend-api"
+          },
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "format": "table",
+          "url_options": {
+            "method": "GET"
+          },
+          "url": "/api/provider-charts/data/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=internal_escaped_bugs&chart_version=1",
+          "root_selector": "$.provider_series_state",
+          "columns": [
+            {
+              "selector": "provider_id",
+              "text": "provider_id",
+              "type": "string"
+            },
+            {
+              "selector": "profile_id",
+              "text": "profile_id",
+              "type": "string"
+            },
+            {
+              "selector": "chart_id",
+              "text": "chart_id",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "reason",
+              "text": "reason",
+              "type": "string"
+            },
+            {
+              "selector": "fact_snapshot_id",
+              "text": "fact_snapshot_id",
+              "type": "string"
+            }
+          ],
+          "metricsContract": {
+            "chartId": "internal_escaped_bugs",
+            "contractVersion": "0.2",
+            "root": "provider_series_state",
+            "shape": "provider_series_state",
+            "requiredFields": [
+              "provider_id",
+              "profile_id",
+              "chart_id",
+              "status",
+              "reason",
+              "fact_snapshot_id"
+            ],
+            "semanticOwner": "metrics",
+            "chartRecipeId": "internal_escaped_bugs",
+            "chartRecipeVersion": 1,
+            "providerBinding": "first_wave_deferred",
+            "evidenceCapability": "summary_only",
+            "evidenceLinkFields": []
+          }
+        }
+      ]
+    }
+  ],
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  }
+}

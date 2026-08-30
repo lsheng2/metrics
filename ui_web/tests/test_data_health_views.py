@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from bug_metrics.models import BugTrendCalculationRun, JiraScopeConfig
 from jira_sync.models import JiraSyncCursor
+from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
 
 
 class TestDataHealthViews(TestCase):
@@ -55,6 +56,42 @@ class TestDataHealthViews(TestCase):
         self.assertIn(str(run.id), content)
         self.assertNotIn('Recalculate now', content)
         self.assertNotIn('Sync now', content)
+
+    def test_shouldRenderProviderSyncCacheHealthWithoutSecrets(self):
+        # Given
+        cache_service = ProviderSyncCacheService()
+        cache_service.materialize_snapshot(
+            provider_id='hsdes',
+            profile_id='nvu-ttl-hsdes',
+            source_query={
+                'ownership_type': 'provider_owned_saved_query',
+                'source_query_ref': '15017652869',
+                'source_query_hash': 'source-hash',
+            },
+            field_set_hash='field-hash',
+            mapping_version_hash='mapping-hash',
+            facts=[],
+            raw_payload={'total': 0},
+            freshness_status=ProviderFreshnessStatus.LIVE_SYNCED,
+        )
+        cache_service.record_failure(
+            provider_id='hsdes',
+            profile_id='nvu-ttl-hsdes',
+            error_category='auth_failed',
+            message='Bearer secret-token failed',
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:data_health'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Provider Sync Cache Health', content)
+        self.assertIn('nvu-ttl-hsdes', content)
+        self.assertIn('auth_failed', content)
+        self.assertIn('Bearer [redacted]', content)
+        self.assertNotIn('secret-token', content)
 
     def _counts(self):
         return {

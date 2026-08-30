@@ -16,6 +16,40 @@
     </section>
 
     <section class="box">
+        <h3 class="title is-4">Provider Sync Cache Health</h3>
+        <table class="table is-fullwidth is-striped">
+            <thead>
+                <tr>
+                    <th>Provider</th>
+                    <th>Profile</th>
+                    <th>Status</th>
+                    <th>Freshness</th>
+                    <th>Last success</th>
+                    <th>Cache age</th>
+                    <th>Snapshot</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data_health.provider_sync_health %}
+                    <tr>
+                        <td>{{ item.provider_id }}</td>
+                        <td>{{ item.profile_id }}</td>
+                        <td>{{ item.status }}</td>
+                        <td>{{ item.freshness_status }}</td>
+                        <td>{{ item.latest_successful_sync_at }}</td>
+                        <td>{{ item.cache_age_seconds }}</td>
+                        <td>{{ item.latest_snapshot_id }}</td>
+                        <td>{{ item.error_category }} {{ item.last_error }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="8">No provider sync cache cursors found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="box">
         <h3 class="title is-4">Jira Sync Health</h3>
         <table class="table is-fullwidth is-striped">
             <thead>

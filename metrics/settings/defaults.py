@@ -40,6 +40,7 @@ CUSTOM_APP = (
     'pull_requests',
     'jira_history',
     'jira_sync',
+    'provider_sync',
     'bug_metrics',
     'ui_web',
 )

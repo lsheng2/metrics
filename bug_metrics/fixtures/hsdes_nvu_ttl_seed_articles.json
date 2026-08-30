@@ -1,0 +1,63 @@
+{
+  "profile_id": "nvu-ttl-hsdes",
+  "seed_name": "NVU All Bugs local runtime preview",
+  "seeded_from_query_id": "15017652869",
+  "articles": [
+    {
+      "id": "16000000001",
+      "rev": "1",
+      "fieldValues": {
+        "HSD_type": "bug",
+        "status": "open",
+        "component": "fwsw",
+        "release": "NVU-FW1.0_TTL",
+        "target_MS": "NVU_TTL_FWSW0.8",
+        "submitted_date": "2026-08-04T08:00:00Z",
+        "updated_date": "2026-08-04T09:00:00Z",
+        "owner": "nvu-owner-a"
+      }
+    },
+    {
+      "id": "16000000002",
+      "rev": "1",
+      "fieldValues": {
+        "HSD_type": "bug",
+        "status": "open",
+        "component": "fwsw",
+        "release": "NVU-FW1.0_TTL",
+        "target_MS": "NVU_TTL_FWSW0.8",
+        "submitted_date": "2026-08-05T08:00:00Z",
+        "updated_date": "2026-08-05T09:00:00Z",
+        "owner": "nvu-owner-b"
+      }
+    },
+    {
+      "id": "16000000003",
+      "rev": "1",
+      "fieldValues": {
+        "HSD_type": "bug",
+        "status": "open",
+        "component": "media",
+        "release": "NVU-FW1.0_TTL",
+        "target_MS": "NVU_TTL_FWSW0.8",
+        "submitted_date": "2026-08-05T10:00:00Z",
+        "updated_date": "2026-08-05T11:00:00Z",
+        "owner": "nvu-owner-c"
+      }
+    },
+    {
+      "id": "16000000004",
+      "rev": "1",
+      "fieldValues": {
+        "HSD_type": "bug",
+        "status": "open",
+        "component": "display",
+        "release": "NVU-FW1.0_TTL",
+        "target_MS": "NVU_TTL_FWSW0.8",
+        "submitted_date": "2026-07-28T08:00:00Z",
+        "updated_date": "2026-07-28T09:00:00Z",
+        "owner": "nvu-owner-d"
+      }
+    }
+  ]
+}

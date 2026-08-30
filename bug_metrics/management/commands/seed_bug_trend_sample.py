@@ -13,38 +13,58 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with transaction.atomic():
-            scope, _ = JiraScopeConfig.objects.update_or_create(
+            self._seed_scope(
                 name='Local STDEL Bug Trend',
-                defaults={
-                    'ip': 'NVU',
-                    'project_label': 'STDEL',
-                    'jql': 'project = STDEL AND issuetype = Bug',
-                    'bug_type_values': ['Bug'],
-                    'open_status_values': ['Open'],
-                    'fixed_status_values': ['Fixed'],
-                    'closed_status_values': ['Closed'],
-                    'fixed_resolution_values': ['Fixed'],
-                    'severity_field': 'priority',
-                    'critical_high_values': ['P1-Critical', 'P2-High'],
-                    'medium_low_values': ['P3-Medium'],
-                    'component_field': 'components',
-                    'owner_field': 'assignee',
-                    'bucket_granularity': JiraScopeConfig.GRANULARITY_WEEKLY,
-                    'enabled': True,
-                },
+                ip='NVU',
+                project_label='STDEL',
+                milestone_field='',
+                jql='project = STDEL AND issuetype = Bug',
+                component_value='team_emulation',
             )
-            scope.jira_issues.all().delete()
-            scope.jira_transitions.all().delete()
-            scope.calculation_runs.all().delete()
+            parity_scope = self._seed_scope(
+                name='chiplet-2a-jira',
+                ip='chiplet_ip',
+                project_label='chiplet',
+                milestone_field='2a',
+                jql='project = "131600" AND component = "team_int_qemu"',
+                component_value='team_int_qemu',
+            )
+        self.stdout.write(self.style.SUCCESS(f'Seeded provider parity sample scope {parity_scope.id}: {parity_scope.name}'))
 
-            coverage_start = date(2025, 4, 7)
-            coverage_end = date(2026, 8, 9)
-            self._create_sample_history(scope, coverage_start, coverage_end)
+    def _seed_scope(self, name, ip, project_label, milestone_field, jql, component_value):
+        scope, _ = JiraScopeConfig.objects.update_or_create(
+            name=name,
+            defaults={
+                'ip': ip,
+                'project_label': project_label,
+                'milestone_field': milestone_field,
+                'jql': jql,
+                'bug_type_values': ['Bug'],
+                'open_status_values': ['Open'],
+                'fixed_status_values': ['Fixed'],
+                'closed_status_values': ['Closed'],
+                'fixed_resolution_values': ['Fixed'],
+                'severity_field': 'priority',
+                'critical_high_values': ['P1-Critical', 'P2-High'],
+                'medium_low_values': ['P3-Medium'],
+                'component_field': 'components',
+                'owner_field': 'assignee',
+                'bucket_granularity': JiraScopeConfig.GRANULARITY_WEEKLY,
+                'enabled': True,
+            },
+        )
+        scope.jira_issues.all().delete()
+        scope.jira_transitions.all().delete()
+        scope.calculation_runs.all().delete()
 
-            bug_metrics_container.bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)
-        self.stdout.write(self.style.SUCCESS(f'Seeded bug trend local sample scope {scope.id}: {scope.name}'))
+        coverage_start = date(2025, 4, 7)
+        coverage_end = date(2026, 8, 9)
+        self._create_sample_history(scope, coverage_start, coverage_end, component_value)
 
-    def _create_sample_history(self, scope, coverage_start, coverage_end):
+        bug_metrics_container.bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)
+        return scope
+
+    def _create_sample_history(self, scope, coverage_start, coverage_end, component_value):
         issue_records = []
         open_issue_keys = []
         issue_number = 9000
@@ -93,10 +113,10 @@ class Command(BaseCommand):
         transition_objects = []
         for record in issue_records:
             if record['fixed_at']:
-                issue_objects.append(self._issue(scope, record['issue_key'], record['summary'], 'Fixed', 'Fixed', record['priority'], record['created_at'], record['fixed_at']))
+                issue_objects.append(self._issue(scope, record['issue_key'], record['summary'], 'Fixed', 'Fixed', record['priority'], record['created_at'], record['fixed_at'], component_value))
                 transition_objects.append(self._transition(scope, record['issue_key'], record['fixed_at'], 'Open', 'Fixed'))
             else:
-                issue_objects.append(self._issue(scope, record['issue_key'], record['summary'], 'Open', '', record['priority'], record['created_at'], record['created_at']))
+                issue_objects.append(self._issue(scope, record['issue_key'], record['summary'], 'Open', '', record['priority'], record['created_at'], record['created_at'], component_value))
 
         JiraIssue.objects.bulk_create(issue_objects, batch_size=1000)
         JiraTransition.objects.bulk_create(transition_objects, batch_size=1000)
@@ -139,7 +159,7 @@ class Command(BaseCommand):
             return 16
         return 24
 
-    def _issue(self, scope, issue_key, summary, status, resolution, priority, created_at, updated_at):
+    def _issue(self, scope, issue_key, summary, status, resolution, priority, created_at, updated_at, component_value):
         return JiraIssue(
             scope=scope,
             issue_key=issue_key,
@@ -148,12 +168,12 @@ class Command(BaseCommand):
             status=status,
             resolution_value=resolution,
             severity_value=priority,
-            component_value='team_emulation',
+            component_value=component_value,
             owner_value='Alice',
             created_at=created_at,
             updated_at=updated_at,
             resolved_at=updated_at if resolution else None,
-            raw_fields_json={'priority': {'name': priority}, 'components': [{'name': 'team_emulation'}]},
+            raw_fields_json={'priority': {'name': priority}, 'components': [{'name': component_value}]},
             is_in_current_scope=True,
         )
 

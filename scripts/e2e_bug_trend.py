@@ -75,7 +75,7 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLife
                 "--artifact-root",
                 "ops/grafana",
                 "--allowlist",
-                "docs/grafana-approved-data-surfaces.json",
+                "openspec/docs/current-baseline/grafana-approved-data-surfaces.json",
             ], workspace),
             run_id=run_id,
         )

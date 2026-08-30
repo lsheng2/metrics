@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlparse
 
+from grafana_evidence_contract import validate_panel_evidence_links
+from grafana_provider_chart_contract import ChartRecipe, load_provider_chart_recipes, validate_daily_metric_panel, validate_provider_chart_contract
+
 
 @dataclass(frozen=True, slots=True)
 class ApiSurface:
@@ -21,9 +24,12 @@ class ApiSurface:
 class GrafanaAllowlist:
     datasource_uids: frozenset[str]
     api_surfaces: dict[str, ApiSurface]
+    provider_chart_recipes: dict[str, ChartRecipe]
     sql_views: frozenset[str]
     forbidden_sql_patterns: tuple[re.Pattern[str], ...]
     secret_patterns: tuple[re.Pattern[str], ...]
+    forbidden_provider_literal_patterns: tuple[re.Pattern[str], ...]
+    forbidden_business_calculation_patterns: tuple[re.Pattern[str], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,9 +43,12 @@ def load_allowlist(path: Path) -> GrafanaAllowlist:
     return GrafanaAllowlist(
         datasource_uids=frozenset(payload.get("datasource_uids", [])),
         api_surfaces=load_api_surfaces(payload.get("api_surfaces", {})),
+        provider_chart_recipes=load_provider_chart_recipes(payload.get("provider_chart_recipes", {})),
         sql_views=frozenset(payload.get("sql_views", [])),
         forbidden_sql_patterns=compile_patterns(payload.get("forbidden_sql_patterns", [])),
         secret_patterns=compile_patterns(payload.get("secret_patterns", []), re.IGNORECASE),
+        forbidden_provider_literal_patterns=compile_patterns(payload.get("forbidden_provider_literal_patterns", []), re.IGNORECASE),
+        forbidden_business_calculation_patterns=compile_patterns(payload.get("forbidden_business_calculation_patterns", []), re.IGNORECASE),
     )
 
 
@@ -94,7 +103,7 @@ def validate_artifact(path: Path, allowlist: GrafanaAllowlist) -> list[Finding]:
     except json.JSONDecodeError as error:
         return [Finding(path, f"invalid JSON: {error}")]
 
-    return validate_node(path, "", payload, allowlist, None) + validate_panel_evidence_links(path, payload) + validate_render_contracts(path, payload, allowlist)
+    return validate_node(path, "", payload, allowlist, None) + validate_panel_evidence_links(path, payload, Finding) + validate_render_contracts(path, payload, allowlist)
 
 
 def validate_render_contracts(path: Path, payload: dict[str, Any], allowlist: GrafanaAllowlist) -> list[Finding]:
@@ -105,6 +114,7 @@ def validate_render_contracts(path: Path, payload: dict[str, Any], allowlist: Gr
     for panel_index, panel in enumerate(panels):
         if not isinstance(panel, dict):
             continue
+        findings.extend(validate_daily_metric_panel(path, f"panels[{panel_index}]", panel, Finding))
         for target_index, target in enumerate(panel.get("targets", [])):
             if not isinstance(target, dict):
                 continue
@@ -118,6 +128,7 @@ def validate_render_contracts(path: Path, payload: dict[str, Any], allowlist: Gr
             if not isinstance(metrics_contract, dict) or not metrics_contract:
                 continue
             findings.extend(validate_render_contract_against_allowlist(path, target_path, target_url, metrics_contract, target, allowlist))
+            findings.extend(validate_provider_chart_contract(path, target_path, target_url, metrics_contract, allowlist, Finding))
             if metrics_contract.get("shape") == "wide_bucket_series":
                 findings.extend(validate_wide_bucket_series_contract(path, target_path, target, metrics_contract))
     return findings
@@ -181,70 +192,6 @@ def chart_id_from_target(target: dict[str, Any]) -> str:
     return params.get("chart_id", "")
 
 
-def validate_panel_evidence_links(path: Path, payload: dict[str, Any]) -> list[Finding]:
-    panels = payload.get("panels", [])
-    if not isinstance(panels, list):
-        return []
-    findings: list[Finding] = []
-    for panel_index, panel in enumerate(panels):
-        if not isinstance(panel, dict):
-            continue
-        panel_path = f"panels[{panel_index}]"
-        target_fields = evidence_fields_by_target(panel)
-        if not target_fields:
-            continue
-        link_urls = panel_link_urls(panel)
-        if not link_urls:
-            findings.append(Finding(path, f"{panel_path} declares evidence link fields but has no panel field links"))
-            continue
-        column_fields = target_column_fields(panel)
-        for target_path, fields in target_fields.items():
-            missing_columns = fields - column_fields
-            if missing_columns:
-                findings.append(Finding(path, f"{target_path} evidenceLinkFields missing target columns: {', '.join(sorted(missing_columns))}"))
-            for field in sorted(fields):
-                field_ref = f"${{__data.fields.{field}}}"
-                if not any(field_ref in link_url for link_url in link_urls):
-                    findings.append(Finding(path, f"{panel_path} evidence link URL does not reference {field_ref}"))
-        findings.extend(validate_evidence_link_param_mapping(path, panel_path, link_urls))
-    return findings
-
-
-def evidence_fields_by_target(panel: dict[str, Any]) -> dict[str, frozenset[str]]:
-    fields_by_target: dict[str, frozenset[str]] = {}
-    targets = panel.get("targets", [])
-    if not isinstance(targets, list):
-        return fields_by_target
-    for target_index, target in enumerate(targets):
-        if not isinstance(target, dict):
-            continue
-        metrics_contract = target.get("metricsContract", {})
-        if not isinstance(metrics_contract, dict):
-            continue
-        evidence_fields = metrics_contract.get("evidenceLinkFields", [])
-        if evidence_fields:
-            fields_by_target[f"targets[{target_index}]"] = frozenset(str(field) for field in evidence_fields)
-    return fields_by_target
-
-
-def panel_link_urls(panel: dict[str, Any]) -> list[str]:
-    defaults = panel.get("fieldConfig", {}).get("defaults", {})
-    links = defaults.get("links", []) if isinstance(defaults, dict) else []
-    return [link.get("url", "") for link in links if isinstance(link, dict) and isinstance(link.get("url"), str)]
-
-
-def target_column_fields(panel: dict[str, Any]) -> frozenset[str]:
-    fields: set[str] = set()
-    targets = panel.get("targets", [])
-    if not isinstance(targets, list):
-        return frozenset()
-    for target in targets:
-        if not isinstance(target, dict):
-            continue
-        fields.update(target_fields(target))
-    return frozenset(fields)
-
-
 def target_fields(target: dict[str, Any]) -> frozenset[str]:
     fields: set[str] = set()
     columns = target.get("columns", [])
@@ -260,23 +207,6 @@ def target_fields(target: dict[str, Any]) -> frozenset[str]:
         if isinstance(text, str):
             fields.add(text)
     return frozenset(fields)
-
-
-def validate_evidence_link_param_mapping(path: Path, panel_path: str, link_urls: list[str]) -> list[Finding]:
-    required_fragments = {
-        "run": "run=${__data.fields.calculation_run_id}",
-        "bucket": "bucket=${__data.fields.bucket_id}",
-    }
-    findings: list[Finding] = []
-    for param_name, fragment in required_fragments.items():
-        if not any(fragment in link_url for link_url in link_urls):
-            findings.append(Finding(path, f"{panel_path} evidence link URL must map {param_name} via {fragment}"))
-    if not any("series=${__data.fields.series_name}" in link_url or "series=${__field.name}" in link_url for link_url in link_urls):
-        findings.append(Finding(path, f"{panel_path} evidence link URL must map series via series=${{__data.fields.series_name}} or series=${{__field.name}}"))
-    chart_ids = {value for link_url in link_urls for name, value in parse_qsl(urlparse(link_url).query, keep_blank_values=True) if name == 'chart_id'}
-    if not chart_ids:
-        findings.append(Finding(path, f"{panel_path} evidence link URL must include chart_id when chart-data target uses Chart Catalog"))
-    return findings
 
 
 def validate_node(artifact_path: Path, value_path: str, value: Any, allowlist: GrafanaAllowlist, inherited_datasource_uid: str | None) -> list[Finding]:
@@ -341,12 +271,30 @@ def validate_string(path: Path, value_path: str, value: str, allowlist: GrafanaA
     findings: list[Finding] = []
     if looks_like_secret_field(value_path, allowlist) and value:
         findings.append(Finding(path, f"secret-shaped field at {value_path}"))
+    findings.extend(validate_forbidden_provider_literals(path, value_path, value, allowlist))
+    findings.extend(validate_forbidden_business_calculations(path, value_path, value, allowlist))
 
     if looks_like_sql(value):
         findings.extend(validate_sql(path, value_path, value, allowlist))
     elif looks_like_metrics_api_path(value):
         findings.extend(validate_api_path(path, value_path, value, allowlist))
     return findings
+
+
+def validate_forbidden_provider_literals(path: Path, value_path: str, value: str, allowlist: GrafanaAllowlist) -> list[Finding]:
+    return [
+        Finding(path, f"provider-native query or field literal at {value_path}: {pattern.pattern}")
+        for pattern in allowlist.forbidden_provider_literal_patterns
+        if pattern.search(value)
+    ]
+
+
+def validate_forbidden_business_calculations(path: Path, value_path: str, value: str, allowlist: GrafanaAllowlist) -> list[Finding]:
+    return [
+        Finding(path, f"Grafana panel-local business calculation at {value_path}: {pattern.pattern}")
+        for pattern in allowlist.forbidden_business_calculation_patterns
+        if pattern.search(value)
+    ]
 
 
 def looks_like_secret_field(value_path: str, allowlist: GrafanaAllowlist) -> bool:
