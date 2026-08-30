@@ -112,7 +112,73 @@ class TestProviderChartApiSurface(TestCase):
         payload = response.json()
         self.assertEqual(200, response.status_code)
         self.assertEqual('supported', payload['status'])
+        self.assertEqual('fwsw', payload['grafana_rows'][0]['component_label'])
         self.assertEqual(4, payload['grafana_rows'][0]['component_bug_count'])
+
+    def test_shouldUseDateRangeLiveFactsInsteadOfWorkWeekArtifactWhenRangeModeIsDate(self):
+        # Given
+        cache_service = ProviderSyncCacheService()
+        snapshot = cache_service.materialize_snapshot(
+            provider_id='hsdes',
+            profile_id='nvu-ttl-hsdes',
+            source_query={
+                'ownership_type': 'provider_owned_saved_query',
+                'source_query_ref': '15017652869',
+                'source_query_hash': 'source-hash',
+            },
+            field_set_hash='field-hash',
+            mapping_version_hash='mapping-hash',
+            facts=[{
+                'source_item_id': '1607367026-1',
+                'source_item_revision': '1',
+                'canonical_fields': {
+                    'source_item_type': 'bug',
+                    'created_at': '2026-08-10T01:00:00Z',
+                    'severity_or_priority': 'medium',
+                },
+            }],
+            raw_payload={'total': 1},
+            freshness_status=ProviderFreshnessStatus.LIVE_SYNCED,
+        )
+        cache_service.store_aggregate_artifact(
+            snapshot=snapshot,
+            chart_id='open_bug_trend',
+            chart_version=1,
+            begin_ww='26WW32',
+            end_ww='26WW32',
+            rows=[],
+            grafana_rows=[{
+                'provider_id': 'hsdes',
+                'profile_id': 'nvu-ttl-hsdes',
+                'bucket_label': '26WW32',
+                'bucket_start': '2026-08-03',
+                'bucket_end': '2026-08-09',
+                'all_open_bugs': 99,
+            }],
+            source_population=snapshot.source_query_json,
+            run_metadata={'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED},
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+            'range_mode': 'date',
+            'begin_ww': '26WW32',
+            'end_ww': '26WW32',
+            'begin_date': '2026-08-10',
+            'end_date': '2026-08-16',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('date', payload['range_mode'])
+        self.assertEqual('live_synced', payload['run_metadata']['freshness_status'])
+        self.assertEqual('2026-08-10', payload['grafana_rows'][0]['bucket_start'])
+        self.assertIn('2026-08-10-2026-08-16', payload['grafana_rows'][0]['calculation_run_id'])
+        self.assertEqual(1, payload['grafana_rows'][0]['all_open_bugs'])
 
     def test_shouldExposeProviderChartAggregatesForGrafanaSurface(self):
         # Given
@@ -163,6 +229,54 @@ class TestProviderChartApiSurface(TestCase):
         self.assertEqual(1, payload['grafana_rows'][0]['all_open_bugs'])
         self.assertFalse(any(key.startswith(('jira_', 'hsdes_')) for key in payload['grafana_rows'][0]))
 
+    def test_shouldUseBrowserDateRangeWhenProviderChartRangeModeIsDate(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='chiplet-2a-jira',
+            ip='chiplet_ip',
+            project_label='chiplet',
+            jql='project = "131600" AND component = "team_int_qemu"',
+            bug_type_values=['Bug'],
+            open_status_values=['Open'],
+            fixed_status_values=['Fixed'],
+            severity_field='priority',
+            critical_high_values=['P1-Stopper'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        JiraIssue.objects.create(
+            scope=scope,
+            issue_key='STDEL-1001',
+            summary='Open stopper bug',
+            issue_type='Bug',
+            status='Open',
+            severity_value='P1-Stopper',
+            component_value='team_int_qemu',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+        )
+        bug_trend_api.recalculate_scope(scope.id, date(2026, 8, 3), date(2026, 8, 9))
+
+        # When
+        response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
+            'profile_id': 'chiplet-2a-jira',
+            'range_mode': 'date',
+            'begin_date': '2026-08-03',
+            'end_date': '2026-08-09',
+            'chart_id': 'open_bug_trend',
+            'chart_version': '1',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('date', payload['range_mode'])
+        self.assertEqual('2026-08-03', payload['begin_date'])
+        self.assertEqual('2026-08-09', payload['end_date'])
+        self.assertEqual('', payload['begin_ww'])
+        self.assertEqual('', payload['end_ww'])
+        self.assertEqual(1, payload['grafana_rows'][0]['all_open_bugs'])
+
     def test_shouldExposeHsdesSeededComponentBugAggregatesForGrafanaSurface(self):
         # When
         response = self.client.get(reverse('ui_web:provider_chart_data_api'), {
@@ -181,6 +295,8 @@ class TestProviderChartApiSurface(TestCase):
         self.assertEqual('nvu-ttl-hsdes', payload['profile_id'])
         self.assertEqual('supported', payload['status'])
         self.assertEqual('materialized_from_seed_hsdes_facts', payload['run_metadata']['freshness_status'])
+        self.assertEqual('fwsw', self._row_value(payload, 'component_label', 'fwsw'))
+        self.assertEqual('media', self._row_value(payload, 'component_label', 'media'))
         self.assertEqual(2, self._row_value(payload, 'component_bug_count', 'fwsw'))
         self.assertEqual(1, self._row_value(payload, 'component_bug_count', 'media'))
         self.assertFalse(any(

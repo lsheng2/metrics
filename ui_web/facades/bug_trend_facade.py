@@ -108,7 +108,8 @@ class BugTrendFacade:
         }
 
     def get_provider_chart_payload(self, provider_id: str, profile_id: str, begin_ww: str, end_ww: str,
-                                   chart_id: str, chart_version: int = 1, fact_snapshot_id: str = '') -> dict:
+                                   chart_id: str, chart_version: int = 1, fact_snapshot_id: str = '',
+                                   range_mode: str = 'ww', begin_date: str = '', end_date: str = '') -> dict:
         resolved_provider_id = self._resolve_provider_id(provider_id, profile_id)
         result = self._bug_trend_api.get_provider_chart_aggregates(
             ProviderChartAggregateQuery(
@@ -119,6 +120,9 @@ class BugTrendFacade:
                 chart_id=chart_id,
                 chart_version=chart_version,
                 fact_snapshot_id=fact_snapshot_id,
+                range_mode=range_mode,
+                begin_date=begin_date,
+                end_date=end_date,
             )
         )
         return result.to_dict()
@@ -127,7 +131,8 @@ class BugTrendFacade:
                                             chart_id: str, calculation_run_id: str, bucket_id: str = '',
                                             series_name: str = '', chart_version: int = 1, fact_snapshot_id: str = '',
                                             owner: str = '', status: str = '', severity: str = '',
-                                            component: str = '', text: str = '') -> dict:
+                                            component: str = '', text: str = '', range_mode: str = 'ww',
+                                            begin_date: str = '', end_date: str = '') -> dict:
         resolved_provider_id = self._resolve_provider_id(provider_id, profile_id)
         return self._bug_trend_api.get_provider_chart_evidence(
             ProviderChartEvidenceQuery(
@@ -146,6 +151,9 @@ class BugTrendFacade:
                 severity=severity,
                 component=component,
                 text=text,
+                range_mode=range_mode,
+                begin_date=begin_date,
+                end_date=end_date,
             )
         )
 

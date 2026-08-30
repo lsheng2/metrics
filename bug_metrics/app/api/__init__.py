@@ -35,7 +35,7 @@ from .provider_aggregate_contracts import (
     evidence_capability_for_result,
     provider_series_to_evidence_series,
 )
-from .provider_aggregates import ProviderChartAggregateService, ww_range_to_dates
+from .provider_aggregates import ProviderChartAggregateService, provider_query_range_to_dates
 from .provider_correlation import ProviderCorrelationService
 from .provider_profiles import ProviderProfileReadinessService
 from .scope_audit import ScopeAudit, ScopeAuditService
@@ -255,7 +255,7 @@ class ApiForBugTrend:
         if scope is None:
             return self._provider_evidence_state(query, 'summary_only', 'unavailable', 'No enabled Jira scope is mapped to the requested provider profile.')
 
-        begin, end = ww_range_to_dates(query.begin_ww, query.end_ww)
+        begin, end = provider_query_range_to_dates(query)
         evidence_series_name = provider_series_to_evidence_series(query.provider_id, query.chart_id, query.selected_series_name)
         result = self.get_evidence_tickets(
             BugTrendPageQueryState(
@@ -286,6 +286,9 @@ class ApiForBugTrend:
             'reason': '',
             'begin_ww': query.begin_ww,
             'end_ww': query.end_ww,
+            'range_mode': query.range_mode,
+            'begin_date': begin.isoformat(),
+            'end_date': end.isoformat(),
             'source_scope_ref': f'jira_scope:{scope.id}',
             'calculation_run_id': query.calculation_run_id,
             'fact_snapshot_id': query.fact_snapshot_id,
@@ -393,6 +396,9 @@ class ApiForBugTrend:
             'reason': resolved_reason,
             'begin_ww': query.begin_ww,
             'end_ww': query.end_ww,
+            'range_mode': query.range_mode,
+            'begin_date': query.begin_date,
+            'end_date': query.end_date,
             'source_scope_ref': '',
             'calculation_run_id': query.calculation_run_id,
             'fact_snapshot_id': query.fact_snapshot_id,

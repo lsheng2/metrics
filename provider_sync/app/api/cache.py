@@ -293,6 +293,20 @@ class ProviderSyncCacheService:
             status='completed',
         ).order_by('-completed_at', '-created_at').first()
 
+    def facts_for_snapshot(self, snapshot: ProviderFactSnapshot) -> list[dict]:
+        return [
+            {
+                'source_item_id': fact.source_item_id,
+                'source_item_revision': fact.source_item_revision,
+                'canonical_fields': fact.canonical_fields_json,
+                'project_fields': fact.project_fields_json,
+                'field_values': fact.field_values_json,
+                'provider_fields': fact.provider_fields_json,
+                'mapping_version': fact.mapping_version,
+            }
+            for fact in ProviderFact.objects.filter(snapshot=snapshot).order_by('source_item_id', 'source_item_revision')
+        ]
+
     def latest_aggregate_artifact(
         self,
         provider_id: str,

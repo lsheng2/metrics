@@ -42,21 +42,27 @@ class ProviderChartAggregateService:
         self._provider_sync_cache_service = provider_sync_cache_service or ProviderSyncCacheService()
 
     def get_aggregates(self, query: ProviderChartAggregateQuery) -> ProviderChartAggregateResult:
-        begin, end = ww_range_to_dates(query.begin_ww, query.end_ww)
+        begin, end = provider_query_range_to_dates(query)
+        range_mode = provider_query_range_mode(query)
         if query.chart_id in DEFERRED_CHART_REASONS:
             source_population = self._hsdes_source_population(query) if query.provider_id == 'hsdes' else self._jira_source_population_without_scope(query)
             return self._state_result(query, 'deferred', DEFERRED_CHART_REASONS[query.chart_id], source_population)
         if query.provider_id == 'hsdes':
-            cached_artifact = self._provider_sync_cache_service.cached_aggregate_artifact(
-                query.provider_id,
-                query.profile_id,
-                query.chart_id,
-                query.chart_version,
-                query.begin_ww,
-                query.end_ww,
-            )
-            if cached_artifact.artifact:
-                return self._aggregate_result_from_artifact(query, cached_artifact)
+            if range_mode == 'ww':
+                cached_artifact = self._provider_sync_cache_service.cached_aggregate_artifact(
+                    query.provider_id,
+                    query.profile_id,
+                    query.chart_id,
+                    query.chart_version,
+                    query.begin_ww,
+                    query.end_ww,
+                )
+                if cached_artifact.artifact:
+                    return self._aggregate_result_from_artifact(query, cached_artifact)
+            live_snapshot = self._provider_sync_cache_service.latest_successful_snapshot(query.provider_id, query.profile_id)
+            if live_snapshot:
+                live_facts = self._provider_sync_cache_service.facts_for_snapshot(live_snapshot)
+                return self.build_hsdes_quality_aggregate_artifact(query, live_facts, live_snapshot.freshness_status)
             seed_facts = self._hsdes_seed_fact_repository.facts_for_profile(query.profile_id)
             if seed_facts:
                 return self.build_hsdes_quality_aggregate_artifact(query, seed_facts, 'materialized_from_seed_hsdes_facts')
@@ -100,10 +106,13 @@ class ProviderChartAggregateService:
             run_metadata=self._run_metadata(scope, run, 'fresh'),
             rows=rows,
             grafana_rows=self._grafana_rows(rows),
+            range_mode=range_mode,
+            begin_date=begin.isoformat(),
+            end_date=end.isoformat(),
         )
 
     def build_hsdes_quality_aggregate_artifact(self, query: ProviderChartAggregateQuery, facts: list[dict], freshness_status: str = 'materialized_from_normalized_hsdes_facts') -> ProviderChartAggregateResult:
-        begin, end = ww_range_to_dates(query.begin_ww, query.end_ww)
+        begin, end = provider_query_range_to_dates(query)
         if query.provider_id != 'hsdes':
             return self._state_result(query, 'unsupported', 'Only HSD-ES quality aggregate artifact generation is supported by this path.', self._empty_source_population(query))
         if query.chart_id in DEFERRED_CHART_REASONS:
@@ -114,7 +123,7 @@ class ProviderChartAggregateService:
         fact_snapshot_id = self._hsdes_fact_snapshot_id(query, facts)
         source_population = self._hsdes_source_population(query)
         source_population['fact_snapshot_id'] = fact_snapshot_id
-        run_id = f'hsdes-{query.chart_id}-{query.begin_ww}-{query.end_ww}-{source_population["source_query_hash"][:12]}'
+        run_id = f'hsdes-{query.chart_id}-{self._range_identity(query, begin, end)}-{source_population["source_query_hash"][:12]}'
         rows = self._build_hsdes_rows(query, facts, begin, end, source_population, fact_snapshot_id, run_id)
         return ProviderChartAggregateResult(
             contract_version=PROVIDER_CHART_CONTRACT_VERSION,
@@ -137,6 +146,9 @@ class ProviderChartAggregateService:
             },
             rows=rows,
             grafana_rows=self._grafana_rows(rows),
+            range_mode=provider_query_range_mode(query),
+            begin_date=begin.isoformat(),
+            end_date=end.isoformat(),
         )
 
     def _build_hsdes_rows(self, query, facts, begin, end, source_population, fact_snapshot_id, calculation_run_id):
@@ -385,6 +397,11 @@ class ProviderChartAggregateService:
     def _hsdes_bucket_id(self, query, metric_id, bucket_start):
         return f'{query.profile_id}:{query.chart_id}:{metric_id}:{bucket_start.isoformat()}'
 
+    def _range_identity(self, query, begin, end):
+        if provider_query_range_mode(query) == 'date':
+            return f'{begin.isoformat()}-{end.isoformat()}'
+        return f'{query.begin_ww}-{query.end_ww}'
+
     def _row(self, query, scope, run, fact_snapshot_id, source_population, metric_id, bucket_grain, bucket_start, bucket_end, bucket_ww, bucket_date, dimensions, series, value, bucket_id=''):
         merged_dimensions = scope_label_dimensions(self._scope_labels(query.profile_id, scope))
         merged_dimensions.update(dimensions)
@@ -454,7 +471,7 @@ class ProviderChartAggregateService:
                 tuple(sorted(aggregate_row.dimensions.items())),
             )
             if row_key not in grafana_rows:
-                grafana_rows[row_key] = {
+                grafana_row = {
                     'provider_id': aggregate_row.provider_id,
                     'profile_id': aggregate_row.profile_id,
                     'source_scope_ref': aggregate_row.source_scope_ref,
@@ -473,10 +490,28 @@ class ProviderChartAggregateService:
                     'mapping_version': aggregate_row.mapping_version,
                     'mapping_version_hash': aggregate_row.mapping_version_hash,
                 }
+                grafana_row.update(self._grafana_render_fields(aggregate_row.chart_id, aggregate_row.dimensions))
+                grafana_rows[row_key] = grafana_row
             grafana_rows[row_key][aggregate_row.series] = aggregate_row.value
         return [deepcopy(row) for row in grafana_rows.values()]
 
+    def _grafana_render_fields(self, chart_id, dimensions):
+        if chart_id == 'component_bug':
+            return {'component_label': dimensions.get('component') or 'Unassigned'}
+        return {}
+
+    def _normalize_cached_grafana_rows(self, chart_id, rows):
+        normalized_rows = []
+        for row in rows:
+            normalized_row = deepcopy(row)
+            dimensions = normalized_row.get('dimensions', {})
+            if isinstance(dimensions, dict):
+                normalized_row.update(self._grafana_render_fields(chart_id, dimensions))
+            normalized_rows.append(normalized_row)
+        return normalized_rows
+
     def _state_result(self, query, status, reason, source_population, run_metadata=None):
+        begin, end = provider_query_range_to_dates(query)
         return ProviderChartAggregateResult(
             contract_version=PROVIDER_CHART_CONTRACT_VERSION,
             provider_id=query.provider_id,
@@ -493,9 +528,13 @@ class ProviderChartAggregateService:
             run_metadata=run_metadata or {},
             rows=[],
             grafana_rows=[],
+            range_mode=provider_query_range_mode(query),
+            begin_date=begin.isoformat(),
+            end_date=end.isoformat(),
         )
 
     def _aggregate_result_from_artifact(self, query, cached_artifact):
+        begin, end = ww_range_to_dates(query.begin_ww, query.end_ww)
         artifact = cached_artifact.artifact
         run_metadata = dict(artifact.run_metadata_json)
         run_metadata['freshness_status'] = cached_artifact.freshness_status
@@ -516,7 +555,10 @@ class ProviderChartAggregateService:
             scope_labels=self._scope_labels(query.profile_id),
             run_metadata=run_metadata,
             rows=[],
-            grafana_rows=artifact.grafana_rows_json,
+            grafana_rows=self._normalize_cached_grafana_rows(query.chart_id, artifact.grafana_rows_json),
+            range_mode='ww',
+            begin_date=begin.isoformat(),
+            end_date=end.isoformat(),
         )
 
     def _jira_scope_for_profile(self, profile_id):
@@ -700,6 +742,29 @@ def ww_range_to_dates(begin_ww: str, end_ww: str) -> tuple[date, date]:
     begin = ww_to_monday(begin_ww)
     end = ww_to_monday(end_ww) + timedelta(days=6)
     return begin, end
+
+
+def provider_query_range_to_dates(query) -> tuple[date, date]:
+    range_mode = provider_query_range_mode(query)
+    if range_mode == 'date':
+        begin = iso_date_value(query.begin_date, 'begin_date')
+        end = iso_date_value(query.end_date, 'end_date')
+        if begin > end:
+            raise ValueError('begin_date must be earlier than or equal to end_date.')
+        return begin, end
+    if range_mode == 'ww':
+        return ww_range_to_dates(query.begin_ww, query.end_ww)
+    raise ValueError('range_mode must be ww or date.')
+
+
+def provider_query_range_mode(query) -> str:
+    return (query.range_mode or 'ww').strip().lower()
+
+
+def iso_date_value(value: str, field_name: str) -> date:
+    if not value:
+        raise ValueError(f'{field_name} is required when range_mode=date.')
+    return date.fromisoformat(value[:10])
 
 
 def ww_to_monday(value: str) -> date:

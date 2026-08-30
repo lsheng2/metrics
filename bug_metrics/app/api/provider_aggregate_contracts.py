@@ -116,6 +116,9 @@ class ProviderChartAggregateQuery:
     chart_id: str
     chart_version: int = 1
     fact_snapshot_id: str = ''
+    range_mode: str = 'ww'
+    begin_date: str = ''
+    end_date: str = ''
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,6 +138,9 @@ class ProviderChartEvidenceQuery:
     severity: str = ''
     component: str = ''
     text: str = ''
+    range_mode: str = 'ww'
+    begin_date: str = ''
+    end_date: str = ''
 
 
 @dataclass(slots=True)
@@ -206,6 +212,9 @@ class ProviderChartAggregateResult:
     run_metadata: Dict[str, str]
     rows: List[ProviderAggregateRow]
     grafana_rows: List[dict]
+    range_mode: str = 'ww'
+    begin_date: str = ''
+    end_date: str = ''
 
     def to_dict(self) -> dict:
         return {
@@ -217,6 +226,9 @@ class ProviderChartAggregateResult:
             'evidence_capability': evidence_capability_for_result(self.chart_id, self.status),
             'begin_ww': self.begin_ww,
             'end_ww': self.end_ww,
+            'range_mode': self.range_mode,
+            'begin_date': self.begin_date,
+            'end_date': self.end_date,
             'status': self.status,
             'reason': self.reason,
             'fact_snapshot_id': self.fact_snapshot_id,
@@ -233,6 +245,9 @@ class ProviderChartAggregateResult:
                 'evidence_capability': evidence_capability_for_result(self.chart_id, self.status),
                 'begin_ww': self.begin_ww,
                 'end_ww': self.end_ww,
+                'range_mode': self.range_mode,
+                'begin_date': self.begin_date,
+                'end_date': self.end_date,
                 'status': self.status,
                 'reason': self.reason,
                 'fact_snapshot_id': self.fact_snapshot_id,

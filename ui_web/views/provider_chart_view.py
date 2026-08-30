@@ -5,10 +5,10 @@ from .bug_trend_view import validate_query_contract
 from .graceful_template_view import GracefulTemplateView
 
 
-PROVIDER_CHART_DATA_REQUIRED_PARAMS = frozenset({'profile_id', 'begin_ww', 'end_ww', 'chart_id'})
-PROVIDER_CHART_DATA_OPTIONAL_PARAMS = frozenset({'provider_id', 'space_id', 'release_target', 'milestone', 'chart_version', 'fact_snapshot_id'})
-PROVIDER_CHART_EVIDENCE_REQUIRED_PARAMS = frozenset({'profile_id', 'begin_ww', 'end_ww', 'run', 'chart_id'})
-PROVIDER_CHART_EVIDENCE_OPTIONAL_PARAMS = frozenset({'provider_id', 'bucket', 'series', 'fact_snapshot_id', 'chart_version', 'owner', 'status', 'severity', 'component', 'text'})
+PROVIDER_CHART_DATA_REQUIRED_BASE_PARAMS = frozenset({'profile_id', 'chart_id'})
+PROVIDER_CHART_DATA_OPTIONAL_PARAMS = frozenset({'provider_id', 'space_id', 'release_target', 'milestone', 'chart_version', 'fact_snapshot_id', 'range_mode', 'begin_ww', 'end_ww', 'begin_date', 'end_date'})
+PROVIDER_CHART_EVIDENCE_REQUIRED_BASE_PARAMS = frozenset({'profile_id', 'run', 'chart_id'})
+PROVIDER_CHART_EVIDENCE_OPTIONAL_PARAMS = frozenset({'provider_id', 'bucket', 'series', 'fact_snapshot_id', 'chart_version', 'owner', 'status', 'severity', 'component', 'text', 'range_mode', 'begin_ww', 'end_ww', 'begin_date', 'end_date'})
 PROVIDER_PROFILE_READINESS_REQUIRED_PARAMS = frozenset({'profile_id'})
 PROVIDER_PROFILE_READINESS_OPTIONAL_PARAMS = frozenset({'provider_id'})
 
@@ -19,18 +19,21 @@ class ProviderChartDataApiView(GracefulTemplateView):
         self.bug_trend_facade = ui_web_container.bug_trend_facade
 
     def get(self, request, *args, **kwargs):
-        invalid_response = validate_query_contract(request, PROVIDER_CHART_DATA_REQUIRED_PARAMS, PROVIDER_CHART_DATA_OPTIONAL_PARAMS)
+        invalid_response = validate_query_contract(request, provider_chart_data_required_params(request), PROVIDER_CHART_DATA_OPTIONAL_PARAMS)
         if invalid_response:
             return invalid_response
         try:
             payload = self.bug_trend_facade.get_provider_chart_payload(
                 provider_id=request.GET.get('provider_id'),
                 profile_id=request.GET.get('profile_id'),
-                begin_ww=request.GET.get('begin_ww'),
-                end_ww=request.GET.get('end_ww'),
+                begin_ww=request.GET.get('begin_ww', ''),
+                end_ww=request.GET.get('end_ww', ''),
                 chart_id=request.GET.get('chart_id'),
                 chart_version=self._chart_version(),
                 fact_snapshot_id=request.GET.get('fact_snapshot_id', ''),
+                range_mode=request.GET.get('range_mode', 'ww'),
+                begin_date=request.GET.get('begin_date', ''),
+                end_date=request.GET.get('end_date', ''),
             )
         except ValueError as error:
             return JsonResponse({'error': str(error)}, status=400)
@@ -69,15 +72,15 @@ class ProviderChartEvidenceApiView(GracefulTemplateView):
         self.bug_trend_facade = ui_web_container.bug_trend_facade
 
     def get(self, request, *args, **kwargs):
-        invalid_response = validate_query_contract(request, PROVIDER_CHART_EVIDENCE_REQUIRED_PARAMS, PROVIDER_CHART_EVIDENCE_OPTIONAL_PARAMS)
+        invalid_response = validate_query_contract(request, provider_chart_evidence_required_params(request), PROVIDER_CHART_EVIDENCE_OPTIONAL_PARAMS)
         if invalid_response:
             return invalid_response
         try:
             payload = self.bug_trend_facade.get_provider_chart_evidence_payload(
                 provider_id=request.GET.get('provider_id'),
                 profile_id=request.GET.get('profile_id'),
-                begin_ww=request.GET.get('begin_ww'),
-                end_ww=request.GET.get('end_ww'),
+                begin_ww=request.GET.get('begin_ww', ''),
+                end_ww=request.GET.get('end_ww', ''),
                 chart_id=request.GET.get('chart_id'),
                 chart_version=self._chart_version(),
                 calculation_run_id=request.GET.get('run', ''),
@@ -89,6 +92,9 @@ class ProviderChartEvidenceApiView(GracefulTemplateView):
                 severity=request.GET.get('severity', ''),
                 component=request.GET.get('component', ''),
                 text=request.GET.get('text', ''),
+                range_mode=request.GET.get('range_mode', 'ww'),
+                begin_date=request.GET.get('begin_date', ''),
+                end_date=request.GET.get('end_date', ''),
             )
         except ValueError as error:
             return JsonResponse({'error': str(error)}, status=400)
@@ -100,3 +106,17 @@ class ProviderChartEvidenceApiView(GracefulTemplateView):
             return int(raw_value)
         except ValueError:
             raise ValueError('chart_version must be an integer.')
+
+
+def provider_chart_data_required_params(request):
+    return PROVIDER_CHART_DATA_REQUIRED_BASE_PARAMS | provider_chart_range_required_params(request)
+
+
+def provider_chart_evidence_required_params(request):
+    return PROVIDER_CHART_EVIDENCE_REQUIRED_BASE_PARAMS | provider_chart_range_required_params(request)
+
+
+def provider_chart_range_required_params(request):
+    if request.GET.get('range_mode', 'ww').strip().lower() == 'date':
+        return frozenset({'begin_date', 'end_date'})
+    return frozenset({'begin_ww', 'end_ww'})
