@@ -1,0 +1,413 @@
+{
+  "datasource_uids": [
+    "metrics-bug-trend-api"
+  ],
+  "api_surfaces": {
+    "/api/charts/data/": {
+      "required_query_params": [
+        "scope_id",
+        "begin",
+        "end",
+        "chart_id"
+      ],
+      "optional_query_params": [],
+      "approved_contract_versions": [
+        "0.1"
+      ],
+      "approved_render_roots": [
+        "grafana_rows"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series"
+      ]
+    },
+    "/api/charts/evidence/": {
+      "required_query_params": [
+        "scope_id",
+        "begin",
+        "end",
+        "run",
+        "chart_id"
+      ],
+      "optional_query_params": [
+        "bucket",
+        "series",
+        "owner",
+        "status",
+        "severity",
+        "component",
+        "text"
+      ]
+    },
+    "/api/provider-charts/data/": {
+      "required_query_params": [
+        "profile_id",
+        "begin_ww",
+        "end_ww",
+        "chart_id"
+      ],
+      "optional_query_params": [
+        "provider_id",
+        "space_id",
+        "release_target",
+        "milestone",
+        "chart_version",
+        "fact_snapshot_id"
+      ],
+      "approved_contract_versions": [
+        "0.2"
+      ],
+      "approved_render_roots": [
+        "grafana_rows",
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series",
+        "provider_series_state"
+      ]
+    },
+    "/api/provider-charts/evidence/": {
+      "required_query_params": [
+        "profile_id",
+        "begin_ww",
+        "end_ww",
+        "run",
+        "chart_id"
+      ],
+      "optional_query_params": [
+        "provider_id",
+        "bucket",
+        "series",
+        "fact_snapshot_id",
+        "chart_version",
+        "owner",
+        "status",
+        "severity",
+        "component",
+        "text"
+      ]
+    },
+    "/api/provider-profiles/readiness/": {
+      "required_query_params": [
+        "profile_id"
+      ],
+      "optional_query_params": [
+        "provider_id"
+      ],
+      "approved_contract_versions": [
+        "0.2"
+      ],
+      "approved_render_roots": [
+        "profile_status_rows"
+      ],
+      "approved_render_shapes": [
+        "profile_readiness_summary"
+      ]
+    }
+  },
+  "provider_chart_recipes": {
+    "component_bug": {
+      "version": 1,
+      "approved_render_roots": [
+        "grafana_rows",
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series",
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "selected_provider_quality",
+        "selected_provider_state"
+      ],
+      "approved_value_fields": [
+        "component_bug_count"
+      ],
+      "approved_evidence_capabilities": [
+        "range_only",
+        "summary_only"
+      ],
+      "bucket_grains": [
+        "range",
+        "week"
+      ]
+    },
+    "rolling_valid_bug": {
+      "version": 1,
+      "approved_render_roots": [
+        "grafana_rows",
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series",
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "selected_provider_quality",
+        "selected_provider_state"
+      ],
+      "approved_value_fields": [
+        "rolling_valid_bug_count"
+      ],
+      "approved_evidence_capabilities": [
+        "summary_only"
+      ],
+      "bucket_grains": [
+        "week"
+      ]
+    },
+    "open_bug_trend": {
+      "version": 1,
+      "approved_render_roots": [
+        "grafana_rows",
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series",
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "selected_provider_quality",
+        "selected_provider_state"
+      ],
+      "approved_value_fields": [
+        "all_open_bugs",
+        "all_open_critical_high",
+        "new_critical_high",
+        "new_medium_low",
+        "fixed_or_closed_bugs"
+      ],
+      "approved_evidence_capabilities": [
+        "bucket_series",
+        "summary_only"
+      ],
+      "bucket_grains": [
+        "week"
+      ]
+    },
+    "total_bug_trend": {
+      "version": 1,
+      "approved_render_roots": [
+        "grafana_rows",
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series",
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "selected_provider_quality",
+        "selected_provider_state"
+      ],
+      "approved_value_fields": [
+        "total_new_bugs",
+        "total_open_bugs",
+        "total_fixed_or_closed_bugs"
+      ],
+      "approved_evidence_capabilities": [
+        "range_only",
+        "summary_only"
+      ],
+      "bucket_grains": [
+        "week"
+      ]
+    },
+    "open_bug_aging": {
+      "version": 1,
+      "approved_render_roots": [
+        "grafana_rows",
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series",
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "selected_provider_quality",
+        "selected_provider_state"
+      ],
+      "approved_value_fields": [
+        "aging_0_7_days",
+        "aging_8_14_days",
+        "aging_15_30_days",
+        "aging_31_plus_days"
+      ],
+      "approved_evidence_capabilities": [
+        "range_only",
+        "summary_only"
+      ],
+      "bucket_grains": [
+        "range",
+        "week"
+      ]
+    },
+    "daily_new_standard_bug_count": {
+      "version": 1,
+      "approved_render_roots": [
+        "grafana_rows",
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "wide_bucket_series",
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "selected_provider_quality",
+        "selected_provider_state"
+      ],
+      "approved_value_fields": [
+        "new_standard_bugs"
+      ],
+      "approved_evidence_capabilities": [
+        "range_only",
+        "summary_only"
+      ],
+      "bucket_grains": [
+        "day"
+      ]
+    },
+    "execution_statistics": {
+      "version": 1,
+      "approved_render_roots": [
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "first_wave_deferred"
+      ],
+      "approved_value_fields": [],
+      "approved_evidence_capabilities": [
+        "summary_only"
+      ],
+      "bucket_grains": []
+    },
+    "milestone_schedule": {
+      "version": 1,
+      "approved_render_roots": [
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "first_wave_deferred"
+      ],
+      "approved_value_fields": [],
+      "approved_evidence_capabilities": [
+        "summary_only"
+      ],
+      "bucket_grains": []
+    },
+    "milestone_progress": {
+      "version": 1,
+      "approved_render_roots": [
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "first_wave_deferred"
+      ],
+      "approved_value_fields": [],
+      "approved_evidence_capabilities": [
+        "summary_only"
+      ],
+      "bucket_grains": []
+    },
+    "automation_statistics": {
+      "version": 1,
+      "approved_render_roots": [
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "first_wave_deferred"
+      ],
+      "approved_value_fields": [],
+      "approved_evidence_capabilities": [
+        "summary_only"
+      ],
+      "bucket_grains": []
+    },
+    "shift_left_statistics": {
+      "version": 1,
+      "approved_render_roots": [
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "first_wave_deferred"
+      ],
+      "approved_value_fields": [],
+      "approved_evidence_capabilities": [
+        "summary_only"
+      ],
+      "bucket_grains": []
+    },
+    "internal_escaped_bugs": {
+      "version": 1,
+      "approved_render_roots": [
+        "provider_series_state"
+      ],
+      "approved_render_shapes": [
+        "provider_series_state"
+      ],
+      "approved_provider_bindings": [
+        "first_wave_deferred"
+      ],
+      "approved_value_fields": [],
+      "approved_evidence_capabilities": [
+        "summary_only"
+      ],
+      "bucket_grains": []
+    }
+  },
+  "sql_views": [],
+  "forbidden_sql_patterns": [
+    "\\bcase\\b",
+    "\\bjoin\\b",
+    "\\bjira_history_",
+    "\\bjira_sync_",
+    "\\bjira_scope_config\\b",
+    "\\bbug_metrics_jirascopeconfig\\b",
+    "\\bbug_trend_bucket_issue\\b",
+    "\\bBug\\b",
+    "\\bFixed\\b",
+    "\\bClosed\\b",
+    "\\bCritical\\b",
+    "\\bHigh\\b",
+    "P1-Stopper",
+    "P2-High"
+  ],
+  "secret_patterns": [
+    "token",
+    "password",
+    "secret",
+    "pat",
+    "api[_-]?key"
+  ],
+  "forbidden_provider_literal_patterns": [
+    "\\bproject\\s*=",
+    "\\bcomponent\\s*=",
+    "\\bjql\\b",
+    "\\beql\\b",
+    "customfield_\\d+",
+    "ip_fw_sw_sensing\\.",
+    "\\bHSD_type\\b",
+    "\\bqueryId\\s*=",
+    "15017652869"
+  ],
+  "forbidden_business_calculation_patterns": [
+    "\\bstandard\\s+bug\\s*=",
+    "\\bcount\\s*\\(",
+    "\\bsum\\s*\\(",
+    "\\bcase\\s+when\\b"
+  ]
+}

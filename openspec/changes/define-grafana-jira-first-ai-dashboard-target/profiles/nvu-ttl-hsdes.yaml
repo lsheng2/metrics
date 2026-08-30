@@ -1,0 +1,101 @@
+profile_id: nvu-ttl-hsdes
+provider_id: hsdes
+project_scope: nvu-ttl
+mapping_version: 1
+status: seed_backed_runtime_preview
+
+source_query:
+  ownership: provider_saved_query
+  query_id: "15017652869"
+  title: NVU All Bugs
+  tenant: ip_fw_sw_sensing.tenant
+  subject: ip_fw_sw_sensing.bug
+  operator: All
+  criteria_snapshot:
+    include:
+      - id > 0
+      - family in NVU-FW
+      - HSD_type in bug
+      - release in NVU-FW.trunk, NVU-FW1.0_RZL, NVU-FW1.0_TTL
+    exclude:
+      - component in sw.val, sw.val.tools, ip.sw.val.tool
+      - title contains [chrome]
+      - title starts with [catalog]
+  provenance_required:
+    - tenant
+    - subject
+    - query_id
+    - criteria_snapshot_or_hash
+    - permission_assumptions
+    - fact_snapshot_id
+
+scope_labels:
+  source: user_configured_static_text
+  ip: NVU
+  project: NVU1.0_TTL
+  milestone: NVU_TTL_FWSW0.8
+
+fields:
+  source_item_id: id
+  source_item_type: HSD_type
+  title: title
+  native_state: status
+  outcome: reason
+  priority: priority
+  severity_or_exposure: exposure
+  component_or_area: component
+  release_target: release
+  affected_release: release_affected
+  milestone: target_MS
+  owner: owner
+  submitter: submitted_by
+  created_at: submitted_date
+  updated_at: updated_date
+  resolved_at: implemented_date
+  closed_at: closed_date
+  team_found: team_found
+  escaped_indicator: pss_escape
+  days_open: days_open
+
+values:
+  normalized_state:
+    open:
+      - open
+      - change_defined
+    done:
+      - complete
+      - implemented
+    rejected:
+      - rejected
+  first_wave_quality:
+    standard_bug_rule: configuration_required
+    critical_high_values: configuration_required
+
+chart_support:
+  component_bug: supported_from_seed_facts_until_live_sync
+  rolling_valid_bug: supported_from_seed_facts_until_live_sync
+  open_bug_trend: supported_from_seed_facts_until_live_sync
+  total_bug_trend: supported_from_seed_facts_until_live_sync
+  open_bug_aging: supported_from_seed_facts_until_live_sync
+  daily_new_standard_bug_count: supported_from_seed_facts_until_live_sync
+  execution_statistics: deferred
+  milestone_schedule: deferred
+  milestone_progress: deferred
+  automation_statistics: deferred
+  shift_left_statistics: deferred
+  escaped_bug_panels: deferred
+
+evidence_rules:
+  bucket_series: metrics_evidence_api_after_article_membership_materialized
+  range_only: metrics_evidence_api_after_article_membership_materialized
+  summary_only: no_ticket_rows_without_explicit_contract
+
+seed_runtime_preview:
+  purpose: allow Grafana to render the first HSD-ES quality chart before live backend credentials are configured
+  data_source: local normalized HSD-ES search-page seed
+  freshness_status: materialized_from_seed_hsdes_facts
+  live_sync_status: configuration_required
+  live_sync_blockers:
+    - backend HSD-ES service-account or Kerberos credential is not configured
+    - saved-query permission has only been checked through browser/user SSO
+    - lookup metadata and full chart field bindings still need runtime validation

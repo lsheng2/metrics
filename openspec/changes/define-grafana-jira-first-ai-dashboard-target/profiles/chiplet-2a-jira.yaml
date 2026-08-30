@@ -1,0 +1,72 @@
+profile_id: chiplet-2a-jira
+provider_id: jira
+project_scope: chiplet-2a
+mapping_version: 1
+status: planning_seed
+
+source_query:
+  ownership: metrics_managed_native_query
+  language: jql
+  text: project = "131600" AND component = "team_int_qemu"
+  saved_filter_support: future_optional
+  provenance_required:
+    - query_text
+    - query_hash
+    - mapping_version
+    - fact_snapshot_id
+
+scope_labels:
+  source: user_configured_static_text
+  ip: chiplet_ip
+  project: chiplet
+  milestone: 2a
+
+fields:
+  source_item_id: key
+  source_item_type: issuetype.name
+  title: summary
+  native_state: status.name
+  outcome: resolution.name
+  priority: priority.name
+  severity_or_exposure: priority.name
+  component_or_area: components[].name
+  release_target: fixVersions[].name
+  owner: assignee.emailAddress
+  submitter: reporter.emailAddress
+  created_at: created
+  updated_at: updated
+  resolved_at: resolutiondate
+
+values:
+  normalized_state:
+    open:
+      - Open
+      - In Progress
+      - Reopened
+    done:
+      - Done
+      - Closed
+      - Resolved
+  first_wave_quality:
+    standard_bug_rule: configuration_required
+    critical_high_priority_values:
+      - P1-Stopper
+      - P2-High
+
+chart_support:
+  component_bug: supported_after_aggregate_implementation
+  rolling_valid_bug: supported_after_standard_bug_mapping
+  open_bug_trend: supported_after_aggregate_implementation
+  total_bug_trend: supported_after_aggregate_implementation
+  open_bug_aging: supported_after_aggregate_implementation
+  execution_statistics: deferred
+  milestone_schedule: deferred
+  milestone_progress: deferred
+  automation_statistics: deferred
+  shift_left_statistics: deferred
+  escaped_bug_panels: deferred
+
+evidence_rules:
+  bucket_series: metrics_evidence_api
+  range_only: metrics_evidence_api_when_membership_materialized
+  summary_only: no_ticket_rows_without_explicit_contract
