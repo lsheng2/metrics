@@ -1,9 +1,13 @@
 import json
+from io import StringIO
 
 from django.conf import settings
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from bug_metrics.app.api.provider_aggregate_common import ww_range_to_dates
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
+from bug_metrics.models import JiraScopeConfig
 from provider_sync.app.api import ProviderFreshnessStatus
 from provider_sync.app.api.hsdes import HsdesHttpClient, HsdesSavedQueryAdapter, HsdesSavedQuerySyncService
 
@@ -30,6 +34,9 @@ class Command(BaseCommand):
             }, sort_keys=True))
             return
         profile = resolution.profile
+        if profile.provider_id == 'jira':
+            self.stdout.write(json.dumps(self._sync_jira_profile(profile, options), sort_keys=True))
+            return
         if profile.provider_id != 'hsdes':
             self.stdout.write(json.dumps({
                 'status': 'unsupported',
@@ -69,3 +76,40 @@ class Command(BaseCommand):
             force_refresh=options['force_refresh'],
         )
         self.stdout.write(json.dumps(result, sort_keys=True))
+
+    def _sync_jira_profile(self, profile, options):
+        scope = JiraScopeConfig.objects.filter(enabled=True, name=profile.profile_id).first()
+        if scope is None:
+            return {
+                'status': 'configuration_required',
+                'freshness_status': ProviderFreshnessStatus.CONFIGURATION_REQUIRED,
+                'profile_id': profile.profile_id,
+                'provider_id': profile.provider_id,
+                'blockers': [{
+                    'code': 'jira_scope_not_mapped',
+                    'message': f'No enabled Jira scope named {profile.profile_id} is mapped to this provider profile.',
+                }],
+            }
+        coverage_start, coverage_end = ww_range_to_dates(options['begin_ww'], options['end_ww'])
+        sync_output = StringIO()
+        command_args = [
+            'sync_jira_scope',
+            str(scope.id),
+            '--coverage-start',
+            coverage_start.isoformat(),
+            '--coverage-end',
+            coverage_end.isoformat(),
+        ]
+        if options['force_refresh']:
+            command_args.append('--full')
+        call_command(*command_args, stdout=sync_output)
+        return {
+            'status': 'success',
+            'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED,
+            'profile_id': profile.profile_id,
+            'provider_id': profile.provider_id,
+            'scope_id': scope.id,
+            'coverage_start': coverage_start.isoformat(),
+            'coverage_end': coverage_end.isoformat(),
+            'sync_summary': sync_output.getvalue().strip(),
+        }

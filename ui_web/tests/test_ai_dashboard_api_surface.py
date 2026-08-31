@@ -292,7 +292,29 @@ class TestAiDashboardApiSurface(TestCase):
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('AI Dashboard Workflow', content)
+        self.assertIn(reverse('ui_web:ai_dashboard_workflow_api'), content)
         self.assertIn('Profile', content)
+        self.assertIn('chiplet-2a-jira (jira)', content)
+        self.assertIn('nvu-ttl-hsdes (hsdes)', content)
         self.assertIn('Requested Series', content)
         self.assertIn('Intent Validation', content)
         self.assertIn('gcx Precondition', content)
+
+    def test_shouldRenderJiraWorkflowResultOnPagePost(self):
+        response = self.client.post(reverse('ui_web:ai_dashboard_workflow'), {
+            'profile_id': 'chiplet-2a-jira',
+            'dashboard_uid': 'ip-quality-dashboard',
+            'chart_id': 'open_bug_trend',
+            'requested_series': 'new_critical_high',
+            'range_mode': 'ww',
+            'range_start': '26WW10',
+            'range_end': '26WW35',
+            'operation': 'grafana_import',
+        })
+
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Provider', content)
+        self.assertIn('jira', content)
+        self.assertIn('chiplet-2a-jira', content)
+        self.assertIn('ready_for_dry_run', content)

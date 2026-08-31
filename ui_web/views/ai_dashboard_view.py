@@ -1,6 +1,7 @@
 import json
 
 from django.http import JsonResponse
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -188,6 +189,7 @@ class AiDashboardWorkflowView(TemplateView):
             'form_values': form_values,
             'catalog': safe_ai_payload(catalog),
             'sidecar_status': safe_ai_payload(self.bug_trend_facade.get_ai_sidecar_status_payload()),
+            'workflow_api_url': self.request.build_absolute_uri(reverse('ui_web:ai_dashboard_workflow_api')),
             'profile_options': self._profile_options(catalog),
             'chart_options': self._chart_options(catalog),
         }

@@ -51,6 +51,7 @@
 
     <section class="box">
         <h2 class="title is-4">Workflow Request</h2>
+        <p class="is-size-7 has-text-grey mb-3">Contract Endpoint: <code>{{ workflow_api_url }}</code></p>
         <form method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
             {% csrf_token %}
             <div class="columns is-multiline">
@@ -161,6 +162,9 @@
                 </div>
                 <div class="column is-one-quarter">
                     <strong>Next Action</strong><br>{{ workflow_result.guidance.next_action }}
+                </div>
+                <div class="column is-one-quarter">
+                    <strong>Guidance Status</strong><br>{{ workflow_result.guidance.status }}
                 </div>
             </div>
             <p>{{ workflow_result.guidance.message }}</p>
