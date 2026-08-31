@@ -88,13 +88,13 @@ Focused test commands are examples only. Each DAG node must name the focused tes
 
 ## Validation Command Evidence Policy
 
-Every validation lane or node command used as closure evidence must be executable from the repository root and must report a real process exit status. Prefer the project virtualenv interpreter through `$python = Join-Path (Get-Location) '.venv/Scripts/python.exe'` on Windows, then invoke Django, pytest, or repo-local validation scripts with explicit target paths.
+Every validation lane or node command used as closure evidence must be executable from the repository root and must report a real process exit status. Write portable plan commands with `{python}` as the interpreter placeholder; on Windows this project normally resolves `{python}` as `$python = Join-Path (Get-Location) '.venv/Scripts/python.exe'`.
 
-- Accepted executor shapes: `& $python manage.py check`, `& $python -m pytest <test-path-or-node> -q`, `& $python scripts/check_file_size_limits.py --include-untracked`, `& $python scripts/check_diff_whitespace.py --include-untracked`, and plan-specific read-only commands whose inputs are repo-relative files named by the DAG node.
+- Accepted executor shapes: `{python} manage.py check`, `{python} -m pytest ui_web/tests/test_data_health_views.py -q`, `{python} scripts/check_file_size_limits.py --include-untracked`, `{python} scripts/check_diff_whitespace.py --include-untracked`, and plan-specific read-only commands whose inputs are repo-relative files named by the DAG node.
 - Required target owner paths: focused commands must cover the changed module family or artifact family, such as `tasks/`, `forecast/`, `velocity/`, `pull_requests/`, `bug_metrics/`, `provider_sync/`, `ui_web/`, `metrics/settings/`, `ops/grafana/`, `scripts/`, `openspec/`, `.github/`, or `.agents/skills/`.
 - Placeholder policy: reject unresolved placeholders except the documented `$python` PowerShell variable and explicit DAG wildcards such as `W*.REPLAN` in prose.
 - Shell operator policy: reject pipes, redirection, command substitution, `;`, and `||` unless a checker explicitly models them; allow `&&` only to sequence independently valid gates.
-- Required negative examples: keyword stuffing in a command string, wrong executor, failure suppression, missing target path, option-value false positive, collect-only execution, setup-only execution, and a broad test command that omits the changed owner path.
+- Required negative examples: reject keyword stuffing such as `{python} -m pytest -q` with no owner path, wrong executor such as `python -c "print('PASS')"`, failure suppression, missing target path, option-value false positive, collect-only execution, setup-only execution, and a broad test command that omits the changed owner path.
 - Test command option semantics: treat positional pytest node ids and repo-relative script paths as execution targets; treat option values such as `-k`, `--ignore`, `--deselect`, `--maxfail`, reporting flags, config flags, and collect-only/setup-only flags as modifiers rather than proof that the named owner path was executed.
 
 ## Rolling-Horizon Refreeze Gates
