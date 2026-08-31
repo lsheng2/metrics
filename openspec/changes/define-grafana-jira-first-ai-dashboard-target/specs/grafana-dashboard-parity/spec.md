@@ -110,11 +110,24 @@ Grafana dashboard SHALL clearly distinguish the Metrics backend data range from 
 
 #### Scenario: Dashboard explains the two date-period controls
 - **WHEN** 用户查看 dashboard 顶部 controls
-- **THEN** Grafana SHALL render explanatory text stating that `Work Week` mode uses `Begin WW` / `End WW` for backend data while the Grafana time picker controls the visible display window, and that `Date` mode uses the Grafana time picker dates for backend data while `Begin WW` / `End WW` are ignored by the API
+- **THEN** Grafana SHALL present the selected `profile_id` as the first dashboard variable
+- **AND** Grafana SHALL present `range_mode`, `begin_ww`, `end_ww` and Refresh as the provider fetch/cache control group
+- **AND** Grafana SHALL present the native Grafana time picker as the display time window control, with a nearby `Sync Range` action for aligning the browser window after WW edits
+- **AND** Grafana SHALL explain through compact control copy and variable help text that `Work Week` mode uses `Begin WW` / `End WW` for backend data while the Grafana time picker controls the visible display window, and that `Date` mode uses the Grafana time picker dates for backend data while `Begin WW` / `End WW` are ignored by the API
 
 #### Scenario: User chooses Work Week mode
 - **WHEN** `range_mode=ww`
 - **THEN** Grafana SHALL pass `begin_ww` and `end_ww` to Metrics chart/evidence APIs, and Metrics SHALL resolve the backend range from those WW values while preserving the browser time picker as a Grafana display-window control
+
+#### Scenario: Work Week mode opens with an aligned Grafana time picker
+- **WHEN** stock Grafana dashboard is launched or imported with `range_mode=ww`
+- **THEN** the dashboard URL or imported dashboard default time SHALL align Grafana native `from` / `to` to the calendar dates resolved from `begin_ww` / `end_ww`
+- **AND** the dashboard SHALL explain that stock Grafana does not hard-lock manual time picker edits, so Metrics still treats `begin_ww` / `end_ww` as the authoritative backend range in `ww` mode
+
+#### Scenario: User changes Work Week variables after dashboard load
+- **WHEN** a user changes `begin_ww` or `end_ww` inside stock Grafana without changing native `from` / `to`
+- **THEN** Metrics SHALL expose a selected-range sync action in a Metrics-owned status payload that reopens the same dashboard with `from` / `to` recalculated from the selected WW range
+- **AND** the dashboard SHALL present that action as an explicit `Sync Range` control in the display time window group rather than implying stock Grafana automatically binds template variable changes to the native time picker
 
 #### Scenario: User chooses Date mode
 - **WHEN** `range_mode=date`

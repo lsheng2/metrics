@@ -123,10 +123,18 @@ Grafana's native time picker remains date/time based, while the legacy reference
 
 | Range mode | Backend data range owner | Grafana browser time picker role |
 | --- | --- | --- |
-| `ww` | Metrics resolves `begin_ww` / `end_ww` into calendar dates and filters aggregates by that range. | Display-window control only; operators should keep it wide enough to include returned bucket dates. |
+| `ww` | Metrics resolves `begin_ww` / `end_ww` into calendar dates and filters aggregates by that range. | Display-window control only; launched/imported dashboard URLs should align native `from` / `to` to the WW-derived calendar bounds using browser-local absolute timestamps. If users edit WW variables inside stock Grafana, the Display Time Window `Sync Range` link should call a Metrics-owned redirect action and reopen the dashboard with recalculated `from` / `to`. Stock Grafana cannot hard-lock later manual picker edits. |
 | `date` | Metrics uses `${__from:date:YYYY-MM-DD}` / `${__to:date:YYYY-MM-DD}` passed as `begin_date` / `end_date`. | Both display-window control and backend data-range control. |
 
 Date mode must not reuse a cached artifact solely because stale `begin_ww` / `end_ww` URL variables match an existing materialized artifact. WW-keyed artifacts are valid for `range_mode=ww`; `range_mode=date` should rebuild from latest provider facts, or return a clear unavailable/configuration state if facts are unavailable.
+
+In stock Grafana, the native time picker is date/time based and does not provide a dashboard-JSON mechanism to constrain selectable low/high dates from template variables, automatically recalculate `from` / `to` when textbox variables change, move the native time picker into a dashboard row, or inject arbitrary label text into the native variable toolbar. The first dashboard therefore keeps the native variable/time-picker controls in Grafana's header, but adds compact top-of-dashboard grouping copy:
+
+1. selected `Profile` remains first in the Grafana variable bar;
+2. `Provider Fetch / Cache Window` explains that `range_mode`, `begin_ww`, `end_ww` and Refresh govern the provider-backed data window;
+3. `Display Time Window` explains that the Grafana time picker controls the visible browser window and contains the explicit `Sync Range` action for manual WW edits.
+
+The dashboard still aligns the picker at launch/import time, keeps a machine-readable aligned URL in the Metrics profile status payload, and keeps the Metrics API range contract authoritative. A future Grafana App/Scenes or custom plugin surface can replace this with a true WW-first picker that controls both WW variables and the visible browser time window.
 
 ### Decision 4: Use approved aggregate artifacts for Grafana
 

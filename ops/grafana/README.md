@@ -21,9 +21,11 @@ The current local validation path uses Grafana OSS on `127.0.0.1:3001`, the Infi
 Provider parity runtime preview:
 
 ```powershell
-.venv\Scripts\python.exe scripts\e2e_provider_parity.py restart --profile-id nvu-ttl-hsdes --begin-ww 26WW32 --end-ww 26WW32 --force-by-port
+.venv\Scripts\python.exe scripts\e2e_provider_parity.py restart --profile-id nvu-ttl-hsdes --begin-ww 26WW32 --end-ww 26WW35 --force-by-port
 ```
 
 This restarts the Django backend, re-imports `provider_parity_dashboard.json`, validates the Metrics-owned provider chart API through Grafana, and opens the dashboard. HSD-ES browser SSO only proves the human can reach the saved query; it does not configure the Django backend. Until live HSD-ES sync credentials are configured, `nvu-ttl-hsdes` charts use the local seed-backed aggregate preview and show `seeded_preview` freshness/status.
+
+For `range_mode=ww`, the launcher resolves `begin_ww` / `end_ww` into calendar dates and sets Grafana's native `from` / `to` URL parameters to the same range using browser-local absolute timestamps. The native Grafana time picker remains manually editable because stock Grafana does not support hard min/max picker limits from dashboard variables or custom placement of the native picker inside a dashboard row. Metrics still uses the WW variables as the backend data-range authority in WW mode. The dashboard keeps the top controls in three logical groups: Profile first; `Provider Fetch / Cache Window` for `range_mode`, `Begin WW`, `End WW`, and Refresh; and `Display Time Window` for the native Grafana time picker plus the `Sync Range` link. If a user changes `Begin WW` / `End WW` inside Grafana, use `Sync Range` to reopen the dashboard with `from` / `to` recalculated for the selected WW range.
 
 Renderer route decision for the built-in chart is recorded in Metrics Chart Catalog as `default_bug_trend`. C-stock is validated only for chart values and Metrics evidence link-out; same-page evidence requires the separate P2C App/Scenes spike trigger.

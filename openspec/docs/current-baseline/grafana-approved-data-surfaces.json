@@ -98,7 +98,12 @@
         "profile_id"
       ],
       "optional_query_params": [
-        "provider_id"
+        "provider_id",
+        "range_mode",
+        "begin_ww",
+        "end_ww",
+        "begin_date",
+        "end_date"
       ],
       "approved_contract_versions": [
         "0.2"

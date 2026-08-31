@@ -15,6 +15,9 @@ class TestProviderChartApiSurface(TestCase):
         # When
         response = self.client.get(reverse('ui_web:provider_profile_readiness_api'), {
             'profile_id': 'nvu-ttl-hsdes',
+            'range_mode': 'ww',
+            'begin_ww': '26WW01',
+            'end_ww': '26WW35',
         })
 
         # Then
@@ -31,6 +34,29 @@ class TestProviderChartApiSurface(TestCase):
         self.assertIn('HSD-ES seed facts can render supported preview charts', payload['profile_status_rows'][0]['data_status_reason'])
         self.assertEqual('Open HSD-ES saved query / sign in', payload['profile_status_rows'][0]['auth_action_label'])
         self.assertEqual('https://hsdes.intel.com/appstore/generalapps/#/pages/community/1607367026?queryId=15017652869', payload['profile_status_rows'][0]['auth_action_url'])
+        self.assertEqual('Sync Time Range', payload['profile_status_rows'][0]['time_range_action_label'])
+        self.assertEqual(
+            '/d/ip-quality-dashboard/ip-quality-dashboard?orgId=1&var-profile_id=nvu-ttl-hsdes&var-range_mode=ww&var-begin_ww=26WW01&var-end_ww=26WW35&from=2025-12-29T00%3A00%3A00&to=2026-08-30T23%3A59%3A59&timezone=browser',
+            payload['profile_status_rows'][0]['time_range_action_url'],
+        )
+
+    def test_shouldReturnHtmlRedirectForAlignedGrafanaTimeRange(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_profile_align_dashboard_range_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+            'range_mode': 'ww',
+            'begin_ww': '26WW01',
+            'end_ww': '26WW35',
+        }, HTTP_REFERER='http://127.0.0.1:3001/d/ip-quality-dashboard/ip-quality-dashboard')
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('http://127.0.0.1:3001/d/ip-quality-dashboard/ip-quality-dashboard?', content)
+        self.assertIn('var-begin_ww=26WW01', content)
+        self.assertIn('var-end_ww=26WW35', content)
+        self.assertIn('from=2025-12-29T00%3A00%3A00', content)
+        self.assertIn('to=2026-08-30T23%3A59%3A59', content)
 
     def test_shouldExposeLiveHsdesCacheStatusAfterSuccessfulSync(self):
         # Given

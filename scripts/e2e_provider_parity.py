@@ -6,6 +6,7 @@ import sys
 import time
 import urllib.parse
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Callable, Mapping, Sequence, TypeVar
 
@@ -66,9 +67,22 @@ class ProviderParitySettings:
 
     def target_variables(self) -> dict[str, str]:
         variables = self.variables()
-        variables["{__from:date:YYYY-MM-DD}"] = self.begin_date
-        variables["{__to:date:YYYY-MM-DD}"] = self.end_date
+        begin_date, end_date = self.date_range()
+        variables["{__from:date:YYYY-MM-DD}"] = begin_date.isoformat()
+        variables["{__to:date:YYYY-MM-DD}"] = end_date.isoformat()
         return variables
+
+    def date_range(self) -> tuple[date, date]:
+        if self.range_mode.strip().lower() == "date":
+            return iso_date(self.begin_date), iso_date(self.end_date)
+        return ww_range_to_dates(self.begin_ww, self.end_ww)
+
+    def grafana_time_range(self) -> dict[str, str]:
+        begin_date, end_date = self.date_range()
+        return {
+            "from": f"{begin_date.isoformat()}T00:00:00",
+            "to": f"{end_date.isoformat()}T23:59:59",
+        }
 
     def resolved_provider_id(self) -> str:
         profile_provider_id = PROVIDER_ID_BY_PROFILE.get(self.profile_id, "")
@@ -192,6 +206,8 @@ def profile_step(lifecycle: object, label: str, callback: Callable[[], T], run_i
 def import_grafana_dashboard(workspace: Path, grafana_port: int, settings: ProviderParitySettings) -> None:
     artifact = workspace / "ops" / "grafana" / "provider_parity_dashboard.json"
     dashboard = json.loads(artifact.read_text(encoding="utf-8"))
+    dashboard["time"] = settings.grafana_time_range()
+    dashboard["timezone"] = "browser"
     variables = settings.variables()
     for variable in dashboard["templating"]["list"]:
         value = variables.get(variable["name"])
@@ -318,7 +334,15 @@ def validate_profile_readiness_payload(panel_title: str, payload: dict[str, obje
     if not rows or not isinstance(rows[0], dict):
         raise RuntimeError(f"{panel_title} expected profile_status_rows")
     row = rows[0]
-    required_fields = {"provider_id", "profile_id", "status", "data_status", "data_status_reason"}
+    required_fields = {
+        "provider_id",
+        "profile_id",
+        "status",
+        "data_status",
+        "data_status_reason",
+        "time_range_action_label",
+        "time_range_action_url",
+    }
     missing_fields = [field for field in sorted(required_fields) if field not in row]
     if missing_fields:
         raise RuntimeError(f"{panel_title} missing profile readiness fields: {', '.join(missing_fields)}")
@@ -357,7 +381,11 @@ def resolve_target_url(url: str, variables: dict[str, str]) -> str:
 
 
 def query_value(url: str, name: str) -> str:
-    return dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query, keep_blank_values=True)).get(name, "")
+    return url_query_values(url).get(name, "")
+
+
+def url_query_values(url: str) -> dict[str, str]:
+    return dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query, keep_blank_values=True))
 
 
 def validate_visible_dashboard(grafana_port: int, dashboard_url: str, workspace: Path) -> None:
@@ -409,11 +437,38 @@ def has_nonblank_canvas(page) -> bool:
 
 
 def grafana_dashboard_url(grafana_port: int, settings: ProviderParitySettings) -> str:
-    variables = urllib.parse.urlencode({
-        f"var-{name}": value
-        for name, value in settings.variables().items()
-    })
-    return f"http://127.0.0.1:{grafana_port}/d/{DASHBOARD_UID}/ip-quality-dashboard?orgId=1&{variables}"
+    query_values = {
+        "orgId": "1",
+        **{
+            f"var-{name}": value
+            for name, value in settings.variables().items()
+        },
+        **settings.grafana_time_range(),
+        "timezone": "browser",
+    }
+    variables = urllib.parse.urlencode(query_values)
+    return f"http://127.0.0.1:{grafana_port}/d/{DASHBOARD_UID}/ip-quality-dashboard?{variables}"
+
+
+def ww_range_to_dates(begin_ww: str, end_ww: str) -> tuple[date, date]:
+    begin = ww_to_monday(begin_ww)
+    end = ww_to_monday(end_ww) + timedelta(days=6)
+    if begin > end:
+        raise ValueError("begin_ww must be earlier than or equal to end_ww.")
+    return begin, end
+
+
+def ww_to_monday(value: str) -> date:
+    normalized = value.strip()
+    if len(normalized) != 6 or normalized[2:4].upper() != "WW":
+        raise ValueError("WW values must use YYWWNN format.")
+    year = 2000 + int(normalized[:2])
+    week = int(normalized[4:])
+    return date.fromisocalendar(year, week, 1)
+
+
+def iso_date(value: str) -> date:
+    return date.fromisoformat(value[:10])
 
 
 def write_e2e_summary(workspace: Path, django_port: int, grafana_port: int, dashboard_url: str) -> None:

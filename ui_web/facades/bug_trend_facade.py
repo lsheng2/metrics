@@ -1,8 +1,10 @@
 import json
 from datetime import date
+from urllib.parse import urlencode
 
 from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilters, ProviderChartAggregateQuery, ProviderChartEvidenceQuery
 from bug_metrics.app.api.provider_aggregate_contracts import FIRST_HSDES_PROFILE_ID, FIRST_JIRA_PROFILE_ID, PROVIDER_CHART_CONTRACT_VERSION
+from bug_metrics.app.api.provider_aggregates import iso_date_value, ww_range_to_dates
 from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, normalize_scope_list_values, saved_scope_config_from_dict
 from bug_metrics.models import JiraScopeConfig
 
@@ -157,13 +159,24 @@ class BugTrendFacade:
             )
         )
 
-    def get_provider_profile_readiness_payload(self, provider_id: str, profile_id: str) -> dict:
+    def get_provider_profile_readiness_payload(self, provider_id: str, profile_id: str, range_mode: str = 'ww',
+                                               begin_ww: str = '', end_ww: str = '', begin_date: str = '',
+                                               end_date: str = '') -> dict:
         resolved_provider_id = self._resolve_provider_id(provider_id, profile_id)
         readiness = self._bug_trend_api.get_provider_profile_readiness(resolved_provider_id, profile_id)
         readiness['contract_version'] = PROVIDER_CHART_CONTRACT_VERSION
         readiness['provider_id'] = resolved_provider_id
-        readiness['profile_status_rows'] = [self._profile_status_row(readiness)]
+        readiness['profile_status_rows'] = [self._profile_status_row(
+            readiness,
+            self._time_range_action_url(profile_id, range_mode, begin_ww, end_ww, begin_date, end_date),
+        )]
         return readiness
+
+    def get_provider_profile_time_range_action_url(self, provider_id: str, profile_id: str, range_mode: str = 'ww',
+                                                   begin_ww: str = '', end_ww: str = '', begin_date: str = '',
+                                                   end_date: str = '') -> str:
+        self._resolve_provider_id(provider_id, profile_id)
+        return self._time_range_action_url(profile_id, range_mode, begin_ww, end_ww, begin_date, end_date)
 
     def _resolve_provider_id(self, provider_id: str, profile_id: str) -> str:
         explicit_provider_id = provider_id or ''
@@ -185,7 +198,7 @@ class BugTrendFacade:
             return 'jira'
         return ''
 
-    def _profile_status_row(self, readiness: dict) -> dict:
+    def _profile_status_row(self, readiness: dict, time_range_action_url: str = '') -> dict:
         scope_labels = readiness.get('scope_labels', {})
         source_query = readiness.get('source_query', {})
         blockers = readiness.get('blockers', [])
@@ -208,6 +221,8 @@ class BugTrendFacade:
             'save_profile_action': 'available_in_profile_editor',
             'auth_action_label': self._profile_auth_action_label(readiness),
             'auth_action_url': self._profile_auth_action_url(readiness),
+            'time_range_action_label': 'Sync Time Range' if time_range_action_url else '',
+            'time_range_action_url': time_range_action_url,
             'blocker_count': len(blockers),
             'freshness_status': sync_cache.get('freshness_status', ''),
             'latest_snapshot_id': sync_cache.get('latest_snapshot_id', ''),
@@ -254,6 +269,31 @@ class BugTrendFacade:
         if readiness.get('provider_id') == 'hsdes':
             return FIRST_HSDES_ACCESS_CHECK_URL
         return ''
+
+    def _time_range_action_url(self, profile_id: str, range_mode: str, begin_ww: str, end_ww: str,
+                               begin_date: str, end_date: str) -> str:
+        normalized_range_mode = (range_mode or 'ww').strip().lower()
+        try:
+            if normalized_range_mode == 'date':
+                begin = iso_date_value(begin_date, 'begin_date')
+                end = iso_date_value(end_date, 'end_date')
+            else:
+                begin, end = ww_range_to_dates(begin_ww, end_ww)
+        except ValueError:
+            return ''
+        if begin > end:
+            return ''
+        query = urlencode({
+            'orgId': '1',
+            'var-profile_id': profile_id,
+            'var-range_mode': normalized_range_mode,
+            'var-begin_ww': begin_ww,
+            'var-end_ww': end_ww,
+            'from': f'{begin.isoformat()}T00:00:00',
+            'to': f'{end.isoformat()}T23:59:59',
+            'timezone': 'browser',
+        })
+        return f'/d/ip-quality-dashboard/ip-quality-dashboard?{query}'
 
     def _scope_label_value(self, scope_labels: dict, name: str) -> str:
         return str(scope_labels.get(name, {}).get('value', ''))

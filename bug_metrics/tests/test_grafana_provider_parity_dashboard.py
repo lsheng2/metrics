@@ -47,8 +47,12 @@ class TestGrafanaProviderParityDashboard(TestCase):
         self.assertIn('cache_age_seconds', self._target_columns(target))
         self.assertIn('auth_action_label', self._target_columns(target))
         self.assertIn('auth_action_url', self._target_columns(target))
+        self.assertIn('time_range_action_label', self._target_columns(target))
+        self.assertIn('time_range_action_url', self._target_columns(target))
         self.assertTrue(self._field_override_links(panel, 'auth_action_label'))
         self.assertTrue(any('${__data.fields.auth_action_url}' in link['url'] for link in self._field_override_links(panel, 'auth_action_label')))
+        self.assertTrue(self._field_override_links(panel, 'time_range_action_label'))
+        self.assertTrue(any('${__data.fields.time_range_action_url}' in link['url'] for link in self._field_override_links(panel, 'time_range_action_label')))
 
     def test_shouldKeepIpQualityDashboardIdentityAndOperationalCopy(self):
         # Given / When
@@ -83,6 +87,7 @@ class TestGrafanaProviderParityDashboard(TestCase):
         self.assertEqual('Refresh', self._field_mapping_text(panel, 'data_status', 'stale'))
         self.assertEqual('Sign In Required', self._field_mapping_text(panel, 'data_status', 'configuration_required'))
         self.assertEqual('Open Source', self._field_mapping_text(panel, 'Source', 'Open HSD-ES saved query / sign in'))
+        self.assertTrue(self._field_is_hidden(panel, 'Browser Range'))
 
     def test_shouldKeepQualityDiagnosticsOutOfPrimaryChartGrid(self):
         # Given / When
@@ -114,24 +119,45 @@ class TestGrafanaProviderParityDashboard(TestCase):
         self.assertEqual('chiplet-2a-jira', variables['profile_id']['current']['value'])
         self.assertEqual('26WW32', variables['begin_ww']['current']['value'])
         self.assertEqual('26WW32', variables['end_ww']['current']['value'])
+        self.assertEqual({'from': '2026-08-03T00:00:00', 'to': '2026-08-09T23:59:59'}, artifact['time'])
+        self.assertEqual('browser', artifact['timezone'])
         self.assertEqual(['QUALITY', 'EXECUTION', 'EFFICIENCY'], [panel['title'] for panel in artifact['panels'] if panel['type'] == 'row'])
 
-    def test_shouldExplainRangeModeRelationshipInDashboardCopy(self):
+    def test_shouldGroupRangeControlsByProviderFetchAndDisplayWindow(self):
         # Given / When
         artifact = self._artifact()
         panels = {panel['title']: panel for panel in artifact['panels']}
-        panel = panels['Range Controls']
+        fetch_panel = panels['Provider Fetch / Cache Window']
+        display_panel = panels['Display Time Window']
+        variables = {item['name']: item for item in artifact['templating']['list']}
 
         # Then
-        self.assertEqual('text', panel['type'])
-        content = panel['options']['content']
-        self.assertIn('Work Week mode', content)
-        self.assertIn('Begin WW / End WW', content)
-        self.assertIn('Date mode', content)
-        self.assertIn('Grafana time picker', content)
-        self.assertGreaterEqual(panel['gridPos']['h'], 4)
-        self.assertEqual(4, panel['gridPos']['y'])
-        self.assertLess(panel['gridPos']['y'], self._row_panel_y(artifact, 'QUALITY'))
+        self.assertNotIn('Range Controls', panels)
+        self.assertEqual('text', fetch_panel['type'])
+        self.assertEqual('text', display_panel['type'])
+        self.assertEqual({'x': 0, 'y': 4, 'w': 24, 'h': 2}, fetch_panel['gridPos'])
+        self.assertEqual({'x': 0, 'y': 6, 'w': 24, 'h': 2}, display_panel['gridPos'])
+        self.assertLess(display_panel['gridPos']['y'], self._row_panel_y(artifact, 'QUALITY'))
+
+        fetch_content = fetch_panel['options']['content']
+        self.assertIn('Provider-side fetch/cache', fetch_content)
+        self.assertIn('Work Week', fetch_content)
+        self.assertIn('Begin WW / End WW', fetch_content)
+        self.assertIn('Date mode', fetch_content)
+        self.assertIn('authoritative backend range', fetch_panel['description'])
+
+        display_content = display_panel['options']['content']
+        self.assertIn('Display Time Window', display_content)
+        self.assertIn('time picker', display_content)
+        self.assertIn('visible charts', display_content)
+        self.assertIn('Sync Range', display_content)
+        self.assertIn('http://127.0.0.1:8002/api/provider-profiles/align-dashboard-range/', display_content)
+        self.assertIn('stock Grafana cannot hard-lock manual picker edits', display_panel['description'])
+
+        self.assertIn('Selected Project Provider Profile', variables['profile_id']['description'])
+        self.assertIn('provider fetch/cache range', variables['range_mode']['description'])
+        self.assertIn('Work Week mode', variables['begin_ww']['description'])
+        self.assertIn('Work Week mode', variables['end_ww']['description'])
 
     def test_shouldWireSupportedQualityPanelsToProviderNeutralAggregateSurface(self):
         # Given

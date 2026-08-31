@@ -9,7 +9,7 @@ from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
 from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEvidenceExportView, BugTrendScopeAuditView, BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView, BugTrendChartDataApiView, BugTrendEvidenceApiView
 from .views.data_health_view import DataHealthView
-from .views.provider_chart_view import ProviderChartDataApiView, ProviderChartEvidenceApiView, ProviderProfileReadinessApiView
+from .views.provider_chart_view import ProviderChartDataApiView, ProviderChartEvidenceApiView, ProviderProfileAlignDashboardRangeApiView, ProviderProfileReadinessApiView
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
 
@@ -62,4 +62,5 @@ urlpatterns = [
      path(_base_prefix + 'api/provider-charts/data/', ProviderChartDataApiView.as_view(), name='provider_chart_data_api'),
      path(_base_prefix + 'api/provider-charts/evidence/', ProviderChartEvidenceApiView.as_view(), name='provider_chart_evidence_api'),
      path(_base_prefix + 'api/provider-profiles/readiness/', ProviderProfileReadinessApiView.as_view(), name='provider_profile_readiness_api'),
+     path(_base_prefix + 'api/provider-profiles/align-dashboard-range/', ProviderProfileAlignDashboardRangeApiView.as_view(), name='provider_profile_align_dashboard_range_api'),
 ]

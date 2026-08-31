@@ -66,6 +66,63 @@ def test_provider_parity_import_uses_provider_dashboard_and_profile_variables(mo
     assert "var-milestone" not in dashboard_url
 
 
+def test_provider_parity_dashboard_url_aligns_browser_time_to_work_week_range():
+    # Given
+    settings = e2e_provider_parity.ProviderParitySettings(
+        profile_id="nvu-ttl-hsdes",
+        begin_ww="26WW32",
+        end_ww="26WW35",
+    )
+
+    # When
+    dashboard_url = e2e_provider_parity.grafana_dashboard_url(3999, settings)
+    params = e2e_provider_parity.url_query_values(dashboard_url)
+
+    # Then
+    assert params["var-range_mode"] == "ww"
+    assert params["var-begin_ww"] == "26WW32"
+    assert params["var-end_ww"] == "26WW35"
+    assert params["from"] == "2026-08-03T00:00:00"
+    assert params["to"] == "2026-08-30T23:59:59"
+    assert params["timezone"] == "browser"
+
+
+def test_provider_parity_import_aligns_dashboard_default_time_to_selected_range(monkeypatch, tmp_path):
+    # Given
+    dashboard = {
+        "uid": "ip-quality-dashboard",
+        "title": "IP Quality Dashboard",
+        "templating": {"list": []},
+        "panels": [],
+        "time": {"from": "now-30d", "to": "now"},
+    }
+    artifact = tmp_path / "ops" / "grafana" / "provider_parity_dashboard.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(json.dumps(dashboard), encoding="utf-8")
+    requests = []
+
+    monkeypatch.setattr(e2e_provider_parity, "request_json", lambda method, url, payload=None: requests.append((method, url, payload)) or {})
+
+    # When
+    e2e_provider_parity.import_grafana_dashboard(
+        tmp_path,
+        3999,
+        e2e_provider_parity.ProviderParitySettings(
+            profile_id="nvu-ttl-hsdes",
+            begin_ww="26WW32",
+            end_ww="26WW35",
+        ),
+    )
+
+    # Then
+    imported = requests[0][2]["dashboard"]
+    assert imported["time"] == {
+        "from": "2026-08-03T00:00:00",
+        "to": "2026-08-30T23:59:59",
+    }
+    assert imported["timezone"] == "browser"
+
+
 def test_provider_parity_runtime_validation_checks_jira_supported_and_deferred_states(monkeypatch, tmp_path):
     dashboard = {
         "dashboard": {
@@ -127,6 +184,8 @@ def test_provider_parity_runtime_validation_checks_jira_supported_and_deferred_s
                     "status": "ready",
                     "data_status": "ready",
                     "data_status_reason": "",
+                    "time_range_action_label": "Sync Time Range",
+                    "time_range_action_url": "/d/ip-quality-dashboard/ip-quality-dashboard?orgId=1",
                 }],
             }
         if "api/provider-charts/data/" in url:
@@ -261,6 +320,8 @@ def test_provider_parity_runtime_validates_hsdes_through_same_provider_selection
                     "status": "seeded_preview",
                     "data_status": "seeded_preview",
                     "data_status_reason": "HSD-ES seed facts can render supported preview charts",
+                    "time_range_action_label": "Sync Time Range",
+                    "time_range_action_url": "/d/ip-quality-dashboard/ip-quality-dashboard?orgId=1",
                 }],
             }
         if "api/provider-charts/data/" in url:
