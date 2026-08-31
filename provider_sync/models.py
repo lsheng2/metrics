@@ -63,6 +63,12 @@ class ProviderAggregateArtifact(models.Model):
     chart_version = models.PositiveIntegerField(default=1)
     begin_ww = models.CharField(max_length=20)
     end_ww = models.CharField(max_length=20)
+    range_mode = models.CharField(max_length=20, default='ww', blank=True)
+    range_start = models.CharField(max_length=20, blank=True)
+    range_end = models.CharField(max_length=20, blank=True)
+    range_grain = models.CharField(max_length=20, blank=True)
+    range_label_start = models.CharField(max_length=40, blank=True)
+    range_label_end = models.CharField(max_length=40, blank=True)
     cache_identity_hash = models.CharField(max_length=64)
     freshness_status = models.CharField(max_length=80)
     status = models.CharField(max_length=40, default='supported')
@@ -85,6 +91,7 @@ class ProviderAggregateArtifact(models.Model):
         )
         indexes = [
             models.Index(fields=['provider_id', 'profile_id', 'chart_id', 'begin_ww', 'end_ww']),
+            models.Index(fields=['provider_id', 'profile_id', 'chart_id', 'range_mode', 'range_start', 'range_end']),
             models.Index(fields=['cache_identity_hash']),
         ]
 

@@ -4,7 +4,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from bug_metrics.app.api import ProviderChartAggregateQuery, bug_trend_api
-from provider_sync.models import ProviderSyncCursor
+from provider_sync.models import ProviderAggregateArtifact, ProviderSyncCursor
 from provider_sync.app.api import (
     ProviderCacheIdentity,
     ProviderCacheSettings,
@@ -138,6 +138,128 @@ class TestProviderSyncCache(TestCase):
         self.assertEqual(ProviderFreshnessStatus.LIVE_SYNCED, latest_snapshot.freshness_status)
         self.assertEqual(ProviderFreshnessStatus.LIVE_SYNCED, latest_artifact.run_metadata_json['freshness_status'])
         self.assertEqual(1, latest_artifact.grafana_rows_json[0]['component_bug_count'])
+
+    def test_shouldStoreWorkWeekAggregateArtifactWithNormalizedRangeIdentity(self):
+        # Given
+        service = ProviderSyncCacheService()
+        snapshot = self._live_snapshot(service)
+
+        # When
+        artifact = service.store_aggregate_artifact(
+            snapshot=snapshot,
+            chart_id='component_bug',
+            chart_version=1,
+            begin_ww='26WW32',
+            end_ww='26WW32',
+            rows=[],
+            grafana_rows=[{'component_bug_count': 7}],
+            source_population=snapshot.source_query_json,
+            run_metadata={'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED},
+        )
+
+        # Then
+        self.assertEqual('ww', artifact.range_mode)
+        self.assertEqual('2026-08-03', artifact.range_start)
+        self.assertEqual('2026-08-09', artifact.range_end)
+        self.assertEqual('week', artifact.range_grain)
+        self.assertEqual('26WW32', artifact.range_label_start)
+        self.assertEqual('26WW32', artifact.range_label_end)
+
+    def test_shouldNotReuseWorkWeekArtifactWhenDateModeUsesSameLegacyWorkWeekLabels(self):
+        # Given
+        service = ProviderSyncCacheService()
+        snapshot = self._live_snapshot(service)
+        workweek_artifact = service.store_aggregate_artifact(
+            snapshot=snapshot,
+            chart_id='open_bug_trend',
+            chart_version=1,
+            begin_ww='26WW32',
+            end_ww='26WW32',
+            rows=[],
+            grafana_rows=[{'bucket_start': '2026-08-03', 'all_open_bugs': 3}],
+            source_population=snapshot.source_query_json,
+            run_metadata={'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED},
+        )
+        date_artifact = service.store_aggregate_artifact(
+            snapshot=snapshot,
+            chart_id='open_bug_trend',
+            chart_version=1,
+            begin_ww='26WW32',
+            end_ww='26WW32',
+            rows=[],
+            grafana_rows=[{'bucket_start': '2026-08-10', 'all_open_bugs': 5}],
+            source_population=snapshot.source_query_json,
+            run_metadata={'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED},
+            range_mode='date',
+            range_start='2026-08-10',
+            range_end='2026-08-16',
+            range_grain='day',
+            range_label_start='2026-08-10',
+            range_label_end='2026-08-16',
+        )
+
+        # When
+        workweek_result = service.latest_aggregate_artifact(
+            'hsdes',
+            'nvu-ttl-hsdes',
+            'open_bug_trend',
+            1,
+            '26WW32',
+            '26WW32',
+        )
+        date_result = service.latest_aggregate_artifact(
+            'hsdes',
+            'nvu-ttl-hsdes',
+            'open_bug_trend',
+            1,
+            '26WW32',
+            '26WW32',
+            range_mode='date',
+            range_start='2026-08-10',
+            range_end='2026-08-16',
+        )
+
+        # Then
+        self.assertEqual(workweek_artifact.id, workweek_result.id)
+        self.assertEqual(date_artifact.id, date_result.id)
+        self.assertNotEqual(workweek_artifact.cache_identity_hash, date_artifact.cache_identity_hash)
+
+    def test_shouldFindLegacyWorkWeekArtifactWhenNewRangeFieldsAreBlank(self):
+        # Given
+        service = ProviderSyncCacheService()
+        snapshot = self._live_snapshot(service)
+        artifact = service.store_aggregate_artifact(
+            snapshot=snapshot,
+            chart_id='component_bug',
+            chart_version=1,
+            begin_ww='26WW32',
+            end_ww='26WW32',
+            rows=[],
+            grafana_rows=[{'component_bug_count': 7}],
+            source_population=snapshot.source_query_json,
+            run_metadata={'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED},
+        )
+        ProviderAggregateArtifact.objects.filter(id=artifact.id).update(
+            range_mode='',
+            range_start='',
+            range_end='',
+            range_grain='',
+            range_label_start='',
+            range_label_end='',
+        )
+
+        # When
+        result = service.latest_aggregate_artifact(
+            'hsdes',
+            'nvu-ttl-hsdes',
+            'component_bug',
+            1,
+            '26WW32',
+            '26WW32',
+        )
+
+        # Then
+        self.assertEqual(artifact.id, result.id)
 
     def test_shouldExposeProviderNeutralFreshnessStates(self):
         # Given / When / Then

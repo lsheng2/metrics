@@ -1,0 +1,145 @@
+{
+  "profile_id": "chiplet-2a-jira",
+  "provider_id": "jira",
+  "display_name": "Chiplet 2A Jira",
+  "enabled": true,
+  "mapping_version": 1,
+  "source_population": {
+    "profile_id": "chiplet-2a-jira",
+    "provider_id": "jira",
+    "ownership_type": "metrics_managed_native_query",
+    "native_query_text": "project = \"131600\" AND component = \"team_int_qemu\"",
+    "tenant_or_site": "Intel Jira",
+    "subject_or_issue_type": "issue",
+    "criteria_operator": "JQL",
+    "criteria_snapshot": "project = \"131600\" AND component = \"team_int_qemu\"",
+    "exclusion_snapshot": "",
+    "permission_assumptions": "configured Jira credentials can search the Metrics-managed JQL",
+    "observed_result_contract": "Jira search returns issue rows with key, fields and changelog expansion when requested."
+  },
+  "scope_labels": {
+    "ip": "chiplet_ip",
+    "project_or_product": "chiplet",
+    "milestone": "2a"
+  },
+  "field_bindings": {
+    "item_id": {"native_field": "key"},
+    "item_type": {"native_field": "issuetype"},
+    "title": {"native_field": "summary"},
+    "status": {"native_field": "status"},
+    "severity": {"native_field": "priority"},
+    "component": {"native_field": "components"},
+    "owner": {"native_field": "assignee"},
+    "submitted_date": {"native_field": "created"},
+    "created_at": {"native_field": "created"},
+    "updated_date": {"native_field": "updated"},
+    "updated_at": {"native_field": "updated"},
+    "implemented_date": {"native_field": "resolutiondate"},
+    "closed_date": {"native_field": "resolutiondate"},
+    "resolved_at": {"native_field": "resolutiondate"},
+    "days_open": {"native_field": "derived:days_open"},
+    "exposure": {"native_field": "derived:severity_bucket"},
+    "milestone": {"native_field": "customfield:project_literal:2a"}
+  },
+  "value_mappings": {
+    "bug_type_values": ["Bug"],
+    "open_status_values": ["Open", "In Progress", "Reopened"],
+    "fixed_status_values": ["Fixed"],
+    "closed_status_values": ["Closed"],
+    "critical_high_values": ["P1-Stopper", "P2-High"],
+    "medium_low_values": ["P3-Medium"]
+  },
+  "chart_bindings": {
+    "component_bug": {
+      "support_status": "supported",
+      "required_canonical_fields": ["component", "item_id", "item_type"],
+      "candidate_native_fields": ["components", "key", "issuetype"],
+      "blocker_codes": []
+    },
+    "rolling_valid_bug": {
+      "support_status": "supported",
+      "required_canonical_fields": ["submitted_date", "severity", "exposure", "status", "item_type"],
+      "candidate_native_fields": ["created", "priority", "status", "issuetype"],
+      "blocker_codes": []
+    },
+    "open_bug_trend": {
+      "support_status": "supported",
+      "required_canonical_fields": ["submitted_date", "updated_date", "implemented_date", "closed_date", "status", "severity", "exposure"],
+      "candidate_native_fields": ["created", "updated", "resolutiondate", "status", "priority"],
+      "blocker_codes": []
+    },
+    "total_bug_trend": {
+      "support_status": "supported",
+      "required_canonical_fields": ["submitted_date", "closed_date", "status", "item_type"],
+      "candidate_native_fields": ["created", "resolutiondate", "status", "issuetype"],
+      "blocker_codes": []
+    },
+    "open_bug_aging": {
+      "support_status": "supported",
+      "required_canonical_fields": ["submitted_date", "closed_date", "days_open", "status"],
+      "candidate_native_fields": ["created", "resolutiondate", "status"],
+      "blocker_codes": []
+    },
+    "daily_new_standard_bug_count": {
+      "support_status": "supported",
+      "required_canonical_fields": ["submitted_date", "item_type"],
+      "candidate_native_fields": ["created", "issuetype"],
+      "blocker_codes": []
+    },
+    "execution_statistics": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "milestone_schedule": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "milestone_progress": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "automation_statistics": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "shift_left_statistics": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "internal_escaped_bugs": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "external_escaped_bugs": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "escaped_bug_details": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    }
+  },
+  "sync_policy": {
+    "live_sync": "supported",
+    "range_modes": ["ww", "date"]
+  },
+  "readiness_policy": {
+    "ready_status": "ready"
+  }
+}

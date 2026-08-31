@@ -1,8 +1,9 @@
 import json
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
+from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
 from provider_sync.app.api import ProviderFreshnessStatus
 from provider_sync.app.api.hsdes import HsdesHttpClient, HsdesSavedQueryAdapter, HsdesSavedQuerySyncService
 
@@ -17,15 +18,35 @@ class Command(BaseCommand):
         parser.add_argument('--force-refresh', action='store_true')
 
     def handle(self, *args, **options):
-        if options['profile_id'] != 'nvu-ttl-hsdes':
-            raise CommandError('Only nvu-ttl-hsdes is supported by the first HSD-ES live sync command.')
+        registry = ProjectProviderProfileRegistry.load_default()
+        resolution = registry.resolve_profile(options['profile_id'])
+        if resolution.profile is None:
+            self.stdout.write(json.dumps({
+                'status': resolution.status,
+                'profile_id': options['profile_id'],
+                'provider_id': resolution.provider_id,
+                'blockers': resolution.blockers,
+            }, sort_keys=True))
+            return
+        if resolution.profile.provider_id != 'hsdes':
+            self.stdout.write(json.dumps({
+                'status': 'unsupported',
+                'profile_id': resolution.profile.profile_id,
+                'provider_id': resolution.profile.provider_id,
+                'blockers': [{
+                    'code': 'provider_sync_adapter_not_available',
+                    'message': f'Provider {resolution.profile.provider_id} is not supported by sync_hsdes_profile.',
+                }],
+            }, sort_keys=True))
+            return
         if not getattr(settings, 'METRICS_HSDES_LIVE_SYNC_ENABLED', False):
             self.stdout.write(json.dumps({
                 'status': 'skipped',
                 'freshness_status': ProviderFreshnessStatus.CONFIGURATION_REQUIRED,
-                'profile_id': options['profile_id'],
+                'profile_id': resolution.profile.profile_id,
+                'provider_id': resolution.profile.provider_id,
                 'reason': 'Set METRICS_HSDES_LIVE_SYNC_ENABLED=true and configure backend HSD-ES credentials to run live sync.',
-            }))
+            }, sort_keys=True))
             return
         client = HsdesHttpClient(
             base_url=settings.METRICS_HSDES_API_BASE_URL,
@@ -38,7 +59,9 @@ class Command(BaseCommand):
         )
         result = HsdesSavedQuerySyncService(
             adapter=HsdesSavedQueryAdapter(client),
-        ).sync_nvu_ttl_profile(
+            profile_registry=registry,
+        ).sync_profile(
+            profile_id=resolution.profile.profile_id,
             begin_ww=options['begin_ww'],
             end_ww=options['end_ww'],
             force_refresh=options['force_refresh'],

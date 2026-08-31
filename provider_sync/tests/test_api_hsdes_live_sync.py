@@ -1,6 +1,7 @@
 import base64
 import json
 import urllib.error
+from unittest.mock import patch
 
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -296,6 +297,60 @@ class TestHsdesLiveSync(TestCase):
         self.assertEqual('skipped', payload['status'])
         self.assertEqual('configuration_required', payload['freshness_status'])
         self.assertIn('METRICS_HSDES_LIVE_SYNC_ENABLED', payload['reason'])
+
+    @override_settings(METRICS_HSDES_LIVE_SYNC_ENABLED=True)
+    def test_shouldSyncHsdesSavedQueryThroughGenericProviderProfileCommand(self):
+        # Given
+        output = JsonOutput()
+        fake_client = FakeHsdesClient([{
+            'data': [
+                {'id': '16000000001', 'rev': '1', 'fieldValues': {'HSD_type': 'bug', 'component': 'fwsw', 'submitted_date': '2026-08-04T08:00:00Z'}},
+            ],
+            'total': 1,
+        }])
+
+        # When
+        with patch('provider_sync.management.commands.sync_provider_profile.HsdesHttpClient', return_value=fake_client):
+            call_command(
+                'sync_provider_profile',
+                '--profile-id',
+                'nvu-ttl-hsdes',
+                '--begin-ww',
+                '26WW32',
+                '--end-ww',
+                '26WW32',
+                stdout=output,
+            )
+
+        # Then
+        payload = json.loads(output.value)
+        self.assertEqual('success', payload['status'])
+        self.assertEqual('nvu-ttl-hsdes', payload['profile_id'])
+        self.assertEqual('15017652869', fake_client.requests[0]['query_id'])
+        self.assertEqual('ip_fw_sw_sensing.tenant', fake_client.requests[0]['tenant'])
+        self.assertEqual('ip_fw_sw_sensing.bug', fake_client.requests[0]['subject'])
+
+    def test_shouldReturnSafeUnsupportedResultForGenericSyncUnknownProfile(self):
+        # Given
+        output = JsonOutput()
+
+        # When
+        call_command(
+            'sync_provider_profile',
+            '--profile-id',
+            'missing-profile',
+            '--begin-ww',
+            '26WW32',
+            '--end-ww',
+            '26WW32',
+            stdout=output,
+        )
+
+        # Then
+        payload = json.loads(output.value)
+        self.assertEqual('unsupported', payload['status'])
+        self.assertEqual('missing-profile', payload['profile_id'])
+        self.assertEqual('profile_not_found', payload['blockers'][0]['code'])
 
     def test_shouldGenerateAllFirstWaveHsdesQualityArtifactsFromLiveFacts(self):
         # Given

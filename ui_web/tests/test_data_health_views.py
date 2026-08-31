@@ -93,6 +93,32 @@ class TestDataHealthViews(TestCase):
         self.assertIn('Bearer [redacted]', content)
         self.assertNotIn('secret-token', content)
 
+    def test_shouldRenderRegistryProviderProfileHealthWithoutSyncCursors(self):
+        # When
+        response = self.client.get(reverse('ui_web:data_health'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('chiplet-2a-jira', content)
+        self.assertIn('nvu-ttl-hsdes', content)
+        self.assertIn('metrics_managed_native_query', content)
+        self.assertIn('provider_owned_saved_query', content)
+        self.assertIn('open_bug_trend', content)
+        self.assertIn('Mapping', content)
+
+    def test_shouldRenderAiSidecarDisabledStatusWithoutCallingAiBase(self):
+        # When
+        response = self.client.get(reverse('ui_web:data_health'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('AI Sidecar Health', content)
+        self.assertIn('disabled', content)
+        self.assertIn('dashboard_query_agent', content)
+        self.assertNotIn('token', content.lower())
+
     def _counts(self):
         return {
             'scopes': JiraScopeConfig.objects.count(),

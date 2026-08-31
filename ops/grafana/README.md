@@ -10,6 +10,14 @@ Committed JSON artifacts in this directory must pass:
 
 The validator intentionally fails when no JSON artifacts are present, so an empty artifact selection cannot be treated as a successful C-stock gate.
 
+`render_configs/ip_quality_dashboard.json` is the editable Metrics-owned render config for the IP Quality Dashboard. `ip_quality_dashboard.generated.json` is generated from that config and the approved data-surface allowlist:
+
+```powershell
+.venv\Scripts\python.exe scripts\grafana_render_config.py --render-config ops\grafana\render_configs\ip_quality_dashboard.json --allowlist openspec\docs\current-baseline\grafana-approved-data-surfaces.json --output ops\grafana\ip_quality_dashboard.generated.json
+```
+
+Review render-config changes first. The generated JSON is committed so Grafana import and validator gates can run without rebuilding it, but it should be regenerated rather than edited directly.
+
 Local deployment and runtime validation steps are documented in:
 
 ```text

@@ -5,12 +5,16 @@ from bug_metrics.models import BugTrendBucket, BugTrendCalculationRun, BugTrendC
 from jira_history.container import jira_history_container
 
 from .ai_context import (
+    DashboardCompositionIntent,
+    GcxPublicationPreconditionRequest,
     ProviderActionPlanRequest,
     ProviderAiChartDraftRequest,
     ProviderAiChartExplanationRequest,
     ProviderAiDashboardContextQuery,
     ProviderAiDashboardContextService,
+    GcxPublicationCallbackRequest,
 )
+from .ai_sidecar import AiSidecarProbeService
 from .calculation import BugTrendCalculationService
 from .chart_catalog import AiChartDraftRequest, ChartCatalogService, ChartDefinition, ChartPublishResult, ChartValidationResult, RendererRouteDecisionResult
 from .chart_data import BUG_TREND_CONTRACT_VERSION, BugTrendChart, BugTrendDataset, BugTrendRunMetadata
@@ -25,18 +29,13 @@ from .page_query import (
     BugTrendTicketListFilters,
 )
 from .provider_aggregate_contracts import (
-    DEFERRED_CHART_REASONS,
-    PROVIDER_CHART_CONTRACT_VERSION,
-    PROVIDER_CHART_EVIDENCE_CAPABILITIES,
-    ProviderAggregateRow,
     ProviderChartAggregateQuery,
     ProviderChartAggregateResult,
     ProviderChartEvidenceQuery,
-    evidence_capability_for_result,
-    provider_series_to_evidence_series,
 )
-from .provider_aggregates import ProviderChartAggregateService, provider_query_range_to_dates
+from .provider_aggregates import ProviderChartAggregateService
 from .provider_correlation import ProviderCorrelationService
+from .provider_evidence import ProviderChartEvidenceService
 from .provider_profiles import ProviderProfileReadinessService
 from .scope_audit import ScopeAudit, ScopeAuditService
 from .scope_config import SavedScopeConfig, ScopeConfigService, ScopeConfigValidationResult
@@ -57,7 +56,9 @@ class ApiForBugTrend:
         self._evidence_export_service = BugTrendEvidenceExportService()
         self._calculation_service = BugTrendCalculationService(self.get_scope)
         self._provider_chart_aggregate_service = ProviderChartAggregateService()
+        self._provider_chart_evidence_service = ProviderChartEvidenceService(self._provider_chart_aggregate_service, self.get_evidence_tickets)
         self._provider_ai_context_service = ProviderAiDashboardContextService(self._provider_chart_aggregate_service)
+        self._ai_sidecar_probe_service = AiSidecarProbeService()
         self._provider_profile_readiness_service = ProviderProfileReadinessService()
         self._hsdes_projection_service = HsdesProviderProjectionService()
         self._provider_correlation_service = ProviderCorrelationService()
@@ -91,7 +92,7 @@ class ApiForBugTrend:
         return self._calculation_health_service.list_calculation_health()
 
     def list_provider_sync_health(self) -> list[dict]:
-        return self._provider_sync_cache_service.list_sync_health()
+        return self._provider_profile_readiness_service.list_profile_health()
 
     def list_enabled_charts(self) -> List[ChartDefinition]:
         return self._chart_catalog_service.list_enabled_charts()
@@ -122,6 +123,24 @@ class ApiForBugTrend:
 
     def create_ai_provider_chart_draft(self, request: ProviderAiChartDraftRequest) -> dict:
         return self._provider_ai_context_service.create_chart_draft(request)
+
+    def get_ai_sidecar_status(self) -> dict:
+        return self._ai_sidecar_probe_service.get_status()
+
+    def list_ai_dashboard_composition_catalog(self, profile_id: str = '') -> dict:
+        return self._provider_ai_context_service.list_composition_catalog(profile_id)
+
+    def validate_ai_dashboard_composition_intent(self, request: DashboardCompositionIntent) -> dict:
+        return self._provider_ai_context_service.validate_composition_intent(request)
+
+    def validate_ai_dashboard_render_config_draft(self, draft_render_config: dict) -> dict:
+        return self._provider_ai_context_service.validate_render_config_draft(draft_render_config)
+
+    def validate_ai_gcx_publication_precondition(self, request: GcxPublicationPreconditionRequest) -> dict:
+        return self._provider_ai_context_service.validate_gcx_publication_precondition(request)
+
+    def record_ai_gcx_publication_callback(self, request: GcxPublicationCallbackRequest) -> dict:
+        return self._provider_ai_context_service.record_gcx_publication_callback(request)
 
     def list_ai_entry_placements(self) -> List[dict]:
         return self._provider_ai_context_service.list_entry_placements()
@@ -245,78 +264,7 @@ class ApiForBugTrend:
         return self._provider_correlation_service.explain_risk(correlations)
 
     def get_provider_chart_evidence(self, query: ProviderChartEvidenceQuery) -> dict:
-        capability = evidence_capability_for_result(query.chart_id, self._provider_evidence_status(query))
-        if capability != 'bucket_series':
-            return self._provider_evidence_state(query, capability)
-        if query.provider_id != 'jira':
-            return self._provider_evidence_state(query, 'summary_only')
-
-        scope = self._provider_chart_aggregate_service.jira_scope_for_profile(query.profile_id)
-        if scope is None:
-            return self._provider_evidence_state(query, 'summary_only', 'unavailable', 'No enabled Jira scope is mapped to the requested provider profile.')
-
-        begin, end = provider_query_range_to_dates(query)
-        evidence_series_name = provider_series_to_evidence_series(query.provider_id, query.chart_id, query.selected_series_name)
-        result = self.get_evidence_tickets(
-            BugTrendPageQueryState(
-                scope_id=scope.id,
-                begin=begin,
-                end=end,
-                calculation_run_id=query.calculation_run_id,
-                selected_bucket_id=query.selected_bucket_id,
-                selected_series_name=evidence_series_name,
-                list_filters=BugTrendTicketListFilters(
-                    owner=query.owner,
-                    status=query.status,
-                    severity=query.severity,
-                    component=query.component,
-                    text=query.text,
-                ),
-                active_chart_id='default_bug_trend',
-            )
-        )
-        return {
-            'contract_version': PROVIDER_CHART_CONTRACT_VERSION,
-            'provider_id': query.provider_id,
-            'profile_id': query.profile_id,
-            'chart_id': query.chart_id,
-            'chart_version': query.chart_version,
-            'evidence_capability': capability,
-            'status': 'supported',
-            'reason': '',
-            'begin_ww': query.begin_ww,
-            'end_ww': query.end_ww,
-            'range_mode': query.range_mode,
-            'begin_date': begin.isoformat(),
-            'end_date': end.isoformat(),
-            'source_scope_ref': f'jira_scope:{scope.id}',
-            'calculation_run_id': query.calculation_run_id,
-            'fact_snapshot_id': query.fact_snapshot_id,
-            'bucket_id': query.selected_bucket_id,
-            'provider_series_name': query.selected_series_name,
-            'series_name': evidence_series_name,
-            'selection_title': result.selection_title,
-            'total_count': result.total_count,
-            'shown_count': result.shown_count,
-            'display_fields': result.display_fields,
-            'rows': [
-                {
-                    'issue_key': row.issue_key,
-                    'source_url': row.source_url,
-                    'summary': row.summary,
-                    'series_name': row.series_name,
-                    'status': row.status,
-                    'severity': row.severity,
-                    'owner': row.owner,
-                    'component': row.component,
-                    'created_at': row.created_at,
-                    'updated_at': row.updated_at,
-                    'extra_fields': row.extra_fields,
-                    'extra_field_values': row.extra_field_values,
-                }
-                for row in result.rows
-            ],
-        }
+        return self._provider_chart_evidence_service.get_provider_chart_evidence(query)
 
     def _latest_authoritative_run(self, scope: JiraScopeConfig, begin: date, end: date) -> Optional[BugTrendCalculationRun]:
         return BugTrendCalculationRun.objects.filter(
@@ -370,57 +318,5 @@ class ApiForBugTrend:
             year, week, _ = bucket.bucket_start.isocalendar()
             return f'{str(year)[2:]}WW{week:02d}'
         return bucket.bucket_start.isoformat()
-
-    def _provider_evidence_status(self, query: ProviderChartEvidenceQuery) -> str:
-        if query.provider_id == 'hsdes':
-            return 'configuration_required'
-        if query.provider_id != 'jira':
-            return 'unsupported'
-        if query.chart_id in DEFERRED_CHART_REASONS:
-            return 'deferred'
-        if query.chart_id not in PROVIDER_CHART_EVIDENCE_CAPABILITIES:
-            return 'unsupported'
-        return 'supported'
-
-    def _provider_evidence_state(self, query: ProviderChartEvidenceQuery, capability: str, status: str = '', reason: str = '') -> dict:
-        resolved_status = status or self._provider_evidence_status(query)
-        resolved_reason = reason or self._provider_evidence_reason(query, capability, resolved_status)
-        return {
-            'contract_version': PROVIDER_CHART_CONTRACT_VERSION,
-            'provider_id': query.provider_id,
-            'profile_id': query.profile_id,
-            'chart_id': query.chart_id,
-            'chart_version': query.chart_version,
-            'evidence_capability': capability,
-            'status': resolved_status,
-            'reason': resolved_reason,
-            'begin_ww': query.begin_ww,
-            'end_ww': query.end_ww,
-            'range_mode': query.range_mode,
-            'begin_date': query.begin_date,
-            'end_date': query.end_date,
-            'source_scope_ref': '',
-            'calculation_run_id': query.calculation_run_id,
-            'fact_snapshot_id': query.fact_snapshot_id,
-            'bucket_id': query.selected_bucket_id,
-            'provider_series_name': query.selected_series_name,
-            'series_name': provider_series_to_evidence_series(query.provider_id, query.chart_id, query.selected_series_name),
-            'selection_title': '',
-            'total_count': 0,
-            'shown_count': 0,
-            'display_fields': [],
-            'rows': [],
-        }
-
-    def _provider_evidence_reason(self, query: ProviderChartEvidenceQuery, capability: str, status: str) -> str:
-        if query.provider_id == 'hsdes':
-            return 'HSD-ES ticket-level evidence requires confirmed field bindings before drilldown can show rows.'
-        if query.chart_id in DEFERRED_CHART_REASONS:
-            return f'{DEFERRED_CHART_REASONS[query.chart_id]} This summary-only panel does not support ticket-level evidence.'
-        if capability == 'range_only':
-            return 'This panel supports range-level evidence only; bucket/series ticket-level drilldown is not enabled in this phase.'
-        if status == 'unsupported':
-            return f'Chart {query.chart_id} does not support ticket-level evidence.'
-        return 'This summary-only panel does not support ticket-level evidence.'
 
 bug_trend_api = ApiForBugTrend()

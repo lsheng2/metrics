@@ -103,6 +103,20 @@ def validate_artifact(path: Path, allowlist: GrafanaAllowlist) -> list[Finding]:
     except json.JSONDecodeError as error:
         return [Finding(path, f"invalid JSON: {error}")]
 
+    if is_render_config(payload):
+        from grafana_render_config import generate_dashboard, validate_render_config
+        findings = validate_node(path, "", payload, allowlist, None) + validate_render_config(payload, allowlist, path)
+        if findings:
+            return findings
+        return findings + validate_dashboard_payload(path, generate_dashboard(payload, allowlist), allowlist)
+    return validate_dashboard_payload(path, payload, allowlist)
+
+
+def is_render_config(payload: dict[str, Any]) -> bool:
+    return 'dashboard_uid' in payload and 'sections' in payload
+
+
+def validate_dashboard_payload(path: Path, payload: dict[str, Any], allowlist: GrafanaAllowlist) -> list[Finding]:
     return validate_node(path, "", payload, allowlist, None) + validate_panel_evidence_links(path, payload, Finding) + validate_render_contracts(path, payload, allowlist)
 
 

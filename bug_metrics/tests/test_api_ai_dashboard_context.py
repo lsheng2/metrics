@@ -3,6 +3,8 @@ from datetime import date, datetime, timezone
 from django.test import TestCase
 
 from bug_metrics.app.api import (
+    DashboardCompositionIntent,
+    GcxPublicationPreconditionRequest,
     ProviderActionPlanRequest,
     ProviderAiChartDraftRequest,
     ProviderAiChartExplanationRequest,
@@ -255,6 +257,150 @@ class TestProviderAiDashboardContext(TestCase):
         self.assertIn('HSD-ES writes remain disabled', plan['unsupported_reason'])
         event = BugTrendAuditEvent.objects.get(event_type='provider_action_plan_unsupported')
         self.assertEqual('16000000001', event.request_summary['source_item_id'])
+
+    def test_shouldExposeAiCompositionCatalogWithoutProviderCredentialsOrNativeQueries(self):
+        # When
+        catalog = bug_trend_api.list_ai_dashboard_composition_catalog('nvu-ttl-hsdes')
+
+        # Then
+        self.assertEqual('0.2', catalog['contract_version'])
+        self.assertEqual('profile_catalog', catalog['catalog_type'])
+        self.assertEqual({'ww', 'date'}, set(catalog['range_modes']))
+        self.assertEqual({'max_rows', 'max_days'}, set(catalog['limits']))
+        profile = catalog['profiles'][0]
+        self.assertEqual('nvu-ttl-hsdes', profile['profile_id'])
+        self.assertEqual('hsdes', profile['provider_id'])
+        self.assertIn('source_query_hash', profile['source_population'])
+        serialized_catalog = str(catalog).lower()
+        self.assertNotIn('native_query_text', serialized_catalog)
+        self.assertNotIn('password', serialized_catalog)
+        self.assertNotIn('token', serialized_catalog)
+        self.assertNotIn('api_key', serialized_catalog)
+        open_bug_recipe = catalog['chart_recipes']['open_bug_trend']
+        self.assertEqual(['all_open_bugs', 'all_open_critical_high', 'new_critical_high', 'new_medium_low', 'fixed_or_closed_bugs'], open_bug_recipe['allowed_series'])
+        self.assertEqual('supported', open_bug_recipe['support_status'])
+
+    def test_shouldReturnNeedsMetricRecipeWhenCompositionIntentRequestsUnapprovedSeries(self):
+        # When
+        validation = bug_trend_api.validate_ai_dashboard_composition_intent(
+            DashboardCompositionIntent(
+                profile_id='nvu-ttl-hsdes',
+                dashboard_uid='ip-quality-dashboard',
+                chart_id='open_bug_trend',
+                requested_series=['new_critical'],
+                range_mode='ww',
+                range_start='26WW10',
+                range_end='26WW35',
+                output_type='render_config_draft',
+                actor='ai_sidecar',
+            )
+        )
+
+        # Then
+        self.assertEqual('needs_metric_recipe', validation['status'])
+        self.assertFalse(validation['valid'])
+        self.assertEqual(['new_critical'], validation['needs_metric_recipe']['requested_series'])
+        self.assertIn('new_critical_high', validation['needs_metric_recipe']['available_series'])
+        self.assertEqual('unapproved_series', validation['findings'][0]['code'])
+        self.assertNotIn('draft_render_config', validation)
+
+    def test_shouldValidateVisibilityOnlyCompositionIntentForApprovedSeries(self):
+        # When
+        validation = bug_trend_api.validate_ai_dashboard_composition_intent(
+            DashboardCompositionIntent(
+                profile_id='nvu-ttl-hsdes',
+                dashboard_uid='ip-quality-dashboard',
+                chart_id='open_bug_trend',
+                requested_series=['new_critical_high'],
+                range_mode='ww',
+                range_start='26WW10',
+                range_end='26WW35',
+                output_type='render_config_draft',
+                actor='ai_sidecar',
+            )
+        )
+
+        # Then
+        self.assertTrue(validation['valid'])
+        self.assertEqual('draft_validated', validation['status'])
+        draft_panel = validation['draft_render_config']['sections'][0]['panels'][0]
+        self.assertEqual({'chart_id': 'open_bug_trend', 'chart_version': 1}, draft_panel['chart_recipe_ref'])
+        self.assertEqual(['new_critical_high'], draft_panel['value_fields'])
+        self.assertEqual('approval_required', validation['publication_audit']['approval_state'])
+
+    def test_shouldBlockGcxPublicationPreconditionWhenDraftRenderConfigIsInvalid(self):
+        # When
+        precondition = bug_trend_api.validate_ai_gcx_publication_precondition(
+            GcxPublicationPreconditionRequest(
+                operation='grafana_import',
+                actor='ai_sidecar',
+                draft_render_config={
+                    'dashboard_uid': 'ip-quality-dashboard',
+                    'title': 'IP Quality Dashboard',
+                    'profile_variable': 'profile_id',
+                    'variables': [],
+                    'range_controls': {'modes': ['ww']},
+                    'sections': [{
+                        'id': 'quality',
+                        'title': 'Quality',
+                        'panels': [{
+                            'panel_id': 'invalid_new_critical',
+                            'title': 'Invalid New Critical',
+                            'type': 'timeseries',
+                            'layout': {'x': 0, 'y': 0, 'w': 12, 'h': 8},
+                            'chart_recipe_ref': {'chart_id': 'open_bug_trend', 'chart_version': 1},
+                            'provider_binding': 'selected_provider_quality',
+                            'render_root': 'grafana_rows',
+                            'render_shape': 'wide_bucket_series',
+                            'category_field': 'bucket_label',
+                            'value_fields': ['new_critical'],
+                            'evidence_capability': 'bucket_series',
+                        }],
+                    }],
+                },
+            )
+        )
+
+        # Then
+        self.assertFalse(precondition['mutation_allowed'])
+        self.assertEqual('blocked', precondition['status'])
+        self.assertEqual('metrics_precondition_failed', precondition['publication_audit']['validation_status'])
+        self.assertTrue(any(finding['code'] == 'render_config_validation_failed' for finding in precondition['findings']))
+        self.assertFalse(BugTrendAuditEvent.objects.filter(event_type='ai_gcx_publication_precondition_passed').exists())
+
+    def test_shouldAllowGcxPublicationPreconditionForValidatedDraftAndRecordAudit(self):
+        # Given
+        validation = bug_trend_api.validate_ai_dashboard_composition_intent(
+            DashboardCompositionIntent(
+                profile_id='nvu-ttl-hsdes',
+                dashboard_uid='ip-quality-dashboard',
+                chart_id='open_bug_trend',
+                requested_series=['new_critical_high'],
+                range_mode='ww',
+                range_start='26WW10',
+                range_end='26WW35',
+                output_type='render_config_draft',
+                actor='ai_sidecar',
+            )
+        )
+
+        # When
+        precondition = bug_trend_api.validate_ai_gcx_publication_precondition(
+            GcxPublicationPreconditionRequest(
+                operation='grafana_import',
+                actor='ai_sidecar',
+                draft_render_config=validation['draft_render_config'],
+            )
+        )
+
+        # Then
+        self.assertTrue(precondition['mutation_allowed'])
+        self.assertEqual('precondition_passed', precondition['status'])
+        self.assertEqual('validated', precondition['publication_audit']['validation_status'])
+        self.assertEqual('approval_required', precondition['publication_audit']['approval_state'])
+        event = BugTrendAuditEvent.objects.get(event_type='ai_gcx_publication_precondition_passed')
+        self.assertEqual('ai_sidecar', event.actor)
+        self.assertEqual('grafana_import', event.request_summary['operation'])
 
     def _create_jira_scope(self):
         return JiraScopeConfig.objects.create(

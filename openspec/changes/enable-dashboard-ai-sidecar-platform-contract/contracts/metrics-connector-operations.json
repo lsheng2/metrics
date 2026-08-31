@@ -1,0 +1,294 @@
+{
+  "connector_id": "metrics-dashboard",
+  "metrics_contract_version": "0.2",
+  "ai_base_profile_id": "dashboard_query_agent",
+  "service_identity": {
+    "expected_service_id": "dashboard-query-agent-app-service",
+    "capability": "dashboardQuery"
+  },
+  "redaction_policy": {
+    "provider_credentials_exposed": false,
+    "native_query_text_exposed": false,
+    "private_filesystem_paths_exposed": false,
+    "blocked_key_fragments": [
+      "password",
+      "secret",
+      "native_query_text",
+      "api_key",
+      "private_path"
+    ]
+  },
+  "operations": [
+    {
+      "operation_id": "catalog.lookup",
+      "method": "GET",
+      "path": "/api/ai-dashboard/catalog/",
+      "query": {
+        "profile_id": "nvu-ttl-hsdes"
+      },
+      "response_expectations": {
+        "contract_version": "0.2",
+        "catalog_type": "profile_catalog",
+        "contains_chart_recipes": true,
+        "contains_allowed_series": true,
+        "contains_provider_credentials": false
+      },
+      "response_example": {
+        "contract_version": "0.2",
+        "catalog_type": "profile_catalog",
+        "profiles": [
+          {
+            "profile_id": "nvu-ttl-hsdes",
+            "provider_id": "hsdes",
+            "status": "seeded_preview",
+            "freshness_status": "seeded_preview",
+            "mapping_version": 1,
+            "mapping_version_hash": "example-mapping-hash",
+            "source_population": {
+              "ownership_type": "provider_owned_saved_query",
+              "source_query_ref": "15017652869",
+              "source_query_name": "NVU All Bugs",
+              "source_query_hash": "example-source-hash"
+            },
+            "range_modes": [
+              "ww",
+              "date"
+            ]
+          }
+        ],
+        "chart_recipes": {
+          "open_bug_trend": {
+            "chart_id": "open_bug_trend",
+            "chart_version": 1,
+            "semantic_owner": "metrics",
+            "allowed_series": [
+              "all_open_bugs",
+              "all_open_critical_high",
+              "new_critical_high"
+            ],
+            "support_status": "supported"
+          }
+        }
+      }
+    },
+    {
+      "operation_id": "intent.validate",
+      "method": "POST",
+      "path": "/api/ai-dashboard/intent/validate/",
+      "json_request": {
+        "profile_id": "nvu-ttl-hsdes",
+        "dashboard_uid": "ip-quality-dashboard",
+        "chart_id": "open_bug_trend",
+        "requested_series": [
+          "new_critical_high"
+        ],
+        "range_mode": "ww",
+        "range_start": "26WW10",
+        "range_end": "26WW35",
+        "output_type": "render_config_draft",
+        "actor": "ai_sidecar"
+      },
+      "response_expectations": {
+        "supported_status": "draft_validated",
+        "unsupported_status": "needs_metric_recipe",
+        "mutation_allowed_without_precondition": false
+      },
+      "response_example": {
+        "contract_version": "0.2",
+        "valid": true,
+        "status": "draft_validated",
+        "findings": [],
+        "draft_render_config": {
+          "dashboard_uid": "ip-quality-dashboard",
+          "title": "AI Draft Dashboard",
+          "profile_variable": "profile_id",
+          "variables": [
+            {
+              "name": "profile_id",
+              "kind": "profile",
+              "values": [
+                "nvu-ttl-hsdes"
+              ],
+              "current": "nvu-ttl-hsdes"
+            }
+          ],
+          "range_controls": {
+            "mode_variable": "range_mode",
+            "modes": [
+              "ww",
+              "date"
+            ]
+          },
+          "sections": []
+        },
+        "publication_audit": {
+          "actor": "ai_sidecar",
+          "operation": "render_config_draft",
+          "validation_status": "validated",
+          "approval_state": "approval_required",
+          "mutation_allowed": false
+        }
+      }
+    },
+    {
+      "operation_id": "render_config.validate",
+      "method": "POST",
+      "path": "/api/ai-dashboard/render-config/validate/",
+      "json_request": {
+        "draft_render_config": {
+          "dashboard_uid": "ip-quality-dashboard",
+          "title": "AI Draft Dashboard",
+          "profile_variable": "profile_id",
+          "variables": [],
+          "range_controls": {
+            "mode_variable": "range_mode",
+            "modes": [
+              "ww",
+              "date"
+            ]
+          },
+          "sections": []
+        }
+      },
+      "response_expectations": {
+        "valid_status": "draft_validated",
+        "invalid_status": "validation_failed",
+        "uses_grafana_render_config_validator": true
+      },
+      "response_example": {
+        "contract_version": "0.2",
+        "valid": true,
+        "status": "draft_validated",
+        "findings": [],
+        "dashboard_preview": {
+          "dashboard_uid": "ip-quality-dashboard",
+          "title": "AI Draft Dashboard",
+          "panel_count": 1,
+          "variable_count": 1
+        }
+      }
+    },
+    {
+      "operation_id": "gcx.precondition",
+      "method": "POST",
+      "path": "/api/ai-dashboard/gcx/precondition/",
+      "json_request": {
+        "operation": "grafana_import",
+        "actor": "ai_sidecar",
+        "approval_policy": "approval_required",
+        "draft_render_config": {
+          "dashboard_uid": "ip-quality-dashboard",
+          "title": "AI Draft Dashboard",
+          "profile_variable": "profile_id",
+          "variables": [],
+          "range_controls": {
+            "mode_variable": "range_mode",
+            "modes": [
+              "ww",
+              "date"
+            ]
+          },
+          "sections": []
+        }
+      },
+      "response_expectations": {
+        "passed_status": "precondition_passed",
+        "blocked_status": "blocked",
+        "mutation_allowed_requires_metrics_precondition": true
+      },
+      "response_example": {
+        "contract_version": "0.2",
+        "status": "precondition_passed",
+        "mutation_allowed": true,
+        "findings": [],
+        "publication_audit": {
+          "actor": "ai_sidecar",
+          "operation": "grafana_import",
+          "validation_status": "validated",
+          "approval_state": "approval_required",
+          "mutation_allowed": true
+        }
+      }
+    },
+    {
+      "operation_id": "gcx.publication_callback",
+      "method": "POST",
+      "path": "/api/ai-dashboard/gcx/publication-callback/",
+      "json_request": {
+        "operation": "grafana_import",
+        "actor": "ai_sidecar",
+        "dashboard_uid": "ip-quality-dashboard",
+        "artifact_ref": "ai-base-artifact://run-123/ip-quality-dashboard.json",
+        "mutation_status": "succeeded",
+        "correlation_id": "corr-123",
+        "dry_run_proof_id": "proof-123"
+      },
+      "response_expectations": {
+        "recorded_status": "recorded",
+        "correlation_id_required": true,
+        "dashboard_uid_required": true
+      },
+      "response_example": {
+        "contract_version": "0.2",
+        "status": "recorded",
+        "operation": "grafana_import",
+        "dashboard_uid": "ip-quality-dashboard",
+        "mutation_status": "succeeded",
+        "correlation_id": "corr-123"
+      }
+    },
+    {
+      "operation_id": "context.lookup",
+      "method": "GET",
+      "path": "/api/ai-dashboard/context/",
+      "query": {
+        "provider_id": "hsdes",
+        "profile_id": "nvu-ttl-hsdes",
+        "begin_ww": "26WW32",
+        "end_ww": "26WW35",
+        "chart_id": "open_bug_trend"
+      },
+      "response_expectations": {
+        "contract_version": "0.1",
+        "contains_profile_mapping_version": true,
+        "contains_chart_recipe_version": true,
+        "contains_fact_snapshot": true,
+        "contains_freshness_status": true,
+        "contains_provider_credentials": false
+      },
+      "response_example": {
+        "contract_version": "0.1",
+        "query_state": {
+          "provider_id": "hsdes",
+          "profile_id": "nvu-ttl-hsdes",
+          "begin_ww": "26WW32",
+          "end_ww": "26WW35"
+        },
+        "provider_facts_context": {
+          "provider_id": "hsdes",
+          "profile_id": "nvu-ttl-hsdes",
+          "freshness_status": "seeded_preview",
+          "latest_snapshot_id": "example-snapshot-id"
+        },
+        "charts": [
+          {
+            "chart_id": "open_bug_trend",
+            "chart_version": 1,
+            "semantic_owner": "metrics",
+            "provider_support_status": "supported",
+            "provider_provenance": {
+              "ownership_type": "provider_owned_saved_query",
+              "source_query_ref": "15017652869",
+              "mapping_version": "1",
+              "mapping_version_hash": "example-mapping-hash"
+            },
+            "fact_snapshot_id": "example-snapshot-id",
+            "run_metadata": {
+              "freshness_status": "seeded_preview"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

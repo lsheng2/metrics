@@ -16,6 +16,38 @@
     </section>
 
     <section class="box">
+        <h3 class="title is-4">AI Sidecar Health</h3>
+        <table class="table is-fullwidth is-striped">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Profile</th>
+                    <th>Service</th>
+                    <th>Base URL</th>
+                    <th>Capabilities</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ data_health.ai_sidecar_status.status }}</td>
+                    <td>{{ data_health.ai_sidecar_status.profile_id }}</td>
+                    <td>{{ data_health.ai_sidecar_status.service_id }}</td>
+                    <td>{{ data_health.ai_sidecar_status.base_url }}</td>
+                    <td>
+                        {% for capability, enabled in data_health.ai_sidecar_status.capabilities.items %}
+                            {{ capability }}={{ enabled }}
+                        {% empty %}
+                            -
+                        {% endfor %}
+                    </td>
+                    <td>{{ data_health.ai_sidecar_status.reason }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="box">
         <h3 class="title is-4">Provider Sync Cache Health</h3>
         <table class="table is-fullwidth is-striped">
             <thead>
@@ -27,6 +59,9 @@
                     <th>Last success</th>
                     <th>Cache age</th>
                     <th>Snapshot</th>
+                    <th>Source</th>
+                    <th>Mapping</th>
+                    <th>Charts</th>
                     <th>Error</th>
                 </tr>
             </thead>
@@ -40,10 +75,13 @@
                         <td>{{ item.latest_successful_sync_at }}</td>
                         <td>{{ item.cache_age_seconds }}</td>
                         <td>{{ item.latest_snapshot_id }}</td>
+                        <td>{{ item.source_query_ownership }} {{ item.source_query_ref }} {{ item.source_query_name }}</td>
+                        <td>{{ item.mapping_version }} {{ item.mapping_version_hash }}</td>
+                        <td>{{ item.supported_chart_ids }} {{ item.deferred_chart_ids }}</td>
                         <td>{{ item.error_category }} {{ item.last_error }}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="8">No provider sync cache cursors found.</td></tr>
+                    <tr><td colspan="11">No provider profiles found.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

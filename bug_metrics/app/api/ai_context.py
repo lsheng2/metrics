@@ -3,6 +3,13 @@ from typing import List
 
 from bug_metrics.models import BugTrendAuditEvent
 
+from .ai_chart_definitions import AI_CHART_DEFINITIONS
+from .ai_dashboard_composition import AiDashboardCompositionService
+from .ai_dashboard_composition_contracts import (
+    DashboardCompositionIntent,
+    GcxPublicationCallbackRequest,
+    GcxPublicationPreconditionRequest,
+)
 from .provider_aggregate_contracts import (
     DEFERRED_CHART_REASONS,
     PROVIDER_CHART_CONTRACT_VERSION,
@@ -11,68 +18,10 @@ from .provider_aggregate_contracts import (
     evidence_capability_for_result,
 )
 from .provider_aggregates import ProviderChartAggregateService
+from .provider_profiles import ProviderProfileReadinessService
 
 
 AI_DASHBOARD_CONTEXT_CONTRACT_VERSION = '0.1'
-
-AI_CHART_DEFINITIONS = {
-    'component_bug': {
-        'title': 'Component Bug',
-        'series': ['component_bug_count'],
-    },
-    'rolling_valid_bug': {
-        'title': 'Rolling Valid Bug',
-        'series': ['rolling_valid_bug_count'],
-    },
-    'open_bug_trend': {
-        'title': 'Open Bug Trend',
-        'series': ['all_open_bugs', 'all_open_critical_high', 'new_critical_high', 'new_medium_low', 'fixed_or_closed_bugs'],
-    },
-    'total_bug_trend': {
-        'title': 'Total Bug Trend',
-        'series': ['total_new_bugs', 'total_open_bugs', 'total_fixed_or_closed_bugs'],
-    },
-    'open_bug_aging': {
-        'title': 'Open Bug Aging',
-        'series': ['aging_0_7_days', 'aging_8_14_days', 'aging_15_30_days', 'aging_31_plus_days'],
-    },
-    'daily_new_standard_bug_count': {
-        'title': 'Daily New Standard Bug Count',
-        'series': ['new_standard_bugs'],
-    },
-    'execution_statistics': {
-        'title': 'Execution Statistics',
-        'series': [],
-    },
-    'milestone_schedule': {
-        'title': 'Milestone Schedule',
-        'series': [],
-    },
-    'milestone_progress': {
-        'title': 'Milestone Progress',
-        'series': [],
-    },
-    'automation_statistics': {
-        'title': 'Automation Statistics',
-        'series': [],
-    },
-    'shift_left_statistics': {
-        'title': 'Shift-left Statistics',
-        'series': [],
-    },
-    'internal_escaped_bugs': {
-        'title': 'Internal Escaped Bugs',
-        'series': [],
-    },
-    'external_escaped_bugs': {
-        'title': 'External Escaped Bugs',
-        'series': [],
-    },
-    'escaped_bug_details': {
-        'title': 'Escaped Bug Details',
-        'series': [],
-    },
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,8 +69,10 @@ class ProviderActionPlanRequest:
 
 
 class ProviderAiDashboardContextService:
-    def __init__(self, aggregate_service: ProviderChartAggregateService):
+    def __init__(self, aggregate_service: ProviderChartAggregateService, readiness_service: ProviderProfileReadinessService | None = None):
         self._aggregate_service = aggregate_service
+        self._readiness_service = readiness_service or ProviderProfileReadinessService()
+        self._composition_service = AiDashboardCompositionService(self._readiness_service)
 
     def get_context(self, query: ProviderAiDashboardContextQuery) -> dict:
         chart_ids = self._selected_chart_ids(query.chart_ids)
@@ -221,6 +172,21 @@ class ProviderAiDashboardContextService:
             'visualization': request.visualization,
             'publication_policy': 'metrics_validator_required',
         }
+
+    def list_composition_catalog(self, profile_id: str = '') -> dict:
+        return self._composition_service.list_composition_catalog(profile_id)
+
+    def validate_composition_intent(self, intent: DashboardCompositionIntent) -> dict:
+        return self._composition_service.validate_composition_intent(intent)
+
+    def validate_render_config_draft(self, draft_render_config: dict) -> dict:
+        return self._composition_service.validate_render_config_draft(draft_render_config)
+
+    def validate_gcx_publication_precondition(self, request: GcxPublicationPreconditionRequest) -> dict:
+        return self._composition_service.validate_gcx_publication_precondition(request)
+
+    def record_gcx_publication_callback(self, request: GcxPublicationCallbackRequest) -> dict:
+        return self._composition_service.record_gcx_publication_callback(request)
 
     def list_entry_placements(self) -> List[dict]:
         backend_contracts = ['ai_dashboard_context', 'ai_chart_explanation', 'ai_chart_draft', 'provider_action_plan']

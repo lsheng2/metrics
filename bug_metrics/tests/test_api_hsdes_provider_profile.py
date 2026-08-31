@@ -4,6 +4,29 @@ from bug_metrics.app.api import bug_trend_api
 
 
 class TestHsdesProviderProfile(TestCase):
+    def test_shouldResolveProviderReadinessFromProfileRegistryWhenProviderIsOmitted(self):
+        # When
+        hsdes_readiness = bug_trend_api.get_provider_profile_readiness('', 'nvu-ttl-hsdes')
+        jira_readiness = bug_trend_api.get_provider_profile_readiness('', 'chiplet-2a-jira')
+
+        # Then
+        self.assertEqual('hsdes', hsdes_readiness['provider_id'])
+        self.assertEqual('nvu-ttl-hsdes', hsdes_readiness['profile_id'])
+        self.assertEqual('NVU', hsdes_readiness['scope_labels']['ip']['value'])
+        self.assertEqual('jira', jira_readiness['provider_id'])
+        self.assertEqual('chiplet-2a-jira', jira_readiness['profile_id'])
+        self.assertEqual('chiplet_ip', jira_readiness['scope_labels']['ip']['value'])
+
+    def test_shouldReturnStructuredUnsupportedReadinessForUnknownProfileWithoutDefaultFallback(self):
+        # When
+        readiness = bug_trend_api.get_provider_profile_readiness('', 'unknown-profile')
+
+        # Then
+        self.assertEqual('unsupported', readiness['status'])
+        self.assertEqual('unknown-profile', readiness['profile_id'])
+        self.assertEqual('', readiness['provider_id'])
+        self.assertEqual('profile_not_found', readiness['blockers'][0]['code'])
+
     def test_shouldExposeHsdesApiReviewWithExplicitBlockers(self):
         # When
         readiness = bug_trend_api.get_provider_profile_readiness('hsdes', 'nvu-ttl-hsdes')
@@ -37,6 +60,25 @@ class TestHsdesProviderProfile(TestCase):
         self.assertEqual('deferred', bindings_by_chart['execution_statistics']['support_status'])
         self.assertIn('submitted_date', bindings_by_chart['open_bug_trend']['candidate_native_fields'])
         self.assertIn('component', bindings_by_chart['component_bug']['candidate_native_fields'])
+
+    def test_shouldExposeRegistryDerivedReadinessMetadataForJiraAndHsdesProfiles(self):
+        # When
+        jira_readiness = bug_trend_api.get_provider_profile_readiness('', 'chiplet-2a-jira')
+        hsdes_readiness = bug_trend_api.get_provider_profile_readiness('', 'nvu-ttl-hsdes')
+
+        # Then
+        jira_support = {item['chart_id']: item for item in jira_readiness['chart_support']}
+        hsdes_support = {item['chart_id']: item for item in hsdes_readiness['chart_support']}
+        self.assertEqual('metrics_managed_native_query', jira_readiness['source_population']['ownership_type'])
+        self.assertEqual('provider_owned_saved_query', hsdes_readiness['source_population']['ownership_type'])
+        self.assertEqual(jira_readiness['mapping_version_hash'], jira_readiness['source_population']['mapping_version_hash'])
+        self.assertEqual(hsdes_readiness['mapping_version_hash'], hsdes_readiness['source_population']['mapping_version_hash'])
+        self.assertEqual('ready', jira_readiness['freshness_status'])
+        self.assertEqual('seeded_preview', hsdes_readiness['freshness_status'])
+        self.assertEqual('supported', jira_support['open_bug_trend']['support_status'])
+        self.assertEqual('supported', hsdes_support['open_bug_trend']['support_status'])
+        self.assertEqual('deferred', jira_support['execution_statistics']['support_status'])
+        self.assertEqual('deferred', hsdes_support['execution_statistics']['support_status'])
 
     def test_shouldDetectHsdesSavedQueryDriftBeforeAggregateGeneration(self):
         # When

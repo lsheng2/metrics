@@ -4,11 +4,42 @@ from datetime import date, datetime, timezone
 from django.test import TestCase
 
 from bug_metrics.app.api import ProviderChartAggregateQuery, bug_trend_api
+from bug_metrics.app.api.hsdes_seed_facts import HsdesSeedFactRepository
+from bug_metrics.app.api.provider_facts import HsdesCanonicalFactAdapter, JiraCalculationRunFactAdapter
+from bug_metrics.app.api.provider_aggregates import ProviderChartAggregateService
+from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
 from bug_metrics.models import BugTrendCalculationRun, JiraScopeConfig
 from jira_history.models import JiraIssue, JiraTransition
+from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
 
 
 class TestProviderAggregateContracts(TestCase):
+    def test_shouldResolveProviderFromProfileRegistryForAggregateQueryWhenProviderIsOmitted(self):
+        # When
+        result = bug_trend_api.get_provider_chart_aggregates(
+            ProviderChartAggregateQuery('', 'nvu-ttl-hsdes', '26WW32', '26WW32', 'component_bug')
+        )
+
+        # Then
+        self.assertEqual('supported', result.status)
+        self.assertEqual('hsdes', result.provider_id)
+        self.assertEqual('nvu-ttl-hsdes', result.profile_id)
+        self.assertEqual('NVU', result.scope_labels['ip']['value'])
+        self.assertEqual('provider_owned_saved_query', result.source_population['ownership_type'])
+
+    def test_shouldRejectProviderProfileMismatchWithoutUsingAlternateProviderPath(self):
+        # When
+        result = bug_trend_api.get_provider_chart_aggregates(
+            ProviderChartAggregateQuery('jira', 'nvu-ttl-hsdes', '26WW32', '26WW32', 'component_bug')
+        )
+
+        # Then
+        self.assertEqual('unsupported', result.status)
+        self.assertEqual('jira', result.provider_id)
+        self.assertEqual('nvu-ttl-hsdes', result.profile_id)
+        self.assertIn('does not match selected profile', result.reason)
+        self.assertEqual([], result.rows)
+
     def test_shouldProduceFirstWaveQualityAggregatesFromJiraFacts(self):
         # Given
         scope = self._seed_fixed_jira_scope_fixture()
@@ -37,6 +68,34 @@ class TestProviderAggregateContracts(TestCase):
         self.assertEqual(2, self._row_value(results['total_bug_trend'], 'total_new_bugs', {}))
         self.assertEqual(1, self._row_value(results['open_bug_aging'], 'aging_0_7_days', {}))
 
+    def test_shouldAdaptJiraCalculationRunToCanonicalOpenBugTrendFactsWithoutChangingSeriesCounts(self):
+        # Given
+        scope = self._seed_fixed_jira_scope_fixture()
+        run = bug_trend_api.recalculate_scope(scope.id, date(2026, 8, 3), date(2026, 8, 9))
+        adapter = JiraCalculationRunFactAdapter()
+
+        # When
+        facts = adapter.open_bug_trend_facts(scope, run, date(2026, 8, 3), date(2026, 8, 9))
+        result = bug_trend_api.get_provider_chart_aggregates(
+            ProviderChartAggregateQuery(
+                provider_id='jira',
+                profile_id='chiplet-2a-jira',
+                begin_ww='26WW32',
+                end_ww='26WW32',
+                chart_id='open_bug_trend',
+            )
+        )
+
+        # Then
+        fact_values = {fact.series: fact.value for fact in facts}
+        row_values = {row.series: row.value for row in result.rows}
+        self.assertEqual(1, fact_values['all_open_bugs'])
+        self.assertEqual(1, fact_values['all_open_critical_high'])
+        self.assertEqual(1, fact_values['new_critical_high'])
+        self.assertEqual(1, fact_values['new_medium_low'])
+        self.assertEqual(-1, fact_values['fixed_or_closed_bugs'])
+        self.assertEqual(fact_values, row_values)
+
     def test_shouldReturnDeferredStateForUnmappedExecutionAndEfficiencyCharts(self):
         # Given
         self._seed_fixed_jira_scope_fixture()
@@ -59,6 +118,43 @@ class TestProviderAggregateContracts(TestCase):
         self.assertEqual(['deferred', 'deferred', 'deferred', 'deferred'], [result.status for result in results])
         self.assertEqual([[], [], [], []], [result.rows for result in results])
         self.assertTrue(all(result.reason for result in results))
+
+    def test_shouldReturnConfigurationRequiredWhenProfileLacksChartRecipeFieldBinding(self):
+        # Given
+        scope = self._seed_fixed_jira_scope_fixture()
+        scope.name = 'custom-jira-profile'
+        scope.save()
+        registry = ProjectProviderProfileRegistry.from_records([
+            {
+                'profile_id': 'custom-jira-profile',
+                'provider_id': 'jira',
+                'display_name': 'Custom Jira Profile',
+                'enabled': True,
+                'mapping_version': 1,
+                'source_population': {'ownership_type': 'metrics_managed_native_query'},
+                'scope_labels': {'ip': 'custom'},
+                'field_bindings': {'submitted_date': {'native_field': 'created'}},
+                'chart_bindings': {
+                    'open_bug_trend': {
+                        'support_status': 'supported',
+                        'required_canonical_fields': ['submitted_date', 'severity'],
+                        'candidate_native_fields': ['created'],
+                        'blocker_codes': [],
+                    },
+                },
+            },
+        ])
+        service = ProviderChartAggregateService(profile_registry=registry)
+
+        # When
+        result = service.get_aggregates(
+            ProviderChartAggregateQuery('jira', 'custom-jira-profile', '26WW32', '26WW32', 'open_bug_trend')
+        )
+
+        # Then
+        self.assertEqual('configuration_required', result.status)
+        self.assertIn('missing canonical field bindings', result.reason)
+        self.assertEqual([], result.rows)
 
     def test_shouldExposeGrafanaAggregateRowProvenance(self):
         # Given
@@ -218,6 +314,90 @@ class TestProviderAggregateContracts(TestCase):
         self.assertEqual(3, self._row_value(results['total_bug_trend'], 'total_new_bugs', {}))
         self.assertEqual(3, self._row_value(results['open_bug_aging'], 'aging_0_7_days', {}))
         self.assertEqual(2, next(row.value for row in results['daily_new_standard_bug_count'].rows if row.bucket_date == '2026-08-05'))
+
+    def test_shouldReturnDateModeHsdesAggregateFromMatchingCachedArtifact(self):
+        # Given
+        cache_service = ProviderSyncCacheService()
+        snapshot = cache_service.materialize_snapshot(
+            provider_id='hsdes',
+            profile_id='nvu-ttl-hsdes',
+            source_query={
+                'ownership_type': 'provider_owned_saved_query',
+                'source_query_ref': '15017652869',
+                'source_query_hash': 'source-hash',
+            },
+            field_set_hash='field-hash',
+            mapping_version_hash='mapping-hash',
+            facts=[],
+            raw_payload={'total': 0},
+            freshness_status=ProviderFreshnessStatus.LIVE_SYNCED,
+        )
+        cache_service.store_aggregate_artifact(
+            snapshot=snapshot,
+            chart_id='open_bug_trend',
+            chart_version=1,
+            begin_ww='26WW32',
+            end_ww='26WW32',
+            rows=[],
+            grafana_rows=[{
+                'bucket_label': '2026-08-10',
+                'bucket_start': '2026-08-10',
+                'bucket_end': '2026-08-16',
+                'bucket_date': '2026-08-10',
+                'all_open_bugs': 5,
+            }],
+            source_population=snapshot.source_query_json,
+            run_metadata={'freshness_status': ProviderFreshnessStatus.LIVE_SYNCED},
+            range_mode='date',
+            range_start='2026-08-10',
+            range_end='2026-08-16',
+            range_grain='day',
+            range_label_start='2026-08-10',
+            range_label_end='2026-08-16',
+        )
+
+        # When
+        result = bug_trend_api.get_provider_chart_aggregates(
+            ProviderChartAggregateQuery(
+                provider_id='hsdes',
+                profile_id='nvu-ttl-hsdes',
+                begin_ww='26WW32',
+                end_ww='26WW32',
+                chart_id='open_bug_trend',
+                range_mode='date',
+                begin_date='2026-08-10',
+                end_date='2026-08-16',
+            )
+        )
+
+        # Then
+        self.assertEqual('supported', result.status)
+        self.assertEqual('date', result.range_mode)
+        self.assertEqual('2026-08-10', result.begin_date)
+        self.assertEqual('2026-08-16', result.end_date)
+        self.assertEqual(5, result.grafana_rows[0]['all_open_bugs'])
+        self.assertEqual('live_synced', result.run_metadata['freshness_status'])
+
+    def test_shouldAdaptHsdesSeedFactsToCanonicalOpenBugTrendFactsWithoutChangingSeriesCounts(self):
+        # Given
+        seed_facts = HsdesSeedFactRepository().facts_for_profile('nvu-ttl-hsdes')
+        adapter = HsdesCanonicalFactAdapter()
+
+        # When
+        facts = adapter.open_bug_trend_facts(seed_facts, date(2026, 8, 3), date(2026, 8, 9))
+        result = bug_trend_api.get_provider_chart_aggregates(
+            ProviderChartAggregateQuery('hsdes', 'nvu-ttl-hsdes', '26WW32', '26WW32', 'open_bug_trend')
+        )
+
+        # Then
+        fact_values = {fact.series: fact.value for fact in facts}
+        row_values = {row.series: row.value for row in result.rows}
+        self.assertEqual(4, fact_values['all_open_bugs'])
+        self.assertEqual(0, fact_values['all_open_critical_high'])
+        self.assertEqual(0, fact_values['new_critical_high'])
+        self.assertEqual(3, fact_values['new_medium_low'])
+        self.assertEqual(0, fact_values['fixed_or_closed_bugs'])
+        self.assertEqual(fact_values, row_values)
 
     def test_shouldReturnDeferredStateForHsdesFirstWaveDeferredCharts(self):
         # When

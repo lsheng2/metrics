@@ -1,0 +1,51 @@
+{
+  "profile_id": "dashboard_query_agent",
+  "service_id": "dashboard-query-agent-app-service",
+  "display_name": "Dashboard Query Agent",
+  "feature_gates": [
+    "dashboardQuery",
+    "metricsConnector",
+    "grafanaOperations"
+  ],
+  "navigation": {
+    "default_route": "/dashboard-query-agent",
+    "diagnostics_route": "/dashboard-query-agent/diagnostics"
+  },
+  "metrics_connector": {
+    "connector_id": "metrics-dashboard",
+    "base_url_config_key": "DASHBOARD_METRICS_BASE_URL",
+    "health_path": "/api/ai-dashboard/catalog/",
+    "contract_fixture": "metrics-connector-operations.json",
+    "profile_scope": {
+      "allowlist": [
+        "dashboard_query_agent"
+      ],
+      "blocked_profiles": [
+        "sample_agent",
+        "report_creator",
+        "soc_ai_driver"
+      ]
+    },
+    "redaction_policy": {
+      "source_credentials": "never_forward",
+      "native_provider_queries": "never_forward",
+      "private_paths": "never_forward"
+    }
+  },
+  "gcx_tools": {
+    "bundle_id": "dashboard-gcx",
+    "default_enabled": false,
+    "model_visible_by_default": false,
+    "raw_shell_allowed": false,
+    "raw_gcx_api_passthrough_allowed": false,
+    "requires_metrics_precondition": true,
+    "requires_dry_run_proof": true,
+    "requires_user_approval_for_mutation": true
+  },
+  "run_contract": {
+    "preferred_mode": "durable_run",
+    "chat_mode": "exploration_only",
+    "artifact_refs_required": true,
+    "correlation_id_required": true
+  }
+}

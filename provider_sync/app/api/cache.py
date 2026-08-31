@@ -1,86 +1,18 @@
-from dataclasses import asdict, dataclass
-import hashlib
-import json
 from datetime import timedelta
 
+from django.db.models import Q
 from django.db import transaction
-from django.conf import settings
 from django.utils import timezone
 
 from provider_sync.models import ProviderAggregateArtifact, ProviderFact, ProviderFactSnapshot, ProviderSyncCursor
-
-
-class ProviderFreshnessStatus:
-    LIVE_SYNCED = 'live_synced'
-    SEEDED_PREVIEW = 'seeded_preview'
-    STALE = 'stale'
-    UNAVAILABLE = 'unavailable'
-    CONFIGURATION_REQUIRED = 'configuration_required'
-    RUNNING = 'running'
-    FAILED = 'failed'
-
-
-@dataclass(frozen=True, slots=True)
-class ProviderCachedArtifactResult:
-    artifact: ProviderAggregateArtifact | None
-    freshness_status: str
-    cache_age_seconds: int
-    reason: str = ''
-
-
-@dataclass(frozen=True, slots=True)
-class ProviderRefreshStartResult:
-    acquired: bool
-    status: str
-    cursor: ProviderSyncCursor | None = None
-    reason: str = ''
-
-
-@dataclass(frozen=True, slots=True)
-class ProviderCacheIdentity:
-    provider_id: str
-    profile_id: str
-    source_query_ownership: str
-    source_query_ref: str
-    source_query_hash: str
-    tenant_or_space: str
-    subject_or_item_type: str
-    field_set_hash: str
-    mapping_version_hash: str
-    chart_id: str
-    chart_version: int
-    begin_ww: str
-    end_ww: str
-    fact_snapshot_id: str = ''
-
-    def cache_key(self) -> str:
-        payload = asdict(self)
-        encoded = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode('utf-8')
-        return hashlib.sha256(encoded).hexdigest()
-
-
-@dataclass(frozen=True, slots=True)
-class ProviderCacheSettings:
-    cache_enabled: bool
-    cache_ttl_seconds: int
-    metadata_cache_seconds: int
-    sync_stale_after_seconds: int
-
-    @classmethod
-    def for_provider(cls, provider_id: str) -> 'ProviderCacheSettings':
-        generic = cls(
-            cache_enabled=getattr(settings, 'METRICS_PROVIDER_CACHE_ENABLED', True),
-            cache_ttl_seconds=getattr(settings, 'METRICS_PROVIDER_CACHE_TTL_SECONDS', 900),
-            metadata_cache_seconds=getattr(settings, 'METRICS_PROVIDER_METADATA_CACHE_SECONDS', 300),
-            sync_stale_after_seconds=getattr(settings, 'METRICS_PROVIDER_SYNC_STALE_AFTER_SECONDS', 1800),
-        )
-        override = getattr(settings, 'METRICS_PROVIDER_CACHE_OVERRIDES', {}).get(provider_id, {})
-        return cls(
-            cache_enabled=override.get('cache_enabled', generic.cache_enabled),
-            cache_ttl_seconds=override.get('cache_ttl_seconds', generic.cache_ttl_seconds),
-            metadata_cache_seconds=override.get('metadata_cache_seconds', generic.metadata_cache_seconds),
-            sync_stale_after_seconds=override.get('sync_stale_after_seconds', generic.sync_stale_after_seconds),
-        )
+from .cache_contracts import (
+    ProviderCachedArtifactResult,
+    ProviderCacheIdentity,
+    ProviderCacheSettings,
+    ProviderFreshnessStatus,
+    ProviderRefreshStartResult,
+    normalized_artifact_range,
+)
 
 
 class ProviderSyncCacheService:
@@ -123,9 +55,22 @@ class ProviderSyncCacheService:
         chart_version: int,
         begin_ww: str,
         end_ww: str,
+        range_mode: str = 'ww',
+        range_start: str = '',
+        range_end: str = '',
         now=None,
     ) -> ProviderCachedArtifactResult:
-        artifact = self.latest_aggregate_artifact(provider_id, profile_id, chart_id, chart_version, begin_ww, end_ww)
+        artifact = self.latest_aggregate_artifact(
+            provider_id,
+            profile_id,
+            chart_id,
+            chart_version,
+            begin_ww,
+            end_ww,
+            range_mode=range_mode,
+            range_start=range_start,
+            range_end=range_end,
+        )
         if artifact is None:
             return ProviderCachedArtifactResult(None, ProviderFreshnessStatus.UNAVAILABLE, 0, 'no_matching_artifact')
         now = now or timezone.now()
@@ -249,7 +194,23 @@ class ProviderSyncCacheService:
         run_metadata: dict,
         status: str = 'supported',
         reason: str = '',
+        range_mode: str = 'ww',
+        range_start: str = '',
+        range_end: str = '',
+        range_grain: str = '',
+        range_label_start: str = '',
+        range_label_end: str = '',
     ) -> ProviderAggregateArtifact:
+        range_identity = normalized_artifact_range(
+            range_mode=range_mode,
+            begin_ww=begin_ww,
+            end_ww=end_ww,
+            range_start=range_start,
+            range_end=range_end,
+            range_grain=range_grain,
+            range_label_start=range_label_start,
+            range_label_end=range_label_end,
+        )
         identity = ProviderCacheIdentity(
             provider_id=snapshot.provider_id,
             profile_id=snapshot.profile_id,
@@ -264,6 +225,12 @@ class ProviderSyncCacheService:
             chart_version=chart_version,
             begin_ww=begin_ww,
             end_ww=end_ww,
+            range_mode=range_identity['range_mode'],
+            range_start=range_identity['range_start'],
+            range_end=range_identity['range_end'],
+            range_grain=range_identity['range_grain'],
+            range_label_start=range_identity['range_label_start'],
+            range_label_end=range_identity['range_label_end'],
             fact_snapshot_id=str(snapshot.id),
         )
         return ProviderAggregateArtifact.objects.update_or_create(
@@ -273,9 +240,15 @@ class ProviderSyncCacheService:
             chart_version=chart_version,
             begin_ww=begin_ww,
             end_ww=end_ww,
+            range_mode=range_identity['range_mode'],
+            range_start=range_identity['range_start'],
+            range_end=range_identity['range_end'],
             cache_identity_hash=identity.cache_key(),
             defaults={
                 'snapshot': snapshot,
+                'range_grain': range_identity['range_grain'],
+                'range_label_start': range_identity['range_label_start'],
+                'range_label_end': range_identity['range_label_end'],
                 'status': status,
                 'reason': reason,
                 'rows_json': rows,
@@ -315,16 +288,36 @@ class ProviderSyncCacheService:
         chart_version: int,
         begin_ww: str,
         end_ww: str,
+        range_mode: str = 'ww',
+        range_start: str = '',
+        range_end: str = '',
     ) -> ProviderAggregateArtifact | None:
-        return ProviderAggregateArtifact.objects.filter(
+        query = ProviderAggregateArtifact.objects.filter(
             provider_id=provider_id,
             profile_id=profile_id,
             chart_id=chart_id,
             chart_version=chart_version,
+            status='supported',
+        )
+        range_identity = normalized_artifact_range(
+            range_mode=range_mode,
             begin_ww=begin_ww,
             end_ww=end_ww,
-            status='supported',
-        ).select_related('snapshot').order_by('-created_at').first()
+            range_start=range_start,
+            range_end=range_end,
+        )
+        if range_identity['range_mode'] == 'ww':
+            query = query.filter(
+                begin_ww=begin_ww,
+                end_ww=end_ww,
+            ).filter(Q(range_mode='ww') | Q(range_mode=''))
+        else:
+            query = query.filter(
+                range_mode=range_identity['range_mode'],
+                range_start=range_identity['range_start'],
+                range_end=range_identity['range_end'],
+            )
+        return query.select_related('snapshot').order_by('-created_at').first()
 
     def _deduped_facts(self, facts: list[dict]) -> list[dict]:
         deduped = {}

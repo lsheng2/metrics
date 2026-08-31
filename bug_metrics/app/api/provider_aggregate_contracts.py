@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict, List
 
+from .provider_profile_registry import ProjectProviderProfileRegistry
+
 
 PROVIDER_CHART_CONTRACT_VERSION = '0.2'
 FIRST_JIRA_PROFILE_ID = 'chiplet-2a-jira'
@@ -269,12 +271,18 @@ def provider_series_to_evidence_series(provider_id: str, chart_id: str, series_n
 
 
 def static_scope_labels_for_profile(profile_id: str, fallback_dimensions: Dict[str, str] | None = None) -> Dict[str, dict]:
-    labels = FIRST_PROVIDER_STATIC_SCOPE_LABELS.get(profile_id, fallback_dimensions or {})
+    try:
+        profile = ProjectProviderProfileRegistry.load_default().get_profile(profile_id)
+        labels = profile.scope_labels
+        mapping_version = profile.mapping_version
+    except KeyError:
+        labels = FIRST_PROVIDER_STATIC_SCOPE_LABELS.get(profile_id, fallback_dimensions or {})
+        mapping_version = MAPPING_VERSION
     return {
         name: {
             'value': value,
             'source': STATIC_SCOPE_LABEL_SOURCE,
-            'mapping_version': MAPPING_VERSION,
+            'mapping_version': mapping_version,
         }
         for name, value in labels.items()
     }

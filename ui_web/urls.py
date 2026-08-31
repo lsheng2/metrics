@@ -4,6 +4,7 @@ from django.urls import path
 from .utils.url_utils import django_normalized_base_url
 from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView, CurrentTasksStageView, \
     AvailableMembersView, TaskPullRequestGatewayView
+from .views.ai_dashboard_view import AiDashboardCatalogApiView, AiDashboardContextApiView, AiDashboardGcxPreconditionApiView, AiDashboardGcxPublicationCallbackApiView, AiDashboardIntentValidationApiView, AiDashboardRenderConfigValidationApiView
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
@@ -63,4 +64,10 @@ urlpatterns = [
      path(_base_prefix + 'api/provider-charts/evidence/', ProviderChartEvidenceApiView.as_view(), name='provider_chart_evidence_api'),
      path(_base_prefix + 'api/provider-profiles/readiness/', ProviderProfileReadinessApiView.as_view(), name='provider_profile_readiness_api'),
      path(_base_prefix + 'api/provider-profiles/align-dashboard-range/', ProviderProfileAlignDashboardRangeApiView.as_view(), name='provider_profile_align_dashboard_range_api'),
+     path(_base_prefix + 'api/ai-dashboard/catalog/', AiDashboardCatalogApiView.as_view(), name='ai_dashboard_catalog_api'),
+     path(_base_prefix + 'api/ai-dashboard/intent/validate/', AiDashboardIntentValidationApiView.as_view(), name='ai_dashboard_intent_validation_api'),
+     path(_base_prefix + 'api/ai-dashboard/render-config/validate/', AiDashboardRenderConfigValidationApiView.as_view(), name='ai_dashboard_render_config_validation_api'),
+     path(_base_prefix + 'api/ai-dashboard/gcx/precondition/', AiDashboardGcxPreconditionApiView.as_view(), name='ai_dashboard_gcx_precondition_api'),
+     path(_base_prefix + 'api/ai-dashboard/gcx/publication-callback/', AiDashboardGcxPublicationCallbackApiView.as_view(), name='ai_dashboard_gcx_publication_callback_api'),
+     path(_base_prefix + 'api/ai-dashboard/context/', AiDashboardContextApiView.as_view(), name='ai_dashboard_context_api'),
 ]

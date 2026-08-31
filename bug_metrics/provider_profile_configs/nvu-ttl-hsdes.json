@@ -1,0 +1,152 @@
+{
+  "profile_id": "nvu-ttl-hsdes",
+  "provider_id": "hsdes",
+  "display_name": "NVU TTL HSD-ES",
+  "enabled": true,
+  "mapping_version": 1,
+  "source_population": {
+    "profile_id": "nvu-ttl-hsdes",
+    "provider_id": "hsdes",
+    "ownership_type": "provider_owned_saved_query",
+    "source_query_ref": "15017652869",
+    "source_query_name": "NVU All Bugs",
+    "native_query_text": "",
+    "tenant_or_site": "ip_fw_sw_sensing.tenant",
+    "subject_or_issue_type": "ip_fw_sw_sensing.bug",
+    "criteria_operator": "All",
+    "criteria_snapshot": "id > 0; family in NVU-FW; HSD_type in bug; release in NVU-FW.trunk,NVU-FW1.0_RZL,NVU-FW1.0_TTL",
+    "exclusion_snapshot": "component not in sw.val,sw.val.tools,ip.sw.val.tool; title does not contain [chrome]; title does not start with [catalog]",
+    "permission_assumptions": "provider saved query is readable by configured HSD-ES credentials",
+    "observed_result_contract": "HSD-ES article search returns ip_fw_sw_sensing.bug rows with stable id and revision fields."
+  },
+  "scope_labels": {
+    "ip": "NVU",
+    "project_or_product": "NVU1.0_TTL",
+    "milestone": "NVU_TTL_FWSW0.8"
+  },
+  "field_bindings": {
+    "item_id": {"native_field": "id"},
+    "revision": {"native_field": "rev"},
+    "field_values": {"native_field": "fieldValues"},
+    "item_type": {"native_field": "HSD_type"},
+    "status": {"native_field": "status"},
+    "reason": {"native_field": "reason"},
+    "severity": {"native_field": "priority"},
+    "exposure": {"native_field": "exposure"},
+    "component": {"native_field": "component"},
+    "release": {"native_field": "release"},
+    "release_affected": {"native_field": "release_affected"},
+    "milestone": {"native_field": "target_MS"},
+    "owner": {"native_field": "owner"},
+    "submitted_by": {"native_field": "submitted_by"},
+    "submitted_date": {"native_field": "submitted_date"},
+    "updated_date": {"native_field": "updated_date"},
+    "implemented_date": {"native_field": "implemented_date"},
+    "closed_date": {"native_field": "closed_date"},
+    "team_found": {"native_field": "team_found"},
+    "pss_escape": {"native_field": "pss_escape"},
+    "days_open": {"native_field": "days_open"}
+  },
+  "value_mappings": {
+    "bug_type_values": ["bug"],
+    "open_status_values": ["open", "submitted", "accepted", "assigned"],
+    "fixed_status_values": ["implemented", "verified"],
+    "closed_status_values": ["closed", "rejected"],
+    "critical_high_values": ["critical", "high"],
+    "medium_low_values": ["medium", "low"]
+  },
+  "chart_bindings": {
+    "component_bug": {
+      "support_status": "supported_from_seed_facts",
+      "required_canonical_fields": ["component", "item_id", "item_type"],
+      "candidate_native_fields": ["component", "id", "HSD_type"],
+      "blocker_codes": ["hsdes_live_sync_not_configured"]
+    },
+    "rolling_valid_bug": {
+      "support_status": "supported_from_seed_facts",
+      "required_canonical_fields": ["submitted_date", "severity", "exposure", "status", "item_type"],
+      "candidate_native_fields": ["submitted_date", "priority", "exposure", "status", "HSD_type"],
+      "blocker_codes": ["hsdes_live_sync_not_configured"]
+    },
+    "open_bug_trend": {
+      "support_status": "supported_from_seed_facts",
+      "required_canonical_fields": ["submitted_date", "updated_date", "implemented_date", "closed_date", "status", "severity", "exposure"],
+      "candidate_native_fields": ["submitted_date", "updated_date", "implemented_date", "closed_date", "status", "priority", "exposure"],
+      "blocker_codes": ["hsdes_live_sync_not_configured"]
+    },
+    "total_bug_trend": {
+      "support_status": "supported_from_seed_facts",
+      "required_canonical_fields": ["submitted_date", "closed_date", "status", "item_type"],
+      "candidate_native_fields": ["submitted_date", "closed_date", "status", "HSD_type"],
+      "blocker_codes": ["hsdes_live_sync_not_configured"]
+    },
+    "open_bug_aging": {
+      "support_status": "supported_from_seed_facts",
+      "required_canonical_fields": ["submitted_date", "closed_date", "days_open", "status"],
+      "candidate_native_fields": ["submitted_date", "closed_date", "days_open", "status"],
+      "blocker_codes": ["hsdes_live_sync_not_configured"]
+    },
+    "daily_new_standard_bug_count": {
+      "support_status": "supported_from_seed_facts",
+      "required_canonical_fields": ["submitted_date", "item_type"],
+      "candidate_native_fields": ["submitted_date", "HSD_type"],
+      "blocker_codes": ["hsdes_live_sync_not_configured"]
+    },
+    "execution_statistics": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "milestone_schedule": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "milestone_progress": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "automation_statistics": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "shift_left_statistics": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "internal_escaped_bugs": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "external_escaped_bugs": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    },
+    "escaped_bug_details": {
+      "support_status": "deferred",
+      "required_canonical_fields": [],
+      "candidate_native_fields": [],
+      "blocker_codes": ["first_wave_deferred_chart"]
+    }
+  },
+  "sync_policy": {
+    "live_sync": "configuration_required",
+    "range_modes": ["ww", "date"],
+    "saved_query_id": "15017652869"
+  },
+  "readiness_policy": {
+    "ready_status": "seeded_preview"
+  }
+}

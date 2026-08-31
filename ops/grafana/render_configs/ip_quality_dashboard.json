@@ -1,0 +1,244 @@
+{
+  "dashboard_uid": "ip-quality-dashboard",
+  "title": "IP Quality Dashboard",
+  "schema_version": 39,
+  "version": 1,
+  "tags": ["metrics", "ip-quality", "jira-first", "hsdes-ready"],
+  "timezone": "browser",
+  "time": {
+    "from": "2026-08-03T00:00:00",
+    "to": "2026-08-09T23:59:59"
+  },
+  "profile_variable": "profile_id",
+  "range_controls": {
+    "mode_variable": "range_mode",
+    "fetch_label": "Provider Fetch / Cache Window",
+    "display_label": "Display Time Window",
+    "modes": ["ww", "date"]
+  },
+  "variables": [
+    {
+      "name": "profile_id",
+      "type": "custom",
+      "values": ["chiplet-2a-jira", "nvu-ttl-hsdes"],
+      "current": "chiplet-2a-jira",
+      "label": "Profile",
+      "description": "Selected Project Provider Profile. Metrics derives provider identity, fixed project labels, source query ownership, field bindings, and mapping version using this profile."
+    },
+    {
+      "name": "range_mode",
+      "type": "custom",
+      "values": ["ww", "date"],
+      "labels": {
+        "ww": "Work Week",
+        "date": "Date"
+      },
+      "query": "Work Week : ww,Date : date",
+      "current": "ww",
+      "label": "Range Mode",
+      "description": "Controls the provider fetch/cache range. Work Week mode uses Begin WW and End WW as the backend data authority; Date mode uses the Grafana time picker dates."
+    },
+    {
+      "name": "begin_ww",
+      "type": "textbox",
+      "current": "26WW32",
+      "label": "Begin WW",
+      "description": "Start work week for provider fetch/cache in Work Week mode. In Date mode this value is ignored by the Metrics API."
+    },
+    {
+      "name": "end_ww",
+      "type": "textbox",
+      "current": "26WW32",
+      "label": "End WW",
+      "description": "End work week for provider fetch/cache in Work Week mode. In Date mode this value is ignored by the Metrics API."
+    }
+  ],
+  "top_panels": [
+    {
+      "panel_id": 100,
+      "title": "Profile Status",
+      "type": "table",
+      "description": "Selected profile scope labels, source access, and materialized data freshness for this dashboard.",
+      "layout": {"h": 4, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {
+          "api_surface": "provider_profile_readiness",
+          "render_root": "profile_status_rows",
+          "render_shape": "profile_readiness_summary",
+          "evidence_capability": "summary_only",
+          "required_fields": ["provider_id", "profile_id", "status", "data_status", "data_status_reason", "ip", "project_or_product", "milestone", "source_query_ownership", "mapping_version", "override_state", "auth_action_label", "auth_action_url", "time_range_action_label", "time_range_action_url"],
+          "columns": [
+            {"selector": "data_status", "text": "Status", "type": "string"},
+            {"selector": "ip", "text": "IP", "type": "string"},
+            {"selector": "project_or_product", "text": "Project", "type": "string"},
+            {"selector": "milestone", "text": "Milestone", "type": "string"},
+            {"selector": "cache_age_seconds", "text": "Cache Age", "type": "number"},
+            {"selector": "auth_action_label", "text": "Source", "type": "string"}
+          ]
+        }
+      ]
+    },
+    {
+      "panel_id": 101,
+      "title": "Provider Fetch / Cache Window",
+      "type": "text",
+      "description": "Provider-side fetch/cache controls define the authoritative backend range. Hover the dashboard variables for exact range-mode behavior.",
+      "layout": {"h": 2, "w": 24, "x": 0, "y": 4},
+      "content": "Provider-side fetch/cache range is controlled by Range Mode, Begin WW, and End WW. Date mode uses the browser time picker dates as backend begin/end dates."
+    },
+    {
+      "panel_id": 102,
+      "title": "Display Time Window",
+      "type": "text",
+      "description": "Grafana's time picker controls the visible chart window. Stock Grafana cannot hard-lock manual picker edits, so use Sync Range when switching WW values.",
+      "layout": {"h": 2, "w": 24, "x": 0, "y": 6},
+      "content": "Display Time Window follows the Grafana time picker. Sync Range opens this dashboard with browser dates aligned to the selected provider range."
+    }
+  ],
+  "sections": [
+    {
+      "id": "quality",
+      "title": "QUALITY",
+      "panel_id": 1,
+      "layout": {"h": 1, "w": 24, "x": 0, "y": 8},
+      "panels": [
+        {
+          "panel_id": 2,
+          "title": "Component Bugs by Area",
+          "type": "barchart",
+          "description": "Current open bug backlog by component or area.",
+          "layout": {"h": 8, "w": 12, "x": 0, "y": 9},
+          "chart_recipe_ref": {"chart_id": "component_bug", "chart_version": 1},
+          "provider_binding": "selected_provider_quality",
+          "render_root": "grafana_rows",
+          "render_shape": "wide_bucket_series",
+          "category_field": "component_label",
+          "value_fields": ["component_bug_count"],
+          "evidence_capability": "range_only",
+          "options": {"xField": "Component"}
+        },
+        {
+          "panel_id": 3,
+          "title": "Rolling Valid Bugs",
+          "type": "timeseries",
+          "layout": {"h": 8, "w": 6, "x": 12, "y": 9},
+          "chart_recipe_ref": {"chart_id": "rolling_valid_bug", "chart_version": 1},
+          "provider_binding": "selected_provider_quality",
+          "render_root": "grafana_rows",
+          "render_shape": "wide_bucket_series",
+          "category_field": "bucket_label",
+          "value_fields": ["rolling_valid_bug_count"],
+          "evidence_capability": "summary_only"
+        },
+        {
+          "panel_id": 4,
+          "title": "Open Bug Trend",
+          "type": "timeseries",
+          "layout": {"h": 8, "w": 6, "x": 18, "y": 9},
+          "chart_recipe_ref": {"chart_id": "open_bug_trend", "chart_version": 1},
+          "provider_binding": "selected_provider_quality",
+          "render_root": "grafana_rows",
+          "render_shape": "wide_bucket_series",
+          "category_field": "bucket_label",
+          "value_fields": ["all_open_bugs", "all_open_critical_high", "new_critical_high", "new_medium_low", "fixed_or_closed_bugs"],
+          "evidence_capability": "bucket_series",
+          "evidence_link": {"enabled": true, "fields": ["calculation_run_id", "bucket_id"]}
+        },
+        {
+          "panel_id": 5,
+          "title": "Total Bug Trend",
+          "type": "timeseries",
+          "layout": {"h": 8, "w": 8, "x": 0, "y": 17},
+          "chart_recipe_ref": {"chart_id": "total_bug_trend", "chart_version": 1},
+          "provider_binding": "selected_provider_quality",
+          "render_root": "grafana_rows",
+          "render_shape": "wide_bucket_series",
+          "category_field": "bucket_label",
+          "value_fields": ["total_new_bugs", "total_open_bugs", "total_fixed_or_closed_bugs"],
+          "evidence_capability": "range_only"
+        },
+        {
+          "panel_id": 6,
+          "title": "Daily New Standard Bugs",
+          "type": "timeseries",
+          "layout": {"h": 8, "w": 8, "x": 8, "y": 17},
+          "chart_recipe_ref": {"chart_id": "daily_new_standard_bug_count", "chart_version": 1},
+          "provider_binding": "selected_provider_quality",
+          "render_root": "grafana_rows",
+          "render_shape": "wide_bucket_series",
+          "category_field": "bucket_label",
+          "value_fields": ["new_standard_bugs"],
+          "evidence_capability": "range_only",
+          "bucket_grain": "day"
+        },
+        {
+          "panel_id": 11,
+          "title": "Open Bug Aging",
+          "type": "barchart",
+          "layout": {"h": 8, "w": 8, "x": 16, "y": 17},
+          "chart_recipe_ref": {"chart_id": "open_bug_aging", "chart_version": 1},
+          "provider_binding": "selected_provider_quality",
+          "render_root": "grafana_rows",
+          "render_shape": "wide_bucket_series",
+          "category_field": "age_bucket_label",
+          "value_fields": ["open_bug_count"],
+          "evidence_capability": "range_only",
+          "options": {"xField": "Age Bucket"}
+        },
+        {
+          "panel_id": 7,
+          "title": "Quality Chart Health",
+          "type": "table",
+          "description": "Provider support state for first-wave quality charts.",
+          "layout": {"h": 6, "w": 24, "x": 0, "y": 25},
+          "targets": [
+            {"chart_recipe_ref": {"chart_id": "open_bug_trend", "chart_version": 1}, "provider_binding": "selected_provider_state", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "bucket_label", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "component_bug", "chart_version": 1}, "provider_binding": "selected_provider_state", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "component_label", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "rolling_valid_bug", "chart_version": 1}, "provider_binding": "selected_provider_state", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "bucket_label", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "total_bug_trend", "chart_version": 1}, "provider_binding": "selected_provider_state", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "bucket_label", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "open_bug_aging", "chart_version": 1}, "provider_binding": "selected_provider_state", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "age_bucket_label", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "daily_new_standard_bug_count", "chart_version": 1}, "provider_binding": "selected_provider_state", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "bucket_label", "value_fields": [], "evidence_capability": "summary_only"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "execution",
+      "title": "EXECUTION",
+      "panel_id": 8,
+      "layout": {"h": 1, "w": 24, "x": 0, "y": 31},
+      "panels": [
+        {
+          "panel_id": 9,
+          "title": "Execution Metrics Not Mapped Yet",
+          "type": "table",
+          "layout": {"h": 8, "w": 24, "x": 0, "y": 32},
+          "targets": [
+            {"chart_recipe_ref": {"chart_id": "execution_statistics", "chart_version": 1}, "provider_binding": "first_wave_deferred", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "milestone_schedule", "chart_version": 1}, "provider_binding": "first_wave_deferred", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "milestone_progress", "chart_version": 1}, "provider_binding": "first_wave_deferred", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "", "value_fields": [], "evidence_capability": "summary_only"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "efficiency",
+      "title": "EFFICIENCY",
+      "panel_id": 10,
+      "layout": {"h": 1, "w": 24, "x": 0, "y": 40},
+      "panels": [
+        {
+          "panel_id": 12,
+          "title": "Efficiency Metrics Not Mapped Yet",
+          "type": "table",
+          "layout": {"h": 8, "w": 24, "x": 0, "y": 41},
+          "targets": [
+            {"chart_recipe_ref": {"chart_id": "automation_statistics", "chart_version": 1}, "provider_binding": "first_wave_deferred", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "shift_left_statistics", "chart_version": 1}, "provider_binding": "first_wave_deferred", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "", "value_fields": [], "evidence_capability": "summary_only"},
+            {"chart_recipe_ref": {"chart_id": "internal_escaped_bugs", "chart_version": 1}, "provider_binding": "first_wave_deferred", "render_root": "provider_series_state", "render_shape": "provider_series_state", "category_field": "", "value_fields": [], "evidence_capability": "summary_only"}
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -8,16 +8,13 @@ from urllib import error, parse, request
 from bug_metrics.app.api.hsdes_projection import HsdesProviderProjectionService
 from bug_metrics.app.api.provider_aggregate_contracts import (
     FIRST_HSDES_PROFILE_ID,
-    FIRST_HSDES_QUERY_ID,
-    FIRST_HSDES_SUBJECT,
-    FIRST_HSDES_TENANT,
-    MAPPING_VERSION,
-    SUPPORTED_HSDES_SEED_CHARTS,
 )
 from bug_metrics.app.api.provider_aggregates import ProviderChartAggregateService
 from bug_metrics.app.api.provider_aggregate_contracts import ProviderChartAggregateQuery
+from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfile, ProjectProviderProfileRegistry
 
-from .cache import ProviderFreshnessStatus, ProviderSyncCacheService
+from .cache import ProviderSyncCacheService
+from .cache_contracts import ProviderFreshnessStatus
 
 
 class HsdesProviderError(Exception):
@@ -193,61 +190,93 @@ class HsdesSavedQuerySyncService:
         cache_service: ProviderSyncCacheService | None = None,
         projection_service: HsdesProviderProjectionService | None = None,
         aggregate_service: ProviderChartAggregateService | None = None,
+        profile_registry: ProjectProviderProfileRegistry | None = None,
     ):
         self._adapter = adapter
         self._cache_service = cache_service or ProviderSyncCacheService()
         self._projection_service = projection_service or HsdesProviderProjectionService()
         self._aggregate_service = aggregate_service or ProviderChartAggregateService(provider_sync_cache_service=self._cache_service)
+        self._profile_registry = profile_registry or ProjectProviderProfileRegistry.load_default()
 
     def sync_nvu_ttl_profile(self, begin_ww: str, end_ww: str, force_refresh: bool = False) -> dict:
-        refresh = self._cache_service.try_start_refresh('hsdes', FIRST_HSDES_PROFILE_ID, FIRST_HSDES_QUERY_ID, force_refresh)
+        return self.sync_profile(FIRST_HSDES_PROFILE_ID, begin_ww, end_ww, force_refresh)
+
+    def sync_profile(self, profile_id: str, begin_ww: str, end_ww: str, force_refresh: bool = False) -> dict:
+        profile_resolution = self._profile_registry.resolve_profile(profile_id)
+        if profile_resolution.profile is None:
+            return {
+                'status': profile_resolution.status,
+                'profile_id': profile_id,
+                'provider_id': profile_resolution.provider_id,
+                'blockers': profile_resolution.blockers,
+            }
+        profile = profile_resolution.profile
+        if profile.provider_id != 'hsdes':
+            return {
+                'status': 'unsupported',
+                'profile_id': profile.profile_id,
+                'provider_id': profile.provider_id,
+                'blockers': [{
+                    'code': 'provider_sync_adapter_not_available',
+                    'message': f'Provider {profile.provider_id} does not have a provider_sync adapter in this command.',
+                }],
+            }
+        source_population = profile.source_population
+        query_id = source_population.get('source_query_ref', '')
+        refresh = self._cache_service.try_start_refresh(profile.provider_id, profile.profile_id, query_id, force_refresh)
         if not refresh.acquired:
             return {
                 'status': refresh.status,
-                'profile_id': FIRST_HSDES_PROFILE_ID,
+                'profile_id': profile.profile_id,
                 'reason': refresh.reason,
             }
         try:
+            field_names = self._field_names(profile)
             payload = self._adapter.fetch_saved_query(
-                query_id=FIRST_HSDES_QUERY_ID,
-                tenant=FIRST_HSDES_TENANT,
-                subject=FIRST_HSDES_SUBJECT,
-                field_names=self._field_names(),
+                query_id=query_id,
+                tenant=source_population.get('tenant_or_site', ''),
+                subject=source_population.get('subject_or_issue_type', ''),
+                field_names=field_names,
             )
-            projection = self._projection_service.normalize_search_page(FIRST_HSDES_PROFILE_ID, payload)
-            source_query = self._source_query(payload)
+            projection = self._projection_service.normalize_search_page(profile.profile_id, payload)
+            source_query = self._source_query(payload, profile, field_names)
             snapshot = self._cache_service.materialize_snapshot(
-                provider_id='hsdes',
-                profile_id=FIRST_HSDES_PROFILE_ID,
+                provider_id=profile.provider_id,
+                profile_id=profile.profile_id,
                 source_query=source_query,
-                field_set_hash=self._field_set_hash(self._field_names()),
-                mapping_version_hash=self._mapping_version_hash(),
+                field_set_hash=self._field_set_hash(field_names),
+                mapping_version_hash=profile.mapping_version_hash,
                 facts=projection['facts'],
                 raw_payload={'total': payload.get('total', 0), 'errors': payload.get('errors', [])},
                 freshness_status=ProviderFreshnessStatus.LIVE_SYNCED,
             )
-            artifacts = self._materialize_aggregate_artifacts(snapshot, projection['facts'], begin_ww, end_ww)
+            artifacts = self._materialize_aggregate_artifacts(snapshot, projection['facts'], begin_ww, end_ww, profile)
             return {
                 'status': 'success',
-                'profile_id': FIRST_HSDES_PROFILE_ID,
+                'profile_id': profile.profile_id,
                 'fact_snapshot_id': str(snapshot.id),
                 'fact_count': snapshot.record_count,
                 'artifact_count': len(artifacts),
                 'force_refresh': force_refresh,
             }
         except HsdesProviderError as error:
-            self._cache_service.record_failure('hsdes', FIRST_HSDES_PROFILE_ID, error.category, str(error))
+            self._cache_service.record_failure(profile.provider_id, profile.profile_id, error.category, str(error))
             return {
                 'status': 'failed',
-                'profile_id': FIRST_HSDES_PROFILE_ID,
+                'profile_id': profile.profile_id,
                 'error_category': error.category,
             }
 
-    def _materialize_aggregate_artifacts(self, snapshot, facts, begin_ww, end_ww):
+    def _materialize_aggregate_artifacts(self, snapshot, facts, begin_ww, end_ww, profile: ProjectProviderProfile):
         artifacts = []
-        for chart_id in sorted(SUPPORTED_HSDES_SEED_CHARTS):
+        supported_chart_ids = [
+            chart_id
+            for chart_id, binding in profile.chart_bindings.items()
+            if str(binding.get('support_status', '')).startswith('supported')
+        ]
+        for chart_id in sorted(supported_chart_ids):
             result = self._aggregate_service.build_hsdes_quality_aggregate_artifact(
-                ProviderChartAggregateQuery('hsdes', FIRST_HSDES_PROFILE_ID, begin_ww, end_ww, chart_id),
+                ProviderChartAggregateQuery(profile.provider_id, profile.profile_id, begin_ww, end_ww, chart_id),
                 facts,
                 ProviderFreshnessStatus.LIVE_SYNCED,
             )
@@ -266,23 +295,20 @@ class HsdesSavedQuerySyncService:
             ))
         return artifacts
 
-    def _source_query(self, payload):
-        source = {
-            'ownership_type': 'provider_owned_saved_query',
-            'source_query_ref': FIRST_HSDES_QUERY_ID,
-            'source_query_hash': self._source_query_hash(payload),
-            'source_query_name': 'NVU All Bugs',
-            'tenant_or_site': FIRST_HSDES_TENANT,
-            'subject_or_issue_type': FIRST_HSDES_SUBJECT,
-            'mapping_version': str(MAPPING_VERSION),
-        }
+    def _source_query(self, payload, profile: ProjectProviderProfile, field_names):
+        source = dict(profile.source_population)
+        source.update({
+            'source_query_hash': self._source_query_hash(payload, profile, field_names),
+            'mapping_version': str(profile.mapping_version),
+            'mapping_version_hash': profile.mapping_version_hash,
+        })
         return source
 
-    def _source_query_hash(self, payload):
+    def _source_query_hash(self, payload, profile: ProjectProviderProfile, field_names):
         encoded = json.dumps({
-            'query_id': FIRST_HSDES_QUERY_ID,
+            'query_id': profile.source_population.get('source_query_ref', ''),
             'total': payload.get('total', 0),
-            'field_names': self._field_names(),
+            'field_names': field_names,
         }, sort_keys=True, separators=(',', ':')).encode('utf-8')
         return hashlib.sha256(encoded).hexdigest()
 
@@ -290,29 +316,10 @@ class HsdesSavedQuerySyncService:
         encoded = json.dumps(sorted(field_names), separators=(',', ':')).encode('utf-8')
         return hashlib.sha256(encoded).hexdigest()
 
-    def _mapping_version_hash(self):
-        return hashlib.sha256(f'hsdes:{FIRST_HSDES_PROFILE_ID}:{MAPPING_VERSION}'.encode('utf-8')).hexdigest()
-
-    def _field_names(self):
-        return [
-            'id',
-            'rev',
-            'HSD_type',
-            'status',
-            'reason',
-            'priority',
-            'exposure',
-            'component',
-            'release',
-            'release_affected',
-            'target_MS',
-            'owner',
-            'submitted_by',
-            'submitted_date',
-            'updated_date',
-            'implemented_date',
-            'closed_date',
-            'team_found',
-            'pss_escape',
-            'days_open',
-        ]
+    def _field_names(self, profile: ProjectProviderProfile):
+        field_names = []
+        for binding in profile.field_bindings.values():
+            native_field = binding.get('native_field', '')
+            if native_field and native_field not in field_names:
+                field_names.append(native_field)
+        return field_names
