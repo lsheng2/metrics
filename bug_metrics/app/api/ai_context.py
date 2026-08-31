@@ -6,10 +6,12 @@ from bug_metrics.models import BugTrendAuditEvent
 from .ai_chart_definitions import AI_CHART_DEFINITIONS
 from .ai_dashboard_composition import AiDashboardCompositionService
 from .ai_dashboard_composition_contracts import (
+    DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
     GcxPublicationCallbackRequest,
     GcxPublicationPreconditionRequest,
 )
+from .ai_dashboard_workflow import AiDashboardWorkflowService
 from .provider_aggregate_contracts import (
     DEFERRED_CHART_REASONS,
     PROVIDER_CHART_CONTRACT_VERSION,
@@ -73,6 +75,7 @@ class ProviderAiDashboardContextService:
         self._aggregate_service = aggregate_service
         self._readiness_service = readiness_service or ProviderProfileReadinessService()
         self._composition_service = AiDashboardCompositionService(self._readiness_service)
+        self._workflow_service = AiDashboardWorkflowService(self._composition_service, self._readiness_service)
 
     def get_context(self, query: ProviderAiDashboardContextQuery) -> dict:
         chart_ids = self._selected_chart_ids(query.chart_ids)
@@ -178,6 +181,9 @@ class ProviderAiDashboardContextService:
 
     def validate_composition_intent(self, intent: DashboardCompositionIntent) -> dict:
         return self._composition_service.validate_composition_intent(intent)
+
+    def run_composition_workflow(self, request: DashboardAiWorkflowRequest) -> dict:
+        return self._workflow_service.run_composition_workflow(request)
 
     def validate_render_config_draft(self, draft_render_config: dict) -> dict:
         return self._composition_service.validate_render_config_draft(draft_render_config)

@@ -4,7 +4,16 @@ from django.urls import path
 from .utils.url_utils import django_normalized_base_url
 from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView, CurrentTasksStageView, \
     AvailableMembersView, TaskPullRequestGatewayView
-from .views.ai_dashboard_view import AiDashboardCatalogApiView, AiDashboardContextApiView, AiDashboardGcxPreconditionApiView, AiDashboardGcxPublicationCallbackApiView, AiDashboardIntentValidationApiView, AiDashboardRenderConfigValidationApiView
+from .views.ai_dashboard_view import (
+    AiDashboardCatalogApiView,
+    AiDashboardContextApiView,
+    AiDashboardGcxPreconditionApiView,
+    AiDashboardGcxPublicationCallbackApiView,
+    AiDashboardIntentValidationApiView,
+    AiDashboardRenderConfigValidationApiView,
+    AiDashboardWorkflowApiView,
+    AiDashboardWorkflowView,
+)
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
@@ -32,6 +41,7 @@ urlpatterns = [
     path(_base_prefix + 'task-forecast/', TaskForecastView.as_view(), name='task_forecast'),
     path(_base_prefix + 'pull-requests/', PullRequestsView.as_view(), name='pull_requests'),
     path(_base_prefix + 'bug-trend/', BugTrendView.as_view(), name='bug_trend'),
+     path(_base_prefix + 'ai-dashboard/workflow/', AiDashboardWorkflowView.as_view(), name='ai_dashboard_workflow'),
      path(_base_prefix + 'data-health/', DataHealthView.as_view(), name='data_health'),
      path(_base_prefix + 'bug-trend/scope-audit/', BugTrendScopeAuditView.as_view(), name='bug_trend_scope_audit'),
      path(_base_prefix + 'bug-trend/scopes/', BugTrendScopeLibraryView.as_view(), name='bug_trend_scope_library'),
@@ -67,6 +77,7 @@ urlpatterns = [
      path(_base_prefix + 'api/ai-dashboard/catalog/', AiDashboardCatalogApiView.as_view(), name='ai_dashboard_catalog_api'),
      path(_base_prefix + 'api/ai-dashboard/intent/validate/', AiDashboardIntentValidationApiView.as_view(), name='ai_dashboard_intent_validation_api'),
      path(_base_prefix + 'api/ai-dashboard/render-config/validate/', AiDashboardRenderConfigValidationApiView.as_view(), name='ai_dashboard_render_config_validation_api'),
+     path(_base_prefix + 'api/ai-dashboard/workflow/', AiDashboardWorkflowApiView.as_view(), name='ai_dashboard_workflow_api'),
      path(_base_prefix + 'api/ai-dashboard/gcx/precondition/', AiDashboardGcxPreconditionApiView.as_view(), name='ai_dashboard_gcx_precondition_api'),
      path(_base_prefix + 'api/ai-dashboard/gcx/publication-callback/', AiDashboardGcxPublicationCallbackApiView.as_view(), name='ai_dashboard_gcx_publication_callback_api'),
      path(_base_prefix + 'api/ai-dashboard/context/', AiDashboardContextApiView.as_view(), name='ai_dashboard_context_api'),

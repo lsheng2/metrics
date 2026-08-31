@@ -131,8 +131,14 @@ class BugTrendFacade:
     def get_ai_dashboard_catalog_payload(self, profile_id: str = '') -> dict:
         return self._bug_trend_api.list_ai_dashboard_composition_catalog(profile_id)
 
+    def get_ai_sidecar_status_payload(self) -> dict:
+        return self._bug_trend_api.get_ai_sidecar_status()
+
     def validate_ai_dashboard_composition_intent(self, request) -> dict:
         return self._bug_trend_api.validate_ai_dashboard_composition_intent(request)
+
+    def run_ai_dashboard_workflow(self, request) -> dict:
+        return self._bug_trend_api.run_ai_dashboard_workflow(request)
 
     def validate_ai_dashboard_render_config_draft(self, draft_render_config: dict) -> dict:
         return self._bug_trend_api.validate_ai_dashboard_render_config_draft(draft_render_config)

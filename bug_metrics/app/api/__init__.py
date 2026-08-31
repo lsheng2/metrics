@@ -5,6 +5,7 @@ from bug_metrics.models import BugTrendBucket, BugTrendCalculationRun, BugTrendC
 from jira_history.container import jira_history_container
 
 from .ai_context import (
+    DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
     GcxPublicationPreconditionRequest,
     ProviderActionPlanRequest,
@@ -132,6 +133,11 @@ class ApiForBugTrend:
 
     def validate_ai_dashboard_composition_intent(self, request: DashboardCompositionIntent) -> dict:
         return self._provider_ai_context_service.validate_composition_intent(request)
+
+    def run_ai_dashboard_workflow(self, request: DashboardAiWorkflowRequest) -> dict:
+        workflow = self._provider_ai_context_service.run_composition_workflow(request)
+        workflow['sidecar_readiness'] = self.get_ai_sidecar_status()
+        return workflow
 
     def validate_ai_dashboard_render_config_draft(self, draft_render_config: dict) -> dict:
         return self._provider_ai_context_service.validate_render_config_draft(draft_render_config)

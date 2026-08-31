@@ -175,6 +175,10 @@
                                hx-indicator="#loading-indicator"
                                hx-push-url="{% url 'ui_web:bug_trend' %}">Bug Trend</a>
                         </li>
+                        <li>
+                            <a href="{% url 'ui_web:ai_dashboard_workflow' %}"
+                               {% if request.resolver_match.url_name == 'ai_dashboard_workflow' %}class="is-active"{% endif %}>AI Workflow</a>
+                        </li>
                                 <li>
                                      <a href="{% url 'ui_web:bug_trend_scope_library' %}"
                                          {% if request.resolver_match.url_name == 'bug_trend_scope_library' or request.resolver_match.url_name == 'bug_trend_scope_config' %}class="is-active"{% endif %}>Scope Library</a>

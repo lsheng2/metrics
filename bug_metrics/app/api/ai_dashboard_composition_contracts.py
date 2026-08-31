@@ -23,6 +23,22 @@ class DashboardCompositionIntent:
 
 
 @dataclass(frozen=True, slots=True)
+class DashboardAiWorkflowRequest:
+    profile_id: str
+    dashboard_uid: str
+    chart_id: str
+    requested_series: List[str]
+    range_mode: str
+    range_start: str
+    range_end: str
+    operation: str = 'grafana_import'
+    actor: str = 'local_operator'
+    output_type: str = 'render_config_draft'
+    panel_title: str = ''
+    visualization: str = 'timeseries'
+
+
+@dataclass(frozen=True, slots=True)
 class GcxPublicationPreconditionRequest:
     operation: str
     actor: str

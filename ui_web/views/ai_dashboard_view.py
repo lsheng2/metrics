@@ -4,8 +4,10 @@ from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import TemplateView
 
 from bug_metrics.app.api import (
+    DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
     GcxPublicationCallbackRequest,
     GcxPublicationPreconditionRequest,
@@ -155,6 +157,81 @@ class AiDashboardContextApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
+class AiDashboardWorkflowView(TemplateView):
+    template_name = 'ai_dashboard_workflow.html'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form_values = ai_dashboard_workflow_form_values(self.request.GET)
+        context.update(self._base_context(form_values))
+        return context
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        form_values = ai_dashboard_workflow_form_values(request.POST)
+        context.update(self._base_context(form_values))
+        try:
+            context['workflow_result'] = safe_ai_payload(
+                self.bug_trend_facade.run_ai_dashboard_workflow(ai_dashboard_workflow_request_from_payload(form_values))
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            context['workflow_error'] = str(error)
+        return self.render_to_response(context)
+
+    def _base_context(self, form_values: dict) -> dict:
+        catalog = self.bug_trend_facade.get_ai_dashboard_catalog_payload('')
+        return {
+            'form_values': form_values,
+            'catalog': safe_ai_payload(catalog),
+            'sidecar_status': safe_ai_payload(self.bug_trend_facade.get_ai_sidecar_status_payload()),
+            'profile_options': self._profile_options(catalog),
+            'chart_options': self._chart_options(catalog),
+        }
+
+    def _profile_options(self, catalog: dict) -> list[dict]:
+        return [
+            {
+                'profile_id': profile.get('profile_id', ''),
+                'provider_id': profile.get('provider_id', ''),
+                'status': profile.get('status', ''),
+            }
+            for profile in catalog.get('profiles', [])
+        ]
+
+    def _chart_options(self, catalog: dict) -> list[dict]:
+        return [
+            {
+                'chart_id': chart_id,
+                'title': recipe.get('title', chart_id),
+                'allowed_series': ', '.join(recipe.get('allowed_series', [])),
+                'support_status': recipe.get('support_status', ''),
+            }
+            for chart_id, recipe in sorted(catalog.get('chart_recipes', {}).items())
+        ]
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AiDashboardWorkflowApiView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def post(self, request, *args, **kwargs):
+        try:
+            payload = json_body(request)
+            return JsonResponse(
+                safe_ai_payload(
+                    self.bug_trend_facade.run_ai_dashboard_workflow(ai_dashboard_workflow_request_from_payload(payload))
+                )
+            )
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            return JsonResponse({'error': str(error)}, status=400)
+
+
 def json_body(request) -> dict:
     if not request.body:
         return {}
@@ -187,6 +264,44 @@ def chart_version_from_query(request) -> int:
         return int(raw_value)
     except ValueError:
         raise ValueError('chart_version must be an integer.')
+
+
+def ai_dashboard_workflow_form_values(payload) -> dict:
+    return {
+        'profile_id': str(payload.get('profile_id', 'nvu-ttl-hsdes') or 'nvu-ttl-hsdes'),
+        'dashboard_uid': str(payload.get('dashboard_uid', 'ip-quality-dashboard') or 'ip-quality-dashboard'),
+        'chart_id': str(payload.get('chart_id', 'open_bug_trend') or 'open_bug_trend'),
+        'requested_series': str(payload.get('requested_series', 'new_critical_high') or 'new_critical_high'),
+        'range_mode': str(payload.get('range_mode', 'ww') or 'ww'),
+        'range_start': str(payload.get('range_start', payload.get('begin_ww', '26WW10')) or '26WW10'),
+        'range_end': str(payload.get('range_end', payload.get('end_ww', '26WW35')) or '26WW35'),
+        'operation': str(payload.get('operation', 'grafana_import') or 'grafana_import'),
+        'actor': str(payload.get('actor', 'local_operator') or 'local_operator'),
+        'panel_title': str(payload.get('panel_title', '') or ''),
+        'visualization': str(payload.get('visualization', 'timeseries') or 'timeseries'),
+    }
+
+
+def ai_dashboard_workflow_request_from_payload(payload: dict) -> DashboardAiWorkflowRequest:
+    return DashboardAiWorkflowRequest(
+        profile_id=str(payload['profile_id']),
+        dashboard_uid=str(payload.get('dashboard_uid', 'ip-quality-dashboard') or 'ip-quality-dashboard'),
+        chart_id=str(payload.get('chart_id', 'open_bug_trend') or 'open_bug_trend'),
+        requested_series=requested_series_from_payload(payload.get('requested_series', ['new_critical_high'])),
+        range_mode=str(payload.get('range_mode', 'ww') or 'ww'),
+        range_start=str(payload.get('range_start', payload.get('begin_ww', '26WW10')) or '26WW10'),
+        range_end=str(payload.get('range_end', payload.get('end_ww', '26WW35')) or '26WW35'),
+        operation=str(payload.get('operation', 'grafana_import') or 'grafana_import'),
+        actor=str(payload.get('actor', 'local_operator') or 'local_operator'),
+        panel_title=str(payload.get('panel_title', '') or ''),
+        visualization=str(payload.get('visualization', 'timeseries') or 'timeseries'),
+    )
+
+
+def requested_series_from_payload(value) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return [item.strip() for item in str(value).split(',') if item.strip()]
 
 
 def safe_ai_payload(value):

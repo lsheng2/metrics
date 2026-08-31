@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}AI Dashboard Workflow{% endblock %}
+{% block page_title %}AI Dashboard Workflow{% endblock %}
+
+{% block content %}
+<article class="block">
+    <section class="box">
+        <div class="level">
+            <div class="level-left">
+                <div>
+                    <h2 class="title is-4">AI Sidecar Readiness</h2>
+                    <p class="is-size-7 has-text-grey">Metrics validation remains available when AI Base is disabled.</p>
+                </div>
+            </div>
+            <div class="level-right">
+                <span class="tag {% if sidecar_status.status == 'ready' %}is-success{% elif sidecar_status.status == 'disabled' %}is-warning{% else %}is-danger{% endif %}">
+                    {{ sidecar_status.status }}
+                </span>
+            </div>
+        </div>
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <tbody>
+                    <tr>
+                        <th>Profile</th>
+                        <td>{{ sidecar_status.profile_id }}</td>
+                        <th>Service</th>
+                        <td>{{ sidecar_status.service_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Base URL</th>
+                        <td>{{ sidecar_status.base_url }}</td>
+                        <th>Capabilities</th>
+                        <td>
+                            {% for capability, enabled in sidecar_status.capabilities.items %}
+                                <span class="tag {% if enabled %}is-success{% else %}is-light{% endif %}">{{ capability }}={{ enabled }}</span>
+                            {% empty %}
+                                <span class="tag is-light">none</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Reason</th>
+                        <td colspan="3">{{ sidecar_status.reason|default:"-" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="box">
+        <h2 class="title is-4">Workflow Request</h2>
+        <form method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
+            {% csrf_token %}
+            <div class="columns is-multiline">
+                <div class="column is-one-third">
+                    <label class="label" for="profile_id">Profile</label>
+                    <div class="select is-fullwidth">
+                        <select id="profile_id" name="profile_id">
+                            {% for profile in profile_options %}
+                                <option value="{{ profile.profile_id }}" {% if profile.profile_id == form_values.profile_id %}selected{% endif %}>
+                                    {{ profile.profile_id }} ({{ profile.provider_id }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="column is-one-third">
+                    <label class="label" for="chart_id">Chart</label>
+                    <div class="select is-fullwidth">
+                        <select id="chart_id" name="chart_id">
+                            {% for chart in chart_options %}
+                                <option value="{{ chart.chart_id }}" {% if chart.chart_id == form_values.chart_id %}selected{% endif %}>
+                                    {{ chart.title }} / {{ chart.chart_id }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="column is-one-third">
+                    <label class="label" for="requested_series">Requested Series</label>
+                    <input class="input" id="requested_series" name="requested_series" value="{{ form_values.requested_series }}">
+                </div>
+                <div class="column is-one-quarter">
+                    <label class="label" for="range_mode">Range Mode</label>
+                    <div class="select is-fullwidth">
+                        <select id="range_mode" name="range_mode">
+                            <option value="ww" {% if form_values.range_mode == 'ww' %}selected{% endif %}>WW</option>
+                            <option value="date" {% if form_values.range_mode == 'date' %}selected{% endif %}>Date</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="column is-one-quarter">
+                    <label class="label" for="range_start">Range Start</label>
+                    <input class="input" id="range_start" name="range_start" value="{{ form_values.range_start }}">
+                </div>
+                <div class="column is-one-quarter">
+                    <label class="label" for="range_end">Range End</label>
+                    <input class="input" id="range_end" name="range_end" value="{{ form_values.range_end }}">
+                </div>
+                <div class="column is-one-quarter">
+                    <label class="label" for="operation">gcx Operation</label>
+                    <div class="select is-fullwidth">
+                        <select id="operation" name="operation">
+                            <option value="grafana_import" {% if form_values.operation == 'grafana_import' %}selected{% endif %}>grafana_import</option>
+                            <option value="grafana_validate" {% if form_values.operation == 'grafana_validate' %}selected{% endif %}>grafana_validate</option>
+                            <option value="grafana_snapshot" {% if form_values.operation == 'grafana_snapshot' %}selected{% endif %}>grafana_snapshot</option>
+                            <option value="grafana_publish" {% if form_values.operation == 'grafana_publish' %}selected{% endif %}>grafana_publish</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="column is-full">
+                    <label class="label" for="panel_title">Panel Title</label>
+                    <input class="input" id="panel_title" name="panel_title" value="{{ form_values.panel_title }}">
+                </div>
+            </div>
+            <button class="button is-primary" type="submit">Run Metrics Validation</button>
+        </form>
+    </section>
+
+    {% if workflow_error %}
+        <section class="notification is-danger">{{ workflow_error }}</section>
+    {% endif %}
+
+    {% if not workflow_result %}
+        <section class="columns is-multiline">
+            <div class="column is-one-third">
+                <div class="box">
+                    <h3 class="title is-5">Intent Validation</h3>
+                    <p class="has-text-grey">Not run.</p>
+                </div>
+            </div>
+            <div class="column is-one-third">
+                <div class="box">
+                    <h3 class="title is-5">Render Preview</h3>
+                    <p class="has-text-grey">Not run.</p>
+                </div>
+            </div>
+            <div class="column is-one-third">
+                <div class="box">
+                    <h3 class="title is-5">gcx Precondition</h3>
+                    <p class="has-text-grey">Not run.</p>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    {% if workflow_result %}
+        <section class="box">
+            <h2 class="title is-4">Workflow Result</h2>
+            <div class="columns is-multiline">
+                <div class="column is-one-quarter">
+                    <strong>Correlation</strong><br>{{ workflow_result.correlation_id }}
+                </div>
+                <div class="column is-one-quarter">
+                    <strong>Provider</strong><br>{{ workflow_result.request.provider_id }}
+                </div>
+                <div class="column is-one-quarter">
+                    <strong>Profile</strong><br>{{ workflow_result.request.profile_id }}
+                </div>
+                <div class="column is-one-quarter">
+                    <strong>Next Action</strong><br>{{ workflow_result.guidance.next_action }}
+                </div>
+            </div>
+            <p>{{ workflow_result.guidance.message }}</p>
+        </section>
+
+        <section class="columns is-multiline">
+            <div class="column is-one-third">
+                <div class="box">
+                    <h3 class="title is-5">Intent Validation</h3>
+                    <p><strong>Status</strong>: {{ workflow_result.intent_validation.status }}</p>
+                    <p><strong>Valid</strong>: {{ workflow_result.intent_validation.valid }}</p>
+                    {% if workflow_result.intent_validation.needs_metric_recipe %}
+                        <p><strong>Needs Series</strong>: {{ workflow_result.intent_validation.needs_metric_recipe.requested_series }}</p>
+                    {% endif %}
+                    {% for finding in workflow_result.intent_validation.findings %}
+                        <article class="message is-warning">
+                            <div class="message-body">{{ finding.field }}: {{ finding.message }}</div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="column is-one-third">
+                <div class="box">
+                    <h3 class="title is-5">Render Preview</h3>
+                    <p><strong>Status</strong>: {{ workflow_result.render_validation.status }}</p>
+                    <p><strong>Valid</strong>: {{ workflow_result.render_validation.valid }}</p>
+                    {% if workflow_result.render_validation.dashboard_preview %}
+                        <p><strong>Dashboard</strong>: {{ workflow_result.render_validation.dashboard_preview.dashboard_uid }}</p>
+                        <p><strong>Panels</strong>: {{ workflow_result.render_validation.dashboard_preview.panel_count }}</p>
+                    {% else %}
+                        <p>{{ workflow_result.render_validation.reason }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="column is-one-third">
+                <div class="box">
+                    <h3 class="title is-5">gcx Precondition</h3>
+                    <p><strong>Status</strong>: {{ workflow_result.gcx_precondition.status }}</p>
+                    <p><strong>Mutation Allowed</strong>: {{ workflow_result.gcx_precondition.mutation_allowed }}</p>
+                    <p><strong>Approval</strong>: {{ workflow_result.gcx_precondition.publication_audit.approval_state }}</p>
+                    {% for finding in workflow_result.gcx_precondition.findings %}
+                        <article class="message is-danger">
+                            <div class="message-body">{{ finding.field }}: {{ finding.message }}</div>
+                        </article>
+                    {% empty %}
+                        <p>{{ workflow_result.gcx_precondition.reason|default:"No blocking findings." }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    {% endif %}
+</article>
+{% endblock %}

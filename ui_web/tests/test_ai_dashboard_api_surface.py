@@ -205,3 +205,94 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertNotIn('password', serialized_payload)
         self.assertNotIn('token', serialized_payload)
         self.assertNotIn('api_key', serialized_payload)
+
+    def test_shouldRunHsdesAiWorkflowForSupportedSeriesWithPreconditionPreview(self):
+        response = self.client.post(
+            reverse('ui_web:ai_dashboard_workflow_api'),
+            data=json.dumps({
+                'profile_id': 'nvu-ttl-hsdes',
+                'dashboard_uid': 'ip-quality-dashboard',
+                'chart_id': 'open_bug_trend',
+                'requested_series': ['new_critical_high'],
+                'range_mode': 'ww',
+                'range_start': '26WW10',
+                'range_end': '26WW35',
+                'operation': 'grafana_import',
+                'actor': 'ai_sidecar',
+            }),
+            content_type='application/json',
+        )
+
+        payload = response.json()
+        serialized_payload = json.dumps(payload).lower()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('draft_validated', payload['intent_validation']['status'])
+        self.assertEqual('draft_validated', payload['render_validation']['status'])
+        self.assertEqual('precondition_passed', payload['gcx_precondition']['status'])
+        self.assertTrue(payload['gcx_precondition']['mutation_allowed'])
+        self.assertEqual('nvu-ttl-hsdes', payload['request']['profile_id'])
+        self.assertEqual(['new_critical_high'], payload['request']['requested_series'])
+        self.assertTrue(payload['correlation_id'])
+        self.assertNotIn('native_query_text', serialized_payload)
+        self.assertNotIn('token', serialized_payload)
+
+    def test_shouldRunHsdesAiWorkflowForUnsupportedSeriesAsMetricRecipeGap(self):
+        response = self.client.post(
+            reverse('ui_web:ai_dashboard_workflow_api'),
+            data=json.dumps({
+                'profile_id': 'nvu-ttl-hsdes',
+                'dashboard_uid': 'ip-quality-dashboard',
+                'chart_id': 'open_bug_trend',
+                'requested_series': ['new_critical'],
+                'range_mode': 'ww',
+                'range_start': '26WW10',
+                'range_end': '26WW35',
+                'operation': 'grafana_import',
+                'actor': 'ai_sidecar',
+            }),
+            content_type='application/json',
+        )
+
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('needs_metric_recipe', payload['intent_validation']['status'])
+        self.assertEqual(['new_critical'], payload['intent_validation']['needs_metric_recipe']['requested_series'])
+        self.assertEqual('not_checked', payload['render_validation']['status'])
+        self.assertEqual('not_checked', payload['gcx_precondition']['status'])
+        self.assertFalse(payload['gcx_precondition']['mutation_allowed'])
+
+    def test_shouldRunJiraAiWorkflowWithSameEnvelopeAsHsdes(self):
+        response = self.client.post(
+            reverse('ui_web:ai_dashboard_workflow_api'),
+            data=json.dumps({
+                'profile_id': 'chiplet-2a-jira',
+                'dashboard_uid': 'ip-quality-dashboard',
+                'chart_id': 'open_bug_trend',
+                'requested_series': ['new_critical_high'],
+                'range_mode': 'ww',
+                'range_start': '26WW10',
+                'range_end': '26WW35',
+                'operation': 'grafana_import',
+                'actor': 'ai_sidecar',
+            }),
+            content_type='application/json',
+        )
+
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('jira', payload['request']['provider_id'])
+        self.assertEqual('chiplet-2a-jira', payload['request']['profile_id'])
+        self.assertEqual('draft_validated', payload['intent_validation']['status'])
+        self.assertEqual('draft_validated', payload['render_validation']['status'])
+        self.assertEqual('precondition_passed', payload['gcx_precondition']['status'])
+
+    def test_shouldRenderAiDashboardWorkflowPage(self):
+        response = self.client.get(reverse('ui_web:ai_dashboard_workflow'))
+
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('AI Dashboard Workflow', content)
+        self.assertIn('Profile', content)
+        self.assertIn('Requested Series', content)
+        self.assertIn('Intent Validation', content)
+        self.assertIn('gcx Precondition', content)
