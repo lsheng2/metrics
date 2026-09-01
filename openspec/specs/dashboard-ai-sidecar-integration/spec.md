@@ -237,5 +237,5 @@ Dashboard SHALL support AI Base workspace synchronization as an integration surf
 
 #### Scenario: Workspace context is synchronized
 - **WHEN** Dashboard connects to AI Base for a selected provider/profile
-- **THEN** Dashboard SHALL be able to push a Metrics context bundle into an AI Base workspace
+- **THEN** Dashboard SHALL be able to push a Metrics context bundle into AI Base through the generic app-workspace context bundle contract
 - **THEN** the workspace SHALL remain bounded to the selected provider/project/profile for subsequent chat sessions

@@ -12,6 +12,7 @@ Metrics SHALL expose a context bundle for a selected provider/project/profile th
 - **WHEN** AI Base or an operator requests the context bundle for profile `nvu-ttl-hsdes`
 - **THEN** Metrics SHALL return workspace boundary metadata, provider profile metadata, canonical field mappings, data-block catalog, Grafana render constraints and Metrics help content
 - **THEN** the bundle SHALL identify `provider_id=hsdes`, `profile_id=nvu-ttl-hsdes` and project labels for NVU
+- **THEN** the bundle SHALL include generic app-workspace fields `source_app_id`, `workspace_key`, `workspace_name`, `bundle_version`, `boundary` and `files`
 
 #### Scenario: Jira workspace context is requested
 - **WHEN** AI Base or an operator requests the context bundle for profile `chiplet-2a-jira`
@@ -37,3 +38,12 @@ Metrics SHALL define workspace boundaries that prevent AI sessions from crossing
 - **WHEN** a context bundle is produced
 - **THEN** it SHALL include allowed provider ids, profile ids, project labels, range modes and permitted data-block ids
 - **THEN** AI Base SHALL be able to bind chats and generated artifacts to that boundary
+
+### Requirement: Context files declare role and visibility
+Metrics SHALL label every context file with role and visibility so AI Base can decide whether the file is model context, catalog-only context, or internal context.
+
+#### Scenario: Context file metadata is included
+- **WHEN** Metrics produces a workspace context bundle
+- **THEN** every file SHALL include path, content type, role and visibility
+- **THEN** files intended for model grounding SHALL use `model_context`
+- **THEN** files intended for discovery but not automatic prompt injection SHALL use `catalog_only`

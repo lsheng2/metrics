@@ -141,23 +141,27 @@ class ProviderAiDashboardContextService:
         grafana_render_contract = self._grafana_render_contract()
         metrics_help = self._metrics_workspace_help(profile_id, provider_id)
         files = [
-            self._json_bundle_file('metrics-context/workspace-boundary.json', boundary),
-            self._json_bundle_file('metrics-context/provider-profile.json', provider_profile),
-            self._json_bundle_file('metrics-context/canonical-field-map.json', canonical_field_map),
-            self._json_bundle_file('metrics-context/data-block-catalog.json', data_block_catalog),
-            self._json_bundle_file('metrics-context/grafana-render-contract.json', grafana_render_contract),
+            self._json_bundle_file('metrics-context/workspace-boundary.json', boundary, 'workspace_boundary', 'model_context'),
+            self._json_bundle_file('metrics-context/provider-profile.json', provider_profile, 'provider_profile', 'model_context'),
+            self._json_bundle_file('metrics-context/canonical-field-map.json', canonical_field_map, 'canonical_field_map', 'model_context'),
+            self._json_bundle_file('metrics-context/data-block-catalog.json', data_block_catalog, 'data_block_catalog', 'model_context'),
+            self._json_bundle_file('metrics-context/grafana-render-contract.json', grafana_render_contract, 'grafana_render_contract', 'catalog_only'),
             {
                 'path': 'metrics-context/metrics-help.md',
                 'content_type': 'text/markdown',
                 'content_text': metrics_help,
+                'visibility': 'model_context',
+                'role': 'metrics_help',
             },
         ]
         return {
             'contract_version': '0.1',
             'bundle_type': 'metrics.workspace_context_bundle',
+            'source_app_id': 'metrics-dashboard',
             'bundle_version': f"{profile_id}:{mapping_hash or 'unmapped'}",
             'generated_at': datetime.now(UTC).isoformat(),
             'workspace_key': workspace_key,
+            'workspace_name': f"Metrics {provider_id} {profile_id}",
             'boundary': boundary,
             'files': files,
         }
@@ -580,11 +584,13 @@ class ProviderAiDashboardContextService:
             'source_url',
         )
 
-    def _json_bundle_file(self, path: str, content: dict) -> dict:
+    def _json_bundle_file(self, path: str, content: dict, role: str, visibility: str) -> dict:
         return {
             'path': path,
             'content_type': 'application/json',
             'content_json': content,
+            'visibility': visibility,
+            'role': role,
         }
 
     def _support_status(self, chart_id: str, aggregate_status: str) -> str:
