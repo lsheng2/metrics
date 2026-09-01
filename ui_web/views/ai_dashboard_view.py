@@ -258,6 +258,18 @@ class AiDashboardContextApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
+class AiDashboardWorkspaceContextApiView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def get(self, request, *args, **kwargs):
+        invalid_response = validate_query_contract(request, frozenset({'profile_id'}), frozenset())
+        if invalid_response:
+            return invalid_response
+        return JsonResponse(safe_ai_payload(self.bug_trend_facade.get_ai_workspace_context_bundle_payload(request.GET['profile_id'])))
+
+
 class AiDashboardWorkflowView(TemplateView):
     template_name = 'ai_dashboard_workflow.html'
 

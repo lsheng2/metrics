@@ -121,6 +121,9 @@ class ApiForBugTrend:
     def get_ai_dashboard_context(self, query: ProviderAiDashboardContextQuery) -> dict:
         return self._provider_ai_context_service.get_context(query)
 
+    def get_ai_workspace_context_bundle(self, profile_id: str) -> dict:
+        return self._provider_ai_context_service.get_workspace_context_bundle(profile_id)
+
     def explain_ai_dashboard_chart(self, request: ProviderAiChartExplanationRequest) -> dict:
         return self._provider_ai_context_service.explain_chart(request)
 

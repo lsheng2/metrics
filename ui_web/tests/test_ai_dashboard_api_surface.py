@@ -440,6 +440,33 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertNotIn('token', serialized_payload)
         self.assertNotIn('api_key', serialized_payload)
 
+    def test_shouldExposeMetricsWorkspaceContextBundleWithCanonicalDataBlocks(self):
+        response = self.client.get(reverse('ui_web:ai_dashboard_workspace_context_api'), {
+            'profile_id': 'nvu-ttl-hsdes',
+        })
+
+        payload = response.json()
+        serialized_payload = json.dumps(payload).lower()
+        files_by_path = {item['path']: item for item in payload['files']}
+        data_block_catalog = files_by_path['metrics-context/data-block-catalog.json']['content_json']
+        quality_facts = data_block_catalog['data_blocks'][0]
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('metrics.workspace_context_bundle', payload['bundle_type'])
+        self.assertEqual('metrics.hsdes.nvu-ttl-hsdes', payload['workspace_key'])
+        self.assertEqual('hsdes', payload['boundary']['allowed_provider_ids'][0])
+        self.assertEqual('nvu-ttl-hsdes', payload['boundary']['allowed_profile_ids'][0])
+        self.assertIn('metrics-context/workspace-boundary.json', files_by_path)
+        self.assertIn('metrics-context/canonical-field-map.json', files_by_path)
+        self.assertIn('metrics-context/data-block-catalog.json', files_by_path)
+        self.assertEqual('work_item.quality_facts', quality_facts['block_id'])
+        self.assertIn('severity', quality_facts['canonical_fields'])
+        self.assertIn('component', quality_facts['canonical_fields'])
+        self.assertIn('created_at', quality_facts['canonical_fields'])
+        self.assertIn('filter', quality_facts['allowed_transforms'])
+        self.assertNotIn('native_query_text', serialized_payload)
+        self.assertNotIn('password', serialized_payload)
+        self.assertNotIn('api_key', serialized_payload)
+
     def test_shouldRunHsdesAiWorkflowForSupportedSeriesWithPreconditionPreview(self):
         response = self.client.post(
             reverse('ui_web:ai_dashboard_workflow_api'),

@@ -167,6 +167,9 @@ class BugTrendFacade:
     def get_ai_dashboard_context_payload(self, query) -> dict:
         return self._bug_trend_api.get_ai_dashboard_context(query)
 
+    def get_ai_workspace_context_bundle_payload(self, profile_id: str) -> dict:
+        return self._bug_trend_api.get_ai_workspace_context_bundle(profile_id)
+
     def _grafana_rows(self, chart_data: BugTrendChartData) -> list[dict]:
         rows = []
         for index, bucket_id in enumerate(chart_data.bucket_ids):

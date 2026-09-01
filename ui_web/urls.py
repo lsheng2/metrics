@@ -17,6 +17,7 @@ from .views.ai_dashboard_view import (
     AiDashboardRenderConfigValidationApiView,
     AiDashboardWorkflowApiView,
     AiDashboardWorkflowView,
+    AiDashboardWorkspaceContextApiView,
 )
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
@@ -89,4 +90,5 @@ urlpatterns = [
      path(_base_prefix + 'api/ai-dashboard/publish-demo/', AiDashboardPublishDemoApiView.as_view(), name='ai_dashboard_publish_demo_api'),
      path(_base_prefix + 'api/ai-dashboard/publish-history/', AiDashboardPublishHistoryApiView.as_view(), name='ai_dashboard_publish_history_api'),
      path(_base_prefix + 'api/ai-dashboard/context/', AiDashboardContextApiView.as_view(), name='ai_dashboard_context_api'),
+     path(_base_prefix + 'api/ai-dashboard/workspace-context/', AiDashboardWorkspaceContextApiView.as_view(), name='ai_dashboard_workspace_context_api'),
 ]
