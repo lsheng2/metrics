@@ -39,6 +39,24 @@ class DashboardAiWorkflowRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class DashboardAiPublishRequest:
+    profile_id: str
+    dashboard_uid: str
+    chart_id: str
+    requested_series: List[str]
+    range_mode: str
+    range_start: str
+    range_end: str
+    operation: str
+    actor: str
+    approval_id: str
+    dry_run_proof_id: str
+    output_type: str = 'render_config_draft'
+    panel_title: str = ''
+    visualization: str = 'timeseries'
+
+
+@dataclass(frozen=True, slots=True)
 class GcxPublicationPreconditionRequest:
     operation: str
     actor: str

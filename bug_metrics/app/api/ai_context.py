@@ -6,6 +6,7 @@ from bug_metrics.models import BugTrendAuditEvent
 from .ai_chart_definitions import AI_CHART_DEFINITIONS
 from .ai_dashboard_composition import AiDashboardCompositionService
 from .ai_dashboard_composition_contracts import (
+    DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
     GcxPublicationCallbackRequest,
@@ -193,6 +194,9 @@ class ProviderAiDashboardContextService:
 
     def record_gcx_publication_callback(self, request: GcxPublicationCallbackRequest) -> dict:
         return self._composition_service.record_gcx_publication_callback(request)
+
+    def publish_grafana_dashboard_demo(self, request: DashboardAiPublishRequest, correlation_id: str) -> dict:
+        return self._composition_service.publish_grafana_dashboard_demo(request, correlation_id)
 
     def list_entry_placements(self) -> List[dict]:
         backend_contracts = ['ai_dashboard_context', 'ai_chart_explanation', 'ai_chart_draft', 'provider_action_plan']

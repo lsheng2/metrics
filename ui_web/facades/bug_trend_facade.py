@@ -149,6 +149,9 @@ class BugTrendFacade:
     def record_ai_gcx_publication_callback(self, request) -> dict:
         return self._bug_trend_api.record_ai_gcx_publication_callback(request)
 
+    def publish_ai_grafana_dashboard_demo(self, request, correlation_id: str) -> dict:
+        return self._bug_trend_api.publish_ai_grafana_dashboard_demo(request, correlation_id)
+
     def get_ai_dashboard_context_payload(self, query) -> dict:
         return self._bug_trend_api.get_ai_dashboard_context(query)
 

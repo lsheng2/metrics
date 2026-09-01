@@ -72,6 +72,121 @@
       }
     },
     {
+      "operation_id": "workflow.run",
+      "method": "POST",
+      "path": "/api/ai-dashboard/workflow/",
+      "json_request": {
+        "profile_id": "chiplet-2a-jira",
+        "dashboard_uid": "ip-quality-dashboard",
+        "chart_id": "open_bug_trend",
+        "requested_series": [
+          "new_critical_high"
+        ],
+        "range_mode": "ww",
+        "range_start": "26WW10",
+        "range_end": "26WW35",
+        "operation": "grafana_import",
+        "actor": "ai_sidecar"
+      },
+      "response_expectations": {
+        "workflow_type": "metrics_ai_dashboard_composition",
+        "supported_intent_status": "draft_validated",
+        "unsupported_intent_status": "needs_metric_recipe",
+        "precondition_status": "precondition_passed",
+        "contains_correlation_id": true,
+        "contains_provider_credentials": false
+      },
+      "response_example": {
+        "contract_version": "0.2",
+        "workflow_type": "metrics_ai_dashboard_composition",
+        "correlation_id": "metrics-ai-example",
+        "request": {
+          "provider_id": "jira",
+          "profile_id": "chiplet-2a-jira",
+          "dashboard_uid": "ip-quality-dashboard",
+          "chart_id": "open_bug_trend",
+          "requested_series": [
+            "new_critical_high"
+          ],
+          "range_mode": "ww",
+          "range_start": "26WW10",
+          "range_end": "26WW35",
+          "operation": "grafana_import"
+        },
+        "intent_validation": {
+          "valid": true,
+          "status": "draft_validated",
+          "findings": []
+        },
+        "render_validation": {
+          "valid": true,
+          "status": "draft_validated",
+          "findings": [],
+          "dashboard_preview": {
+            "dashboard_uid": "ip-quality-dashboard",
+            "title": "AI Draft Dashboard",
+            "panel_count": 1,
+            "variable_count": 1
+          }
+        },
+        "gcx_precondition": {
+          "status": "precondition_passed",
+          "mutation_allowed": true,
+          "findings": []
+        },
+        "guidance": {
+          "status": "ready_for_dry_run",
+          "next_action": "gcx_dry_run"
+        }
+      }
+    },
+    {
+      "operation_id": "workflow.publish_demo",
+      "method": "POST",
+      "path": "/api/ai-dashboard/publish-demo/",
+      "model_visible": false,
+      "json_request": {
+        "profile_id": "chiplet-2a-jira",
+        "dashboard_uid": "ai-open-bug-trend-demo",
+        "chart_id": "open_bug_trend",
+        "requested_series": [
+          "new_critical_high"
+        ],
+        "range_mode": "ww",
+        "range_start": "26WW32",
+        "range_end": "26WW35",
+        "operation": "grafana_import",
+        "actor": "ai_sidecar",
+        "approval_id": "approval-chat-demo",
+        "dry_run_proof_id": "dryrun-example",
+        "correlation_id": "metrics-ai-example"
+      },
+      "response_expectations": {
+        "published_status": "published",
+        "requires_approval_id": true,
+        "requires_dry_run_proof_id": true,
+        "contains_dashboard_url": true,
+        "contains_provider_credentials": false
+      },
+      "response_example": {
+        "contract_version": "0.2",
+        "status": "published",
+        "operation": "grafana_import",
+        "dashboard_uid": "ai-open-bug-trend-demo",
+        "dashboard_url": "http://127.0.0.1:3001/d/ai-open-bug-trend-demo/ai-draft-dashboard?orgId=1&var-profile_id=chiplet-2a-jira&var-range_mode=ww&var-begin_ww=26WW32&var-end_ww=26WW35",
+        "correlation_id": "metrics-ai-example",
+        "dry_run_proof_id": "dryrun-example",
+        "approval_id": "approval-chat-demo",
+        "audit": {
+          "status": "recorded",
+          "operation": "grafana_import",
+          "dashboard_uid": "ai-open-bug-trend-demo",
+          "mutation_status": "succeeded",
+          "correlation_id": "metrics-ai-example"
+        }
+      }
+    },
+    {
       "operation_id": "intent.validate",
       "method": "POST",
       "path": "/api/ai-dashboard/intent/validate/",

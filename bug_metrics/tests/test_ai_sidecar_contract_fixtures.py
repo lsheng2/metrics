@@ -7,7 +7,7 @@ from django.urls import reverse
 
 class TestAiSidecarContractFixtures(TestCase):
     def test_shouldPublishDashboardAiBaseProfileSuggestion(self):
-        fixture_path = Path('openspec/changes/enable-dashboard-ai-sidecar-platform-contract/contracts/ai-base-dashboard-profile-suggestion.json')
+        fixture_path = Path('openspec/changes/archive/2026-09-01-enable-dashboard-ai-sidecar-platform-contract/contracts/ai-base-dashboard-profile-suggestion.json')
 
         payload = json.loads(fixture_path.read_text(encoding='utf-8'))
         self.assertEqual('dashboard_query_agent', payload['profile_id'])
@@ -19,7 +19,7 @@ class TestAiSidecarContractFixtures(TestCase):
         self.assertFalse(payload['gcx_tools']['raw_gcx_api_passthrough_allowed'])
 
     def test_shouldPublishMetricsConnectorOperationFixtureForAiBase(self):
-        fixture_path = Path('openspec/changes/enable-dashboard-ai-sidecar-platform-contract/contracts/metrics-connector-operations.json')
+        fixture_path = Path('openspec/changes/archive/2026-09-01-enable-dashboard-ai-sidecar-platform-contract/contracts/metrics-connector-operations.json')
 
         payload = json.loads(fixture_path.read_text(encoding='utf-8'))
         operation_ids = {operation['operation_id'] for operation in payload['operations']}
@@ -28,6 +28,8 @@ class TestAiSidecarContractFixtures(TestCase):
         self.assertEqual('0.2', payload['metrics_contract_version'])
         self.assertEqual({
             'catalog.lookup',
+            'workflow.run',
+            'workflow.publish_demo',
             'intent.validate',
             'render_config.validate',
             'gcx.precondition',
@@ -35,6 +37,8 @@ class TestAiSidecarContractFixtures(TestCase):
             'context.lookup',
         }, operation_ids)
         self.assertEqual(reverse('ui_web:ai_dashboard_catalog_api'), self._operation_path(payload, 'catalog.lookup'))
+        self.assertEqual(reverse('ui_web:ai_dashboard_workflow_api'), self._operation_path(payload, 'workflow.run'))
+        self.assertEqual(reverse('ui_web:ai_dashboard_publish_demo_api'), self._operation_path(payload, 'workflow.publish_demo'))
         self.assertEqual(reverse('ui_web:ai_dashboard_intent_validation_api'), self._operation_path(payload, 'intent.validate'))
         self.assertEqual(reverse('ui_web:ai_dashboard_render_config_validation_api'), self._operation_path(payload, 'render_config.validate'))
         self.assertEqual(reverse('ui_web:ai_dashboard_gcx_precondition_api'), self._operation_path(payload, 'gcx.precondition'))

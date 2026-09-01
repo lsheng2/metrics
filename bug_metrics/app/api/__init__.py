@@ -5,6 +5,7 @@ from bug_metrics.models import BugTrendBucket, BugTrendCalculationRun, BugTrendC
 from jira_history.container import jira_history_container
 
 from .ai_context import (
+    DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
     GcxPublicationPreconditionRequest,
@@ -147,6 +148,9 @@ class ApiForBugTrend:
 
     def record_ai_gcx_publication_callback(self, request: GcxPublicationCallbackRequest) -> dict:
         return self._provider_ai_context_service.record_gcx_publication_callback(request)
+
+    def publish_ai_grafana_dashboard_demo(self, request: DashboardAiPublishRequest, correlation_id: str) -> dict:
+        return self._provider_ai_context_service.publish_grafana_dashboard_demo(request, correlation_id)
 
     def list_ai_entry_placements(self) -> List[dict]:
         return self._provider_ai_context_service.list_entry_placements()

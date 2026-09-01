@@ -10,6 +10,7 @@ from .views.ai_dashboard_view import (
     AiDashboardGcxPreconditionApiView,
     AiDashboardGcxPublicationCallbackApiView,
     AiDashboardIntentValidationApiView,
+    AiDashboardPublishDemoApiView,
     AiDashboardRenderConfigValidationApiView,
     AiDashboardWorkflowApiView,
     AiDashboardWorkflowView,
@@ -80,5 +81,6 @@ urlpatterns = [
      path(_base_prefix + 'api/ai-dashboard/workflow/', AiDashboardWorkflowApiView.as_view(), name='ai_dashboard_workflow_api'),
      path(_base_prefix + 'api/ai-dashboard/gcx/precondition/', AiDashboardGcxPreconditionApiView.as_view(), name='ai_dashboard_gcx_precondition_api'),
      path(_base_prefix + 'api/ai-dashboard/gcx/publication-callback/', AiDashboardGcxPublicationCallbackApiView.as_view(), name='ai_dashboard_gcx_publication_callback_api'),
+     path(_base_prefix + 'api/ai-dashboard/publish-demo/', AiDashboardPublishDemoApiView.as_view(), name='ai_dashboard_publish_demo_api'),
      path(_base_prefix + 'api/ai-dashboard/context/', AiDashboardContextApiView.as_view(), name='ai_dashboard_context_api'),
 ]

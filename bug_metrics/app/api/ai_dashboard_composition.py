@@ -1,6 +1,14 @@
 from pathlib import Path
 import sys
 from typing import List
+from datetime import date, timedelta
+import base64
+import json
+import re
+import urllib.parse
+import urllib.request
+
+from django.conf import settings
 
 from bug_metrics.models import BugTrendAuditEvent
 
@@ -17,6 +25,7 @@ from .ai_dashboard_composition_contracts import (
     AI_DASHBOARD_MAX_DAYS,
     AI_DASHBOARD_MAX_ROWS,
     AiDashboardValidationFinding,
+    DashboardAiPublishRequest,
     DashboardCompositionIntent,
     GcxPublicationCallbackRequest,
     GcxPublicationPreconditionRequest,
@@ -156,6 +165,77 @@ class AiDashboardCompositionService:
             'dashboard_uid': request.dashboard_uid,
             'mutation_status': request.mutation_status,
             'correlation_id': request.correlation_id,
+        }
+
+    def publish_grafana_dashboard_demo(self, request: DashboardAiPublishRequest, correlation_id: str) -> dict:
+        if not request.approval_id:
+            raise ValueError('approval_id is required.')
+        if not request.dry_run_proof_id:
+            raise ValueError('dry_run_proof_id is required.')
+        intent_validation = self.validate_composition_intent(
+            DashboardCompositionIntent(
+                profile_id=request.profile_id,
+                dashboard_uid=request.dashboard_uid,
+                chart_id=request.chart_id,
+                requested_series=list(request.requested_series),
+                range_mode=request.range_mode,
+                range_start=request.range_start,
+                range_end=request.range_end,
+                output_type=request.output_type,
+                actor=request.actor,
+                panel_title=request.panel_title,
+                visualization=request.visualization,
+            )
+        )
+        draft_render_config = intent_validation.get('draft_render_config')
+        if not draft_render_config:
+            return self._blocked_publish_result(request, correlation_id, intent_validation, 'intent_validation_blocked')
+        render_validation = self.validate_render_config_draft(draft_render_config)
+        if not render_validation.get('valid'):
+            return self._blocked_publish_result(request, correlation_id, render_validation, 'render_validation_blocked')
+        precondition = self.validate_gcx_publication_precondition(
+            GcxPublicationPreconditionRequest(
+                operation=request.operation,
+                actor=request.actor,
+                draft_render_config=draft_render_config,
+            )
+        )
+        if not precondition.get('mutation_allowed'):
+            return self._blocked_publish_result(request, correlation_id, precondition, 'precondition_blocked')
+        allowlist = load_allowlist(GRAFANA_ALLOWLIST_PATH)
+        dashboard = generate_dashboard(draft_render_config, allowlist)
+        dashboard['time'] = self._grafana_time_range(request)
+        dashboard['timezone'] = 'browser'
+        grafana_base_url = self._configured_grafana_base_url()
+        import_result = import_grafana_dashboard_payload(
+            grafana_base_url,
+            dashboard,
+            str(settings.METRICS_AI_GRAFANA_USERNAME),
+            str(settings.METRICS_AI_GRAFANA_PASSWORD),
+        )
+        artifact_ref = f'grafana://{request.dashboard_uid}'
+        audit = self.record_gcx_publication_callback(
+            GcxPublicationCallbackRequest(
+                operation=request.operation,
+                actor=request.actor,
+                dashboard_uid=request.dashboard_uid,
+                artifact_ref=artifact_ref,
+                mutation_status='succeeded',
+                correlation_id=correlation_id,
+                dry_run_proof_id=request.dry_run_proof_id,
+            )
+        )
+        return {
+            'contract_version': AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
+            'status': 'published',
+            'operation': request.operation,
+            'dashboard_uid': request.dashboard_uid,
+            'dashboard_url': self._grafana_dashboard_url(grafana_base_url, request),
+            'correlation_id': correlation_id,
+            'dry_run_proof_id': request.dry_run_proof_id,
+            'approval_id': request.approval_id,
+            'import_result': import_result,
+            'audit': audit,
         }
 
     def _needs_metric_recipe(self, intent: DashboardCompositionIntent, available_series: List[str],
@@ -334,6 +414,64 @@ class AiDashboardCompositionService:
             return []
         return [AiDashboardValidationFinding('unsupported_gcx_operation', 'gcx operation is not approved by Metrics.', 'error', 'operation')]
 
+    def _blocked_publish_result(self, request: DashboardAiPublishRequest, correlation_id: str, validation: dict, reason: str) -> dict:
+        return {
+            'contract_version': AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
+            'status': 'blocked',
+            'reason': reason,
+            'operation': request.operation,
+            'dashboard_uid': request.dashboard_uid,
+            'correlation_id': correlation_id,
+            'dry_run_proof_id': request.dry_run_proof_id,
+            'approval_id': request.approval_id,
+            'validation': validation,
+        }
+
+    def _grafana_dashboard_url(self, grafana_base_url: str, request: DashboardAiPublishRequest) -> str:
+        query_values = {
+            'orgId': '1',
+            'var-profile_id': request.profile_id,
+            'var-range_mode': request.range_mode,
+            'var-begin_ww': request.range_start if request.range_mode == 'ww' else '',
+            'var-end_ww': request.range_end if request.range_mode == 'ww' else '',
+            **self._grafana_time_range(request),
+            'timezone': 'browser',
+        }
+        query = urllib.parse.urlencode({key: value for key, value in query_values.items() if value})
+        return f'{grafana_base_url}/d/{request.dashboard_uid}/ai-draft-dashboard?{query}'
+
+    def _configured_grafana_base_url(self) -> str:
+        configured = str(settings.METRICS_AI_GRAFANA_BASE_URL).rstrip('/')
+        if configured != 'http://127.0.0.1:3001':
+            return configured
+        summary_path = Path(settings.METRICS_STATE_DIR) / 'e2e' / 'bug_trend_ports.json'
+        if not summary_path.exists():
+            return configured
+        summary = json.loads(summary_path.read_text(encoding='utf-8'))
+        grafana_port = summary.get('grafana_port')
+        if not isinstance(grafana_port, int):
+            return configured
+        return f'http://127.0.0.1:{grafana_port}'
+
+    def _grafana_time_range(self, request: DashboardAiPublishRequest) -> dict:
+        if request.range_mode == 'ww':
+            begin, end = self._ww_range_to_dates(request.range_start, request.range_end)
+            return {'from': f'{begin.isoformat()}T00:00:00', 'to': f'{end.isoformat()}T23:59:59'}
+        return {'from': request.range_start, 'to': request.range_end}
+
+    def _ww_range_to_dates(self, begin_ww: str, end_ww: str) -> tuple[date, date]:
+        begin = self._ww_to_monday(begin_ww)
+        end = self._ww_to_monday(end_ww) + timedelta(days=6)
+        if begin > end:
+            raise ValueError('range_start must be earlier than or equal to range_end.')
+        return begin, end
+
+    def _ww_to_monday(self, value: str) -> date:
+        normalized = value.strip()
+        if not re.fullmatch(r'\d{2}WW\d{2}', normalized, flags=re.IGNORECASE):
+            raise ValueError('WW values must use YYWWNN format.')
+        return date.fromisocalendar(2000 + int(normalized[:2]), int(normalized[4:]), 1)
+
     def _render_config_findings(self, render_config: dict) -> list[AiDashboardValidationFinding]:
         allowlist = load_allowlist(GRAFANA_ALLOWLIST_PATH)
         findings = validate_node(GRAFANA_ALLOWLIST_PATH, '', render_config, allowlist, None)
@@ -344,3 +482,17 @@ class AiDashboardCompositionService:
             AiDashboardValidationFinding('render_config_validation_failed', finding.message, 'error', str(finding.path))
             for finding in findings
         ]
+
+
+def import_grafana_dashboard_payload(grafana_base_url: str, dashboard: dict, username: str, password: str) -> dict:
+    payload = json.dumps({
+        'dashboard': dashboard,
+        'overwrite': True,
+        'message': 'Approved AI Dashboard local demo publish',
+    }).encode('utf-8')
+    request = urllib.request.Request(f'{grafana_base_url}/api/dashboards/db', data=payload, method='POST')
+    request.add_header('Content-Type', 'application/json')
+    token = base64.b64encode(f'{username}:{password}'.encode('utf-8')).decode('ascii')
+    request.add_header('Authorization', f'Basic {token}')
+    with urllib.request.urlopen(request, timeout=10) as response:
+        return json.loads(response.read().decode('utf-8'))

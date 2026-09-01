@@ -1,4 +1,5 @@
 import json
+from uuid import uuid4
 
 from django.http import JsonResponse
 from django.urls import reverse
@@ -8,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from bug_metrics.app.api import (
+    DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
     GcxPublicationCallbackRequest,
@@ -131,6 +133,37 @@ class AiDashboardGcxPublicationCallbackApiView(View):
                 dry_run_proof_id=payload.get('dry_run_proof_id', ''),
             )
             return JsonResponse(self.bug_trend_facade.record_ai_gcx_publication_callback(callback_request))
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            return JsonResponse({'error': str(error)}, status=400)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AiDashboardPublishDemoApiView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def post(self, request, *args, **kwargs):
+        try:
+            payload = json_body(request)
+            publish_request = DashboardAiPublishRequest(
+                profile_id=payload['profile_id'],
+                dashboard_uid=payload['dashboard_uid'],
+                chart_id=payload.get('chart_id', 'open_bug_trend'),
+                requested_series=requested_series_from_payload(payload.get('requested_series', ['new_critical_high'])),
+                range_mode=payload.get('range_mode', 'ww'),
+                range_start=payload.get('range_start', payload.get('begin_ww', '26WW32')),
+                range_end=payload.get('range_end', payload.get('end_ww', '26WW35')),
+                operation=payload.get('operation', 'grafana_import'),
+                actor=payload.get('actor', 'local_operator'),
+                approval_id=payload.get('approval_id', ''),
+                dry_run_proof_id=payload.get('dry_run_proof_id', ''),
+                output_type=payload.get('output_type', 'render_config_draft'),
+                panel_title=payload.get('panel_title', ''),
+                visualization=payload.get('visualization', 'timeseries'),
+            )
+            correlation_id = payload.get('correlation_id') or f'metrics-publish-{uuid4()}'
+            return JsonResponse(safe_ai_payload(self.bug_trend_facade.publish_ai_grafana_dashboard_demo(publish_request, correlation_id)))
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
             return JsonResponse({'error': str(error)}, status=400)
 

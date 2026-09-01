@@ -1,5 +1,7 @@
 import json
+from unittest.mock import patch
 
+from django.test import override_settings
 from django.test import TestCase
 from django.urls import reverse
 
@@ -163,6 +165,61 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertEqual('corr-123', payload['correlation_id'])
         self.assertEqual('ai_sidecar', event.actor)
         self.assertEqual('ip-quality-dashboard', event.request_summary['dashboard_uid'])
+
+    @override_settings(METRICS_AI_GRAFANA_BASE_URL='http://grafana.test')
+    def test_shouldPublishApprovedAiDashboardDraftToGrafanaAndReturnUrl(self):
+        with patch('bug_metrics.app.api.ai_dashboard_composition.import_grafana_dashboard_payload') as importer:
+            importer.return_value = {'status': 'imported', 'uid': 'ai-open-bug-trend-demo'}
+
+            response = self.client.post(
+                reverse('ui_web:ai_dashboard_publish_demo_api'),
+                data=json.dumps({
+                    'profile_id': 'chiplet-2a-jira',
+                    'dashboard_uid': 'ai-open-bug-trend-demo',
+                    'chart_id': 'open_bug_trend',
+                    'requested_series': ['new_critical_high'],
+                    'range_mode': 'ww',
+                    'range_start': '26WW32',
+                    'range_end': '26WW35',
+                    'operation': 'grafana_import',
+                    'actor': 'ai_sidecar',
+                    'approval_id': 'approval-local-demo',
+                    'dry_run_proof_id': 'dryrun-local-demo',
+                }),
+                content_type='application/json',
+            )
+
+        payload = response.json()
+        event = BugTrendAuditEvent.objects.get(event_type='ai_gcx_publication_callback_recorded')
+        imported_dashboard = importer.call_args.args[1]
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('published', payload['status'])
+        self.assertEqual('ai-open-bug-trend-demo', payload['dashboard_uid'])
+        self.assertIn('/d/ai-open-bug-trend-demo/', payload['dashboard_url'])
+        self.assertEqual('recorded', payload['audit']['status'])
+        self.assertEqual('dryrun-local-demo', event.request_summary['dry_run_proof_id'])
+        self.assertEqual('ai-open-bug-trend-demo', imported_dashboard['uid'])
+
+    def test_shouldRejectAiDashboardPublishWithoutApprovalAndProof(self):
+        response = self.client.post(
+            reverse('ui_web:ai_dashboard_publish_demo_api'),
+            data=json.dumps({
+                'profile_id': 'chiplet-2a-jira',
+                'dashboard_uid': 'ai-open-bug-trend-demo',
+                'chart_id': 'open_bug_trend',
+                'requested_series': ['new_critical_high'],
+                'range_mode': 'ww',
+                'range_start': '26WW32',
+                'range_end': '26WW35',
+                'operation': 'grafana_import',
+                'actor': 'ai_sidecar',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(400, response.status_code)
+        self.assertIn('approval_id', response.json()['error'])
+        self.assertFalse(BugTrendAuditEvent.objects.filter(event_type='ai_gcx_publication_callback_recorded').exists())
 
     def test_shouldRejectIncompleteGcxPublicationCallbackWithoutAuditRecord(self):
         response = self.client.post(
