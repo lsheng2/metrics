@@ -4,11 +4,11 @@ param(
     [switch]$ForceByPort
 )
 
-$arguments = @(
-    '-Action', 'stop',
-    '-DashboardWorkspace', $DashboardWorkspace,
-    '-AiBaseWorkspace', $AiBaseWorkspace
-)
-if ($ForceByPort) { $arguments += '-ForceByPort' }
+$arguments = @{
+    Action = 'stop'
+    DashboardWorkspace = $DashboardWorkspace
+    AiBaseWorkspace = $AiBaseWorkspace
+    ForceByPort = $ForceByPort
+}
 
 & (Join-Path $PSScriptRoot 'e2e_dashboard_ai_stack.ps1') @arguments

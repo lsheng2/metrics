@@ -12,19 +12,19 @@ param(
     [switch]$ForceByPort
 )
 
-$arguments = @(
-    '-Action', 'restart',
-    '-DashboardWorkspace', $DashboardWorkspace,
-    '-AiBaseWorkspace', $AiBaseWorkspace,
-    '-DashboardBaseUrl', $DashboardBaseUrl,
-    '-AiBaseBackendUrl', $AiBaseBackendUrl,
-    '-AiBaseFrontendUrl', $AiBaseFrontendUrl,
-    '-JiraProfileId', $JiraProfileId,
-    '-BeginWw', $BeginWw,
-    '-EndWw', $EndWw
-)
-if ($SkipJiraSync) { $arguments += '-SkipJiraSync' }
-if ($SkipSmoke) { $arguments += '-SkipSmoke' }
-if ($ForceByPort) { $arguments += '-ForceByPort' }
+$arguments = @{
+    Action = 'restart'
+    DashboardWorkspace = $DashboardWorkspace
+    AiBaseWorkspace = $AiBaseWorkspace
+    DashboardBaseUrl = $DashboardBaseUrl
+    AiBaseBackendUrl = $AiBaseBackendUrl
+    AiBaseFrontendUrl = $AiBaseFrontendUrl
+    JiraProfileId = $JiraProfileId
+    BeginWw = $BeginWw
+    EndWw = $EndWw
+    SkipJiraSync = $SkipJiraSync
+    SkipSmoke = $SkipSmoke
+    ForceByPort = $ForceByPort
+}
 
 & (Join-Path $PSScriptRoot 'e2e_dashboard_ai_stack.ps1') @arguments
