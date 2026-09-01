@@ -118,3 +118,14 @@ Dashboard SHALL expose a single workflow result envelope that combines catalog/p
 #### Scenario: Unsupported semantic request
 - **WHEN** AI requests a series not approved by the Metrics chart recipe
 - **THEN** the workflow result SHALL return `needs_metric_recipe`, SHALL keep render/precondition as `not_checked`, and SHALL NOT fabricate a valid draft
+
+### Requirement: Workflow envelope supports dry-run proof handoff
+Dashboard AI composition workflow SHALL expose enough status, correlation and artifact guidance for AI Base to create a dry-run proof while keeping mutation approval external to composition validation.
+
+#### Scenario: Valid workflow result is used for dry-run
+- **WHEN** Dashboard returns `ready_for_dry_run`
+- **THEN** the result SHALL include correlation id, selected profile/range/chart, render validation result and gcx precondition result sufficient for AI Base dry-run proof correlation
+
+#### Scenario: Dry-run proof is produced
+- **WHEN** AI Base produces a dry-run proof for a Dashboard-generated artifact
+- **THEN** downstream UI SHALL distinguish `dry_run_proof_id` from final publication callback or mutation status
