@@ -6,6 +6,7 @@ from jira_history.container import jira_history_container
 
 from .ai_context import (
     DashboardAiPublishApprovalRequest,
+    DashboardAiArtifactValidationRequest,
     DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
@@ -146,6 +147,9 @@ class ApiForBugTrend:
 
     def validate_ai_dashboard_render_config_draft(self, draft_render_config: dict) -> dict:
         return self._provider_ai_context_service.validate_render_config_draft(draft_render_config)
+
+    def validate_ai_dashboard_workspace_artifact(self, request: DashboardAiArtifactValidationRequest) -> dict:
+        return self._provider_ai_context_service.validate_workspace_artifact(request)
 
     def validate_ai_gcx_publication_precondition(self, request: GcxPublicationPreconditionRequest) -> dict:
         return self._provider_ai_context_service.validate_gcx_publication_precondition(request)

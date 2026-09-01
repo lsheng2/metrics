@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from bug_metrics.app.api import (
+    DashboardAiArtifactValidationRequest,
     DashboardAiPublishApprovalRequest,
     DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
@@ -96,6 +97,28 @@ class AiDashboardRenderConfigValidationApiView(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+class AiDashboardArtifactValidationApiView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def post(self, request, *args, **kwargs):
+        try:
+            payload = json_body(request)
+            validation_request = DashboardAiArtifactValidationRequest(
+                artifact_ref=payload['artifact_ref'],
+                artifact_version=int(payload['artifact_version']),
+                workspace_key=payload['workspace_key'],
+                correlation_id=payload['correlation_id'],
+                artifact=payload['artifact'],
+                actor=payload.get('actor', 'ai_sidecar'),
+            )
+            return JsonResponse(safe_ai_payload(self.bug_trend_facade.validate_ai_dashboard_workspace_artifact(validation_request)))
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            return JsonResponse({'error': str(error)}, status=400)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
 class AiDashboardGcxPreconditionApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -162,6 +185,8 @@ class AiDashboardPublishDemoApiView(View):
                 output_type=payload.get('output_type', 'render_config_draft'),
                 panel_title=payload.get('panel_title', ''),
                 visualization=payload.get('visualization', 'timeseries'),
+                artifact_ref=payload.get('artifact_ref', ''),
+                artifact_version=int(payload.get('artifact_version', 0) or 0),
             )
             correlation_id = payload.get('correlation_id') or f'metrics-publish-{uuid4()}'
             return JsonResponse(safe_ai_payload(self.bug_trend_facade.publish_ai_grafana_dashboard_demo(publish_request, correlation_id)))
@@ -194,6 +219,8 @@ class AiDashboardPublishApprovalApiView(View):
                 range_end=payload.get('range_end', payload.get('end_ww', '26WW35')),
                 dry_run_proof_id=payload['dry_run_proof_id'],
                 actor=payload.get('actor', 'local_operator'),
+                artifact_ref=payload.get('artifact_ref', ''),
+                artifact_version=int(payload.get('artifact_version', 0) or 0),
             )
             return JsonResponse(safe_ai_payload(self.bug_trend_facade.request_ai_grafana_publish_approval(approval_request)))
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
@@ -433,4 +460,9 @@ def safe_ai_payload(value):
 
 def is_sensitive_key(key: str) -> bool:
     normalized = key.lower()
-    return normalized in SENSITIVE_AI_CONTEXT_KEYS or any(fragment in normalized for fragment in ('password', 'token', 'api_key', 'secret', 'private_path'))
+    compact = ''.join(character for character in normalized if character.isalnum())
+    return (
+        normalized in SENSITIVE_AI_CONTEXT_KEYS
+        or any(fragment in normalized for fragment in ('password', 'token', 'api_key', 'secret', 'private_path'))
+        or any(fragment in compact for fragment in ('apikey', 'privatepath', 'rawquery', 'providernativequery', 'nativequerytext'))
+    )

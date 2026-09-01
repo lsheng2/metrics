@@ -147,6 +147,8 @@ class AiGrafanaPublishApprovalService:
             'range_start': summary.get('range_start', ''),
             'range_end': summary.get('range_end', ''),
             'dry_run_proof_id': summary.get('dry_run_proof_id', ''),
+            'artifact_ref': summary.get('artifact_ref', ''),
+            'artifact_version': summary.get('artifact_version', 0),
             'correlation_id': summary.get('correlation_id', ''),
             'created_at': event.created_at.isoformat(),
         }
@@ -168,6 +170,8 @@ class AiGrafanaPublishApprovalService:
             'range_start': request.range_start,
             'range_end': request.range_end,
             'dry_run_proof_id': request.dry_run_proof_id,
+            'artifact_ref': request.artifact_ref,
+            'artifact_version': request.artifact_version,
         }
 
     def _summary_from_publish_request(self, request: DashboardAiPublishRequest) -> dict:
@@ -182,4 +186,6 @@ class AiGrafanaPublishApprovalService:
             'range_start': request.range_start,
             'range_end': request.range_end,
             'dry_run_proof_id': request.dry_run_proof_id,
+            'artifact_ref': request.artifact_ref,
+            'artifact_version': request.artifact_version,
         }

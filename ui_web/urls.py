@@ -7,6 +7,7 @@ from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView
 from .views.ai_dashboard_view import (
     AiDashboardCatalogApiView,
     AiDashboardContextApiView,
+    AiDashboardArtifactValidationApiView,
     AiDashboardGcxPreconditionApiView,
     AiDashboardGcxPublicationCallbackApiView,
     AiDashboardIntentValidationApiView,
@@ -82,6 +83,7 @@ urlpatterns = [
      path(_base_prefix + 'api/ai-dashboard/catalog/', AiDashboardCatalogApiView.as_view(), name='ai_dashboard_catalog_api'),
      path(_base_prefix + 'api/ai-dashboard/intent/validate/', AiDashboardIntentValidationApiView.as_view(), name='ai_dashboard_intent_validation_api'),
      path(_base_prefix + 'api/ai-dashboard/render-config/validate/', AiDashboardRenderConfigValidationApiView.as_view(), name='ai_dashboard_render_config_validation_api'),
+     path(_base_prefix + 'api/ai-dashboard/artifacts/validate/', AiDashboardArtifactValidationApiView.as_view(), name='ai_dashboard_artifact_validation_api'),
      path(_base_prefix + 'api/ai-dashboard/workflow/', AiDashboardWorkflowApiView.as_view(), name='ai_dashboard_workflow_api'),
      path(_base_prefix + 'api/ai-dashboard/gcx/precondition/', AiDashboardGcxPreconditionApiView.as_view(), name='ai_dashboard_gcx_precondition_api'),
      path(_base_prefix + 'api/ai-dashboard/gcx/publication-callback/', AiDashboardGcxPublicationCallbackApiView.as_view(), name='ai_dashboard_gcx_publication_callback_api'),

@@ -105,6 +105,111 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertEqual('ip-quality-dashboard', payload['dashboard_preview']['dashboard_uid'])
         self.assertGreater(payload['dashboard_preview']['panel_count'], 0)
 
+    def test_shouldValidateAiWorkspaceArtifactWithMetadata(self):
+        draft = bug_trend_api.validate_ai_dashboard_composition_intent(
+            DashboardCompositionIntent(
+                profile_id='nvu-ttl-hsdes',
+                dashboard_uid='ip-quality-dashboard',
+                chart_id='open_bug_trend',
+                requested_series=['new_critical_high'],
+                range_mode='ww',
+                range_start='26WW10',
+                range_end='26WW35',
+                output_type='render_config_draft',
+                actor='ai_sidecar',
+            )
+        )['draft_render_config']
+
+        response = self.client.post(
+            reverse('ui_web:ai_dashboard_artifact_validation_api'),
+            data=json.dumps({
+                'artifact_ref': 'ai-base-artifact://workspace/art_123',
+                'artifact_version': 1,
+                'workspace_key': 'metrics.hsdes.nvu-ttl-hsdes',
+                'correlation_id': 'corr-artifact-1',
+                'artifact': {
+                    'profile_id': 'nvu-ttl-hsdes',
+                    'dashboard_uid': 'ip-quality-dashboard',
+                    'chart_id': 'open_bug_trend',
+                    'requested_series': ['new_critical_high'],
+                    'range_mode': 'ww',
+                    'range_start': '26WW10',
+                    'range_end': '26WW35',
+                    'draft_render_config': draft,
+                },
+            }),
+            content_type='application/json',
+        )
+
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('draft_validated', payload['status'])
+        self.assertTrue(payload['valid'])
+        self.assertEqual('ai-base-artifact://workspace/art_123', payload['artifact_ref'])
+        self.assertEqual(1, payload['artifact_version'])
+        self.assertEqual('metrics.hsdes.nvu-ttl-hsdes', payload['workspace_key'])
+        self.assertEqual('corr-artifact-1', payload['correlation_id'])
+        self.assertEqual('draft_validated', payload['render_validation']['status'])
+        self.assertIn('normalized_render_config', payload)
+
+    def test_shouldBlockAiWorkspaceArtifactWithUnsupportedSeries(self):
+        response = self.client.post(
+            reverse('ui_web:ai_dashboard_artifact_validation_api'),
+            data=json.dumps({
+                'artifact_ref': 'ai-base-artifact://workspace/art_bad',
+                'artifact_version': 1,
+                'workspace_key': 'metrics.hsdes.nvu-ttl-hsdes',
+                'correlation_id': 'corr-artifact-bad',
+                'artifact': {
+                    'profile_id': 'nvu-ttl-hsdes',
+                    'dashboard_uid': 'ip-quality-dashboard',
+                    'chart_id': 'open_bug_trend',
+                    'requested_series': ['new_critical'],
+                    'range_mode': 'ww',
+                    'range_start': '26WW10',
+                    'range_end': '26WW35',
+                },
+            }),
+            content_type='application/json',
+        )
+
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('needs_metric_recipe', payload['status'])
+        self.assertFalse(payload['valid'])
+        self.assertEqual(['new_critical'], payload['intent_validation']['needs_metric_recipe']['requested_series'])
+        self.assertNotIn('normalized_render_config', payload)
+
+    def test_shouldRejectAiWorkspaceArtifactWithUnsafeContent(self):
+        response = self.client.post(
+            reverse('ui_web:ai_dashboard_artifact_validation_api'),
+            data=json.dumps({
+                'artifact_ref': 'ai-base-artifact://workspace/art_unsafe',
+                'artifact_version': 1,
+                'workspace_key': 'metrics.hsdes.nvu-ttl-hsdes',
+                'correlation_id': 'corr-artifact-unsafe',
+                'artifact': {
+                    'profile_id': 'nvu-ttl-hsdes',
+                    'dashboard_uid': 'ip-quality-dashboard',
+                    'chart_id': 'open_bug_trend',
+                    'requested_series': ['new_critical_high'],
+                    'range_mode': 'ww',
+                    'range_start': '26WW10',
+                    'range_end': '26WW35',
+                    'privatePath': 'D:/private/path',
+                    'providerNativeQuery': 'select * from private_table',
+                },
+            }),
+            content_type='application/json',
+        )
+
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('validation_failed', payload['status'])
+        self.assertFalse(payload['valid'])
+        self.assertIn('unsafe_artifact_content', {item['code'] for item in payload['findings']})
+        self.assertNotIn('D:/private/path', json.dumps(payload))
+
     def test_shouldBlockGcxPreconditionBeforeMutationForInvalidDraft(self):
         response = self.client.post(
             reverse('ui_web:ai_dashboard_gcx_precondition_api'),
@@ -190,6 +295,8 @@ class TestAiDashboardApiSurface(TestCase):
                     'visualization': 'barchart',
                     'approval_id': approval['approval_id'],
                     'dry_run_proof_id': 'dryrun-local-demo',
+                    'artifact_ref': 'ai-base-artifact://workspace/art_publish',
+                    'artifact_version': 3,
                 }),
                 content_type='application/json',
             )
@@ -209,7 +316,10 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertEqual(1, payload['chart_version'])
         self.assertEqual(['new_critical_high'], payload['requested_series'])
         self.assertEqual('barchart', payload['visualization'])
+        self.assertEqual('ai-base-artifact://workspace/art_publish', payload['artifact_ref'])
+        self.assertEqual(3, payload['artifact_version'])
         self.assertEqual('dryrun-local-demo', event.request_summary['dry_run_proof_id'])
+        self.assertEqual('ai-base-artifact://workspace/art_publish', event.request_summary['artifact_ref'])
         self.assertEqual('ai-open-bug-trend-demo', imported_dashboard['uid'])
 
     @override_settings(METRICS_AI_GRAFANA_BASE_URL='http://grafana.test')
@@ -375,6 +485,8 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertEqual('jira', rows[0]['provider_id'])
         self.assertEqual('chiplet-2a-jira', rows[0]['profile_id'])
         self.assertEqual('open_bug_trend', rows[0]['chart_id'])
+        self.assertEqual('ai-base-artifact://workspace/second-proof', rows[0]['artifact_ref'])
+        self.assertEqual(1, rows[0]['artifact_version'])
         self.assertIn('/d/ai-open-bug-trend-demo/', rows[0]['dashboard_url'])
 
     def test_shouldRejectAiDashboardPublishWithoutApprovalAndProof(self):
@@ -701,6 +813,8 @@ class TestAiDashboardApiSurface(TestCase):
                     'visualization': 'barchart',
                     'approval_id': approval['approval_id'],
                     'dry_run_proof_id': proof_id,
+                    'artifact_ref': f'ai-base-artifact://workspace/{proof_id}',
+                    'artifact_version': 1,
                     'correlation_id': f'corr-{proof_id}',
                 }),
                 content_type='application/json',

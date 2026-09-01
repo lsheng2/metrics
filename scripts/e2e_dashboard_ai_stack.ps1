@@ -54,7 +54,7 @@ function Invoke-JsonPost {
         [Parameter(Mandatory = $true)]
         [string]$Url,
         [Parameter(Mandatory = $true)]
-        [hashtable]$Body
+        [object]$Body
     )
 
     $json = $Body | ConvertTo-Json -Depth 10
@@ -175,6 +175,56 @@ function Test-DashboardAiStack {
     }
     if (-not (@($connector.modelVisibleOperations) -contains 'workflow.run')) {
         throw 'AI Base metrics-dashboard connector does not expose workflow.run.'
+    }
+    if (-not (@($connector.modelVisibleOperations) -contains 'artifact.validate')) {
+        throw 'AI Base metrics-dashboard connector does not expose artifact.validate.'
+    }
+
+    $contextBundle = Invoke-RestMethod -Uri "$DashboardBaseUrl/api/ai-dashboard/workspace-context/?profile_id=$JiraProfileId" -TimeoutSec 20
+    $workspaceSync = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/app-workspace-context-bundles/sync" -Body $contextBundle
+    if (-not $workspaceSync.workspace.workspaceId) {
+        throw 'AI Base workspace context sync did not return a workspace id.'
+    }
+
+    $artifactContent = @{
+        profile_id = $JiraProfileId
+        dashboard_uid = 'ip-quality-dashboard'
+        chart_id = 'open_bug_trend'
+        requested_series = @('new_critical_high')
+        range_mode = 'ww'
+        range_start = $BeginWw
+        range_end = $EndWw
+        output_type = 'render_config_draft'
+        visualization = 'timeseries'
+    }
+    $artifact = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/workspace-artifacts" -Body @{
+        workspaceId = $workspaceSync.workspace.workspaceId
+        sourceAppId = 'metrics-dashboard'
+        workspaceKey = $contextBundle.workspace_key
+        artifactKind = 'dashboard.chart.renderConfigDraft'
+        title = 'E2E Weekly Open Bug Trend'
+        correlationId = 'e2e-dashboard-ai-stack'
+        content = $artifactContent
+    }
+    $artifactRef = "ai-base-artifact://workspace/$($artifact.artifactId)/v$($artifact.version)"
+    $artifactValidation = Invoke-JsonPost -Url "$DashboardBaseUrl/api/ai-dashboard/artifacts/validate/" -Body @{
+        artifact_ref = $artifactRef
+        artifact_version = $artifact.version
+        workspace_key = $contextBundle.workspace_key
+        correlation_id = 'e2e-dashboard-ai-stack'
+        artifact = $artifact.content
+    }
+    if ($artifactValidation.status -ne 'draft_validated') {
+        throw "Dashboard artifact validation was $($artifactValidation.status)."
+    }
+    $artifactUpdate = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/workspace-artifacts/$($artifact.artifactId)/revisions" -Body @{
+        title = $artifact.title
+        content = $artifact.content
+        validationStatus = $artifactValidation.status
+        validationResult = $artifactValidation
+    }
+    if ($artifactUpdate.status -ne 'draft_validated') {
+        throw "AI Base artifact validation result was not recorded: $($artifactUpdate.status)"
     }
 
     Write-Host 'Smoke checks passed.'

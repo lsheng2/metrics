@@ -54,6 +54,18 @@ class DashboardAiPublishRequest:
     output_type: str = 'render_config_draft'
     panel_title: str = ''
     visualization: str = 'timeseries'
+    artifact_ref: str = ''
+    artifact_version: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class DashboardAiArtifactValidationRequest:
+    artifact_ref: str
+    artifact_version: int
+    workspace_key: str
+    correlation_id: str
+    artifact: dict
+    actor: str = 'ai_sidecar'
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +79,8 @@ class DashboardAiPublishApprovalRequest:
     range_end: str
     dry_run_proof_id: str
     actor: str = 'local_operator'
+    artifact_ref: str = ''
+    artifact_version: int = 0
 
 
 @dataclass(frozen=True, slots=True)

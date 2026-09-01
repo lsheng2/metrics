@@ -9,6 +9,7 @@ from .ai_dashboard_composition import AiDashboardCompositionService
 from .ai_dashboard_composition_contracts import (
     AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
     DashboardAiPublishApprovalRequest,
+    DashboardAiArtifactValidationRequest,
     DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
@@ -247,6 +248,9 @@ class ProviderAiDashboardContextService:
 
     def validate_render_config_draft(self, draft_render_config: dict) -> dict:
         return self._composition_service.validate_render_config_draft(draft_render_config)
+
+    def validate_workspace_artifact(self, request: DashboardAiArtifactValidationRequest) -> dict:
+        return self._composition_service.validate_workspace_artifact(request)
 
     def validate_gcx_publication_precondition(self, request: GcxPublicationPreconditionRequest) -> dict:
         return self._composition_service.validate_gcx_publication_precondition(request)

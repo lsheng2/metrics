@@ -143,6 +143,9 @@ class BugTrendFacade:
     def validate_ai_dashboard_render_config_draft(self, draft_render_config: dict) -> dict:
         return self._bug_trend_api.validate_ai_dashboard_render_config_draft(draft_render_config)
 
+    def validate_ai_dashboard_workspace_artifact(self, request) -> dict:
+        return self._bug_trend_api.validate_ai_dashboard_workspace_artifact(request)
+
     def validate_ai_gcx_publication_precondition(self, request) -> dict:
         return self._bug_trend_api.validate_ai_gcx_publication_precondition(request)
 
