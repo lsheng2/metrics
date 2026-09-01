@@ -173,11 +173,11 @@ function Test-DashboardAiStack {
     if (-not $connector.executable) {
         throw "AI Base metrics-dashboard connector is not executable: $($connector.blockedReason)"
     }
-    if (-not (@($connector.modelVisibleOperations) -contains 'workflow.run')) {
-        throw 'AI Base metrics-dashboard connector does not expose workflow.run.'
+    if (@($connector.modelVisibleOperations) -contains 'workflow.run') {
+        throw 'AI Base metrics-dashboard connector exposes workflow.run as model-visible.'
     }
-    if (-not (@($connector.modelVisibleOperations) -contains 'artifact.validate')) {
-        throw 'AI Base metrics-dashboard connector does not expose artifact.validate.'
+    if (@($connector.modelVisibleOperations) -contains 'artifact.validate') {
+        throw 'AI Base metrics-dashboard connector exposes artifact.validate as model-visible.'
     }
 
     $contextBundle = Invoke-RestMethod -Uri "$DashboardBaseUrl/api/ai-dashboard/workspace-context/?profile_id=$JiraProfileId" -TimeoutSec 20
