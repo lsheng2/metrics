@@ -6,6 +6,8 @@ from bug_metrics.models import BugTrendAuditEvent
 from .ai_chart_definitions import AI_CHART_DEFINITIONS
 from .ai_dashboard_composition import AiDashboardCompositionService
 from .ai_dashboard_composition_contracts import (
+    AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
+    DashboardAiPublishApprovalRequest,
     DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
@@ -13,6 +15,7 @@ from .ai_dashboard_composition_contracts import (
     GcxPublicationPreconditionRequest,
 )
 from .ai_dashboard_workflow import AiDashboardWorkflowService
+from .ai_dashboard_approval import AiGrafanaPublishApprovalService
 from .provider_aggregate_contracts import (
     DEFERRED_CHART_REASONS,
     PROVIDER_CHART_CONTRACT_VERSION,
@@ -77,6 +80,7 @@ class ProviderAiDashboardContextService:
         self._readiness_service = readiness_service or ProviderProfileReadinessService()
         self._composition_service = AiDashboardCompositionService(self._readiness_service)
         self._workflow_service = AiDashboardWorkflowService(self._composition_service, self._readiness_service)
+        self._approval_service = AiGrafanaPublishApprovalService()
 
     def get_context(self, query: ProviderAiDashboardContextQuery) -> dict:
         chart_ids = self._selected_chart_ids(query.chart_ids)
@@ -195,8 +199,77 @@ class ProviderAiDashboardContextService:
     def record_gcx_publication_callback(self, request: GcxPublicationCallbackRequest) -> dict:
         return self._composition_service.record_gcx_publication_callback(request)
 
+    def request_grafana_publish_approval(self, request: DashboardAiPublishApprovalRequest) -> dict:
+        return self._approval_service.request_approval(request)
+
+    def decide_grafana_publish_approval(self, approval_id: str, decision: str, actor: str) -> dict:
+        return self._approval_service.decide_approval(approval_id, decision, actor)
+
+    def get_grafana_publish_approval(self, approval_id: str) -> dict:
+        return self._approval_service.get_approval_state(approval_id)
+
+    def list_grafana_publish_history(self, limit: int = 25) -> dict:
+        return self._approval_service.list_publish_history(limit)
+
     def publish_grafana_dashboard_demo(self, request: DashboardAiPublishRequest, correlation_id: str) -> dict:
-        return self._composition_service.publish_grafana_dashboard_demo(request, correlation_id)
+        if not request.approval_id or not request.dry_run_proof_id:
+            return self._composition_service.publish_grafana_dashboard_demo(request, correlation_id)
+        approval = self._approval_service.ensure_local_demo_approval(request)
+        if approval['status'] != 'approved':
+            return {
+                'contract_version': AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
+                'status': 'blocked',
+                'reason': 'approval_not_granted',
+                'operation': request.operation,
+                'dashboard_uid': request.dashboard_uid,
+                'correlation_id': correlation_id,
+                'dry_run_proof_id': request.dry_run_proof_id,
+                'approval_id': request.approval_id,
+                'approval': approval,
+            }
+        readiness = self._aggregate_service.get_aggregates(
+            ProviderChartAggregateQuery(
+                provider_id='',
+                profile_id=request.profile_id,
+                begin_ww=request.range_start if request.range_mode == 'ww' else '',
+                end_ww=request.range_end if request.range_mode == 'ww' else '',
+                chart_id=request.chart_id,
+                chart_version=1,
+                range_mode=request.range_mode,
+                begin_date=request.range_start if request.range_mode == 'date' else '',
+                end_date=request.range_end if request.range_mode == 'date' else '',
+            )
+        )
+        if readiness.status != 'supported' or not readiness.grafana_rows:
+            return {
+                'contract_version': AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
+                'status': 'blocked',
+                'reason': 'data_not_ready',
+                'operation': request.operation,
+                'dashboard_uid': request.dashboard_uid,
+                'correlation_id': correlation_id,
+                'dry_run_proof_id': request.dry_run_proof_id,
+                'approval_id': request.approval_id,
+                'readiness': {
+                    'provider_id': readiness.provider_id,
+                    'profile_id': readiness.profile_id,
+                    'chart_id': readiness.chart_id,
+                    'chart_version': readiness.chart_version,
+                    'status': readiness.status,
+                    'reason': readiness.reason,
+                    'fact_snapshot_id': readiness.fact_snapshot_id,
+                    'run_metadata': readiness.run_metadata,
+                },
+            }
+        result = self._composition_service.publish_grafana_dashboard_demo(request, correlation_id)
+        if result.get('status') == 'published':
+            result['approval'] = self._approval_service.mark_published(
+                request,
+                result.get('dashboard_url', ''),
+                correlation_id,
+                readiness.provider_id,
+            )
+        return result
 
     def list_entry_placements(self) -> List[dict]:
         backend_contracts = ['ai_dashboard_context', 'ai_chart_explanation', 'ai_chart_draft', 'provider_action_plan']

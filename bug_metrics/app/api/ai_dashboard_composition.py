@@ -229,7 +229,16 @@ class AiDashboardCompositionService:
             'contract_version': AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
             'status': 'published',
             'operation': request.operation,
+            'provider_id': self._provider_id_for_profile(request.profile_id),
+            'profile_id': request.profile_id,
             'dashboard_uid': request.dashboard_uid,
+            'chart_id': request.chart_id,
+            'chart_version': 1,
+            'requested_series': list(request.requested_series),
+            'range_mode': request.range_mode,
+            'range_start': request.range_start,
+            'range_end': request.range_end,
+            'visualization': request.visualization,
             'dashboard_url': self._grafana_dashboard_url(grafana_base_url, request),
             'correlation_id': correlation_id,
             'dry_run_proof_id': request.dry_run_proof_id,
@@ -426,6 +435,9 @@ class AiDashboardCompositionService:
             'approval_id': request.approval_id,
             'validation': validation,
         }
+
+    def _provider_id_for_profile(self, profile_id: str) -> str:
+        return self._readiness_service.get_readiness('', profile_id).get('provider_id', '')
 
     def _grafana_dashboard_url(self, grafana_base_url: str, request: DashboardAiPublishRequest) -> str:
         query_values = {

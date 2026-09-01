@@ -57,6 +57,19 @@ class DashboardAiPublishRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class DashboardAiPublishApprovalRequest:
+    profile_id: str
+    dashboard_uid: str
+    chart_id: str
+    requested_series: List[str]
+    range_mode: str
+    range_start: str
+    range_end: str
+    dry_run_proof_id: str
+    actor: str = 'local_operator'
+
+
+@dataclass(frozen=True, slots=True)
 class GcxPublicationPreconditionRequest:
     operation: str
     actor: str

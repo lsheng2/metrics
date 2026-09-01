@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from bug_metrics.app.api import (
+    DashboardAiPublishApprovalRequest,
     DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
@@ -168,6 +169,72 @@ class AiDashboardPublishDemoApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class AiDashboardPublishApprovalApiView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def get(self, request, *args, **kwargs):
+        approval_id = request.GET.get('approval_id', '')
+        if not approval_id:
+            return JsonResponse({'error': 'approval_id is required.'}, status=400)
+        return JsonResponse(safe_ai_payload(self.bug_trend_facade.get_ai_grafana_publish_approval(approval_id)))
+
+    def post(self, request, *args, **kwargs):
+        try:
+            payload = json_body(request)
+            approval_request = DashboardAiPublishApprovalRequest(
+                profile_id=payload['profile_id'],
+                dashboard_uid=payload['dashboard_uid'],
+                chart_id=payload.get('chart_id', 'open_bug_trend'),
+                requested_series=requested_series_from_payload(payload.get('requested_series', ['new_critical_high'])),
+                range_mode=payload.get('range_mode', 'ww'),
+                range_start=payload.get('range_start', payload.get('begin_ww', '26WW32')),
+                range_end=payload.get('range_end', payload.get('end_ww', '26WW35')),
+                dry_run_proof_id=payload['dry_run_proof_id'],
+                actor=payload.get('actor', 'local_operator'),
+            )
+            return JsonResponse(safe_ai_payload(self.bug_trend_facade.request_ai_grafana_publish_approval(approval_request)))
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            return JsonResponse({'error': str(error)}, status=400)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AiDashboardPublishApprovalDecisionApiView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def post(self, request, *args, **kwargs):
+        try:
+            payload = json_body(request)
+            return JsonResponse(
+                safe_ai_payload(
+                    self.bug_trend_facade.decide_ai_grafana_publish_approval(
+                        payload['approval_id'],
+                        payload['decision'],
+                        payload.get('actor', 'local_operator'),
+                    )
+                )
+            )
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            return JsonResponse({'error': str(error)}, status=400)
+
+
+class AiDashboardPublishHistoryApiView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bug_trend_facade = ui_web_container.bug_trend_facade
+
+    def get(self, request, *args, **kwargs):
+        try:
+            limit = int(request.GET.get('limit', '25'))
+            return JsonResponse(safe_ai_payload(self.bug_trend_facade.list_ai_grafana_publish_history(limit)))
+        except ValueError as error:
+            return JsonResponse({'error': str(error)}, status=400)
+
+
 class AiDashboardContextApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -225,6 +292,7 @@ class AiDashboardWorkflowView(TemplateView):
             'workflow_api_url': self.request.build_absolute_uri(reverse('ui_web:ai_dashboard_workflow_api')),
             'profile_options': self._profile_options(catalog),
             'chart_options': self._chart_options(catalog),
+            'publish_history': safe_ai_payload(self.bug_trend_facade.list_ai_grafana_publish_history(10)),
         }
 
     def _profile_options(self, catalog: dict) -> list[dict]:

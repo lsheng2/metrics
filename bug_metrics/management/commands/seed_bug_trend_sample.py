@@ -58,7 +58,7 @@ class Command(BaseCommand):
         scope.calculation_runs.all().delete()
 
         coverage_start = date(2025, 4, 7)
-        coverage_end = date(2026, 8, 9)
+        coverage_end = date(2026, 8, 30)
         self._create_sample_history(scope, coverage_start, coverage_end, component_value)
 
         bug_metrics_container.bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)

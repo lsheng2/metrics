@@ -152,6 +152,18 @@ class BugTrendFacade:
     def publish_ai_grafana_dashboard_demo(self, request, correlation_id: str) -> dict:
         return self._bug_trend_api.publish_ai_grafana_dashboard_demo(request, correlation_id)
 
+    def request_ai_grafana_publish_approval(self, request) -> dict:
+        return self._bug_trend_api.request_ai_grafana_publish_approval(request)
+
+    def decide_ai_grafana_publish_approval(self, approval_id: str, decision: str, actor: str) -> dict:
+        return self._bug_trend_api.decide_ai_grafana_publish_approval(approval_id, decision, actor)
+
+    def get_ai_grafana_publish_approval(self, approval_id: str) -> dict:
+        return self._bug_trend_api.get_ai_grafana_publish_approval(approval_id)
+
+    def list_ai_grafana_publish_history(self, limit: int = 25) -> dict:
+        return self._bug_trend_api.list_ai_grafana_publish_history(limit)
+
     def get_ai_dashboard_context_payload(self, query) -> dict:
         return self._bug_trend_api.get_ai_dashboard_context(query)
 

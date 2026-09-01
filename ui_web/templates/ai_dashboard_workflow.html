@@ -216,5 +216,49 @@
             </div>
         </section>
     {% endif %}
+
+    <section class="box">
+        <h2 class="title is-4">Recent AI Grafana Publishes</h2>
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Profile</th>
+                        <th>Chart</th>
+                        <th>Range</th>
+                        <th>Dashboard</th>
+                        <th>Published</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in publish_history.items %}
+                        <tr>
+                            <td>
+                                <span class="tag {% if item.status == 'published' %}is-success{% else %}is-light{% endif %}">
+                                    {{ item.status }}{% if item.latest %} latest{% endif %}
+                                </span>
+                            </td>
+                            <td>{{ item.profile_id }}</td>
+                            <td>{{ item.chart_id }}</td>
+                            <td>{{ item.range_start }} to {{ item.range_end }}</td>
+                            <td>
+                                {% if item.dashboard_url %}
+                                    <a href="{{ item.dashboard_url }}">{{ item.dashboard_uid }}</a>
+                                {% else %}
+                                    {{ item.dashboard_uid }}
+                                {% endif %}
+                            </td>
+                            <td>{{ item.created_at }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="has-text-grey">No AI Grafana publishes recorded yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 </article>
 {% endblock %}

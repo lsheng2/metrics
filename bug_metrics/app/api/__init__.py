@@ -5,6 +5,7 @@ from bug_metrics.models import BugTrendBucket, BugTrendCalculationRun, BugTrendC
 from jira_history.container import jira_history_container
 
 from .ai_context import (
+    DashboardAiPublishApprovalRequest,
     DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
@@ -151,6 +152,18 @@ class ApiForBugTrend:
 
     def publish_ai_grafana_dashboard_demo(self, request: DashboardAiPublishRequest, correlation_id: str) -> dict:
         return self._provider_ai_context_service.publish_grafana_dashboard_demo(request, correlation_id)
+
+    def request_ai_grafana_publish_approval(self, request: DashboardAiPublishApprovalRequest) -> dict:
+        return self._provider_ai_context_service.request_grafana_publish_approval(request)
+
+    def decide_ai_grafana_publish_approval(self, approval_id: str, decision: str, actor: str = 'local_operator') -> dict:
+        return self._provider_ai_context_service.decide_grafana_publish_approval(approval_id, decision, actor)
+
+    def get_ai_grafana_publish_approval(self, approval_id: str) -> dict:
+        return self._provider_ai_context_service.get_grafana_publish_approval(approval_id)
+
+    def list_ai_grafana_publish_history(self, limit: int = 25) -> dict:
+        return self._provider_ai_context_service.list_grafana_publish_history(limit)
 
     def list_ai_entry_placements(self) -> List[dict]:
         return self._provider_ai_context_service.list_entry_placements()
