@@ -126,6 +126,31 @@ Invoke-RestMethod -Uri "http://127.0.0.1:48300/api/runtime/diagnostics/summary" 
 - `executable=true`
 - `modelVisibleOperations` 包含 `workflow.run`
 
+## AI Base Chat Demo
+
+打开 `http://127.0.0.1:48310/`，进入 `Chat` 页面，新建一个 chat session。
+
+输入：
+
+```text
+Create a weekly open bug trend chart for chiplet Jira from 26WW32 to 26WW35, only new critical/high.
+```
+
+预期 Chat 回复包含：
+
+- `Dashboard chart workflow completed.`
+- `Profile: chiplet-2a-jira`
+- `Provider: jira`
+- `Chart: open_bug_trend`
+- `Series: new_critical_high`
+- `Intent validation: draft_validated`
+- `Render validation: draft_validated`
+- `gcx precondition: precondition_passed`
+- `Dry-run proof: dryrun_...`
+- `Approval: human approval required before Grafana mutation`
+
+这个 demo 是 **受控 chart authoring dry-run**，不是正式发布。它证明 AI Base Chat 已经能通过 Dashboard `workflow.run` 走完整验证和 dry-run proof handoff，但真实 Grafana mutation 仍需要后续人工审批流程。
+
 ## 当前安全边界
 
 - `workflow.run` 可以进入 `ready_for_dry_run`。
