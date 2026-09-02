@@ -21,9 +21,9 @@ from .bug_trend_view import validate_query_contract
 
 
 AI_DASHBOARD_CATALOG_REQUIRED_PARAMS = frozenset()
-AI_DASHBOARD_CATALOG_OPTIONAL_PARAMS = frozenset({'profile_id'})
+AI_DASHBOARD_CATALOG_OPTIONAL_PARAMS = frozenset({'profile_id', 'provider_id', 'workspace_key'})
 AI_DASHBOARD_CONTEXT_REQUIRED_BASE_PARAMS = frozenset({'profile_id'})
-AI_DASHBOARD_CONTEXT_OPTIONAL_PARAMS = frozenset({'provider_id', 'chart_id', 'chart_ids', 'chart_version', 'range_mode', 'begin_ww', 'end_ww', 'begin_date', 'end_date'})
+AI_DASHBOARD_CONTEXT_OPTIONAL_PARAMS = frozenset({'provider_id', 'workspace_key', 'chart_id', 'chart_ids', 'chart_version', 'range_mode', 'begin_ww', 'end_ww', 'begin_date', 'end_date'})
 SENSITIVE_AI_CONTEXT_KEYS = frozenset({
     'native_query_text',
     'criteria_snapshot',
@@ -47,7 +47,17 @@ class AiDashboardCatalogApiView(View):
         invalid_response = validate_query_contract(request, AI_DASHBOARD_CATALOG_REQUIRED_PARAMS, AI_DASHBOARD_CATALOG_OPTIONAL_PARAMS)
         if invalid_response:
             return invalid_response
-        return JsonResponse(self.bug_trend_facade.get_ai_dashboard_catalog_payload(request.GET.get('profile_id', '')))
+        profile_id = request.GET.get('profile_id', '')
+        catalog = self.bug_trend_facade.get_ai_dashboard_catalog_payload(profile_id)
+        boundary_error = ai_dashboard_boundary_error(
+            catalog,
+            profile_id,
+            request.GET.get('provider_id', ''),
+            request.GET.get('workspace_key', ''),
+        )
+        if boundary_error:
+            return JsonResponse({'error': boundary_error}, status=400)
+        return JsonResponse(catalog)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -176,7 +186,16 @@ class AiDashboardContextApiView(View):
                 chart_ids=chart_ids_from_query(request),
                 chart_version=chart_version_from_query(request),
             )
-            return JsonResponse(safe_ai_payload(self.bug_trend_facade.get_ai_dashboard_context_payload(query)))
+            payload = self.bug_trend_facade.get_ai_dashboard_context_payload(query)
+            boundary_error = ai_dashboard_boundary_error(
+                {'profiles': [{'profile_id': payload['query_state']['profile_id'], 'provider_id': payload['query_state']['provider_id']}]},
+                payload['query_state']['profile_id'],
+                request.GET.get('provider_id', ''),
+                request.GET.get('workspace_key', ''),
+            )
+            if boundary_error:
+                return JsonResponse({'error': boundary_error}, status=400)
+            return JsonResponse(safe_ai_payload(payload))
         except ValueError as error:
             return JsonResponse({'error': str(error)}, status=400)
 
@@ -334,6 +353,23 @@ def ai_dashboard_workflow_request_from_payload(payload: dict) -> DashboardAiWork
         panel_title=str(payload.get('panel_title', '') or ''),
         visualization=str(payload.get('visualization', 'timeseries') or 'timeseries'),
     )
+
+
+def ai_dashboard_boundary_error(catalog: dict, profile_id: str, provider_id: str, workspace_key: str) -> str:
+    if not provider_id and not workspace_key:
+        return ''
+    if not profile_id:
+        return 'profile_id is required when provider_id or workspace_key is provided.'
+    profile = next((item for item in catalog.get('profiles', []) if item.get('profile_id') == profile_id), None)
+    if not profile:
+        return 'profile_id is not available in the AI dashboard catalog.'
+    expected_provider_id = str(profile.get('provider_id', ''))
+    if provider_id and provider_id != expected_provider_id:
+        return 'provider_id does not match the profile boundary.'
+    expected_workspace_key = f'metrics.{expected_provider_id}.{profile_id}' if expected_provider_id else ''
+    if workspace_key and workspace_key != expected_workspace_key:
+        return 'workspace_key does not match the profile boundary.'
+    return ''
 
 
 def requested_series_from_payload(value) -> list[str]:

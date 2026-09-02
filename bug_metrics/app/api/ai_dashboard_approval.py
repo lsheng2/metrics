@@ -7,7 +7,11 @@ from django.utils import timezone
 
 from bug_metrics.models import BugTrendAuditEvent
 
-from .ai_dashboard_composition_contracts import DashboardAiPublishApprovalRequest, DashboardAiPublishRequest
+from .ai_dashboard_composition_contracts import (
+    AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
+    DashboardAiPublishApprovalRequest,
+    DashboardAiPublishRequest,
+)
 from .provider_profiles import ProviderProfileReadinessService
 
 
@@ -28,6 +32,7 @@ class AiGrafanaPublishApprovalState:
 
     def to_dict(self) -> dict:
         return {
+            'contract_version': AI_DASHBOARD_COMPOSITION_CONTRACT_VERSION,
             'approval_id': self.approval_id,
             'status': self.status,
             'actor': self.actor,

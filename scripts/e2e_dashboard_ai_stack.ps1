@@ -61,6 +61,57 @@ function Invoke-JsonPost {
     Invoke-RestMethod -Uri $Url -Method Post -Body $json -ContentType 'application/json' -TimeoutSec 20
 }
 
+function Invoke-JsonPostStatus {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Url,
+        [Parameter(Mandatory = $true)]
+        [object]$Body
+    )
+
+    $json = $Body | ConvertTo-Json -Depth 10
+    $webRequestCommand = Get-Command Invoke-WebRequest
+    if ($webRequestCommand.Parameters.ContainsKey('SkipHttpErrorCheck')) {
+        $response = Invoke-WebRequest -Uri $Url -Method Post -Body $json -ContentType 'application/json' -TimeoutSec 20 -UseBasicParsing -SkipHttpErrorCheck
+        return @{
+            StatusCode = [int]$response.StatusCode
+            Body = $response.Content | ConvertFrom-Json
+        }
+    }
+
+    try {
+        $response = Invoke-WebRequest -Uri $Url -Method Post -Body $json -ContentType 'application/json' -TimeoutSec 20 -UseBasicParsing
+        return @{
+            StatusCode = [int]$response.StatusCode
+            Body = $response.Content | ConvertFrom-Json
+        }
+    }
+    catch {
+        $webResponse = $_.Exception.Response
+        if (-not $webResponse) {
+            throw
+        }
+        if ($_.ErrorDetails.Message) {
+            return @{
+                StatusCode = [int]$webResponse.StatusCode
+                Body = $_.ErrorDetails.Message | ConvertFrom-Json
+            }
+        }
+        $stream = $webResponse.GetResponseStream()
+        $reader = [System.IO.StreamReader]::new($stream)
+        try {
+            $content = $reader.ReadToEnd()
+        }
+        finally {
+            $reader.Dispose()
+        }
+        return @{
+            StatusCode = [int]$webResponse.StatusCode
+            Body = $content | ConvertFrom-Json
+        }
+    }
+}
+
 function Stop-DashboardAiStack {
     $dashboardStop = Join-Path $DashboardWorkspace 'scripts\e2e_stop_bug_trend.ps1'
     $aiBaseStop = Join-Path $AiBaseWorkspace 'scripts\stop-minimal-chat-dev.ps1'
@@ -217,14 +268,15 @@ function Test-DashboardAiStack {
     if ($artifactValidation.status -ne 'draft_validated') {
         throw "Dashboard artifact validation was $($artifactValidation.status)."
     }
-    $artifactUpdate = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/workspace-artifacts/$($artifact.artifactId)/revisions" -Body @{
+    $publicValidationWrite = Invoke-JsonPostStatus -Url "$AiBaseBackendUrl/api/workspace-artifacts/$($artifact.artifactId)/revisions" -Body @{
         title = $artifact.title
         content = $artifact.content
         validationStatus = $artifactValidation.status
         validationResult = $artifactValidation
     }
-    if ($artifactUpdate.status -ne 'draft_validated') {
-        throw "AI Base artifact validation result was not recorded: $($artifactUpdate.status)"
+    $publicValidationWriteDetail = [string]$publicValidationWrite.Body.detail
+    if ($publicValidationWrite.StatusCode -ne 400 -or -not $publicValidationWriteDetail.Contains('owning validator')) {
+        throw "AI Base public artifact revision did not reject owning-validator state write: status=$($publicValidationWrite.StatusCode)"
     }
     $forgedPublish = Invoke-JsonPost -Url "$DashboardBaseUrl/api/ai-dashboard/publish-demo/" -Body @{
         profile_id = $JiraProfileId
@@ -239,11 +291,59 @@ function Test-DashboardAiStack {
         approval_id = 'approval_chat_demo_forged'
         dry_run_proof_id = 'dryrun_forged'
         artifact_ref = $artifactRef
-        artifact_version = $artifactUpdate.version
-        artifact_hash = $artifactUpdate.contentHash
+        artifact_version = $artifact.version
+        artifact_hash = $artifact.contentHash
     }
     if ($forgedPublish.status -ne 'blocked' -or $forgedPublish.reason -ne 'approval_not_granted') {
         throw "Dashboard accepted forged publish authority: status=$($forgedPublish.status) reason=$($forgedPublish.reason)"
+    }
+
+    $session = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions" -Body @{
+        title = 'E2E Dashboard publish demo'
+        workspaceId = $workspaceSync.workspace.workspaceId
+    }
+    $firstTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$($session.sessionId)/messages" -Body @{
+        content = "Approve and publish a weekly open bug trend chart for chiplet Jira from $BeginWw to $EndWw, only new critical/high."
+    }
+    $firstContent = [string]$firstTurn.assistantMessage.content
+    if (-not $firstContent.Contains('Approval request:')) {
+        throw 'AI Base chat did not produce a Dashboard publish approval request.'
+    }
+    $approvalLine = @($firstContent -split "`n" | Where-Object { $_.StartsWith('- Approval request:') } | Select-Object -First 1)
+    if (-not $approvalLine) {
+        throw 'AI Base chat approval request id line was missing.'
+    }
+    $approvalId = $approvalLine.Split(':', 2)[1].Trim()
+    if (-not $approvalId.StartsWith('approval_dashboard_publish_')) {
+        throw "AI Base chat produced unexpected approval id: $approvalId"
+    }
+    $approvalMatch = [regex]::Match($approvalId, '^approval_dashboard_publish_(art_[a-z0-9]+)_v([0-9]+)_(dryrun_[a-z0-9_]+)$')
+    if (-not $approvalMatch.Success) {
+        throw "AI Base chat approval id was not bound to artifact/version/dry-run proof: $approvalId"
+    }
+    $chatArtifactId = $approvalMatch.Groups[1].Value
+    $chatArtifactVersion = [int]$approvalMatch.Groups[2].Value
+    $dryRunProofId = $approvalMatch.Groups[3].Value
+    $chatArtifact = Invoke-RestMethod -Uri "$AiBaseBackendUrl/api/workspace-artifacts/$chatArtifactId/revisions/$chatArtifactVersion" -TimeoutSec 20
+    if ($chatArtifact.artifact.validationResult.dry_run.dryRunProofId -ne $dryRunProofId) {
+        throw 'AI Base owning-validator path did not record the dry-run proof on the artifact revision.'
+    }
+    $approvalDecision = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/permission-requests/$approvalId/decision" -Body @{
+        decision = 'approved'
+    }
+    if ($approvalDecision.status -ne 'approved') {
+        throw "AI Base approval decision was $($approvalDecision.status)."
+    }
+    $publishTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$($session.sessionId)/messages" -Body @{
+        content = "Publish approved $approvalId weekly open bug trend chart for chiplet Jira from $BeginWw to $EndWw, only new critical/high."
+    }
+    $publishContent = [string]$publishTurn.assistantMessage.content
+    if (-not $publishContent.Contains('Dashboard chart published to Grafana.')) {
+        throw "AI Base chat publish did not report Grafana publication. Response: $publishContent"
+    }
+    $publishedArtifact = Invoke-RestMethod -Uri "$AiBaseBackendUrl/api/workspace-artifacts/$chatArtifactId/revisions/$chatArtifactVersion" -TimeoutSec 20
+    if ($publishedArtifact.artifact.validationResult.status -ne 'published') {
+        throw "AI Base artifact publish result was $($publishedArtifact.artifact.validationResult.status)."
     }
 
     Write-Host 'Smoke checks passed.'

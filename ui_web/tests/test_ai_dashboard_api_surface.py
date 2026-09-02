@@ -35,6 +35,27 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertNotIn('token', serialized_payload)
         self.assertNotIn('api_key', serialized_payload)
 
+    def test_shouldAcceptAiDashboardCatalogConnectorBoundaryParams(self):
+        response = self.client.get(reverse('ui_web:ai_dashboard_catalog_api'), {
+            'provider_id': 'hsdes',
+            'profile_id': 'nvu-ttl-hsdes',
+            'workspace_key': 'metrics.hsdes.nvu-ttl-hsdes',
+        })
+
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('nvu-ttl-hsdes', payload['profiles'][0]['profile_id'])
+
+    def test_shouldRejectAiDashboardCatalogWhenBoundaryParamsMismatchProfile(self):
+        response = self.client.get(reverse('ui_web:ai_dashboard_catalog_api'), {
+            'provider_id': 'jira',
+            'profile_id': 'nvu-ttl-hsdes',
+            'workspace_key': 'metrics.hsdes.nvu-ttl-hsdes',
+        })
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('provider_id does not match the profile boundary.', response.json()['error'])
+
     def test_shouldValidateUnsupportedAiCompositionIntentAsNeedsMetricRecipe(self):
         response = self.client.post(
             reverse('ui_web:ai_dashboard_intent_validation_api'),
@@ -287,6 +308,7 @@ class TestAiDashboardApiSurface(TestCase):
         response = self.client.get(reverse('ui_web:ai_dashboard_context_api'), {
             'provider_id': 'hsdes',
             'profile_id': 'nvu-ttl-hsdes',
+            'workspace_key': 'metrics.hsdes.nvu-ttl-hsdes',
             'begin_ww': '26WW32',
             'end_ww': '26WW35',
             'chart_id': 'open_bug_trend',
