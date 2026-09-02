@@ -106,8 +106,8 @@ new_critical
 预期 Metrics Connector 显示：
 
 - Connector ID: `metrics-dashboard`
-- Model Visible Operations 包含 `workflow.run`
-- Workflow Operation: `workflow.run`
+- Model Visible Operations 只包含 read/validate 类操作，例如 `catalog.lookup`、`intent.validate`、`render_config.validate`、`context.lookup`
+- Internal Workflow Operation: `workflow.run` 不应 model-visible，只能由受控 workflow/helper 调用
 - Dry-run Proof: `workflow.run can record dry-run proof`
 - Approval Gate: `Human approval required before mutation`
 
@@ -124,7 +124,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:48300/api/runtime/diagnostics/summary" 
 - `available=true`
 - `activated=true`
 - `executable=true`
-- `modelVisibleOperations` 包含 `workflow.run`
+- `modelVisibleOperations` 不包含 `workflow.run`、`artifact.validate`、`workflow.publish_demo` 或 callback/mutation 操作
 
 ## AI Base Chat Demo
 
@@ -151,7 +151,7 @@ Create a weekly open bug trend chart for chiplet Jira from 26WW32 to 26WW35, onl
 
 这个 demo 是 **受控 chart authoring dry-run**。它证明 AI Base Chat 已经能通过 Dashboard `workflow.run` 走完整验证和 dry-run proof handoff。
 
-## AI Base Chat Publish Demo
+## AI Base Chat Publish Authority Check
 
 在同一个 Chat session 继续输入：
 
@@ -161,14 +161,24 @@ Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 2
 
 预期 Chat 回复包含：
 
+- `human approval required`
+- `dry-run proof`
+- 不应声称已经 publish
+- 不应返回 `approval_chat_demo_...` 作为可执行 approval
+- 不应直接触发 Grafana import
+
+真实 publish 必须走 Dashboard-owned publish authorization：先创建 pending approval，人工 approve 后，publish request 的 provider、workspace key、profile、range、series、artifact ref/version/hash、dry-run proof、operation 和 actor 必须与 approval 记录完全匹配，并且 approval 必须在有效期内。
+
+当 publish authorization 通过时，预期返回：
+
 - `Dashboard chart published to Grafana.`
 - `Dashboard: ai-open-bug-trend-demo`
 - `URL: http://127.0.0.1:3001/d/ai-open-bug-trend-demo/...`
 - `Dry-run proof: dryrun_...`
-- `Approval: approval_chat_demo_...`
+- `Approval: approval_...`
 - `Audit: recorded`
 
-打开回复里的 URL。预期 Grafana 页面能看到 AI 生成的 `Open Bug Trend` chart。这个 publish demo 是 **local approved demo publish**：Chat 里的明确 approve/publish 文本会生成本地 approval id；Dashboard 会重新执行 Metrics validation、render validation、gcx precondition，然后只导入 Metrics 生成的 Grafana JSON，并记录 publication callback audit。
+打开回复里的 URL。预期 Grafana 页面能看到 AI 生成的 `Open Bug Trend` chart。Dashboard 会重新执行 Metrics validation、render validation、gcx precondition，然后只导入 Metrics 生成的 Grafana JSON，并记录 publication callback audit。
 
 如果要用 Jira `chiplet-2a-jira` 做同一个 publish demo，需要先运行不带 `-SkipJiraSync` 的完整重启或手动 sync，确保 `26WW32` 到 `26WW35` 有 completed aggregate artifact；否则 Grafana dashboard 会被创建，但 panel 会显示 `No data`。
 
@@ -176,8 +186,9 @@ Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 2
 
 - `workflow.run` 可以进入 `ready_for_dry_run`。
 - AI Base try-run 可以返回 dry-run proof summary。
-- 真实 Grafana import/publish 需要 human approval；本地 demo 用 Chat 中明确 approve/publish 文本生成 `approval_chat_demo_...`。
+- 真实 Grafana import/publish 需要 human-approved Dashboard publish authorization；Chat 文本不能自造 approval id。
 - 没有 approval id 时，不应执行真实 mutation。
+- approval id、dry-run proof id、artifact ref/version/hash、provider/workspace/profile/range/series/operation/actor 必须匹配同一个未过期 authorization tuple。
 - Unsupported metric series 必须返回 `needs_metric_recipe`，不能由 AI 自行改写语义。
 
 ## 常见问题

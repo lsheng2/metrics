@@ -226,6 +226,25 @@ function Test-DashboardAiStack {
     if ($artifactUpdate.status -ne 'draft_validated') {
         throw "AI Base artifact validation result was not recorded: $($artifactUpdate.status)"
     }
+    $forgedPublish = Invoke-JsonPost -Url "$DashboardBaseUrl/api/ai-dashboard/publish-demo/" -Body @{
+        profile_id = $JiraProfileId
+        dashboard_uid = 'ai-open-bug-trend-demo'
+        chart_id = 'open_bug_trend'
+        requested_series = @('new_critical_high')
+        range_mode = 'ww'
+        range_start = $BeginWw
+        range_end = $EndWw
+        operation = 'grafana_import'
+        actor = 'e2e_dashboard_ai_stack'
+        approval_id = 'approval_chat_demo_forged'
+        dry_run_proof_id = 'dryrun_forged'
+        artifact_ref = $artifactRef
+        artifact_version = $artifactUpdate.version
+        artifact_hash = $artifactUpdate.contentHash
+    }
+    if ($forgedPublish.status -ne 'blocked' -or $forgedPublish.reason -ne 'approval_not_granted') {
+        throw "Dashboard accepted forged publish authority: status=$($forgedPublish.status) reason=$($forgedPublish.reason)"
+    }
 
     Write-Host 'Smoke checks passed.'
 }

@@ -56,6 +56,9 @@ class DashboardAiPublishRequest:
     visualization: str = 'timeseries'
     artifact_ref: str = ''
     artifact_version: int = 0
+    artifact_hash: str = ''
+    provider_id: str = ''
+    workspace_key: str = ''
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +84,10 @@ class DashboardAiPublishApprovalRequest:
     actor: str = 'local_operator'
     artifact_ref: str = ''
     artifact_version: int = 0
+    artifact_hash: str = ''
+    operation: str = 'grafana_import'
+    provider_id: str = ''
+    workspace_key: str = ''
 
 
 @dataclass(frozen=True, slots=True)
