@@ -10,7 +10,7 @@ if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
 import e2e_bug_trend
-from port_lifecycle import ServiceSpec, ServiceState
+from service_lifecycle_engine import ServiceSpec, ServiceState
 
 
 def test_bug_trend_load_specs_uses_json_ports_unless_cli_overrides(tmp_path):
@@ -49,7 +49,7 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
     calls = []
 
     class FakeLifecycle:
-        def profile_step(self, label, callback, run_id=None, prefix="PortLifecycle timing"):
+        def profile_step(self, label, callback, run_id=None, prefix="ServiceLifecycleEngine timing"):
             calls.append(("profile_step", label, run_id, prefix))
             return callback()
 
@@ -158,6 +158,52 @@ def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_
     assert dashboard_url.startswith(f"http://127.0.0.1:{grafana_port}/")
     summary = json.loads((tmp_path / "state" / "e2e" / "bug_trend_ports.json").read_text(encoding="utf-8"))
     assert summary == {"dashboard_url": dashboard_url, "django_port": django_port, "grafana_port": grafana_port}
+
+
+def test_bug_trend_runtime_grafana_config_is_generated_when_template_is_missing(tmp_path):
+    runtime_config = e2e_bug_trend.write_runtime_grafana_config(tmp_path, 3999)
+
+    runtime_content = runtime_config.read_text(encoding="utf-8")
+    expected_directories = (
+        tmp_path / "state" / "grafana" / "data",
+        tmp_path / "state" / "grafana" / "data" / "plugins",
+        tmp_path / "state" / "grafana" / "logs",
+        tmp_path / "state" / "grafana" / "conf" / "provisioning",
+        tmp_path / "state" / "grafana" / "conf" / "provisioning" / "datasources",
+    )
+    assert "[server]" in runtime_content
+    assert "http_addr = 127.0.0.1" in runtime_content
+    assert "http_port = 3999" in runtime_content
+    assert "root_url = http://127.0.0.1:3999/" in runtime_content
+    assert f"data = {(tmp_path / 'state' / 'grafana' / 'data').as_posix()}" in runtime_content
+    assert all(directory.exists() for directory in expected_directories)
+
+
+def test_bug_trend_runtime_grafana_config_reuses_main_worktree_plugin_cache(tmp_path):
+    workspace = tmp_path / "scrum_dashboard" / ".worktrees" / "service-lifecycle-engine"
+    plugin_cache = tmp_path / "scrum_dashboard" / "state" / "grafana" / "data" / "plugins"
+    (plugin_cache / "yesoreyeram-infinity-datasource").mkdir(parents=True)
+    workspace.mkdir(parents=True)
+
+    runtime_config = e2e_bug_trend.write_runtime_grafana_config(workspace, 3999)
+
+    runtime_content = runtime_config.read_text(encoding="utf-8")
+    assert f"plugins = {plugin_cache.as_posix()}" in runtime_content
+
+
+def test_bug_trend_scope_id_resolver_reads_seeded_scope_from_shell_output(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_run(command, cwd, check, text, capture_output):
+        calls.append((command, cwd, check, text, capture_output))
+        return type("Completed", (), {"stdout": "29 objects imported automatically (use -v 2 for details).\n\n2\n"})()
+
+    monkeypatch.setattr(e2e_bug_trend.subprocess, "run", fake_run)
+
+    scope_id = e2e_bug_trend.resolve_scope_id_by_name(tmp_path, sys.executable, "chiplet-2a-jira")
+
+    assert scope_id == "2"
+    assert calls[0][0][:3] == [sys.executable, "manage.py", "shell"]
 
 
 def test_grafana_datasource_is_created_when_uid_update_returns_not_found(monkeypatch):

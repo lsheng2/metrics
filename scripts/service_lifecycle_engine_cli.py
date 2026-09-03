@@ -4,11 +4,11 @@ import argparse
 import json
 from pathlib import Path
 
-from port_lifecycle import PortLifecycle, load_project_name, load_service_specs
+from service_lifecycle_engine import ServiceLifecycleEngine, load_project_name, load_service_specs
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Port lifecycle diagnostics.")
+    parser = argparse.ArgumentParser(description="Service lifecycle diagnostics.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     doctor = subparsers.add_parser("doctor", help="Inspect lifecycle state, listeners, and health for declared services.")
     doctor.add_argument("--workspace", default=str(Path(__file__).resolve().parents[1]))
@@ -26,15 +26,14 @@ def main() -> None:
 def run_doctor(args: argparse.Namespace) -> None:
     workspace = Path(args.workspace).resolve()
     service_config = resolve_workspace_path(workspace, args.service_config)
-    state_directory = resolve_workspace_path(workspace, args.state_directory) if args.state_directory else workspace / "state" / "port-lifecycle"
-    lifecycle = PortLifecycle(
-        project_name=load_project_name(service_config, "port-lifecycle"),
+    state_directory = resolve_workspace_path(workspace, args.state_directory) if args.state_directory else workspace / "state" / "service-lifecycle-engine"
+    lifecycle = ServiceLifecycleEngine(
+        project_name=load_project_name(service_config, "service-lifecycle-engine"),
         workspace=workspace,
         instance_name=args.instance,
         state_directory=state_directory,
     )
-    specs = tuple(load_service_specs(service_config, workspace).values())
-    diagnostics = lifecycle.diagnose_services(specs)
+    diagnostics = lifecycle.diagnose_services(tuple(load_service_specs(service_config, workspace).values()))
     if args.json:
         print(json.dumps(diagnostics, indent=2, sort_keys=True))
     else:

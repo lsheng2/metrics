@@ -9,6 +9,7 @@ if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
 import e2e_provider_parity
+import e2e_provider_parity_validation
 
 
 def test_provider_parity_import_uses_provider_dashboard_and_profile_variables(monkeypatch, tmp_path):
@@ -189,15 +190,15 @@ def test_provider_parity_runtime_validation_checks_jira_supported_and_deferred_s
                 }],
             }
         if "api/provider-charts/data/" in url:
-            profile_id = e2e_provider_parity.query_value(url, "profile_id")
+            profile_id = e2e_provider_parity_validation.query_value(url, "profile_id")
             provider_id = e2e_provider_parity.PROVIDER_ID_BY_PROFILE[profile_id]
-            chart_id = e2e_provider_parity.query_value(url, "chart_id")
+            chart_id = e2e_provider_parity_validation.query_value(url, "chart_id")
             return json_responses[f"{chart_id}:{provider_id}"]
         return {}
 
-    monkeypatch.setattr(e2e_provider_parity, "request_json", fake_request_json)
-    monkeypatch.setattr(e2e_provider_parity, "assert_http_ok", lambda url, auth=False: checked_urls.append((url, auth)))
-    monkeypatch.setattr(e2e_provider_parity, "validate_visible_dashboard", lambda *args, **kwargs: None)
+    monkeypatch.setattr(e2e_provider_parity_validation, "request_json", fake_request_json)
+    monkeypatch.setattr(e2e_provider_parity_validation, "assert_http_ok", lambda url, auth=False: checked_urls.append((url, auth)))
+    monkeypatch.setattr(e2e_provider_parity_validation, "validate_visible_dashboard", lambda *args, **kwargs: None)
 
     e2e_provider_parity.validate_runtime(
         tmp_path,
@@ -236,7 +237,7 @@ def test_provider_parity_runtime_validation_resolves_grafana_date_macros(monkeyp
             return dashboard
         if "api/provider-charts/data/" in url:
             checked_urls.append(url)
-            if e2e_provider_parity.query_value(url, "chart_id") == "execution_statistics":
+            if e2e_provider_parity_validation.query_value(url, "chart_id") == "execution_statistics":
                 return {
                     "status": "deferred",
                     "grafana_rows": [],
@@ -249,9 +250,9 @@ def test_provider_parity_runtime_validation_resolves_grafana_date_macros(monkeyp
             }
         return {}
 
-    monkeypatch.setattr(e2e_provider_parity, "request_json", fake_request_json)
-    monkeypatch.setattr(e2e_provider_parity, "assert_http_ok", lambda url, auth=False: checked_urls.append(url))
-    monkeypatch.setattr(e2e_provider_parity, "validate_visible_dashboard", lambda *args, **kwargs: None)
+    monkeypatch.setattr(e2e_provider_parity_validation, "request_json", fake_request_json)
+    monkeypatch.setattr(e2e_provider_parity_validation, "assert_http_ok", lambda url, auth=False: checked_urls.append(url))
+    monkeypatch.setattr(e2e_provider_parity_validation, "validate_visible_dashboard", lambda *args, **kwargs: None)
 
     e2e_provider_parity.validate_runtime(
         tmp_path,
@@ -325,13 +326,13 @@ def test_provider_parity_runtime_validates_hsdes_through_same_provider_selection
                 }],
             }
         if "api/provider-charts/data/" in url:
-            if e2e_provider_parity.query_value(url, "chart_id") == "execution_statistics":
+            if e2e_provider_parity_validation.query_value(url, "chart_id") == "execution_statistics":
                 return {
                     "status": "deferred",
                     "grafana_rows": [],
                     "provider_series_state": [{"status": "deferred", "reason": "Execution mappings deferred"}],
                 }
-            if e2e_provider_parity.query_value(url, "chart_id") == "component_bug":
+            if e2e_provider_parity_validation.query_value(url, "chart_id") == "component_bug":
                 return {
                     "status": "supported",
                     "grafana_rows": [{"provider_id": "hsdes", "profile_id": "nvu-ttl-hsdes", "component_bug_count": 3}],
@@ -344,9 +345,9 @@ def test_provider_parity_runtime_validates_hsdes_through_same_provider_selection
             }
         return {}
 
-    monkeypatch.setattr(e2e_provider_parity, "request_json", fake_request_json)
-    monkeypatch.setattr(e2e_provider_parity, "assert_http_ok", lambda url, auth=False: None)
-    monkeypatch.setattr(e2e_provider_parity, "validate_visible_dashboard", lambda *args, **kwargs: None)
+    monkeypatch.setattr(e2e_provider_parity_validation, "request_json", fake_request_json)
+    monkeypatch.setattr(e2e_provider_parity_validation, "assert_http_ok", lambda url, auth=False: None)
+    monkeypatch.setattr(e2e_provider_parity_validation, "validate_visible_dashboard", lambda *args, **kwargs: None)
 
     e2e_provider_parity.validate_runtime(
         tmp_path,

@@ -24,7 +24,7 @@
 | `docs/validation/jira-grafana-test-plan.md` | `validation-runbook` | `openspec/docs/validation/jira-grafana-test-plan.md` | Jira/Grafana test plan. |
 | `docs/validation/test-case-catalog.md` | `validation-runbook` | `openspec/docs/validation/test-case-catalog.md` | Test-case catalog. |
 | `docs/validation/test-strategy.md` | `validation-runbook` | `openspec/docs/validation/test-strategy.md` | Validation strategy. |
-| `docs/port-lifecycle-module.zh.md` | `validation-runbook` | `openspec/docs/validation/port-lifecycle-module.zh.md` | Local runtime/port lifecycle supporting module notes. |
+| `docs/service-lifecycle-engine.zh.md` | `validation-runbook` | `openspec/docs/validation/service-lifecycle-engine.zh.md` | Local runtime/service lifecycle engine supporting module notes. |
 | `docs/ai-base-dashboard-query-agent-handoff.md` | `historical` | `openspec/docs/historical/ai-base-dashboard-query-agent-handoff.md` | Historical handoff, not normative. |
 | `docs/implementation-start.md` | `historical` | `openspec/docs/historical/implementation-start.md` | Historical implementation start note. |
 | `docs/jira-dashboard-research-and-architecture.md` | `historical` | `openspec/docs/historical/jira-dashboard-research-and-architecture.md` | Research/background record. |
