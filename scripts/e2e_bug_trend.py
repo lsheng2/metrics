@@ -314,12 +314,21 @@ def assert_http_ok(url: str, auth: bool = False) -> None:
     request = urllib.request.Request(url)
     if auth:
         request.add_header("Authorization", basic_auth())
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            if not 200 <= response.status < 300:
-                raise RuntimeError(f"Expected HTTP 2xx from {url}, got {response.status}")
-    except urllib.error.HTTPError as error:
-        raise RuntimeError(f"Expected HTTP 2xx from {url}, got {error.code}") from error
+    deadline = time.monotonic() + 10.0
+    last_error = None
+    while True:
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                if not 200 <= response.status < 300:
+                    raise RuntimeError(f"Expected HTTP 2xx from {url}, got {response.status}")
+                return
+        except urllib.error.HTTPError as error:
+            raise RuntimeError(f"Expected HTTP 2xx from {url}, got {error.code}") from error
+        except urllib.error.URLError as error:
+            last_error = error
+            if time.monotonic() >= deadline:
+                raise RuntimeError(f"Expected HTTP 2xx from {url}, got connection error {type(error.reason).__name__}") from error
+            time.sleep(0.25)
 
 
 def basic_auth() -> str:

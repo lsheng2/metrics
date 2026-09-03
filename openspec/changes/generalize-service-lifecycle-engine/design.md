@@ -64,11 +64,33 @@ The engine records what can be proven and lets caller policy decide what is suff
 
 This matches Agora's expectation without forcing every Scrum Dashboard local service to expose Linux `/proc`-style evidence.
 
+### 5a. P1 provenance is part of event and state payloads
+
+`ProcessProvenance` is the generic evidence bundle carried by lifecycle events and persisted service state when the engine can observe it. The bundle remains optional because wrapper-only launchers, OS limitations, and short-lived failed starts may provide only degraded evidence.
+
+The same provenance object is used for:
+
+- ready events consumed by endpoint authority adapters;
+- aborted events used for failure diagnostics;
+- stopped events and termination ledgers;
+- persisted `ServiceState` snapshots used by later diagnostics.
+
+The engine SHALL NOT require all provenance fields. Capability level tells consumers whether the evidence is wrapper-only, command-matched registered process, owned listener, endpoint-grade, or HTTP identity enriched.
+
 ### 6. Stop result separates source from escalation
 
 `StopResult.forced` means kill escalation after graceful termination failed. Generic stop result adds source/intent fields such as `stop_source`, `stop_mode`, or `force_requested`. Force-by-port request is caller intent; force kill is termination escalation.
 
-### 7. State store becomes a protocol
+### 7. Platform operations and state store are constructor-injected
+
+`ServiceLifecycleEngine` defaults to production filesystem/platform operations, but callers can inject:
+
+- `PlatformOperationSet` for fake process tables, fake ports, fake HTTP probes, and deterministic termination tests;
+- `LifecycleStateStore` for in-memory state, project-owned storage, or filesystem storage.
+
+All start, stop, readiness, diagnostics, provenance and force-by-port paths route through the injected operations. Filesystem storage remains the default for Scrum Dashboard launchers.
+
+### 8. State store becomes a protocol
 
 Engine code writes through a state store protocol. The contract covers:
 
@@ -78,11 +100,21 @@ Engine code writes through a state store protocol. The contract covers:
 - ordered append ledgers;
 - fail-closed corruption handling for destructive operations.
 
-### 8. Live service resolver is generic read-side surface
+### 9. Reusable provenance helpers are public generic API
+
+The generic package exposes helper functions that are useful to downstream adapters without importing launcher internals:
+
+- `capture_process_provenance(...)`;
+- `resolve_owned_listener(...)`;
+- `provenance_capability_for(...)`.
+
+Helpers use `PlatformOperationSet` and avoid app-specific service names, routes or workspaces.
+
+### 10. Live service resolver is generic read-side surface
 
 The resolver returns typed service endpoint information: service id, host, port, base URL, resolution source, and diagnostics. It can read explicit input, current lifecycle state, project-provided runtime projection, or defaults according to caller policy. Diagnostics launch authority is evidence, not normal endpoint truth, unless a project-specific signoff adapter explicitly opts into it.
 
-### 9. Validation coverage is part of the migration contract
+### 11. Validation coverage is part of the migration contract
 
 Zero compatibility raises regression risk, so validation must prove both the new behavior and the intentional break:
 
@@ -113,7 +145,9 @@ Zero compatibility raises regression risk, so validation must prove both the new
 7. Add typed live service resolver with explicit input, lifecycle state, optional projection and default fallback sources.
 8. Delete `scripts/port_lifecycle/` and `scripts/port_lifecycle_cli.py` after internal callers are migrated.
 9. Update validation docs and OpenSpec notes to describe zero compatibility and new commands.
-10. Run full focused lifecycle validation, negative legacy-surface tests, file-size/whitespace checks and OpenSpec strict validation before implementation closure.
+10. P1 hardening: add event/state provenance and constructor injection for platform ops/state store.
+11. P2 hardening: expose reusable provenance helpers.
+12. Run full focused lifecycle validation, negative legacy-surface tests, file-size/whitespace checks and OpenSpec strict validation before implementation closure.
 
 ## Open Questions
 

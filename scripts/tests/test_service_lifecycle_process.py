@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
-from service_lifecycle_engine import ServiceLifecycleEngine, ServiceSpec, is_port_available, process_exists
+from service_lifecycle_engine import LifecycleState, PlatformOperationSet, ServiceLifecycleEngine, ServiceSpec, is_port_available, process_exists
 from service_lifecycle_engine.platform_ops import creation_flags, kill_process, wait_process_exit
 
 
@@ -40,7 +40,7 @@ def test_resolve_plan_does_not_assign_same_available_port_twice(tmp_path):
     assert lifecycle.resolve_plan((api_spec, ui_spec)) == {"api": shared_port, "ui": fallback_port}
 
 
-def test_wait_ready_rejects_dead_child_even_when_health_url_responds(tmp_path):
+def test_waitReadyShouldAcceptHealthyEndpointWhenWrapperProcessExits(tmp_path):
     lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state")
     port = find_free_port()
     server = subprocess.Popen(
@@ -58,14 +58,38 @@ def test_wait_ready_rejects_dead_child_even_when_health_url_responds(tmp_path):
     try:
         wait_until_listening(port)
         spec = http_server_spec(tmp_path, [port])
-        try:
-            lifecycle.wait_ready(spec, port, DeadProcess())
-        except RuntimeError as error:
-            assert "exited before becoming ready" in str(error)
-        else:
-            raise AssertionError("dead launched process was treated as ready")
+        lifecycle.wait_ready(spec, port, DeadProcess())
     finally:
         stop_process(server.pid)
+
+
+def test_waitReadyShouldRejectTransientHealthWhenWrapperExits(tmp_path):
+    health_results = iter((True, False, False))
+    lifecycle = ServiceLifecycleEngine(
+        "test-project",
+        tmp_path,
+        state_directory=tmp_path / "state",
+        platform_ops=PlatformOperationSet(http_status_ok=lambda url: next(health_results, False)),
+    )
+
+    class DeadProcess:
+        def poll(self):
+            return 1
+
+    spec = ServiceSpec.from_values(
+        "web",
+        [8100],
+        [sys.executable, "-m", "http.server", "{port}"],
+        health_url="http://{host}:{port}/",
+        startup_timeout_seconds=0.5,
+    )
+
+    try:
+        lifecycle.wait_ready(spec, 8100, DeadProcess())
+    except RuntimeError as error:
+        assert "exited before becoming ready" in str(error)
+    else:
+        raise AssertionError("transient health response should not mark service ready")
 
 
 def test_start_and_stop_service_writes_termination_ledger(tmp_path):
@@ -103,9 +127,39 @@ def test_start_service_writes_launch_authority_with_identity_probe(tmp_path):
         authority = json.loads(Path(state.launch_authority_file).read_text(encoding="utf-8"))
         assert authority["service"] == "web"
         assert authority["listener_identity_probe"]["reachable"] is True
+        assert str(port) in authority["command"]
+        assert "{port}" not in authority["command"]
         assert state.listener_identity_fingerprint
     finally:
         lifecycle.stop_service("web", graceful_timeout_seconds=0.1)
+
+
+def test_start_service_emits_aborted_event_when_process_exits_before_readiness(tmp_path):
+    events = []
+    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", event_handler=events.append)
+    port = find_free_port()
+    spec = ServiceSpec.from_values(
+        name="web",
+        preferred_ports=[port],
+        command=[sys.executable, "-c", "raise SystemExit(3)"],
+        health_url="http://{host}:{port}/",
+        startup_timeout_seconds=5.0,
+    )
+
+    try:
+        lifecycle.start_service(spec, port=port)
+    except RuntimeError as error:
+        assert "exited before becoming ready" in str(error)
+    else:
+        raise AssertionError("start_service should fail when child exits before readiness")
+
+    assert [(event.service_name, event.state, event.reason) for event in events] == [
+        ("web", LifecycleState.ABORTED, "failed:RuntimeError"),
+    ]
+    assert events[0].provenance.wrapper_pid is not None
+    ledger_record = json.loads(lifecycle.termination_ledger.read_text(encoding="utf-8").splitlines()[-1])
+    assert ledger_record["reason"].startswith("startup_aborted:")
+    assert ledger_record["provenance"]["wrapper_pid"] == events[0].provenance.wrapper_pid
 
 
 def test_prepare_startup_does_not_force_stop_unowned_ports_by_default(tmp_path):

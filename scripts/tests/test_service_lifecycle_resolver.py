@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
-from service_lifecycle_engine import LiveServiceResolutionSource, LiveServiceResolver
+from service_lifecycle_engine import LifecycleState, LiveServiceResolutionSource, LiveServiceResolver
 
 
 def test_shouldResolveExplicitServiceEndpointBeforeOtherSources():
@@ -25,7 +25,7 @@ def test_shouldResolveExplicitServiceEndpointBeforeOtherSources():
 
 def test_shouldResolveLifecycleStateBeforeProjectionAndDefaults():
     resolver = LiveServiceResolver(
-        lifecycle_state={"api": {"host": "127.0.0.1", "port": 8100}},
+        lifecycle_state={"api": {"host": "127.0.0.1", "port": 8100, "lifecycle_state": LifecycleState.READY}},
         projection={"api": {"host": "127.0.0.1", "port": 8200}},
         default_ports={"api": 8000},
     )
@@ -34,6 +34,19 @@ def test_shouldResolveLifecycleStateBeforeProjectionAndDefaults():
 
     assert resolution.base_url == "http://127.0.0.1:8100"
     assert resolution.source == LiveServiceResolutionSource.LIFECYCLE_STATE
+
+
+def test_shouldIgnoreNonReadyLifecycleStateWhenResolvingEndpoint():
+    resolver = LiveServiceResolver(
+        lifecycle_state={"api": {"host": "127.0.0.1", "port": 8100, "lifecycle_state": LifecycleState.STOPPED}},
+        projection={"api": {"host": "127.0.0.1", "port": 8200}},
+        default_ports={"api": 8000},
+    )
+
+    resolution = resolver.resolve("api")
+
+    assert resolution.base_url == "http://127.0.0.1:8200"
+    assert resolution.source == LiveServiceResolutionSource.PROJECT_PROJECTION
 
 
 def test_shouldResolveProjectionBeforeDefaultWhenLifecycleStateIsMissing():

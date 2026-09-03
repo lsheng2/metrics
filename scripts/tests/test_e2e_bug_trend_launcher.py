@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -176,6 +177,8 @@ def test_bug_trend_runtime_grafana_config_is_generated_when_template_is_missing(
     assert "http_port = 3999" in runtime_content
     assert "root_url = http://127.0.0.1:3999/" in runtime_content
     assert f"data = {(tmp_path / 'state' / 'grafana' / 'data').as_posix()}" in runtime_content
+    assert "preinstall_disabled = true" in runtime_content
+    assert "check_for_plugin_updates = false" in runtime_content
     assert all(directory.exists() for directory in expected_directories)
 
 
@@ -223,3 +226,30 @@ def test_grafana_datasource_is_created_when_uid_update_returns_not_found(monkeyp
     assert calls[1][0] == "POST"
     assert calls[1][1] == "http://127.0.0.1:3999/api/datasources"
     assert calls[1][2]["uid"] == "metrics-bug-trend-api"
+
+
+def test_assert_http_ok_retries_transient_connection_failure(monkeypatch):
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        calls.append(request.full_url)
+        if len(calls) == 1:
+            raise urllib.error.URLError(ConnectionRefusedError())
+        return SuccessfulResponse()
+
+    monkeypatch.setattr(e2e_bug_trend.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    e2e_bug_trend.assert_http_ok("http://127.0.0.1:8999/")
+
+    assert calls == ["http://127.0.0.1:8999/", "http://127.0.0.1:8999/"]
+
+
+class SuccessfulResponse:
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False

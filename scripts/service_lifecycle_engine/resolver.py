@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from urllib.parse import urlsplit
 
-from .models import LiveServiceResolution, LiveServiceResolutionSource
+from .models import LifecycleState, LiveServiceResolution, LiveServiceResolutionSource
 
 
 class LiveServiceResolver:
@@ -53,6 +53,8 @@ class LiveServiceResolver:
     ) -> LiveServiceResolution | None:
         values = values_by_service.get(service_name)
         if values is None:
+            return None
+        if source == LiveServiceResolutionSource.LIFECYCLE_STATE and values.get("lifecycle_state") != LifecycleState.READY.value:
             return None
         base_url = str(values.get("base_url") or "")
         if base_url:

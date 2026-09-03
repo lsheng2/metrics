@@ -42,3 +42,12 @@
 - [x] 6.4 Run `python scripts/check_file_size_limits.py --include-untracked` and verify no changed or new file exceeds project limits.
 - [x] 6.5 Run `python scripts/check_diff_whitespace.py --include-untracked` and verify the diff has no whitespace issues.
 - [x] 6.6 Run `openspec validate generalize-service-lifecycle-engine --strict` and verify the execution OpenSpec remains valid.
+
+## 7. Provenance And Injection Hardening
+
+- [x] 7.1 Add optional `ProcessProvenance` to `LifecycleEvent` and verify ready/aborted/stopped events can carry degraded or strong provenance without requiring every field.
+- [x] 7.2 Persist wrapper/listener provenance in `ServiceState` when available and verify state serialization keeps provenance capability evidence.
+- [x] 7.3 Add `ServiceLifecycleEngine(..., platform_ops=PlatformOperationSet(...))` and route start/stop/readiness/diagnostics/provenance behavior through the injected operations.
+- [x] 7.4 Add `ServiceLifecycleEngine(..., state_store=...)` and verify state snapshots, startup ledger and termination ledger use the injected store while default filesystem behavior remains unchanged.
+- [x] 7.5 Expose generic provenance helpers `capture_process_provenance(...)`, `resolve_owned_listener(...)`, and `provenance_capability_for(...)` with fake platform tests covering wrapper-only, registered-process, owned-listener, endpoint-grade and HTTP-identity evidence.
+- [x] 7.6 Re-run focused lifecycle tests, launcher tests, OpenSpec strict validation, file-size and whitespace gates.

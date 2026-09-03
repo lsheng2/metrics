@@ -105,6 +105,8 @@ class ServiceState:
     listener_identity_url: str | None
     listener_identity_fingerprint: str | None
     port_release_timeout_seconds: float
+    provenance: ProcessProvenance | None = None
+    lifecycle_state: LifecycleState = LifecycleState.READY
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +119,7 @@ class StopResult:
     reason: str
     stop_source: StopSource = StopSource.REGISTERED_PROCESS
     force_requested: bool = False
+    provenance: ProcessProvenance | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +131,7 @@ class LifecycleEvent:
     host: str
     port: int
     metadata: Mapping[str, object] = field(default_factory=dict)
+    provenance: ProcessProvenance | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +155,7 @@ class ProcessProvenance:
     wrapper_pid: int | None = None
     listener_pid: int | None = None
     process_group_id: int | None = None
+    process_start_marker: str = ""
     start_time: str = ""
     command_fingerprint: str = ""
     command_line: str = ""

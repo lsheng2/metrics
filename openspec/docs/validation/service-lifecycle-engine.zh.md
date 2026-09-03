@@ -45,7 +45,7 @@ Engine 可发出以下 event：
 - `aborted`
 - `stopped`
 
-Event payload 包含 service identity、host、port、generation、reason 和 metadata。外部项目可以用 adapter 消费这些 event，例如发布 runtime endpoint binding、写 dashboard runtime config，或追加项目自己的审计记录。
+Event payload 包含 service identity、host、port、generation、reason、metadata，以及可选 `ProcessProvenance`。外部项目可以用 adapter 消费这些 event，例如发布 runtime endpoint binding、写 dashboard runtime config，或追加项目自己的审计记录。
 
 Engine 不直接写项目业务状态，也不读取项目业务模块。
 
@@ -62,6 +62,16 @@ Provenance 是 capability-based：
 | HTTP identity | 语义身份补充证据，不能单独证明 OS listener ownership。 |
 
 不是所有 service 都必须提供最强 provenance。Wrapper-only service 可以继续运行，只是 diagnostics 会显示 degraded evidence。
+
+`ServiceState` 在可观测时保存相同的 provenance bundle，便于后续 diagnose / stop / adapter decision 识别 wrapper process、owned listener、HTTP semantic identity 和降级原因。
+
+公共 helper：
+
+- `capture_process_provenance(...)`
+- `resolve_owned_listener(...)`
+- `provenance_capability_for(...)`
+
+这些 helper 只依赖 generic `PlatformOperationSet`，不依赖 Scrum Dashboard 或 Agora 的业务模型。
 
 ## Stop Safety
 
@@ -81,6 +91,7 @@ Stop result 中：
 
 `LifecycleStateStore` 至少提供：
 
+- `exists`
 - `read_json`
 - `write_json_atomic`
 - `append_jsonl`
@@ -94,6 +105,21 @@ Filesystem implementation 必须满足：
 - corrupt 或 unsupported state fail closed，不静默删除或覆盖；
 - state snapshot 使用 atomic replacement；
 - append ledgers 保持写入顺序。
+
+`ServiceLifecycleEngine` 默认使用 `FilesystemLifecycleStateStore`，也允许通过 `state_store=...` 注入 project-owned 或 in-memory store。
+
+## Platform Operations
+
+`ServiceLifecycleEngine` 默认使用 production `PlatformOperationSet`，也允许通过 `platform_ops=...` 注入 fake 或 project-owned platform operations。以下行为必须走注入 seam：
+
+- port availability；
+- process existence；
+- command identity；
+- listener discovery；
+- process group / start marker；
+- HTTP readiness / identity probe；
+- terminate / kill / wait；
+- port release wait。
 
 ## Live Service Resolver
 
@@ -131,5 +157,5 @@ Focused validation:
 
 ```powershell
 python -m pytest scripts\tests\test_service_lifecycle_engine.py scripts\tests\test_service_lifecycle_state_store.py scripts\tests\test_service_lifecycle_platform_ops.py scripts\tests\test_service_lifecycle_resolver.py -q
-python -m pytest scripts\tests\test_service_lifecycle_process.py scripts\tests\test_service_lifecycle_cli.py scripts\tests\test_e2e_bug_trend_launcher.py scripts\tests\test_e2e_provider_parity_launcher.py -q
+python -m pytest scripts\tests\test_service_lifecycle_provenance.py scripts\tests\test_service_lifecycle_process.py scripts\tests\test_service_lifecycle_cli.py scripts\tests\test_e2e_bug_trend_launcher.py scripts\tests\test_e2e_provider_parity_launcher.py -q
 ```

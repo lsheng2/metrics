@@ -14,6 +14,8 @@
 - 引入 `LifecycleStateStore` protocol 与 filesystem implementation，定义 schema version、instance isolation、lock scope、corruption handling、atomic write 和 append ledger 语义。
 - 提供 generic live service resolver/read-side surface，使 smoke、validation、dev task、signoff 和 live probes 通过 typed service view 读取 host/port/base URL，而不是继续复制默认端口常量。
 - 强化 validation coverage：新增 negative tests 确认 legacy imports/CLI 已移除；新增 migration/regression tests 确认 existing launchers direct-import new engine 后 start/stop/restart 行为不回退。
+- P1 hardening：`LifecycleEvent` 和 persisted `ServiceState` SHALL carry optional `ProcessProvenance` when available; `ServiceLifecycleEngine` SHALL accept injected `PlatformOperationSet` and `LifecycleStateStore` so downstream adapters can test launcher behavior without real ports/process kills.
+- P2 hardening：公开 generic provenance helpers，例如 `capture_process_provenance(...)`、`resolve_owned_listener(...)` 和 `provenance_capability_for(...)`，用于明确 wrapper/listener separation 和 graded provenance。
 
 ## Capabilities
 
@@ -31,4 +33,4 @@
 - Public API impact: `port_lifecycle` and `PortLifecycle` imports are removed; consumers must use `service_lifecycle_engine.ServiceLifecycleEngine` and related generic names.
 - CLI impact: `port_lifecycle_cli.py doctor` is removed or replaced by `service_lifecycle_engine_cli.py doctor`.
 - Behavior impact: runtime behavior for selected ports, stop safety, force-by-port, diagnostics and E2E start/stop/restart SHALL remain equivalent after migration, but old import/CLI names intentionally fail.
-- Cross-project alignment: engine 保持 generic，不引用 Agora 或 Scrum Dashboard business model；Agora-style endpoint binding remains an adapter concern, not engine responsibility。
+- Cross-project alignment: engine 保持 generic，不引用 Agora 或 Scrum Dashboard business model；Agora-style endpoint binding remains an adapter concern, not engine responsibility。P1 hardening makes the event stream sufficient for an adapter such as Agora `RuntimeServiceEndpointBindingStore` without embedding that store in the engine.

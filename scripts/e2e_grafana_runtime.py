@@ -67,6 +67,8 @@ def default_grafana_config_content(workspace: Path, grafana_port: int) -> str:
         "",
         "[plugins]",
         "allow_loading_unsigned_plugins = yesoreyeram-infinity-datasource",
+        "preinstall_disabled = true",
+        "check_for_plugin_updates = false",
     ])
 
 

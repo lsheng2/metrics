@@ -45,6 +45,11 @@
 - **WHEN** a service reaches ready and the engine emits a ready event
 - **THEN** the event SHALL include enough service identity, endpoint, lifecycle generation, and provenance data for an external adapter to decide whether to publish external endpoint authority
 
+#### Scenario: Event carries available provenance
+- **WHEN** lifecycle engine emits ready, aborted, or stopped events
+- **THEN** the event SHALL include optional `ProcessProvenance` when process or listener evidence is available
+- **AND** missing provenance fields SHALL NOT prevent wrapper-only services from emitting lifecycle events
+
 #### Scenario: External adapter rejects an event
 - **WHEN** an external adapter rejects or ignores a lifecycle event
 - **THEN** lifecycle engine SHALL preserve its local lifecycle result and SHALL NOT retry project-specific publication without an explicit caller action
@@ -67,6 +72,16 @@
 #### Scenario: HTTP identity is available
 - **WHEN** a service exposes an HTTP health or identity fingerprint
 - **THEN** lifecycle engine SHALL treat it as semantic identity evidence and SHALL NOT use it as the only proof of OS listener ownership when strong listener ownership is required
+
+#### Scenario: Persist service provenance
+- **WHEN** a managed service reaches readiness and provenance evidence can be observed
+- **THEN** persisted `ServiceState` SHALL retain wrapper/listener provenance evidence
+- **AND** later diagnostics SHALL be able to report degraded wrapper-only versus stronger listener provenance
+
+#### Scenario: Capture provenance through reusable helpers
+- **WHEN** a launcher or adapter needs wrapper/listener evidence
+- **THEN** the package SHALL expose generic helpers for process provenance capture, owned listener resolution, and provenance capability classification
+- **AND** these helpers SHALL depend on `PlatformOperationSet` rather than app-specific code
 
 ### Requirement: Stop defaults are ownership-first and force is explicit
 系统 SHALL 默认只停止 lifecycle state 中证明归属的 managed service process 或 owned listener。系统 MUST NOT kill unproven listener processes by port unless the caller explicitly requests force-by-port cleanup.
@@ -108,6 +123,19 @@
 #### Scenario: State mutation occurs
 - **WHEN** lifecycle engine writes state or appends lifecycle records
 - **THEN** state replacement SHALL be atomic, append ledgers SHALL preserve event order, and lock scope SHALL cover the identity being mutated
+
+#### Scenario: Custom state store is injected
+- **WHEN** a caller constructs `ServiceLifecycleEngine` with a custom `LifecycleStateStore`
+- **THEN** all state snapshots and append ledgers SHALL use that injected store
+- **AND** default construction SHALL continue to use `FilesystemLifecycleStateStore`
+
+### Requirement: Platform operations are injectable
+系统 SHALL route process, port, HTTP readiness, listener discovery, termination, kill and wait behavior through `PlatformOperationSet`.
+
+#### Scenario: Fake platform ops drive engine behavior
+- **WHEN** tests or downstream adapters inject a fake `PlatformOperationSet`
+- **THEN** start/stop/readiness/diagnostics/provenance decisions SHALL use the injected operations
+- **AND** those tests SHALL NOT need real ports, real subprocess kills, or real HTTP probes
 
 ### Requirement: Live service resolution is typed and generic
 系统 SHALL provide a typed live service resolution surface for launcher-adjacent tools that need to contact a managed service. Consumers SHOULD use explicit inputs or this typed service view before falling back to default ports.
