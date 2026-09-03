@@ -170,6 +170,89 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    function initializeWorkbenchShell() {
+        if (document.querySelector('.workbench-shell') && !window.metricsWorkbenchInitialScrollGuardRegistered) {
+            window.metricsWorkbenchInitialScrollGuardRegistered = true;
+            let userMovedViewport = false;
+            ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(eventName => {
+                window.addEventListener(eventName, function() {
+                    userMovedViewport = true;
+                }, { once: true, passive: true });
+            });
+            [0, 250, 750, 1500, 3000].forEach(delay => {
+                window.setTimeout(function() {
+                    if (!userMovedViewport && window.scrollY > 8 && window.scrollY < 480) {
+                        window.scrollTo(window.scrollX, 0);
+                    }
+                }, delay);
+            });
+        }
+
+        document.querySelectorAll('.workbench-ai-chat-frame').forEach(frame => {
+            if (frame.dataset.workbenchScrollGuardInitialized === 'true') {
+                return;
+            }
+            frame.dataset.workbenchScrollGuardInitialized = 'true';
+            const initialScrollY = window.scrollY;
+            frame.addEventListener('load', function() {
+                if (initialScrollY <= 8 && window.scrollY > 8 && window.scrollY < 480) {
+                    window.scrollTo(window.scrollX, initialScrollY);
+                }
+            }, { once: true });
+        });
+
+        document.querySelectorAll('[data-workbench-collapse]').forEach(button => {
+            if (button.dataset.workbenchInitialized === 'true') {
+                return;
+            }
+            button.dataset.workbenchInitialized = 'true';
+            button.addEventListener('click', function() {
+                const pane = document.querySelector(`[data-workbench-pane="${this.dataset.workbenchCollapse}"]`);
+                if (!pane) {
+                    return;
+                }
+                const isCollapsed = pane.classList.toggle('is-collapsed');
+                this.setAttribute('aria-expanded', String(!isCollapsed));
+                this.textContent = isCollapsed ? 'Expand' : 'Collapse';
+            });
+        });
+
+        if (window.metricsWorkbenchMessageHandlerRegistered) {
+            return;
+        }
+        window.metricsWorkbenchMessageHandlerRegistered = true;
+        window.addEventListener('message', event => {
+            if (event.origin !== window.location.origin) {
+                return;
+            }
+            const payload = event.data || {};
+            if (payload.type !== 'metrics-workbench:grafana-selection') {
+                return;
+            }
+            const params = new URLSearchParams(window.location.search);
+            Object.entries(payload).forEach(([key, value]) => {
+                if (key === 'type') {
+                    return;
+                }
+                if (value) {
+                    params.set(key, value);
+                }
+            });
+            const url = `${window.location.pathname}?${params.toString()}`;
+            if (window.htmx) {
+                htmx.ajax('GET', url, {
+                    target: '.workbench-shell',
+                    select: '.workbench-shell',
+                    swap: 'outerHTML'
+                });
+            } else {
+                window.location.assign(url);
+                return;
+            }
+            window.history.pushState({}, '', url);
+        });
+    }
     
     let activeRequestCount = 0;
 
@@ -230,6 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
     expandInitialActiveMenus();
     initializeDirtyForms();
     initializeConfirmForms();
+    initializeWorkbenchShell();
     
     document.querySelectorAll('.menu-list a').forEach(link => {
         link.addEventListener('click', function(e) {
@@ -250,6 +334,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.body.addEventListener('htmx:beforeRequest', showLoadingIndicator);
     document.body.addEventListener('htmx:afterRequest', hideLoadingIndicator);
+    document.body.addEventListener('htmx:afterSwap', function() {
+        initializeWorkbenchShell();
+        if (typeof window.initBugTrendChart === 'function') {
+            window.initBugTrendChart();
+        }
+    });
 
     document.body.addEventListener('htmx:responseError', function(event) {
         const url = event.detail.pathInfo.requestPath;

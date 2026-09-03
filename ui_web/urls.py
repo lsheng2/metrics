@@ -31,6 +31,7 @@ from .views.data_health_view import DataHealthView
 from .views.provider_chart_view import ProviderChartDataApiView, ProviderChartEvidenceApiView, ProviderProfileAlignDashboardRangeApiView, ProviderProfileReadinessApiView
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
+from .views.workbench_view import WorkbenchGrafanaSelectionView, WorkbenchView
 
 app_name = 'ui_web'
 
@@ -39,6 +40,8 @@ _base_prefix = django_normalized_base_url(settings.METRICS_BASE_URL)
 urlpatterns = [
     # Homepage
     path(_base_prefix, HomepageView.as_view(), name='homepage'),
+    path(_base_prefix + 'workbench/', WorkbenchView.as_view(), name='workbench'),
+    path(_base_prefix + 'workbench/grafana-selection/', WorkbenchGrafanaSelectionView.as_view(), name='workbench_grafana_selection'),
 
     # Full page views
     path(_base_prefix + 'current-tasks/', CurrentTasksView.as_view(), name='current_tasks'),

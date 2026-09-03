@@ -245,7 +245,7 @@ class TestGrafanaDataSurfaceContract(TestCase):
                 'defaults': {
                     'links': [
                         {
-                            'url': '/api/provider-charts/evidence/?profile_id=$profile&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}'
+                            'url': '/workbench/grafana-selection/?profile_id=$profile&begin_ww=$begin_ww&end_ww=$end_ww&chart_id=open_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}'
                         }
                     ]
                 }

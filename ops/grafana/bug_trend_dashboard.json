@@ -84,8 +84,8 @@
           },
           "links": [
             {
-              "title": "Open Metrics evidence",
-              "url": "/api/charts/evidence/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}"
+              "title": "Open workbench evidence",
+              "url": "/workbench/grafana-selection/?scope_id=$scope_id&begin=$begin&end=$end&chart_id=default_bug_trend&run=${__data.fields.calculation_run_id}&bucket=${__data.fields.bucket_id}&series=${__field.name}"
             }
           ]
         },

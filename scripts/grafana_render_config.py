@@ -157,9 +157,11 @@ def generate_panel(panel: dict[str, Any], allowlist: GrafanaAllowlist | None) ->
         generated['fieldConfig'] = {
             'defaults': {
                 'links': [{
-                    'title': 'Open evidence',
-                    'url': '/api/provider-charts/evidence/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww&chart_id='
-                           f'{targets[0]["chart_recipe_ref"]["chart_id"]}&run=${{__data.fields.calculation_run_id}}'
+                    'title': 'Open workbench evidence',
+                    'url': '/workbench/grafana-selection/?profile_id=$profile_id&begin_ww=$begin_ww&end_ww=$end_ww'
+                           f'&chart_id={targets[0]["chart_recipe_ref"]["chart_id"]}'
+                           f'&chart_version={targets[0]["chart_recipe_ref"].get("chart_version", 1)}'
+                           '&run=${__data.fields.calculation_run_id}'
                            '&bucket=${__data.fields.bucket_id}&series=${__field.name}&range_mode=$range_mode'
                            '&begin_date=${__from:date:YYYY-MM-DD}&end_date=${__to:date:YYYY-MM-DD}',
                     'targetBlank': False,

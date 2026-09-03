@@ -8,7 +8,7 @@
 
 <script>
 (function() {
-    function initBugTrendChart() {
+    window.initBugTrendChart = function initBugTrendChart() {
         if (typeof Chart === 'undefined') {
             setTimeout(initBugTrendChart, 100);
             return;
@@ -50,6 +50,18 @@
                         + '&chart_id=' + encodeURIComponent(chartData.chart_id)
                         + '&bucket=' + encodeURIComponent(bucketId)
                         + '&series=' + encodeURIComponent(seriesName);
+                    if (document.getElementById('workbench-grid')) {
+                        const workbenchParams = new URLSearchParams(window.location.search);
+                        new URLSearchParams(params).forEach((value, key) => workbenchParams.set(key, value));
+                        const workbenchUrl = '{% url "ui_web:workbench" %}?' + workbenchParams.toString();
+                        htmx.ajax('GET', workbenchUrl, {
+                            target: '.workbench-shell',
+                            select: '.workbench-shell',
+                            swap: 'outerHTML'
+                        });
+                        window.history.pushState({}, '', workbenchUrl);
+                        return;
+                    }
                     htmx.ajax('GET', '{% url "ui_web:bug_trend_evidence" %}' + params, {
                         target: '#bug-trend-evidence-container',
                         swap: 'innerHTML'
@@ -60,11 +72,11 @@
                 }
             }
         });
-    }
+    };
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initBugTrendChart);
+        document.addEventListener('DOMContentLoaded', window.initBugTrendChart);
     } else {
-        initBugTrendChart();
+        window.initBugTrendChart();
     }
 })();
 </script>

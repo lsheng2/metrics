@@ -57,7 +57,11 @@ def validate_evidence_capabilities(path, panel_path: str, panel: dict[str, Any],
 
 
 def is_ticket_evidence_url(link_url: str) -> bool:
-    return urlparse(link_url).path in {"/api/charts/evidence/", "/api/provider-charts/evidence/"}
+    return urlparse(link_url).path in {
+        "/api/charts/evidence/",
+        "/api/provider-charts/evidence/",
+        "/workbench/grafana-selection/",
+    }
 
 
 def evidence_fields_by_target(panel: dict[str, Any]) -> dict[str, frozenset[str]]:

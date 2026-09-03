@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Metrics Workbench{% endblock %}
+
+{% block page_title %}Metrics Workbench{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block content %}
+<section class="workbench-shell" aria-label="Metrics Workbench">
+    {{ workbench_ai_context|json_script:"workbench-ai-context" }}
+    <form class="workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+        <div class="workbench-control-grid">
+            <div class="field">
+                <label class="label" for="workbench-scope">Scope</label>
+                <div class="select is-small is-fullwidth">
+                    <select id="workbench-scope" name="scope_id">
+                        {% for scope in scope_options %}
+                            <option value="{{ scope.id }}" {% if scope.id == selected_scope_id %}selected{% endif %}>{{ scope.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label" for="workbench-profile">Profile</label>
+                <input class="input is-small" id="workbench-profile" name="profile_id" value="{{ workbench_state.profile_id }}">
+            </div>
+            <div class="field">
+                <label class="label" for="workbench-provider">Provider</label>
+                <input class="input is-small" id="workbench-provider" name="provider_id" value="{{ workbench_state.provider_id }}" readonly>
+            </div>
+            <div class="field">
+                <label class="label" for="workbench-range-mode">Range</label>
+                <div class="select is-small is-fullwidth">
+                    <select id="workbench-range-mode" name="range_mode">
+                        <option value="ww" {% if workbench_state.range_mode == "ww" %}selected{% endif %}>Work Week</option>
+                        <option value="date" {% if workbench_state.range_mode == "date" %}selected{% endif %}>Date</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field">
+                <label class="label" for="workbench-chart">Chart</label>
+                <input class="input is-small" id="workbench-chart" name="chart_id" value="{{ active_chart_id }}">
+            </div>
+            <div class="field">
+                <label class="label" for="workbench-begin">Begin</label>
+                <input class="input is-small" id="workbench-begin" name="begin" value="{{ workbench_state.begin }}">
+            </div>
+            <div class="field">
+                <label class="label" for="workbench-end">End</label>
+                <input class="input is-small" id="workbench-end" name="end" value="{{ workbench_state.end }}">
+            </div>
+            <div class="field workbench-apply-field">
+                <button class="button is-primary is-small" type="submit">Apply</button>
+            </div>
+        </div>
+    </form>
+
+    <div id="workbench-grid" class="workbench-grid" data-workbench-state="{{ workbench_state }}">
+        <article class="workbench-pane workbench-pane-primary" data-workbench-pane="chart" aria-labelledby="workbench-chart-title">
+            <header class="workbench-pane-header">
+                <h2 class="title is-5" id="workbench-chart-title">Quality Chart</h2>
+            </header>
+            <div class="workbench-pane-body">
+                {% include "partials/bug_trend_chart.html" %}
+                <details class="mt-3">
+                    <summary class="button is-small">Grafana panel preview</summary>
+                    <iframe class="workbench-grafana-panel mt-3" src="{{ workbench_grafana_panel_url }}" title="Grafana Bug Trend panel"></iframe>
+                    <p class="is-size-7 mt-2"><a href="{{ workbench_grafana_full_url }}" target="_blank" rel="noopener">Open full Grafana dashboard</a></p>
+                </details>
+            </div>
+        </article>
+
+        <article class="workbench-pane workbench-pane-evidence" data-workbench-pane="evidence" aria-labelledby="workbench-evidence-title">
+            <header class="workbench-pane-header">
+                <h2 class="title is-5" id="workbench-evidence-title">Ticket Evidence</h2>
+                {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
+                    <a class="button is-small" href="{{ workbench_clear_selection_url }}" hx-get="{{ workbench_clear_selection_url }}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">Clear selection</a>
+                {% endif %}
+            </header>
+            <div id="bug-trend-evidence-container" class="workbench-pane-body">
+                {% if workbench_selection_error %}
+                    <div class="notification is-danger is-light">{{ workbench_selection_error }}</div>
+                {% endif %}
+                {% if workbench_evidence_unavailable_reason %}
+                    <div class="notification is-warning is-light">{{ workbench_evidence_unavailable_reason }}</div>
+                {% elif evidence %}
+                    {% include "partials/bug_trend_evidence.html" %}
+                {% else %}
+                    <p class="has-text-grey">Evidence pane placeholder. It will refresh from Metrics-owned selection state.</p>
+                    {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
+                        <p class="is-size-7">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</p>
+                    {% else %}
+                        <p class="is-size-7">Evidence tickets for the current chart range.</p>
+                    {% endif %}
+                {% endif %}
+                <form class="mt-3" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+                    <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
+                    <input type="hidden" name="profile_id" value="{{ workbench_state.profile_id }}">
+                    <input type="hidden" name="provider_id" value="{{ workbench_state.provider_id }}">
+                    <input type="hidden" name="range_mode" value="{{ workbench_state.range_mode }}">
+                    <input type="hidden" name="begin" value="{{ workbench_state.begin }}">
+                    <input type="hidden" name="end" value="{{ workbench_state.end }}">
+                    <input type="hidden" name="chart_id" value="{{ workbench_state.chart_id }}">
+                    <input type="hidden" name="chart_version" value="{{ workbench_state.chart_version }}">
+                    <input type="hidden" name="run" value="{{ workbench_state.calculation_run_id }}">
+                    <input type="hidden" name="snapshot" value="{{ workbench_state.fact_snapshot_id }}">
+                    <input type="hidden" name="bucket" value="{{ workbench_state.selected_bucket_id }}">
+                    <input type="hidden" name="series" value="{{ workbench_state.selected_series_name }}">
+                    <div class="field has-addons">
+                        <div class="control is-expanded">
+                            <input class="input" name="text" value="{{ workbench_state.list_filters.text }}" placeholder="Filter evidence text">
+                        </div>
+                        <div class="control">
+                            <button class="button" type="submit">Filter</button>
+                        </div>
+                    </div>
+                    <div class="columns is-variable is-2">
+                        <div class="column">
+                            <input class="input is-small" name="status" value="{{ workbench_state.list_filters.status }}" placeholder="Status">
+                        </div>
+                        <div class="column">
+                            <input class="input is-small" name="severity" value="{{ workbench_state.list_filters.severity }}" placeholder="Severity">
+                        </div>
+                        <div class="column">
+                            <input class="input is-small" name="owner" value="{{ workbench_state.list_filters.owner }}" placeholder="Owner">
+                        </div>
+                        <div class="column">
+                            <input class="input is-small" name="component" value="{{ workbench_state.list_filters.component }}" placeholder="Component">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </article>
+
+        <aside class="workbench-pane workbench-pane-ai" data-workbench-pane="ai-assistant" aria-labelledby="workbench-ai-title">
+            <header class="workbench-pane-header">
+                <h2 class="title is-5" id="workbench-ai-title">AI Assistant</h2>
+                <button class="button is-small" type="button" data-workbench-collapse="ai-assistant" aria-expanded="true">Collapse</button>
+            </header>
+            <div class="workbench-pane-body workbench-ai-pane-body">
+                <div class="workbench-ai-context-strip" aria-label="AI context">
+                    <span>{{ workbench_ai_context.profile_id|default:"profile" }}</span>
+                    <span>{{ workbench_ai_context.chart_id|default:"chart" }}</span>
+                    <span>{{ workbench_ai_context.ai_base.status }}</span>
+                </div>
+                {% if workbench_ai_context.ai_base.status == "ready" or workbench_ai_context.ai_base.status == "connected" or workbench_ai_context.ai_base.status == "available" %}
+                    <iframe
+                        class="workbench-ai-chat-frame"
+                        src="{{ workbench_ai_context.ai_base.chat_url }}"
+                        title="AI Base chat side window"
+                        tabindex="-1"
+                        loading="lazy"
+                        referrerpolicy="no-referrer">
+                    </iframe>
+                {% else %}
+                    <div class="workbench-ai-unavailable">
+                        <p class="has-text-grey">AI Base is {{ workbench_ai_context.ai_base.status }}.</p>
+                        <dl class="is-size-7 mt-3">
+                            <dt>Profile</dt>
+                            <dd>{{ workbench_ai_context.profile_id }}</dd>
+                            <dt>Chart</dt>
+                            <dd>{{ workbench_ai_context.chart_id }}</dd>
+                            <dt>Selection</dt>
+                            <dd>{{ workbench_ai_context.selection.bucket }} {{ workbench_ai_context.selection.series }}</dd>
+                        </dl>
+                        <p class="mt-3"><a class="button is-small" href="{% url 'ui_web:ai_dashboard_workflow' %}">Open AI workflow diagnostics</a></p>
+                    </div>
+                {% endif %}
+            </div>
+        </aside>
+
+    </div>
+    <footer class="workbench-status-bar" data-workbench-status-bar aria-label="Service status">
+        {% for service in workbench_service_statuses %}
+            <a class="workbench-status-item {% if service.status == 'available' or service.status == 'connected' or service.status == 'ready' %}is-success{% elif service.status == 'configured' %}is-info{% else %}is-warning{% endif %}"
+               href="{{ service.target_url|default:'#' }}"
+               title="{{ service.reason }} {{ service.next_action }}"
+               data-service-id="{{ service.service_id }}">
+                <span class="workbench-status-dot" aria-hidden="true"></span>
+                <span class="workbench-status-name">{{ service.label }}</span>
+                <span class="workbench-status-state">{{ service.status }}</span>
+                <span class="workbench-status-url">{{ service.target_url|default:"-" }}</span>
+                <span class="workbench-status-time">at {{ service.checked_at }}</span>
+            </a>
+        {% endfor %}
+    </footer>
+</section>
+{% endblock %}

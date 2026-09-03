@@ -353,7 +353,7 @@ class TestGrafanaProviderParityDashboard(TestCase):
             provider_evidence_links = [
                 link['url']
                 for link in panel.get('fieldConfig', {}).get('defaults', {}).get('links', [])
-                if '/api/provider-charts/evidence/' in link.get('url', '')
+                if '/workbench/grafana-selection/' in link.get('url', '')
             ]
             for target in panel.get('targets', []):
                 contract = target.get('metricsContract', {})
@@ -370,7 +370,7 @@ class TestGrafanaProviderParityDashboard(TestCase):
             self.assertEqual('bucket_series', contract['evidenceCapability'])
             self.assertEqual(['calculation_run_id', 'bucket_id'], contract['evidenceLinkFields'])
             self.assertIn('bucket_id', self._target_columns(target))
-            self.assertTrue(any('/api/provider-charts/evidence/' in link for link in links))
+            self.assertTrue(any('/workbench/grafana-selection/' in link for link in links))
         for _, contract in unlinked_targets:
             self.assertNotEqual('bucket_series', contract['evidenceCapability'])
             self.assertEqual([], contract.get('evidenceLinkFields', []))

@@ -14,7 +14,7 @@
     },
     {
       "name": "grafana",
-      "preferred_ports": [3001, 3011, 3021, 3031, 3051],
+      "preferred_ports": [3001, 3051, 3151, 3251, 3351],
       "command": ["{grafana_bin}", "server", "--homepath", "{grafana_homepath}", "--config", "{grafana_config}"],
       "host": "127.0.0.1",
       "cwd": "{workspace}",

@@ -84,6 +84,7 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
             "scope_id": "7",
             "begin": "2026-01-01",
             "end": "2026-02-01",
+            "open_entrypoint": "none",
         },
     )()
 
@@ -93,9 +94,9 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
     monkeypatch.setattr(e2e_bug_trend, "run", lambda command, workspace: calls.append(("run", tuple(command))))
     monkeypatch.setattr(e2e_bug_trend, "write_runtime_grafana_config", lambda workspace, grafana_port: tmp_path / f"grafana-{grafana_port}.ini")
     monkeypatch.setattr(e2e_bug_trend, "configure_grafana_datasource", lambda grafana_port, django_port: calls.append(("datasource", grafana_port, django_port)))
-    monkeypatch.setattr(e2e_bug_trend, "import_grafana_dashboard", lambda workspace, grafana_port, scope_id, begin, end: None)
+    monkeypatch.setattr(e2e_bug_trend, "import_grafana_dashboard", lambda workspace, grafana_port, django_port, scope_id, begin, end: None)
     monkeypatch.setattr(e2e_bug_trend, "validate_runtime", lambda workspace, grafana_port, django_port, scope_id, begin, end: calls.append(("validate", grafana_port, django_port)))
-    monkeypatch.setattr(e2e_bug_trend, "write_e2e_summary", lambda workspace, django_port, grafana_port, dashboard_url: calls.append(("summary", django_port, grafana_port, dashboard_url)))
+    monkeypatch.setattr(e2e_bug_trend, "write_e2e_summary", lambda workspace, django_port, grafana_port, dashboard_url, workbench_url: calls.append(("summary", django_port, grafana_port, dashboard_url, workbench_url)))
     monkeypatch.setattr(e2e_bug_trend, "open_browser", lambda url: None)
 
     e2e_bug_trend.start_runtime(args, tmp_path, FakeLifecycle(), run_id="run-1")
@@ -131,7 +132,7 @@ def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_
                     "panels": [
                         {
                             "targets": [{"url": "/api/charts/data/?chart_id=default_bug_trend"}],
-                            "fieldConfig": {"defaults": {"links": [{"url": "/bug-trend/evidence/?chart_id=default_bug_trend"}]}}
+                            "fieldConfig": {"defaults": {"links": [{"url": f"http://127.0.0.1:{django_port}/workbench/grafana-selection/?chart_id=default_bug_trend"}]}}
                         }
                     ]
                 }
@@ -145,11 +146,27 @@ def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_
     e2e_bug_trend.configure_grafana_datasource(grafana_port, django_port)
     e2e_bug_trend.validate_runtime(tmp_path, grafana_port, django_port, scope_id, begin, end)
     dashboard_url = e2e_bug_trend.grafana_dashboard_url(grafana_port, scope_id, begin, end)
-    e2e_bug_trend.write_e2e_summary(tmp_path, django_port, grafana_port, dashboard_url)
+    workbench_url = e2e_bug_trend.workbench_url_for(django_port, scope_id, begin, end)
+    e2e_bug_trend.write_e2e_summary(tmp_path, django_port, grafana_port, dashboard_url, workbench_url)
 
     runtime_content = runtime_config.read_text(encoding="utf-8")
     assert f"http_port = {grafana_port}" in runtime_content
     assert f"root_url = http://127.0.0.1:{grafana_port}/" in runtime_content
+    assert "org_role = Viewer" in runtime_content
+    assert "check_for_updates = false" in runtime_content
+    assert "check_for_plugin_updates = false" in runtime_content
+    assert "[unified_alerting]" in runtime_content
+    assert "execute_alerts = false" in runtime_content
+    assert "[unified_alerting.state_history]" in runtime_content
+    assert "disable_plugins = " in runtime_content
+    assert "elasticsearch" in runtime_content
+    assert "prometheus" not in runtime_content
+    assert "tempo" in runtime_content
+    assert "preinstall_disabled = true" in runtime_content
+    assert "preinstall_auto_update = false" in runtime_content
+    assert (tmp_path / "state" / "grafana" / "conf" / "provisioning" / "alerting").is_dir()
+    assert (tmp_path / "state" / "grafana" / "conf" / "provisioning" / "dashboards").is_dir()
+    assert (tmp_path / "state" / "grafana" / "conf" / "provisioning" / "plugins").is_dir()
     datasource_payload = json_requests[0][2]
     assert json_requests[0][1] == f"http://127.0.0.1:{grafana_port}/api/datasources/uid/metrics-bug-trend-api"
     assert datasource_payload["url"] == f"http://127.0.0.1:{django_port}"
@@ -157,7 +174,7 @@ def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_
     assert any(f"127.0.0.1:{grafana_port}/api/datasources/proxy/" in url for url, auth in http_checks)
     assert dashboard_url.startswith(f"http://127.0.0.1:{grafana_port}/")
     summary = json.loads((tmp_path / "state" / "e2e" / "bug_trend_ports.json").read_text(encoding="utf-8"))
-    assert summary == {"dashboard_url": dashboard_url, "django_port": django_port, "grafana_port": grafana_port}
+    assert summary == {"dashboard_url": dashboard_url, "django_port": django_port, "grafana_port": grafana_port, "workbench_url": workbench_url}
 
 
 def test_grafana_datasource_is_created_when_uid_update_returns_not_found(monkeypatch):

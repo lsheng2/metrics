@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Workbench Selection</title>
+</head>
+<body>
+    <p>Updating workbench evidence selection...</p>
+    <script>
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const rangeMode = params.get('range_mode') || 'ww';
+            const begin = params.get('begin') || (rangeMode === 'ww' ? params.get('begin_ww') : params.get('begin_date')) || '';
+            const end = params.get('end') || (rangeMode === 'ww' ? params.get('end_ww') : params.get('end_date')) || '';
+            const payload = {
+                type: 'metrics-workbench:grafana-selection',
+                scope_id: params.get('scope_id') || '',
+                profile_id: params.get('profile_id') || '',
+                range_mode: rangeMode,
+                begin: begin,
+                end: end,
+                chart_id: params.get('chart_id') || '',
+                chart_version: params.get('chart_version') || '',
+                run: params.get('run') || '',
+                snapshot: params.get('snapshot') || params.get('fact_snapshot_id') || '',
+                bucket: params.get('bucket') || '',
+                series: params.get('series') || ''
+            };
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(payload, window.location.origin);
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 param(
     [string]$Workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
+    [ValidateSet('grafana', 'workbench', 'none')]
+    [string]$OpenEntrypoint = 'grafana',
     [switch]$ForceByPort
 )
 
@@ -10,7 +12,14 @@ if (-not (Test-Path $python)) {
     $python = 'python'
 }
 
-$arguments = @((Join-Path $Workspace 'scripts\e2e_bug_trend.py'), 'start', '--workspace', $Workspace)
+$arguments = @(
+    (Join-Path $Workspace 'scripts\e2e_bug_trend.py'),
+    'start',
+    '--workspace',
+    $Workspace,
+    '--open-entrypoint',
+    $OpenEntrypoint
+)
 if ($ForceByPort) {
     $arguments += '--force-by-port'
 }

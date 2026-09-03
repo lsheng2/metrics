@@ -14,6 +14,7 @@ import uuid
 from pathlib import Path
 from typing import Callable, Mapping, Protocol, Sequence, TypeVar
 
+from grafana_e2e_runtime import write_runtime_grafana_config
 from port_lifecycle import PortLifecycle, ServiceSpec, load_project_name, load_service_specs
 
 T = TypeVar("T")
@@ -37,6 +38,7 @@ def main() -> None:
     parser.add_argument("--end", default="2026-08-09")
     parser.add_argument("--grafana-bin", default=os.environ.get("GRAFANA_BIN", ""))
     parser.add_argument("--grafana-homepath", default=os.environ.get("GRAFANA_HOMEPATH", ""))
+    parser.add_argument("--open-entrypoint", choices=("grafana", "workbench", "none"), default="grafana")
     parser.add_argument("--force-by-port", action="store_true")
     args = parser.parse_args()
 
@@ -101,13 +103,16 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLife
     grafana_port = restart_result.port_plan["grafana"]
 
     profile_step(lifecycle, "configure_grafana_datasource", lambda: configure_grafana_datasource(grafana_port, django_port), run_id=run_id)
-    profile_step(lifecycle, "import_grafana_dashboard", lambda: import_grafana_dashboard(workspace, grafana_port, args.scope_id, args.begin, args.end), run_id=run_id)
+    profile_step(lifecycle, "import_grafana_dashboard", lambda: import_grafana_dashboard(workspace, grafana_port, django_port, args.scope_id, args.begin, args.end), run_id=run_id)
     profile_step(lifecycle, "validate_runtime", lambda: validate_runtime(workspace, grafana_port, django_port, args.scope_id, args.begin, args.end), run_id=run_id)
 
     dashboard_url = grafana_dashboard_url(grafana_port, args.scope_id, args.begin, args.end)
-    profile_step(lifecycle, "write_e2e_summary", lambda: write_e2e_summary(workspace, django_port, grafana_port, dashboard_url), run_id=run_id)
-    profile_step(lifecycle, "open_browser", lambda: open_browser(dashboard_url), run_id=run_id)
-    print(f"E2E Bug Trend is ready: {dashboard_url}")
+    workbench_url = workbench_url_for(django_port, args.scope_id, args.begin, args.end)
+    profile_step(lifecycle, "write_e2e_summary", lambda: write_e2e_summary(workspace, django_port, grafana_port, dashboard_url, workbench_url), run_id=run_id)
+    entrypoint_url = entrypoint_url_for(args.open_entrypoint, dashboard_url, workbench_url)
+    if entrypoint_url:
+        profile_step(lifecycle, "open_browser", lambda: open_browser(entrypoint_url), run_id=run_id)
+    print(f"E2E Bug Trend is ready: {entrypoint_url or workbench_url}")
 
 
 def stop_runtime(lifecycle: PortLifecycle, args: argparse.Namespace, run_id: str | None = None) -> None:
@@ -217,24 +222,6 @@ def resolve_grafana_homepath(configured: str, grafana_bin: str) -> str:
     return str(binary_path.parent)
 
 
-def write_runtime_grafana_config(workspace: Path, grafana_port: int) -> Path:
-    source = workspace / "state" / "grafana" / "grafana.ini"
-    runtime_directory = workspace / "state" / "grafana" / "runtime"
-    runtime_directory.mkdir(parents=True, exist_ok=True)
-    target = runtime_directory / f"grafana-e2e-{grafana_port}.ini"
-    content = source.read_text(encoding="utf-8")
-    lines = []
-    for line in content.splitlines():
-        if line.strip().startswith("http_port"):
-            lines.append(f"http_port = {grafana_port}")
-        elif line.strip().startswith("root_url"):
-            lines.append(f"root_url = http://127.0.0.1:{grafana_port}/")
-        else:
-            lines.append(line)
-    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return target
-
-
 def configure_grafana_datasource(grafana_port: int, django_port: int) -> None:
     metrics_url = f"http://127.0.0.1:{django_port}"
     payload = {
@@ -264,7 +251,7 @@ def upsert_grafana_datasource(grafana_port: int, payload: dict[str, object]) -> 
         request_json("POST", f"http://127.0.0.1:{grafana_port}/api/datasources", payload)
 
 
-def import_grafana_dashboard(workspace: Path, grafana_port: int, scope_id: str, begin: str, end: str) -> None:
+def import_grafana_dashboard(workspace: Path, grafana_port: int, django_port: int, scope_id: str, begin: str, end: str) -> None:
     artifact = workspace / "ops" / "grafana" / "bug_trend_dashboard.json"
     dashboard = json.loads(artifact.read_text(encoding="utf-8"))
     for variable in dashboard["templating"]["list"]:
@@ -277,11 +264,26 @@ def import_grafana_dashboard(workspace: Path, grafana_port: int, scope_id: str, 
         if variable["name"] == "end":
             variable["query"] = end
             variable["current"] = {"text": end, "value": end}
+    rewrite_workbench_links(dashboard, django_port)
     request_json(
         "POST",
         f"http://127.0.0.1:{grafana_port}/api/dashboards/db",
         {"dashboard": dashboard, "overwrite": True, "message": "Import Metrics Bug Trend C-stock dashboard"},
     )
+
+
+def rewrite_workbench_links(dashboard: dict[str, object], django_port: int) -> None:
+    base_url = f"http://127.0.0.1:{django_port}"
+    for panel in dashboard.get("panels", []):
+        if not isinstance(panel, dict):
+            continue
+        defaults = panel.get("fieldConfig", {}).get("defaults", {})
+        for link in defaults.get("links", []):
+            if not isinstance(link, dict):
+                continue
+            link_url = str(link.get("url", ""))
+            if link_url.startswith("/workbench/"):
+                link["url"] = base_url + link_url
 
 
 def validate_runtime(workspace: Path, grafana_port: int, django_port: int, scope_id: str, begin: str, end: str) -> None:
@@ -294,6 +296,8 @@ def validate_runtime(workspace: Path, grafana_port: int, django_port: int, scope
     link_url = dashboard["dashboard"]["panels"][0]["fieldConfig"]["defaults"]["links"][0]["url"]
     if "chart_id=default_bug_trend" not in target_url or "chart_id=default_bug_trend" not in link_url:
         raise RuntimeError("Imported Grafana dashboard is missing chart_id=default_bug_trend")
+    if f"http://127.0.0.1:{django_port}/workbench/grafana-selection/" not in link_url:
+        raise RuntimeError("Imported Grafana dashboard evidence link does not return to the Dashboard workbench")
 
 
 def request_json(method: str, url: str, payload: dict[str, object] | None = None) -> dict[str, object]:
@@ -327,7 +331,19 @@ def grafana_dashboard_url(grafana_port: int, scope_id: str, begin: str, end: str
     return f"http://127.0.0.1:{grafana_port}/d/metrics-bug-trend-c-stock/metrics-bug-trend-c-stock-spike?orgId=1&var-scope_id={scope_id}&var-begin={begin}&var-end={end}"
 
 
-def write_e2e_summary(workspace: Path, django_port: int, grafana_port: int, dashboard_url: str) -> None:
+def workbench_url_for(django_port: int, scope_id: str, begin: str, end: str) -> str:
+    return f"http://127.0.0.1:{django_port}/workbench/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend"
+
+
+def entrypoint_url_for(open_entrypoint: str, dashboard_url: str, workbench_url: str) -> str:
+    if open_entrypoint == "grafana":
+        return dashboard_url
+    if open_entrypoint == "workbench":
+        return workbench_url
+    return ""
+
+
+def write_e2e_summary(workspace: Path, django_port: int, grafana_port: int, dashboard_url: str, workbench_url: str) -> None:
     summary_path = workspace / "state" / "e2e" / "bug_trend_ports.json"
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(
@@ -336,6 +352,7 @@ def write_e2e_summary(workspace: Path, django_port: int, grafana_port: int, dash
                 "django_port": django_port,
                 "grafana_port": grafana_port,
                 "dashboard_url": dashboard_url,
+                "workbench_url": workbench_url,
             },
             indent=2,
             sort_keys=True,

@@ -4,13 +4,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://unpkg.com/bulma@1.0.4/css/bulma.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/iconoir@7.11.0/css/iconoir.css">
+    <link rel="stylesheet" href="{% static 'css/vendor_fallbacks.css' %}">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <script src="https://unpkg.com/htmx.org@2.0.10/dist/htmx.min.js"></script>
-    <script src="https://unpkg.com/chart.js@4.5.1/dist/chart.umd.js"></script>
-    <script src="https://unpkg.com/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <script src="https://unpkg.com/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="{% static 'js/vendor_fallbacks.js' %}"></script>
     <script src="{% static 'js/main.js' %}"></script>
     <title>{% block title %}Metrics Dashboard{% endblock %}</title>
 </head>
@@ -34,6 +30,10 @@
                         <li>
                             <a href="{% url 'ui_web:homepage' %}"
                                {% if request.resolver_match.url_name == 'homepage' %}class="is-active"{% endif %}>Home</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'ui_web:workbench' %}"
+                               {% if request.resolver_match.url_name == 'workbench' %}class="is-active"{% endif %}>Workbench</a>
                         </li>
                         <li>
                             {% if global_available_member_groups %}
@@ -203,11 +203,13 @@
                 </div>
             </section>
             
-            <footer class="footer mt-auto">
-                <div class="has-text-centered">
-                    <p>&copy; 2017 - {% now "Y" %} Metrics Dashboard</p>
-                </div>
-            </footer>
+            {% block footer %}
+                <footer class="footer mt-auto">
+                    <div class="has-text-centered">
+                        <p>&copy; 2017 - {% now "Y" %} Metrics Dashboard</p>
+                    </div>
+                </footer>
+            {% endblock %}
         </main>
     </div>
 

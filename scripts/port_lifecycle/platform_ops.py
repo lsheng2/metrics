@@ -33,6 +33,7 @@ def is_port_available(host: str, port: int) -> bool:
 def http_status_ok(url: str) -> bool:
     try:
         with urllib.request.urlopen(url, timeout=1.0) as response:
+            response.read(2048)
             return 200 <= response.status < 300
     except (OSError, urllib.error.URLError):
         return False
@@ -188,7 +189,9 @@ def wait_process_exit(pid: int, timeout_seconds: float) -> bool:
 
 
 def creation_flags() -> int:
-    return subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
+    if sys.platform != "win32":
+        return 0
+    return subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
 
 
 def get_listening_process_ids(host: str, port: int) -> tuple[int, ...]:

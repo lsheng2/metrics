@@ -72,6 +72,11 @@ tr.htmx-request .review-loader {
     max-width: none !important;
 }
 
+.container:has(.workbench-shell) {
+    max-width: none !important;
+    width: 100%;
+}
+
 .board-columns {
     overflow-x: auto;
     flex-wrap: nowrap;
@@ -90,4 +95,303 @@ tr.htmx-request .review-loader {
 
 .board-column-body::-webkit-scrollbar {
     display: none;
+}
+
+.workbench-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 4.75rem;
+}
+
+.workbench-toolbar {
+    border: 1px solid var(--bulma-border);
+    border-radius: 6px;
+    background: var(--bulma-scheme-main);
+    margin-bottom: 0;
+    padding: 0.55rem 0.65rem;
+}
+
+.workbench-control-grid {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.7fr) repeat(2, minmax(120px, 1fr)) minmax(96px, 0.75fr) repeat(3, minmax(112px, 1fr)) auto;
+    gap: 0.45rem;
+    align-items: end;
+}
+
+.workbench-control-grid .field {
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+.workbench-control-grid .label {
+    font-size: 0.72rem;
+    line-height: 1;
+    margin-bottom: 0.22rem;
+}
+
+.workbench-control-grid .input,
+.workbench-control-grid .select,
+.workbench-control-grid select {
+    min-width: 0;
+}
+
+.workbench-apply-field {
+    display: flex;
+    align-items: end;
+}
+
+.workbench-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 0.8fr);
+    grid-template-rows: minmax(320px, 42vh) minmax(260px, 34vh);
+    gap: 1rem;
+}
+
+.workbench-pane {
+    border: 1px solid var(--bulma-border);
+    border-radius: 6px;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--bulma-scheme-main);
+    display: flex;
+    flex-direction: column;
+}
+
+.workbench-pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.35rem;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--bulma-border);
+}
+
+.workbench-pane-header .title {
+    margin-bottom: 0;
+}
+
+.workbench-pane-body {
+    padding: 0.65rem 0.75rem;
+    min-height: 9rem;
+    overflow: auto;
+    flex: 1 1 auto;
+}
+
+.workbench-grafana-panel {
+    width: 100%;
+    height: 360px;
+    border: 1px solid var(--bulma-border);
+    border-radius: 6px;
+    background: var(--bulma-scheme-main);
+}
+
+.workbench-pane-primary {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.workbench-pane-evidence {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.workbench-pane-ai {
+    grid-column: 2;
+    grid-row: 1 / 3;
+}
+
+.workbench-pane-ai .workbench-pane-body,
+.workbench-pane-evidence .workbench-pane-body {
+    max-height: 100%;
+}
+
+.workbench-ai-pane-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0;
+}
+
+.workbench-ai-context-strip {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.4rem;
+    align-items: center;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--bulma-border);
+    padding: 0.55rem 0.75rem;
+    white-space: nowrap;
+}
+
+.workbench-ai-context-strip span {
+    border: 1px solid var(--bulma-border);
+    border-radius: 4px;
+    color: var(--bulma-text);
+    font-size: 0.75rem;
+    line-height: 1;
+    opacity: 0.9;
+    padding: 0.35rem 0.45rem;
+}
+
+.workbench-ai-chat-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 520px;
+    border: 0;
+    background: var(--bulma-scheme-main);
+}
+
+.workbench-ai-unavailable {
+    padding: 1rem;
+}
+
+.workbench-pane-ai.is-collapsed .workbench-pane-body {
+    display: none;
+}
+
+.workbench-pane-ai.is-collapsed {
+    min-height: 4rem;
+}
+
+.workbench-status-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    align-items: center;
+    overflow-x: auto;
+    border-top: 1px solid var(--bulma-border);
+    background: var(--bulma-scheme-main);
+    box-shadow: 0 -8px 18px rgba(0, 0, 0, 0.18);
+    padding: 0.35rem 1rem max(0.35rem, env(safe-area-inset-bottom));
+    white-space: nowrap;
+}
+
+.workbench-status-item {
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    align-items: center;
+    gap: 0.35rem;
+    border-right: 1px solid var(--bulma-border);
+    color: var(--bulma-text);
+    padding: 0 0.85rem 0 0;
+    text-decoration: none;
+}
+
+.workbench-status-item:last-child {
+    border-right: 0;
+}
+
+.workbench-status-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.workbench-status-name {
+    font-weight: 700;
+}
+
+.workbench-status-state {
+    opacity: 0.9;
+}
+
+.workbench-status-url,
+.workbench-status-time {
+    color: var(--bulma-text);
+    font-size: 0.78rem;
+    opacity: 0.75;
+}
+
+@media screen and (max-width: 1023px) {
+    body > .columns.is-gapless {
+        display: flex;
+        flex-direction: column;
+    }
+
+    body > .columns.is-gapless > .column.is-2-desktop.is-3-tablet {
+        flex: 0 0 auto;
+        flex-basis: auto !important;
+        flex-grow: 0 !important;
+        min-height: 0;
+        width: 100%;
+    }
+
+    body > .columns.is-gapless > .column.is-2-desktop.is-3-tablet .menu {
+        height: auto;
+        min-height: 0;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--bulma-border);
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    body > .columns.is-gapless > .column.is-2-desktop.is-3-tablet .menu-list {
+        display: flex;
+        gap: 0.25rem;
+        white-space: nowrap;
+    }
+
+    body > .columns.is-gapless > .column.is-2-desktop.is-3-tablet .menu-list li {
+        flex: 0 0 auto;
+    }
+
+    body > .columns.is-gapless > .column.is-2-desktop.is-3-tablet .menu-list a {
+        border-radius: 4px;
+        padding: 0.35rem 0.65rem;
+    }
+
+    main.column .section {
+        padding: 0.75rem 1rem 1rem;
+    }
+
+    .workbench-control-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.45rem 0.55rem;
+    }
+
+    .workbench-control-grid .field:first-child,
+    .workbench-apply-field {
+        grid-column: 1 / -1;
+    }
+
+    .workbench-apply-field .button {
+        width: 100%;
+    }
+
+    .workbench-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+    }
+
+    .workbench-pane-primary,
+    .workbench-pane-evidence,
+    .workbench-pane-ai {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .workbench-status-bar {
+        align-items: center;
+    }
+
+    .workbench-status-item {
+        max-width: 100%;
+    }
+
+    .workbench-status-url {
+        margin-left: auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
