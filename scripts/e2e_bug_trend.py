@@ -14,14 +14,14 @@ import uuid
 from pathlib import Path
 from typing import Callable, Mapping, Protocol, Sequence, TypeVar
 
-from grafana_e2e_runtime import write_runtime_grafana_config
-from port_lifecycle import PortLifecycle, ServiceSpec, load_project_name, load_service_specs
+from e2e_grafana_runtime import write_runtime_grafana_config
+from service_lifecycle_engine import ServiceLifecycleEngine, ServiceSpec, load_project_name, load_service_specs
 
 T = TypeVar("T")
 
 
 class LifecycleProfiler(Protocol):
-    def profile_step(self, label: str, callback: Callable[[], T], run_id: str | None = None, prefix: str = "PortLifecycle timing") -> T:
+    def profile_step(self, label: str, callback: Callable[[], T], run_id: str | None = None, prefix: str = "ServiceLifecycleEngine timing") -> T:
         ...
 
 
@@ -33,7 +33,8 @@ def main() -> None:
     parser.add_argument("--service-config", default=str(Path(__file__).with_name("e2e_bug_trend.services.json")))
     parser.add_argument("--django-ports", default="")
     parser.add_argument("--grafana-ports", default="")
-    parser.add_argument("--scope-id", default="3")
+    parser.add_argument("--scope-id", default="")
+    parser.add_argument("--scope-name", default="chiplet-2a-jira")
     parser.add_argument("--begin", default="2026-06-01")
     parser.add_argument("--end", default="2026-08-09")
     parser.add_argument("--grafana-bin", default=os.environ.get("GRAFANA_BIN", ""))
@@ -44,11 +45,11 @@ def main() -> None:
 
     workspace = Path(args.workspace).resolve()
     service_config = Path(args.service_config).resolve()
-    lifecycle = PortLifecycle(
+    lifecycle = ServiceLifecycleEngine(
         project_name=load_project_name(service_config, "metrics-bug-trend"),
         workspace=workspace,
         instance_name=args.instance,
-        state_directory=workspace / "state" / "e2e" / "port-lifecycle",
+        state_directory=workspace / "state" / "e2e" / "service-lifecycle-engine",
     )
     run_id = str(uuid.uuid4())
 
@@ -58,16 +59,20 @@ def main() -> None:
         start_runtime(args, workspace, lifecycle, run_id)
 
 
-def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLifecycle, run_id: str | None = None) -> None:
+def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: ServiceLifecycleEngine, run_id: str | None = None) -> None:
     grafana_bin = resolve_grafana_bin(args.grafana_bin)
     grafana_homepath = resolve_grafana_homepath(args.grafana_homepath, grafana_bin)
     python_executable = sys.executable
     specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath)
+    runtime_scope_id = args.scope_id
 
     def after_prepare(stop_results: Sequence[object]) -> None:
+        nonlocal runtime_scope_id
         print_stop_results(stop_results)
         profile_step(lifecycle, "migrate", lambda: run([python_executable, "manage.py", "migrate"], workspace), run_id=run_id)
         profile_step(lifecycle, "seed_bug_trend_sample", lambda: run([python_executable, "manage.py", "seed_bug_trend_sample"], workspace), run_id=run_id)
+        if not runtime_scope_id:
+            runtime_scope_id = profile_step(lifecycle, "resolve_bug_trend_scope", lambda: resolve_scope_id_by_name(workspace, python_executable, args.scope_name), run_id=run_id)
         profile_step(
             lifecycle,
             "validate_grafana_artifacts",
@@ -103,24 +108,22 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: PortLife
     grafana_port = restart_result.port_plan["grafana"]
 
     profile_step(lifecycle, "configure_grafana_datasource", lambda: configure_grafana_datasource(grafana_port, django_port), run_id=run_id)
-    profile_step(lifecycle, "import_grafana_dashboard", lambda: import_grafana_dashboard(workspace, grafana_port, django_port, args.scope_id, args.begin, args.end), run_id=run_id)
-    profile_step(lifecycle, "validate_runtime", lambda: validate_runtime(workspace, grafana_port, django_port, args.scope_id, args.begin, args.end), run_id=run_id)
+    profile_step(lifecycle, "import_grafana_dashboard", lambda: import_grafana_dashboard(workspace, grafana_port, django_port, runtime_scope_id, args.begin, args.end), run_id=run_id)
+    profile_step(lifecycle, "validate_runtime", lambda: validate_runtime(workspace, grafana_port, django_port, runtime_scope_id, args.begin, args.end), run_id=run_id)
 
-    dashboard_url = grafana_dashboard_url(grafana_port, args.scope_id, args.begin, args.end)
-    workbench_url = workbench_url_for(django_port, args.scope_id, args.begin, args.end)
+    dashboard_url = grafana_dashboard_url(grafana_port, runtime_scope_id, args.begin, args.end)
+    workbench_url = workbench_url_for(django_port, runtime_scope_id, args.begin, args.end)
     profile_step(lifecycle, "write_e2e_summary", lambda: write_e2e_summary(workspace, django_port, grafana_port, dashboard_url, workbench_url), run_id=run_id)
     entrypoint_url = entrypoint_url_for(args.open_entrypoint, dashboard_url, workbench_url)
     if entrypoint_url:
         profile_step(lifecycle, "open_browser", lambda: open_browser(entrypoint_url), run_id=run_id)
     print(f"E2E Bug Trend is ready: {entrypoint_url or workbench_url}")
 
-
-def stop_runtime(lifecycle: PortLifecycle, args: argparse.Namespace, run_id: str | None = None) -> None:
+def stop_runtime(lifecycle: ServiceLifecycleEngine, args: argparse.Namespace, run_id: str | None = None) -> None:
     results = profile_step(lifecycle, "stop_registered_services", lambda: lifecycle.stop_all(graceful_timeout_seconds=5.0), run_id=run_id)
     if args.force_by_port:
         results.extend(profile_step(lifecycle, "force_stop_by_ports", lambda: lifecycle.force_stop_by_ports(force_stop_specs(args), graceful_timeout_seconds=0.5), run_id=run_id))
     print_stop_results(results, empty_message="No E2E services registered.")
-
 
 def print_stop_results(results: Sequence[object], empty_message: str = "") -> None:
     if not results:
@@ -135,7 +138,6 @@ def print_stop_results(results: Sequence[object], empty_message: str = "") -> No
 def force_stop_specs(args: argparse.Namespace) -> tuple[ServiceSpec, ...]:
     specs = load_specs(args, Path(args.workspace).resolve(), sys.executable, args.grafana_bin or "grafana", args.grafana_homepath or "")
     return tuple(specs.values())
-
 
 def load_specs(
     args: argparse.Namespace,
@@ -160,7 +162,6 @@ def load_specs(
         "grafana": replace_ports(specs["grafana"], parse_ports(args.grafana_ports)) if args.grafana_ports else specs["grafana"],
     }
 
-
 def replace_ports(spec: ServiceSpec, ports: tuple[int, ...]) -> ServiceSpec:
     return ServiceSpec(
         name=spec.name,
@@ -180,6 +181,22 @@ def replace_ports(spec: ServiceSpec, ports: tuple[int, ...]) -> ServiceSpec:
 
 def run(command: list[str], workspace: Path) -> None:
     subprocess.run(command, cwd=workspace, check=True)
+
+
+def resolve_scope_id_by_name(workspace: Path, python_executable: str, scope_name: str) -> str:
+    command = [
+        python_executable,
+        "manage.py",
+        "shell",
+        "-c",
+        f"from bug_metrics.models import JiraScopeConfig; print(JiraScopeConfig.objects.get(name={scope_name!r}).id)",
+    ]
+    completed = subprocess.run(command, cwd=workspace, check=True, text=True, capture_output=True)
+    for line in reversed(completed.stdout.splitlines()):
+        normalized = line.strip()
+        if normalized.isdigit():
+            return normalized
+    raise RuntimeError(f"Could not resolve Bug Trend scope id for {scope_name}.")
 
 
 def timed_step(label: str, callback: Callable[[], T]) -> T:
@@ -314,12 +331,21 @@ def assert_http_ok(url: str, auth: bool = False) -> None:
     request = urllib.request.Request(url)
     if auth:
         request.add_header("Authorization", basic_auth())
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            if not 200 <= response.status < 300:
-                raise RuntimeError(f"Expected HTTP 2xx from {url}, got {response.status}")
-    except urllib.error.HTTPError as error:
-        raise RuntimeError(f"Expected HTTP 2xx from {url}, got {error.code}") from error
+    deadline = time.monotonic() + 10.0
+    last_error = None
+    while True:
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                if not 200 <= response.status < 300:
+                    raise RuntimeError(f"Expected HTTP 2xx from {url}, got {response.status}")
+                return
+        except urllib.error.HTTPError as error:
+            raise RuntimeError(f"Expected HTTP 2xx from {url}, got {error.code}") from error
+        except urllib.error.URLError as error:
+            last_error = error
+            if time.monotonic() >= deadline:
+                raise RuntimeError(f"Expected HTTP 2xx from {url}, got connection error {type(error.reason).__name__}") from error
+            time.sleep(0.25)
 
 
 def basic_auth() -> str:

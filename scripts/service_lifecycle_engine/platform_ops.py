@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import shlex
 import signal
 import socket
 import subprocess
@@ -53,6 +54,21 @@ def http_probe(url: str, timeout: float = 1.0, body_limit: int = 2048) -> dict[s
         return {"reachable": False, "error": type(error).__name__}
 
 
+def start_process(
+    command: tuple[str, ...],
+    cwd: str,
+    env: dict[str, str],
+    stdout,
+    stderr,
+    creationflags: int,
+):
+    return subprocess.Popen(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, creationflags=creationflags)
+
+
+def run_command(command: tuple[str, ...], cwd) -> None:
+    subprocess.run(command, cwd=cwd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+
 def wait_port_available(host: str, port: int, timeout_seconds: float) -> bool:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
@@ -82,13 +98,47 @@ def process_matches_command(pid: int, expected_command: tuple[str, ...]) -> bool
     command_line = get_process_command_line(pid)
     if not command_line or not expected_command:
         return False
-    actual = command_line.casefold() if sys.platform == "win32" else command_line
-    expected_parts = [part.casefold() if sys.platform == "win32" else part for part in expected_command]
-    executable = expected_parts[0]
-    executable_name = os.path.basename(executable)
-    if executable not in actual and executable_name not in actual:
+    actual_parts = normalize_command_parts(split_command_line(command_line))
+    expected_parts = normalize_command_parts(expected_command)
+    if len(actual_parts) != len(expected_parts):
         return False
-    return all(part in actual for part in expected_parts[1:])
+    actual_executable = normalize_executable_identity(actual_parts[0])
+    expected_executable = normalize_executable_identity(expected_parts[0])
+    actual_path_qualified = is_path_qualified_executable(actual_parts[0])
+    expected_path_qualified = is_path_qualified_executable(expected_parts[0])
+    if expected_path_qualified:
+        if not actual_path_qualified:
+            return False
+        if actual_executable != expected_executable:
+            return False
+    elif os.path.basename(actual_executable) != os.path.basename(expected_executable):
+        return False
+    return actual_parts[1:] == expected_parts[1:]
+
+
+def split_command_line(command_line: str) -> tuple[str, ...]:
+    try:
+        return tuple(shlex.split(command_line, posix=sys.platform != "win32"))
+    except ValueError:
+        return tuple(command_line.split())
+
+
+def normalize_command_parts(command: tuple[str, ...] | list[str]) -> list[str]:
+    normalized = [str(part).strip().strip('"') for part in command]
+    if sys.platform == "win32":
+        return [part.casefold() for part in normalized]
+    return normalized
+
+
+def normalize_executable_identity(executable: str) -> str:
+    normalized = os.path.normpath(executable)
+    if sys.platform == "win32":
+        return os.path.normcase(normalized)
+    return normalized
+
+
+def is_path_qualified_executable(executable: str) -> bool:
+    return os.path.isabs(executable) or os.path.dirname(executable) != "" or "/" in executable or "\\" in executable
 
 
 def get_process_command_line(pid: int) -> str:
@@ -121,6 +171,14 @@ def get_process_command_line(pid: int) -> str:
             check=False,
         )
         return completed.stdout.strip()
+
+
+def process_start_marker(pid: int) -> str:
+    command_line = get_process_command_line(pid)
+    if not command_line:
+        return ""
+    digest = hashlib.sha256(f"{int(pid)}:{command_line}".encode("utf-8")).hexdigest()
+    return digest
 
 
 def process_exists_windows(pid: int) -> bool:
