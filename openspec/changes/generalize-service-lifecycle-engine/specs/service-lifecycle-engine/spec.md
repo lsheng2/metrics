@@ -189,3 +189,26 @@
 #### Scenario: Process-backed lifecycle smoke remains covered
 - **WHEN** focused lifecycle tests run against lightweight local HTTP processes
 - **THEN** they SHALL prove start/stop/restart, readiness wait, launch authority evidence, pid recovery, and explicit force-by-port behavior still work
+
+### Requirement: App-neutral conformance pack covers downstream reuse contract
+系统 SHALL include an app-neutral conformance test pack for downstream projects that reuse `service_lifecycle_engine` at source level. The pack SHALL NOT import Dashboard, Grafana, or project-specific launcher helpers.
+
+#### Scenario: Wrapper and listener split is proven generically
+- **WHEN** a wrapper process starts a distinct owned listener
+- **THEN** conformance tests SHALL prove lifecycle events and persisted service state retain wrapper/listener provenance and graded capability
+
+#### Scenario: Stale PID reuse is rejected generically
+- **WHEN** a persisted registered PID exists but current command identity does not match the managed service command
+- **THEN** conformance tests SHALL prove process existence alone is not treated as service ownership
+
+#### Scenario: Endpoint-grade provenance is captured without app helpers
+- **WHEN** only a single reachable listener can be observed for an endpoint
+- **THEN** conformance tests SHALL prove generic provenance helpers can report endpoint-grade evidence without Dashboard or Grafana code
+
+#### Scenario: Injected seams are exercised by conformance tests
+- **WHEN** conformance tests run
+- **THEN** they SHALL use injected `PlatformOperationSet` and injected `LifecycleStateStore` to avoid real ports, real subprocess kills, or project-specific stores
+
+#### Scenario: Force request and kill escalation remain distinct
+- **WHEN** explicit force-by-port cleanup gracefully terminates a process
+- **THEN** conformance tests SHALL prove `force_requested` is true, stop source is force-by-port, and `forced` remains false because no kill escalation occurred

@@ -16,6 +16,7 @@
 - 强化 validation coverage：新增 negative tests 确认 legacy imports/CLI 已移除；新增 migration/regression tests 确认 existing launchers direct-import new engine 后 start/stop/restart 行为不回退。
 - P1 hardening：`LifecycleEvent` 和 persisted `ServiceState` SHALL carry optional `ProcessProvenance` when available; `ServiceLifecycleEngine` SHALL accept injected `PlatformOperationSet` and `LifecycleStateStore` so downstream adapters can test launcher behavior without real ports/process kills.
 - P2 hardening：公开 generic provenance helpers，例如 `capture_process_provenance(...)`、`resolve_owned_listener(...)` 和 `provenance_capability_for(...)`，用于明确 wrapper/listener separation 和 graded provenance。
+- 外部 adoption follow-up：新增 app-neutral conformance test pack，覆盖 wrapper/listener split、stale PID reuse、endpoint-grade provenance、injected platform/state-store seams，以及 `force_requested` vs `forced` 语义，方便 Agora 和未来项目复用前对齐 generic contract。
 
 ## Capabilities
 
@@ -34,3 +35,4 @@
 - CLI impact: `port_lifecycle_cli.py doctor` is removed or replaced by `service_lifecycle_engine_cli.py doctor`.
 - Behavior impact: runtime behavior for selected ports, stop safety, force-by-port, diagnostics and E2E start/stop/restart SHALL remain equivalent after migration, but old import/CLI names intentionally fail.
 - Cross-project alignment: engine 保持 generic，不引用 Agora 或 Scrum Dashboard business model；Agora-style endpoint binding remains an adapter concern, not engine responsibility。P1 hardening makes the event stream sufficient for an adapter such as Agora `RuntimeServiceEndpointBindingStore` without embedding that store in the engine.
+- Consumer validation: Agora 已完成 source-level adoption and fullstack validation without blocking generic API gaps; the remaining improvement is a small app-neutral conformance pack in this repo, not a Dashboard/Grafana runtime helper move.

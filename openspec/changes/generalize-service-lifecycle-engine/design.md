@@ -125,6 +125,18 @@ Zero compatibility raises regression risk, so validation must prove both the new
 - process-backed tests: start/stop/restart still work against lightweight HTTP services;
 - hygiene gates: file-size, whitespace and OpenSpec strict validation pass.
 
+### 12. App-neutral conformance pack for downstream consumers
+
+Agora completed source-level adoption without blocking API gaps. To make that reusable for future consumers, this change adds a small app-neutral conformance test pack under generic lifecycle tests. The pack is not a new runtime feature and does not move Dashboard/Grafana helpers into the engine.
+
+The conformance pack verifies the public reusable contract:
+
+- wrapper/listener split persists provenance on events and `ServiceState`;
+- stale registered PID reuse is rejected when command identity differs;
+- endpoint-grade provenance can be captured for a sole reachable listener even when wrapper proof is degraded;
+- injected `PlatformOperationSet` and injected `LifecycleStateStore` drive behavior without real ports or process kills;
+- explicit force-by-port intent sets `force_requested=True` and `StopSource.FORCE_BY_PORT` while `forced` remains reserved for kill escalation.
+
 ## Risks / Trade-offs
 
 - [Breaking external users] -> This is intentional for zero compatibility; docs and tests must make the new import/CLI explicit.

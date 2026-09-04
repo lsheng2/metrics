@@ -51,3 +51,12 @@
 - [x] 7.4 Add `ServiceLifecycleEngine(..., state_store=...)` and verify state snapshots, startup ledger and termination ledger use the injected store while default filesystem behavior remains unchanged.
 - [x] 7.5 Expose generic provenance helpers `capture_process_provenance(...)`, `resolve_owned_listener(...)`, and `provenance_capability_for(...)` with fake platform tests covering wrapper-only, registered-process, owned-listener, endpoint-grade and HTTP-identity evidence.
 - [x] 7.6 Re-run focused lifecycle tests, launcher tests, OpenSpec strict validation, file-size and whitespace gates.
+
+## 8. Consumer Conformance Pack
+
+- [x] 8.1 Add an app-neutral conformance test pack for `service_lifecycle_engine` that does not import Dashboard/Grafana runtime helpers.
+- [x] 8.2 Cover wrapper/listener split with persisted/event provenance.
+- [x] 8.3 Cover stale registered PID reuse where process existence alone is insufficient without command identity.
+- [x] 8.4 Cover endpoint-grade provenance capture for a sole reachable listener.
+- [x] 8.5 Cover injected `PlatformOperationSet` and injected `LifecycleStateStore` through public engine behavior.
+- [x] 8.6 Cover `force_requested` / `StopSource.FORCE_BY_PORT` separately from `forced` kill escalation.
