@@ -436,10 +436,11 @@ document.addEventListener('DOMContentLoaded', function() {
             frame.dataset.workbenchScrollGuardInitialized = 'true';
             const initialScrollY = window.scrollY;
             frame.addEventListener('load', function() {
+                frame.dataset.workbenchAiLoaded = 'true';
                 if (initialScrollY <= 8 && window.scrollY > 8 && window.scrollY < 480) {
                     window.scrollTo(window.scrollX, initialScrollY);
                 }
-            }, { once: true });
+            });
         });
 
         document.querySelectorAll('[data-workbench-splitter]').forEach(splitter => {
@@ -624,6 +625,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!frame.contentWindow || !frame.src) {
                         return;
                     }
+                    if (frame.dataset.workbenchAiLoaded !== 'true') {
+                        return;
+                    }
                     let targetOrigin = window.location.origin;
                     try {
                         targetOrigin = new URL(frame.src).origin;
@@ -639,6 +643,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, targetOrigin);
                 });
             }
+            document.querySelectorAll('.workbench-ai-chat-frame').forEach(frame => {
+                if (frame.dataset.workbenchTicketNotifyInitialized === 'true') {
+                    return;
+                }
+                frame.dataset.workbenchTicketNotifyInitialized = 'true';
+                frame.addEventListener('load', notifyAiSelectedTickets);
+            });
             function updateSelectedCount() {
                 const count = ticketBoxes.filter(box => box.checked).length;
                 if (selectedCount) {

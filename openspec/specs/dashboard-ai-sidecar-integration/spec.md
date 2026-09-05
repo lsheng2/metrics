@@ -60,6 +60,11 @@ AI Base SHALL use Metrics-provided catalog、intent validation、draft render va
 - **WHEN** user asks for a series such as `new_critical` but Metrics only approves `new_critical_high`
 - **THEN** AI Base SHALL preserve the exact series identity, return `needs_metric_recipe`, and SHALL NOT rename, filter, relabel or synthesize unsupported Metrics semantics
 
+#### Scenario: Model-visible connector route is invoked
+- **WHEN** AI Base exposes Metrics connector tools to the model
+- **THEN** only read/validate operations with explicit safe policy SHALL be model-visible
+- **THEN** AI Base SHALL enforce the active workspace boundary before invoking those operations
+
 ### Requirement: gcx operations are Metrics-preconditioned
 AI Base/gcx SHALL NOT mutate Grafana resources for Metrics dashboards unless Metrics precondition validation has passed for the exact artifact and operation.
 
@@ -157,21 +162,23 @@ AI Base Dashboard Query Agent SHALL create or surface a durable dry-run proof be
 
 #### Scenario: Workflow reaches dry-run state
 - **WHEN** Dashboard `workflow.run` returns `ready_for_dry_run`
-- **THEN** AI Base SHALL run or simulate the configured gcx dry-run path through the governed CLI runner, record a `dry_run_proof_id`, and show the proof status to the operator
+- **THEN** AI Base SHALL run or simulate the configured gcx dry-run path through the governed CLI runner
+- **THEN** AI Base SHALL record a dry-run proof bound to artifact ref, artifact version, artifact hash, workspace key, profile id, dashboard uid, chart id, requested series, range, operation and executable/env fingerprints
+- **THEN** AI Base SHALL show the proof status to the operator
 
 #### Scenario: Workflow does not reach dry-run state
 - **WHEN** Dashboard `workflow.run` returns `needs_metric_recipe`, `blocked`, validation failed, or precondition not checked
 - **THEN** AI Base SHALL NOT create a dry-run proof and SHALL surface the blocking status instead
 
 ### Requirement: Human approval is required after dry-run proof
-AI Base SHALL NOT execute Grafana mutation after dry-run proof unless an explicit human approval id is attached to the mutation request and the proof still matches.
+AI Base SHALL NOT execute Grafana mutation after dry-run proof unless explicit human approval is attached to the same immutable artifact/proof scope.
 
 #### Scenario: Dry-run proof exists without approval
-- **WHEN** a valid dry-run proof exists but no approval id exists
+- **WHEN** a valid dry-run proof exists but no matching approved authorization exists
 - **THEN** UI SHALL show approval required and mutation SHALL remain unavailable
 
 #### Scenario: Mutation is requested without matching proof
-- **WHEN** a mutation request lacks a matching dry-run proof, matching scope, or matching artifact reference
+- **WHEN** a mutation request lacks a matching proof, matching artifact version/hash, matching workspace boundary or approved authorization
 - **THEN** AI Base SHALL block mutation before running gcx and SHALL NOT call Dashboard publication callback
 
 ### Requirement: AI Base chat can trigger Dashboard chart workflow demo
@@ -239,3 +246,29 @@ Dashboard SHALL support AI Base workspace synchronization as an integration surf
 - **WHEN** Dashboard connects to AI Base for a selected provider/profile
 - **THEN** Dashboard SHALL be able to push a Metrics context bundle into AI Base through the generic app-workspace context bundle contract
 - **THEN** the workspace SHALL remain bounded to the selected provider/project/profile for subsequent chat sessions
+
+### Requirement: AI Base chat can produce publishable Dashboard artifacts
+Dashboard sidecar integration SHALL support a chat-triggered flow where AI Base creates a validated chart artifact and Dashboard remains the authority for validation, approval and Grafana publication.
+
+#### Scenario: Chat request creates validated draft
+- **WHEN** a user asks AI Base chat to create a supported Grafana chart for a synced Metrics workspace
+- **THEN** AI Base SHALL use workspace context and Metrics validation contracts to produce a draft artifact
+- **THEN** Dashboard SHALL return validation status, precondition status, correlation id and next action
+
+#### Scenario: Chat request cannot be validated
+- **WHEN** user asks for unsupported semantics, missing profile, missing range or unavailable data
+- **THEN** the flow SHALL return a clear blocked state and SHALL NOT create a dry-run proof or approval-ready publish action
+
+### Requirement: Human-approved publish is end-to-end auditable
+Dashboard sidecar integration SHALL require dry-run proof and human approval before AI-generated chart artifacts mutate Grafana.
+
+#### Scenario: Human-approved publish succeeds
+- **WHEN** a validated artifact has matching dry-run proof and approval id
+- **THEN** AI Base MAY request Dashboard publish
+- **THEN** Dashboard SHALL regenerate or normalize the Grafana payload from the validated artifact, import it to Grafana, and return a visible dashboard URL
+- **THEN** Dashboard SHALL record publish history with profile id, provider id, artifact id, correlation id, approval id, dry-run proof id, dashboard uid and status
+
+#### Scenario: Publish lacks proof or approval
+- **WHEN** publish is requested without matching dry-run proof or approval id
+- **THEN** Dashboard SHALL reject the mutation before Grafana import
+- **THEN** Dashboard SHALL return a structured blocking reason

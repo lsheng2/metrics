@@ -208,7 +208,13 @@ class WorkbenchView(GracefulTemplateView):
         return next((chart for chart in chart_options if chart.chart_id == chart_id), None)
 
     def _ai_context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
-        return self.ai_adapter.context(state, sidecar_status)
+        return self.ai_adapter.context(state, sidecar_status, self._host_origin())
+
+    def _host_origin(self) -> str:
+        parsed_url = urlparse(self.request.build_absolute_uri('/'))
+        if not parsed_url.scheme or not parsed_url.netloc:
+            return ''
+        return f'{parsed_url.scheme}://{parsed_url.netloc}'
 
 
 class WorkbenchGrafanaSelectionView(TemplateView):

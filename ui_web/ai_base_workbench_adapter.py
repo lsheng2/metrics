@@ -33,7 +33,7 @@ class AiBaseWorkbenchAdapter:
             return ''
         return f'metrics.{state.provider_id}.{state.profile_id}'
 
-    def context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
+    def context(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> dict:
         return {
             'profile_id': state.profile_id,
             'provider_id': state.provider_id,
@@ -48,10 +48,10 @@ class AiBaseWorkbenchAdapter:
                 'bucket': state.selected_bucket_id,
                 'series': state.selected_series_name,
             },
-            'ai_base': self.ai_base_payload(state, sidecar_status),
+            'ai_base': self.ai_base_payload(state, sidecar_status, host_origin),
         }
 
-    def ai_base_payload(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
+    def ai_base_payload(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> dict:
         return {
             'enabled': bool(sidecar_status.get('enabled', False)),
             'status': sidecar_status.get('status', 'disabled'),
@@ -61,24 +61,24 @@ class AiBaseWorkbenchAdapter:
             'profile_id': sidecar_status.get('profile_id', ''),
             'service_id': sidecar_status.get('service_id', ''),
             'capabilities': sidecar_status.get('capabilities', {}),
-            'chat_url': self.chat_url(state, sidecar_status),
+            'chat_url': self.chat_url(state, sidecar_status, host_origin),
             'workspace_key': self.workspace_key_for_state(state),
             'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
-            'binding_request': self.binding_request(state, sidecar_status),
+            'binding_request': self.binding_request(state, sidecar_status, host_origin),
             'launcher_command': self._launcher_command,
         }
 
-    def chat_url(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> str:
+    def chat_url(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> str:
         mode = self._embed_mode()
         base_url = self.frontend_base_url(sidecar_status)
         if mode == 'app-chat':
-            return f'{base_url}/?embed=app-chat#/chat?{urlencode(self._app_chat_query(state))}'
+            return f'{base_url}/?embed=app-chat#/chat?{urlencode(self._app_chat_query(state, host_origin))}'
         return f'{base_url}/?embed=workbench#/chat?{urlencode(self._legacy_workbench_query(state, sidecar_status))}'
 
-    def binding_request(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
+    def binding_request(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> dict:
         workspace_key = self.workspace_key_for_state(state)
         session_key = self._session_key(state)
-        return {
+        request = {
             'sourceAppId': self.source_app_id,
             'auth': {
                 'authMode': 'local_sidecar_signed_token',
@@ -113,6 +113,9 @@ class AiBaseWorkbenchAdapter:
             },
             'correlationId': f'metrics-workbench:{state.profile_id}:{state.chart_id}',
         }
+        if host_origin:
+            request['hostOrigin'] = host_origin
+        return request
 
     def next_action(self, status: str) -> str:
         if status in {'ready', 'connected', 'available'}:
@@ -136,9 +139,9 @@ class AiBaseWorkbenchAdapter:
             'series': state.selected_series_name,
         }
 
-    def _app_chat_query(self, state: WorkbenchPageQueryState) -> dict:
-        request = self.binding_request(state, {})
-        return {
+    def _app_chat_query(self, state: WorkbenchPageQueryState, host_origin: str = '') -> dict:
+        request = self.binding_request(state, {}, host_origin)
+        query = {
             'sourceAppId': request['sourceAppId'],
             'bindingKey': request['bindingKey'],
             'workspaceKey': request['workspaceKey'],
@@ -153,6 +156,9 @@ class AiBaseWorkbenchAdapter:
             'correlationId': request['correlationId'],
             'credentialRef': request['auth']['credentialRef'],
         }
+        if host_origin:
+            query['hostOrigin'] = host_origin
+        return query
 
     @staticmethod
     def _session_key(state: WorkbenchPageQueryState) -> str:

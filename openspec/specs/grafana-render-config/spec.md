@@ -65,7 +65,7 @@ Render config SHALL describe provider fetch/cache range and Grafana display time
 - **THEN** generated panel targets SHALL pass Grafana native time macros as `begin_date` and `end_date`, and Metrics SHALL ignore stale WW variables for backend filtering
 
 ### Requirement: Render config publication is validated and auditable
-System SHALL require validation before generated Grafana artifacts are imported, published, or treated as approved dashboard definitions.
+System SHALL require validation, immutable artifact versioning, dry-run proof and approved publish authorization before generated Grafana artifacts are imported, published, or treated as approved dashboard definitions.
 
 #### Scenario: Developer publishes dashboard config
 - **WHEN** developer updates render config or generated dashboard JSON
@@ -73,14 +73,15 @@ System SHALL require validation before generated Grafana artifacts are imported,
 
 #### Scenario: AI-generated dashboard draft is submitted
 - **WHEN** AI sidecar submits a render-config draft
-- **THEN** system SHALL validate it using the same rules as developer-authored render config and SHALL keep it unpublished until validation and approval policy pass
+- **THEN** system SHALL validate it using the same rules as developer-authored render config
+- **THEN** system SHALL keep it unpublished until artifact validation, dry-run proof, human approval and publish authorization all match the same artifact version and content hash
 
 ### Requirement: AI-generated Grafana dashboards are listed and auditable
 Dashboard SHALL track AI-generated Grafana dashboard publish artifacts so operators can inspect previous AI chart publications.
 
 #### Scenario: Published AI dashboard is listed
 - **WHEN** an AI-generated dashboard is published to Grafana
-- **THEN** Dashboard SHALL record a publish artifact entry with dashboard uid, title, Grafana URL, profile id, provider id, chart id, range, requested series, actor, approval id, dry-run proof id, status and timestamps
+- **THEN** Dashboard SHALL record a publish artifact entry with dashboard uid, title, Grafana URL, profile id, provider id, chart id, range, requested series, actor, authorization id, approval id, dry-run proof id, artifact ref, artifact version, artifact hash, status and timestamps
 
 #### Scenario: Operator views publish history
 - **WHEN** an operator opens the AI publish history surface or calls its API
@@ -89,3 +90,20 @@ Dashboard SHALL track AI-generated Grafana dashboard publish artifacts so operat
 #### Scenario: Publish artifact is superseded
 - **WHEN** a later publish overwrites or replaces the same demo dashboard uid
 - **THEN** history SHALL retain previous audit metadata and mark the latest artifact clearly rather than silently losing prior publications
+
+### Requirement: AI render artifacts are validated as render config inputs
+Grafana render config SHALL support AI-authored draft artifacts as inputs only after they satisfy the same validation rules as developer-authored render configs.
+
+#### Scenario: AI render artifact uses approved recipe
+- **WHEN** an AI artifact references an approved chart recipe, profile id, range, render shape, category field and value fields
+- **THEN** the validator SHALL accept the artifact and return a normalized render config preview
+- **THEN** generated Grafana JSON SHALL be derived from the normalized render config rather than directly trusting arbitrary AI JSON
+
+#### Scenario: AI render artifact uses data blocks
+- **WHEN** an AI artifact starts from canonical data blocks instead of a pre-existing chart recipe
+- **THEN** the validator SHALL require approved canonical fields, allowed transforms, provider boundary and render constraints before the artifact can become publishable
+- **THEN** unsupported data-block semantics SHALL be reported as a Metrics-owned recipe or aggregate gap
+
+#### Scenario: AI render artifact includes unsafe content
+- **WHEN** an AI artifact includes provider-native query literals, raw SQL, unapproved datasource ids, secrets or local filesystem paths
+- **THEN** validation SHALL fail and SHALL report the unsafe field paths

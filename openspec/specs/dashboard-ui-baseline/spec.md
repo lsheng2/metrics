@@ -52,3 +52,45 @@ UI layer SHALL 通过 facade methods 获取每个页面或组件的数据，并�
 #### Scenario: Evidence API is requested
 - **WHEN** consumer 请求 evidence API
 - **THEN** 系统 SHALL 返回与请求 run/range/selection 对应的 ticket rows、display fields、counts 和 selection metadata
+
+### Requirement: Existing Dashboard surfaces are pane-compatible
+当前 Django dashboard surfaces SHALL be reusable inside the unified workbench shell without duplicating business logic or bypassing facade/module boundaries.
+
+#### Scenario: Workbench mounts an existing Dashboard page surface
+- **WHEN** workbench loads a Django-owned page or component such as Bug Trend evidence、scope config、data health、publish history or diagnostics
+- **THEN** the surface SHALL be delivered through an explicit pane route, partial, or view mode
+- **AND** it SHALL continue to obtain data through UI facades and owning module public APIs
+
+#### Scenario: Pane refreshes a Django partial
+- **WHEN** a workbench pane refreshes after PageQueryState changes
+- **THEN** only the pane or its target partial SHALL be replaced
+- **AND** unrelated panes SHALL preserve their scroll position, form state and layout unless the new query state invalidates them
+
+#### Scenario: Evidence pane opens ticket detail
+- **WHEN** a user clicks a ticket row inside the evidence pane
+- **THEN** Dashboard SHALL render a local ticket detail partial or JSON-backed view using Dashboard/provider APIs
+- **AND** the detail pane SHALL NOT iframe the full Jira/HSD-ES web UI
+- **AND** closing or resizing the detail pane SHALL preserve the evidence list and current selected ticket working set
+
+#### Scenario: A full page remains directly accessible
+- **WHEN** 用户访问 legacy/full-page Dashboard URL
+- **THEN** system SHALL continue to render the existing page unless that page has an approved migration path
+- **AND** the page SHALL link or redirect to the workbench only when the target workbench behavior is functionally equivalent
+
+### Requirement: Workbench shell preserves Dashboard UI technology baseline
+Workbench shell SHALL preserve the existing Dashboard baseline of server-rendered Django, semantic HTML, Bulma and HTMX for Dashboard-owned surfaces, while permitting a narrowly scoped client-side dock layout layer for pane composition.
+
+#### Scenario: Dashboard-owned pane needs dynamic refresh
+- **WHEN** a Dashboard-owned pane refreshes chart state, evidence rows, settings or publish/audit content
+- **THEN** it SHALL prefer server-rendered HTML or JSON-backed HTMX/vanilla browser behavior consistent with the existing Dashboard UI baseline
+- **AND** it SHALL NOT require rewriting existing Dashboard pages into a new frontend framework
+
+#### Scenario: Dock layout layer is introduced
+- **WHEN** implementation adds a dock/window frame dependency for pane placement
+- **THEN** the dependency SHALL be isolated to shell layout responsibilities
+- **AND** Dashboard-owned domain interactions SHALL remain in existing views, facades, APIs and templates
+
+#### Scenario: Native splitters are sufficient
+- **WHEN** resizable chart/evidence、evidence/detail and main/AI boundaries can be implemented with scoped CSS and vanilla browser behavior
+- **THEN** implementation SHOULD prefer the native splitter path over adding a dock dependency
+- **AND** any persisted layout state SHALL remain separate from provider query state and business filters
