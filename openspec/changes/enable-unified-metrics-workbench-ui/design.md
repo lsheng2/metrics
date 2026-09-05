@@ -99,6 +99,16 @@ AI Base compact embed 是显式 surface contract，而不是 Dashboard-side ifra
 
 Rationale: 这保持 AI Base 的平台价值，同时避免把用户的 dashboard state 分裂到另一个窗口。
 
+### Decision 6.1: Dashboard supports standalone and with-AI modes through an adapter layer
+
+Dashboard APP 必须可以在不加载 AI Base 的情况下独立操作。Standalone mode 只依赖 Dashboard-owned provider facts、chart/evidence APIs、settings、Grafana render/publish integration 和 local diagnostics；AI disabled/unavailable 不得阻塞 chart、evidence、ticket detail、scope/profile sync、Grafana preview 或 Dashboard-owned publish/audit workflows。
+
+With-AI mode 是在 standalone Dashboard 之上加载一个单独的 AI adapter layer。该 adapter 是 Dashboard 到 AI Base SDK/compact widget 的唯一边界，负责把 `WorkbenchPageQueryState`、selected bucket/series、selected tickets 和 safe summary fields 转换为 AI Base `AppChatBindingRequest` / context patch / host action handler。Workbench view/template 不应直接拼 AI Base SDK payload、agent/workspace/session keys 或 postMessage protocol；它只能消费 adapter 输出的 readiness、chat URL/binding request、diagnostics 和 safe context metadata。
+
+Adapter layer 的建议位置是 `ui_web/ai_base_workbench_adapter.py` 或同等清晰的模块。它可以先生成 compact embed URL，后续切到 AI Base SDK `createWidgetUrl()` / `resolveBinding()` 时，调用方不应改变 Dashboard chart/evidence/publish 代码。任何新增 AI 功能必须先经过 adapter，不能把 AI Base coupling 写入 provider、chart、evidence 或 core workbench state 模块。
+
+Rationale: 这让 Dashboard 有两个清晰运行形态：无 AI 时是完整可用的 Metrics Dashboard；有 AI 时通过可替换 adapter 获得 AI sidebar 能力。AI 集成变成一层可加载的应用适配，而不是侵入 Dashboard 核心。
+
 ### Decision 7: One-window runtime is a launcher/proxy concern, not product ownership
 
 本 change 可以新增或扩展 local launcher/reverse-proxy，使用户只打开 workbench URL。代理层负责同源路径、service discovery 和 health；业务权限仍在 Dashboard/API 层。

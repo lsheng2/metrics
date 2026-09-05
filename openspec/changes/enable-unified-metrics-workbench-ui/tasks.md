@@ -70,3 +70,11 @@
 - [x] 8.16 固化 Dashboard-to-AI Base compact embed contract，传递 `workspace_key` 和 Dashboard agent id，并验证 AI Base 使用固定 workspace/agent 创建或过滤 chat session
 - [x] 8.17 统一 Workbench button/input 高密度样式，去掉图表 pane 内重复标题/外层 box，减少无效空间
 - [x] 8.18 增加通用 Chart.js legend/tooltip rendering，使用 dataset metadata 解释不同颜色曲线/柱状图
+
+## 9. Dashboard AI Adapter Principle
+
+- [x] 9.1 抽出 Dashboard-owned AI workbench adapter 模块，例如 `ui_web/ai_base_workbench_adapter.py`，集中负责 AI Base SDK binding request、compact embed URL、context patch、host action handler 和 diagnostics projection
+- [x] 9.2 保持 Dashboard standalone mode 为默认可运行路径，验证 `METRICS_AI_SIDECAR_ENABLED=False` 或 AI Base unavailable 时 chart/evidence/ticket detail/scope sync/Grafana preview/publish audit 仍可用
+- [x] 9.3 将 WorkbenchView/template 中直接拼接 AI Base `embed=workbench` query string 的逻辑迁入 adapter，并为未来 generic `embed=app-chat` / AI Base SDK `resolveBinding()` 切换保留同一调用面
+- [x] 9.4 增加 architecture guard 或 focused tests，防止 provider、chart、evidence、ticket detail 和 core PageQueryState 模块 import AI Base SDK/runtime objects
+- [x] 9.5 未来任何 Dashboard AI-assisted feature 必须先通过 adapter 接入，并同时覆盖 standalone mode 与 with-AI mode 的测试

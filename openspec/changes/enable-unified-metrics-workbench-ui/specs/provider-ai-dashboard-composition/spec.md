@@ -30,6 +30,27 @@ AI Base dashboard agent experience SHALL be available as an optional workbench p
 - **THEN** Dashboard SHALL remain the authority for chart recipe validation, artifact validation, publish approval, Grafana import and audit
 - **AND** the AI pane SHALL surface required approval or validation failures without bypassing Dashboard-owned workflow APIs
 
+### Requirement: Dashboard AI integration is isolated behind an adapter layer
+Dashboard SHALL support both standalone operation and with-AI operation, and AI Base-specific integration code SHALL be isolated behind a Dashboard-owned adapter layer.
+
+#### Scenario: Dashboard runs without AI Base
+- **WHEN** AI Base is disabled, not configured or unreachable
+- **THEN** Dashboard SHALL keep chart rendering, evidence list, ticket detail, scope/profile sync, settings, Grafana preview and Dashboard-owned publish/audit workflows usable
+- **AND** Dashboard SHALL show accurate AI diagnostics without starting AI Base as a side effect of rendering a web request
+- **AND** Dashboard SHALL NOT require AI Base SDK code to initialize core chart/evidence workbench behavior
+
+#### Scenario: Dashboard runs with AI Base enabled
+- **WHEN** AI Base is enabled and reachable
+- **THEN** Dashboard SHALL load AI capability through a single AI workbench adapter layer
+- **AND** the adapter SHALL translate `WorkbenchPageQueryState`, selected bucket/series, selected ticket working set and safe summaries into AI Base binding/context requests
+- **AND** the adapter SHALL own AI Base SDK URL building, binding request construction, context patch construction and host action handler registration
+
+#### Scenario: Implementation adds new AI-assisted behavior
+- **WHEN** a future change adds AI chat, artifact, approval, host action or context synchronization behavior to Dashboard
+- **THEN** the change SHALL route that behavior through the AI workbench adapter layer
+- **AND** provider, chart, evidence, ticket detail and core PageQueryState modules SHALL remain usable without importing AI Base SDK or depending on AI Base runtime objects
+- **AND** tests SHALL cover both standalone mode and with-AI mode for the affected user workflow
+
 ### Requirement: Workbench context handoff is bounded and explicit
 Workbench-to-AI context handoff SHALL include only approved state and safe artifact references, not raw credentials, private paths, provider-native secrets or unrestricted query text.
 

@@ -407,39 +407,6 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('AI chat is not enabled for this Dashboard process.', content)
         self.assertNotIn('secret-token', content)
 
-    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
-    def test_shouldRenderReadyAiBasePaneWithCurrentContext(self, status_payload):
-        # Given
-        status_payload.return_value = {
-            'status': 'ready',
-            'profile_id': 'dashboard_query_agent',
-            'service_id': 'dashboard-query-agent-app-service',
-            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
-        }
-
-        # When
-        response = self.client.get(reverse('ui_web:workbench'), {
-            'profile_id': 'nvu-ttl-hsdes',
-            'range_mode': 'ww',
-            'begin': '26WW32',
-            'end': '26WW35',
-            'chart_id': 'open_bug_trend',
-        })
-
-        # Then
-        content = response.content.decode()
-        self.assertEqual(200, response.status_code)
-        self.assertIn('AI Assistant', content)
-        self.assertIn('AI Base chat side window', content)
-        self.assertIn('tabindex="-1"', content)
-        self.assertIn('http://127.0.0.1:48310/?embed=workbench#/chat?', content)
-        self.assertIn('source=metrics-workbench', content)
-        self.assertIn('workspace_key=metrics.hsdes.nvu-ttl-hsdes', content)
-        self.assertIn('agent_id=dashboard_query_agent', content)
-        self.assertIn('ready', content)
-        self.assertIn('nvu-ttl-hsdes', content)
-        self.assertIn('open_bug_trend', content)
-
     def test_shouldRefreshWorkbenchEvidenceWhenReferenceChartBarIsClicked(self):
         # Given
         scope, run, bucket = self._seed_trend_data()

@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
@@ -108,6 +108,44 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         self.assertEqual(result['resized_sidebar_width'], result['stored_sidebar_width'])
         self.assertEqual('nvu-ttl-hsdes', result['profile_value'])
         self.assertEqual('hsdes', result['provider_value'])
+
+    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
+    def test_shouldKeepWorkbenchUsableInStandaloneModeWhenAiIsDisabled(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        BugTrendBucketIssue.objects.create(
+            scope=scope,
+            bucket=bucket,
+            calculation_run=run,
+            series_name='new_critical_high',
+            issue_key='STDEL-9301',
+            summary='Critical standalone issue',
+            status='Open',
+            severity_value='P1-Critical',
+            component_value='media',
+            owner_value='Bob',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        )
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+        })
+
+        # When
+        result = self._exercise_workbench_standalone_ai_disabled(response)
+
+        # Then
+        self.assertTrue(result['chart_visible'])
+        self.assertTrue(result['evidence_visible'])
+        self.assertTrue(result['ai_diagnostic_visible'])
+        self.assertEqual(0, result['iframe_count'])
+        self.assertTrue(result['ai_collapsed'])
 
     def _seed_trend_data(self):
         scope = JiraScopeConfig.objects.create(

@@ -2,7 +2,6 @@ from dataclasses import replace
 from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
 from urllib.parse import urlparse
-from urllib.parse import urlunparse
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,6 +9,7 @@ from django.views.generic import TemplateView
 from django.urls import reverse
 
 from ..container import ui_web_container
+from ..ai_base_workbench_adapter import AiBaseWorkbenchAdapter
 from ..workbench_grafana import grafana_full_dashboard_url, grafana_panel_embed_url
 from ..workbench_registry import WorkbenchServiceStatus, default_workbench_panes
 from ..workbench_state import WorkbenchPageQueryState
@@ -24,6 +24,7 @@ class WorkbenchView(GracefulTemplateView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bug_trend_facade = ui_web_container.bug_trend_facade
+        self.ai_adapter = AiBaseWorkbenchAdapter(self.full_stack_launcher_command)
 
     def populate_context(self, context, **kwargs):
         sidecar_status = self.bug_trend_facade.get_ai_sidecar_status_payload()
@@ -60,7 +61,7 @@ class WorkbenchView(GracefulTemplateView):
         ai_status = sidecar_status.get('status') or 'disabled'
         grafana_base_url = str(settings.METRICS_AI_GRAFANA_BASE_URL or '').rstrip('/')
         grafana_status = 'configured' if grafana_base_url else 'unavailable'
-        ai_frontend_url = self._ai_frontend_base_url(sidecar_status)
+        ai_frontend_url = self.ai_adapter.frontend_base_url(sidecar_status)
         checked_at = datetime.now().strftime('%H:%M:%S')
         return [
             WorkbenchServiceStatus(
@@ -86,7 +87,7 @@ class WorkbenchView(GracefulTemplateView):
                 ai_status,
                 ai_frontend_url,
                 str(sidecar_status.get('reason') or ''),
-                self._ai_next_action(ai_status),
+                self.ai_adapter.next_action(ai_status),
                 checked_at,
             ),
         ]
@@ -98,44 +99,6 @@ class WorkbenchView(GracefulTemplateView):
         if port:
             return f'If the panel is blank, check that Grafana is listening on port {port}.'
         return 'If the panel is blank, check the configured Grafana URL and service health.'
-
-    def _ai_next_action(self, status: str) -> str:
-        if status in {'ready', 'connected', 'available'}:
-            return 'Use the AI pane with the bounded workbench context.'
-        if status == 'disabled':
-            return f'Restart the unified stack with: {self.full_stack_launcher_command}'
-        return f'Start or restart AI Base with: {self.full_stack_launcher_command}'
-
-    def _ai_frontend_base_url(self, sidecar_status: dict) -> str:
-        configured_frontend = str(getattr(settings, 'METRICS_AI_BASE_FRONTEND_URL', '') or '').rstrip('/')
-        if configured_frontend:
-            return configured_frontend
-        backend_base_url = str(sidecar_status.get('base_url') or settings.METRICS_AI_BASE_URL).rstrip('/')
-        parsed_url = urlparse(backend_base_url)
-        if not parsed_url.scheme or not parsed_url.hostname:
-            return backend_base_url
-        frontend_port = (parsed_url.port + 10) if parsed_url.port else None
-        netloc = parsed_url.hostname
-        if frontend_port:
-            netloc = f'{netloc}:{frontend_port}'
-        return urlunparse((parsed_url.scheme, netloc, '', '', '', ''))
-
-    def _ai_chat_url(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> str:
-        base_url = self._ai_frontend_base_url(sidecar_status)
-        query = urlencode({
-            'source': 'metrics-workbench',
-            'profile_id': state.profile_id,
-            'provider_id': state.provider_id,
-            'workspace_key': self._workspace_key_for_state(state),
-            'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
-            'range_mode': state.range_mode,
-            'begin': state.begin,
-            'end': state.end,
-            'chart_id': state.chart_id,
-            'bucket': state.selected_bucket_id,
-            'series': state.selected_series_name,
-        })
-        return f'{base_url}/?embed=workbench#/chat?{query}'
 
     def _state(self) -> WorkbenchPageQueryState:
         state = WorkbenchPageQueryState.from_query(self.request.GET)
@@ -185,11 +148,6 @@ class WorkbenchView(GracefulTemplateView):
         if 'jira' in normalized_profile:
             return 'jira'
         return ''
-
-    def _workspace_key_for_state(self, state: WorkbenchPageQueryState) -> str:
-        if not state.provider_id or not state.profile_id:
-            return ''
-        return f'metrics.{state.provider_id}.{state.profile_id}'
 
     def _populate_chart_context(self, context, state: WorkbenchPageQueryState):
         scope_options = self.bug_trend_facade.get_scope_options()
@@ -250,35 +208,7 @@ class WorkbenchView(GracefulTemplateView):
         return next((chart for chart in chart_options if chart.chart_id == chart_id), None)
 
     def _ai_context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
-        return {
-            'profile_id': state.profile_id,
-            'provider_id': state.provider_id,
-            'range_mode': state.range_mode,
-            'begin': state.begin,
-            'end': state.end,
-            'chart_id': state.chart_id,
-            'chart_version': state.chart_version,
-            'selection': {
-                'run': state.calculation_run_id,
-                'snapshot': state.fact_snapshot_id,
-                'bucket': state.selected_bucket_id,
-                'series': state.selected_series_name,
-            },
-            'ai_base': {
-                'enabled': bool(sidecar_status.get('enabled', False)),
-                'status': sidecar_status.get('status', 'disabled'),
-                'reason': sidecar_status.get('reason', ''),
-                'base_url': sidecar_status.get('base_url', ''),
-                'frontend_url': self._ai_frontend_base_url(sidecar_status),
-                'profile_id': sidecar_status.get('profile_id', ''),
-                'service_id': sidecar_status.get('service_id', ''),
-                'capabilities': sidecar_status.get('capabilities', {}),
-                'chat_url': self._ai_chat_url(state, sidecar_status),
-                'workspace_key': self._workspace_key_for_state(state),
-                'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
-                'launcher_command': self.full_stack_launcher_command,
-            },
-        }
+        return self.ai_adapter.context(state, sidecar_status)
 
 
 class WorkbenchGrafanaSelectionView(TemplateView):
