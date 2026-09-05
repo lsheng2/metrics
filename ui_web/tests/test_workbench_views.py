@@ -29,10 +29,16 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('data-workbench-pane="chart"', content)
         self.assertIn('data-workbench-pane="evidence"', content)
         self.assertIn('data-workbench-pane="ai-assistant"', content)
+        self.assertIn('data-workbench-nav-link', content)
         self.assertNotIn('data-workbench-pane="utility"', content)
         self.assertNotIn('Settings, Publish, Audit', content)
         self.assertIn('data-workbench-status-bar', content)
         self.assertIn('workbench-control-grid', content)
+        self.assertIn('data-dashboard-sidebar-splitter', content)
+        self.assertIn('data-workbench-splitter="chart-evidence"', content)
+        self.assertIn('data-workbench-splitter="main-ai"', content)
+        self.assertIn('data-workbench-collapse="chart"', content)
+        self.assertIn('data-workbench-collapse="ai-assistant"', content)
         self.assertNotIn('compact panel ready', content)
         self.assertNotIn('&copy; 2017', content)
 
@@ -63,6 +69,8 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn('AI Base', content)
         self.assertIn('disabled', content)
+        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
+        self.assertIn('scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort', content)
         self.assertIn('Dashboard', content)
         self.assertIn('available', content)
         self.assertIn('Grafana', content)
@@ -203,6 +211,14 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn('STDEL-9201', content)
         self.assertIn('new_critical_high tickets for 26WW32', content)
+        self.assertIn('data-workbench-evidence-workspace', content)
+        self.assertIn('data-workbench-column-toggle="status"', content)
+        self.assertIn('data-workbench-evidence-sort-field', content)
+        self.assertIn('data-workbench-ticket-select-all', content)
+        self.assertIn('data-workbench-ticket-checkbox', content)
+        self.assertIn('data-workbench-ticket-detail', content)
+        self.assertIn('data-workbench-splitter="ticket-detail"', content)
+        self.assertIn('Open Source', content)
 
     def test_shouldExposeClearSelectionUrlWithoutBucketOrSeries(self):
         # Given
@@ -317,7 +333,8 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('Grafana', content)
         self.assertIn('unavailable', content)
         self.assertIn('Set METRICS_AI_GRAFANA_BASE_URL and start the Grafana service', content)
-        self.assertIn('Set METRICS_AI_SIDECAR_ENABLED=true and start AI Base', content)
+        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
+        self.assertIn('scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort', content)
 
     def test_shouldKeepLegacyFullPageUrlsReachableFromWorkbenchNavigation(self):
         # When
@@ -386,7 +403,8 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('workbench-ai-context', content)
         self.assertIn('nvu-ttl-hsdes', content)
         self.assertIn('new_critical_high', content)
-        self.assertIn('Open AI workflow diagnostics', content)
+        self.assertIn('Diagnostics', content)
+        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
         self.assertNotIn('secret-token', content)
 
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
@@ -414,8 +432,10 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('AI Assistant', content)
         self.assertIn('AI Base chat side window', content)
         self.assertIn('tabindex="-1"', content)
-        self.assertIn('http://127.0.0.1:48310/#/chat?', content)
+        self.assertIn('http://127.0.0.1:48310/?embed=workbench#/chat?', content)
         self.assertIn('source=metrics-workbench', content)
+        self.assertIn('workspace_key=metrics.hsdes.nvu-ttl-hsdes', content)
+        self.assertIn('agent_id=dashboard_query_agent', content)
         self.assertIn('ready', content)
         self.assertIn('nvu-ttl-hsdes', content)
         self.assertIn('open_bug_trend', content)

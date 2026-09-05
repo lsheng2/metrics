@@ -346,7 +346,7 @@ def normalize(value: str) -> str:
 
 
 def default_dashboard_state_path(workspace: Path) -> Path:
-    return workspace / "state" / "e2e" / "port-lifecycle" / "metrics-bug-trend-default.json"
+    return workspace / "state" / "e2e" / "service-lifecycle-engine" / "metrics-bug-trend-default.json"
 
 
 def default_ai_base_state_path(workspace: Path | None) -> Path | None:

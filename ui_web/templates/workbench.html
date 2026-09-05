@@ -16,7 +16,10 @@
                 <div class="select is-small is-fullwidth">
                     <select id="workbench-scope" name="scope_id">
                         {% for scope in scope_options %}
-                            <option value="{{ scope.id }}" {% if scope.id == selected_scope_id %}selected{% endif %}>{{ scope.label }}</option>
+                            <option value="{{ scope.id }}"
+                                    data-profile-id="{{ scope.profile_id }}"
+                                    data-provider-id="{{ scope.provider_id }}"
+                                    {% if scope.id == selected_scope_id %}selected{% endif %}>{{ scope.label }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -59,7 +62,15 @@
     <div id="workbench-grid" class="workbench-grid" data-workbench-state="{{ workbench_state }}">
         <article class="workbench-pane workbench-pane-primary" data-workbench-pane="chart" aria-labelledby="workbench-chart-title">
             <header class="workbench-pane-header">
-                <h2 class="title is-5" id="workbench-chart-title">Quality Chart</h2>
+                <div class="workbench-pane-title-group">
+                    <h2 class="title is-5" id="workbench-chart-title">Quality Chart</h2>
+                    {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
+                        <span class="tag is-light">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</span>
+                    {% endif %}
+                </div>
+                <div class="workbench-pane-actions">
+                    <button class="button is-small" type="button" data-workbench-collapse="chart" aria-expanded="true">Collapse</button>
+                </div>
             </header>
             <div class="workbench-pane-body">
                 {% include "partials/bug_trend_chart.html" %}
@@ -70,6 +81,7 @@
                 </details>
             </div>
         </article>
+        <div class="workbench-splitter workbench-splitter-horizontal" role="separator" aria-orientation="horizontal" tabindex="0" data-workbench-splitter="chart-evidence" title="Resize chart and evidence panes"></div>
 
         <article class="workbench-pane workbench-pane-evidence" data-workbench-pane="evidence" aria-labelledby="workbench-evidence-title">
             <header class="workbench-pane-header">
@@ -132,18 +144,20 @@
                 </form>
             </div>
         </article>
+        <div class="workbench-splitter workbench-splitter-vertical" role="separator" aria-orientation="vertical" tabindex="0" data-workbench-splitter="main-ai" title="Resize main work area and AI pane"></div>
 
         <aside class="workbench-pane workbench-pane-ai" data-workbench-pane="ai-assistant" aria-labelledby="workbench-ai-title">
             <header class="workbench-pane-header">
-                <h2 class="title is-5" id="workbench-ai-title">AI Assistant</h2>
-                <button class="button is-small" type="button" data-workbench-collapse="ai-assistant" aria-expanded="true">Collapse</button>
+                <div class="workbench-pane-title-group">
+                    <h2 class="title is-5" id="workbench-ai-title">AI Assistant</h2>
+                    <span class="tag is-light">{{ workbench_ai_context.ai_base.status }}</span>
+                </div>
+                <div class="workbench-pane-actions">
+                    <a class="button is-small" href="{{ workbench_ai_context.ai_base.chat_url }}" target="_blank" rel="noopener">Open</a>
+                    <button class="button is-small" type="button" data-workbench-collapse="ai-assistant" aria-expanded="true">Collapse</button>
+                </div>
             </header>
             <div class="workbench-pane-body workbench-ai-pane-body">
-                <div class="workbench-ai-context-strip" aria-label="AI context">
-                    <span>{{ workbench_ai_context.profile_id|default:"profile" }}</span>
-                    <span>{{ workbench_ai_context.chart_id|default:"chart" }}</span>
-                    <span>{{ workbench_ai_context.ai_base.status }}</span>
-                </div>
                 {% if workbench_ai_context.ai_base.status == "ready" or workbench_ai_context.ai_base.status == "connected" or workbench_ai_context.ai_base.status == "available" %}
                     <iframe
                         class="workbench-ai-chat-frame"
@@ -155,16 +169,26 @@
                     </iframe>
                 {% else %}
                     <div class="workbench-ai-unavailable">
-                        <p class="has-text-grey">AI Base is {{ workbench_ai_context.ai_base.status }}.</p>
-                        <dl class="is-size-7 mt-3">
-                            <dt>Profile</dt>
-                            <dd>{{ workbench_ai_context.profile_id }}</dd>
-                            <dt>Chart</dt>
-                            <dd>{{ workbench_ai_context.chart_id }}</dd>
-                            <dt>Selection</dt>
-                            <dd>{{ workbench_ai_context.selection.bucket }} {{ workbench_ai_context.selection.series }}</dd>
-                        </dl>
-                        <p class="mt-3"><a class="button is-small" href="{% url 'ui_web:ai_dashboard_workflow' %}">Open AI workflow diagnostics</a></p>
+                        {% if not workbench_ai_context.ai_base.enabled %}
+                            <p class="has-text-weight-semibold">AI chat is not enabled for this Dashboard process.</p>
+                            <p class="is-size-7 has-text-grey">Restart the unified stack to enable the embedded AI Base chat side window.</p>
+                        {% else %}
+                            <p class="has-text-weight-semibold">AI chat is configured but not reachable.</p>
+                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.reason|default:"Check the AI Base backend and frontend services." }}</p>
+                        {% endif %}
+                        <div class="workbench-ai-start-command mt-3">
+                            <span>Start stack</span>
+                            <code>{{ workbench_ai_context.ai_base.launcher_command }}</code>
+                        </div>
+                        <div class="buttons are-small mt-3">
+                            <a class="button" href="{% url 'ui_web:ai_dashboard_workflow' %}">Diagnostics</a>
+                            {% if workbench_ai_context.ai_base.frontend_url %}
+                                <a class="button" href="{{ workbench_ai_context.ai_base.frontend_url }}" target="_blank" rel="noopener">AI Base</a>
+                            {% endif %}
+                            {% if workbench_ai_context.ai_base.base_url %}
+                                <a class="button" href="{{ workbench_ai_context.ai_base.base_url }}/health/handshake" target="_blank" rel="noopener">Handshake</a>
+                            {% endif %}
+                        </div>
                     </div>
                 {% endif %}
             </div>

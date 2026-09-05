@@ -6,6 +6,8 @@ from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeCon
 from bug_metrics.models import JiraScopeConfig
 
 from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
+from .bug_trend_chart_payload import chart_payload, run_metadata_payload
+from .bug_trend_scope_profile import resolve_scope_profile_binding
 from .provider_dashboard_facade import ProviderDashboardFacade
 
 
@@ -16,14 +18,11 @@ class BugTrendFacade:
         self._provider_dashboard_facade = ProviderDashboardFacade(bug_trend_api)
 
     def get_scope_options(self):
-        return [
-            BugTrendScopeOption(
-                id=scope.id,
-                name=scope.name,
-                label=self._scope_label(scope),
-            )
-            for scope in self._bug_trend_api.list_enabled_scopes()
-        ]
+        options = []
+        for scope in self._bug_trend_api.list_enabled_scopes():
+            profile_id, provider_id = resolve_scope_profile_binding(scope)
+            options.append(BugTrendScopeOption(scope.id, scope.name, self._scope_label(scope), profile_id, provider_id))
+        return options
 
     def get_scope_library(self):
         return self._bug_trend_api.list_scope_configs()
@@ -61,7 +60,7 @@ class BugTrendFacade:
             bucket_ends=chart.bucket_ends or [],
             bucket_granularity=chart.bucket_granularity or '',
             unavailable_reason=chart.unavailable_reason,
-            run_metadata=self._run_metadata_payload(chart.run_metadata),
+            run_metadata=run_metadata_payload(chart.run_metadata),
             current_evidence_available=chart.current_evidence_available,
         )
 
@@ -69,41 +68,7 @@ class BugTrendFacade:
         return json.dumps(self.get_chart_payload(chart_data))
 
     def get_chart_payload(self, chart_data: BugTrendChartData) -> dict:
-        points = []
-        for dataset in chart_data.datasets:
-            for index, value in enumerate(dataset['values']):
-                points.append({
-                    'calculation_run_id': chart_data.calculation_run_id,
-                    'bucket_id': chart_data.bucket_ids[index],
-                    'bucket_label': chart_data.labels[index],
-                    'bucket_start': self._bucket_value(chart_data.bucket_starts, index),
-                    'bucket_end': self._bucket_value(chart_data.bucket_ends, index),
-                    'bucket_granularity': chart_data.bucket_granularity,
-                    'series_name': dataset['series_name'],
-                    'series_label': self._series_label(dataset['series_name']),
-                    'label': chart_data.labels[index],
-                    'value': value,
-                    'type': dataset['type'],
-                    'color': dataset['color'],
-                })
-        grafana_rows = self._grafana_rows(chart_data)
-        return {
-            'scope_id': chart_data.scope_id,
-            'chart_id': chart_data.chart_id,
-            'contract_version': chart_data.contract_version,
-            'calculation_run_id': chart_data.calculation_run_id,
-            'labels': chart_data.labels,
-            'bucket_ids': chart_data.bucket_ids,
-            'bucket_starts': chart_data.bucket_starts,
-            'bucket_ends': chart_data.bucket_ends,
-            'bucket_granularity': chart_data.bucket_granularity,
-            'datasets': chart_data.datasets,
-            'points': points,
-            'grafana_rows': grafana_rows,
-            'unavailable_reason': chart_data.unavailable_reason,
-            'run_metadata': chart_data.run_metadata or {},
-            'current_evidence_available': chart_data.current_evidence_available,
-        }
+        return chart_payload(chart_data)
 
     def get_provider_chart_payload(self, provider_id: str, profile_id: str, begin_ww: str, end_ww: str,
                                    chart_id: str, chart_version: int = 1, fact_snapshot_id: str = '',
@@ -172,41 +137,6 @@ class BugTrendFacade:
 
     def get_ai_workspace_context_bundle_payload(self, profile_id: str) -> dict:
         return self._bug_trend_api.get_ai_workspace_context_bundle(profile_id)
-
-    def _grafana_rows(self, chart_data: BugTrendChartData) -> list[dict]:
-        rows = []
-        for index, bucket_id in enumerate(chart_data.bucket_ids):
-            row = {
-                'calculation_run_id': chart_data.calculation_run_id,
-                'bucket_id': bucket_id,
-                'bucket_label': chart_data.labels[index],
-                'bucket_start': self._bucket_value(chart_data.bucket_starts, index),
-                'bucket_end': self._bucket_value(chart_data.bucket_ends, index),
-                'bucket_granularity': chart_data.bucket_granularity,
-            }
-            for dataset in chart_data.datasets:
-                row[dataset['series_name']] = dataset['values'][index]
-            rows.append(row)
-        return rows
-
-    def _bucket_value(self, values: list, index: int) -> str:
-        return values[index] if values and index < len(values) else ''
-
-    def _series_label(self, series_name: str) -> str:
-        return series_name.replace('_', ' ').title()
-
-    def _run_metadata_payload(self, run_metadata) -> dict:
-        if not run_metadata:
-            return {}
-        return {
-            'calculation_run_id': run_metadata.calculation_run_id,
-            'run_config_version_hash': run_metadata.run_config_version_hash,
-            'current_config_version_hash': run_metadata.current_config_version_hash,
-            'freshness_status': run_metadata.freshness_status,
-            'source_coverage_start': run_metadata.source_coverage_start,
-            'source_coverage_end': run_metadata.source_coverage_end,
-            'completed_at': run_metadata.completed_at,
-        }
 
     def get_evidence_data(self, scope_id: int, begin: date, end: date, bucket_id: str = '', series_name: str = '',
                           calculation_run_id: str = '', owner: str = '', status: str = '', severity: str = '',

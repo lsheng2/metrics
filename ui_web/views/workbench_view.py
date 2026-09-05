@@ -19,6 +19,7 @@ from .graceful_template_view import GracefulTemplateView
 
 class WorkbenchView(GracefulTemplateView):
     template_name = 'workbench.html'
+    full_stack_launcher_command = 'powershell -ExecutionPolicy Bypass -File scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -102,8 +103,8 @@ class WorkbenchView(GracefulTemplateView):
         if status in {'ready', 'connected', 'available'}:
             return 'Use the AI pane with the bounded workbench context.'
         if status == 'disabled':
-            return 'Set METRICS_AI_SIDECAR_ENABLED=true and start AI Base when assistant support is needed.'
-        return 'Start or restart AI Base and verify the Dashboard connector diagnostics.'
+            return f'Restart the unified stack with: {self.full_stack_launcher_command}'
+        return f'Start or restart AI Base with: {self.full_stack_launcher_command}'
 
     def _ai_frontend_base_url(self, sidecar_status: dict) -> str:
         configured_frontend = str(getattr(settings, 'METRICS_AI_BASE_FRONTEND_URL', '') or '').rstrip('/')
@@ -125,6 +126,8 @@ class WorkbenchView(GracefulTemplateView):
             'source': 'metrics-workbench',
             'profile_id': state.profile_id,
             'provider_id': state.provider_id,
+            'workspace_key': self._workspace_key_for_state(state),
+            'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
             'range_mode': state.range_mode,
             'begin': state.begin,
             'end': state.end,
@@ -132,26 +135,39 @@ class WorkbenchView(GracefulTemplateView):
             'bucket': state.selected_bucket_id,
             'series': state.selected_series_name,
         })
-        return f'{base_url}/#/chat?{query}'
+        return f'{base_url}/?embed=workbench#/chat?{query}'
 
     def _state(self) -> WorkbenchPageQueryState:
         state = WorkbenchPageQueryState.from_query(self.request.GET)
         today = date.today()
-        provider_id = self._provider_id_for_profile(state.profile_id) or state.provider_id
-        scope_id = state.scope_id or self._default_scope_id()
+        scope_options = self.bug_trend_facade.get_scope_options()
+        scope_id = state.scope_id or self._default_scope_id(state.profile_id, scope_options)
+        scope_option = self._scope_option(scope_options, scope_id)
+        profile_id = scope_option.profile_id if scope_option and scope_option.profile_id else state.profile_id
+        provider_id = scope_option.provider_id if scope_option and scope_option.provider_id else self._provider_id_for_profile(profile_id) or state.provider_id
         return replace(
             state,
             scope_id=scope_id,
+            profile_id=profile_id,
             provider_id=provider_id,
             begin=state.begin or (today - timedelta(days=27)).isoformat(),
             end=state.end or today.isoformat(),
         )
 
-    def _default_scope_id(self) -> str:
-        scope_options = self.bug_trend_facade.get_scope_options()
+    def _default_scope_id(self, profile_id: str, scope_options=None) -> str:
+        scope_options = scope_options if scope_options is not None else self.bug_trend_facade.get_scope_options()
         if not scope_options:
             return ''
+        normalized_profile_id = profile_id.lower()
+        for scope in scope_options:
+            if scope.name.lower() == normalized_profile_id:
+                return str(scope.id)
         return str(scope_options[0].id)
+
+    def _scope_option(self, scope_options, scope_id: str):
+        if not scope_id:
+            return None
+        return next((scope for scope in scope_options if str(scope.id) == str(scope_id)), None)
 
     def _provider_id_for_profile(self, profile_id: str) -> str:
         if not profile_id:
@@ -169,6 +185,11 @@ class WorkbenchView(GracefulTemplateView):
         if 'jira' in normalized_profile:
             return 'jira'
         return ''
+
+    def _workspace_key_for_state(self, state: WorkbenchPageQueryState) -> str:
+        if not state.provider_id or not state.profile_id:
+            return ''
+        return f'metrics.{state.provider_id}.{state.profile_id}'
 
     def _populate_chart_context(self, context, state: WorkbenchPageQueryState):
         scope_options = self.bug_trend_facade.get_scope_options()
@@ -244,11 +265,18 @@ class WorkbenchView(GracefulTemplateView):
                 'series': state.selected_series_name,
             },
             'ai_base': {
+                'enabled': bool(sidecar_status.get('enabled', False)),
                 'status': sidecar_status.get('status', 'disabled'),
+                'reason': sidecar_status.get('reason', ''),
+                'base_url': sidecar_status.get('base_url', ''),
+                'frontend_url': self._ai_frontend_base_url(sidecar_status),
                 'profile_id': sidecar_status.get('profile_id', ''),
                 'service_id': sidecar_status.get('service_id', ''),
                 'capabilities': sidecar_status.get('capabilities', {}),
                 'chat_url': self._ai_chat_url(state, sidecar_status),
+                'workspace_key': self._workspace_key_for_state(state),
+                'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
+                'launcher_command': self.full_stack_launcher_command,
             },
         }
 

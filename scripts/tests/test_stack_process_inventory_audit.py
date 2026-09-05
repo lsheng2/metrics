@@ -12,7 +12,7 @@ import audit_stack_process_inventory
 
 
 def write_runtime_state(tmp_path: Path) -> tuple[Path, Path, Path]:
-    dashboard_state_path = tmp_path / "state" / "e2e" / "port-lifecycle" / "metrics-bug-trend-default.json"
+    dashboard_state_path = tmp_path / "state" / "e2e" / "service-lifecycle-engine" / "metrics-bug-trend-default.json"
     dashboard_state_path.parent.mkdir(parents=True)
     dashboard_state_path.write_text(
         json.dumps(
@@ -268,3 +268,7 @@ def test_dashboardAiStackRunsProcessInventoryAuditBeforeOpeningBrowser():
 
     assert "Invoke-ProcessInventoryAudit -Phase 'final'" in script
     assert script.index("Invoke-ProcessInventoryAudit -Phase 'final'") < script.index("Start-Process $workbenchUrl")
+    final_section = script[script.index("Invoke-BootLogAudit -Phase 'final'"):script.index("Start-Process $workbenchUrl")]
+    assert "Clear-StaleDemoProcesses" not in final_section
+    assert "Get-DashboardLifecycleStatePath" in script
+    assert "service-lifecycle-engine\\metrics-bug-trend-default.json" in script

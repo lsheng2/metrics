@@ -161,6 +161,9 @@ class TestBugTrendDashboardBrowser(TestCase):
         self.assertEqual([1, 1], series_values['new_critical_high'])
         self.assertEqual([1, 1], series_values['new_medium_low'])
         self.assertEqual([-1, -1], series_values['fixed_or_closed_bugs'])
+        self.assertTrue(chart_config['options']['plugins']['legend']['display'])
+        self.assertEqual('top', chart_config['options']['plugins']['legend']['position'])
+        self.assertIn('Fixed Or Closed Bugs', chart_config['legendText'])
         self.assertIn('STDEL-9002', evidence_text)
 
     def test_shouldRenderChartAndOpenEvidenceFromClickedBucket(self):
@@ -290,6 +293,7 @@ class TestBugTrendDashboardBrowser(TestCase):
                 () => {
                     const config = window.bugTrendChartInstance.config;
                     config.evidenceUrl = window.lastHtmxUrl;
+                    config.legendText = document.getElementById('bugTrendLegend')?.innerText || '';
                     return config;
                 }
             """)
@@ -344,6 +348,9 @@ class TestBugTrendDashboardBrowser(TestCase):
         html = html.replace(
             '<script src="https://unpkg.com/chart.js@4.5.1/dist/chart.umd.js"></script>',
             '<script>' + self._chart_stub() + '</script>',
+        ).replace(
+            '<script src="/static/js/vendor_fallbacks.js"></script>',
+            '<script>' + self._htmx_stub() + self._chart_stub() + '</script>',
         ).replace(
             '<script src="https://unpkg.com/htmx.org@2.0.10/dist/htmx.min.js"></script>',
             '<script>' + self._htmx_stub() + '</script>',

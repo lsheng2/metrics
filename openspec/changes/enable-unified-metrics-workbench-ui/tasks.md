@@ -49,3 +49,24 @@
 - [x] 7.4 运行 `python manage.py check`、`python scripts/check_file_size_limits.py --include-untracked`、`python scripts/check_diff_whitespace.py --include-untracked` 并确认无阻断问题
 - [x] 7.5 更新相关 docs/runbook，验证文档说明 one-window workbench launch、chart-to-evidence behavior、unsupported evidence states 和 rollback path
 - [x] 7.6 运行 `openspec validate enable-unified-metrics-workbench-ui --strict` 并确认 change 通过
+
+## 8. High-Density Workbench Interaction Upgrade
+
+- [x] 8.1 实现 chart/evidence horizontal splitter，支持上下拖动、双击恢复默认值、最小高度保护，并验证拖动不改变 PageQueryState、selected bucket/series 或 evidence filters
+- [x] 8.2 实现 main/AI vertical splitter 和 AI right-rail collapse/expand，支持左右拖动、窄 rail 恢复、最小/最大宽度保护，并验证 chat iframe/context、pending approval 和 artifact state 不因 layout 操作丢失
+- [x] 8.3 将 Bug Trend chart pane 折叠/展开接入 layout state，折叠后只保留 chart header 和 selected bucket/series summary，并验证 evidence table 获得额外高度
+- [x] 8.4 增加 evidence table high-density toolbar，支持字段显隐、可见字段多字段排序、selected count、bulk action 和 export，验证这些 view-state 不改变 provider truth 或 chart selection
+- [x] 8.5 增加 evidence ticket checkbox selection，支持单选/多选/select-all，验证 selected tickets 作为 explicit working set 与 chart bucket/series selection、evidence filters 分开保存
+- [x] 8.6 增加 evidence 内部 ticket detail pane，点击单个 ticket 时展示 normalized ticket fields、summary、latest activity、links 和 local actions，验证它不 iframe Jira/HSD-ES full page 且关闭/resize 不清空 ticket list
+- [x] 8.7 更新 workbench-to-AI context payload，使 selected-ticket working set 可作为 bounded AI grounding 输入，并验证 payload 不包含 credentials、tokens、private paths、raw provider exceptions 或外部 provider session data
+- [x] 8.8 增加 responsive/high-density UI inspection：desktop 宽屏、窄屏和 AI collapsed rail 状态下 chart、ticket list、ticket detail、AI pane 和 bottom service status 不重叠、不遮挡、文本不溢出
+- [x] 8.9 增加 focused tests/browser smoke 覆盖 splitter resize、pane collapse、table columns/sort、ticket selection、ticket detail lazy load、AI context separation，并重新运行 `openspec validate enable-unified-metrics-workbench-ui --strict`
+- [x] 8.10 增加 Workbench 主导航状态恢复：保存最后一次有效 same-origin `/workbench/` query URL，拒绝外部 URL，并验证从其它 Dashboard 页面返回时不会丢失 profile/scope/range/chart selection
+- [x] 8.11 明确 AI Base disabled/unavailable 的运行时边界：页面只显示准确状态、diagnostics 和一键 launcher command，不在 web request 中 on-the-fly 启动外部服务
+- [x] 8.12 修复 unified stack launcher lifecycle state source，确保 final stale-process cleanup/audit 不会误停当前 Dashboard/Grafana lifecycle process
+- [x] 8.13 接入 AI Base `embed=workbench` compact chat surface，验证 iframe 不显示完整 AppShell navigation、session setup sidebar、session files/details panel 或内部 status chrome
+- [x] 8.14 增加 Dashboard global navigation/main work area splitter，支持左右调整并持久化 sidebar 宽度
+- [x] 8.15 增加 scope-bound profile/provider synchronization，验证切换 scope 后 toolbar 和 server PageQueryState 均使用正确 provider profile
+- [x] 8.16 固化 Dashboard-to-AI Base compact embed contract，传递 `workspace_key` 和 Dashboard agent id，并验证 AI Base 使用固定 workspace/agent 创建或过滤 chat session
+- [x] 8.17 统一 Workbench button/input 高密度样式，去掉图表 pane 内重复标题/外层 box，减少无效空间
+- [x] 8.18 增加通用 Chart.js legend/tooltip rendering，使用 dataset metadata 解释不同颜色曲线/柱状图

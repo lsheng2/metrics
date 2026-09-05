@@ -7,6 +7,8 @@ class BugTrendScopeOption:
     id: int
     name: str
     label: str
+    profile_id: str = ''
+    provider_id: str = ''
 
 
 @dataclass(slots=True)

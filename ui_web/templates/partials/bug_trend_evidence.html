@@ -1,23 +1,52 @@
-<div class="box">
-    <div class="level mb-3">
-        <div class="level-left">
-            <div>
-                <h3 class="title is-4">{{ evidence.selection_title }}</h3>
-                <p class="is-size-7 has-text-grey">{{ evidence.shown_count }} of {{ evidence.total_count }} evidence tickets shown</p>
-            </div>
+<div class="workbench-evidence-card box" data-workbench-evidence-workspace>
+    <div class="workbench-evidence-heading">
+        <div class="workbench-evidence-title">
+            <h3 class="title is-5">{{ evidence.selection_title }}</h3>
+            <p class="is-size-7 has-text-grey">{{ evidence.shown_count }} of {{ evidence.total_count }} evidence tickets shown</p>
         </div>
-        {% if evidence.has_selection %}
-            <div class="level-right">
+        <div class="workbench-evidence-actions" aria-label="Evidence actions">
+            <details class="workbench-menu">
+                <summary class="button is-small">Columns</summary>
+                <div class="workbench-menu-panel">
+                    <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="series"> Series</label>
+                    <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="status"> Status</label>
+                    <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="severity"> Severity</label>
+                    <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="owner"> Owner</label>
+                    <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="component"> Component</label>
+                    <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="created"> Created</label>
+                    <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="updated"> Updated</label>
+                </div>
+            </details>
+            <div class="select is-small">
+                <select aria-label="Sort evidence field" data-workbench-evidence-sort-field>
+                    <option value="severity">Severity</option>
+                    <option value="updated">Updated</option>
+                    <option value="created">Created</option>
+                    <option value="status">Status</option>
+                    <option value="owner">Owner</option>
+                </select>
+            </div>
+            <div class="select is-small">
+                <select aria-label="Sort evidence direction" data-workbench-evidence-sort-direction>
+                    <option value="desc">Desc</option>
+                    <option value="asc">Asc</option>
+                </select>
+            </div>
+            <button class="button is-small" type="button" data-workbench-evidence-sort>Sort</button>
+            <span class="tag is-light" data-workbench-ticket-selected-count>0 selected</span>
+            <button class="button is-small" type="button" data-workbench-ticket-bulk>Bulk</button>
+            <a class="button is-small" href="{% url 'ui_web:bug_trend_evidence_export' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}&bucket={{ evidence.bucket_id }}&series={{ evidence.series_name }}&owner={{ evidence.owner|urlencode }}&status={{ evidence.status|urlencode }}&severity={{ evidence.severity|urlencode }}&component={{ evidence.component|urlencode }}&text={{ evidence.text|urlencode }}">Export</a>
+            {% if evidence.has_selection %}
                 <button class="button is-small"
                     hx-get="{% url 'ui_web:bug_trend_evidence' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}"
-                        hx-target="#bug-trend-evidence-container"
-                        hx-swap="innerHTML">
-                    Clear selection
+                    hx-target="#bug-trend-evidence-container"
+                    hx-swap="innerHTML">
+                    Clear
                 </button>
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
-    <form class="mb-4" hx-get="{% url 'ui_web:bug_trend_evidence' %}" hx-target="#bug-trend-evidence-container" hx-swap="innerHTML">
+    <form class="workbench-evidence-filter" hx-get="{% url 'ui_web:bug_trend_evidence' %}" hx-target="#bug-trend-evidence-container" hx-swap="innerHTML">
         <input type="hidden" name="scope_id" value="{{ evidence.scope_id }}">
         <input type="hidden" name="run" value="{{ evidence.calculation_run_id }}">
         <input type="hidden" name="chart_id" value="{{ evidence.active_chart_id }}">
@@ -25,77 +54,104 @@
         <input type="hidden" name="end" value="{{ evidence.end }}">
         <input type="hidden" name="bucket" value="{{ evidence.bucket_id }}">
         <input type="hidden" name="series" value="{{ evidence.series_name }}">
-        <div class="columns is-multiline is-align-items-end">
-            <div class="column is-one-quarter">
-                <label class="label" for="evidence-text">Text</label>
-                <input class="input" id="evidence-text" name="text" value="{{ evidence.text }}">
-            </div>
-            <div class="column">
-                <label class="label" for="evidence-status">Status</label>
-                <input class="input" id="evidence-status" name="status" value="{{ evidence.status }}">
-            </div>
-            <div class="column">
-                <label class="label" for="evidence-severity">Severity</label>
-                <input class="input" id="evidence-severity" name="severity" value="{{ evidence.severity }}">
-            </div>
-            <div class="column">
-                <label class="label" for="evidence-owner">Owner</label>
-                <input class="input" id="evidence-owner" name="owner" value="{{ evidence.owner }}">
-            </div>
-            <div class="column">
-                <label class="label" for="evidence-component">Component</label>
-                <input class="input" id="evidence-component" name="component" value="{{ evidence.component }}">
-            </div>
-            <div class="column is-narrow">
-                <button class="button is-link" type="submit">Filter evidence</button>
-            </div>
-            <div class="column is-narrow">
-                <a class="button" href="{% url 'ui_web:bug_trend_evidence_export' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}&bucket={{ evidence.bucket_id }}&series={{ evidence.series_name }}&owner={{ evidence.owner|urlencode }}&status={{ evidence.status|urlencode }}&severity={{ evidence.severity|urlencode }}&component={{ evidence.component|urlencode }}&text={{ evidence.text|urlencode }}">Export CSV</a>
-            </div>
-        </div>
+        <input class="input is-small" name="text" value="{{ evidence.text }}" placeholder="Text">
+        <input class="input is-small" name="status" value="{{ evidence.status }}" placeholder="Status">
+        <input class="input is-small" name="severity" value="{{ evidence.severity }}" placeholder="Severity">
+        <input class="input is-small" name="owner" value="{{ evidence.owner }}" placeholder="Owner">
+        <input class="input is-small" name="component" value="{{ evidence.component }}" placeholder="Component">
+        <button class="button is-link is-small" type="submit">Filter</button>
     </form>
-    <table class="table is-fullwidth is-striped is-hoverable">
-        <thead>
-            <tr>
-                <th>Issue</th>
-                <th>Summary</th>
-                <th>Series</th>
-                <th>Status</th>
-                <th>Severity</th>
-                <th>Owner</th>
-                <th>Component</th>
-                <th>Created</th>
-                <th>Updated</th>
-                {% for field_name in evidence.display_fields %}
-                    <th>{{ field_name }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in evidence.rows %}
-                <tr>
-                    <td>
-                        {% if row.source_url %}
-                            <a href="{{ row.source_url }}" target="_blank" rel="noopener noreferrer">{{ row.issue_key }}</a>
-                        {% else %}
-                            {{ row.issue_key }}
-                        {% endif %}
-                    </td>
-                    <td>{{ row.summary }}</td>
-                    <td>{{ row.series_name }}</td>
-                    <td>{{ row.status }}</td>
-                    <td>{{ row.severity }}</td>
-                    <td>{{ row.owner }}</td>
-                    <td>{{ row.component }}</td>
-                    <td>{{ row.created_at }}</td>
-                    <td>{{ row.updated_at }}</td>
-                    {% for field_value in row.extra_field_values %}
-                        <td>{{ field_value }}</td>
+    <div class="workbench-evidence-layout is-detail-collapsed" data-workbench-evidence-layout>
+        <div class="workbench-evidence-table-wrap">
+            <table class="table is-fullwidth is-striped is-hoverable workbench-evidence-table" data-workbench-evidence-table>
+                <thead>
+                    <tr>
+                        <th class="workbench-select-column"><input type="checkbox" aria-label="Select all evidence tickets" data-workbench-ticket-select-all></th>
+                        <th data-workbench-field="issue">Issue</th>
+                        <th data-workbench-field="summary">Summary</th>
+                        <th data-workbench-field="series">Series</th>
+                        <th data-workbench-field="status">Status</th>
+                        <th data-workbench-field="severity">Severity</th>
+                        <th data-workbench-field="owner">Owner</th>
+                        <th data-workbench-field="component">Component</th>
+                        <th data-workbench-field="created">Created</th>
+                        <th data-workbench-field="updated">Updated</th>
+                        {% for field_name in evidence.display_fields %}
+                            <th>{{ field_name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in evidence.rows %}
+                        <tr data-workbench-ticket-row
+                            data-issue-key="{{ row.issue_key }}"
+                            data-source-url="{{ row.source_url }}"
+                            data-summary="{{ row.summary }}"
+                            data-series="{{ row.series_name }}"
+                            data-status="{{ row.status }}"
+                            data-severity="{{ row.severity }}"
+                            data-owner="{{ row.owner }}"
+                            data-component="{{ row.component }}"
+                            data-created="{{ row.created_at }}"
+                            data-updated="{{ row.updated_at }}">
+                            <td class="workbench-select-column"><input type="checkbox" value="{{ row.issue_key }}" aria-label="Select {{ row.issue_key }}" data-workbench-ticket-checkbox></td>
+                            <td data-workbench-field="issue">
+                                {% if row.source_url %}
+                                    <a href="{{ row.source_url }}" target="_blank" rel="noopener noreferrer">{{ row.issue_key }}</a>
+                                {% else %}
+                                    {{ row.issue_key }}
+                                {% endif %}
+                            </td>
+                            <td data-workbench-field="summary">{{ row.summary }}</td>
+                            <td data-workbench-field="series">{{ row.series_name }}</td>
+                            <td data-workbench-field="status">{{ row.status }}</td>
+                            <td data-workbench-field="severity">{{ row.severity }}</td>
+                            <td data-workbench-field="owner">{{ row.owner }}</td>
+                            <td data-workbench-field="component">{{ row.component }}</td>
+                            <td data-workbench-field="created">{{ row.created_at }}</td>
+                            <td data-workbench-field="updated">{{ row.updated_at }}</td>
+                            {% for field_value in row.extra_field_values %}
+                                <td>{{ field_value }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="{{ evidence.display_fields|length|add:10 }}">No evidence rows matched this selection.</td></tr>
                     {% endfor %}
-                </tr>
-            {% empty %}
-                <tr><td colspan="{{ evidence.display_fields|length|add:9 }}">No evidence rows matched this selection.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </tbody>
+            </table>
+        </div>
+        <div class="workbench-evidence-detail-splitter" role="separator" aria-orientation="vertical" tabindex="0" data-workbench-splitter="ticket-detail" title="Resize ticket detail pane"></div>
+        <aside class="workbench-ticket-detail" data-workbench-ticket-detail aria-label="Ticket detail">
+            <header class="workbench-ticket-detail-header">
+                <h4 class="title is-6">Ticket Detail</h4>
+                <button class="button is-small" type="button" data-workbench-ticket-detail-close aria-label="Close ticket detail">Close</button>
+            </header>
+            <div class="workbench-ticket-detail-body">
+                <p class="has-text-grey is-size-7" data-ticket-detail-empty>Select a ticket to inspect normalized details.</p>
+                <div class="is-hidden" data-ticket-detail-content>
+                    <p class="is-size-7 has-text-grey">Issue</p>
+                    <p class="has-text-weight-semibold" data-ticket-detail-issue></p>
+                    <p class="mt-2" data-ticket-detail-summary></p>
+                    <dl class="workbench-ticket-detail-fields">
+                        <dt>Status</dt>
+                        <dd data-ticket-detail-status></dd>
+                        <dt>Severity</dt>
+                        <dd data-ticket-detail-severity></dd>
+                        <dt>Owner</dt>
+                        <dd data-ticket-detail-owner></dd>
+                        <dt>Component</dt>
+                        <dd data-ticket-detail-component></dd>
+                        <dt>Created</dt>
+                        <dd data-ticket-detail-created></dd>
+                        <dt>Updated</dt>
+                        <dd data-ticket-detail-updated></dd>
+                    </dl>
+                    <div class="buttons are-small mt-3">
+                        <button class="button is-link" type="button" data-workbench-ticket-ask-ai>Ask AI</button>
+                        <a class="button" href="#" target="_blank" rel="noopener noreferrer" data-ticket-detail-source>Open Source</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
 </div>

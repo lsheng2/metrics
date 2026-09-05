@@ -1,4 +1,37 @@
+import json
+
 from .defaults import *
+
+
+def metrics_list_setting(name, default=None):
+    raw_value = env.str(name, default=None)
+    if raw_value is None:
+        return default
+    raw_text = raw_value.strip()
+    if not raw_text:
+        return []
+    json_candidate = raw_text
+    if len(raw_text) > 2 and raw_text[0] in {'"', "'"} and raw_text[-1] == raw_text[0]:
+        quoted_inner = raw_text[1:-1].strip()
+        if quoted_inner.startswith('['):
+            json_candidate = quoted_inner
+    if json_candidate.startswith('['):
+        decoded_value = json.loads(json_candidate)
+        if not isinstance(decoded_value, list):
+            raise ValueError(f'{name} must be a list.')
+        return metrics_normalize_list_items(decoded_value)
+    return metrics_normalize_list_items(raw_text.split(','))
+
+
+def metrics_normalize_list_items(values):
+    normalized_values = []
+    for value in values:
+        text = str(value).strip()
+        if len(text) >= 2 and text[0] in {'"', "'"} and text[-1] == text[0]:
+            text = text[1:-1].strip()
+        if text:
+            normalized_values.append(text)
+    return normalized_values
 
 
 def metrics_absolute_state_path(raw_path):
@@ -41,29 +74,30 @@ METRICS_BITBUCKET_URL = env.str('METRICS_BITBUCKET_URL', default='https://api.bi
 METRICS_BITBUCKET_WORKSPACE = env.str('METRICS_BITBUCKET_WORKSPACE', default=None)
 METRICS_BITBUCKET_USERNAME = env.str('METRICS_BITBUCKET_USERNAME', default=None)
 METRICS_BITBUCKET_APP_PASSWORD = env.str('METRICS_BITBUCKET_APP_PASSWORD', default=None)
-METRICS_BITBUCKET_REPOSITORIES = env.list('METRICS_BITBUCKET_REPOSITORIES', default=None)
+METRICS_BITBUCKET_REPOSITORIES = metrics_list_setting('METRICS_BITBUCKET_REPOSITORIES', default=None)
 
 # Pull request review gate configuration
-METRICS_PR_MAIN_REVIEWER_LEVELS = env.list('METRICS_PR_MAIN_REVIEWER_LEVELS', default=['lead', 'arch'])
+METRICS_PR_MAIN_REVIEWER_LEVELS = metrics_list_setting('METRICS_PR_MAIN_REVIEWER_LEVELS', default=['lead', 'arch'])
 METRICS_PR_MIN_DEVELOPER_APPROVALS = env.int('METRICS_PR_MIN_DEVELOPER_APPROVALS', default=2)
 
 # Status codes
 
-METRICS_IN_PROGRESS_STATUS_CODES = env.list('METRICS_IN_PROGRESS_STATUS_CODES',
-                                            default=['Analysis', 'Active', 'In Progress', 'In Development', 'QA',
-                                                     'Validation', 'Testing', 'Review'])
-METRICS_PENDING_STATUS_CODES = env.list('METRICS_PENDING_STATUS_CODES',
-                                        default=['Blocked', 'On Hold', 'Pending', 'Waiting'])
-METRICS_DONE_STATUS_CODES = env.list('METRICS_DONE_STATUS_CODES', default=['Done', 'Closed', 'Resolved'])
+METRICS_IN_PROGRESS_STATUS_CODES = metrics_list_setting('METRICS_IN_PROGRESS_STATUS_CODES',
+                                                        default=['Analysis', 'Active', 'In Progress',
+                                                                 'In Development', 'QA', 'Validation',
+                                                                 'Testing', 'Review'])
+METRICS_PENDING_STATUS_CODES = metrics_list_setting('METRICS_PENDING_STATUS_CODES',
+                                                    default=['Blocked', 'On Hold', 'Pending', 'Waiting'])
+METRICS_DONE_STATUS_CODES = metrics_list_setting('METRICS_DONE_STATUS_CODES', default=['Done', 'Closed', 'Resolved'])
 
 # Recently finished tasks configuration
 METRICS_RECENTLY_FINISHED_TASKS_DAYS = env.int('METRICS_RECENTLY_FINISHED_TASKS_DAYS', default=14)
 
 # Filters
-METRICS_PROJECT_KEYS = env.list('METRICS_PROJECT_KEYS', default=None)
+METRICS_PROJECT_KEYS = metrics_list_setting('METRICS_PROJECT_KEYS', default=None)
 
-METRICS_GLOBAL_TASK_TYPES_FILTER = env.list('METRICS_GLOBAL_TASK_TYPES_FILTER', default=None)
-METRICS_GLOBAL_TEAM_FILTER = env.list('METRICS_GLOBAL_TEAM_FILTER', default=None)
+METRICS_GLOBAL_TASK_TYPES_FILTER = metrics_list_setting('METRICS_GLOBAL_TASK_TYPES_FILTER', default=None)
+METRICS_GLOBAL_TEAM_FILTER = metrics_list_setting('METRICS_GLOBAL_TEAM_FILTER', default=None)
 
 # Calculations
 METRICS_STORY_POINT_CUSTOM_FIELD_ID = env.str('METRICS_STORY_POINT_CUSTOM_FIELD_ID', default=None)
@@ -118,10 +152,11 @@ METRICS_AI_GRAFANA_BASE_URL = env.str('METRICS_AI_GRAFANA_BASE_URL', default='ht
 METRICS_AI_GRAFANA_USERNAME = env.str('METRICS_AI_GRAFANA_USERNAME', default='admin')
 METRICS_AI_GRAFANA_PASSWORD = env.str('METRICS_AI_GRAFANA_PASSWORD', default='admin')
 
-METRICS_AVAILABLE_MEMBER_STAGES_FILTER = env.list('METRICS_AVAILABLE_MEMBER_STAGES_FILTER', default=[])
+METRICS_AVAILABLE_MEMBER_STAGES_FILTER = metrics_list_setting('METRICS_AVAILABLE_MEMBER_STAGES_FILTER', default=[])
 
-METRICS_TASK_FILTER_FIELDS = env.list('METRICS_TASK_FILTER_FIELDS',
-                                      default=['health', 'priority', 'release', 'iteration', 'assignee', 'parent'])
+METRICS_TASK_FILTER_FIELDS = metrics_list_setting('METRICS_TASK_FILTER_FIELDS',
+                                                  default=['health', 'priority', 'release', 'iteration',
+                                                           'assignee', 'parent'])
 
 # Velocity time unit configuration
 METRICS_DEFAULT_VELOCITY_TIME_UNIT = env.str('METRICS_DEFAULT_VELOCITY_TIME_UNIT', default='DAY')

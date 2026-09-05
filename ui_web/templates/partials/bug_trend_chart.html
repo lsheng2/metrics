@@ -1,9 +1,9 @@
-<div class="box">
-    <h3 class="title is-4">Bug Trend</h3>
+<div class="bug-trend-chart-shell">
     {% if unavailable_reason %}
         <div class="notification is-warning">{{ unavailable_reason }}</div>
     {% endif %}
-    <canvas id="bugTrendChart" width="900" height="360" data-testid="bug-trend-chart"></canvas>
+    <div class="bug-trend-legend" id="bugTrendLegend" aria-label="Chart series legend"></div>
+    <canvas class="bug-trend-chart-canvas" id="bugTrendChart" width="900" height="360" data-testid="bug-trend-chart"></canvas>
 </div>
 
 <script>
@@ -21,6 +21,27 @@
         if (!canvas) return;
         const chartData = {{ chart_json|safe }};
         if (!chartData || !chartData.labels || chartData.labels.length === 0) return;
+        const themeStyles = getComputedStyle(document.documentElement);
+        const chartTextColor = themeStyles.getPropertyValue('--bulma-text').trim() || '#dce3f7';
+        const chartGridColor = themeStyles.getPropertyValue('--bulma-border').trim() || 'rgba(220, 227, 247, 0.18)';
+        const readableSeriesLabel = value => String(value || '')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, character => character.toUpperCase());
+        const legend = document.getElementById('bugTrendLegend');
+        if (legend) {
+            legend.replaceChildren();
+            chartData.datasets.forEach(dataset => {
+                const item = document.createElement('span');
+                item.className = 'bug-trend-legend-item';
+                const swatch = document.createElement('span');
+                swatch.className = 'bug-trend-legend-swatch';
+                swatch.style.backgroundColor = dataset.color;
+                const label = document.createElement('span');
+                label.textContent = readableSeriesLabel(dataset.series_name);
+                item.append(swatch, label);
+                legend.appendChild(item);
+            });
+        }
         window.bugTrendChartInstance = new Chart(canvas.getContext('2d'), {
             type: 'bar',
             data: {
@@ -38,6 +59,29 @@
             options: {
                 responsive: true,
                 interaction: { intersect: true, mode: 'nearest' },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'start',
+                        labels: {
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            color: chartTextColor,
+                            padding: 10,
+                            usePointStyle: true,
+                            generateLabels: chart => Chart.defaults.plugins.legend.labels.generateLabels(chart).map(item => ({
+                                ...item,
+                                text: readableSeriesLabel(item.text),
+                            })),
+                        },
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: context => `${readableSeriesLabel(context.dataset.label)}: ${context.formattedValue}`,
+                        },
+                    },
+                },
                 onClick: function(event, elements) {
                     if (!elements || elements.length === 0) return;
                     const point = elements[0];
@@ -68,7 +112,15 @@
                     });
                 },
                 scales: {
-                    y: { beginAtZero: true }
+                    x: {
+                        ticks: { color: chartTextColor },
+                        grid: { color: chartGridColor },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: chartTextColor },
+                        grid: { color: chartGridColor },
+                    }
                 }
             }
         });

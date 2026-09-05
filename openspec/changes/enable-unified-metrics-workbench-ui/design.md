@@ -29,6 +29,8 @@ See `proposal.md` for motivation. 当前系统已经具备三个关键基础：D
 
 Workbench shell 放在 `ui_web`，由 Django route 提供入口页面，由 Dashboard 后端产生 initial context、pane registry 和 safe service status。PageQueryState 至少包含 `profile_id`、`provider_id`、`range_mode`、`begin/end`、`chart_id`、`chart_version`、`calculation_run_id` or `fact_snapshot_id`、`selected_bucket_id`、`selected_series_name` 和 `list_filters`。
 
+PageQueryState 的 canonical representation 是 URL query string。Workbench 可以用 browser local storage 缓存最后一次有效 same-origin `/workbench/` URL，仅用于主导航恢复用户上下文；它不能接受外部 URL、不能替代 server validation，也不能成为 provider/evidence truth。无 `scope_id` 的 server default state 应优先选择与 `profile_id` 同名的 enabled scope，例如 `chiplet-2a-jira`，再退回第一个 enabled scope，避免用户从其它页面返回时落到 unrelated empty scope。
+
 Alternatives considered:
 
 - **AI Base as shell**: chat 体验更自然，但会把 provider/evidence/publish authority 拉出 Dashboard，和既有边界冲突。
@@ -36,9 +38,11 @@ Alternatives considered:
 
 Rationale: Dashboard 已经拥有 facts、chart recipes、evidence、validation、approval 和 Grafana publication。shell state 放在 Dashboard 最符合现有 authority model。
 
-### Decision 2: Use an isolated dock layout layer, with fixed layout as first milestone
+### Decision 2: Use a high-density resizable workbench layout
 
-第一阶段实现固定 workbench layout：top chart pane、bottom evidence pane、right AI pane、utility tabs。第二阶段再启用 dock/drag/persist。如果引入 dock dependency，优先选择能隔离在 shell asset 中的 lightweight dock layout library，例如 Dockview；它只负责 pane placement，不负责业务数据流。
+默认 workbench layout 是高密度三窗格：左上 chart pane、左下 evidence pane、右侧 AI pane。chart/evidence 使用水平 splitter 调整高度，evidence list/detail 使用 evidence 内部垂直 splitter 调整宽度，main/AI 使用全局垂直 splitter 调整宽度。chart pane、ticket detail pane 和 AI pane 都可折叠，折叠只改变 layout state，不改变 PageQueryState、selected bucket/series、selected tickets 或 chat session。
+
+第一阶段可以用轻量原生 CSS/JS splitter 实现固定 pane registry + 可拖尺寸；如果后续需要 dock/tab/float，再引入能隔离在 shell asset 中的 lightweight dock layout library，例如 Dockview。dock/splitter layer 只负责 pane placement，不负责业务数据流。
 
 Alternatives considered:
 
@@ -46,7 +50,7 @@ Alternatives considered:
 - **Full SPA framework migration**: 对现有 Django/HTMX surface 破坏太大。
 - **Backstage/low-code portal**: 会引入第二个产品壳和权限/导航模型。
 
-Rationale: 先证明业务交互，再增强 layout；dock layer 必须是可替换 UI infrastructure。
+Rationale: 当前用户分析路径需要在 chart、ticket table、ticket detail 和 AI assistant 之间快速调整空间。原生 splitter 可以先满足高密度 resize/collapse 诉求，并且不会把业务状态放进 layout library。dock layer 仍必须是可替换 UI infrastructure。
 
 ### Decision 3: Chart pane supports multiple renderer routes through one contract
 
@@ -74,6 +78,10 @@ Rationale: single-panel embed 是最小可行路径；只有当 panel embed + da
 
 Evidence pane 调用 Metrics evidence APIs。Chart click 只提供 selection candidate；后端必须验证 selected run/snapshot、bucket、series、chart id、profile/range 是否匹配。验证失败时清空旧 rows 并显示错误或 unsupported state。
 
+Evidence table 是一个高密度工作区，而不是只读列表。表头提供 list-local controls：字段显隐、可见字段排序、selected ticket count、bulk action 和 export。每行支持 checkbox 多选，selection 是 explicit ticket working set；它可以作为 AI grounding 或 bulk action 输入，但必须和 chart bucket/series selection 分开建模。
+
+点击单个 ticket 时，evidence window 右侧打开 ticket detail pane。该 pane 只展示 Metrics/provider API 已返回或按需获取的 normalized ticket fields、description summary、latest activity、links 和 action buttons。它不能 iframe 完整 Jira/HSD-ES browser page，不能拥有 provider cookies/credentials，也不能把外部系统 navigation 带进 workbench。完整 Jira/HSD-ES 页面只作为 `Open in Jira/HSDES` 外链。
+
 Alternatives considered:
 
 - **Grafana panel 直接查询 ticket list**: 会复制 Jira/HSD-ES 语义，破坏 Metrics ownership。
@@ -83,13 +91,21 @@ Rationale: ticket evidence 是业务事实和审计对象，必须从 Metrics �
 
 ### Decision 6: AI Base is an optional contextual pane
 
-AI pane 通过 safe context handoff 接收当前 profile/range/chart/selection。AI Base 可以解释、draft、dry-run 和请求 publish，但不能绕过 Dashboard APIs。AI 不可用时，workbench 其它 pane 继续工作。
+AI pane 通过 safe context handoff 接收当前 profile/range/chart/selection 和显式 selected-ticket working set。Selected-ticket payload 只包含 safe summary fields，并带 `selectedTicketCount` / `truncated` 元数据；默认最多传递 50 条 ticket summary，避免把大列表或 provider 原始内容直接塞进 AI pane。AI Base 可以解释、draft、dry-run 和请求 publish，但不能绕过 Dashboard APIs。AI 不可用时，workbench 其它 pane 继续工作。
+
+AI pane 不应 iframe 完整 AI Base App chrome。短期允许接入 AI Base compact embed route；长期推荐 Dashboard host-native compact renderer，使用 AI Base backend chat/approval/artifact/diagnostics contract。compact sidebar 默认不显示 context chips，不显示内部 service status strip；全局 service status 只由 workbench bottom status bar 展示。AI pane 可以向右折叠成窄 rail，折叠不丢 chat session、pending approval 或 artifact state。
+
+AI Base compact embed 是显式 surface contract，而不是 Dashboard-side iframe clipping。Dashboard 通过 `embed=workbench` 请求 compact route；AI Base 负责隐藏完整 AppShell navigation、session setup sidebar、session files/details panel 和内部 status chrome，只保留 sidebar 可用的 chat conversation/composer 和轻量 session selector。完整 AI Base UI 继续通过外链打开。
 
 Rationale: 这保持 AI Base 的平台价值，同时避免把用户的 dashboard state 分裂到另一个窗口。
 
 ### Decision 7: One-window runtime is a launcher/proxy concern, not product ownership
 
 本 change 可以新增或扩展 local launcher/reverse-proxy，使用户只打开 workbench URL。代理层负责同源路径、service discovery 和 health；业务权限仍在 Dashboard/API 层。
+
+Workbench 页面本身不负责 on-the-fly 启动 Dashboard、Grafana 或 AI Base。AI Base disabled 表示当前 Dashboard process 未启用 sidecar 配置；AI Base unavailable 表示 sidecar 配置已启用但 handshake/runtime probe 不通过。UI 应在 AI pane 和 bottom service status 中给出准确原因、诊断入口和统一 stack launcher 命令，而不是在页面渲染时创建后台进程。
+
+Launcher 的 start、stale cleanup、boot-log audit 和 process-inventory audit 必须读取同一个 Dashboard lifecycle state source。当前 Dashboard/Grafana runtime 由 `ServiceLifecycleEngine` 管理，wrapper 脚本不得再读取旧 `port-lifecycle` state 作为当前进程权威；final cleanup 也不得在 smoke 通过后重新清理当前 Dashboard/Grafana 进程树。
 
 Rationale: 单窗口 UX 需要 runtime glue，但不应该让 proxy 成为业务规则承载点。
 

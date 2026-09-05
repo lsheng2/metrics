@@ -116,7 +116,7 @@ def collect_log_paths(
     paths: list[Path] = []
     paths.extend(explicit_log_files)
     paths.extend(log_paths_from_dashboard_state(dashboard_state_path))
-    paths.extend(recent_logs(dashboard_workspace / "state" / "e2e" / "port-lifecycle" / "logs", since_timestamp))
+    paths.extend(recent_logs(dashboard_workspace / "state" / "e2e" / "service-lifecycle-engine" / "logs", since_timestamp))
     if stack_log_directory is not None:
         paths.extend(recent_logs(stack_log_directory, since_timestamp))
     if ai_base_workspace is not None and include_ai_base_logs:
@@ -271,7 +271,7 @@ def read_text(path: Path) -> str:
 
 
 def default_dashboard_state_path(workspace: Path) -> Path:
-    return workspace / "state" / "e2e" / "port-lifecycle" / "metrics-bug-trend-default.json"
+    return workspace / "state" / "e2e" / "service-lifecycle-engine" / "metrics-bug-trend-default.json"
 
 
 def default_ai_base_state_path(workspace: Path | None) -> Path | None:

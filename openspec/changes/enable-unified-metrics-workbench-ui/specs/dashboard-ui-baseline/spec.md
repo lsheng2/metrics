@@ -13,6 +13,12 @@
 - **THEN** only the pane or its target partial SHALL be replaced
 - **AND** unrelated panes SHALL preserve their scroll position, form state and layout unless the new query state invalidates them
 
+#### Scenario: Evidence pane opens ticket detail
+- **WHEN** a user clicks a ticket row inside the evidence pane
+- **THEN** Dashboard SHALL render a local ticket detail partial or JSON-backed view using Dashboard/provider APIs
+- **AND** the detail pane SHALL NOT iframe the full Jira/HSD-ES web UI
+- **AND** closing or resizing the detail pane SHALL preserve the evidence list and current selected ticket working set
+
 #### Scenario: A full page remains directly accessible
 - **WHEN** 用户访问 legacy/full-page Dashboard URL
 - **THEN** system SHALL continue to render the existing page unless that page has an approved migration path
@@ -30,3 +36,8 @@ Workbench shell SHALL preserve the existing Dashboard baseline of server-rendere
 - **WHEN** implementation adds a dock/window frame dependency for pane placement
 - **THEN** the dependency SHALL be isolated to shell layout responsibilities
 - **AND** Dashboard-owned domain interactions SHALL remain in existing views, facades, APIs and templates
+
+#### Scenario: Native splitters are sufficient
+- **WHEN** resizable chart/evidence、evidence/detail and main/AI boundaries can be implemented with scoped CSS and vanilla browser behavior
+- **THEN** implementation SHOULD prefer the native splitter path over adding a dock dependency
+- **AND** any persisted layout state SHALL remain separate from provider query state and business filters

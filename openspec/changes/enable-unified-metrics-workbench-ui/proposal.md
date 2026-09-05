@@ -13,6 +13,9 @@
 - 修改 Provider AI Dashboard Composition，要求 AI Base 作为 workbench sidebar/pane 进入 unified UI，并从 shell 传入当前 profile/range/chart/selection context。
 - 保留 Dashboard 对 provider facts、chart recipes、evidence、validation、approval 和 Grafana publication 的 source-of-truth 权限；AI Base 和 Grafana 仍是 clients/renderers/operators。
 - 引入开源 dock/window frame dependency 的选型约束，优先采用轻量 dock layout layer，而不是把产品迁移到 Backstage、low-code portal 或 Grafana-only app。
+- 增强 workbench high-density layout：chart/evidence、evidence list/detail、main/AI pane 的边界可拖动，chart、ticket detail 和 AI pane 可折叠，服务状态只在全局底部 status bar 展示。
+- 增强 evidence 工作区：表头提供字段显隐、可见字段排序、多选计数和批量操作；点击单个 ticket 在 evidence 内部右侧打开 normalized ticket detail pane，完整 Jira/HSD-ES 页面只作为外链。
+- 明确 AI Base Chat Widget 不应 iframe 完整 AI Base App；短期可使用 compact embed route，长期推荐 Dashboard host-native compact renderer，共用 AI Base backend contract。
 
 ## Capabilities
 
@@ -28,7 +31,7 @@
 
 ## Impact
 
-- Affected code: `ui_web` routes/views/templates/static assets, `bug_metrics` chart/evidence/page-query APIs, Grafana panel embed/artifact/render config generation, AI dashboard workflow views, local E2E launcher scripts.
-- Affected APIs: `/api/charts/data/`, `/api/charts/evidence/`, `/api/provider-charts/data/`, `/api/provider-charts/evidence/`, `/api/ai-dashboard/*` may need additional shell-context fields, pane metadata, or selection sync semantics.
+- Affected code: `ui_web` routes/views/templates/static assets, `bug_metrics` chart/evidence/page-query APIs, Grafana panel embed/artifact/render config generation, AI dashboard workflow views, local E2E launcher scripts, optional AI Base compact widget contract docs.
+- Affected APIs: `/api/charts/data/`, `/api/charts/evidence/`, `/api/provider-charts/data/`, `/api/provider-charts/evidence/`, `/api/ai-dashboard/*` may need additional shell-context fields, pane metadata, selection sync semantics, evidence table view-state fields, selected-ticket working set, or ticket detail payloads.
 - Affected systems: Django Dashboard, local Grafana, AI Base app, reverse-proxy/local launcher, browser E2E validation.
 - Dependencies: MAY add a lightweight dock layout library for the shell, with preference for a framework-neutral or isolated integration so the existing Django/Bulma/HTMX baseline is not rewritten wholesale.

@@ -22,9 +22,9 @@
         </nav>
     </header>
     
-    <div class="columns is-gapless is-flex-grow-1">
+    <div class="columns is-gapless is-flex-grow-1 dashboard-app-layout" data-dashboard-layout>
         <!-- Left sidebar menu -->
-        <div class="column is-2-desktop is-3-tablet">
+        <div class="column is-2-desktop is-3-tablet dashboard-sidebar-column" data-dashboard-sidebar>
             <aside class="menu p-4" role="navigation" aria-label="main navigation">
                 <ul class="menu-list">
                         <li>
@@ -33,6 +33,7 @@
                         </li>
                         <li>
                             <a href="{% url 'ui_web:workbench' %}"
+                               data-workbench-nav-link
                                {% if request.resolver_match.url_name == 'workbench' %}class="is-active"{% endif %}>Workbench</a>
                         </li>
                         <li>
@@ -191,8 +192,9 @@
                     {% block sidebar_extra %}{% endblock %}
             </aside>
         </div>
+        <div class="dashboard-sidebar-splitter" role="separator" aria-orientation="vertical" tabindex="0" data-dashboard-sidebar-splitter title="Resize navigation and work area"></div>
         
-        <main class="column is-flex is-flex-direction-column">
+        <main class="column is-flex is-flex-direction-column dashboard-main-column">
             <progress class="progress is-medium is-primary is-hidden loading-indicator-sticky" id="loading-indicator"></progress>
             <section class="section is-flex-grow-1">
                 <div class="container">

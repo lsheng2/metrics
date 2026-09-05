@@ -125,6 +125,8 @@ function Invoke-BootLogAudit {
         (Join-Path $DashboardWorkspace 'scripts\audit_stack_boot_logs.py'),
         '--dashboard-workspace',
         $DashboardWorkspace,
+        '--dashboard-state',
+        (Get-DashboardLifecycleStatePath),
         '--ai-base-workspace',
         $AiBaseWorkspace,
         '--stack-log-directory',
@@ -162,6 +164,8 @@ function Invoke-ProcessInventoryAudit {
         (Join-Path $DashboardWorkspace 'scripts\audit_stack_process_inventory.py'),
         '--dashboard-workspace',
         $DashboardWorkspace,
+        '--dashboard-state',
+        (Get-DashboardLifecycleStatePath),
         '--ai-base-workspace',
         $AiBaseWorkspace,
         '--phase',
@@ -394,6 +398,10 @@ function Get-ProcessTreeIds {
     return @($seen.Keys | Sort-Object -Descending)
 }
 
+function Get-DashboardLifecycleStatePath {
+    return (Join-Path $DashboardWorkspace 'state\e2e\service-lifecycle-engine\metrics-bug-trend-default.json')
+}
+
 function Stop-ProcessTrees {
     param(
         [int[]]$RootProcessIds,
@@ -415,7 +423,7 @@ function Stop-ProcessTrees {
 }
 
 function Get-CurrentDashboardServiceRootIds {
-    $statePath = Join-Path $DashboardWorkspace 'state\e2e\port-lifecycle\metrics-bug-trend-default.json'
+    $statePath = Get-DashboardLifecycleStatePath
     if (-not (Test-Path $statePath)) {
         return @()
     }
@@ -827,7 +835,6 @@ try {
     Test-DashboardAiStack
     Write-Host 'Stack smoke checks completed.'
     Invoke-BootLogAudit -Phase 'final' -RequireDashboardState -RequireAiBaseState
-    Clear-StaleDemoProcesses
     Invoke-ProcessInventoryAudit -Phase 'final'
 
     $workbenchUrl = Get-WorkbenchUrl

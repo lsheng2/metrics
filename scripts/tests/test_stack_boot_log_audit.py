@@ -12,13 +12,13 @@ import audit_stack_boot_logs
 
 
 def test_shouldFailBootAuditWhenDashboardServiceLogContainsError(tmp_path, capsys):
-    log_path = tmp_path / "state" / "e2e" / "port-lifecycle" / "logs" / "grafana-3001.out.log"
+    log_path = tmp_path / "state" / "e2e" / "service-lifecycle-engine" / "logs" / "grafana-3001.out.log"
     log_path.parent.mkdir(parents=True)
     log_path.write_text(
         'logger=http.server level=error msg="failed to open listener" error="forbidden by access permissions"\n',
         encoding="utf-8",
     )
-    state_path = tmp_path / "state" / "e2e" / "port-lifecycle" / "metrics-bug-trend-default.json"
+    state_path = tmp_path / "state" / "e2e" / "service-lifecycle-engine" / "metrics-bug-trend-default.json"
     state_path.write_text(
         json.dumps(
             {
