@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from django.test import TestCase
 from django.urls import reverse
 
-from bug_metrics.models import BugTrendCalculationRun, JiraScopeConfig
+from bug_metrics.models import BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.models import JiraSyncCursor
 from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
 
@@ -118,6 +118,33 @@ class TestDataHealthViews(TestCase):
         self.assertIn('disabled', content)
         self.assertIn('dashboard_query_agent', content)
         self.assertNotIn('token', content.lower())
+
+    def test_shouldRenderScopeBindingHealthSummaryAndRepairLinks(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Binding health scope',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='Binding health scope',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
+            provenance={'matched_by': 'legacy_jira_scope'},
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:data_health'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Scope Binding Health', content)
+        self.assertIn('Compatibility', content)
+        self.assertIn('Binding health scope', content)
+        self.assertIn('legacy_jira_scope', content)
+        self.assertIn(reverse('ui_web:bug_trend_scope_library'), content)
 
     def _counts(self):
         return {

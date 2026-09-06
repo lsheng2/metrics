@@ -524,6 +524,21 @@ body.has-workbench-shell .dashboard-main-column #main-content {
     margin-bottom: 0.35rem;
 }
 
+.scope-actions {
+    display: grid;
+    gap: 0.3rem;
+    justify-items: end;
+}
+
+.scope-binding-editor {
+    justify-content: flex-end;
+    margin-bottom: 0;
+}
+
+.scope-binding-editor .select select {
+    max-width: 14rem;
+}
+
 .loading-indicator-sticky {
     position: sticky;
     top: 1rem;
@@ -926,6 +941,27 @@ tr.htmx-request .review-loader {
 
 .workbench-ai-unavailable {
     padding: 1rem;
+}
+
+.workbench-ai-binding-note {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.35rem;
+    align-items: center;
+    border-bottom: 1px solid var(--dashboard-border);
+    color: var(--dashboard-text-muted);
+    font-size: var(--dashboard-font-caption);
+    padding: 0.4rem 0.55rem;
+    white-space: nowrap;
+}
+
+.workbench-ai-binding-note.is-warning {
+    background: rgba(217, 119, 6, 0.12);
+    color: #fbbf24;
+}
+
+.workbench-ai-binding-note a {
+    margin-left: auto;
 }
 
 .workbench-ai-start-command {

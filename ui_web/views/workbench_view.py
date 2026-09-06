@@ -231,7 +231,25 @@ class WorkbenchView(GracefulTemplateView):
         return 'Scope is not bound to a provider profile.'
 
     def _ai_context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
-        return self.ai_adapter.context(state, sidecar_status, self._host_origin())
+        context = self.ai_adapter.context(state, sidecar_status, self._host_origin())
+        context['scope_binding'] = self._scope_binding_context(state)
+        return context
+
+    def _scope_binding_context(self, state: WorkbenchPageQueryState) -> dict:
+        scope_option = self._scope_option(self.bug_trend_facade.get_scope_options(), state.scope_id)
+        if not scope_option:
+            return {
+                'status': 'configuration_required',
+                'profile_id': '',
+                'provider_id': '',
+                'blockers': [{'message': 'Scope is not bound to a provider profile.'}],
+            }
+        return {
+            'status': scope_option.binding_status,
+            'profile_id': scope_option.profile_id,
+            'provider_id': scope_option.provider_id,
+            'blockers': scope_option.binding_blockers or [],
+        }
 
     def _host_origin(self) -> str:
         parsed_url = urlparse(self.request.build_absolute_uri('/'))

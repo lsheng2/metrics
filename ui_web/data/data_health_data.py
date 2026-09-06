@@ -7,6 +7,7 @@ class DataHealthPageData:
     sync_health: List[object]
     calculation_health: List[object]
     provider_sync_health: List[object]
+    scope_binding_health: dict
     ai_sidecar_status: dict
     scope_count: int
     stale_scope_count: int

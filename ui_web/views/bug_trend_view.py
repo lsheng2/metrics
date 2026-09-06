@@ -206,10 +206,16 @@ class BugTrendScopeLibraryView(GracefulTemplateView):
             self.bug_trend_facade.disable_scope_config(int(scope_id))
         if action == 'confirm_binding' and scope_id and scope_id.isdecimal():
             self.bug_trend_facade.confirm_scope_provider_binding(int(scope_id))
+        if action == 'save_binding' and scope_id and scope_id.isdecimal():
+            try:
+                self.bug_trend_facade.set_scope_provider_binding(int(scope_id), request.POST.get('profile_id', ''))
+            except ValueError:
+                pass
         return redirect('ui_web:bug_trend_scope_library')
 
     def populate_context(self, context, **kwargs):
         context['scope_rows'] = self.bug_trend_facade.get_scope_library_rows()
+        context['provider_profile_choices'] = self.bug_trend_facade.get_scope_provider_profile_choices()
         context['build_page_title'] = 'Bug Trend Scope Library'
 
 

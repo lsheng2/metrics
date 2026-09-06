@@ -80,7 +80,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('data-confirm="Disable this scope?', content)
         self.assertIn('Binding', content)
         self.assertIn('compatibility', content)
-        self.assertIn('Confirm binding', content)
+        self.assertIn('Confirm', content)
 
     def test_shouldConfirmCompatibilityScopeBindingFromLibrary(self):
         # Given
@@ -112,6 +112,29 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertEqual('jira', binding.provider_id)
         self.assertEqual('scope_provider_binding_resolver', binding.provenance['persisted_by'])
 
+    def test_shouldSaveSelectedProviderProfileBindingFromLibrary(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Unbound library scope',
+            jql='',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_library'), {
+            'action': 'save_binding',
+            'scope_id': str(scope.id),
+            'profile_id': 'chiplet-2a-jira',
+        })
+
+        # Then
+        binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
+        self.assertEqual('chiplet-2a-jira', binding.profile_id)
+        self.assertEqual('jira', binding.provider_id)
+
     def test_shouldShowConfigurationRequiredScopeBindingWithoutConfirmAction(self):
         # Given
         JiraScopeConfig.objects.create(
@@ -130,6 +153,8 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('configuration_required', content)
         self.assertIn('Scope is not bound to a provider profile.', content)
         self.assertNotIn('Confirm binding', content)
+        self.assertIn('name="profile_id"', content)
+        self.assertIn('chiplet-2a-jira (jira)', content)
 
     def test_shouldDisableScopeFromLibraryWithoutDeletingConfig(self):
         # Given

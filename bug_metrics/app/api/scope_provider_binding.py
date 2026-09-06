@@ -54,6 +54,37 @@ class ScopeProviderBindingResolver:
         )
         return self._resolution_from_binding(binding)
 
+    def set_explicit(self, scope: JiraScopeConfig, profile_id: str) -> ScopeProviderBindingResolution:
+        registry_resolution = self._profile_registry.resolve_profile(profile_id)
+        if registry_resolution.profile is None:
+            raise ValueError(f'Provider profile {profile_id} is not available.')
+        profile = registry_resolution.profile
+        binding, _ = BugTrendScopeProviderBinding.objects.update_or_create(
+            scope=scope,
+            defaults={
+                'profile_id': profile.profile_id,
+                'provider_id': profile.provider_id,
+                'status': BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+                'provenance': {
+                    'source': 'operator_confirmed',
+                    'matched_by': 'provider_profile_selection',
+                    'persisted_by': 'scope_provider_binding_resolver',
+                },
+                'blockers': [],
+            },
+        )
+        return self._resolution_from_binding(binding)
+
+    def list_profile_choices(self) -> list[dict[str, str]]:
+        return [
+            {
+                'profile_id': profile.profile_id,
+                'provider_id': profile.provider_id,
+                'display_name': profile.display_name,
+            }
+            for profile in self._profile_registry.list_profiles()
+        ]
+
     def _resolution_from_binding(self, binding: BugTrendScopeProviderBinding) -> ScopeProviderBindingResolution:
         if binding.profile_id and binding.provider_id:
             registry_resolution = self._profile_registry.resolve_profile(binding.profile_id)

@@ -69,18 +69,38 @@
                         <td>{{ binding.provider_id|default:"-" }}</td>
                         <td><code>{{ scope.config_version_hash|slice:":12" }}</code></td>
                         <td>
-                            <div class="buttons is-justify-content-flex-end">
-                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
-                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
-                                {% if binding.can_confirm %}
-                                    <form method="post" data-confirm="Confirm this provider binding as explicit?">
+                            <div class="scope-actions">
+                                <div class="buttons is-justify-content-flex-end are-small">
+                                    <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
+                                    <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
+                                    {% if binding.can_confirm %}
+                                        <form method="post" data-confirm="Confirm this provider binding as explicit?">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                            <button class="button is-info is-light" type="submit" name="action" value="confirm_binding">Confirm</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                                {% if binding.can_edit %}
+                                    <form class="field has-addons scope-binding-editor" method="post" data-confirm="Save this provider binding as explicit?">
                                         {% csrf_token %}
                                         <input type="hidden" name="scope_id" value="{{ scope.id }}">
-                                        <button class="button is-small is-info is-light" type="submit" name="action" value="confirm_binding">Confirm binding</button>
+                                        <div class="control">
+                                            <div class="select is-small">
+                                                <select name="profile_id" aria-label="Provider profile for {{ scope.name }}">
+                                                    {% for profile in provider_profile_choices %}
+                                                        <option value="{{ profile.profile_id }}" {% if profile.profile_id == binding.profile_id %}selected{% endif %}>{{ profile.profile_id }} ({{ profile.provider_id }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="control">
+                                            <button class="button is-small is-primary" type="submit" name="action" value="save_binding">Save</button>
+                                        </div>
                                     </form>
                                 {% endif %}
                                 {% if scope.enabled %}
-                                    <form method="post" data-confirm="Disable this scope? Historical runs and evidence will be preserved.">
+                                    <form class="is-pulled-right" method="post" data-confirm="Disable this scope? Historical runs and evidence will be preserved.">
                                         {% csrf_token %}
                                         <input type="hidden" name="scope_id" value="{{ scope.id }}">
                                         <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Disable</button>

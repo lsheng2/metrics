@@ -16,6 +16,59 @@
     </section>
 
     <section class="box">
+        <h3 class="title is-4">Scope Binding Health</h3>
+        <div class="columns is-multiline">
+            <div class="column is-one-fifth"><strong>Total</strong><br>{{ data_health.scope_binding_health.total }}</div>
+            <div class="column is-one-fifth"><strong>Explicit</strong><br>{{ data_health.scope_binding_health.counts.explicit }}</div>
+            <div class="column is-one-fifth"><strong>Compatibility</strong><br>{{ data_health.scope_binding_health.counts.compatibility }}</div>
+            <div class="column is-one-fifth"><strong>Config required</strong><br>{{ data_health.scope_binding_health.counts.configuration_required }}</div>
+            <div class="column is-one-fifth"><strong>Ambiguous</strong><br>{{ data_health.scope_binding_health.counts.ambiguous }}</div>
+        </div>
+        <table class="table is-fullwidth is-striped is-hoverable">
+            <thead>
+                <tr>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th>Profile</th>
+                    <th>Provider</th>
+                    <th>Provenance</th>
+                    <th>Blockers</th>
+                    <th>Repair</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data_health.scope_binding_health.rows %}
+                    <tr>
+                        <td>{{ item.scope_name }}</td>
+                        <td>
+                            {% if item.status == "explicit" %}
+                                <span class="tag is-success is-light">{{ item.status }}</span>
+                            {% elif item.status == "compatibility" %}
+                                <span class="tag is-info is-light">{{ item.status }}</span>
+                            {% else %}
+                                <span class="tag is-warning is-light">{{ item.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.profile_id|default:"-" }}</td>
+                        <td>{{ item.provider_id|default:"-" }}</td>
+                        <td>{{ item.provenance_summary|default:"-" }}</td>
+                        <td>
+                            {% for blocker in item.blockers %}
+                                {{ blocker.message }}
+                            {% empty %}
+                                -
+                            {% endfor %}
+                        </td>
+                        <td><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7">No scope bindings found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="box">
         <h3 class="title is-4">AI Sidecar Health</h3>
         <table class="table is-fullwidth is-striped">
             <thead>

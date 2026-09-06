@@ -96,6 +96,40 @@ class ApiForBugTrend:
         scope = JiraScopeConfig.objects.get(id=scope_id)
         return self.backfill_scope_provider_binding(scope, explicit=True)
 
+    def set_scope_provider_binding(self, scope_id: int, profile_id: str) -> ScopeProviderBindingResolution:
+        scope = JiraScopeConfig.objects.get(id=scope_id)
+        return self._scope_provider_binding_resolver.set_explicit(scope, profile_id)
+
+    def list_scope_provider_profile_choices(self) -> list[dict[str, str]]:
+        return self._scope_provider_binding_resolver.list_profile_choices()
+
+    def get_scope_provider_binding_health(self) -> dict:
+        rows = []
+        counts = {
+            'explicit': 0,
+            'compatibility': 0,
+            'configuration_required': 0,
+            'ambiguous': 0,
+            'disabled': 0,
+        }
+        for scope, binding in self.list_scope_provider_bindings():
+            counts[binding.status] = counts.get(binding.status, 0) + 1
+            rows.append({
+                'scope_id': scope.id,
+                'scope_name': scope.name,
+                'profile_id': binding.profile_id,
+                'provider_id': binding.provider_id,
+                'status': binding.status,
+                'provenance': binding.provenance,
+                'provenance_summary': binding.provenance.get('matched_by') or binding.provenance.get('source') or '-',
+                'blockers': binding.blockers,
+            })
+        return {
+            'total': len(rows),
+            'counts': counts,
+            'rows': rows,
+        }
+
     def validate_scope_config(self, config: SavedScopeConfig) -> ScopeConfigValidationResult:
         return self._scope_config_service.validate_scope_config(config)
 

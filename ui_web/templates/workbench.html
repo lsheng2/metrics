@@ -162,6 +162,15 @@
                 </div>
             </header>
             <div class="workbench-pane-body workbench-ai-pane-body">
+                <div class="workbench-ai-binding-note {% if workbench_ai_context.scope_binding.status != 'explicit' %}is-warning{% endif %}">
+                    <span>Binding</span>
+                    <strong>{{ workbench_ai_context.scope_binding.status|default:"configuration_required" }}</strong>
+                    <span>{{ workbench_ai_context.scope_binding.provider_id|default:"-" }} / {{ workbench_ai_context.scope_binding.profile_id|default:"-" }}</span>
+                    {% if workbench_ai_context.scope_binding.blockers %}
+                        <span>{{ workbench_ai_context.scope_binding.blockers.0.message }}</span>
+                        <a href="{% url 'ui_web:bug_trend_scope_library' %}">Repair</a>
+                    {% endif %}
+                </div>
                 {% if workbench_ai_context.ai_base.status == "ready" or workbench_ai_context.ai_base.status == "connected" or workbench_ai_context.ai_base.status == "available" %}
                     <iframe
                         class="workbench-ai-chat-frame"
@@ -186,6 +195,7 @@
                         </div>
                         <div class="buttons are-small mt-3">
                             <a class="button" href="{% url 'ui_web:ai_dashboard_workflow' %}">Diagnostics</a>
+                            <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Binding</a>
                             {% if workbench_ai_context.ai_base.frontend_url %}
                                 <a class="button" href="{{ workbench_ai_context.ai_base.frontend_url }}" target="_blank" rel="noopener">AI Base</a>
                             {% endif %}

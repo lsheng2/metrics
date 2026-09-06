@@ -21,12 +21,20 @@ class BugTrendScopeBindingData:
     provenance_summary: str
     blockers: list
     can_confirm: bool
+    can_edit: bool
 
 
 @dataclass(slots=True)
 class BugTrendScopeLibraryRow:
     scope: object
     binding: BugTrendScopeBindingData
+
+
+@dataclass(slots=True)
+class BugTrendProviderProfileChoice:
+    profile_id: str
+    provider_id: str
+    display_name: str
 
 
 @dataclass(slots=True)

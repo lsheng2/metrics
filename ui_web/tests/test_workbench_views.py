@@ -11,6 +11,7 @@ from bug_metrics.models import (
     BugTrendCalculationRun,
     BugTrendChartDefinition,
     BugTrendEvidenceContract,
+    BugTrendScopeProviderBinding,
     JiraScopeConfig,
 )
 from ui_web.workbench_registry import default_workbench_panes
@@ -76,6 +77,74 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('Grafana', content)
         self.assertIn('configured', content)
         self.assertIn('at ', content)
+        self.assertIn('workbench-ai-binding-note', content)
+        self.assertIn('Scope Binding', content)
+
+    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
+    def test_shouldShowScopeBindingRepairBeforeAiWorkspaceHintWhenBindingIsMissing(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Unbound workbench AI scope',
+            jql='',
+            bug_type_values=['Bug'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('"scope_binding": {"status": "configuration_required"', content)
+        self.assertIn('Scope is not bound to a provider profile.', content)
+        self.assertIn(reverse('ui_web:bug_trend_scope_library'), content)
+
+    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
+    def test_shouldIncludeResolvedScopeBindingInAiContext(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Resolved workbench AI scope',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('"scope_binding": {"status": "explicit"', content)
+        self.assertIn('"profile_id": "chiplet-2a-jira"', content)
+        self.assertIn('"provider_id": "jira"', content)
 
     def test_shouldKeepToolbarAndEvidenceFilterStateBoundariesSeparate(self):
         # When

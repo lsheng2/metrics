@@ -5,7 +5,7 @@ from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilter
 from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, normalize_scope_list_values, saved_scope_config_from_dict
 from bug_metrics.models import JiraScopeConfig
 
-from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeBindingData, BugTrendScopeLibraryRow, BugTrendScopeOption
+from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendProviderProfileChoice, BugTrendScopeAuditData, BugTrendScopeBindingData, BugTrendScopeLibraryRow, BugTrendScopeOption
 from .bug_trend_chart_payload import chart_payload, run_metadata_payload
 from .bug_trend_scope_profile import resolve_scope_provider_binding
 from .provider_dashboard_facade import ProviderDashboardFacade
@@ -53,6 +53,26 @@ class BugTrendFacade:
     def confirm_scope_provider_binding(self, scope_id: int):
         return self._bug_trend_api.confirm_scope_provider_binding(scope_id)
 
+    def set_scope_provider_binding(self, scope_id: int, profile_id: str):
+        return self._bug_trend_api.set_scope_provider_binding(scope_id, profile_id)
+
+    def get_scope_provider_profile_choices(self):
+        if not hasattr(self._bug_trend_api, 'list_scope_provider_profile_choices'):
+            return []
+        return [
+            BugTrendProviderProfileChoice(
+                choice.get('profile_id', ''),
+                choice.get('provider_id', ''),
+                choice.get('display_name', ''),
+            )
+            for choice in self._bug_trend_api.list_scope_provider_profile_choices()
+        ]
+
+    def get_scope_provider_binding_health(self) -> dict:
+        if not hasattr(self._bug_trend_api, 'get_scope_provider_binding_health'):
+            return {'total': 0, 'counts': {}, 'rows': []}
+        return self._bug_trend_api.get_scope_provider_binding_health()
+
     def get_chart_options(self):
         return [
             BugTrendChartOption(
@@ -74,6 +94,7 @@ class BugTrendFacade:
             provenance_summary,
             list(binding.blockers or []),
             binding.status == 'compatibility' and bool(binding.profile_id and binding.provider_id),
+            binding.status != 'explicit',
         )
 
     def get_chart_data(self, scope_id: int, begin: date, end: date, chart_id: str = 'default_bug_trend') -> BugTrendChartData:

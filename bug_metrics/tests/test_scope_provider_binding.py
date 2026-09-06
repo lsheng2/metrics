@@ -60,6 +60,36 @@ class TestScopeProviderBindingResolver(TestCase):
         self.assertEqual('stable-jira-profile', resolution.profile_id)
         self.assertEqual('scope_provider_binding_resolver', resolution.provenance['persisted_by'])
 
+    def test_shouldSaveExplicitBindingFromSelectedProviderProfile(self):
+        scope = self._scope('Unbound Scope', '')
+        resolver = self._resolver([self._profile('stable-jira-profile', 'jira', 'project = STDEL')])
+
+        resolution = resolver.set_explicit(scope, 'stable-jira-profile')
+
+        binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
+        self.assertEqual('stable-jira-profile', binding.profile_id)
+        self.assertEqual('jira', binding.provider_id)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
+        self.assertEqual('operator_confirmed', binding.provenance['source'])
+        self.assertEqual('stable-jira-profile', resolution.profile_id)
+
+    def test_shouldRejectUnknownProviderProfileWithoutChangingExistingBinding(self):
+        scope = self._scope('Bound Scope', '')
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='stable-jira-profile',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
+        resolver = self._resolver([self._profile('stable-jira-profile', 'jira', 'project = STDEL')])
+
+        with self.assertRaises(ValueError):
+            resolver.set_explicit(scope, 'missing-profile')
+
+        binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
+        self.assertEqual('stable-jira-profile', binding.profile_id)
+        self.assertEqual('jira', binding.provider_id)
+
     def test_shouldReturnConfigurationRequiredWhenNoSafeBindingExists(self):
         scope = self._scope('Unbound Scope', '')
 
