@@ -14,6 +14,22 @@ class BugTrendScopeOption:
 
 
 @dataclass(slots=True)
+class BugTrendScopeBindingData:
+    profile_id: str
+    provider_id: str
+    status: str
+    provenance_summary: str
+    blockers: list
+    can_confirm: bool
+
+
+@dataclass(slots=True)
+class BugTrendScopeLibraryRow:
+    scope: object
+    binding: BugTrendScopeBindingData
+
+
+@dataclass(slots=True)
 class BugTrendChartOption:
     chart_id: str
     title: str

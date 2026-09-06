@@ -94,3 +94,15 @@ Dashboard saved scopes SHALL NOT infer provider/profile identity from mutable di
 - **WHEN** a user renames a saved scope or changes its display labels such as IP, project or milestone
 - **THEN** the provider profile binding SHALL remain stable by explicit binding id or canonical profile id
 - **AND** Workbench, Grafana, evidence and AI context SHALL continue to use the same resolved provider/profile unless the binding itself is changed through an approved configuration path
+
+### Requirement: Scope provider bindings are auditable and confirmable
+Scope provider bindings SHALL expose enough metadata for UI and diagnostics to distinguish explicit operator-approved bindings from compatibility bindings produced during migration.
+
+#### Scenario: Binding metadata is listed
+- **WHEN** Dashboard UI lists saved scopes
+- **THEN** the provider profile registry boundary SHALL expose binding status, profile id, provider id, provenance and blockers for each scope
+
+#### Scenario: Compatibility binding is confirmed
+- **WHEN** an operator confirms a compatibility binding
+- **THEN** the system SHALL change the binding status to `explicit`
+- **AND** it SHALL record confirmation provenance without changing the scope semantic config or provider profile registry record

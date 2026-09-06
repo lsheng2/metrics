@@ -31,12 +31,16 @@
                     <th>IP</th>
                     <th>Project</th>
                     <th>Status</th>
+                    <th>Binding</th>
+                    <th>Profile</th>
+                    <th>Provider</th>
                     <th>Config hash</th>
                     <th class="has-text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for scope in scopes %}
+                {% for row in scope_rows %}
+                    {% with scope=row.scope binding=row.binding %}
                     <tr>
                         <td>{{ scope.name }}</td>
                         <td>{{ scope.ip|default:"-" }}</td>
@@ -48,11 +52,33 @@
                                 <span class="tag is-warning is-light">Draft</span>
                             {% endif %}
                         </td>
+                        <td>
+                            {% if binding.status == "explicit" %}
+                                <span class="tag is-success is-light">explicit</span>
+                            {% elif binding.status == "compatibility" %}
+                                <span class="tag is-info is-light">compatibility</span>
+                            {% else %}
+                                <span class="tag is-warning is-light">{{ binding.status|default:"configuration_required" }}</span>
+                            {% endif %}
+                            <p class="is-size-7 has-text-grey">{{ binding.provenance_summary }}</p>
+                            {% if binding.blockers %}
+                                <p class="is-size-7 has-text-danger">{{ binding.blockers.0.message }}</p>
+                            {% endif %}
+                        </td>
+                        <td>{{ binding.profile_id|default:"-" }}</td>
+                        <td>{{ binding.provider_id|default:"-" }}</td>
                         <td><code>{{ scope.config_version_hash|slice:":12" }}</code></td>
                         <td>
                             <div class="buttons is-justify-content-flex-end">
                                 <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
                                 <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
+                                {% if binding.can_confirm %}
+                                    <form method="post" data-confirm="Confirm this provider binding as explicit?">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                        <button class="button is-small is-info is-light" type="submit" name="action" value="confirm_binding">Confirm binding</button>
+                                    </form>
+                                {% endif %}
                                 {% if scope.enabled %}
                                     <form method="post" data-confirm="Disable this scope? Historical runs and evidence will be preserved.">
                                         {% csrf_token %}
@@ -63,9 +89,10 @@
                             </div>
                         </td>
                     </tr>
+                    {% endwith %}
                 {% empty %}
                     <tr>
-                        <td colspan="6">No scopes saved yet.</td>
+                        <td colspan="9">No scopes saved yet.</td>
                     </tr>
                 {% endfor %}
             </tbody>

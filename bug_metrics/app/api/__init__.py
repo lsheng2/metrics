@@ -88,6 +88,14 @@ class ApiForBugTrend:
     def backfill_scope_provider_binding(self, scope: JiraScopeConfig, explicit: bool = False) -> ScopeProviderBindingResolution:
         return self._scope_provider_binding_resolver.backfill(scope, explicit)
 
+    def list_scope_provider_bindings(self) -> list[tuple[JiraScopeConfig, ScopeProviderBindingResolution]]:
+        scopes = JiraScopeConfig.objects.order_by('ip', 'project_label', 'name')
+        return [(scope, self.resolve_scope_provider_binding(scope)) for scope in scopes]
+
+    def confirm_scope_provider_binding(self, scope_id: int) -> ScopeProviderBindingResolution:
+        scope = JiraScopeConfig.objects.get(id=scope_id)
+        return self.backfill_scope_provider_binding(scope, explicit=True)
+
     def validate_scope_config(self, config: SavedScopeConfig) -> ScopeConfigValidationResult:
         return self._scope_config_service.validate_scope_config(config)
 

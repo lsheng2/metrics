@@ -5,7 +5,7 @@ from bug_metrics.app.api import BugTrendPageQueryState, BugTrendTicketListFilter
 from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, normalize_scope_list_values, saved_scope_config_from_dict
 from bug_metrics.models import JiraScopeConfig
 
-from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
+from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeBindingData, BugTrendScopeLibraryRow, BugTrendScopeOption
 from .bug_trend_chart_payload import chart_payload, run_metadata_payload
 from .bug_trend_scope_profile import resolve_scope_provider_binding
 from .provider_dashboard_facade import ProviderDashboardFacade
@@ -35,6 +35,24 @@ class BugTrendFacade:
     def get_scope_library(self):
         return self._bug_trend_api.list_scope_configs()
 
+    def get_scope_library_rows(self):
+        if not hasattr(self._bug_trend_api, 'list_scope_provider_bindings'):
+            return [
+                BugTrendScopeLibraryRow(scope, BugTrendScopeBindingData('', '', 'configuration_required', '-', [], False))
+                for scope in self.get_scope_library()
+            ]
+        configs_by_id = {config.id: config for config in self.get_scope_library()}
+        rows = []
+        for scope, binding in self._bug_trend_api.list_scope_provider_bindings():
+            config = configs_by_id.get(scope.id)
+            if not config:
+                continue
+            rows.append(BugTrendScopeLibraryRow(config, self._binding_data(binding)))
+        return rows
+
+    def confirm_scope_provider_binding(self, scope_id: int):
+        return self._bug_trend_api.confirm_scope_provider_binding(scope_id)
+
     def get_chart_options(self):
         return [
             BugTrendChartOption(
@@ -45,6 +63,18 @@ class BugTrendFacade:
             )
             for chart in self._bug_trend_api.list_enabled_charts()
         ]
+
+    def _binding_data(self, binding) -> BugTrendScopeBindingData:
+        provenance = dict(getattr(binding, 'provenance', {}) or {})
+        provenance_summary = provenance.get('matched_by') or provenance.get('source') or '-'
+        return BugTrendScopeBindingData(
+            binding.profile_id,
+            binding.provider_id,
+            binding.status,
+            provenance_summary,
+            list(binding.blockers or []),
+            binding.status == 'compatibility' and bool(binding.profile_id and binding.provider_id),
+        )
 
     def get_chart_data(self, scope_id: int, begin: date, end: date, chart_id: str = 'default_bug_trend') -> BugTrendChartData:
         chart = self._bug_trend_api.get_chart(scope_id, begin, end, chart_id)

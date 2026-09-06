@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 
-from bug_metrics.models import BugTrendCalculationRun, JiraScopeConfig
+from bug_metrics.models import BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
 from jira_history.models import JiraIssue
 
@@ -78,6 +78,58 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn(f'?duplicate_scope_id={enabled_scope.id}', content)
         self.assertIn('Disable', content)
         self.assertIn('data-confirm="Disable this scope?', content)
+        self.assertIn('Binding', content)
+        self.assertIn('compatibility', content)
+        self.assertIn('Confirm binding', content)
+
+    def test_shouldConfirmCompatibilityScopeBindingFromLibrary(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL confirm binding',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='STDEL confirm binding',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
+            provenance={'source': 'test', 'matched_by': 'legacy_jira_scope'},
+        )
+
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_library'), {
+            'action': 'confirm_binding',
+            'scope_id': str(scope.id),
+        })
+
+        # Then
+        binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
+        self.assertEqual('STDEL confirm binding', binding.profile_id)
+        self.assertEqual('jira', binding.provider_id)
+        self.assertEqual('scope_provider_binding_resolver', binding.provenance['persisted_by'])
+
+    def test_shouldShowConfigurationRequiredScopeBindingWithoutConfirmAction(self):
+        # Given
+        JiraScopeConfig.objects.create(
+            name='Unbound draft scope',
+            jql='',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('configuration_required', content)
+        self.assertIn('Scope is not bound to a provider profile.', content)
+        self.assertNotIn('Confirm binding', content)
 
     def test_shouldDisableScopeFromLibraryWithoutDeletingConfig(self):
         # Given
