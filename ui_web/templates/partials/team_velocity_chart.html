@@ -1,5 +1,5 @@
 <div class="box">
-    <h3 class="title is-4">📈 Velocity{% if velocity_rolling_avg %} ({{ velocity_rolling_avg }}M Avg){% endif %}{% if use_custom_filter %} — Member Group Custom Filter{% endif %}</h3>
+    <h3 class="title is-4">Velocity{% if velocity_rolling_avg %} ({{ velocity_rolling_avg }}M Avg){% endif %}{% if use_custom_filter %} - Member Group Custom Filter{% endif %}</h3>
     <div class="buttons are-small">
         <button class="button {% if velocity_rolling_avg %}is-info{% endif %}"
                 hx-get="{% url 'ui_web:team_velocity_chart' %}?member_group_id={{ member_group_id }}{% if not velocity_rolling_avg %}&rolling_avg=3{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}{% endif %}"

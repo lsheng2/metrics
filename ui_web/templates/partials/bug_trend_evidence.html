@@ -35,13 +35,13 @@
             <button class="button is-small" type="button" data-workbench-evidence-sort>Sort</button>
             <span class="tag is-light" data-workbench-ticket-selected-count>0 selected</span>
             <button class="button is-small" type="button" data-workbench-ticket-bulk>Bulk</button>
-            <a class="button is-small" href="{% url 'ui_web:bug_trend_evidence_export' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}&bucket={{ evidence.bucket_id }}&series={{ evidence.series_name }}&owner={{ evidence.owner|urlencode }}&status={{ evidence.status|urlencode }}&severity={{ evidence.severity|urlencode }}&component={{ evidence.component|urlencode }}&text={{ evidence.text|urlencode }}">Export</a>
+            <a class="button is-small" href="{% url 'ui_web:bug_trend_evidence_export' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}&bucket={{ evidence.bucket_id }}&series={{ evidence.series_name }}&owner={{ evidence.owner|urlencode }}&status={{ evidence.status|urlencode }}&severity={{ evidence.severity|urlencode }}&component={{ evidence.component|urlencode }}&text={{ evidence.text|urlencode }}">Export CSV</a>
             {% if evidence.has_selection %}
                 <button class="button is-small"
                     hx-get="{% url 'ui_web:bug_trend_evidence' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}"
                     hx-target="#bug-trend-evidence-container"
                     hx-swap="innerHTML">
-                    Clear
+                    Clear selection
                 </button>
             {% endif %}
         </div>
@@ -59,7 +59,7 @@
         <input class="input is-small" name="severity" value="{{ evidence.severity }}" placeholder="Severity">
         <input class="input is-small" name="owner" value="{{ evidence.owner }}" placeholder="Owner">
         <input class="input is-small" name="component" value="{{ evidence.component }}" placeholder="Component">
-        <button class="button is-link is-small" type="submit">Filter</button>
+        <button class="button is-link is-small" type="submit">Filter evidence</button>
     </form>
     <div class="workbench-evidence-layout is-detail-collapsed" data-workbench-evidence-layout>
         <div class="workbench-evidence-table-wrap">

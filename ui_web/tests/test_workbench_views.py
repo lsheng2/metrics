@@ -35,6 +35,14 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertNotIn('Settings, Publish, Audit', content)
         self.assertIn('data-workbench-status-bar', content)
         self.assertIn('workbench-control-grid', content)
+        self.assertIn('workbench-toolbar-field-scope', content)
+        self.assertIn('id="workbench-scope" name="scope_id" data-workbench-state-trigger="scope"', content)
+        self.assertNotIn('onchange="this.form.requestSubmit()"', content)
+        self.assertIn('workbench-control-input" id="workbench-profile"', content)
+        self.assertIn('workbench-control-input" id="workbench-provider"', content)
+        self.assertIn('workbench-control-input" id="workbench-begin"', content)
+        self.assertIn('workbench-control-input" id="workbench-end"', content)
+        self.assertIn('workbench-apply-button', content)
         self.assertIn('data-dashboard-sidebar-splitter', content)
         self.assertIn('data-workbench-splitter="chart-evidence"', content)
         self.assertIn('data-workbench-splitter="main-ai"', content)
@@ -147,6 +155,50 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('"scope_binding": {"status": "explicit"', content)
         self.assertIn('"profile_id": "chiplet-2a-jira"', content)
         self.assertIn('"provider_id": "jira"', content)
+
+    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
+    def test_shouldGateAiIframeWhenScopeBindingProfileIsNotRegistryBacked(self, status_payload):
+        # Given
+        status_payload.return_value = {
+            'enabled': True,
+            'status': 'ready',
+            'base_url': 'http://127.0.0.1:48300',
+            'profile_id': 'dashboard_query_agent',
+            'service_id': 'dashboard-query-agent-app-service',
+            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
+        }
+        scope = JiraScopeConfig.objects.create(
+            name='Legacy explicit scope',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='Legacy explicit scope',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('AI workspace needs a registry-backed profile.', content)
+        self.assertIn('Rebind this scope in Scope Library.', content)
+        self.assertNotIn('AI Base chat side window', content)
 
     @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldWarnButRenderProviderPanesForCompatibilityBinding(self):

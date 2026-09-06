@@ -351,6 +351,35 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.assign(url);
     }
 
+    function closeWorkbenchMenus(exceptMenu) {
+        document.querySelectorAll('.workbench-menu[open]').forEach(menu => {
+            if (menu !== exceptMenu) {
+                menu.open = false;
+            }
+        });
+    }
+
+    function initializeDismissibleWorkbenchMenus() {
+        if (document.body.dataset.workbenchMenuDismissInitialized === 'true') {
+            return;
+        }
+        document.body.dataset.workbenchMenuDismissInitialized = 'true';
+        document.addEventListener('click', event => {
+            const clickedMenu = event.target.closest('.workbench-menu');
+            if (clickedMenu) {
+                closeWorkbenchMenus(clickedMenu);
+                return;
+            }
+            closeWorkbenchMenus(null);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+            closeWorkbenchMenus(null);
+        });
+    }
+
     function initializeDashboardSidebarSplitter() {
         const layout = document.querySelector('[data-dashboard-layout]');
         const sidebar = document.querySelector('[data-dashboard-sidebar]');
@@ -624,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        const scopeSelect = document.getElementById('workbench-scope');
+        const scopeSelect = document.querySelector('[data-workbench-state-trigger="scope"]');
         if (scopeSelect && scopeSelect.dataset.workbenchScopeSyncInitialized !== 'true') {
             scopeSelect.dataset.workbenchScopeSyncInitialized = 'true';
             scopeSelect.addEventListener('change', function() {
@@ -934,6 +963,7 @@ document.addEventListener('DOMContentLoaded', function() {
     expandInitialActiveMenus();
     initializeDirtyForms();
     initializeConfirmForms();
+    initializeDismissibleWorkbenchMenus();
     initializeWorkbenchShell();
     
     document.querySelectorAll('.menu-list a').forEach(link => {

@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
+from playwright.sync_api import sync_playwright
 
 from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
@@ -89,6 +91,36 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('More', content)
         self.assertIn('Binding Audit History', content)
         self.assertIn('No scope binding audit events yet.', content)
+
+    def test_shouldKeepScopeLibraryRowActionsCompactInBrowser(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL compact actions',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='STDEL compact actions',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+            provenance={'source': 'test', 'matched_by': 'provider_profile_registry'},
+        )
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # When
+        result = self._measure_scope_library_row_actions(response.content.decode())
+
+        # Then
+        self.assertTrue(result['same_row'])
+        self.assertEqual([31], result['primary_heights'])
+        self.assertEqual([62], result['primary_widths'])
+        self.assertLessEqual(result['panel_width'], result['action_cell_width'])
+        self.assertTrue(result['open_after_summary_click'])
+        self.assertFalse(result['open_after_blank_click'])
+        self.assertFalse(result['open_after_escape'])
+        self.assertFalse(result['horizontal_overflow'])
 
     def test_shouldConfirmCompatibilityScopeBindingFromLibrary(self):
         # Given
@@ -552,3 +584,51 @@ class TestBugTrendScopeConfigViews(TestCase):
             'bucket_granularity': scope.bucket_granularity,
             'enabled': 'on',
         }
+
+    def _measure_scope_library_row_actions(self, html):
+        static_dir = Path(__file__).resolve().parents[1] / 'static'
+        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
+        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
+        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
+        html = html.replace(
+            '</head>',
+            f'<style>{vendor_css}\n{main_css}</style></head>',
+        ).replace(
+            '</body>',
+            f'<script>{main_js}</script></body>',
+        )
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 1280, 'height': 900})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            page.locator('.scope-row-menu summary').first.click()
+            result = page.evaluate("""
+                () => {
+                    const actions = document.querySelector('tbody tr .scope-primary-actions');
+                    const primaryButtons = Array.from(actions.querySelectorAll(':scope > .button, :scope > .scope-row-menu > summary.button'));
+                    const primaryRects = primaryButtons.map(button => button.getBoundingClientRect());
+                    const panel = actions.querySelector('.workbench-menu-panel').getBoundingClientRect();
+                    const cell = actions.closest('td').getBoundingClientRect();
+                    const menu = actions.querySelector('.scope-row-menu');
+                    return {
+                        same_row: primaryRects.length >= 2 && Math.abs(primaryRects[0].top - primaryRects[1].top) <= 1,
+                        primary_heights: Array.from(new Set(primaryRects.map(rect => Math.round(rect.height)))).sort((a, b) => a - b),
+                        primary_widths: Array.from(new Set(primaryRects.map(rect => Math.round(rect.width)))).sort((a, b) => a - b),
+                        panel_width: Math.round(panel.width),
+                        action_cell_width: Math.round(cell.width),
+                        horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        open_after_summary_click: menu.open,
+                    };
+                }
+            """)
+            page.mouse.click(20, 20)
+            result['open_after_blank_click'] = page.locator('.scope-row-menu').first.evaluate('menu => menu.open')
+            page.locator('.scope-row-menu summary').first.click()
+            page.keyboard.press('Escape')
+            result['open_after_escape'] = page.locator('.scope-row-menu').first.evaluate('menu => menu.open')
+            return result
+        finally:
+            page.close()
+            browser.close()
+            playwright.stop()

@@ -1,4 +1,7 @@
+from urllib.error import HTTPError
 from urllib.parse import urlencode, urlparse, urlunparse
+from urllib.request import Request, urlopen
+import json
 
 from django.conf import settings
 
@@ -11,8 +14,9 @@ class AiBaseWorkbenchAdapter:
     default_binding_key = 'metrics.workbench.overview'
     default_redaction_policy = 'metrics-dashboard-default'
 
-    def __init__(self, launcher_command: str):
+    def __init__(self, launcher_command: str, json_poster=None):
         self._launcher_command = launcher_command
+        self._json_poster = json_poster or self._default_json_poster
 
     def frontend_base_url(self, sidecar_status: dict) -> str:
         configured_frontend = str(getattr(settings, 'METRICS_AI_BASE_FRONTEND_URL', '') or '').rstrip('/')
@@ -53,7 +57,7 @@ class AiBaseWorkbenchAdapter:
 
     def ai_base_payload(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> dict:
         return {
-            'enabled': bool(sidecar_status.get('enabled', False)),
+            'enabled': self.is_enabled(sidecar_status),
             'status': sidecar_status.get('status', 'disabled'),
             'reason': sidecar_status.get('reason', ''),
             'base_url': sidecar_status.get('base_url', ''),
@@ -67,6 +71,67 @@ class AiBaseWorkbenchAdapter:
             'binding_request': self.binding_request(state, sidecar_status, host_origin),
             'launcher_command': self._launcher_command,
         }
+
+    def resolve_chat_binding(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> dict:
+        if sidecar_status.get('status') not in {'ready', 'connected', 'available'}:
+            return {
+                'ready': False,
+                'status': sidecar_status.get('status') or 'disabled',
+                'code': 'ai_base_unavailable',
+                'message': sidecar_status.get('reason') or 'AI Base is not ready.',
+                'can_sync_workspace': False,
+            }
+        base_url = str(sidecar_status.get('base_url') or '').rstrip('/')
+        if not base_url:
+            return {
+                'ready': True,
+                'status': 'assumed_ready',
+                'code': '',
+                'message': '',
+                'can_sync_workspace': False,
+            }
+        try:
+            payload = self._json_poster(
+                self._api_url(base_url, '/api/app-chat-bindings/resolve'),
+                self.binding_request(state, sidecar_status, host_origin),
+                float(getattr(settings, 'METRICS_AI_BASE_TIMEOUT_SECONDS', 3.0)),
+            )
+            return {
+                'ready': True,
+                'status': payload.get('status', 'ready'),
+                'code': '',
+                'message': '',
+                'can_sync_workspace': False,
+                'resolution': payload,
+            }
+        except HTTPError as error:
+            detail = self._http_error_detail(error)
+            code = detail.get('code') or f'http_{error.code}'
+            return {
+                'ready': False,
+                'status': 'workspace_sync_required' if code == 'workspace_sync_required' else 'unavailable',
+                'code': code,
+                'message': detail.get('message') or 'AI Base chat binding could not be resolved.',
+                'can_sync_workspace': code == 'workspace_sync_required',
+            }
+        except Exception as error:
+            return {
+                'ready': False,
+                'status': 'unavailable',
+                'code': type(error).__name__,
+                'message': f'AI Base chat binding preflight failed: {type(error).__name__}.',
+                'can_sync_workspace': False,
+            }
+
+    def sync_workspace_context(self, sidecar_status: dict, context_bundle: dict) -> dict:
+        base_url = str(sidecar_status.get('base_url') or '').rstrip('/')
+        if not base_url:
+            raise ValueError('AI Base backend URL is not available.')
+        return self._json_poster(
+            self._api_url(base_url, '/api/app-workspace-context-bundles/sync'),
+            context_bundle,
+            float(getattr(settings, 'METRICS_AI_BASE_TIMEOUT_SECONDS', 3.0)),
+        )
 
     def chat_url(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> str:
         mode = self._embed_mode()
@@ -159,6 +224,28 @@ class AiBaseWorkbenchAdapter:
         if host_origin:
             query['hostOrigin'] = host_origin
         return query
+
+    def _api_url(self, base_url: str, path: str) -> str:
+        return f'{base_url.rstrip("/")}/{path.lstrip("/")}'
+
+    def _default_json_poster(self, url: str, payload: dict, timeout_seconds: float) -> dict:
+        data = json.dumps(payload).encode('utf-8')
+        request = Request(url, data=data, headers={'Accept': 'application/json', 'Content-Type': 'application/json'})
+        with urlopen(request, timeout=timeout_seconds) as response:
+            return json.loads(response.read().decode('utf-8'))
+
+    def _http_error_detail(self, error: HTTPError) -> dict:
+        try:
+            payload = json.loads(error.read().decode('utf-8'))
+        except Exception:
+            return {}
+        detail = payload.get('detail', {})
+        return detail if isinstance(detail, dict) else {}
+
+    @staticmethod
+    def is_enabled(sidecar_status: dict) -> bool:
+        status = sidecar_status.get('status')
+        return bool(sidecar_status.get('enabled', status in {'ready', 'connected', 'available'}))
 
     @staticmethod
     def _session_key(state: WorkbenchPageQueryState) -> str:

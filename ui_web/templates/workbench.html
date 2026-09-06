@@ -15,10 +15,10 @@
     {{ workbench_ai_context|json_script:"workbench-ai-context" }}
     <form class="workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
         <div class="workbench-control-grid">
-            <div class="field">
+            <div class="field workbench-toolbar-field workbench-toolbar-field-scope">
                 <label class="label" for="workbench-scope">Scope</label>
-                <div class="select is-small is-fullwidth">
-                    <select id="workbench-scope" name="scope_id">
+                <div class="select is-small is-fullwidth workbench-control-shell">
+                    <select class="workbench-control-input" id="workbench-scope" name="scope_id" data-workbench-state-trigger="scope">
                         {% for scope in scope_options %}
                             <option value="{{ scope.id }}"
                                     data-profile-id="{{ scope.profile_id }}"
@@ -28,37 +28,38 @@
                     </select>
                 </div>
             </div>
-            <div class="field">
+            <div class="field workbench-toolbar-field workbench-toolbar-field-profile">
                 <label class="label" for="workbench-profile">Profile</label>
-                <input class="input is-small" id="workbench-profile" value="{{ workbench_state.profile_id }}" readonly data-workbench-derived-field="profile_id">
+                <input class="input is-small workbench-control-input" id="workbench-profile" value="{{ workbench_state.profile_id }}" readonly data-workbench-derived-field="profile_id">
             </div>
-            <div class="field">
+            <div class="field workbench-toolbar-field workbench-toolbar-field-provider">
                 <label class="label" for="workbench-provider">Provider</label>
-                <input class="input is-small" id="workbench-provider" value="{{ workbench_state.provider_id }}" readonly data-workbench-derived-field="provider_id">
+                <input class="input is-small workbench-control-input" id="workbench-provider" value="{{ workbench_state.provider_id }}" readonly data-workbench-derived-field="provider_id">
             </div>
-            <div class="field">
+            <div class="field workbench-toolbar-field workbench-toolbar-field-range">
                 <label class="label" for="workbench-range-mode">Range</label>
-                <div class="select is-small is-fullwidth">
-                    <select id="workbench-range-mode" name="range_mode">
+                <div class="select is-small is-fullwidth workbench-control-shell">
+                    <select class="workbench-control-input" id="workbench-range-mode" name="range_mode">
                         <option value="ww" {% if workbench_state.range_mode == "ww" %}selected{% endif %}>Work Week</option>
                         <option value="date" {% if workbench_state.range_mode == "date" %}selected{% endif %}>Date</option>
                     </select>
                 </div>
             </div>
-            <div class="field">
+            <div class="field workbench-toolbar-field workbench-toolbar-field-chart">
                 <label class="label" for="workbench-chart">Chart</label>
-                <input class="input is-small" id="workbench-chart" name="chart_id" value="{{ active_chart_id }}">
+                <input class="input is-small workbench-control-input" id="workbench-chart" name="chart_id" value="{{ active_chart_id }}">
             </div>
-            <div class="field">
+            <div class="field workbench-toolbar-field workbench-toolbar-field-date">
                 <label class="label" for="workbench-begin">Begin</label>
-                <input class="input is-small" id="workbench-begin" name="begin" value="{{ workbench_state.begin }}">
+                <input class="input is-small workbench-control-input" id="workbench-begin" name="begin" value="{{ workbench_state.begin }}">
             </div>
-            <div class="field">
+            <div class="field workbench-toolbar-field workbench-toolbar-field-date">
                 <label class="label" for="workbench-end">End</label>
-                <input class="input is-small" id="workbench-end" name="end" value="{{ workbench_state.end }}">
+                <input class="input is-small workbench-control-input" id="workbench-end" name="end" value="{{ workbench_state.end }}">
             </div>
-            <div class="field workbench-apply-field">
-                <button class="button is-primary is-small" type="submit">Apply</button>
+            <div class="field workbench-toolbar-field workbench-apply-field">
+                <span class="label workbench-apply-label" aria-hidden="true">&nbsp;</span>
+                <button class="button is-primary is-small workbench-apply-button" type="submit">Apply</button>
             </div>
         </div>
     </form>
@@ -132,10 +133,10 @@
                     <input type="hidden" name="series" value="{{ workbench_state.selected_series_name }}">
                     <div class="field has-addons">
                         <div class="control is-expanded">
-                            <input class="input" name="text" value="{{ workbench_state.list_filters.text }}" placeholder="Filter evidence text">
+                            <input class="input is-small" name="text" value="{{ workbench_state.list_filters.text }}" placeholder="Filter evidence text">
                         </div>
                         <div class="control">
-                            <button class="button" type="submit">Filter</button>
+                            <button class="button is-small" type="submit">Filter</button>
                         </div>
                     </div>
                     <div class="columns is-variable is-2">
@@ -164,7 +165,9 @@
                     <span class="tag is-light">{{ workbench_ai_context.ai_base.status }}</span>
                 </div>
                 <div class="workbench-pane-actions">
-                    <a class="button is-small" href="{{ workbench_ai_context.ai_base.chat_url }}" target="_blank" rel="noopener">Open</a>
+                    {% if workbench_ai_context.ai_base.chat_ready %}
+                        <a class="button is-small" href="{{ workbench_ai_context.ai_base.chat_url }}" target="_blank" rel="noopener">Open</a>
+                    {% endif %}
                     <button class="button is-small" type="button" data-workbench-collapse="ai-assistant" aria-expanded="true">Collapse</button>
                 </div>
             </header>
@@ -178,7 +181,7 @@
                         <a href="{% url 'ui_web:bug_trend_scope_library' %}">Repair</a>
                     {% endif %}
                 </div>
-                {% if workbench_ai_context.ai_base.status == "ready" or workbench_ai_context.ai_base.status == "connected" or workbench_ai_context.ai_base.status == "available" %}
+                {% if workbench_ai_context.ai_base.chat_ready %}
                     <iframe
                         class="workbench-ai-chat-frame"
                         src="{{ workbench_ai_context.ai_base.chat_url }}"
@@ -189,12 +192,38 @@
                     </iframe>
                 {% else %}
                     <div class="workbench-ai-unavailable">
-                        {% if not workbench_ai_context.ai_base.enabled %}
+                        {% if workbench_ai_context.ai_base.chat_gate.status == "registry_profile_required" %}
+                            <p class="has-text-weight-semibold">AI workspace needs a registry-backed profile.</p>
+                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
+                        {% elif workbench_ai_context.ai_base.chat_gate.status == "workspace_sync_required" %}
+                            <p class="has-text-weight-semibold">AI workspace context is not synced for this scope.</p>
+                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
+                        {% elif not workbench_ai_context.ai_base.enabled %}
                             <p class="has-text-weight-semibold">AI chat is not enabled for this Dashboard process.</p>
                             <p class="is-size-7 has-text-grey">Restart the unified stack to enable the embedded AI Base chat side window.</p>
                         {% else %}
-                            <p class="has-text-weight-semibold">AI chat is configured but not reachable.</p>
-                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.reason|default:"Check the AI Base backend and frontend services." }}</p>
+                            <p class="has-text-weight-semibold">AI chat is not ready for this scope.</p>
+                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.chat_gate.message|default:workbench_ai_context.ai_base.reason }}</p>
+                        {% endif %}
+                        {% if workbench_ai_workspace_error %}
+                            <p class="is-size-7 has-text-danger">Workspace sync failed: {{ workbench_ai_workspace_error }}</p>
+                        {% endif %}
+                        {% if workbench_ai_context.ai_base.chat_gate.can_sync_workspace %}
+                            <form method="post" class="mt-3">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="sync_ai_workspace">
+                                <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
+                                <input type="hidden" name="range_mode" value="{{ workbench_state.range_mode }}">
+                                <input type="hidden" name="begin" value="{{ workbench_state.begin }}">
+                                <input type="hidden" name="end" value="{{ workbench_state.end }}">
+                                <input type="hidden" name="chart_id" value="{{ workbench_state.chart_id }}">
+                                <input type="hidden" name="chart_version" value="{{ workbench_state.chart_version }}">
+                                <input type="hidden" name="run" value="{{ workbench_state.calculation_run_id }}">
+                                <input type="hidden" name="snapshot" value="{{ workbench_state.fact_snapshot_id }}">
+                                <input type="hidden" name="bucket" value="{{ workbench_state.selected_bucket_id }}">
+                                <input type="hidden" name="series" value="{{ workbench_state.selected_series_name }}">
+                                <button class="button is-primary is-small" type="submit">Sync AI workspace</button>
+                            </form>
                         {% endif %}
                         <div class="workbench-ai-start-command mt-3">
                             <span>Start stack</span>

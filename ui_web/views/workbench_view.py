@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import redirect
 from django.views.generic import TemplateView
 from django.urls import reverse
 
@@ -40,7 +41,21 @@ class WorkbenchView(GracefulTemplateView):
         context['workbench_grafana_panel_url'] = grafana_panel_embed_url(state)
         context['workbench_grafana_full_url'] = grafana_full_dashboard_url(state)
         context['workbench_ai_context'] = self._ai_context(state, sidecar_status)
+        context['workbench_ai_workspace_error'] = self.request.GET.get('ai_workspace_error', '')
         self._populate_chart_context(context, state)
+
+    def post(self, request, *args, **kwargs):
+        if request.POST.get('action') != 'sync_ai_workspace':
+            return redirect('ui_web:workbench')
+        sidecar_status = self.bug_trend_facade.get_ai_sidecar_status_payload()
+        state = self._state(request.POST)
+        redirect_params = state.to_query_params()
+        try:
+            context_bundle = self.bug_trend_facade.get_ai_workspace_context_bundle_payload(state.profile_id)
+            self.ai_adapter.sync_workspace_context(sidecar_status, context_bundle)
+        except Exception as error:
+            redirect_params['ai_workspace_error'] = f'{type(error).__name__}'
+        return redirect(self._workbench_url(redirect_params))
 
     def _pane_registry(self):
         return [
@@ -100,8 +115,8 @@ class WorkbenchView(GracefulTemplateView):
             return f'If the panel is blank, check that Grafana is listening on port {port}.'
         return 'If the panel is blank, check the configured Grafana URL and service health.'
 
-    def _state(self) -> WorkbenchPageQueryState:
-        state = WorkbenchPageQueryState.from_query(self.request.GET)
+    def _state(self, query=None) -> WorkbenchPageQueryState:
+        state = WorkbenchPageQueryState.from_query(query or self.request.GET)
         today = date.today()
         scope_options = self.bug_trend_facade.get_scope_options()
         scope_id = state.scope_id or self._default_scope_id(state.profile_id, scope_options)
@@ -245,12 +260,22 @@ class WorkbenchView(GracefulTemplateView):
 
     def _ai_context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
         context = self.ai_adapter.context(state, sidecar_status, self._host_origin())
-        context['scope_binding'] = self._scope_binding_context(state)
+        scope_binding = self._scope_binding_context(state)
+        context['scope_binding'] = scope_binding
+        context['ai_base']['chat_gate'] = self._ai_chat_gate(state, sidecar_status, scope_binding)
+        context['ai_base']['chat_ready'] = context['ai_base']['chat_gate']['ready']
         return context
 
     def _scope_binding_context(self, state: WorkbenchPageQueryState) -> dict:
         scope_option = self._scope_option(self.bug_trend_facade.get_scope_options(), state.scope_id)
         if not scope_option:
+            if state.profile_id and state.provider_id:
+                return {
+                    'status': 'explicit',
+                    'profile_id': state.profile_id,
+                    'provider_id': state.provider_id,
+                    'blockers': [],
+                }
             return {
                 'status': 'configuration_required',
                 'profile_id': '',
@@ -263,6 +288,36 @@ class WorkbenchView(GracefulTemplateView):
             'provider_id': scope_option.provider_id,
             'blockers': scope_option.binding_blockers or [],
         }
+
+    def _ai_chat_gate(self, state: WorkbenchPageQueryState, sidecar_status: dict, scope_binding: dict) -> dict:
+        if not self.ai_adapter.is_enabled(sidecar_status):
+            return {
+                'ready': False,
+                'status': 'disabled',
+                'message': 'AI chat is not enabled for this Dashboard process.',
+                'can_sync_workspace': False,
+            }
+        if scope_binding['status'] not in {'explicit', 'compatibility'} or not state.profile_id or not state.provider_id:
+            return {
+                'ready': False,
+                'status': 'binding_required',
+                'message': 'Bind this scope to a provider profile before opening AI chat.',
+                'can_sync_workspace': False,
+            }
+        if not self._is_registry_backed_profile(state.profile_id, state.provider_id):
+            return {
+                'ready': False,
+                'status': 'registry_profile_required',
+                'message': 'AI chat requires a registry-backed provider profile. Rebind this scope in Scope Library.',
+                'can_sync_workspace': False,
+            }
+        return self.ai_adapter.resolve_chat_binding(state, sidecar_status, self._host_origin())
+
+    def _is_registry_backed_profile(self, profile_id: str, provider_id: str) -> bool:
+        return any(
+            choice.profile_id == profile_id and choice.provider_id == provider_id
+            for choice in self.bug_trend_facade.get_scope_provider_profile_choices()
+        )
 
     def _host_origin(self) -> str:
         parsed_url = urlparse(self.request.build_absolute_uri('/'))
