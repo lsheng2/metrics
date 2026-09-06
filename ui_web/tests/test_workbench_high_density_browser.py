@@ -68,7 +68,22 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         self.assertNotEqual('3.15rem', result['chart_height'])
         self.assertTrue(result['detail_collapsed_after_close'])
         self.assertTrue(result['ai_collapsed'])
+        self.assertEqual('AI', result['ai_button_text'])
+        self.assertFalse(result['ai_title_visible'])
         self.assertNotEqual('44px', result['ai_width'])
+        self.assertGreaterEqual(int(result['ai_width'].removesuffix('px')), 280)
+        self.assertLessEqual(abs(result['layout_metrics']['appTop']), 1)
+        self.assertLessEqual(abs(result['layout_metrics']['sidebarTop']), 1)
+        self.assertLessEqual(result['layout_metrics']['shellTop'], 10)
+        self.assertLessEqual(result['layout_metrics']['shellRightGap'], 1)
+        self.assertLessEqual(result['layout_metrics']['aiRightGap'], 1)
+        self.assertLessEqual(result['layout_metrics']['aiWidth'], 42)
+        self.assertEqual('40px', result['layout_metrics']['aiWidthVar'])
+        self.assertLessEqual(abs(result['layout_metrics']['statusBottomGap']), 1)
+        self.assertGreaterEqual(result['layout_metrics']['statusHeight'], 24)
+        self.assertTrue(result['restored_ai_collapsed'])
+        self.assertEqual('AI', result['restored_ai_button_text'])
+        self.assertFalse(result['restored_ai_title_visible'])
 
     def test_shouldSyncScopeBoundProfileAndResizeGlobalSidebarInBrowser(self):
         # Given
@@ -99,13 +114,22 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
             'end': '2026-08-09',
             'chart_id': 'default_bug_trend',
         })
+        target_response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': hsdes_scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
 
         # When
-        result = self._exercise_workbench_scope_sync_and_sidebar_resize(response, hsdes_scope.id)
+        result = self._exercise_workbench_scope_sync_and_sidebar_resize(response, hsdes_scope.id, target_response)
 
         # Then
         self.assertGreater(int(result['resized_sidebar_width'].removesuffix('px')), int(result['initial_sidebar_width'].removesuffix('px')))
         self.assertEqual(result['resized_sidebar_width'], result['stored_sidebar_width'])
+        self.assertIn(f'scope_id={hsdes_scope.id}', result['htmx_url'])
+        self.assertNotIn('profile_id=', result['htmx_url'])
+        self.assertNotIn('provider_id=', result['htmx_url'])
         self.assertEqual('nvu-ttl-hsdes', result['profile_value'])
         self.assertEqual('hsdes', result['provider_value'])
 

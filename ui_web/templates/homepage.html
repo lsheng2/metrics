@@ -5,52 +5,37 @@
 {% block page_title %}Metrics Dashboard{% endblock %}
 
 {% block content %}
-<div class="box">
-    <div class="content">
-        <h2 class="title is-2">Welcome to the Metrics Dashboard</h2>
-        <p class="subtitle is-4">This application provides comprehensive insights into software development metrics and team performance tracking.</p>
-    </div>
-</div>
+<section class="dashboard-home-hero">
+    <h2 class="title is-2">Metrics Dashboard</h2>
+    <p class="subtitle is-4">Operational views for development health, work queues, delivery forecast, and quality trend evidence.</p>
+</section>
 
-<div class="box">
-    <h3 class="title is-3">Available Pages</h3>
-    
-    <div class="columns is-multiline">
-        <div class="column is-half">
-            <div class="box">
-                <h4 class="title is-4">📋 Current Tasks</h4>
-                <p>View and track ongoing work items and their progress. Monitor active tasks, time spent, and completion status across your development team.</p>
-            </div>
+<section class="box">
+    <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
+        <h3 class="title is-3 mb-0">Core Workflows</h3>
+        <a class="button is-primary is-small" href="{% url 'ui_web:workbench' %}">Open Workbench</a>
+    </div>
+    <div class="dashboard-home-grid">
+        <div class="box dashboard-home-card">
+            <h4 class="title is-4">Current Tasks</h4>
+            <p class="is-size-7">Track active work items, owner coverage, stage health, and linked review gates.</p>
+            <a class="button is-small mt-3" href="{% url 'ui_web:current_tasks' %}">Open</a>
         </div>
-        
-        <div class="column is-half">
-            <div class="box">
-                <h4 class="title is-4">🚀 Team Velocity</h4>
-                <p>Analyze team performance metrics and story point completion. Track velocity trends and story point resolution over time to understand team capacity.</p>
-            </div>
+        <div class="box dashboard-home-card">
+            <h4 class="title is-4">Bug Trend</h4>
+            <p class="is-size-7">Review quality trends with chart-to-ticket evidence and provider-backed scope controls.</p>
+            <a class="button is-small mt-3" href="{% url 'ui_web:bug_trend' %}">Open</a>
         </div>
-        
-        <div class="column is-half">
-            <div class="box">
-                <h4 class="title is-4">👨‍💻 Dev Velocity</h4>
-                <p>Individual developer performance tracking over time. Monitor personal velocity metrics and story point completion for team members.</p>
-            </div>
+        <div class="box dashboard-home-card">
+            <h4 class="title is-4">Team Velocity</h4>
+            <p class="is-size-7">Compare throughput, story points, and team execution patterns across configured groups.</p>
+            <a class="button is-small mt-3" href="{% url 'ui_web:team_velocity' %}">Open</a>
         </div>
-        
-        <div class="column is-half">
-            <div class="box">
-                <h4 class="title is-4">🔮 Task Forecast</h4>
-                <p>Estimate completion timelines for tasks and hierarchies. Generate forecasts based on team velocity and task complexity to plan project deliveries.</p>
-            </div>
+        <div class="box dashboard-home-card">
+            <h4 class="title is-4">Task Forecast</h4>
+            <p class="is-size-7">Estimate delivery timelines from task hierarchy, team velocity, and remaining work.</p>
+            <a class="button is-small mt-3" href="{% url 'ui_web:task_forecast' %}">Open</a>
         </div>
     </div>
-</div>
-
-<div class="box">
-    <h3 class="title is-3">Getting Started</h3>
-    <div class="content">
-        <p>Use the navigation menu on the <strong>left</strong> to explore different sections of the dashboard. Each page provides detailed metrics and visualizations to help you understand your development process.</p>
-        <p>If member groups are configured, you can filter data by specific teams or groups using the navigation submenu items.</p>
-    </div>
-</div>
+</section>
 {% endblock %}

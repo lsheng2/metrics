@@ -7,7 +7,7 @@ from bug_metrics.models import JiraScopeConfig
 
 from ..data.bug_trend_data import BugTrendChartData, BugTrendChartOption, BugTrendEvidenceData, BugTrendScopeAuditData, BugTrendScopeOption
 from .bug_trend_chart_payload import chart_payload, run_metadata_payload
-from .bug_trend_scope_profile import resolve_scope_profile_binding
+from .bug_trend_scope_profile import resolve_scope_provider_binding
 from .provider_dashboard_facade import ProviderDashboardFacade
 
 
@@ -20,8 +20,16 @@ class BugTrendFacade:
     def get_scope_options(self):
         options = []
         for scope in self._bug_trend_api.list_enabled_scopes():
-            profile_id, provider_id = resolve_scope_profile_binding(scope)
-            options.append(BugTrendScopeOption(scope.id, scope.name, self._scope_label(scope), profile_id, provider_id))
+            binding = resolve_scope_provider_binding(self._bug_trend_api, scope)
+            options.append(BugTrendScopeOption(
+                scope.id,
+                scope.name,
+                self._scope_label(scope),
+                binding.profile_id,
+                binding.provider_id,
+                binding.status,
+                binding.blockers,
+            ))
         return options
 
     def get_scope_library(self):

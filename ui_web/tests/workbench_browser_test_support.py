@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from playwright.sync_api import sync_playwright
 
 
@@ -87,9 +86,14 @@ class WorkbenchBrowserTestSupport:
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
-        main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
-        test_css = '<style>[data-dashboard-layout]{--dashboard-sidebar-width:248px;display:flex}[data-dashboard-sidebar]{width:var(--dashboard-sidebar-width);flex:0 0 var(--dashboard-sidebar-width)}</style>'
-        html = self._browser_html(response.content.decode()).replace('</body>', f'{test_css}<script>{main_js}</script></body>')
+        static_dir = Path(__file__).resolve().parents[1] / 'static'
+        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
+        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
+        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
+        html = self._browser_html(response.content.decode()).replace(
+            '</body>',
+            f'<style>{vendor_css}\n{main_css}</style><script>{main_js}</script></body>',
+        )
         try:
             page.route('http://testserver/workbench/', lambda route: route.fulfill(
                 status=200,
@@ -133,10 +137,39 @@ class WorkbenchBrowserTestSupport:
             ai_collapsed = page.locator('#workbench-grid').evaluate(
                 "element => element.classList.contains('is-ai-collapsed')"
             )
+            ai_button_text = page.locator('[data-workbench-collapse="ai-assistant"]').inner_text()
+            ai_title_visible = page.locator('#workbench-ai-title').is_visible()
             page.locator('[data-workbench-splitter="main-ai"]').press('ArrowLeft')
             ai_width = page.locator('#workbench-grid').evaluate(
                 "element => getComputedStyle(element).getPropertyValue('--workbench-ai-width').trim()"
             )
+            page.locator('[data-workbench-collapse="ai-assistant"]').click()
+            layout_metrics = page.evaluate("""
+                () => {
+                    const app = document.querySelector('[data-dashboard-layout]').getBoundingClientRect();
+                    const sidebar = document.querySelector('[data-dashboard-sidebar]').getBoundingClientRect();
+                    const shell = document.querySelector('.workbench-shell').getBoundingClientRect();
+                    const ai = document.querySelector('[data-workbench-pane="ai-assistant"]').getBoundingClientRect();
+                    const status = document.querySelector('[data-workbench-status-bar]').getBoundingClientRect();
+                    return {
+                        appTop: Math.round(app.top),
+                        sidebarTop: Math.round(sidebar.top),
+                        shellTop: Math.round(shell.top),
+                        shellRightGap: Math.round(window.innerWidth - shell.right),
+                        aiRightGap: Math.round(window.innerWidth - ai.right),
+                        aiWidth: Math.round(ai.width),
+                        aiWidthVar: getComputedStyle(document.querySelector('#workbench-grid')).getPropertyValue('--workbench-ai-width').trim(),
+                        statusBottomGap: Math.round(window.innerHeight - status.bottom),
+                        statusHeight: Math.round(status.height),
+                    };
+                }
+            """)
+            page.reload(wait_until='domcontentloaded')
+            restored_ai_collapsed = page.locator('#workbench-grid').evaluate(
+                "element => element.classList.contains('is-ai-collapsed')"
+            )
+            restored_ai_button_text = page.locator('[data-workbench-collapse="ai-assistant"]').inner_text()
+            restored_ai_title_visible = page.locator('#workbench-ai-title').is_visible()
             return {
                 'initial_detail_collapsed': initial_detail_collapsed,
                 'detail_open': detail_open,
@@ -150,7 +183,13 @@ class WorkbenchBrowserTestSupport:
                 'chart_height': chart_height,
                 'detail_collapsed_after_close': detail_collapsed_after_close,
                 'ai_collapsed': ai_collapsed,
+                'ai_button_text': ai_button_text,
+                'ai_title_visible': ai_title_visible,
                 'ai_width': ai_width,
+                'layout_metrics': layout_metrics,
+                'restored_ai_collapsed': restored_ai_collapsed,
+                'restored_ai_button_text': restored_ai_button_text,
+                'restored_ai_title_visible': restored_ai_title_visible,
             }
         finally:
             page.close()
@@ -285,18 +324,21 @@ class WorkbenchBrowserTestSupport:
             browser.close()
             playwright.stop()
 
-    def _exercise_workbench_scope_sync_and_sidebar_resize(self, response, target_scope_id):
+    def _exercise_workbench_scope_sync_and_sidebar_resize(self, response, target_scope_id, target_response=None):
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
         main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
         html = self._browser_html(response.content.decode()).replace('</body>', f'<script>{main_js}</script></body>')
+        target_html = html
+        if target_response is not None:
+            target_html = self._browser_html(target_response.content.decode()).replace('</body>', f'<script>{main_js}</script></body>')
         try:
-            page.route('http://testserver/workbench/', lambda route: route.fulfill(
-                status=200,
-                content_type='text/html',
-                body=html,
-            ))
+            def fulfill_workbench(route):
+                body = target_html if '?' in route.request.url else html
+                route.fulfill(status=200, content_type='text/html', body=body)
+
+            page.route('**/workbench/**', fulfill_workbench)
             page.goto('http://testserver/workbench/', wait_until='domcontentloaded')
             page.locator('[data-dashboard-layout]').evaluate(
                 "element => element.style.setProperty('--dashboard-sidebar-width', '248px')"
@@ -315,12 +357,16 @@ class WorkbenchBrowserTestSupport:
             )
             stored_sidebar_width = page.evaluate("window.localStorage.getItem('metricsDashboard.sidebarWidth')")
             page.locator('#workbench-scope').select_option(str(target_scope_id))
+            page.wait_for_function("window.lastHtmxUrl !== undefined")
+            htmx_url = page.evaluate("window.lastHtmxUrl")
+            page.wait_for_timeout(100)
             profile_value = page.locator('#workbench-profile').input_value()
             provider_value = page.locator('#workbench-provider').input_value()
             return {
                 'initial_sidebar_width': initial_sidebar_width,
                 'resized_sidebar_width': resized_sidebar_width,
                 'stored_sidebar_width': stored_sidebar_width,
+                'htmx_url': htmx_url,
                 'profile_value': profile_value,
                 'provider_value': provider_value,
             }

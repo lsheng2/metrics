@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="en" data-theme="dark" class="has-navbar-fixed-top">
+<html lang="en" data-theme="dark" class="has-navbar-fixed-top {% block html_class %}{% endblock %}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,7 @@
     <script src="{% static 'js/main.js' %}"></script>
     <title>{% block title %}Metrics Dashboard{% endblock %}</title>
 </head>
-<body class="is-flex is-flex-direction-column is-fullheight">
+<body class="is-flex is-flex-direction-column is-fullheight {% block body_class %}{% endblock %}">
     <header>
         <nav class="navbar is-fixed-top">
             <div class="navbar-brand">
@@ -205,13 +205,7 @@
                 </div>
             </section>
             
-            {% block footer %}
-                <footer class="footer mt-auto">
-                    <div class="has-text-centered">
-                        <p>&copy; 2017 - {% now "Y" %} Metrics Dashboard</p>
-                    </div>
-                </footer>
-            {% endblock %}
+            {% block footer %}{% endblock %}
         </main>
     </div>
 

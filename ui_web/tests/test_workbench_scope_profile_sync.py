@@ -42,8 +42,70 @@ class TestWorkbenchScopeProfileSync(TestCase):
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn(f'value="{hsdes_scope.id}"', content)
-        self.assertIn('id="workbench-profile" name="profile_id" value="nvu-ttl-hsdes"', content)
-        self.assertIn('id="workbench-provider" name="provider_id" value="hsdes" readonly', content)
+        self.assertIn('id="workbench-profile" value="nvu-ttl-hsdes" readonly data-workbench-derived-field="profile_id"', content)
+        self.assertIn('id="workbench-provider" value="hsdes" readonly data-workbench-derived-field="provider_id"', content)
         self.assertIn('data-profile-id="nvu-ttl-hsdes"', content)
         self.assertIn('data-provider-id="hsdes"', content)
-        self.assertIn('workspace_key=metrics.hsdes.nvu-ttl-hsdes', content)
+        self.assertIn('"workspace_key": "metrics.hsdes.nvu-ttl-hsdes"', content)
+
+    def test_shouldResolveDisplayNamedJiraScopeWithoutTrustingStaleQueryBinding(self):
+        scope = JiraScopeConfig.objects.create(
+            name='NVU / STDEL / Demo STDEL Bug Trend',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'profile_id': 'chiplet-2a-jira',
+            'provider_id': '',
+            'range_mode': 'ww',
+            'begin': '2026-08-03',
+            'end': '2026-08-30',
+            'chart_id': 'default_bug_trend',
+        })
+
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn(f'value="{scope.id}"', content)
+        self.assertIn('id="workbench-profile" value="NVU / STDEL / Demo STDEL Bug Trend" readonly data-workbench-derived-field="profile_id"', content)
+        self.assertIn('id="workbench-provider" value="jira" readonly data-workbench-derived-field="provider_id"', content)
+        self.assertIn('data-provider-id="jira"', content)
+        self.assertNotIn('id="workbench-profile" name="profile_id"', content)
+        self.assertNotIn('id="workbench-provider" name="provider_id"', content)
+
+    def test_shouldShowConfigurationRequiredWhenScopeHasNoSafeBinding(self):
+        scope = JiraScopeConfig.objects.create(
+            name='Unbound Empty Scope',
+            jql='',
+            bug_type_values=['Bug'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'profile_id': 'chiplet-2a-jira',
+            'provider_id': 'jira',
+            'range_mode': 'ww',
+            'begin': '2026-08-03',
+            'end': '2026-08-30',
+            'chart_id': 'default_bug_trend',
+        })
+
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('id="workbench-profile" value="" readonly data-workbench-derived-field="profile_id"', content)
+        self.assertIn('id="workbench-provider" value="" readonly data-workbench-derived-field="provider_id"', content)
+        self.assertIn('Scope is not bound to a provider profile.', content)
+        self.assertNotIn('workspace_key=metrics.jira.chiplet-2a-jira', content)

@@ -106,8 +106,12 @@ class WorkbenchView(GracefulTemplateView):
         scope_options = self.bug_trend_facade.get_scope_options()
         scope_id = state.scope_id or self._default_scope_id(state.profile_id, scope_options)
         scope_option = self._scope_option(scope_options, scope_id)
-        profile_id = scope_option.profile_id if scope_option and scope_option.profile_id else state.profile_id
-        provider_id = scope_option.provider_id if scope_option and scope_option.provider_id else self._provider_id_for_profile(profile_id) or state.provider_id
+        if scope_option:
+            profile_id = scope_option.profile_id
+            provider_id = scope_option.provider_id
+        else:
+            profile_id = state.profile_id
+            provider_id = self._provider_id_for_profile(profile_id) or state.provider_id
         return replace(
             state,
             scope_id=scope_id,
@@ -155,6 +159,8 @@ class WorkbenchView(GracefulTemplateView):
         context['scope_options'] = scope_options
         context['chart_options'] = chart_options
         context['active_chart_id'] = state.chart_id or 'default_bug_trend'
+        active_scope = self._scope_option(scope_options, state.scope_id)
+        context['workbench_binding_unavailable_reason'] = self._binding_unavailable_reason(active_scope)
         active_chart = self._active_chart_option(chart_options, context['active_chart_id'])
         context['workbench_evidence_capability'] = active_chart.capability if active_chart else 'unsupported'
         context['workbench_evidence_unavailable_reason'] = ''
@@ -163,6 +169,14 @@ class WorkbenchView(GracefulTemplateView):
             context['chart_json'] = '{}'
             context['unavailable_reason'] = 'Create a saved Jira scope before opening the workbench chart pane.'
             context['run_metadata'] = {}
+            return
+        if context['workbench_binding_unavailable_reason']:
+            context['selected_scope_id'] = int(state.scope_id)
+            context['chart_json'] = '{}'
+            context['unavailable_reason'] = context['workbench_binding_unavailable_reason']
+            context['run_metadata'] = {}
+            context['evidence'] = None
+            context['workbench_evidence_unavailable_reason'] = context['workbench_binding_unavailable_reason']
             return
 
         selected_scope_id = int(state.scope_id)
@@ -206,6 +220,15 @@ class WorkbenchView(GracefulTemplateView):
 
     def _active_chart_option(self, chart_options, chart_id):
         return next((chart for chart in chart_options if chart.chart_id == chart_id), None)
+
+    def _binding_unavailable_reason(self, scope_option) -> str:
+        if not scope_option:
+            return ''
+        if scope_option.profile_id and scope_option.provider_id:
+            return ''
+        if scope_option.binding_blockers:
+            return scope_option.binding_blockers[0].get('message', 'Scope is not bound to a provider profile.')
+        return 'Scope is not bound to a provider profile.'
 
     def _ai_context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
         return self.ai_adapter.context(state, sidecar_status, self._host_origin())

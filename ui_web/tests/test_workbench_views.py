@@ -139,8 +139,9 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('id="workbench-provider" name="provider_id" value="jira" readonly', content)
-        self.assertIn('provider_id=jira', content)
+        self.assertIn('id="workbench-provider" value="jira" readonly data-workbench-derived-field="provider_id"', content)
+        self.assertIn('providerId=jira', content)
+        self.assertIn('sourceAppId=metrics-dashboard', content)
 
     def test_shouldShowValidationFailureForInvalidSelectionWithoutStaleRows(self):
         # When

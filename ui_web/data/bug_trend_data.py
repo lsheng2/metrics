@@ -9,6 +9,8 @@ class BugTrendScopeOption:
     label: str
     profile_id: str = ''
     provider_id: str = ''
+    binding_status: str = ''
+    binding_blockers: list = None
 
 
 @dataclass(slots=True)

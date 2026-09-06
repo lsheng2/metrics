@@ -125,6 +125,46 @@ class JiraScopeConfig(models.Model):
         return self.name
 
 
+class BugTrendScopeProviderBinding(models.Model):
+    STATUS_EXPLICIT = 'explicit'
+    STATUS_COMPATIBILITY = 'compatibility'
+    STATUS_CONFIGURATION_REQUIRED = 'configuration_required'
+    STATUS_AMBIGUOUS = 'ambiguous'
+    STATUS_DISABLED = 'disabled'
+
+    STATUS_CHOICES = (
+        (STATUS_EXPLICIT, 'Explicit'),
+        (STATUS_COMPATIBILITY, 'Compatibility'),
+        (STATUS_CONFIGURATION_REQUIRED, 'Configuration required'),
+        (STATUS_AMBIGUOUS, 'Ambiguous'),
+        (STATUS_DISABLED, 'Disabled'),
+    )
+
+    scope = models.OneToOneField(JiraScopeConfig, on_delete=models.CASCADE, related_name='provider_binding')
+    profile_id = models.CharField(max_length=120, blank=True)
+    provider_id = models.CharField(max_length=80, blank=True)
+    status = models.CharField(max_length=40, choices=STATUS_CHOICES, default=STATUS_CONFIGURATION_REQUIRED)
+    provenance = models.JSONField(default=_empty_dict)
+    blockers = models.JSONField(default=_empty_list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['profile_id', 'provider_id', 'status']),
+        ]
+
+    @property
+    def is_resolved(self) -> bool:
+        return bool(self.profile_id and self.provider_id and self.status in {
+            self.STATUS_EXPLICIT,
+            self.STATUS_COMPATIBILITY,
+        })
+
+    def __str__(self):
+        return f'{self.scope_id}:{self.profile_id}:{self.provider_id}:{self.status}'
+
+
 class BugTrendCalculationRun(models.Model):
     STATUS_RUNNING = 'running'
     STATUS_COMPLETED = 'completed'

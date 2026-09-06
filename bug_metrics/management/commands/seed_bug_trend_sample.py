@@ -62,6 +62,7 @@ class Command(BaseCommand):
         self._create_sample_history(scope, coverage_start, coverage_end, component_value)
 
         bug_metrics_container.bug_trend_api.recalculate_scope(scope.id, coverage_start, coverage_end)
+        bug_metrics_container.bug_trend_api.backfill_scope_provider_binding(scope, explicit=name == 'chiplet-2a-jira')
         return scope
 
     def _create_sample_history(self, scope, coverage_start, coverage_end, component_value):

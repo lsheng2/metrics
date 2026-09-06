@@ -43,6 +43,7 @@ from .provider_evidence import ProviderChartEvidenceService
 from .provider_profiles import ProviderProfileReadinessService
 from .scope_audit import ScopeAudit, ScopeAuditService
 from .scope_config import SavedScopeConfig, ScopeConfigService, ScopeConfigValidationResult
+from .scope_provider_binding import ScopeProviderBindingResolution, ScopeProviderBindingResolver
 from .series import active_bug_trend_series
 from provider_sync.app.api import ProviderSyncCacheService
 
@@ -55,6 +56,7 @@ class ApiForBugTrend:
         )
         self._scope_audit_service = ScopeAuditService()
         self._scope_config_service = ScopeConfigService()
+        self._scope_provider_binding_resolver = ScopeProviderBindingResolver()
         self._chart_catalog_service = ChartCatalogService()
         self._calculation_health_service = BugTrendCalculationHealthService()
         self._evidence_export_service = BugTrendEvidenceExportService()
@@ -79,6 +81,12 @@ class ApiForBugTrend:
 
     def get_scope_config(self, scope_id: int) -> SavedScopeConfig:
         return self._scope_config_service.get_scope_config(scope_id)
+
+    def resolve_scope_provider_binding(self, scope: JiraScopeConfig) -> ScopeProviderBindingResolution:
+        return self._scope_provider_binding_resolver.resolve(scope)
+
+    def backfill_scope_provider_binding(self, scope: JiraScopeConfig, explicit: bool = False) -> ScopeProviderBindingResolution:
+        return self._scope_provider_binding_resolver.backfill(scope, explicit)
 
     def validate_scope_config(self, config: SavedScopeConfig) -> ScopeConfigValidationResult:
         return self._scope_config_service.validate_scope_config(config)

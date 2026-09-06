@@ -328,6 +328,29 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
+    function workbenchToolbarUrl(form) {
+        const action = form.getAttribute('hx-get') || form.getAttribute('action') || window.location.pathname;
+        const url = new URL(action, window.location.origin);
+        const params = new URLSearchParams(new FormData(form));
+        url.search = params.toString();
+        return `${url.pathname}${url.search}`;
+    }
+
+    function refreshWorkbenchFromToolbar(form) {
+        const url = workbenchToolbarUrl(form);
+        if (window.htmx) {
+            htmx.ajax('GET', url, {
+                target: '.workbench-shell',
+                select: '.workbench-shell',
+                swap: 'outerHTML'
+            });
+            window.history.pushState({}, '', url);
+            saveCurrentWorkbenchUrl();
+            return;
+        }
+        window.location.assign(url);
+    }
+
     function initializeDashboardSidebarSplitter() {
         const layout = document.querySelector('[data-dashboard-layout]');
         const sidebar = document.querySelector('[data-dashboard-sidebar]');
@@ -398,18 +421,74 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const workbenchGrid = document.getElementById('workbench-grid');
+        const aiRailWidth = 40;
+        const minExpandedAiWidth = 280;
+        const maxExpandedAiWidth = 600;
+        function normalizeWorkbenchAiWidth(width) {
+            const numericWidth = Number.parseInt(width);
+            if (!numericWidth || numericWidth <= aiRailWidth || numericWidth < minExpandedAiWidth) {
+                return aiRailWidth;
+            }
+            return Math.min(maxExpandedAiWidth, numericWidth);
+        }
+        function syncWorkbenchCollapseState(paneName, isCollapsed) {
+            const pane = document.querySelector(`[data-workbench-pane="${paneName}"]`);
+            const button = document.querySelector(`[data-workbench-collapse="${paneName}"]`);
+            if (pane) {
+                pane.classList.toggle('is-collapsed', isCollapsed);
+            }
+            if (!button) {
+                return;
+            }
+            button.setAttribute('aria-expanded', String(!isCollapsed));
+            if (paneName === 'ai-assistant') {
+                button.textContent = isCollapsed ? 'AI' : 'Collapse';
+                button.setAttribute('aria-label', isCollapsed ? 'Expand AI assistant' : 'Collapse AI assistant');
+                return;
+            }
+            button.textContent = isCollapsed ? 'Expand' : 'Collapse';
+        }
+        function setWorkbenchAiCollapsed(isCollapsed, width) {
+            if (!workbenchGrid) {
+                return;
+            }
+            const normalizedWidth = width
+                ? normalizeWorkbenchAiWidth(width)
+                : isCollapsed ? aiRailWidth : 340;
+            const shouldCollapse = isCollapsed || normalizedWidth === aiRailWidth;
+            workbenchGrid.classList.toggle('is-ai-collapsed', shouldCollapse);
+            workbenchGrid.style.setProperty('--workbench-ai-width', `${normalizedWidth}px`);
+            syncWorkbenchCollapseState('ai-assistant', shouldCollapse);
+        }
+        function setWorkbenchChartCollapsed(isCollapsed, height) {
+            if (!workbenchGrid) {
+                return;
+            }
+            workbenchGrid.classList.toggle('is-chart-collapsed', isCollapsed);
+            workbenchGrid.style.setProperty('--workbench-chart-height', height || (isCollapsed ? '3.15rem' : '38vh'));
+            syncWorkbenchCollapseState('chart', isCollapsed);
+        }
         if (workbenchGrid && workbenchGrid.dataset.workbenchLayoutInitialized !== 'true') {
             workbenchGrid.dataset.workbenchLayoutInitialized = 'true';
             const savedAiWidth = window.localStorage.getItem('metricsWorkbench.aiWidth');
             const savedChartHeight = window.localStorage.getItem('metricsWorkbench.chartHeight');
+            let aiCollapsed = false;
+            let chartCollapsed = false;
             if (savedAiWidth) {
-                workbenchGrid.style.setProperty('--workbench-ai-width', savedAiWidth);
-                workbenchGrid.classList.toggle('is-ai-collapsed', savedAiWidth === '44px');
+                const migratedAiWidth = savedAiWidth === '44px' ? '40px' : savedAiWidth;
+                const normalizedAiWidth = normalizeWorkbenchAiWidth(migratedAiWidth);
+                aiCollapsed = normalizedAiWidth === aiRailWidth;
+                setWorkbenchAiCollapsed(aiCollapsed, `${normalizedAiWidth}px`);
+                if (`${normalizedAiWidth}px` !== savedAiWidth) {
+                    window.localStorage.setItem('metricsWorkbench.aiWidth', `${normalizedAiWidth}px`);
+                }
             }
             if (savedChartHeight) {
-                workbenchGrid.style.setProperty('--workbench-chart-height', savedChartHeight);
-                workbenchGrid.classList.toggle('is-chart-collapsed', savedChartHeight === '3.15rem');
+                chartCollapsed = savedChartHeight === '3.15rem';
+                setWorkbenchChartCollapsed(chartCollapsed, savedChartHeight);
             }
+            syncWorkbenchCollapseState('ai-assistant', aiCollapsed);
+            syncWorkbenchCollapseState('chart', chartCollapsed);
         }
 
         if (document.querySelector('.workbench-shell') && !window.metricsWorkbenchInitialScrollGuardRegistered) {
@@ -472,17 +551,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.dataset.workbenchSplitter === 'main-ai') {
                     const current = parseInt(getComputedStyle(workbenchGrid).getPropertyValue('--workbench-ai-width')) || 340;
                     const delta = event.key === 'ArrowLeft' ? 16 : event.key === 'ArrowRight' ? -16 : 0;
-                    const next = Math.max(44, Math.min(600, current + delta));
-                    workbenchGrid.style.setProperty('--workbench-ai-width', `${next}px`);
-                    workbenchGrid.classList.toggle('is-ai-collapsed', next <= 44);
+                    const candidate = current <= aiRailWidth && delta > 0 ? 340 : current + delta;
+                    const next = normalizeWorkbenchAiWidth(candidate);
+                    setWorkbenchAiCollapsed(next === aiRailWidth, `${next}px`);
                     window.localStorage.setItem('metricsWorkbench.aiWidth', `${next}px`);
                 }
                 if (this.dataset.workbenchSplitter === 'chart-evidence') {
                     const current = parseInt(getComputedStyle(workbenchGrid).getPropertyValue('--workbench-chart-height')) || Math.round(gridRect.height * 0.55);
                     const delta = event.key === 'ArrowUp' ? -16 : event.key === 'ArrowDown' ? 16 : 0;
                     const next = Math.max(50, Math.min(gridRect.height - 240, current + delta));
-                    workbenchGrid.style.setProperty('--workbench-chart-height', `${next}px`);
-                    workbenchGrid.classList.toggle('is-chart-collapsed', next <= 52);
+                    setWorkbenchChartCollapsed(next <= 52, `${next}px`);
                     window.localStorage.setItem('metricsWorkbench.chartHeight', `${next}px`);
                 }
             });
@@ -497,15 +575,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const evidenceRect = evidenceLayout ? evidenceLayout.getBoundingClientRect() : null;
                 const onPointerMove = moveEvent => {
                     if (splitterKind === 'main-ai') {
-                        const next = Math.max(44, Math.min(600, Math.round(gridRect.right - moveEvent.clientX)));
-                        workbenchGrid.style.setProperty('--workbench-ai-width', `${next}px`);
-                        workbenchGrid.classList.toggle('is-ai-collapsed', next <= 44);
+                        const next = normalizeWorkbenchAiWidth(Math.round(gridRect.right - moveEvent.clientX));
+                        setWorkbenchAiCollapsed(next === aiRailWidth, `${next}px`);
                         window.localStorage.setItem('metricsWorkbench.aiWidth', `${next}px`);
                     }
                     if (splitterKind === 'chart-evidence') {
                         const next = Math.max(50, Math.min(gridRect.height - 240, Math.round(moveEvent.clientY - gridRect.top)));
-                        workbenchGrid.style.setProperty('--workbench-chart-height', `${next}px`);
-                        workbenchGrid.classList.toggle('is-chart-collapsed', next <= 52);
+                        setWorkbenchChartCollapsed(next <= 52, `${next}px`);
                         window.localStorage.setItem('metricsWorkbench.chartHeight', `${next}px`);
                     }
                     if (splitterKind === 'ticket-detail' && evidenceLayout && evidenceRect) {
@@ -532,19 +608,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!pane) {
                     return;
                 }
-                const isCollapsed = pane.classList.toggle('is-collapsed');
+                const wasCollapsed = pane.classList.contains('is-collapsed')
+                    || (workbenchGrid && this.dataset.workbenchCollapse === 'ai-assistant' && workbenchGrid.classList.contains('is-ai-collapsed'))
+                    || (workbenchGrid && this.dataset.workbenchCollapse === 'chart' && workbenchGrid.classList.contains('is-chart-collapsed'));
+                const isCollapsed = !wasCollapsed;
                 if (workbenchGrid && this.dataset.workbenchCollapse === 'ai-assistant') {
-                    workbenchGrid.classList.toggle('is-ai-collapsed', isCollapsed);
-                    workbenchGrid.style.setProperty('--workbench-ai-width', isCollapsed ? '44px' : '340px');
-                    window.localStorage.setItem('metricsWorkbench.aiWidth', isCollapsed ? '44px' : '340px');
+                    setWorkbenchAiCollapsed(isCollapsed);
+                    window.localStorage.setItem('metricsWorkbench.aiWidth', isCollapsed ? '40px' : '340px');
                 }
                 if (workbenchGrid && this.dataset.workbenchCollapse === 'chart') {
-                    workbenchGrid.classList.toggle('is-chart-collapsed', isCollapsed);
-                    workbenchGrid.style.setProperty('--workbench-chart-height', isCollapsed ? '3.15rem' : '42vh');
-                    window.localStorage.setItem('metricsWorkbench.chartHeight', isCollapsed ? '3.15rem' : '42vh');
+                    setWorkbenchChartCollapsed(isCollapsed);
+                    window.localStorage.setItem('metricsWorkbench.chartHeight', isCollapsed ? '3.15rem' : '38vh');
                 }
-                this.setAttribute('aria-expanded', String(!isCollapsed));
-                this.textContent = isCollapsed ? 'Expand' : 'Collapse';
+                syncWorkbenchCollapseState(this.dataset.workbenchCollapse, isCollapsed);
             });
         });
 
@@ -562,6 +638,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (providerField) {
                     providerField.value = providerId;
+                }
+                const toolbar = this.closest('form');
+                if (toolbar) {
+                    refreshWorkbenchFromToolbar(toolbar);
                 }
             });
         }

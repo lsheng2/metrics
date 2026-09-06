@@ -4,6 +4,10 @@
 
 {% block page_title %}Metrics Workbench{% endblock %}
 
+{% block html_class %}has-workbench-shell{% endblock %}
+
+{% block body_class %}has-workbench-shell{% endblock %}
+
 {% block footer %}{% endblock %}
 
 {% block content %}
@@ -26,11 +30,11 @@
             </div>
             <div class="field">
                 <label class="label" for="workbench-profile">Profile</label>
-                <input class="input is-small" id="workbench-profile" name="profile_id" value="{{ workbench_state.profile_id }}">
+                <input class="input is-small" id="workbench-profile" value="{{ workbench_state.profile_id }}" readonly data-workbench-derived-field="profile_id">
             </div>
             <div class="field">
                 <label class="label" for="workbench-provider">Provider</label>
-                <input class="input is-small" id="workbench-provider" name="provider_id" value="{{ workbench_state.provider_id }}" readonly>
+                <input class="input is-small" id="workbench-provider" value="{{ workbench_state.provider_id }}" readonly data-workbench-derived-field="provider_id">
             </div>
             <div class="field">
                 <label class="label" for="workbench-range-mode">Range</label>

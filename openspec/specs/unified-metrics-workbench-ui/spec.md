@@ -63,20 +63,33 @@ Unified Metrics Workbench UI 定义一个 Dashboard-owned single Web UI，用于
 - **THEN** shell SHALL 恢复默认工作台布局
 - **AND** shell SHALL 保留当前 profile/range/chart selection unless the reset action explicitly says it also resets query state
 
-### Requirement: PageQueryState is the shared source of truth
-Workbench shell SHALL own shared PageQueryState for profile、provider、range、active chart、calculation run or fact snapshot、selected bucket、selected series 和 list-local filters.
+### Requirement: PageQueryState is normalized through a server-side binding resolver
+Workbench shell SHALL own shared PageQueryState for canonical scope/range/chart/selection/list-filter state, while server-side binding resolution SHALL derive profile、provider、workspace 和 AI context from the selected scope or selected provider profile. Workbench SHALL NOT treat profile/provider display fields as independent query authority when a canonical scope binding is available.
 
 #### Scenario: User changes profile or range
-- **WHEN** 用户修改 profile、provider-derived scope、range mode、begin/end 或 chart filter
+- **WHEN** 用户修改 provider profile、provider-derived scope、range mode、begin/end 或 chart filter
 - **THEN** shell SHALL update PageQueryState
 - **AND** shell SHALL clear selected bucket and selected series
 - **AND** chart pane and evidence pane SHALL refresh from the updated state
 
 #### Scenario: User changes scope
 - **WHEN** 用户在 workbench toolbar 选择不同 scope
-- **THEN** shell SHALL immediately synchronize the profile and provider controls from the selected scope metadata when the scope is bound to a provider profile
-- **AND** server-side PageQueryState normalization SHALL prefer the selected scope binding over stale profile/provider query parameters
-- **AND** applying the toolbar SHALL refresh chart and evidence panes for the selected scope/profile/provider tuple
+- **THEN** shell SHALL immediately submit or HTMX-refresh the workbench using `scope_id` as the user-selected authority
+- **AND** server-side PageQueryState normalization SHALL resolve `profile_id`、`provider_id`、workspace key and AI binding context from the selected scope binding
+- **AND** profile/provider controls SHALL be rendered as read-only derived display fields, without `name` attributes in the primary toolbar form
+- **AND** applying the toolbar SHALL refresh chart, evidence and AI panes for the resolved scope binding
+
+#### Scenario: Workbench receives stale profile or provider query parameters
+- **WHEN** a URL, local storage restore, AI host action or legacy bookmark includes `profile_id` or `provider_id` that contradict the selected `scope_id`
+- **THEN** server-side normalization SHALL ignore the stale profile/provider values for provider-backed state and use the selected scope binding
+- **AND** the shell SHALL generate a canonical pushed URL that omits derived profile/provider parameters when `scope_id` is present
+- **AND** downstream chart, evidence, Grafana panel and AI context requests SHALL use only the normalized binding values
+
+#### Scenario: Scope binding requires configuration
+- **WHEN** selected scope has no safe explicit or compatibility binding to a provider profile
+- **THEN** Workbench SHALL display a configuration-required state for provider-backed panes
+- **AND** the state SHALL identify the selected scope and the missing binding action
+- **AND** Workbench SHALL NOT keep rendering stale profile/provider values from a previously selected scope
 
 #### Scenario: User changes evidence list filter
 - **WHEN** 用户修改 text、status、severity、owner、component 或其它 list-local filter
@@ -191,3 +204,31 @@ Workbench controls SHALL use a consistent high-density button/input style approp
 - **WHEN** the workbench toolbar, pane headers, evidence controls and action buttons are rendered
 - **THEN** buttons and inputs SHALL use consistent height, radius, type size and spacing
 - **AND** decorative or duplicate labels SHALL be minimized so chart, ticket list and AI content keep priority
+
+### Requirement: Workbench state is normalized through explicit scope bindings
+Workbench shell SHALL own shared PageQueryState for canonical scope/range/chart/selection/list-filter state, while server-side binding resolution SHALL derive profile、provider、workspace 和 AI context from the selected scope or selected provider profile. Workbench SHALL NOT treat profile/provider display fields as independent query authority when a canonical scope binding is available.
+
+#### Scenario: User changes profile or range
+- **WHEN** 用户修改 provider profile、provider-derived scope、range mode、begin/end 或 chart filter
+- **THEN** shell SHALL update PageQueryState
+- **AND** shell SHALL clear selected bucket and selected series
+- **AND** chart pane and evidence pane SHALL refresh from the updated state
+
+#### Scenario: User changes scope
+- **WHEN** 用户在 workbench toolbar 选择不同 scope
+- **THEN** shell SHALL immediately submit or HTMX-refresh the workbench using `scope_id` as the user-selected authority
+- **AND** server-side PageQueryState normalization SHALL resolve `profile_id`、`provider_id`、workspace key and AI binding context from the selected scope binding
+- **AND** profile/provider controls SHALL be rendered as read-only derived display fields, without `name` attributes in the primary toolbar form
+- **AND** applying the toolbar SHALL refresh chart, evidence and AI panes for the resolved scope binding
+
+#### Scenario: Workbench receives stale profile or provider query parameters
+- **WHEN** a URL, local storage restore, AI host action or legacy bookmark includes `profile_id` or `provider_id` that contradict the selected `scope_id`
+- **THEN** server-side normalization SHALL ignore the stale profile/provider values for provider-backed state and use the selected scope binding
+- **AND** the shell SHALL generate a canonical pushed URL that omits derived profile/provider parameters when `scope_id` is present
+- **AND** downstream chart, evidence, Grafana panel and AI context requests SHALL use only the normalized binding values
+
+#### Scenario: Scope binding requires configuration
+- **WHEN** selected scope has no safe explicit or compatibility binding to a provider profile
+- **THEN** Workbench SHALL display a configuration-required state for provider-backed panes
+- **AND** the state SHALL identify the selected scope and the missing binding action
+- **AND** Workbench SHALL NOT keep rendering stale profile/provider values from a previously selected scope
