@@ -9,6 +9,7 @@ def test_dashboard_ai_stack_smoke_checks_unified_workbench():
 
     assert "'-OpenEntrypoint', 'none'" in script
     assert "METRICS_AI_BASE_FRONTEND_URL = $AiBaseFrontendUrl" in script
+    assert "METRICS_AI_BASE_EMBED_MODE = 'app-chat'" in script
     assert "Update-DashboardRuntimeUrls" in script
     assert 'state\\e2e\\bug_trend_ports.json' in script
     assert '"$DashboardBaseUrl/workbench/"' in script
@@ -25,6 +26,10 @@ def test_dashboard_ai_stack_smoke_checks_unified_workbench():
     assert "LOGFIRE_IGNORE_NO_CONFIG = '1'" in script
     assert "FullAiChatSmoke" in script
     assert "Skipping deep AI chat publish smoke" in script
+    assert "/api/app-chat-bindings/resolve" in script
+    assert "/api/app-chat-bindings/host-actions/activity" in script
+    assert "metrics.openGrafanaChart" in script
+    assert "AI Base emitted Workbench host action" in script
     assert "$exitCode -ne 0" in script
     assert "$($exitCode)" in script
     assert "Invoke-WithStackRetry" in script

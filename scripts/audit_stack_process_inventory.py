@@ -68,12 +68,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"  ... {remaining} more issue(s) omitted")
         return 1
 
-    print("Process inventory audit passed: no stale demo process windows detected.")
+    print("Process inventory audit passed: no stale stack process windows detected.")
     return 0
 
 
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Audit the Dashboard + AI Base demo process inventory.")
+    parser = argparse.ArgumentParser(description="Audit the Dashboard + AI Base stack process inventory.")
     parser.add_argument("--dashboard-workspace", default=str(Path(__file__).resolve().parents[1]))
     parser.add_argument("--ai-base-workspace", default="")
     parser.add_argument("--dashboard-state", default="")

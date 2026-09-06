@@ -7,6 +7,7 @@ from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupp
 
 
 class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
+    @override_settings(METRICS_AI_BASE_EMBED_MODE='workbench')
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
     def test_shouldRenderReadyAiBasePaneWithCurrentContext(self, status_payload):
         # Given

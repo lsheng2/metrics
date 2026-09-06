@@ -300,6 +300,7 @@ function Start-DashboardStack {
         METRICS_AI_SIDECAR_ENABLED = 'true'
         METRICS_AI_BASE_URL = $AiBaseBackendUrl
         METRICS_AI_BASE_FRONTEND_URL = $AiBaseFrontendUrl
+        METRICS_AI_BASE_EMBED_MODE = 'app-chat'
     } -ScriptBlock {
         Invoke-StackScript -ScriptPath $dashboardStart -Arguments $dashboardArgs -Label 'dashboard-start'
     }
@@ -712,16 +713,51 @@ function Test-DashboardAiStack {
     }
 
     if (-not $FullAiChatSmoke) {
-        Write-Host 'Skipping deep AI chat publish smoke. Re-run with -FullAiChatSmoke to exercise model-backed chat approval and publish.'
+        Write-Host 'Skipping deep AI chat publish smoke. Re-run with -FullAiChatSmoke to exercise model-backed chat approval, publish and Workbench host action.'
         Write-Host 'Smoke checks passed.'
         return
     }
 
-    $session = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions" -Body @{
-        title = 'E2E Dashboard publish demo'
-        workspaceId = $workspaceSync.workspace.workspaceId
+    $runtimeInfo = Invoke-WithStackRetry -ScriptBlock {
+        Invoke-RestMethod -Uri "$AiBaseBackendUrl/api/runtime/info" -TimeoutSec 20
     }
-    $firstTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$($session.sessionId)/messages" -Body @{
+    $appChatAuth = @{
+        authMode = 'local_sidecar_signed_token'
+        credentialRef = 'metrics-dashboard-local'
+    }
+    if ($runtimeInfo.app.instanceToken) {
+        $appChatAuth.instanceTokenId = $runtimeInfo.app.instanceToken
+    }
+    $binding = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/app-chat-bindings/resolve" -Body @{
+        sourceAppId = 'metrics-dashboard'
+        auth = $appChatAuth
+        bindingKey = 'metrics.workbench.overview'
+        agentKey = 'metrics.dashboardQuery'
+        workspaceKey = $contextBundle.workspace_key
+        sessionKey = "metrics.workbench.$JiraProfileId.overview"
+        sessionTitle = "$JiraProfileId Workbench"
+        sessionMode = 'reuse_or_create'
+        context = @{
+            contextKind = 'metrics.dashboard.workbench'
+            visibility = 'model_context'
+            version = 'dashboard-workbench-v1'
+            redactionPolicy = 'metrics-dashboard-default'
+            data = @{
+                profileId = $JiraProfileId
+                providerId = 'jira'
+                rangeMode = 'ww'
+                begin = $BeginWw
+                end = $EndWw
+                chartId = 'open_bug_trend'
+            }
+        }
+        correlationId = 'e2e-dashboard-ai-stack-app-chat'
+    }
+    if (-not $binding.session.sessionId) {
+        throw 'AI Base app-chat binding did not resolve a chat session.'
+    }
+    $sessionId = $binding.session.sessionId
+    $firstTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$sessionId/messages" -Body @{
         content = "Approve and publish a weekly open bug trend chart for chiplet Jira from $BeginWw to $EndWw, only new critical/high."
     }
     $firstContent = [string]$firstTurn.assistantMessage.content
@@ -755,7 +791,7 @@ function Test-DashboardAiStack {
     if ($approvalDecision.status -ne 'approved') {
         throw "AI Base approval decision was $($approvalDecision.status)."
     }
-    $publishTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$($session.sessionId)/messages" -Body @{
+    $publishTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$sessionId/messages" -Body @{
         content = "Publish approved $approvalId weekly open bug trend chart for chiplet Jira from $BeginWw to $EndWw, only new critical/high."
     }
     $publishContent = [string]$publishTurn.assistantMessage.content
@@ -768,6 +804,24 @@ function Test-DashboardAiStack {
     if ($publishedArtifact.artifact.validationResult.status -ne 'published') {
         throw "AI Base artifact publish result was $($publishedArtifact.artifact.validationResult.status)."
     }
+    $authQuery = "authMode=local_sidecar_signed_token&credentialRef=metrics-dashboard-local"
+    if ($appChatAuth.instanceTokenId) {
+        $authQuery = "$authQuery&instanceTokenId=$([Uri]::EscapeDataString([string]$appChatAuth.instanceTokenId))"
+    }
+    $hostActionActivity = Invoke-WithStackRetry -ScriptBlock {
+        Invoke-RestMethod -Uri "$AiBaseBackendUrl/api/app-chat-bindings/host-actions/activity?sourceAppId=metrics-dashboard&bindingKey=metrics.workbench.overview&sessionId=$sessionId&$authQuery" -TimeoutSec 20
+    }
+    $openChartAction = @($hostActionActivity.items | Where-Object { $_.actionKind -eq 'metrics.openGrafanaChart' } | Select-Object -Last 1)
+    if (-not $openChartAction) {
+        throw 'AI Base did not emit a metrics.openGrafanaChart host action after chart publication.'
+    }
+    if ($openChartAction.status -ne 'pending') {
+        throw "AI Base open chart host action was $($openChartAction.status), expected pending for Workbench delivery."
+    }
+    if (-not ([string]$openChartAction.payload.workbenchUrl).Contains('/workbench/?')) {
+        throw 'AI Base open chart host action did not include a Workbench route.'
+    }
+    Write-Host "AI Base emitted Workbench host action: $($openChartAction.requestId)"
 
     Write-Host 'Smoke checks passed.'
 }

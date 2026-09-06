@@ -149,7 +149,7 @@ Create a weekly open bug trend chart for chiplet Jira from 26WW32 to 26WW35, onl
 - `Dry-run proof: dryrun_...`
 - `Approval: human approval required before Grafana mutation`
 
-这个 demo 是 **受控 chart authoring dry-run**。它证明 AI Base Chat 已经能通过 Dashboard `workflow.run` 走完整验证和 dry-run proof handoff。
+这个流程是 **受控 chart authoring dry-run**。它证明 AI Base Chat 已经能通过 Dashboard `workflow.run` 走完整验证和 dry-run proof handoff。
 
 ## AI Base Chat Publish Authority Check
 
@@ -177,10 +177,13 @@ Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 2
 - `Dry-run proof: dryrun_...`
 - `Approval: approval_...`
 - `Audit: recorded`
+- `Workbench action: metrics.openGrafanaChart pending`
+- `Host action request: hostact_...`
+- `Workbench fallback: /workbench/?...`
 
-打开回复里的 URL。预期 Grafana 页面能看到 AI 生成的 `Open Bug Trend` chart。Dashboard 会重新执行 Metrics validation、render validation、gcx precondition，然后只导入 Metrics 生成的 Grafana JSON，并记录 publication callback audit。
+主路径不是让用户打开原始 Grafana URL。AI Base compact chat 会把 pending `metrics.openGrafanaChart` host action 发给 unified Workbench，Workbench 接收 `ai-base.host-action.request` 后在 chart pane 内打开对应 chart，并回写 `ai-base.host-action.result`。原始 Grafana URL 只是 fallback。
 
-如果要用 Jira `chiplet-2a-jira` 做同一个 publish demo，需要先运行不带 `-SkipJiraSync` 的完整重启或手动 sync，确保 `26WW32` 到 `26WW35` 有 completed aggregate artifact；否则 Grafana dashboard 会被创建，但 panel 会显示 `No data`。
+如果要用 Jira `chiplet-2a-jira` 做同一个 publish workflow，需要先运行不带 `-SkipJiraSync` 的完整重启或手动 sync，确保 `26WW32` 到 `26WW35` 有 completed aggregate artifact；否则 Grafana dashboard 会被创建，但 panel 会显示 `No data`。
 
 ## 当前安全边界
 
