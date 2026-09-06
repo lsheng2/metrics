@@ -107,6 +107,8 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('"scope_binding": {"status": "configuration_required"', content)
+        self.assertIn('id="workbench-profile" value="" readonly data-workbench-derived-field="profile_id"', content)
+        self.assertIn('id="workbench-provider" value="" readonly data-workbench-derived-field="provider_id"', content)
         self.assertIn('Scope is not bound to a provider profile.', content)
         self.assertIn(reverse('ui_web:bug_trend_scope_library'), content)
 
@@ -145,6 +147,34 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('"scope_binding": {"status": "explicit"', content)
         self.assertIn('"profile_id": "chiplet-2a-jira"', content)
         self.assertIn('"provider_id": "jira"', content)
+
+    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
+    def test_shouldWarnButRenderProviderPanesForCompatibilityBinding(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
+            provenance={'matched_by': 'legacy_jira_scope'},
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('This scope is using a compatibility provider binding.', content)
+        self.assertIn(str(run.id), content)
+        self.assertIn(str(bucket.id), content)
+        self.assertIn('"scope_binding": {"status": "compatibility"', content)
 
     def test_shouldKeepToolbarAndEvidenceFilterStateBoundariesSeparate(self):
         # When

@@ -106,9 +106,12 @@ class WorkbenchView(GracefulTemplateView):
         scope_options = self.bug_trend_facade.get_scope_options()
         scope_id = state.scope_id or self._default_scope_id(state.profile_id, scope_options)
         scope_option = self._scope_option(scope_options, scope_id)
-        if scope_option:
+        if scope_option and scope_option.binding_status in {'explicit', 'compatibility'}:
             profile_id = scope_option.profile_id
             provider_id = scope_option.provider_id
+        elif scope_option:
+            profile_id = ''
+            provider_id = ''
         else:
             profile_id = state.profile_id
             provider_id = self._provider_id_for_profile(profile_id) or state.provider_id
@@ -161,6 +164,7 @@ class WorkbenchView(GracefulTemplateView):
         context['active_chart_id'] = state.chart_id or 'default_bug_trend'
         active_scope = self._scope_option(scope_options, state.scope_id)
         context['workbench_binding_unavailable_reason'] = self._binding_unavailable_reason(active_scope)
+        context['workbench_binding_warning'] = self._binding_warning(active_scope)
         active_chart = self._active_chart_option(chart_options, context['active_chart_id'])
         context['workbench_evidence_capability'] = active_chart.capability if active_chart else 'unsupported'
         context['workbench_evidence_unavailable_reason'] = ''
@@ -224,11 +228,20 @@ class WorkbenchView(GracefulTemplateView):
     def _binding_unavailable_reason(self, scope_option) -> str:
         if not scope_option:
             return ''
-        if scope_option.profile_id and scope_option.provider_id:
+        if scope_option.binding_status in {'explicit', 'compatibility'} and scope_option.profile_id and scope_option.provider_id:
             return ''
+        if scope_option.binding_status == 'disabled':
+            return 'Selected scope is disabled. Enable or repair it in Scope Library before using provider-backed panes.'
         if scope_option.binding_blockers:
             return scope_option.binding_blockers[0].get('message', 'Scope is not bound to a provider profile.')
         return 'Scope is not bound to a provider profile.'
+
+    def _binding_warning(self, scope_option) -> str:
+        if not scope_option:
+            return ''
+        if scope_option.binding_status == 'compatibility':
+            return 'This scope is using a compatibility provider binding. Confirm it in Scope Library before explicit-only operation.'
+        return ''
 
     def _ai_context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
         context = self.ai_adapter.context(state, sidecar_status, self._host_origin())

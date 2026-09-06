@@ -43,7 +43,7 @@ from .provider_evidence import ProviderChartEvidenceService
 from .provider_profiles import ProviderProfileReadinessService
 from .scope_audit import ScopeAudit, ScopeAuditService
 from .scope_config import SavedScopeConfig, ScopeConfigService, ScopeConfigValidationResult
-from .scope_provider_binding import ScopeProviderBindingResolution, ScopeProviderBindingResolver
+from .scope_provider_binding import ScopeProviderBindingBulkConfirmResult, ScopeProviderBindingResolution, ScopeProviderBindingResolver
 from .series import active_bug_trend_series
 from provider_sync.app.api import ProviderSyncCacheService
 
@@ -85,26 +85,32 @@ class ApiForBugTrend:
     def resolve_scope_provider_binding(self, scope: JiraScopeConfig) -> ScopeProviderBindingResolution:
         return self._scope_provider_binding_resolver.resolve(scope)
 
-    def backfill_scope_provider_binding(self, scope: JiraScopeConfig, explicit: bool = False) -> ScopeProviderBindingResolution:
-        return self._scope_provider_binding_resolver.backfill(scope, explicit)
+    def backfill_scope_provider_binding(self, scope: JiraScopeConfig, explicit: bool = False,
+                                        actor: str = 'local_operator') -> ScopeProviderBindingResolution:
+        return self._scope_provider_binding_resolver.backfill(scope, explicit, actor)
 
     def list_scope_provider_bindings(self) -> list[tuple[JiraScopeConfig, ScopeProviderBindingResolution]]:
         scopes = JiraScopeConfig.objects.order_by('ip', 'project_label', 'name')
         return [(scope, self.resolve_scope_provider_binding(scope)) for scope in scopes]
 
-    def confirm_scope_provider_binding(self, scope_id: int) -> ScopeProviderBindingResolution:
+    def confirm_scope_provider_binding(self, scope_id: int, actor: str = 'local_operator') -> ScopeProviderBindingResolution:
         scope = JiraScopeConfig.objects.get(id=scope_id)
-        return self.backfill_scope_provider_binding(scope, explicit=True)
+        return self.backfill_scope_provider_binding(scope, explicit=True, actor=actor)
 
-    def set_scope_provider_binding(self, scope_id: int, profile_id: str) -> ScopeProviderBindingResolution:
+    def set_scope_provider_binding(self, scope_id: int, profile_id: str, actor: str = 'local_operator') -> ScopeProviderBindingResolution:
         scope = JiraScopeConfig.objects.get(id=scope_id)
-        return self._scope_provider_binding_resolver.set_explicit(scope, profile_id)
+        return self._scope_provider_binding_resolver.set_explicit(scope, profile_id, actor)
+
+    def bulk_confirm_scope_provider_bindings(self, actor: str = 'local_operator') -> ScopeProviderBindingBulkConfirmResult:
+        scopes = JiraScopeConfig.objects.order_by('ip', 'project_label', 'name')
+        return self._scope_provider_binding_resolver.bulk_confirm_compatibility(scopes, actor)
 
     def list_scope_provider_profile_choices(self) -> list[dict[str, str]]:
         return self._scope_provider_binding_resolver.list_profile_choices()
 
     def get_scope_provider_binding_health(self) -> dict:
         rows = []
+        explicit_only_impacted_rows = []
         counts = {
             'explicit': 0,
             'compatibility': 0,
@@ -114,20 +120,28 @@ class ApiForBugTrend:
         }
         for scope, binding in self.list_scope_provider_bindings():
             counts[binding.status] = counts.get(binding.status, 0) + 1
-            rows.append({
+            row = {
                 'scope_id': scope.id,
                 'scope_name': scope.name,
+                'enabled': scope.enabled,
                 'profile_id': binding.profile_id,
                 'provider_id': binding.provider_id,
                 'status': binding.status,
                 'provenance': binding.provenance,
                 'provenance_summary': binding.provenance.get('matched_by') or binding.provenance.get('source') or '-',
                 'blockers': binding.blockers,
-            })
+                'explicit_only_blocking': scope.enabled and binding.status != 'explicit',
+            }
+            rows.append(row)
+            if row['explicit_only_blocking']:
+                explicit_only_impacted_rows.append(row)
         return {
             'total': len(rows),
             'counts': counts,
             'rows': rows,
+            'explicit_only_ready': len(explicit_only_impacted_rows) == 0,
+            'explicit_only_blocked_count': len(explicit_only_impacted_rows),
+            'explicit_only_impacted_rows': explicit_only_impacted_rows,
         }
 
     def validate_scope_config(self, config: SavedScopeConfig) -> ScopeConfigValidationResult:

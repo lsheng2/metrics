@@ -526,8 +526,72 @@ body.has-workbench-shell .dashboard-main-column #main-content {
 
 .scope-actions {
     display: grid;
-    gap: 0.3rem;
+    gap: 0.22rem;
     justify-items: end;
+}
+
+.scope-library-header {
+    margin-bottom: 0.55rem;
+}
+
+.scope-library-result {
+    margin-bottom: 0.55rem;
+    padding: 0.45rem 0.65rem;
+}
+
+.scope-library-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.85rem;
+    align-items: center;
+    margin-bottom: 0.45rem;
+    color: var(--bulma-text);
+    font-size: 0.78rem;
+}
+
+.scope-library-table-box {
+    padding: 0.55rem;
+}
+
+.scope-library-table {
+    font-size: 0.82rem;
+}
+
+.scope-library-table th,
+.scope-library-table td {
+    vertical-align: middle;
+}
+
+.scope-binding-cell {
+    min-width: 10rem;
+}
+
+.scope-binding-status {
+    margin-right: 0.25rem;
+}
+
+.scope-binding-provenance,
+.scope-binding-blocker {
+    display: inline-block;
+    max-width: 10rem;
+    overflow: hidden;
+    color: var(--bulma-text-weak);
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.scope-binding-blocker {
+    color: var(--bulma-danger);
+}
+
+.scope-primary-actions {
+    margin-bottom: 0;
+}
+
+.scope-row-menu .workbench-menu-panel {
+    min-width: 8rem;
 }
 
 .scope-binding-editor {
@@ -537,6 +601,56 @@ body.has-workbench-shell .dashboard-main-column #main-content {
 
 .scope-binding-editor .select select {
     max-width: 14rem;
+}
+
+.scope-binding-readiness {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+    align-items: center;
+    border: 1px solid var(--bulma-border);
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.85rem;
+}
+
+.scope-binding-readiness.is-ready {
+    background: color-mix(in srgb, var(--bulma-success) 8%, transparent);
+}
+
+.scope-binding-readiness.is-blocked {
+    background: color-mix(in srgb, var(--bulma-warning) 12%, transparent);
+}
+
+.data-health-page .box {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.data-health-page .table-container {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.data-health-page table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.data-health-page th,
+.data-health-page td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.data-health-page .table {
+    font-size: 0.78rem;
+}
+
+.data-health-table-container table {
+    min-width: 70rem;
 }
 
 .loading-indicator-sticky {
@@ -684,6 +798,12 @@ tr.htmx-request .review-loader {
 .workbench-control-grid .select,
 .workbench-control-grid select {
     min-width: 0;
+}
+
+.workbench-binding-warning {
+    margin-bottom: 0;
+    padding: 0.42rem 0.65rem;
+    font-size: 0.82rem;
 }
 
 .workbench-apply-field {

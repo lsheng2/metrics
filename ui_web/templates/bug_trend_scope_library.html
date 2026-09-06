@@ -11,7 +11,7 @@
         </ul>
     </nav>
 
-    <div class="level">
+    <div class="level scope-library-header">
         <div class="level-left">
             <div>
                 <h2 class="title is-3">Scope Library</h2>
@@ -19,12 +19,34 @@
             </div>
         </div>
         <div class="level-right">
-            <a class="button is-primary" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new">New scope</a>
+            <div class="buttons are-small">
+                {% if scope_library_summary.compatibility_ready_count %}
+                    <form method="post" data-confirm="Confirm all eligible compatibility bindings as explicit?">
+                        {% csrf_token %}
+                        <button class="button is-info is-light" type="submit" name="action" value="bulk_confirm_bindings">
+                            Confirm all compatibility ({{ scope_library_summary.compatibility_ready_count }})
+                        </button>
+                    </form>
+                {% endif %}
+                <a class="button is-primary" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new">New scope</a>
+            </div>
         </div>
     </div>
 
-    <div class="table-container box">
-        <table class="table is-fullwidth is-hoverable">
+    {% if bulk_changed %}
+        <div class="notification is-info is-light scope-library-result">
+            Binding bulk confirmation finished: {{ bulk_changed }} changed, {{ bulk_skipped }} skipped.
+        </div>
+    {% endif %}
+
+    <div class="scope-library-summary">
+        <span><strong>{{ scope_library_summary.total }}</strong> scopes</span>
+        <span><strong>{{ scope_library_summary.compatibility_ready_count }}</strong> ready to confirm</span>
+        <span><strong>{{ scope_library_summary.needs_attention_count }}</strong> need attention</span>
+    </div>
+
+    <div class="table-container box scope-library-table-box">
+        <table class="table is-fullwidth is-hoverable is-narrow scope-library-table">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -52,17 +74,17 @@
                                 <span class="tag is-warning is-light">Draft</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="scope-binding-cell">
                             {% if binding.status == "explicit" %}
-                                <span class="tag is-success is-light">explicit</span>
+                                <span class="tag is-success is-light scope-binding-status">explicit</span>
                             {% elif binding.status == "compatibility" %}
-                                <span class="tag is-info is-light">compatibility</span>
+                                <span class="tag is-info is-light scope-binding-status">compatibility</span>
                             {% else %}
-                                <span class="tag is-warning is-light">{{ binding.status|default:"configuration_required" }}</span>
+                                <span class="tag is-warning is-light scope-binding-status">{{ binding.status|default:"configuration_required" }}</span>
                             {% endif %}
-                            <p class="is-size-7 has-text-grey">{{ binding.provenance_summary }}</p>
+                            <span class="scope-binding-provenance" title="Binding provenance">{{ binding.provenance_summary }}</span>
                             {% if binding.blockers %}
-                                <p class="is-size-7 has-text-danger">{{ binding.blockers.0.message }}</p>
+                                <span class="scope-binding-blocker" title="{{ binding.blockers.0.message }}">blocked</span>
                             {% endif %}
                         </td>
                         <td>{{ binding.profile_id|default:"-" }}</td>
@@ -70,9 +92,8 @@
                         <td><code>{{ scope.config_version_hash|slice:":12" }}</code></td>
                         <td>
                             <div class="scope-actions">
-                                <div class="buttons is-justify-content-flex-end are-small">
+                                <div class="buttons is-justify-content-flex-end are-small scope-primary-actions">
                                     <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
-                                    <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
                                     {% if binding.can_confirm %}
                                         <form method="post" data-confirm="Confirm this provider binding as explicit?">
                                             {% csrf_token %}
@@ -80,6 +101,19 @@
                                             <button class="button is-info is-light" type="submit" name="action" value="confirm_binding">Confirm</button>
                                         </form>
                                     {% endif %}
+                                    <details class="workbench-menu scope-row-menu">
+                                        <summary class="button" aria-label="More scope actions">More</summary>
+                                        <div class="workbench-menu-panel">
+                                            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
+                                            {% if scope.enabled %}
+                                                <form method="post" data-confirm="Disable this scope? Historical runs and evidence will be preserved.">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                                    <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Disable</button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </details>
                                 </div>
                                 {% if binding.can_edit %}
                                     <form class="field has-addons scope-binding-editor" method="post" data-confirm="Save this provider binding as explicit?">
@@ -97,13 +131,6 @@
                                         <div class="control">
                                             <button class="button is-small is-primary" type="submit" name="action" value="save_binding">Save</button>
                                         </div>
-                                    </form>
-                                {% endif %}
-                                {% if scope.enabled %}
-                                    <form class="is-pulled-right" method="post" data-confirm="Disable this scope? Historical runs and evidence will be preserved.">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="scope_id" value="{{ scope.id }}">
-                                        <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Disable</button>
                                     </form>
                                 {% endif %}
                             </div>

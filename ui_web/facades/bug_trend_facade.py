@@ -38,7 +38,7 @@ class BugTrendFacade:
     def get_scope_library_rows(self):
         if not hasattr(self._bug_trend_api, 'list_scope_provider_bindings'):
             return [
-                BugTrendScopeLibraryRow(scope, BugTrendScopeBindingData('', '', 'configuration_required', '-', [], False))
+                BugTrendScopeLibraryRow(scope, BugTrendScopeBindingData('', '', 'configuration_required', '-', [], False, True))
                 for scope in self.get_scope_library()
             ]
         configs_by_id = {config.id: config for config in self.get_scope_library()}
@@ -50,8 +50,22 @@ class BugTrendFacade:
             rows.append(BugTrendScopeLibraryRow(config, self._binding_data(binding)))
         return rows
 
+    def get_scope_library_summary(self, rows=None) -> dict:
+        rows = rows if rows is not None else self.get_scope_library_rows()
+        return {
+            'total': len(rows),
+            'compatibility_ready_count': sum(1 for row in rows if row.binding.can_confirm),
+            'needs_attention_count': sum(1 for row in rows if row.binding.can_edit),
+        }
+
     def confirm_scope_provider_binding(self, scope_id: int):
         return self._bug_trend_api.confirm_scope_provider_binding(scope_id)
+
+    def bulk_confirm_scope_provider_bindings(self):
+        if not hasattr(self._bug_trend_api, 'bulk_confirm_scope_provider_bindings'):
+            return {'changed_count': 0, 'skipped_count': 0, 'changed': [], 'skipped': []}
+        result = self._bug_trend_api.bulk_confirm_scope_provider_bindings()
+        return result.to_dict() if hasattr(result, 'to_dict') else result
 
     def set_scope_provider_binding(self, scope_id: int, profile_id: str):
         return self._bug_trend_api.set_scope_provider_binding(scope_id, profile_id)

@@ -234,6 +234,9 @@ class BugTrendBucketIssue(models.Model):
 
 class BugTrendAuditEvent(models.Model):
     EVENT_EVIDENCE_EXPORTED = 'evidence_exported'
+    EVENT_SCOPE_BINDING_CONFIRMED = 'scope_binding_confirmed'
+    EVENT_SCOPE_BINDING_UPDATED = 'scope_binding_updated'
+    EVENT_SCOPE_BINDING_BULK_CONFIRMED = 'scope_binding_bulk_confirmed'
 
     event_type = models.CharField(max_length=80)
     actor = models.CharField(max_length=120)

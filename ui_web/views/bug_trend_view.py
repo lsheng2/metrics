@@ -206,6 +206,14 @@ class BugTrendScopeLibraryView(GracefulTemplateView):
             self.bug_trend_facade.disable_scope_config(int(scope_id))
         if action == 'confirm_binding' and scope_id and scope_id.isdecimal():
             self.bug_trend_facade.confirm_scope_provider_binding(int(scope_id))
+        if action == 'bulk_confirm_bindings':
+            result = self.bug_trend_facade.bulk_confirm_scope_provider_bindings()
+            response = redirect('ui_web:bug_trend_scope_library')
+            response['Location'] = (
+                f'{response["Location"]}?bulk_changed={result.get("changed_count", 0)}'
+                f'&bulk_skipped={result.get("skipped_count", 0)}'
+            )
+            return response
         if action == 'save_binding' and scope_id and scope_id.isdecimal():
             try:
                 self.bug_trend_facade.set_scope_provider_binding(int(scope_id), request.POST.get('profile_id', ''))
@@ -214,7 +222,11 @@ class BugTrendScopeLibraryView(GracefulTemplateView):
         return redirect('ui_web:bug_trend_scope_library')
 
     def populate_context(self, context, **kwargs):
-        context['scope_rows'] = self.bug_trend_facade.get_scope_library_rows()
+        scope_rows = self.bug_trend_facade.get_scope_library_rows()
+        context['scope_rows'] = scope_rows
+        context['scope_library_summary'] = self.bug_trend_facade.get_scope_library_summary(scope_rows)
+        context['bulk_changed'] = self.request.GET.get('bulk_changed')
+        context['bulk_skipped'] = self.request.GET.get('bulk_skipped')
         context['provider_profile_choices'] = self.bug_trend_facade.get_scope_provider_profile_choices()
         context['build_page_title'] = 'Bug Trend Scope Library'
 

@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 import hashlib
+import uuid
 
-from bug_metrics.models import BugTrendScopeProviderBinding, JiraScopeConfig
+from bug_metrics.models import BugTrendAuditEvent, BugTrendScopeProviderBinding, JiraScopeConfig
 
 from .provider_profile_registry import ProjectProviderProfile, ProjectProviderProfileRegistry
 
@@ -23,11 +24,45 @@ class ScopeProviderBindingResolution:
         })
 
 
+@dataclass(frozen=True, slots=True)
+class ScopeProviderBindingBulkConfirmResult:
+    changed: list[dict]
+    skipped: list[dict]
+
+    @property
+    def changed_count(self) -> int:
+        return len(self.changed)
+
+    @property
+    def skipped_count(self) -> int:
+        return len(self.skipped)
+
+    def to_dict(self) -> dict:
+        return {
+            'changed_count': self.changed_count,
+            'skipped_count': self.skipped_count,
+            'changed': self.changed,
+            'skipped': self.skipped,
+        }
+
+
 class ScopeProviderBindingResolver:
     def __init__(self, profile_registry: ProjectProviderProfileRegistry | None = None):
         self._profile_registry = profile_registry or ProjectProviderProfileRegistry.load_default()
 
     def resolve(self, scope: JiraScopeConfig) -> ScopeProviderBindingResolution:
+        if not scope.enabled:
+            return ScopeProviderBindingResolution(
+                scope_id=str(scope.id),
+                profile_id='',
+                provider_id='',
+                status=BugTrendScopeProviderBinding.STATUS_DISABLED,
+                provenance={'source': 'scope_config'},
+                blockers=[{
+                    'code': 'scope_disabled',
+                    'message': 'Scope is disabled.',
+                }],
+            )
         explicit_binding = getattr(scope, 'provider_binding', None)
         if explicit_binding:
             return self._resolution_from_binding(explicit_binding)
@@ -36,8 +71,14 @@ class ScopeProviderBindingResolver:
             return compatibility
         return compatibility
 
-    def backfill(self, scope: JiraScopeConfig, explicit: bool = False) -> ScopeProviderBindingResolution:
-        resolution = self._compatibility_resolution(scope)
+    def backfill(self, scope: JiraScopeConfig, explicit: bool = False, actor: str = 'local_operator',
+                 operation_type: str = BugTrendAuditEvent.EVENT_SCOPE_BINDING_CONFIRMED,
+                 bulk_operation_id: str = '') -> ScopeProviderBindingResolution:
+        before = self.resolve(scope)
+        if explicit and before.status == BugTrendScopeProviderBinding.STATUS_COMPATIBILITY and before.is_resolved:
+            resolution = before
+        else:
+            resolution = self._compatibility_resolution(scope)
         status = BugTrendScopeProviderBinding.STATUS_EXPLICIT if explicit and resolution.is_resolved else resolution.status
         binding, _ = BugTrendScopeProviderBinding.objects.update_or_create(
             scope=scope,
@@ -52,9 +93,12 @@ class ScopeProviderBindingResolver:
                 'blockers': resolution.blockers,
             },
         )
-        return self._resolution_from_binding(binding)
+        after = self._resolution_from_binding(binding)
+        self._record_audit(scope, actor, operation_type, before, after, bulk_operation_id)
+        return after
 
-    def set_explicit(self, scope: JiraScopeConfig, profile_id: str) -> ScopeProviderBindingResolution:
+    def set_explicit(self, scope: JiraScopeConfig, profile_id: str, actor: str = 'local_operator') -> ScopeProviderBindingResolution:
+        before = self.resolve(scope)
         registry_resolution = self._profile_registry.resolve_profile(profile_id)
         if registry_resolution.profile is None:
             raise ValueError(f'Provider profile {profile_id} is not available.')
@@ -73,7 +117,39 @@ class ScopeProviderBindingResolver:
                 'blockers': [],
             },
         )
-        return self._resolution_from_binding(binding)
+        after = self._resolution_from_binding(binding)
+        self._record_audit(scope, actor, BugTrendAuditEvent.EVENT_SCOPE_BINDING_UPDATED, before, after, '')
+        return after
+
+    def bulk_confirm_compatibility(self, scopes, actor: str = 'local_operator') -> ScopeProviderBindingBulkConfirmResult:
+        changed = []
+        skipped = []
+        bulk_operation_id = str(uuid.uuid4())
+        for scope in scopes:
+            resolution = self.resolve(scope)
+            if resolution.status == BugTrendScopeProviderBinding.STATUS_COMPATIBILITY and resolution.profile_id and resolution.provider_id:
+                confirmed = self.backfill(
+                    scope,
+                    explicit=True,
+                    actor=actor,
+                    operation_type=BugTrendAuditEvent.EVENT_SCOPE_BINDING_BULK_CONFIRMED,
+                    bulk_operation_id=bulk_operation_id,
+                )
+                changed.append({
+                    'scope_id': scope.id,
+                    'scope_name': scope.name,
+                    'profile_id': confirmed.profile_id,
+                    'provider_id': confirmed.provider_id,
+                    'status': confirmed.status,
+                })
+            else:
+                skipped.append({
+                    'scope_id': scope.id,
+                    'scope_name': scope.name,
+                    'status': resolution.status,
+                    'reason': self._skip_reason(resolution),
+                })
+        return ScopeProviderBindingBulkConfirmResult(changed, skipped)
 
     def list_profile_choices(self) -> list[dict[str, str]]:
         return [
@@ -191,3 +267,38 @@ class ScopeProviderBindingResolver:
         profile_ip = str(source_population.get('tenant_or_site', '') or '').split('.')[0].strip().lower()
         scope_ip = str(scope.ip or '').strip().lower()
         return bool(profile_ip and scope_ip and profile_ip == scope_ip and source_population.get('source_query_name'))
+
+    def _record_audit(self, scope: JiraScopeConfig, actor: str, event_type: str,
+                      before: ScopeProviderBindingResolution, after: ScopeProviderBindingResolution,
+                      bulk_operation_id: str):
+        if self._snapshot(before) == self._snapshot(after):
+            return
+        BugTrendAuditEvent.objects.create(
+            event_type=event_type,
+            actor=actor,
+            scope=scope,
+            request_summary={
+                'operation': event_type,
+                'bulk_operation_id': bulk_operation_id,
+                'before': self._snapshot(before),
+                'after': self._snapshot(after),
+            },
+        )
+
+    def _snapshot(self, resolution: ScopeProviderBindingResolution) -> dict:
+        return {
+            'status': resolution.status,
+            'profile_id': resolution.profile_id,
+            'provider_id': resolution.provider_id,
+            'provenance': resolution.provenance,
+            'blockers': resolution.blockers,
+        }
+
+    def _skip_reason(self, resolution: ScopeProviderBindingResolution) -> str:
+        if resolution.status == BugTrendScopeProviderBinding.STATUS_EXPLICIT:
+            return 'Binding is already explicit.'
+        if resolution.blockers:
+            return resolution.blockers[0].get('message', 'Binding is not safe to confirm.')
+        if not resolution.profile_id or not resolution.provider_id:
+            return 'Binding is missing profile or provider.'
+        return f'Binding status {resolution.status} cannot be bulk confirmed.'

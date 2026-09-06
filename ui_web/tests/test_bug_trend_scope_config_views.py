@@ -81,6 +81,10 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('Binding', content)
         self.assertIn('compatibility', content)
         self.assertIn('Confirm', content)
+        self.assertIn('scope-library-summary', content)
+        self.assertIn('Confirm all compatibility', content)
+        self.assertIn('scope-library-table', content)
+        self.assertIn('More', content)
 
     def test_shouldConfirmCompatibilityScopeBindingFromLibrary(self):
         # Given
@@ -111,6 +115,42 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertEqual('STDEL confirm binding', binding.profile_id)
         self.assertEqual('jira', binding.provider_id)
         self.assertEqual('scope_provider_binding_resolver', binding.provenance['persisted_by'])
+
+    def test_shouldBulkConfirmCompatibilityScopeBindingsFromLibrary(self):
+        # Given
+        eligible = JiraScopeConfig.objects.create(
+            name='Bulk eligible library',
+            jql='project = BULKELIGIBLE',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        JiraScopeConfig.objects.create(
+            name='Bulk unsafe library',
+            jql='',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=eligible,
+            profile_id='Bulk eligible library',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
+            provenance={'source': 'test', 'matched_by': 'legacy_jira_scope'},
+        )
+
+        # When
+        response = self.client.post(
+            reverse('ui_web:bug_trend_scope_library'),
+            {'action': 'bulk_confirm_bindings'},
+            follow=True,
+        )
+
+        # Then
+        content = response.content.decode()
+        binding = BugTrendScopeProviderBinding.objects.get(scope=eligible)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
+        self.assertIn('Binding bulk confirmation finished: 1 changed, 1 skipped.', content)
 
     def test_shouldSaveSelectedProviderProfileBindingFromLibrary(self):
         # Given

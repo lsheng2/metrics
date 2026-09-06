@@ -3,7 +3,7 @@
 {% block title %}Data Health{% endblock %}
 
 {% block content %}
-<article class="block">
+<article class="block data-health-page">
     <h2 class="title is-3">Data Health</h2>
     <section class="box">
         <h3 class="title is-4">Summary</h3>
@@ -17,6 +17,20 @@
 
     <section class="box">
         <h3 class="title is-4">Scope Binding Health</h3>
+        <div class="scope-binding-readiness {% if data_health.scope_binding_health.explicit_only_ready %}is-ready{% else %}is-blocked{% endif %}">
+            <div>
+                <strong>Explicit-only readiness</strong>
+                {% if data_health.scope_binding_health.explicit_only_ready %}
+                    <span class="tag is-success is-light">Ready</span>
+                {% else %}
+                    <span class="tag is-warning is-light">Blocked</span>
+                {% endif %}
+            </div>
+            <div>
+                <span>{{ data_health.scope_binding_health.explicit_only_blocked_count }} impacted scopes</span>
+                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Repair bindings</a>
+            </div>
+        </div>
         <div class="columns is-multiline">
             <div class="column is-one-fifth"><strong>Total</strong><br>{{ data_health.scope_binding_health.total }}</div>
             <div class="column is-one-fifth"><strong>Explicit</strong><br>{{ data_health.scope_binding_health.counts.explicit }}</div>
@@ -66,6 +80,33 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% if data_health.scope_binding_health.explicit_only_impacted_rows %}
+            <h4 class="title is-6 mt-4">Explicit-only impacted scopes</h4>
+            <table class="table is-fullwidth is-striped is-hoverable is-narrow">
+                <thead>
+                    <tr>
+                        <th>Scope</th>
+                        <th>Status</th>
+                        <th>Profile</th>
+                        <th>Provider</th>
+                        <th>Provenance</th>
+                        <th>Repair</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data_health.scope_binding_health.explicit_only_impacted_rows %}
+                        <tr>
+                            <td>{{ item.scope_name }}</td>
+                            <td><span class="tag is-warning is-light">{{ item.status }}</span></td>
+                            <td>{{ item.profile_id|default:"-" }}</td>
+                            <td>{{ item.provider_id|default:"-" }}</td>
+                            <td>{{ item.provenance_summary|default:"-" }}</td>
+                            <td><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
     </section>
 
     <section class="box">
@@ -102,42 +143,44 @@
 
     <section class="box">
         <h3 class="title is-4">Provider Sync Cache Health</h3>
-        <table class="table is-fullwidth is-striped">
-            <thead>
-                <tr>
-                    <th>Provider</th>
-                    <th>Profile</th>
-                    <th>Status</th>
-                    <th>Freshness</th>
-                    <th>Last success</th>
-                    <th>Cache age</th>
-                    <th>Snapshot</th>
-                    <th>Source</th>
-                    <th>Mapping</th>
-                    <th>Charts</th>
-                    <th>Error</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data_health.provider_sync_health %}
+        <div class="table-container data-health-table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
                     <tr>
-                        <td>{{ item.provider_id }}</td>
-                        <td>{{ item.profile_id }}</td>
-                        <td>{{ item.status }}</td>
-                        <td>{{ item.freshness_status }}</td>
-                        <td>{{ item.latest_successful_sync_at }}</td>
-                        <td>{{ item.cache_age_seconds }}</td>
-                        <td>{{ item.latest_snapshot_id }}</td>
-                        <td>{{ item.source_query_ownership }} {{ item.source_query_ref }} {{ item.source_query_name }}</td>
-                        <td>{{ item.mapping_version }} {{ item.mapping_version_hash }}</td>
-                        <td>{{ item.supported_chart_ids }} {{ item.deferred_chart_ids }}</td>
-                        <td>{{ item.error_category }} {{ item.last_error }}</td>
+                        <th>Provider</th>
+                        <th>Profile</th>
+                        <th>Status</th>
+                        <th>Freshness</th>
+                        <th>Last success</th>
+                        <th>Cache age</th>
+                        <th>Snapshot</th>
+                        <th>Source</th>
+                        <th>Mapping</th>
+                        <th>Charts</th>
+                        <th>Error</th>
                     </tr>
-                {% empty %}
-                    <tr><td colspan="11">No provider profiles found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for item in data_health.provider_sync_health %}
+                        <tr>
+                            <td>{{ item.provider_id }}</td>
+                            <td>{{ item.profile_id }}</td>
+                            <td>{{ item.status }}</td>
+                            <td>{{ item.freshness_status }}</td>
+                            <td>{{ item.latest_successful_sync_at }}</td>
+                            <td>{{ item.cache_age_seconds }}</td>
+                            <td>{{ item.latest_snapshot_id }}</td>
+                            <td>{{ item.source_query_ownership }} {{ item.source_query_ref }} {{ item.source_query_name }}</td>
+                            <td>{{ item.mapping_version }} {{ item.mapping_version_hash }}</td>
+                            <td>{{ item.supported_chart_ids }} {{ item.deferred_chart_ids }}</td>
+                            <td>{{ item.error_category }} {{ item.last_error }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="11">No provider profiles found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <section class="box">
