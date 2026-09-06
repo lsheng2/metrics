@@ -176,6 +176,37 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn(str(bucket.id), content)
         self.assertIn('"scope_binding": {"status": "compatibility"', content)
 
+    @override_settings(METRICS_SCOPE_BINDING_POLICY='explicit_only', METRICS_AI_SIDECAR_ENABLED=False)
+    def test_shouldBlockCompatibilityBindingWhenPolicyIsExplicitOnly(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
+            provenance={'matched_by': 'legacy_jira_scope'},
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Scope uses a compatibility binding and must be confirmed before explicit-only operation.', content)
+        self.assertIn('id="workbench-profile" value="" readonly data-workbench-derived-field="profile_id"', content)
+        self.assertIn('id="workbench-provider" value="" readonly data-workbench-derived-field="provider_id"', content)
+        self.assertNotIn('data-workbench-evidence-workspace', content)
+
     def test_shouldKeepToolbarAndEvidenceFilterStateBoundariesSeparate(self):
         # When
         response = self.client.get(reverse('ui_web:workbench'), {

@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 
-from bug_metrics.models import BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
+from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
 from jira_history.models import JiraIssue
 
@@ -82,9 +82,13 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('compatibility', content)
         self.assertIn('Confirm', content)
         self.assertIn('scope-library-summary', content)
+        self.assertIn('Policy', content)
+        self.assertIn('compatibility_allowed', content)
         self.assertIn('Confirm all compatibility', content)
         self.assertIn('scope-library-table', content)
         self.assertIn('More', content)
+        self.assertIn('Binding Audit History', content)
+        self.assertIn('No scope binding audit events yet.', content)
 
     def test_shouldConfirmCompatibilityScopeBindingFromLibrary(self):
         # Given
@@ -151,6 +155,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
         self.assertIn('Binding bulk confirmation finished: 1 changed, 1 skipped.', content)
+        self.assertIn(BugTrendAuditEvent.EVENT_SCOPE_BINDING_BULK_CONFIRMED, content)
 
     def test_shouldSaveSelectedProviderProfileBindingFromLibrary(self):
         # Given

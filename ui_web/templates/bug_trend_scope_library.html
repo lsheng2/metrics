@@ -41,6 +41,7 @@
 
     <div class="scope-library-summary">
         <span><strong>{{ scope_library_summary.total }}</strong> scopes</span>
+        <span><strong>Policy</strong> {{ scope_binding_policy }}</span>
         <span><strong>{{ scope_library_summary.compatibility_ready_count }}</strong> ready to confirm</span>
         <span><strong>{{ scope_library_summary.needs_attention_count }}</strong> need attention</span>
     </div>
@@ -145,5 +146,44 @@
             </tbody>
         </table>
     </div>
+
+    <section class="box scope-binding-audit-box">
+        <div class="level is-mobile mb-2">
+            <div class="level-left">
+                <h3 class="title is-5 mb-0">Binding Audit History</h3>
+            </div>
+            <div class="level-right">
+                <span class="tag is-light">{{ scope_binding_audit_events|length }} recent</span>
+            </div>
+        </div>
+        <table class="table is-fullwidth is-narrow is-hoverable scope-binding-audit-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Actor</th>
+                    <th>Operation</th>
+                    <th>Scope</th>
+                    <th>Before</th>
+                    <th>After</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in scope_binding_audit_events %}
+                    <tr>
+                        <td>{{ event.created_at }}</td>
+                        <td>{{ event.actor }}</td>
+                        <td>{{ event.event_type }}</td>
+                        <td>{{ event.scope_name|default:"-" }}</td>
+                        <td>{{ event.before_summary }}</td>
+                        <td>{{ event.after_summary }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">No scope binding audit events yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
 </article>
 {% endblock %}

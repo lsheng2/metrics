@@ -91,7 +91,7 @@ class ApiForBugTrend:
 
     def list_scope_provider_bindings(self) -> list[tuple[JiraScopeConfig, ScopeProviderBindingResolution]]:
         scopes = JiraScopeConfig.objects.order_by('ip', 'project_label', 'name')
-        return [(scope, self.resolve_scope_provider_binding(scope)) for scope in scopes]
+        return [(scope, self._scope_provider_binding_resolver.resolve(scope, enforce_policy=False)) for scope in scopes]
 
     def confirm_scope_provider_binding(self, scope_id: int, actor: str = 'local_operator') -> ScopeProviderBindingResolution:
         scope = JiraScopeConfig.objects.get(id=scope_id)
@@ -107,6 +107,12 @@ class ApiForBugTrend:
 
     def list_scope_provider_profile_choices(self) -> list[dict[str, str]]:
         return self._scope_provider_binding_resolver.list_profile_choices()
+
+    def get_scope_binding_policy(self) -> str:
+        return self._scope_provider_binding_resolver.runtime_policy()
+
+    def list_scope_binding_audit_events(self, limit: int = 25) -> list[dict]:
+        return self._scope_provider_binding_resolver.list_binding_audit_events(limit)
 
     def get_scope_provider_binding_health(self) -> dict:
         rows = []
@@ -139,6 +145,7 @@ class ApiForBugTrend:
             'total': len(rows),
             'counts': counts,
             'rows': rows,
+            'runtime_policy': self.get_scope_binding_policy(),
             'explicit_only_ready': len(explicit_only_impacted_rows) == 0,
             'explicit_only_blocked_count': len(explicit_only_impacted_rows),
             'explicit_only_impacted_rows': explicit_only_impacted_rows,

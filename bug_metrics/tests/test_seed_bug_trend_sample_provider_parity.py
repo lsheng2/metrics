@@ -2,7 +2,7 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from bug_metrics.app.api import ProviderChartAggregateQuery, bug_trend_api
-from bug_metrics.models import BugTrendCalculationRun, JiraScopeConfig
+from bug_metrics.models import BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_history.models import JiraIssue
 
 
@@ -19,6 +19,10 @@ class TestSeedBugTrendSampleProviderParity(TestCase):
         self.assertEqual('project = "131600" AND component = "team_int_qemu"', scope.jql)
         self.assertTrue(JiraIssue.objects.filter(scope=scope, is_in_current_scope=True).exists())
         self.assertTrue(BugTrendCalculationRun.objects.filter(scope=scope, status=BugTrendCalculationRun.STATUS_COMPLETED).exists())
+        self.assertEqual(
+            2,
+            BugTrendScopeProviderBinding.objects.filter(status=BugTrendScopeProviderBinding.STATUS_EXPLICIT).count(),
+        )
 
     def test_shouldSeedJiraFirstAiPublishCoverageForTargetRange(self):
         # When

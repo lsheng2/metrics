@@ -58,6 +58,16 @@ class BugTrendFacade:
             'needs_attention_count': sum(1 for row in rows if row.binding.can_edit),
         }
 
+    def get_scope_binding_policy(self) -> str:
+        if not hasattr(self._bug_trend_api, 'get_scope_binding_policy'):
+            return 'compatibility_allowed'
+        return self._bug_trend_api.get_scope_binding_policy()
+
+    def get_scope_binding_audit_events(self, limit: int = 12) -> list[dict]:
+        if not hasattr(self._bug_trend_api, 'list_scope_binding_audit_events'):
+            return []
+        return self._bug_trend_api.list_scope_binding_audit_events(limit)
+
     def confirm_scope_provider_binding(self, scope_id: int):
         return self._bug_trend_api.confirm_scope_provider_binding(scope_id)
 

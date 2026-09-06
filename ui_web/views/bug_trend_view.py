@@ -227,6 +227,8 @@ class BugTrendScopeLibraryView(GracefulTemplateView):
         context['scope_library_summary'] = self.bug_trend_facade.get_scope_library_summary(scope_rows)
         context['bulk_changed'] = self.request.GET.get('bulk_changed')
         context['bulk_skipped'] = self.request.GET.get('bulk_skipped')
+        context['scope_binding_policy'] = self.bug_trend_facade.get_scope_binding_policy()
+        context['scope_binding_audit_events'] = self.bug_trend_facade.get_scope_binding_audit_events()
         context['provider_profile_choices'] = self.bug_trend_facade.get_scope_provider_profile_choices()
         context['build_page_title'] = 'Bug Trend Scope Library'
 

@@ -25,6 +25,7 @@
                 {% else %}
                     <span class="tag is-warning is-light">Blocked</span>
                 {% endif %}
+                <span class="tag is-light">Policy: {{ data_health.scope_binding_health.runtime_policy|default:"compatibility_allowed" }}</span>
             </div>
             <div>
                 <span>{{ data_health.scope_binding_health.explicit_only_blocked_count }} impacted scopes</span>
@@ -107,6 +108,36 @@
                 </tbody>
             </table>
         {% endif %}
+    </section>
+
+    <section class="box">
+        <h3 class="title is-4">Scope Binding Audit History</h3>
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow scope-binding-audit-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Actor</th>
+                    <th>Operation</th>
+                    <th>Scope</th>
+                    <th>Before</th>
+                    <th>After</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in data_health.scope_binding_audit_events %}
+                    <tr>
+                        <td>{{ event.created_at }}</td>
+                        <td>{{ event.actor }}</td>
+                        <td>{{ event.event_type }}</td>
+                        <td>{{ event.scope_name|default:"-" }}</td>
+                        <td>{{ event.before_summary }}</td>
+                        <td>{{ event.after_summary }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6">No scope binding audit events yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </section>
 
     <section class="box">

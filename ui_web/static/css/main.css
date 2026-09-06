@@ -594,6 +594,19 @@ body.has-workbench-shell .dashboard-main-column #main-content {
     min-width: 8rem;
 }
 
+.scope-binding-audit-box {
+    margin-top: 0.65rem;
+}
+
+.scope-binding-audit-table {
+    font-size: 0.78rem;
+}
+
+.scope-binding-audit-table th,
+.scope-binding-audit-table td {
+    vertical-align: middle;
+}
+
 .scope-binding-editor {
     justify-content: flex-end;
     margin-bottom: 0;

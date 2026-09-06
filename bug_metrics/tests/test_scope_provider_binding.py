@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from bug_metrics.app.api import ApiForBugTrend
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
@@ -34,6 +34,28 @@ class TestScopeProviderBindingResolver(TestCase):
         self.assertEqual('jira', resolution.provider_id)
         self.assertEqual(BugTrendScopeProviderBinding.STATUS_COMPATIBILITY, resolution.status)
         self.assertEqual('provider_profile_registry', resolution.provenance['matched_by'])
+
+    @override_settings(METRICS_SCOPE_BINDING_POLICY='explicit_only')
+    def test_shouldRejectCompatibilityBindingAsRuntimeAuthorityWhenPolicyIsExplicitOnly(self):
+        scope = self._scope('Display Name', "project = 'STDEL'")
+
+        resolution = self._resolver([self._profile('stable-jira-profile', 'jira', 'project = "STDEL"')]).resolve(scope)
+
+        self.assertEqual('', resolution.profile_id)
+        self.assertEqual('', resolution.provider_id)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED, resolution.status)
+        self.assertEqual('explicit_binding_required', resolution.blockers[0]['code'])
+        self.assertEqual('stable-jira-profile', resolution.provenance['compatibility_profile_id'])
+
+    @override_settings(METRICS_SCOPE_BINDING_POLICY='explicit_only')
+    def test_shouldKeepRawCompatibilityBindingAvailableForGovernanceWhenPolicyIsExplicitOnly(self):
+        scope = self._scope('Display Name', "project = 'STDEL'")
+
+        resolution = self._resolver([self._profile('stable-jira-profile', 'jira', 'project = "STDEL"')]).resolve(scope, enforce_policy=False)
+
+        self.assertEqual('stable-jira-profile', resolution.profile_id)
+        self.assertEqual('jira', resolution.provider_id)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_COMPATIBILITY, resolution.status)
 
     def test_shouldNotChooseProviderWhenCompatibilityMatchIsAmbiguous(self):
         scope = self._scope('Display Name', 'project = STDEL')
@@ -163,6 +185,32 @@ class TestScopeProviderBindingResolver(TestCase):
         self.assertEqual(1, health['explicit_only_blocked_count'])
         self.assertEqual(['Compatibility readiness scope'], [row['scope_name'] for row in health['explicit_only_impacted_rows']])
         self.assertEqual(1, health['counts']['disabled'])
+        self.assertEqual('compatibility_allowed', health['runtime_policy'])
+
+    def test_shouldListOnlyScopeBindingAuditEvents(self):
+        scope = self._scope('Audited list scope', '')
+        BugTrendAuditEvent.objects.create(
+            event_type=BugTrendAuditEvent.EVENT_EVIDENCE_EXPORTED,
+            actor='exporter',
+            scope=scope,
+        )
+        BugTrendAuditEvent.objects.create(
+            event_type=BugTrendAuditEvent.EVENT_SCOPE_BINDING_UPDATED,
+            actor='scope_admin',
+            scope=scope,
+            request_summary={
+                'before': {'status': 'compatibility', 'provider_id': 'jira', 'profile_id': 'old-profile'},
+                'after': {'status': 'explicit', 'provider_id': 'jira', 'profile_id': 'new-profile'},
+            },
+        )
+
+        events = ScopeProviderBindingResolver().list_binding_audit_events()
+
+        self.assertEqual(1, len(events))
+        self.assertEqual(BugTrendAuditEvent.EVENT_SCOPE_BINDING_UPDATED, events[0]['event_type'])
+        self.assertEqual('scope_admin', events[0]['actor'])
+        self.assertEqual('compatibility: jira / old-profile', events[0]['before_summary'])
+        self.assertEqual('explicit: jira / new-profile', events[0]['after_summary'])
 
     def test_shouldReturnConfigurationRequiredWhenNoSafeBindingExists(self):
         scope = self._scope('Unbound Scope', '')

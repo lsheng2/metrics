@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from django.test import TestCase
 from django.urls import reverse
 
-from bug_metrics.models import BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
+from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.models import JiraSyncCursor
 from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
 
@@ -142,6 +142,7 @@ class TestDataHealthViews(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn('Scope Binding Health', content)
         self.assertIn('Explicit-only readiness', content)
+        self.assertIn('Policy: compatibility_allowed', content)
         self.assertIn('Blocked', content)
         self.assertIn('1 impacted scopes', content)
         self.assertIn('Explicit-only impacted scopes', content)
@@ -149,6 +150,35 @@ class TestDataHealthViews(TestCase):
         self.assertIn('Binding health scope', content)
         self.assertIn('legacy_jira_scope', content)
         self.assertIn(reverse('ui_web:bug_trend_scope_library'), content)
+
+    def test_shouldRenderScopeBindingAuditHistory(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Binding audit scope',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+        )
+        BugTrendAuditEvent.objects.create(
+            event_type=BugTrendAuditEvent.EVENT_SCOPE_BINDING_UPDATED,
+            actor='scope_admin',
+            scope=scope,
+            request_summary={
+                'before': {'status': 'compatibility', 'provider_id': 'jira', 'profile_id': 'old-profile'},
+                'after': {'status': 'explicit', 'provider_id': 'jira', 'profile_id': 'new-profile'},
+            },
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:data_health'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Scope Binding Audit History', content)
+        self.assertIn('scope_admin', content)
+        self.assertIn('scope_binding_updated', content)
+        self.assertIn('compatibility: jira / old-profile', content)
+        self.assertIn('explicit: jira / new-profile', content)
 
     def _counts(self):
         return {
