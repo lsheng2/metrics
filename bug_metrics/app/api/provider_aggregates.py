@@ -120,7 +120,7 @@ class ProviderChartAggregateService(
     def _jira_aggregates(self, query, begin, end):
         scope = self._jira_scope_for_profile(query.profile_id)
         if scope is None:
-            return self._state_result(query, 'unavailable', 'No enabled Jira scope is mapped to the requested provider profile.', self._jira_source_population_without_scope(query))
+            return self._state_result(query, 'unavailable', 'No enabled saved Jira-backed scope is mapped to the requested provider profile.', self._jira_source_population_without_scope(query))
         run = self._latest_authoritative_run(scope, begin, end)
         if run is None:
             return self._jira_missing_run_result(query, scope, begin, end)

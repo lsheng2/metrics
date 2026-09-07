@@ -24,7 +24,7 @@ class ProviderChartEvidenceService:
 
         scope = self._aggregate_service.jira_scope_for_profile(query.profile_id)
         if scope is None:
-            return self._provider_evidence_state(query, 'summary_only', 'unavailable', 'No enabled Jira scope is mapped to the requested provider profile.')
+            return self._provider_evidence_state(query, 'summary_only', 'unavailable', 'No enabled saved Jira-backed scope is mapped to the requested provider profile.')
 
         begin, end = provider_query_range_to_dates(query)
         evidence_series_name = provider_series_to_evidence_series(query.provider_id, query.chart_id, query.selected_series_name)

@@ -31,7 +31,8 @@
 
     <section class="box">
         <h3 class="title is-4">Observed values</h3>
-        <table class="table is-fullwidth is-striped is-hoverable">
+        <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-striped is-hoverable responsive-admin-table is-cardable">
             <thead>
                 <tr>
                     <th>Category</th>
@@ -45,18 +46,18 @@
             <tbody>
                 {% for value in audit.observed_values %}
                     <tr>
-                        <td>{{ value.category }}</td>
-                        <td>{{ value.value }}</td>
-                        <td>{{ value.count }}</td>
-                        <td>
+                        <td data-label="Category">{{ value.category }}</td>
+                        <td data-label="Value">{{ value.value }}</td>
+                        <td data-label="Count">{{ value.count }}</td>
+                        <td data-label="Mapping">
                             {% if value.mapped %}
                                 <span class="tag is-success is-light">mapped</span>
                             {% else %}
                                 <span class="tag is-warning is-light">unmapped</span>
                             {% endif %}
                         </td>
-                        <td>{{ value.mapping_group }}</td>
-                        <td>
+                        <td data-label="Mapping group">{{ value.mapping_group }}</td>
+                        <td data-label="Config handoff">
                             {% if not value.mapped and value.category == 'severity' %}
                                 <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ audit.scope_id }}&add_field=critical_high_values&add_value={{ value.value|urlencode }}">Add as critical/high</a>
                             {% endif %}
@@ -67,6 +68,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </section>
 </article>
 {% endblock %}

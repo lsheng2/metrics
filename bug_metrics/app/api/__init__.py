@@ -163,6 +163,18 @@ class ApiForBugTrend:
     def disable_scope_config(self, scope_id: int) -> SavedScopeConfig:
         return self._scope_config_service.disable_scope_config(scope_id)
 
+    def get_scope_delete_impact(self, scope_id: int) -> dict:
+        return self._scope_config_service.get_scope_delete_impact(scope_id).to_dict()
+
+    def export_scope_config_package(self, scope_id: int) -> dict:
+        return self._scope_config_service.export_scope_config_package(scope_id)
+
+    def import_scope_config_package(self, package: dict) -> SavedScopeConfig:
+        return self._scope_config_service.import_scope_config_package(package)
+
+    def delete_archived_scope_config(self, scope_id: int, confirmation: str) -> dict:
+        return self._scope_config_service.delete_archived_scope_config(scope_id, confirmation).to_dict()
+
     def list_calculation_health(self) -> List[BugTrendCalculationHealth]:
         return self._calculation_health_service.list_calculation_health()
 

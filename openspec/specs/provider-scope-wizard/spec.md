@@ -93,6 +93,21 @@ Scope Library SHALL show each saved scope's provider binding status so operators
 - **WHEN** a scope binding is missing, ambiguous or disabled
 - **THEN** Scope Library SHALL display an actionable configuration-required state rather than hiding the scope or silently reusing stale profile/provider values
 
+### Requirement: Scope Library exposes registry provider profiles
+Scope Library SHALL be a provider-neutral inventory for both saved query scopes and Project Provider Profiles, so provider-backed scopes such as HSD-ES do not disappear merely because they are not represented by a Jira saved-scope row.
+
+#### Scenario: Registry profile has no saved scope row
+- **WHEN** a configured Project Provider Profile such as `nvu-ttl-hsdes` is enabled in the registry
+- **AND** no saved scope is explicitly or compatibly bound to that profile
+- **THEN** Scope Library SHALL render a read-only provider profile row with provider id, static scope labels, source population provenance and mapping version hash
+- **AND** the row SHALL NOT expose Jira-specific edit, duplicate or disable actions
+- **AND** the row SHALL provide provider-profile actions such as opening workflow/readiness surfaces
+
+#### Scenario: Saved scope is bound to a registry profile
+- **WHEN** a saved scope is explicitly or compatibly bound to a registry profile
+- **THEN** Scope Library SHALL render the saved scope row as the binding authority
+- **AND** it SHALL NOT duplicate the same registry profile as a second inventory row
+
 ### Requirement: Scope Library provides a scope binding editor
 Scope Library SHALL allow operators to repair provider binding states without editing raw scope semantic fields.
 

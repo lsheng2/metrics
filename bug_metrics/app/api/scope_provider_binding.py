@@ -166,6 +166,9 @@ class ScopeProviderBindingResolver:
                 'profile_id': profile.profile_id,
                 'provider_id': profile.provider_id,
                 'display_name': profile.display_name,
+                'scope_labels': dict(profile.scope_labels),
+                'source_population': dict(profile.source_population),
+                'mapping_version_hash': profile.mapping_version_hash,
             }
             for profile in self._profile_registry.list_profiles()
         ]

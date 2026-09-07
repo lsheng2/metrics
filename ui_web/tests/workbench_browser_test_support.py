@@ -117,6 +117,10 @@ class WorkbenchBrowserTestSupport:
             status_column_hidden = page.locator('[data-workbench-field="status"]').first.evaluate(
                 "element => element.classList.contains('is-hidden')"
             )
+            page.mouse.click(12, 12)
+            columns_menu_open_after_blank_click = page.locator('[data-workbench-evidence-workspace] .workbench-menu').first.evaluate(
+                "menu => menu.open"
+            )
             page.locator('[data-workbench-evidence-sort-field]').select_option('owner')
             page.locator('[data-workbench-evidence-sort-direction]').select_option('asc')
             page.locator('[data-workbench-evidence-sort]').click()
@@ -178,6 +182,7 @@ class WorkbenchBrowserTestSupport:
                 'selected_ticket_payload': selected_ticket_payload,
                 'bulk_detail_issue': bulk_detail_issue,
                 'status_column_hidden': status_column_hidden,
+                'columns_menu_open_after_blank_click': columns_menu_open_after_blank_click,
                 'first_issue_after_sort': first_issue_after_sort,
                 'chart_collapsed': chart_collapsed,
                 'chart_height': chart_height,

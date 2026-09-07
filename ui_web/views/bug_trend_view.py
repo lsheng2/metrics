@@ -1,4 +1,6 @@
+import json
 from datetime import date, timedelta
+from urllib.parse import urlencode
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -60,7 +62,7 @@ class BugTrendView(GracefulTemplateView):
         if not scope_options:
             context['chart_json'] = '{}'
             context['selected_scope_id'] = ''
-            context['unavailable_reason'] = 'Create a saved Jira scope before opening the bug trend dashboard.'
+            context['unavailable_reason'] = 'Create a saved query scope before opening the bug trend dashboard.'
             return
 
         selected_scope_id = int(self.request.GET.get('scope_id') or scope_options[0].id)
@@ -199,11 +201,34 @@ class BugTrendScopeLibraryView(GracefulTemplateView):
         super().__init__(**kwargs)
         self.bug_trend_facade = ui_web_container.bug_trend_facade
 
+    def get(self, request, *args, **kwargs):
+        export_scope_id = request.GET.get('export_scope_id')
+        if export_scope_id and export_scope_id.isdecimal():
+            package = self.bug_trend_facade.export_scope_config_package(int(export_scope_id))
+            response = JsonResponse(package, json_dumps_params={'indent': 2})
+            response['Content-Disposition'] = f'attachment; filename="scope-{export_scope_id}.json"'
+            return response
+        return super().get(request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
         action = request.POST.get('action')
         scope_id = request.POST.get('scope_id')
         if action == 'disable' and scope_id and scope_id.isdecimal():
             self.bug_trend_facade.disable_scope_config(int(scope_id))
+            return self._library_redirect({'archived': 1})
+        if action == 'delete_archived' and scope_id and scope_id.isdecimal():
+            try:
+                self.bug_trend_facade.delete_archived_scope_config(int(scope_id), request.POST.get('delete_confirmation', ''))
+                return self._library_redirect({'deleted': 1})
+            except ValueError as error:
+                return self._library_redirect({'delete_error': self._error_message(error)})
+        if action == 'import_scope':
+            try:
+                package = self._scope_import_package(request)
+                imported = self.bug_trend_facade.import_scope_config_package(package)
+                return self._library_redirect({'imported_scope': imported.name})
+            except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as error:
+                return self._library_redirect({'import_error': self._error_message(error)})
         if action == 'confirm_binding' and scope_id and scope_id.isdecimal():
             self.bug_trend_facade.confirm_scope_provider_binding(int(scope_id))
         if action == 'bulk_confirm_bindings':
@@ -221,12 +246,33 @@ class BugTrendScopeLibraryView(GracefulTemplateView):
                 pass
         return redirect('ui_web:bug_trend_scope_library')
 
+    def _library_redirect(self, params: dict):
+        response = redirect('ui_web:bug_trend_scope_library')
+        response['Location'] = f'{response["Location"]}?{urlencode(params)}'
+        return response
+
+    def _scope_import_package(self, request):
+        uploaded_file = request.FILES.get('scope_package')
+        if uploaded_file is None:
+            raise ValueError({'scope_import': 'Choose a scope JSON package to import.'})
+        return json.loads(uploaded_file.read().decode('utf-8'))
+
+    def _error_message(self, error):
+        if error.args and isinstance(error.args[0], dict):
+            return '; '.join(str(value) for value in error.args[0].values())
+        return str(error)
+
     def populate_context(self, context, **kwargs):
         scope_rows = self.bug_trend_facade.get_scope_library_rows()
         context['scope_rows'] = scope_rows
         context['scope_library_summary'] = self.bug_trend_facade.get_scope_library_summary(scope_rows)
         context['bulk_changed'] = self.request.GET.get('bulk_changed')
         context['bulk_skipped'] = self.request.GET.get('bulk_skipped')
+        context['archived'] = self.request.GET.get('archived')
+        context['deleted'] = self.request.GET.get('deleted')
+        context['imported_scope'] = self.request.GET.get('imported_scope')
+        context['import_error'] = self.request.GET.get('import_error')
+        context['delete_error'] = self.request.GET.get('delete_error')
         context['scope_binding_policy'] = self.bug_trend_facade.get_scope_binding_policy()
         context['scope_binding_audit_events'] = self.bug_trend_facade.get_scope_binding_audit_events()
         context['provider_profile_choices'] = self.bug_trend_facade.get_scope_provider_profile_choices()
@@ -277,7 +323,7 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         if not scope_id or not scope_id.isdecimal():
             context['config'] = None
             context['scope_config_errors'] = {'scope_id': 'A valid scope id is required.'}
-            context['build_page_title'] = 'Bug Trend Scope Config'
+            context['build_page_title'] = 'Bug Trend Saved Scope Config'
             return
         config = self.bug_trend_facade.get_scope_config(
             int(scope_id),
@@ -289,7 +335,7 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         context['saved'] = self.request.GET.get('saved') == '1'
         context['hash_changed'] = self.request.GET.get('hash_changed') == '1'
         context['scope_metadata'] = self._metadata_options(config)
-        context['build_page_title'] = 'Bug Trend Scope Config'
+        context['build_page_title'] = 'Bug Trend Saved Scope Config'
 
     def _metadata_options(self, config):
         if self.request.GET.get('refresh_metadata') != '1':

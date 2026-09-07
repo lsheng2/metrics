@@ -19,20 +19,20 @@
                 </span>
             </div>
         </div>
-        <div class="table-container">
-            <table class="table is-fullwidth is-striped">
+        <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-striped responsive-admin-table">
                 <tbody>
                     <tr>
-                        <th>Profile</th>
-                        <td>{{ sidecar_status.profile_id }}</td>
-                        <th>Service</th>
-                        <td>{{ sidecar_status.service_id }}</td>
+                        <th data-label="Field">Profile</th>
+                        <td data-label="Value">{{ sidecar_status.profile_id }}</td>
+                        <th data-label="Field">Service</th>
+                        <td data-label="Value">{{ sidecar_status.service_id }}</td>
                     </tr>
                     <tr>
-                        <th>Base URL</th>
-                        <td>{{ sidecar_status.base_url }}</td>
-                        <th>Capabilities</th>
-                        <td>
+                        <th data-label="Field">Base URL</th>
+                        <td data-label="Value">{{ sidecar_status.base_url }}</td>
+                        <th data-label="Field">Capabilities</th>
+                        <td data-label="Value">
                             {% for capability, enabled in sidecar_status.capabilities.items %}
                                 <span class="tag {% if enabled %}is-success{% else %}is-light{% endif %}">{{ capability }}={{ enabled }}</span>
                             {% empty %}
@@ -41,8 +41,8 @@
                         </td>
                     </tr>
                     <tr>
-                        <th>Reason</th>
-                        <td colspan="3">{{ sidecar_status.reason|default:"-" }}</td>
+                        <th data-label="Field">Reason</th>
+                        <td data-label="Value" colspan="3">{{ sidecar_status.reason|default:"-" }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -219,8 +219,8 @@
 
     <section class="box">
         <h2 class="title is-4">Recent AI Grafana Publishes</h2>
-        <div class="table-container">
-            <table class="table is-fullwidth is-striped">
+        <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
                 <thead>
                     <tr>
                         <th>Status</th>
@@ -234,22 +234,22 @@
                 <tbody>
                     {% for item in publish_history.items %}
                         <tr>
-                            <td>
+                            <td data-label="Status">
                                 <span class="tag {% if item.status == 'published' %}is-success{% else %}is-light{% endif %}">
                                     {{ item.status }}{% if item.latest %} latest{% endif %}
                                 </span>
                             </td>
-                            <td>{{ item.profile_id }}</td>
-                            <td>{{ item.chart_id }}</td>
-                            <td>{{ item.range_start }} to {{ item.range_end }}</td>
-                            <td>
+                            <td data-label="Profile">{{ item.profile_id }}</td>
+                            <td data-label="Chart">{{ item.chart_id }}</td>
+                            <td data-label="Range">{{ item.range_start }} to {{ item.range_end }}</td>
+                            <td data-label="Dashboard">
                                 {% if item.dashboard_url %}
                                     <a href="{{ item.dashboard_url }}">{{ item.dashboard_uid }}</a>
                                 {% else %}
                                     {{ item.dashboard_uid }}
                                 {% endif %}
                             </td>
-                            <td>{{ item.created_at }}</td>
+                            <td data-label="Published">{{ item.created_at }}</td>
                         </tr>
                     {% empty %}
                         <tr>

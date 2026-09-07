@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Bug Trend Scope Config{% endblock %}
+{% block title %}Bug Trend Saved Scope Config{% endblock %}
 
 {% block content %}
 <article class="block">
@@ -18,11 +18,11 @@
     <div class="level">
         <div class="level-left">
             <div>
-                <h2 class="title is-3">Bug Trend Scope Config</h2>
+                <h2 class="title is-3">Bug Trend Saved Scope Config</h2>
                 {% if editor_mode == 'new' %}
-                    <p class="subtitle is-6">New scope draft</p>
+                    <p class="subtitle is-6">New saved scope draft</p>
                 {% elif editor_mode == 'duplicate' %}
-                    <p class="subtitle is-6">Duplicate scope draft</p>
+                    <p class="subtitle is-6">Duplicate saved scope draft</p>
                 {% else %}
                     <p class="subtitle is-6">Editing persisted scope {{ config.name }}</p>
                 {% endif %}
@@ -182,7 +182,7 @@
             {% else %}
                 <span class="tag is-warning is-light">Draft</span>
             {% endif %}
-            <p class="is-size-7">Use Save and enable to publish a scope. Use Disable from Scope Library to remove an existing scope from the dashboard selector.</p>
+            <p class="is-size-7">Use Save and enable to deploy a validated scope into Dashboard, Workbench and AI Assistant selection. Use Archive from Scope Library to remove an existing scope from normal selection while preserving history.</p>
         </div>
         <div class="notification is-warning is-light is-hidden" data-dirty-banner>
             Unsaved changes are local to this editor until you save. Use Discard changes to reload the persisted baseline.

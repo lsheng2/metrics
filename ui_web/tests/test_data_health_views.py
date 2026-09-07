@@ -1,7 +1,9 @@
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 from django.test import TestCase
 from django.urls import reverse
+from playwright.sync_api import sync_playwright
 
 from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.models import JiraSyncCursor
@@ -141,6 +143,10 @@ class TestDataHealthViews(TestCase):
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('Scope Binding Health', content)
+        self.assertIn('responsive-admin-table', content)
+        self.assertIn('is-cardable', content)
+        self.assertIn('data-label="Scope"', content)
+        self.assertIn('data-label="Repair"', content)
         self.assertIn('Explicit-only readiness', content)
         self.assertIn('Policy: compatibility_allowed', content)
         self.assertIn('Blocked', content)
@@ -180,9 +186,74 @@ class TestDataHealthViews(TestCase):
         self.assertIn('compatibility: jira / old-profile', content)
         self.assertIn('explicit: jira / new-profile', content)
 
+    def test_shouldAdaptDataHealthAdminTablesOnlyOnPhoneSizedScreens(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Binding health compact scope',
+            jql='project = STDEL AND component = very_long_component_name',
+            bug_type_values=['Bug'],
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='Binding health compact profile with long text',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
+            provenance={'matched_by': 'legacy_jira_scope'},
+        )
+        response = self.client.get(reverse('ui_web:data_health'))
+
+        # When
+        result = self._measure_data_health_responsive_tables(response.content.decode())
+
+        # Then
+        self.assertFalse(result['desktop']['page_horizontal_overflow'])
+        self.assertNotEqual('none', result['desktop']['thead_display'])
+        self.assertNotEqual('grid', result['desktop']['first_cell_display'])
+        self.assertFalse(result['phone']['page_horizontal_overflow'])
+        self.assertEqual('none', result['phone']['thead_display'])
+        self.assertEqual('grid', result['phone']['first_cell_display'])
+        self.assertEqual('Scope', result['phone']['first_cell_label'])
+
     def _counts(self):
         return {
             'scopes': JiraScopeConfig.objects.count(),
             'cursors': JiraSyncCursor.objects.count(),
             'runs': BugTrendCalculationRun.objects.count(),
         }
+
+    def _measure_data_health_responsive_tables(self, html):
+        static_dir = Path(__file__).resolve().parents[1] / 'static'
+        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
+        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
+        html = html.replace('</head>', f'<style>{vendor_css}\n{main_css}</style></head>')
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            return {
+                'desktop': self._measure_data_health_viewport(browser, html, 760, 900),
+                'phone': self._measure_data_health_viewport(browser, html, 390, 900),
+            }
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_data_health_viewport(self, browser, html, width, height):
+        page = browser.new_page(viewport={'width': width, 'height': height})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            return page.evaluate("""
+                () => {
+                    const table = document.querySelector('.data-health-page .responsive-admin-table.is-cardable');
+                    const thead = table.querySelector('thead');
+                    const firstCell = table.querySelector('tbody td[data-label]');
+                    return {
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        table_horizontal_overflow: table.closest('.responsive-admin-table-box').scrollWidth > table.closest('.responsive-admin-table-box').clientWidth + 1,
+                        thead_display: getComputedStyle(thead).display,
+                        first_cell_display: getComputedStyle(firstCell).display,
+                        first_cell_label: firstCell.dataset.label,
+                    };
+                }
+            """)
+        finally:
+            page.close()

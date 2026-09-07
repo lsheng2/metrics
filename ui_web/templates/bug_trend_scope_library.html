@@ -15,11 +15,16 @@
         <div class="level-left">
             <div>
                 <h2 class="title is-3">Scope Library</h2>
-                <p class="subtitle is-6">Manage saved Jira scopes before they appear on the dashboard.</p>
+                <p class="subtitle is-6">Manage saved query scopes and registry provider profiles before they appear in Metrics workflows.</p>
             </div>
         </div>
         <div class="level-right">
             <div class="buttons are-small">
+                <form method="post" enctype="multipart/form-data" class="scope-import-form">
+                    {% csrf_token %}
+                    <input class="input is-small" type="file" name="scope_package" accept="application/json,.json" required aria-label="Import scope JSON package">
+                    <button class="button" type="submit" name="action" value="import_scope">Import archived</button>
+                </form>
                 {% if scope_library_summary.compatibility_ready_count %}
                     <form method="post" data-confirm="Confirm all eligible compatibility bindings as explicit?">
                         {% csrf_token %}
@@ -28,7 +33,7 @@
                         </button>
                     </form>
                 {% endif %}
-                <a class="button is-primary" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new">New scope</a>
+                <a class="button is-primary" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new">New saved scope</a>
             </div>
         </div>
     </div>
@@ -38,48 +43,152 @@
             Binding bulk confirmation finished: {{ bulk_changed }} changed, {{ bulk_skipped }} skipped.
         </div>
     {% endif %}
+    {% if archived %}
+        <div class="notification is-info is-light scope-library-result">
+            Scope archived. It is removed from normal Dashboard, Workbench and AI Assistant scope selection; historical records remain available.
+        </div>
+    {% endif %}
+    {% if deleted %}
+        <div class="notification is-warning is-light scope-library-result">
+            Archived scope deleted with its cascade-managed historical records.
+        </div>
+    {% endif %}
+    {% if imported_scope %}
+        <div class="notification is-success is-light scope-library-result">
+            Imported {{ imported_scope }} as an archived scope. Review, bind, sync and calculate before enabling it.
+        </div>
+    {% endif %}
+    {% if import_error %}
+        <div class="notification is-danger is-light scope-library-result">{{ import_error }}</div>
+    {% endif %}
+    {% if delete_error %}
+        <div class="notification is-danger is-light scope-library-result">{{ delete_error }}</div>
+    {% endif %}
+
+    <section class="box scope-lifecycle-guide">
+        <h3 class="title is-5">Scope lifecycle</h3>
+        <div class="scope-lifecycle-steps">
+            <span><strong>1</strong> Save archived draft</span>
+            <span><strong>2</strong> Validate required fields</span>
+            <span><strong>3</strong> Bind provider profile</span>
+            <span><strong>4</strong> Save and enable</span>
+            <span><strong>5</strong> Sync and calculate</span>
+            <span><strong>6</strong> Use Dashboard, Workbench and AI charts</span>
+        </div>
+        <details class="scope-readiness-help">
+            <summary class="button is-small">Readiness matrix</summary>
+            <div class="table-container responsive-admin-table-box">
+                <table class="table is-fullwidth is-narrow responsive-admin-table scope-readiness-table">
+                    <thead>
+                        <tr>
+                            <th>Capability</th>
+                            <th>Requires</th>
+                            <th>If missing</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Save archived draft</td>
+                            <td>Name, provider query, bug type, bucket granularity, timezone format</td>
+                            <td>Scope cannot be saved.</td>
+                        </tr>
+                        <tr>
+                            <td>Deploy to Dashboard selector</td>
+                            <td>Draft validation plus open status, fixed/closed status, severity field, critical/high and medium/low values</td>
+                            <td>Scope stays archived and cannot participate in normal Dashboard selection.</td>
+                        </tr>
+                        <tr>
+                            <td>Sync facts</td>
+                            <td>Deployed scope, provider credentials, valid query permissions</td>
+                            <td>Data Health reports sync/cache blocker.</td>
+                        </tr>
+                        <tr>
+                            <td>Calculate buckets and evidence</td>
+                            <td>Synced source facts and coverage window</td>
+                            <td>Charts show no current calculation or stale coverage.</td>
+                        </tr>
+                        <tr>
+                            <td>Workbench evidence</td>
+                            <td>Fresh calculation run and chart evidence contract</td>
+                            <td>Ticket list is unavailable or selection is summary-only.</td>
+                        </tr>
+                        <tr>
+                            <td>AI Assistant Grafana charts</td>
+                            <td>Provider binding, profile readiness, fresh facts/calculation and AI sidecar readiness</td>
+                            <td>AI can explain blockers but should not publish a chart as ready.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </section>
 
     <div class="scope-library-summary">
-        <span><strong>{{ scope_library_summary.total }}</strong> scopes</span>
+        <span><strong>{{ scope_library_summary.total }}</strong> entries</span>
+        <span><strong>{{ scope_library_summary.saved_scope_count }}</strong> saved scopes</span>
+        <span><strong>{{ scope_library_summary.provider_profile_count }}</strong> provider profiles</span>
         <span><strong>Policy</strong> {{ scope_binding_policy }}</span>
         <span><strong>{{ scope_library_summary.compatibility_ready_count }}</strong> ready to confirm</span>
         <span><strong>{{ scope_library_summary.needs_attention_count }}</strong> need attention</span>
     </div>
 
-    <div class="table-container box scope-library-table-box">
-        <table class="table is-fullwidth is-hoverable is-narrow scope-library-table">
+    <div class="table-container box responsive-admin-table-box scope-library-table-box">
+        <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable scope-library-table">
+            <colgroup>
+                <col class="scope-col-name">
+                <col class="scope-col-source">
+                <col class="scope-col-ip">
+                <col class="scope-col-project">
+                <col class="scope-col-status">
+                <col class="scope-col-binding">
+                <col class="scope-col-profile">
+                <col class="scope-col-provider">
+                <col class="scope-col-hash">
+                <col class="scope-col-actions">
+            </colgroup>
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>IP</th>
-                    <th>Project</th>
-                    <th>Status</th>
-                    <th>Binding</th>
-                    <th>Profile</th>
-                    <th>Provider</th>
-                    <th>Config hash</th>
-                    <th class="has-text-right">Actions</th>
+                    <th class="scope-col-name">Name</th>
+                    <th class="scope-col-source">Source</th>
+                    <th class="scope-col-ip">IP</th>
+                    <th class="scope-col-project">Project</th>
+                    <th class="scope-col-status">Status</th>
+                    <th class="scope-col-binding">Binding</th>
+                    <th class="scope-col-profile">Profile</th>
+                    <th class="scope-col-provider">Provider</th>
+                    <th class="scope-col-hash">Config hash</th>
+                    <th class="scope-col-actions has-text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in scope_rows %}
                     {% with scope=row.scope binding=row.binding %}
                     <tr>
-                        <td>{{ scope.name }}</td>
-                        <td>{{ scope.ip|default:"-" }}</td>
-                        <td>{{ scope.project_label|default:"-" }}</td>
-                        <td>
-                            {% if scope.enabled %}
-                                <span class="tag is-success is-light">Enabled</span>
-                            {% else %}
-                                <span class="tag is-warning is-light">Draft</span>
+                        <td class="scope-col-name scope-library-primary-cell" data-label="Name" title="{{ scope.name }}">{{ scope.name }}</td>
+                        <td class="scope-col-source scope-library-source-cell" data-label="Source">
+                            <span class="tag {% if row.source_kind == 'provider_profile' %}is-info{% else %}is-light{% endif %}">{{ row.source_label }}</span>
+                            {% if row.source_detail %}
+                                <span class="scope-binding-provenance" title="{{ row.source_detail }}">{{ row.source_detail }}</span>
                             {% endif %}
                         </td>
-                        <td class="scope-binding-cell">
+                        <td class="scope-col-ip" data-label="IP">{{ scope.ip|default:"-" }}</td>
+                        <td class="scope-col-project" data-label="Project" title="{{ scope.project_label }}">{{ scope.project_label|default:"-" }}</td>
+                        <td class="scope-col-status" data-label="Status">
+                            {% if row.source_kind == 'provider_profile' %}
+                                <span class="tag is-info is-light">Registry</span>
+                            {% elif scope.enabled %}
+                                <span class="tag is-success is-light">Enabled</span>
+                            {% else %}
+                                <span class="tag is-warning is-light">Archived</span>
+                            {% endif %}
+                        </td>
+                        <td class="scope-col-binding scope-binding-cell" data-label="Binding">
                             {% if binding.status == "explicit" %}
                                 <span class="tag is-success is-light scope-binding-status">explicit</span>
                             {% elif binding.status == "compatibility" %}
                                 <span class="tag is-info is-light scope-binding-status">compatibility</span>
+                            {% elif binding.status == "provider_profile" %}
+                                <span class="tag is-info is-light scope-binding-status">profile</span>
                             {% else %}
                                 <span class="tag is-warning is-light scope-binding-status">{{ binding.status|default:"configuration_required" }}</span>
                             {% endif %}
@@ -88,35 +197,54 @@
                                 <span class="scope-binding-blocker" title="{{ binding.blockers.0.message }}">blocked</span>
                             {% endif %}
                         </td>
-                        <td>{{ binding.profile_id|default:"-" }}</td>
-                        <td>{{ binding.provider_id|default:"-" }}</td>
-                        <td><code>{{ scope.config_version_hash|slice:":12" }}</code></td>
-                        <td>
+                        <td class="scope-col-profile" data-label="Profile" title="{{ binding.profile_id }}">{{ binding.profile_id|default:"-" }}</td>
+                        <td class="scope-col-provider" data-label="Provider">{{ binding.provider_id|default:"-" }}</td>
+                        <td class="scope-col-hash" data-label="Config hash"><code>{{ scope.config_version_hash|slice:":12" }}</code></td>
+                        <td class="scope-col-actions" data-label="Actions">
                             <div class="scope-actions">
                                 <div class="buttons is-justify-content-flex-end are-small scope-primary-actions">
-                                    <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
-                                    {% if binding.can_confirm %}
-                                        <form method="post" data-confirm="Confirm this provider binding as explicit?">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="scope_id" value="{{ scope.id }}">
-                                            <button class="button is-info is-light" type="submit" name="action" value="confirm_binding">Confirm</button>
-                                        </form>
+                                    {% if row.can_edit_scope %}
+                                        {% if binding.can_confirm %}
+                                            <form method="post" data-confirm="Confirm this provider binding as explicit?">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                                <button class="button is-info is-light" type="submit" name="action" value="confirm_binding">Confirm</button>
+                                            </form>
+                                        {% else %}
+                                            <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
+                                        {% endif %}
+                                        <details class="workbench-menu scope-row-menu">
+                                            <summary class="button" aria-label="More scope actions">More</summary>
+                                            <div class="workbench-menu-panel">
+                                                {% if binding.can_confirm %}
+                                                    <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
+                                                {% endif %}
+                                                {% if row.can_duplicate_scope %}
+                                                    <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
+                                                {% endif %}
+                                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}?export_scope_id={{ scope.id }}">Export JSON</a>
+                                                {% if row.can_disable_scope and scope.enabled %}
+                                                    <form method="post" data-confirm="Archive this scope? It will be removed from normal Dashboard, Workbench, and AI Assistant scope selection, while historical runs, evidence, sync cache, and audit records remain preserved. Use Edit > Save and enable to restore it.">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                                        <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Archive</button>
+                                                    </form>
+                                                {% elif row.can_disable_scope %}
+                                                    <form method="post" data-confirm="Delete this archived scope? Related calculation runs, buckets, evidence, Jira history, sync cursor, provider binding and audit records may be removed by cascade.">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                                        <input class="input is-small" name="delete_confirmation" placeholder="{{ row.delete_confirmation }}" aria-label="Delete confirmation for {{ scope.name }}">
+                                                        <button class="button is-small is-danger is-light" type="submit" name="action" value="delete_archived" title="Impact: {{ row.delete_impact.calculation_runs }} runs, {{ row.delete_impact.bucket_issues }} bucket issues, {{ row.delete_impact.jira_issues }} Jira issues">Delete archived</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </details>
+                                    {% else %}
+                                        <a class="button" href="{% url 'ui_web:ai_dashboard_workflow' %}?profile_id={{ binding.profile_id }}">Workflow</a>
+                                        <a class="button" href="{% url 'ui_web:data_health' %}">Health</a>
                                     {% endif %}
-                                    <details class="workbench-menu scope-row-menu">
-                                        <summary class="button" aria-label="More scope actions">More</summary>
-                                        <div class="workbench-menu-panel">
-                                            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
-                                            {% if scope.enabled %}
-                                                <form method="post" data-confirm="Disable this scope? Historical runs and evidence will be preserved.">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="scope_id" value="{{ scope.id }}">
-                                                    <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Disable</button>
-                                                </form>
-                                            {% endif %}
-                                        </div>
-                                    </details>
                                 </div>
-                                {% if binding.can_edit %}
+                                {% if binding.can_edit and row.can_edit_scope and binding.status != "compatibility" %}
                                     <form class="field has-addons scope-binding-editor" method="post" data-confirm="Save this provider binding as explicit?">
                                         {% csrf_token %}
                                         <input type="hidden" name="scope_id" value="{{ scope.id }}">
@@ -140,7 +268,7 @@
                     {% endwith %}
                 {% empty %}
                     <tr>
-                        <td colspan="9">No scopes saved yet.</td>
+                        <td colspan="10">No saved scopes or provider profiles are available yet.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -156,7 +284,7 @@
                 <span class="tag is-light">{{ scope_binding_audit_events|length }} recent</span>
             </div>
         </div>
-        <table class="table is-fullwidth is-narrow is-hoverable scope-binding-audit-table">
+        <table class="table is-fullwidth is-narrow is-hoverable responsive-admin-table is-cardable scope-binding-audit-table">
             <thead>
                 <tr>
                     <th>Time</th>
@@ -170,12 +298,12 @@
             <tbody>
                 {% for event in scope_binding_audit_events %}
                     <tr>
-                        <td>{{ event.created_at }}</td>
-                        <td>{{ event.actor }}</td>
-                        <td>{{ event.event_type }}</td>
-                        <td>{{ event.scope_name|default:"-" }}</td>
-                        <td>{{ event.before_summary }}</td>
-                        <td>{{ event.after_summary }}</td>
+                        <td data-label="Time">{{ event.created_at }}</td>
+                        <td data-label="Actor">{{ event.actor }}</td>
+                        <td data-label="Operation">{{ event.event_type }}</td>
+                        <td data-label="Scope">{{ event.scope_name|default:"-" }}</td>
+                        <td data-label="Before">{{ event.before_summary }}</td>
+                        <td data-label="After">{{ event.after_summary }}</td>
                     </tr>
                 {% empty %}
                     <tr>

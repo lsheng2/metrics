@@ -1,7 +1,9 @@
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from playwright.sync_api import sync_playwright
@@ -73,13 +75,22 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('New scope', content)
+        self.assertIn('New saved scope', content)
         self.assertIn('STDEL enabled library', content)
         self.assertIn('STDEL draft library', content)
+        self.assertIn('saved scopes', content)
+        self.assertIn('provider profiles', content)
+        self.assertIn('nvu-ttl-hsdes', content)
+        self.assertIn('NVU1.0_TTL', content)
+        self.assertIn('Provider profile', content)
+        self.assertIn('provider_owned_saved_query', content)
+        self.assertIn('Workflow', content)
+        self.assertIn('Health', content)
         self.assertIn(f'?scope_id={enabled_scope.id}', content)
         self.assertIn(f'?duplicate_scope_id={enabled_scope.id}', content)
-        self.assertIn('Disable', content)
-        self.assertIn('data-confirm="Disable this scope?', content)
+        self.assertIn('Archive', content)
+        self.assertIn('data-confirm="Archive this scope?', content)
+        self.assertIn('Dashboard, Workbench, and AI Assistant scope selection', content)
         self.assertIn('Binding', content)
         self.assertIn('compatibility', content)
         self.assertIn('Confirm', content)
@@ -91,6 +102,10 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('More', content)
         self.assertIn('Binding Audit History', content)
         self.assertIn('No scope binding audit events yet.', content)
+        self.assertIn('Scope lifecycle', content)
+        self.assertIn('Readiness matrix', content)
+        self.assertIn('Deploy to Dashboard selector', content)
+        self.assertIn('AI Assistant Grafana charts', content)
 
     def test_shouldKeepScopeLibraryRowActionsCompactInBrowser(self):
         # Given
@@ -115,12 +130,47 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Then
         self.assertTrue(result['same_row'])
         self.assertEqual([31], result['primary_heights'])
-        self.assertEqual([62], result['primary_widths'])
-        self.assertLessEqual(result['panel_width'], result['action_cell_width'])
+        self.assertTrue(all(width >= 44 for width in result['primary_widths']))
+        self.assertLessEqual(max(result['primary_widths']) - min(result['primary_widths']), 2)
+        self.assertTrue(result['archive_action_visible'])
         self.assertTrue(result['open_after_summary_click'])
         self.assertFalse(result['open_after_blank_click'])
         self.assertFalse(result['open_after_escape'])
         self.assertFalse(result['horizontal_overflow'])
+
+    def test_shouldAdaptScopeLibraryTableAcrossScreenWidthsInBrowser(self):
+        # Given
+        JiraScopeConfig.objects.create(
+            name='Real Intel Jira 131600 Bug Trend Fixture',
+            jql='project = 131600 AND component = team_int_qemu',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # When
+        results = self._measure_scope_library_responsive_table(response.content.decode())
+
+        # Then
+        self.assertFalse(results['wide']['page_horizontal_overflow'])
+        self.assertFalse(results['wide']['table_horizontal_overflow'])
+        self.assertNotEqual('none', results['wide']['hash_column_display'])
+        self.assertFalse(results['desktop']['page_horizontal_overflow'])
+        self.assertLessEqual(results['desktop']['max_body_row_height'], 42)
+        self.assertFalse(results['desktop']['actions_wrap'])
+        self.assertNotEqual('none', results['desktop']['hash_column_display'])
+        self.assertNotEqual('none', results['desktop']['ip_column_display'])
+        self.assertNotEqual('none', results['desktop']['project_column_display'])
+        self.assertFalse(results['medium']['page_horizontal_overflow'])
+        self.assertTrue(results['medium']['table_horizontal_overflow'])
+        self.assertNotEqual('none', results['medium']['hash_column_display'])
+        self.assertNotEqual('none', results['medium']['ip_column_display'])
+        self.assertNotEqual('none', results['medium']['project_column_display'])
+        self.assertNotEqual('none', results['medium']['thead_display'])
+        self.assertNotEqual('grid', results['medium']['first_cell_display'])
+        self.assertFalse(results['phone']['page_horizontal_overflow'])
+        self.assertEqual('none', results['phone']['thead_display'])
+        self.assertEqual('grid', results['phone']['first_cell_display'])
 
     def test_shouldConfirmCompatibilityScopeBindingFromLibrary(self):
         # Given
@@ -251,6 +301,131 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertFalse(scope.enabled)
         self.assertTrue(JiraScopeConfig.objects.filter(id=scope.id).exists())
 
+    def test_shouldExportScopeConfigPackageFromLibrary(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL export from library',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            open_status_values=['New'],
+            fixed_status_values=['Fixed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'), {'export_scope_id': str(scope.id)})
+
+        # Then
+        package = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('attachment; filename="scope-%s.json"' % scope.id, response['Content-Disposition'])
+        self.assertEqual('metrics.scope-config', package['format'])
+        self.assertEqual('STDEL export from library', package['scope']['name'])
+        self.assertIn('calculation_runs', package['excludes'])
+
+    def test_shouldImportScopePackageAsArchivedScopeFromLibrary(self):
+        # Given
+        package = {
+            'format': 'metrics.scope-config',
+            'version': 1,
+            'scope': {
+                'id': 999,
+                'name': 'STDEL imported library',
+                'ip': 'NVU',
+                'project_label': 'STDEL',
+                'jql': 'project = STDEL',
+                'bug_type_values': ['Bug'],
+                'open_status_values': ['New'],
+                'fixed_status_values': ['Fixed'],
+                'closed_status_values': [],
+                'terminal_excluded_status_values': [],
+                'fixed_resolution_values': [],
+                'closed_resolution_values': [],
+                'reopen_status_values': [],
+                'severity_field': 'priority',
+                'critical_high_values': ['P1-Critical'],
+                'medium_low_values': ['P3-Medium'],
+                'component_field': '',
+                'owner_field': 'assignee',
+                'team_field': '',
+                'milestone_field': '',
+                'fix_version_field': '',
+                'package_version_field': '',
+                'display_fields': [],
+                'timezone': 'UTC',
+                'bucket_granularity': JiraScopeConfig.GRANULARITY_WEEKLY,
+                'enabled': True,
+                'config_version_hash': 'source-hash',
+            },
+            'provider_binding': {
+                'profile_id': 'chiplet-2a-jira',
+                'provider_id': 'jira',
+                'status': 'explicit',
+            },
+        }
+        upload = SimpleUploadedFile('scope.json', json.dumps(package).encode('utf-8'), content_type='application/json')
+
+        # When
+        response = self.client.post(
+            reverse('ui_web:bug_trend_scope_library'),
+            {'action': 'import_scope', 'scope_package': upload},
+            follow=True,
+        )
+
+        # Then
+        imported = JiraScopeConfig.objects.get(name='STDEL imported library imported')
+        binding = BugTrendScopeProviderBinding.objects.get(scope=imported)
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(imported.enabled)
+        self.assertEqual('chiplet-2a-jira', binding.profile_id)
+        self.assertIn('Imported STDEL imported library imported as an archived scope.', response.content.decode())
+
+    def test_shouldDeleteOnlyArchivedScopeFromLibraryWithConfirmation(self):
+        # Given
+        enabled_scope = JiraScopeConfig.objects.create(
+            name='STDEL enabled protected delete',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            open_status_values=['New'],
+            fixed_status_values=['Fixed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            enabled=True,
+        )
+        archived_scope = JiraScopeConfig.objects.create(
+            name='STDEL archived delete from library',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            open_status_values=['New'],
+            fixed_status_values=['Fixed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            enabled=False,
+        )
+
+        # When
+        protected_response = self.client.post(reverse('ui_web:bug_trend_scope_library'), {
+            'action': 'delete_archived',
+            'scope_id': str(enabled_scope.id),
+            'delete_confirmation': 'DELETE STDEL enabled protected delete',
+        }, follow=True)
+        deleted_response = self.client.post(reverse('ui_web:bug_trend_scope_library'), {
+            'action': 'delete_archived',
+            'scope_id': str(archived_scope.id),
+            'delete_confirmation': 'DELETE STDEL archived delete from library',
+        }, follow=True)
+
+        # Then
+        self.assertTrue(JiraScopeConfig.objects.filter(id=enabled_scope.id).exists())
+        self.assertFalse(JiraScopeConfig.objects.filter(id=archived_scope.id).exists())
+        self.assertIn('Only archived scopes can be deleted.', protected_response.content.decode())
+        self.assertIn('Archived scope deleted', deleted_response.content.decode())
+
     def test_shouldRenderNewScopeEditorWithoutExistingScopeId(self):
         # When
         response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'mode': 'new'})
@@ -327,6 +502,7 @@ class TestBugTrendScopeConfigViews(TestCase):
             name='STDEL config save',
             jql='project = STDEL AND issuetype = Bug',
             bug_type_values=['Bug'],
+            open_status_values=['New'],
             fixed_status_values=['Fixed'],
             severity_field='priority',
             critical_high_values=['P2-High'],
@@ -611,12 +787,15 @@ class TestBugTrendScopeConfigViews(TestCase):
                     const panel = actions.querySelector('.workbench-menu-panel').getBoundingClientRect();
                     const cell = actions.closest('td').getBoundingClientRect();
                     const menu = actions.querySelector('.scope-row-menu');
+                    const archiveButton = actions.querySelector('button[value="disable"]');
+                    const archiveRect = archiveButton ? archiveButton.getBoundingClientRect() : null;
                     return {
                         same_row: primaryRects.length >= 2 && Math.abs(primaryRects[0].top - primaryRects[1].top) <= 1,
                         primary_heights: Array.from(new Set(primaryRects.map(rect => Math.round(rect.height)))).sort((a, b) => a - b),
                         primary_widths: Array.from(new Set(primaryRects.map(rect => Math.round(rect.width)))).sort((a, b) => a - b),
                         panel_width: Math.round(panel.width),
                         action_cell_width: Math.round(cell.width),
+                        archive_action_visible: archiveRect !== null && archiveRect.width > 0 && archiveRect.height > 0,
                         horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
                         open_after_summary_click: menu.open,
                     };
@@ -632,3 +811,64 @@ class TestBugTrendScopeConfigViews(TestCase):
             page.close()
             browser.close()
             playwright.stop()
+
+    def _measure_scope_library_responsive_table(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            return {
+                'wide': self._measure_scope_library_viewport(browser, html, 1920, 900),
+                'desktop': self._measure_scope_library_viewport(browser, html, 1532, 768),
+                'medium': self._measure_scope_library_viewport(browser, html, 1180, 820),
+                'phone': self._measure_scope_library_viewport(browser, html, 390, 900),
+            }
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_scope_library_viewport(self, browser, html, width, height):
+        page = browser.new_page(viewport={'width': width, 'height': height})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            return page.evaluate("""
+                () => {
+                    const rows = Array.from(document.querySelectorAll('.scope-library-table tbody tr'));
+                    const bodyRowHeights = rows.map(row => Math.round(row.getBoundingClientRect().height));
+                    const firstActions = document.querySelector('tbody tr .scope-primary-actions');
+                    const actionRects = firstActions
+                        ? Array.from(firstActions.querySelectorAll(':scope > .button, :scope > form .button, :scope > .scope-row-menu > summary.button')).map(button => button.getBoundingClientRect())
+                        : [];
+                    const hashCell = document.querySelector('.scope-library-table tbody td.scope-col-hash');
+                    const ipCell = document.querySelector('.scope-library-table tbody td.scope-col-ip');
+                    const projectCell = document.querySelector('.scope-library-table tbody td.scope-col-project');
+                    const thead = document.querySelector('.scope-library-table thead');
+                    const firstCell = document.querySelector('.scope-library-table tbody td');
+                    return {
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        table_horizontal_overflow: document.querySelector('.scope-library-table-box').scrollWidth > document.querySelector('.scope-library-table-box').clientWidth + 1,
+                        max_body_row_height: Math.max(...bodyRowHeights),
+                        actions_wrap: actionRects.length >= 2 && Math.abs(actionRects[0].top - actionRects[1].top) > 1,
+                        hash_column_display: hashCell ? getComputedStyle(hashCell).display : '',
+                        ip_column_display: ipCell ? getComputedStyle(ipCell).display : '',
+                        project_column_display: projectCell ? getComputedStyle(projectCell).display : '',
+                        thead_display: thead ? getComputedStyle(thead).display : '',
+                        first_cell_display: firstCell ? getComputedStyle(firstCell).display : '',
+                    };
+                }
+            """)
+        finally:
+            page.close()
+
+    def _scope_library_browser_html(self, html):
+        static_dir = Path(__file__).resolve().parents[1] / 'static'
+        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
+        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
+        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
+        return html.replace(
+            '</head>',
+            f'<style>{vendor_css}\n{main_css}</style></head>',
+        ).replace(
+            '</body>',
+            f'<script>{main_js}</script></body>',
+        )

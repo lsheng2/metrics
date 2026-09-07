@@ -101,6 +101,7 @@ body::-webkit-scrollbar-corner,
 
 main.column {
     min-width: 0;
+    overflow-x: hidden;
     background:
         linear-gradient(180deg, rgba(13, 148, 136, 0.06), transparent 10rem),
         var(--dashboard-bg);
@@ -146,6 +147,7 @@ main.column {
     flex: 1 1 auto !important;
     max-width: none !important;
     min-width: 0;
+    overflow-x: hidden;
 }
 
 .dashboard-sidebar-splitter {
@@ -693,12 +695,134 @@ body.has-workbench-shell .dashboard-main-column #main-content {
     margin-bottom: 0.35rem;
 }
 
+.responsive-admin-table-box {
+    box-sizing: border-box;
+    container-type: inline-size;
+    display: block;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    width: 100%;
+}
+
+.responsive-admin-table {
+    min-width: var(--responsive-admin-table-min-width, 58rem);
+    width: 100%;
+    table-layout: fixed;
+}
+
+.responsive-admin-table th,
+.responsive-admin-table td {
+    min-width: 0;
+    overflow: hidden;
+    padding: 0.26rem 0.38rem;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.responsive-admin-table .button,
+.responsive-admin-table .select.is-small,
+.responsive-admin-table .select.is-small select {
+    height: 1.72rem;
+    min-height: 1.72rem;
+}
+
+.responsive-admin-table .button {
+    font-size: var(--dashboard-font-caption);
+    padding: 0 0.48rem;
+}
+
+.responsive-admin-table .tag {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: inherit;
+    line-height: 1;
+    min-height: 1.24rem;
+    padding: 0.12rem 0.34rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.responsive-admin-table code {
+    font-size: 0.74rem;
+}
+
+@container (max-width: 40rem) {
+    .responsive-admin-table.is-cardable colgroup {
+        display: none;
+    }
+
+    .responsive-admin-table.is-cardable,
+    .responsive-admin-table.is-cardable thead,
+    .responsive-admin-table.is-cardable tbody,
+    .responsive-admin-table.is-cardable tr,
+    .responsive-admin-table.is-cardable th,
+    .responsive-admin-table.is-cardable td {
+        display: block;
+        width: 100%;
+    }
+
+    .responsive-admin-table.is-cardable thead {
+        display: none;
+    }
+
+    .responsive-admin-table.is-cardable tbody {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .responsive-admin-table.is-cardable tr {
+        border: 1px solid var(--dashboard-border);
+        border-radius: var(--dashboard-radius-panel);
+        background: color-mix(in srgb, var(--dashboard-surface-raised) 86%, black);
+        padding: 0.45rem;
+    }
+
+    .responsive-admin-table.is-cardable td {
+        display: grid;
+        grid-template-columns: minmax(4.75rem, 28%) minmax(0, 1fr);
+        gap: 0.35rem;
+        border: 0;
+        padding: 0.22rem 0;
+        white-space: normal;
+        width: 100%;
+    }
+
+    .responsive-admin-table.is-cardable td[class*="scope-col-"] {
+        width: 100%;
+    }
+
+    .responsive-admin-table.is-cardable td > * {
+        grid-column: 2;
+    }
+
+    .responsive-admin-table.is-cardable td::before {
+        content: attr(data-label);
+        grid-column: 1;
+        grid-row: 1 / span 4;
+        color: var(--dashboard-text-muted);
+        font-size: var(--dashboard-font-micro);
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .responsive-admin-table.is-cardable td:not([data-label])::before {
+        content: none;
+    }
+
+    .responsive-admin-table.is-cardable {
+        min-width: 0;
+    }
+}
+
 .scope-actions {
     display: flex;
     flex-direction: column;
     gap: 0.22rem;
     align-items: flex-end;
     justify-items: end;
+    min-width: 7.55rem;
 }
 
 .scope-library-header {
@@ -720,26 +844,134 @@ body.has-workbench-shell .dashboard-main-column #main-content {
     font-size: 0.78rem;
 }
 
+.scope-import-form {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+    margin: 0;
+}
+
+.scope-import-form .input[type="file"] {
+    max-width: 13rem;
+}
+
+.scope-lifecycle-guide {
+    margin-bottom: 0.55rem;
+    padding: 0.52rem 0.7rem;
+}
+
+.scope-lifecycle-guide .title {
+    margin-bottom: 0.35rem;
+}
+
+.scope-lifecycle-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    font-size: var(--dashboard-font-caption);
+}
+
+.scope-lifecycle-steps span {
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
+    border: 1px solid var(--dashboard-border);
+    border-radius: var(--dashboard-radius-control);
+    padding: 0.18rem 0.38rem;
+    white-space: nowrap;
+}
+
+.scope-lifecycle-steps strong {
+    color: var(--dashboard-accent-strong);
+}
+
+.scope-readiness-help {
+    margin-top: 0.45rem;
+}
+
+.scope-readiness-help summary.button {
+    width: max-content;
+}
+
+.scope-readiness-help[open] summary.button {
+    margin-bottom: 0.45rem;
+}
+
+.scope-readiness-table {
+    --responsive-admin-table-min-width: 52rem;
+    font-size: var(--dashboard-font-caption);
+}
+
 .scope-library-table-box {
+    --responsive-admin-table-min-width: 76rem;
     padding: 0.55rem;
 }
 
 .scope-library-table {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
+    line-height: 1.15;
 }
 
-.scope-library-table th,
-.scope-library-table td {
-    vertical-align: middle;
+.scope-library-table .scope-col-name {
+    width: 14%;
 }
 
-.scope-library-table th:last-child,
-.scope-library-table td:last-child {
-    width: 9.25rem;
+.scope-library-table .scope-col-source {
+    width: 9%;
+}
+
+.scope-library-table .scope-col-ip {
+    width: 5%;
+}
+
+.scope-library-table .scope-col-project {
+    width: 6%;
+}
+
+.scope-library-table .scope-col-status {
+    width: 6%;
+}
+
+.scope-library-table .scope-col-binding {
+    width: 16%;
+}
+
+.scope-library-table .scope-col-profile {
+    width: 13%;
+}
+
+.scope-library-table .scope-col-provider {
+    width: 5%;
+}
+
+.scope-library-table .scope-col-hash {
+    width: 7%;
+}
+
+.scope-library-table .scope-col-actions {
+    width: 19%;
+}
+
+.scope-library-table th.scope-col-actions,
+.scope-library-table td.scope-col-actions {
+    overflow: visible;
+}
+
+.scope-library-source-cell {
+    min-width: 0;
+}
+
+.scope-library-primary-cell,
+.scope-library-table .scope-col-profile,
+.scope-library-table .scope-col-project {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .scope-binding-cell {
-    min-width: 10rem;
+    min-width: 0;
 }
 
 .scope-binding-status {
@@ -749,7 +981,7 @@ body.has-workbench-shell .dashboard-main-column #main-content {
 .scope-binding-provenance,
 .scope-binding-blocker {
     display: inline-block;
-    max-width: 10rem;
+    max-width: min(7rem, 52%);
     overflow: hidden;
     color: var(--bulma-text-weak);
     font-size: 0.72rem;
@@ -770,9 +1002,15 @@ body.has-workbench-shell .dashboard-main-column #main-content {
     margin-bottom: 0;
 }
 
+.scope-primary-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
 .scope-primary-actions .button,
+.scope-primary-actions form .button,
 .scope-row-menu summary.button {
-    min-width: 3.85rem;
+    min-width: 3.55rem;
 }
 
 .scope-row-menu {
@@ -784,9 +1022,46 @@ body.has-workbench-shell .dashboard-main-column #main-content {
     padding: 0.35rem;
 }
 
+.scope-row-menu .workbench-menu-panel form {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+}
+
+.scope-row-menu .workbench-menu-panel .input {
+    width: 100%;
+}
+
 .scope-row-menu .workbench-menu-panel .button {
     justify-content: flex-start;
     width: 100%;
+}
+
+@container (max-width: 40rem) {
+    .scope-library-table {
+        min-width: 0;
+    }
+
+    .scope-library-table .scope-col-hash {
+        display: grid;
+    }
+
+    .scope-library-table .scope-col-ip,
+    .scope-library-table .scope-col-project {
+        display: grid;
+    }
+
+    .scope-library-primary-cell,
+    .scope-library-table .scope-col-profile,
+    .scope-library-table .scope-col-project {
+        white-space: normal;
+    }
+
+    .scope-actions,
+    .scope-primary-actions {
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
 }
 
 .scope-binding-audit-box {
@@ -957,6 +1232,11 @@ tr.htmx-request .review-loader {
 }
 
 .container:has(.workbench-shell) {
+    max-width: none !important;
+    width: 100%;
+}
+
+.container:has(.responsive-admin-table-box) {
     max-width: none !important;
     width: 100%;
 }

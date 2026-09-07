@@ -1,10 +1,13 @@
+from datetime import date
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 
 from bug_metrics.app.api import bug_trend_api
 from bug_metrics.app.api.scope_config import SavedScopeConfig
-from bug_metrics.models import BugTrendAuditEvent, JiraScopeConfig
+from bug_metrics.models import BugTrendAuditEvent, BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_history.models import JiraIssue
+from jira_sync.models import JiraSyncCursor
 
 
 class TestScopeConfigApi(TestCase):
@@ -24,6 +27,15 @@ class TestScopeConfigApi(TestCase):
     def test_shouldValidateRequiredFieldsAndSemanticShapesBeforeSave(self):
         # Given
         config = self._scope_config(name='', jql='', bucket_granularity='monthly')
+        config.bug_type_values = []
+        config.open_status_values = []
+        config.fixed_status_values = []
+        config.closed_status_values = []
+        config.severity_field = ''
+        config.critical_high_values = []
+        config.medium_low_values = []
+        config.timezone = 'Mars/Olympus'
+        config.enabled = True
 
         # When
         result = bug_trend_api.validate_scope_config(config)
@@ -32,7 +44,14 @@ class TestScopeConfigApi(TestCase):
         self.assertFalse(result.valid)
         self.assertEqual('Scope name is required.', result.errors['name'])
         self.assertEqual('JQL is required.', result.errors['jql'])
+        self.assertEqual('At least one bug type value is required.', result.errors['bug_type_values'])
+        self.assertEqual('At least one open status value is required.', result.errors['open_status_values'])
+        self.assertEqual('At least one fixed or closed status value is required.', result.errors['fixed_status_values'])
+        self.assertEqual('Severity field is required for critical/high and medium/low trend metrics.', result.errors['severity_field'])
+        self.assertEqual('At least one critical/high value is required.', result.errors['critical_high_values'])
+        self.assertEqual('At least one medium/low value is required.', result.errors['medium_low_values'])
         self.assertEqual('Bucket granularity must be daily or weekly.', result.errors['bucket_granularity'])
+        self.assertEqual('Timezone must be a valid IANA timezone name.', result.errors['timezone'])
 
     def test_shouldNormalizeSemanticListsWhenSavingScopeConfig(self):
         # Given
@@ -156,6 +175,107 @@ class TestScopeConfigApi(TestCase):
         self.assertEqual('STDEL disable action', bug_trend_api.get_scope_config(saved.id).name)
         event = BugTrendAuditEvent.objects.get(event_type='scope_disabled', scope_id=saved.id)
         self.assertTrue(event.request_summary['was_enabled'])
+
+    def test_shouldRejectActivationWhenScopeFailsDeploymentValidation(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL invalid deploy',
+            jql='project = STDEL',
+            bug_type_values=[],
+            open_status_values=[],
+            fixed_status_values=[],
+            closed_status_values=[],
+            severity_field='',
+            critical_high_values=[],
+            medium_low_values=[],
+            enabled=False,
+        )
+
+        # When / Then
+        with self.assertRaises(ValueError):
+            bug_trend_api.activate_scope_config(scope.id)
+        scope.refresh_from_db()
+        self.assertFalse(scope.enabled)
+
+    def test_shouldExportScopeConfigWithoutHistoricalFacts(self):
+        # Given
+        scope = self._create_scope(name='STDEL export scope')
+        binding = BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+            provenance={'matched_by': 'test'},
+        )
+        run = BugTrendCalculationRun.objects.create(
+            scope=scope,
+            status=BugTrendCalculationRun.STATUS_COMPLETED,
+            config_version_hash=scope.config_version_hash,
+            source_coverage_start=date(2026, 8, 1),
+            source_coverage_end=date(2026, 8, 31),
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        bucket = BugTrendBucket.objects.create(
+            calculation_run=run,
+            scope=scope,
+            bucket_start=date(2026, 8, 3),
+            bucket_end=date(2026, 8, 9),
+            granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        BugTrendBucketIssue.objects.create(scope=scope, bucket=bucket, calculation_run=run, series_name='all_open_bugs', issue_key='STDEL-1')
+        JiraIssue.objects.create(scope=scope, issue_key='STDEL-1', issue_type='Bug')
+        JiraSyncCursor.objects.create(scope=scope, status=JiraSyncCursor.STATUS_SUCCESS)
+
+        # When
+        package = bug_trend_api.export_scope_config_package(scope.id)
+
+        # Then
+        self.assertEqual('metrics.scope-config', package['format'])
+        self.assertEqual('STDEL export scope', package['scope']['name'])
+        self.assertEqual(binding.profile_id, package['provider_binding']['profile_id'])
+        self.assertIn('calculation_runs', package['excludes'])
+        self.assertNotIn('bucket_issues', package)
+        self.assertNotIn('jira_issues', package)
+
+    def test_shouldImportScopePackageAsArchivedCopy(self):
+        # Given
+        scope = self._create_scope(name='STDEL import source')
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
+        package = bug_trend_api.export_scope_config_package(scope.id)
+
+        # When
+        imported = bug_trend_api.import_scope_config_package(package)
+
+        # Then
+        self.assertFalse(imported.enabled)
+        self.assertEqual('STDEL import source imported', imported.name)
+        imported_binding = BugTrendScopeProviderBinding.objects.get(scope_id=imported.id)
+        self.assertEqual('chiplet-2a-jira', imported_binding.profile_id)
+        self.assertEqual('scope_config_import', imported_binding.provenance['source'])
+
+    def test_shouldOnlyHardDeleteArchivedScopeWithConfirmation(self):
+        # Given
+        enabled_scope = self._create_scope(name='STDEL enabled delete')
+        archived_scope = self._create_scope(name='STDEL archived delete')
+        archived_scope.enabled = False
+        archived_scope.save()
+        JiraIssue.objects.create(scope=archived_scope, issue_key='STDEL-2001', issue_type='Bug')
+
+        # When / Then
+        with self.assertRaises(ValueError):
+            bug_trend_api.delete_archived_scope_config(enabled_scope.id, 'DELETE STDEL enabled delete')
+        with self.assertRaises(ValueError):
+            bug_trend_api.delete_archived_scope_config(archived_scope.id, 'wrong')
+
+        impact = bug_trend_api.delete_archived_scope_config(archived_scope.id, 'DELETE STDEL archived delete')
+        self.assertEqual(1, impact['jira_issues'])
+        self.assertFalse(JiraScopeConfig.objects.filter(id=archived_scope.id).exists())
+        self.assertTrue(JiraScopeConfig.objects.filter(id=enabled_scope.id).exists())
 
     def test_shouldNotLoadDisabledScopeThroughChartScopeLookupBeforeActivation(self):
         # Given

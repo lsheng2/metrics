@@ -25,9 +25,27 @@ class BugTrendScopeBindingData:
 
 
 @dataclass(slots=True)
+class BugTrendScopeLibraryScopeData:
+    id: str
+    name: str
+    ip: str
+    project_label: str
+    enabled: bool
+    config_version_hash: str
+
+
+@dataclass(slots=True)
 class BugTrendScopeLibraryRow:
-    scope: object
+    scope: BugTrendScopeLibraryScopeData
     binding: BugTrendScopeBindingData
+    source_kind: str = 'saved_scope'
+    source_label: str = 'Saved scope'
+    source_detail: str = ''
+    can_edit_scope: bool = True
+    can_duplicate_scope: bool = True
+    can_disable_scope: bool = True
+    delete_impact: dict = None
+    delete_confirmation: str = ''
 
 
 @dataclass(slots=True)
@@ -35,6 +53,9 @@ class BugTrendProviderProfileChoice:
     profile_id: str
     provider_id: str
     display_name: str
+    scope_labels: dict = None
+    source_population: dict = None
+    mapping_version_hash: str = ''
 
 
 @dataclass(slots=True)

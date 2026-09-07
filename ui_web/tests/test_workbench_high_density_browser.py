@@ -63,6 +63,7 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         self.assertNotIn('sourceUrl', result['selected_ticket_payload']['tickets'][0])
         self.assertEqual('2 selected tickets', result['bulk_detail_issue'])
         self.assertTrue(result['status_column_hidden'])
+        self.assertFalse(result['columns_menu_open_after_blank_click'])
         self.assertEqual('STDEL-9202', result['first_issue_after_sort'])
         self.assertTrue(result['chart_collapsed'])
         self.assertNotEqual('3.15rem', result['chart_height'])

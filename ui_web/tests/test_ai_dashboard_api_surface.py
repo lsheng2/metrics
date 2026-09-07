@@ -481,6 +481,10 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertIn('Intent Validation', content)
         self.assertIn('gcx Precondition', content)
         self.assertIn('Recent AI Grafana Publishes', content)
+        self.assertIn('responsive-admin-table', content)
+        self.assertIn('data-label="Field"', content)
+        self.assertIn('data-label="Value"', content)
+        self.assertIn('responsive-admin-table is-cardable', content)
 
     def test_shouldRenderJiraWorkflowResultOnPagePost(self):
         response = self.client.post(reverse('ui_web:ai_dashboard_workflow'), {

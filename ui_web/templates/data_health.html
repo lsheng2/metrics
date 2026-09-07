@@ -39,7 +39,8 @@
             <div class="column is-one-fifth"><strong>Config required</strong><br>{{ data_health.scope_binding_health.counts.configuration_required }}</div>
             <div class="column is-one-fifth"><strong>Ambiguous</strong><br>{{ data_health.scope_binding_health.counts.ambiguous }}</div>
         </div>
-        <table class="table is-fullwidth is-striped is-hoverable">
+        <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-striped is-hoverable responsive-admin-table is-cardable">
             <thead>
                 <tr>
                     <th>Scope</th>
@@ -54,8 +55,8 @@
             <tbody>
                 {% for item in data_health.scope_binding_health.rows %}
                     <tr>
-                        <td>{{ item.scope_name }}</td>
-                        <td>
+                        <td data-label="Scope">{{ item.scope_name }}</td>
+                        <td data-label="Status">
                             {% if item.status == "explicit" %}
                                 <span class="tag is-success is-light">{{ item.status }}</span>
                             {% elif item.status == "compatibility" %}
@@ -64,26 +65,28 @@
                                 <span class="tag is-warning is-light">{{ item.status }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ item.profile_id|default:"-" }}</td>
-                        <td>{{ item.provider_id|default:"-" }}</td>
-                        <td>{{ item.provenance_summary|default:"-" }}</td>
-                        <td>
+                        <td data-label="Profile">{{ item.profile_id|default:"-" }}</td>
+                        <td data-label="Provider">{{ item.provider_id|default:"-" }}</td>
+                        <td data-label="Provenance">{{ item.provenance_summary|default:"-" }}</td>
+                        <td data-label="Blockers">
                             {% for blocker in item.blockers %}
                                 {{ blocker.message }}
                             {% empty %}
                                 -
                             {% endfor %}
                         </td>
-                        <td><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
+                        <td data-label="Repair"><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="7">No scope bindings found.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% if data_health.scope_binding_health.explicit_only_impacted_rows %}
             <h4 class="title is-6 mt-4">Explicit-only impacted scopes</h4>
-            <table class="table is-fullwidth is-striped is-hoverable is-narrow">
+            <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-striped is-hoverable is-narrow responsive-admin-table is-cardable">
                 <thead>
                     <tr>
                         <th>Scope</th>
@@ -97,22 +100,24 @@
                 <tbody>
                     {% for item in data_health.scope_binding_health.explicit_only_impacted_rows %}
                         <tr>
-                            <td>{{ item.scope_name }}</td>
-                            <td><span class="tag is-warning is-light">{{ item.status }}</span></td>
-                            <td>{{ item.profile_id|default:"-" }}</td>
-                            <td>{{ item.provider_id|default:"-" }}</td>
-                            <td>{{ item.provenance_summary|default:"-" }}</td>
-                            <td><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
+                            <td data-label="Scope">{{ item.scope_name }}</td>
+                            <td data-label="Status"><span class="tag is-warning is-light">{{ item.status }}</span></td>
+                            <td data-label="Profile">{{ item.profile_id|default:"-" }}</td>
+                            <td data-label="Provider">{{ item.provider_id|default:"-" }}</td>
+                            <td data-label="Provenance">{{ item.provenance_summary|default:"-" }}</td>
+                            <td data-label="Repair"><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         {% endif %}
     </section>
 
     <section class="box">
         <h3 class="title is-4">Scope Binding Audit History</h3>
-        <table class="table is-fullwidth is-striped is-hoverable is-narrow scope-binding-audit-table">
+        <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-striped is-hoverable is-narrow responsive-admin-table is-cardable scope-binding-audit-table">
             <thead>
                 <tr>
                     <th>Time</th>
@@ -126,23 +131,25 @@
             <tbody>
                 {% for event in data_health.scope_binding_audit_events %}
                     <tr>
-                        <td>{{ event.created_at }}</td>
-                        <td>{{ event.actor }}</td>
-                        <td>{{ event.event_type }}</td>
-                        <td>{{ event.scope_name|default:"-" }}</td>
-                        <td>{{ event.before_summary }}</td>
-                        <td>{{ event.after_summary }}</td>
+                        <td data-label="Time">{{ event.created_at }}</td>
+                        <td data-label="Actor">{{ event.actor }}</td>
+                        <td data-label="Operation">{{ event.event_type }}</td>
+                        <td data-label="Scope">{{ event.scope_name|default:"-" }}</td>
+                        <td data-label="Before">{{ event.before_summary }}</td>
+                        <td data-label="After">{{ event.after_summary }}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="6">No scope binding audit events yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </section>
 
     <section class="box">
         <h3 class="title is-4">AI Sidecar Health</h3>
-        <table class="table is-fullwidth is-striped">
+        <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
             <thead>
                 <tr>
                     <th>Status</th>
@@ -155,27 +162,28 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ data_health.ai_sidecar_status.status }}</td>
-                    <td>{{ data_health.ai_sidecar_status.profile_id }}</td>
-                    <td>{{ data_health.ai_sidecar_status.service_id }}</td>
-                    <td>{{ data_health.ai_sidecar_status.base_url }}</td>
-                    <td>
+                    <td data-label="Status">{{ data_health.ai_sidecar_status.status }}</td>
+                    <td data-label="Profile">{{ data_health.ai_sidecar_status.profile_id }}</td>
+                    <td data-label="Service">{{ data_health.ai_sidecar_status.service_id }}</td>
+                    <td data-label="Base URL">{{ data_health.ai_sidecar_status.base_url }}</td>
+                    <td data-label="Capabilities">
                         {% for capability, enabled in data_health.ai_sidecar_status.capabilities.items %}
                             {{ capability }}={{ enabled }}
                         {% empty %}
                             -
                         {% endfor %}
                     </td>
-                    <td>{{ data_health.ai_sidecar_status.reason }}</td>
+                    <td data-label="Reason">{{ data_health.ai_sidecar_status.reason }}</td>
                 </tr>
             </tbody>
         </table>
+        </div>
     </section>
 
     <section class="box">
         <h3 class="title is-4">Provider Sync Cache Health</h3>
-        <div class="table-container data-health-table-container">
-            <table class="table is-fullwidth is-striped">
+        <div class="table-container responsive-admin-table-box data-health-table-container">
+            <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
                 <thead>
                     <tr>
                         <th>Provider</th>
@@ -194,17 +202,17 @@
                 <tbody>
                     {% for item in data_health.provider_sync_health %}
                         <tr>
-                            <td>{{ item.provider_id }}</td>
-                            <td>{{ item.profile_id }}</td>
-                            <td>{{ item.status }}</td>
-                            <td>{{ item.freshness_status }}</td>
-                            <td>{{ item.latest_successful_sync_at }}</td>
-                            <td>{{ item.cache_age_seconds }}</td>
-                            <td>{{ item.latest_snapshot_id }}</td>
-                            <td>{{ item.source_query_ownership }} {{ item.source_query_ref }} {{ item.source_query_name }}</td>
-                            <td>{{ item.mapping_version }} {{ item.mapping_version_hash }}</td>
-                            <td>{{ item.supported_chart_ids }} {{ item.deferred_chart_ids }}</td>
-                            <td>{{ item.error_category }} {{ item.last_error }}</td>
+                            <td data-label="Provider">{{ item.provider_id }}</td>
+                            <td data-label="Profile">{{ item.profile_id }}</td>
+                            <td data-label="Status">{{ item.status }}</td>
+                            <td data-label="Freshness">{{ item.freshness_status }}</td>
+                            <td data-label="Last success">{{ item.latest_successful_sync_at }}</td>
+                            <td data-label="Cache age">{{ item.cache_age_seconds }}</td>
+                            <td data-label="Snapshot">{{ item.latest_snapshot_id }}</td>
+                            <td data-label="Source">{{ item.source_query_ownership }} {{ item.source_query_ref }} {{ item.source_query_name }}</td>
+                            <td data-label="Mapping">{{ item.mapping_version }} {{ item.mapping_version_hash }}</td>
+                            <td data-label="Charts">{{ item.supported_chart_ids }} {{ item.deferred_chart_ids }}</td>
+                            <td data-label="Error">{{ item.error_category }} {{ item.last_error }}</td>
                         </tr>
                     {% empty %}
                         <tr><td colspan="11">No provider profiles found.</td></tr>
@@ -216,7 +224,8 @@
 
     <section class="box">
         <h3 class="title is-4">Jira Sync Health</h3>
-        <table class="table is-fullwidth is-striped">
+        <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
             <thead>
                 <tr>
                     <th>Scope</th>
@@ -232,25 +241,27 @@
             <tbody>
                 {% for item in data_health.sync_health %}
                     <tr>
-                        <td>{{ item.scope_name }}</td>
-                        <td>{{ item.status }}</td>
-                        <td>{{ item.last_successful_sync_at }}</td>
-                        <td>{{ item.last_jira_updated_cutoff }}</td>
-                        <td>{{ item.earliest_reliable_bucket_start }} to {{ item.latest_reliable_bucket_end }}</td>
-                        <td>{{ item.changelog_coverage_status }}</td>
-                        <td>{{ item.materialized_config_version_hash }} / {{ item.current_config_version_hash }}</td>
-                        <td>{{ item.last_error }}</td>
+                        <td data-label="Scope">{{ item.scope_name }}</td>
+                        <td data-label="Status">{{ item.status }}</td>
+                        <td data-label="Last success">{{ item.last_successful_sync_at }}</td>
+                        <td data-label="Jira cutoff">{{ item.last_jira_updated_cutoff }}</td>
+                        <td data-label="Reliable coverage">{{ item.earliest_reliable_bucket_start }} to {{ item.latest_reliable_bucket_end }}</td>
+                        <td data-label="Changelog coverage">{{ item.changelog_coverage_status }}</td>
+                        <td data-label="Config hash">{{ item.materialized_config_version_hash }} / {{ item.current_config_version_hash }}</td>
+                        <td data-label="Error">{{ item.last_error }}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="8">No Jira sync cursors found.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </section>
 
     <section class="box">
         <h3 class="title is-4">Calculation Health</h3>
-        <table class="table is-fullwidth is-striped">
+        <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
             <thead>
                 <tr>
                     <th>Scope</th>
@@ -265,19 +276,20 @@
             <tbody>
                 {% for item in data_health.calculation_health %}
                     <tr>
-                        <td>{{ item.scope_name }}</td>
-                        <td>{{ item.status }}</td>
-                        <td>{{ item.freshness_status }}</td>
-                        <td>{{ item.calculation_run_id }}</td>
-                        <td>{{ item.source_coverage_start }} to {{ item.source_coverage_end }}</td>
-                        <td>{{ item.run_config_version_hash }} / {{ item.current_config_version_hash }}</td>
-                        <td>{{ item.completed_at }}</td>
+                        <td data-label="Scope">{{ item.scope_name }}</td>
+                        <td data-label="Status">{{ item.status }}</td>
+                        <td data-label="Freshness">{{ item.freshness_status }}</td>
+                        <td data-label="Run">{{ item.calculation_run_id }}</td>
+                        <td data-label="Coverage">{{ item.source_coverage_start }} to {{ item.source_coverage_end }}</td>
+                        <td data-label="Config hash">{{ item.run_config_version_hash }} / {{ item.current_config_version_hash }}</td>
+                        <td data-label="Completed">{{ item.completed_at }}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="7">No enabled scopes found.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </section>
 </article>
 {% endblock %}
