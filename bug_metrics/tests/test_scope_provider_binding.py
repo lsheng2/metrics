@@ -113,6 +113,31 @@ class TestScopeProviderBindingResolver(TestCase):
         self.assertEqual('stable-jira-profile', binding.profile_id)
         self.assertEqual('jira', binding.provider_id)
 
+    def test_shouldBlockArchivedProfileBindingWithoutBreakingLegacyUnknownBinding(self):
+        archived_scope = self._scope('Archived profile bound scope', '')
+        legacy_scope = self._scope('Legacy profile bound scope', '')
+        BugTrendScopeProviderBinding.objects.create(
+            scope=archived_scope,
+            profile_id='archived-jira-profile',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=legacy_scope,
+            profile_id='legacy-jira-profile',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
+        )
+        resolver = self._resolver([self._profile('archived-jira-profile', 'jira', 'project = ARCHIVED', enabled=False)])
+
+        archived_resolution = resolver.resolve(archived_scope, enforce_policy=False)
+        legacy_resolution = resolver.resolve(legacy_scope, enforce_policy=False)
+
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED, archived_resolution.status)
+        self.assertEqual('profile_disabled', archived_resolution.blockers[0]['code'])
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_COMPATIBILITY, legacy_resolution.status)
+        self.assertEqual('legacy-jira-profile', legacy_resolution.profile_id)
+
     def test_shouldAuditExplicitBindingUpdatesWithOldAndNewSnapshots(self):
         scope = self._scope('Audited Scope', '')
         BugTrendScopeProviderBinding.objects.create(
@@ -187,6 +212,26 @@ class TestScopeProviderBindingResolver(TestCase):
         self.assertEqual(1, health['counts']['disabled'])
         self.assertEqual('compatibility_allowed', health['runtime_policy'])
 
+    def test_shouldRetainExplicitProfileIdentityForDisabledScope(self):
+        # Given
+        scope = self._scope('Disabled explicit scope', 'project = DISABLED')
+        scope.enabled = False
+        scope.save()
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
+
+        # When
+        resolution = self._resolver([self._profile('chiplet-2a-jira', 'jira', 'project = DISABLED')]).resolve(scope)
+
+        # Then
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_DISABLED, resolution.status)
+        self.assertEqual('chiplet-2a-jira', resolution.profile_id)
+        self.assertEqual('jira', resolution.provider_id)
+
     def test_shouldListOnlyScopeBindingAuditEvents(self):
         scope = self._scope('Audited list scope', '')
         BugTrendAuditEvent.objects.create(
@@ -238,11 +283,11 @@ class TestScopeProviderBindingResolver(TestCase):
             bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
         )
 
-    def _profile(self, profile_id, provider_id, native_query_text):
+    def _profile(self, profile_id, provider_id, native_query_text, enabled=True):
         return {
             'profile_id': profile_id,
             'provider_id': provider_id,
-            'enabled': True,
+            'enabled': enabled,
             'source_population': {
                 'native_query_text': native_query_text,
             },

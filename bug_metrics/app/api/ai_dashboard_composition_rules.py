@@ -237,11 +237,7 @@ class AiDashboardCompositionRules:
         return range_modes or {'ww'}
 
     def _profile_range_modes(self, profile_id: str) -> List[str]:
-        try:
-            profile = self._readiness_service._profile_registry.get_profile(profile_id)
-        except KeyError:
-            return []
-        return list(profile.sync_policy.get('range_modes', ['ww']))
+        return self._readiness_service.profile_range_modes(profile_id)
 
     def _composition_intent_findings(self, intent: DashboardCompositionIntent) -> list[AiDashboardValidationFinding]:
         findings = []

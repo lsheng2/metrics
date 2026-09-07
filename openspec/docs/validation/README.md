@@ -12,6 +12,7 @@ This folder is the validation source of truth for the Jira/Grafana Bug Trend MVP
 | [test-case-catalog.md](test-case-catalog.md) | Categorized inventory of existing and planned test cases mapped to code paths and contracts. |
 | [gate-and-ci-plan.md](gate-and-ci-plan.md) | Local gates, full gates, proposed CI jobs, and merge-blocking policy. |
 | [e2e-runtime-runbook.md](e2e-runtime-runbook.md) | Browser, Grafana, C0, and C1 runtime validation runbook. |
+| [ui-change-quality-gate.zh.md](ui-change-quality-gate.zh.md) | UI-level OpenSpec gate: visual hierarchy, component states, responsive browser smoke, screenshots, and monkey-user validation. |
 
 ## Current Validation Snapshot
 

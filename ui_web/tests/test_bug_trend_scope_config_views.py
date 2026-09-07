@@ -37,7 +37,12 @@ class FakeSuccessfulScopeMetadataFacade(FakeScopeMetadataFacade):
         return ScopeConfigOptions(
             projects=[TrackerOption('STDEL', 'STDEL')],
             item_types=[TrackerOption('1', 'Bug')],
+            statuses=[TrackerOption('11', 'Open')],
+            resolutions=[TrackerOption('21', 'Fixed')],
+            priorities=[TrackerOption('31', 'P1-Critical')],
             fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
+            components=[TrackerOption('41', 'Emulation')],
+            versions=[TrackerOption('51', '2026.01')],
         )
 
 
@@ -75,10 +80,12 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('New saved scope', content)
+        self.assertIn('New Scope', content)
+        self.assertIn('Import Scope File', content)
+        self.assertIn('scope-import-menu', content)
         self.assertIn('STDEL enabled library', content)
         self.assertIn('STDEL draft library', content)
-        self.assertIn('saved scopes', content)
+        self.assertIn('scopes', content)
         self.assertIn('provider profiles', content)
         self.assertIn('nvu-ttl-hsdes', content)
         self.assertIn('NVU1.0_TTL', content)
@@ -97,7 +104,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('scope-library-summary', content)
         self.assertIn('Policy', content)
         self.assertIn('compatibility_allowed', content)
-        self.assertIn('Confirm all compatibility', content)
+        self.assertIn('Confirm Inferred Bindings', content)
         self.assertIn('scope-library-table', content)
         self.assertIn('More', content)
         self.assertIn('Binding Audit History', content)
@@ -106,6 +113,10 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('Readiness matrix', content)
         self.assertIn('Deploy to Dashboard selector', content)
         self.assertIn('AI Assistant Grafana charts', content)
+        self.assertIn('class="help-tip"', content)
+        self.assertIn('Archived scopes are removed from normal selectors', content)
+        self.assertIn('compatibility_allowed keeps inferred legacy bindings usable', content)
+        self.assertIn('The provider profile selected for this row', content)
 
     def test_shouldKeepScopeLibraryRowActionsCompactInBrowser(self):
         # Given
@@ -137,6 +148,11 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertFalse(result['open_after_blank_click'])
         self.assertFalse(result['open_after_escape'])
         self.assertFalse(result['horizontal_overflow'])
+        self.assertTrue(result['help_tip_visible_on_hover'])
+        self.assertLessEqual(result['help_tip_width'], 1)
+        self.assertGreaterEqual(result['icon_help_tip_width'], 12)
+        self.assertFalse(result['import_file_visible_initial'])
+        self.assertTrue(result['import_file_visible_after_open'])
 
     def test_shouldAdaptScopeLibraryTableAcrossScreenWidthsInBrowser(self):
         # Given
@@ -283,6 +299,218 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('name="profile_id"', content)
         self.assertIn('chiplet-2a-jira (jira)', content)
 
+    def test_shouldNotShowInlineProviderBindingEditorForArchivedScope(self):
+        # Given
+        JiraScopeConfig.objects.create(
+            name='Archived no inline binding',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=False,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Archived no inline binding', content)
+        self.assertIn('Archived: edit, validate, then Enable Scope before provider binding or AI/Grafana use.', content)
+        self.assertNotIn('Provider profile for Archived no inline binding', content)
+
+    def test_shouldRenderScopeConfigTerminologyHelp(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'mode': 'new'})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Scope config', content)
+        self.assertIn('class="help-tip"', content)
+        self.assertIn('Jira Query Language used for sync and metadata discovery', content)
+        self.assertIn('The time bucket size for trend calculations', content)
+        self.assertNotIn('Save</button>', content)
+
+    def test_shouldRenderProviderContextAndReadinessOnScopeConfig(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='chiplet-2a-jira',
+            jql='project = 131600 AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+            provenance={'source': 'test', 'matched_by': 'operator_confirmed'},
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'scope_id': str(scope.id)})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Choose provider first', content)
+        self.assertIn('chiplet-2a-jira (jira)', content)
+        self.assertIn('operator_confirmed', content)
+        self.assertIn('Save Draft requires', content)
+        self.assertIn('Enable Scope requires', content)
+        self.assertIn('Provider metadata uses', content)
+        self.assertIn('IP and Project label are display/binding hints', content)
+        self.assertIn('Save binding', content)
+        self.assertIn('scope-provider-choice is-provider-green is-selected', content)
+        self.assertIn('scope-provider-choice is-provider-blue', content)
+        self.assertIn('scope-config-provider-panel provider-tab-shell is-provider-green', content)
+        self.assertIn('provider-tab-check', content)
+        self.assertIn('role="tablist"', content)
+        self.assertIn('role="tabpanel"', content)
+
+    def test_shouldSaveProviderBindingFromScopeConfigWithoutSavingScopeFields(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Scope config binding target',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_config'), {
+            'action': 'save_binding',
+            'id': str(scope.id),
+            'profile_id': 'chiplet-2a-jira',
+            'name': 'Unsaved rename must not persist',
+            'jql': 'project = DIFFERENT',
+        }, follow=True)
+        scope.refresh_from_db()
+
+        # Then
+        binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('Scope config binding target', scope.name)
+        self.assertEqual('project = STDEL', scope.jql)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
+        self.assertEqual('chiplet-2a-jira', binding.profile_id)
+        self.assertIn('Provider binding saved.', response.content.decode())
+
+    def test_shouldRenderNewScopeProviderFirstChoices(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'mode': 'new'})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Choose provider first', content)
+        self.assertIn('scope-provider-choice is-provider-green is-selected', content)
+        self.assertIn('Jira</span>', content)
+        self.assertIn('scope-provider-choice is-provider-blue', content)
+        self.assertIn('HSD-ES</span>', content)
+        self.assertIn('provider-tab-check', content)
+        self.assertIn('aria-selected="true"', content)
+        self.assertIn('name="provider_id" value="jira"', content)
+        self.assertIn('Jira metadata refresh is available from JQL project, Selected Jira projects and bug type values.', content)
+        self.assertIn('GitHub', content)
+        self.assertIn('is-provider-purple', content)
+
+    def test_shouldRenderHsdesProviderTemplateOnNewScope(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+            'mode': 'new',
+            'provider_id': 'hsdes',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('scope-provider-choice is-provider-blue is-selected', content)
+        self.assertIn('scope-config-provider-panel provider-tab-shell is-provider-blue', content)
+        self.assertIn('provider-tab-check', content)
+        self.assertIn('name="provider_id" value="hsdes"', content)
+        self.assertIn('nvu-ttl-hsdes (hsdes)', content)
+        self.assertIn('HSD-ES source reference', content)
+        self.assertIn('saved query', content)
+        self.assertIn('query id', content)
+        self.assertIn('Refresh metadata unavailable', content)
+        self.assertIn('provider profile workflow/readiness', content)
+
+    def test_shouldKeepScopeConfigProviderTabsUsableAcrossDesktopAndPhoneInBrowser(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+            'mode': 'new',
+            'provider_id': 'hsdes',
+            'profile_id': 'nvu-ttl-hsdes',
+        })
+        results = self._measure_scope_config_provider_tabs(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(results['desktop']['page_horizontal_overflow'])
+        self.assertFalse(results['phone']['page_horizontal_overflow'])
+        self.assertGreaterEqual(results['desktop']['tab_count'], 3)
+        self.assertTrue(results['desktop']['selected_check_visible'])
+        self.assertTrue(results['phone']['selected_check_visible'])
+        self.assertTrue(results['desktop']['tab_shell_wraps_provider_content'])
+        self.assertTrue(results['phone']['tab_shell_wraps_provider_content'])
+        self.assertTrue(results['desktop']['tab_body_visible'])
+        self.assertTrue(results['phone']['tab_body_visible'])
+        self.assertTrue(results['desktop']['selected_tab_attached_to_body'])
+        self.assertTrue(results['desktop']['selected_tab_is_hsdes'])
+        self.assertTrue(results['desktop']['shell_border_is_blue'])
+        self.assertLessEqual(results['desktop']['detail_panel_left_border_width'], 1)
+        self.assertLessEqual(results['desktop']['provider_choice_max_height'], 82)
+        self.assertLessEqual(results['desktop']['scope_form_control_height_delta'], 1)
+        self.assertLessEqual(results['phone']['scope_form_control_height_delta'], 1)
+
+    def test_shouldSaveNewScopeWithSelectedProviderProfileBinding(self):
+        # Given
+        payload = {
+            'id': '',
+            'name': 'Provider first new scope',
+            'ip': 'NVU',
+            'project_label': 'Chiplet',
+            'jql': 'project = "131600"',
+            'bug_type_values': 'Bug',
+            'open_status_values': 'Open',
+            'fixed_status_values': 'Fixed',
+            'closed_status_values': '',
+            'terminal_excluded_status_values': '',
+            'fixed_resolution_values': '',
+            'closed_resolution_values': '',
+            'reopen_status_values': '',
+            'severity_field': 'priority',
+            'critical_high_values': 'P1-Critical',
+            'medium_low_values': 'P3-Medium',
+            'component_field': 'components',
+            'owner_field': 'assignee',
+            'team_field': '',
+            'milestone_field': '',
+            'fix_version_field': '',
+            'package_version_field': '',
+            'display_fields': '',
+            'timezone': 'UTC',
+            'bucket_granularity': 'weekly',
+            'provider_id': 'jira',
+            'profile_id': 'chiplet-2a-jira',
+            'action': 'save_draft',
+        }
+
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_config'), payload, follow=True)
+
+        # Then
+        scope = JiraScopeConfig.objects.get(name='Provider first new scope')
+        binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(scope.enabled)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
+        self.assertEqual('chiplet-2a-jira', binding.profile_id)
+        self.assertEqual('jira', binding.provider_id)
+        self.assertIn('Provider binding saved.', content)
+
     def test_shouldDisableScopeFromLibraryWithoutDeletingConfig(self):
         # Given
         scope = JiraScopeConfig.objects.create(
@@ -381,7 +609,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertFalse(imported.enabled)
         self.assertEqual('chiplet-2a-jira', binding.profile_id)
-        self.assertIn('Imported STDEL imported library imported as an archived scope.', response.content.decode())
+        self.assertIn('Imported STDEL imported library imported as an archived draft.', response.content.decode())
 
     def test_shouldDeleteOnlyArchivedScopeFromLibraryWithConfirmation(self):
         # Given
@@ -433,9 +661,9 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('Save draft', content)
-        self.assertIn('Save and enable', content)
-        self.assertIn('Discard changes', content)
+        self.assertIn('Save Draft', content)
+        self.assertIn('Enable Scope', content)
+        self.assertIn('Discard Changes', content)
         self.assertIn('data-dirty-form', content)
         self.assertIn('hx-include="closest form"', content)
         self.assertIn('value=""', content)
@@ -458,7 +686,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('STDEL source duplicate copy', content)
-        self.assertIn('Save draft', content)
+        self.assertIn('Save Draft', content)
         self.assertNotIn('Scope Audit', content)
         self.assertTrue(scope.enabled)
 
@@ -547,7 +775,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('Save changes', content)
+        self.assertIn('Save Changes', content)
 
     def test_shouldRenderValidationErrorsWhenScopeConfigPostIsInvalid(self):
         # Given
@@ -706,9 +934,21 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
+        self.assertIn('scope-metadata-grid', content)
+        self.assertIn('Projects', content)
+        self.assertIn('Types', content)
+        self.assertIn('Statuses', content)
+        self.assertIn('Fields', content)
+        self.assertIn('Maps to Bug type values', content)
         self.assertIn('Project: STDEL', content)
         self.assertIn('Type: Bug', content)
+        self.assertIn('Status: Open', content)
+        self.assertIn('Priority: P1-Critical', content)
         self.assertIn('Field: Severity (customfield_12345)', content)
+        self.assertIn('Add as bug type', content)
+        self.assertIn('Use as severity field', content)
+        self.assertIn('add_field=bug_type_values', content)
+        self.assertIn('add_field=severity_field', content)
 
     def test_shouldRenderMetadataWarningsAlongsideDiscoveredOptions(self):
         # Given
@@ -761,6 +1001,66 @@ class TestBugTrendScopeConfigViews(TestCase):
             'enabled': 'on',
         }
 
+    def _measure_scope_config_provider_tabs(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            return {
+                'desktop': self._measure_scope_config_provider_tabs_viewport(browser, html, 1440, 900),
+                'phone': self._measure_scope_config_provider_tabs_viewport(browser, html, 390, 900),
+            }
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_scope_config_provider_tabs_viewport(self, browser, html, width, height):
+        page = browser.new_page(viewport={'width': width, 'height': height})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            return page.evaluate("""
+                () => {
+                    const shell = document.querySelector('.scope-config-provider-panel.provider-tab-shell');
+                    const tabBody = document.querySelector('.provider-tab-body');
+                    const contextGrid = document.querySelector('.scope-provider-grid');
+                    const detailPanel = document.querySelector('.scope-provider-detail-panel');
+                    const profileSelect = document.querySelector('select[name="profile_id"]');
+                    const selectedTab = document.querySelector('.provider-tab-list [aria-selected="true"]');
+                    const selectedCheck = selectedTab ? selectedTab.querySelector('.provider-tab-check') : null;
+                    const providerChoiceHeights = Array.from(document.querySelectorAll('.provider-tab-list .provider-setup-choice'))
+                        .map(choice => Math.round(choice.getBoundingClientRect().height));
+                    const formControlHeights = Array.from(document.querySelectorAll('.scope-config-form-field .input, .scope-config-form-field select'))
+                        .map(control => Math.round(control.getBoundingClientRect().height))
+                        .filter(height => height > 0);
+                    const maxHeight = values => values.length ? Math.max(...values) : 0;
+                    const minHeight = values => values.length ? Math.min(...values) : 0;
+                    const shellBorderColor = shell ? getComputedStyle(shell).borderLeftColor : '';
+                    return {
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        tab_count: document.querySelectorAll('.provider-tab-list [role="tab"]').length,
+                        selected_check_visible: selectedCheck ? selectedCheck.getBoundingClientRect().width >= 14 : false,
+                        tab_shell_wraps_provider_content: Boolean(
+                            shell && contextGrid && detailPanel && profileSelect
+                            && shell.contains(contextGrid)
+                            && shell.contains(detailPanel)
+                            && shell.contains(profileSelect)
+                        ),
+                        tab_body_visible: tabBody ? tabBody.getBoundingClientRect().height > 0 : false,
+                        selected_tab_attached_to_body: Boolean(
+                            selectedTab && tabBody
+                            && Math.abs(selectedTab.getBoundingClientRect().bottom - tabBody.getBoundingClientRect().top) <= 2
+                        ),
+                        selected_tab_is_hsdes: selectedTab ? selectedTab.textContent.includes('HSD-ES') : false,
+                        shell_border_is_blue: shellBorderColor === 'rgb(28, 126, 214)',
+                        detail_panel_left_border_width: detailPanel ? Math.round(parseFloat(getComputedStyle(detailPanel).borderLeftWidth)) : 0,
+                        provider_choice_max_height: maxHeight(providerChoiceHeights),
+                        scope_form_control_height_delta: maxHeight(formControlHeights) - minHeight(formControlHeights),
+                    };
+                }
+            """)
+        finally:
+            page.close()
+
     def _measure_scope_library_row_actions(self, html):
         static_dir = Path(__file__).resolve().parents[1] / 'static'
         vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
@@ -778,6 +1078,26 @@ class TestBugTrendScopeConfigViews(TestCase):
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
         try:
             page.set_content(html, wait_until='domcontentloaded')
+            import_file_visible_initial = page.locator('.scope-import-panel').is_visible()
+            page.locator('.scope-import-menu summary').click()
+            import_file_visible_after_open = page.locator('.scope-import-panel').is_visible()
+            page.locator('.scope-import-menu').evaluate('menu => { menu.open = false; }')
+            page.locator('.scope-library-header .title').hover()
+            page.wait_for_timeout(180)
+            help_result = page.evaluate("""
+                () => {
+                    const helpTip = document.querySelector('.help-tip');
+                    const iconHelpTip = document.querySelector('.help-tip.is-icon');
+                    const helpTipBubble = helpTip ? getComputedStyle(helpTip, '::after') : null;
+                    const helpTipRect = helpTip ? helpTip.getBoundingClientRect() : null;
+                    const iconHelpTipRect = iconHelpTip ? iconHelpTip.getBoundingClientRect() : null;
+                    return {
+                        help_tip_visible_on_hover: helpTipBubble ? Number(helpTipBubble.opacity) > 0.9 : false,
+                        help_tip_width: helpTipRect ? Math.round(helpTipRect.width) : 0,
+                        icon_help_tip_width: iconHelpTipRect ? Math.round(iconHelpTipRect.width) : 0,
+                    };
+                }
+            """)
             page.locator('.scope-row-menu summary').first.click()
             result = page.evaluate("""
                 () => {
@@ -801,6 +1121,9 @@ class TestBugTrendScopeConfigViews(TestCase):
                     };
                 }
             """)
+            result.update(help_result)
+            result['import_file_visible_initial'] = import_file_visible_initial
+            result['import_file_visible_after_open'] = import_file_visible_after_open
             page.mouse.click(20, 20)
             result['open_after_blank_click'] = page.locator('.scope-row-menu').first.evaluate('menu => menu.open')
             page.locator('.scope-row-menu summary').first.click()

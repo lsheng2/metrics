@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
+from bug_metrics.provider_profile_connection import first_profile_credential_value, profile_connection_value, profile_credential_value
 from provider_sync.app.api import ProviderFreshnessStatus
 from provider_sync.app.api.hsdes import HsdesHttpClient, HsdesSavedQueryAdapter, HsdesSavedQuerySyncService
 
@@ -49,13 +50,13 @@ class Command(BaseCommand):
             }, sort_keys=True))
             return
         client = HsdesHttpClient(
-            base_url=settings.METRICS_HSDES_API_BASE_URL,
-            auth_mode=settings.METRICS_HSDES_AUTH_MODE,
-            username=settings.METRICS_HSDES_USERNAME,
-            password=settings.METRICS_HSDES_PASSWORD,
-            token=settings.METRICS_HSDES_TOKEN,
-            timeout_seconds=settings.METRICS_HSDES_TIMEOUT_SECONDS,
-            transport=settings.METRICS_HSDES_HTTP_TRANSPORT,
+            base_url=profile_connection_value(resolution.profile.connection_settings, 'base_url', settings.METRICS_HSDES_API_BASE_URL),
+            auth_mode=profile_connection_value(resolution.profile.connection_settings, 'auth_mode', settings.METRICS_HSDES_AUTH_MODE),
+            username=profile_credential_value(resolution.profile.connection_settings, 'username', settings.METRICS_HSDES_USERNAME),
+            password=profile_credential_value(resolution.profile.connection_settings, 'password', settings.METRICS_HSDES_PASSWORD),
+            token=first_profile_credential_value(resolution.profile.connection_settings, ['token', 'api_token'], settings.METRICS_HSDES_TOKEN),
+            timeout_seconds=int(profile_connection_value(resolution.profile.connection_settings, 'timeout_seconds', settings.METRICS_HSDES_TIMEOUT_SECONDS)),
+            transport=profile_connection_value(resolution.profile.connection_settings, 'transport', settings.METRICS_HSDES_HTTP_TRANSPORT),
         )
         result = HsdesSavedQuerySyncService(
             adapter=HsdesSavedQueryAdapter(client),

@@ -13,7 +13,7 @@ FIRST_HSDES_ACCESS_CHECK_URL = 'https://hsdes.intel.com/appstore/generalapps/#/p
 class ProviderDashboardFacade:
     def __init__(self, bug_trend_api):
         self._bug_trend_api = bug_trend_api
-        self._profile_registry = ProjectProviderProfileRegistry.load_default()
+        self._profile_registry = None
 
     def get_provider_chart_payload(self, provider_id: str, profile_id: str, begin_ww: str, end_ww: str,
                                    chart_id: str, chart_version: int = 1, fact_snapshot_id: str = '',
@@ -96,12 +96,15 @@ class ProviderDashboardFacade:
         raise ValueError(f'Provider could not be resolved for profile {profile_id}.')
 
     def _provider_id_for_profile(self, profile_id: str) -> str:
-        resolution = self._profile_registry.resolve_profile(profile_id)
+        resolution = self._registry().resolve_profile(profile_id)
         if resolution.profile is not None:
             return resolution.profile.provider_id
         if JiraScopeConfig.objects.filter(enabled=True, name=profile_id).exists():
             return 'jira'
         return ''
+
+    def _registry(self) -> ProjectProviderProfileRegistry:
+        return self._profile_registry or ProjectProviderProfileRegistry.load_default()
 
     def _profile_status_row(self, readiness: dict, time_range_action_url: str = '') -> dict:
         scope_labels = readiness.get('scope_labels', {})

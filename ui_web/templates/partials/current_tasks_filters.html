@@ -19,6 +19,13 @@
             </div>
         </div>
         {% endfor %}
+        {% for field in task_filter_panel.fields %}
+            {% if field.param == "health" %}
+                <div class="column is-narrow task-filter-help">
+                    <span class="is-size-7 has-text-grey">Health{% include "partials/help_tip.html" with label="Health filter" text="Health filtering requires forecast enrichment because the risk signal is calculated from task effort and estimate data." %}</span>
+                </div>
+            {% endif %}
+        {% endfor %}
         {% if task_filter_panel.fields %}
         <div class="column is-narrow">
             <button type="submit" class="button is-small is-primary">

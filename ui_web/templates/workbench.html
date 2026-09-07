@@ -16,7 +16,7 @@
     <form class="workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
         <div class="workbench-control-grid">
             <div class="field workbench-toolbar-field workbench-toolbar-field-scope">
-                <label class="label" for="workbench-scope">Scope</label>
+                <label class="label" for="workbench-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope that drives the chart range, evidence tickets, provider binding, and AI workspace context." %}</label>
                 <div class="select is-small is-fullwidth workbench-control-shell">
                     <select class="workbench-control-input" id="workbench-scope" name="scope_id" data-workbench-state-trigger="scope">
                         {% for scope in scope_options %}
@@ -29,15 +29,15 @@
                 </div>
             </div>
             <div class="field workbench-toolbar-field workbench-toolbar-field-profile">
-                <label class="label" for="workbench-profile">Profile</label>
+                <label class="label" for="workbench-profile">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile resolved from the selected scope. It is read-only here because Scope Library owns binding." %}</label>
                 <input class="input is-small workbench-control-input" id="workbench-profile" value="{{ workbench_state.profile_id }}" readonly data-workbench-derived-field="profile_id">
             </div>
             <div class="field workbench-toolbar-field workbench-toolbar-field-provider">
-                <label class="label" for="workbench-provider">Provider</label>
+                <label class="label" for="workbench-provider">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the resolved profile, such as Jira or HSD-ES." %}</label>
                 <input class="input is-small workbench-control-input" id="workbench-provider" value="{{ workbench_state.provider_id }}" readonly data-workbench-derived-field="provider_id">
             </div>
             <div class="field workbench-toolbar-field workbench-toolbar-field-range">
-                <label class="label" for="workbench-range-mode">Range</label>
+                <label class="label" for="workbench-range-mode">Range{% include "partials/help_tip.html" with label="Range" text="The time format used for chart and evidence queries. Work Week uses WW notation; Date uses calendar dates." %}</label>
                 <div class="select is-small is-fullwidth workbench-control-shell">
                     <select class="workbench-control-input" id="workbench-range-mode" name="range_mode">
                         <option value="ww" {% if workbench_state.range_mode == "ww" %}selected{% endif %}>Work Week</option>
@@ -46,7 +46,7 @@
                 </div>
             </div>
             <div class="field workbench-toolbar-field workbench-toolbar-field-chart">
-                <label class="label" for="workbench-chart">Chart</label>
+                <label class="label" for="workbench-chart">Chart{% include "partials/help_tip.html" with label="Chart" text="The Metrics chart id to render and connect to evidence selection." %}</label>
                 <input class="input is-small workbench-control-input" id="workbench-chart" name="chart_id" value="{{ active_chart_id }}">
             </div>
             <div class="field workbench-toolbar-field workbench-toolbar-field-date">
@@ -75,7 +75,7 @@
         <article class="workbench-pane workbench-pane-primary" data-workbench-pane="chart" aria-labelledby="workbench-chart-title">
             <header class="workbench-pane-header">
                 <div class="workbench-pane-title-group">
-                    <h2 class="title is-5" id="workbench-chart-title">Quality Chart</h2>
+                    <h2 class="title is-5" id="workbench-chart-title">Quality Chart{% include "partials/help_tip.html" with label="Quality Chart" text="Dashboard-owned chart area. Clicking supported Grafana bars refreshes the evidence list for the selected bucket and series." %}</h2>
                     {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
                         <span class="tag is-light">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</span>
                     {% endif %}
@@ -87,7 +87,7 @@
             <div class="workbench-pane-body">
                 {% include "partials/bug_trend_chart.html" %}
                 <details class="mt-3">
-                    <summary class="button is-small">Grafana panel preview</summary>
+                    <summary class="button is-small">Grafana panel preview{% include "partials/help_tip.html" with label="Grafana panel preview" text="Embedded Grafana panel for this chart. The full Grafana page remains available through the external link." inert=True %}</summary>
                     <iframe class="workbench-grafana-panel mt-3" src="{{ workbench_grafana_panel_url }}" title="Grafana Bug Trend panel"></iframe>
                     <p class="is-size-7 mt-2"><a href="{{ workbench_grafana_full_url }}" target="_blank" rel="noopener">Open full Grafana dashboard</a></p>
                 </details>
@@ -97,7 +97,7 @@
 
         <article class="workbench-pane workbench-pane-evidence" data-workbench-pane="evidence" aria-labelledby="workbench-evidence-title">
             <header class="workbench-pane-header">
-                <h2 class="title is-5" id="workbench-evidence-title">Ticket Evidence</h2>
+                <h2 class="title is-5" id="workbench-evidence-title">Ticket Evidence{% include "partials/help_tip.html" with label="Ticket Evidence" text="The normalized Jira or HSD-ES tickets behind the selected chart range, bucket, and series." %}</h2>
                 {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
                     <a class="button is-small" href="{{ workbench_clear_selection_url }}" hx-get="{{ workbench_clear_selection_url }}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">Clear selection</a>
                 {% endif %}
@@ -161,7 +161,7 @@
         <aside class="workbench-pane workbench-pane-ai" data-workbench-pane="ai-assistant" aria-labelledby="workbench-ai-title">
             <header class="workbench-pane-header">
                 <div class="workbench-pane-title-group">
-                    <h2 class="title is-5" id="workbench-ai-title">AI Assistant</h2>
+                    <h2 class="title is-5" id="workbench-ai-title">AI Assistant{% include "partials/help_tip.html" with label="AI Assistant" text="Embedded AI Base chat bound to the selected scope profile and synced workspace context when available." %}</h2>
                     <span class="tag is-light">{{ workbench_ai_context.ai_base.status }}</span>
                 </div>
                 <div class="workbench-pane-actions">
@@ -173,7 +173,7 @@
             </header>
             <div class="workbench-pane-body workbench-ai-pane-body">
                 <div class="workbench-ai-binding-note {% if workbench_ai_context.scope_binding.status != 'explicit' %}is-warning{% endif %}">
-                    <span>Binding</span>
+                    <span>Binding{% include "partials/help_tip.html" with label="Binding" text="The selected scope to provider profile link. AI chat requires a registry-backed explicit binding and synced workspace context." %}</span>
                     <strong>{{ workbench_ai_context.scope_binding.status|default:"configuration_required" }}</strong>
                     <span>{{ workbench_ai_context.scope_binding.provider_id|default:"-" }} / {{ workbench_ai_context.scope_binding.profile_id|default:"-" }}</span>
                     {% if workbench_ai_context.scope_binding.blockers %}

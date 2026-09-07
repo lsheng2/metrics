@@ -185,6 +185,10 @@
                                          {% if request.resolver_match.url_name == 'bug_trend_scope_library' or request.resolver_match.url_name == 'bug_trend_scope_config' %}class="is-active"{% endif %}>Scope Library</a>
                                 </li>
                            <li>
+                            <a href="{% url 'ui_web:provider_setup' %}"
+                               {% if request.resolver_match.url_name == 'provider_setup' %}class="is-active"{% endif %}>Provider Setup</a>
+                           </li>
+                           <li>
                             <a href="{% url 'ui_web:data_health' %}"
                                {% if request.resolver_match.url_name == 'data_health' %}class="is-active"{% endif %}>Data Health</a>
                            </li>

@@ -5,13 +5,14 @@ from .provider_aggregate_contracts import (
 )
 from .hsdes_readiness_contract import FIRST_HSDES_EXPECTED_FIELD_SET, hsdes_api_contract
 from .provider_profile_registry import ChartRecipeRequirement, ProjectProviderProfile, ProjectProviderProfileRegistry
+from bug_metrics.provider_profile_security import without_profile_secret_values
 from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
 
 
 class ProviderProfileReadinessService:
     def __init__(self, provider_sync_cache_service=None, profile_registry=None):
         self._provider_sync_cache_service = provider_sync_cache_service or ProviderSyncCacheService()
-        self._profile_registry = profile_registry or ProjectProviderProfileRegistry.load_default()
+        self._profile_registry = profile_registry
 
     def get_readiness(self, provider_id: str, profile_id: str) -> dict:
         resolution = self._resolve_profile(provider_id, profile_id)
@@ -79,7 +80,7 @@ class ProviderProfileReadinessService:
         }
 
     def _resolve_profile(self, provider_id: str, profile_id: str):
-        resolution = self._profile_registry.resolve_profile(profile_id)
+        resolution = self._registry().resolve_profile(profile_id)
         if resolution.profile is None:
             return resolution
         profile = resolution.profile
@@ -106,6 +107,7 @@ class ProviderProfileReadinessService:
             'mapping_version_hash': '',
             'source_query': {},
             'source_population': {},
+            'connection_settings': {},
             'scope_labels': {},
             'sync_cache': {},
             'freshness': {'status': resolution.status, 'source': 'profile_resolution'},
@@ -128,6 +130,7 @@ class ProviderProfileReadinessService:
             'mapping_version_hash': '',
             'source_query': {},
             'source_population': {},
+            'connection_settings': {},
             'scope_labels': {},
             'sync_cache': {},
             'freshness': {'status': 'unsupported', 'source': 'provider_profile'},
@@ -143,7 +146,14 @@ class ProviderProfileReadinessService:
         }
 
     def list_profile_health(self) -> list[dict]:
-        return [self._profile_health_row(profile) for profile in self._profile_registry.list_profiles()]
+        return [self._profile_health_row(profile) for profile in self._registry().list_profiles()]
+
+    def profile_range_modes(self, profile_id: str) -> list[str]:
+        try:
+            profile = self._registry().get_profile(profile_id)
+        except KeyError:
+            return []
+        return list(profile.sync_policy.get('range_modes', ['ww']))
 
     def _readiness_payload(self, profile: ProjectProviderProfile, status: str, blockers: list[dict],
                            api_contract: dict, sync_cache: dict) -> dict:
@@ -158,6 +168,7 @@ class ProviderProfileReadinessService:
             'mapping_version_hash': profile.mapping_version_hash,
             'source_query': source_population,
             'source_population': source_population,
+            'connection_settings': without_profile_secret_values(profile.connection_settings or {}),
             'scope_labels': static_scope_labels_for_profile(profile.profile_id),
             'sync_cache': sync_cache,
             'freshness': {
@@ -269,7 +280,7 @@ class ProviderProfileReadinessService:
         ]
 
     def _resolve_chart_support(self, profile: ProjectProviderProfile, chart_id: str, binding: dict):
-        return self._profile_registry.resolve_chart_support(
+        return self._registry().resolve_chart_support(
             profile.profile_id,
             ChartRecipeRequirement(
                 chart_id=chart_id,
@@ -287,6 +298,9 @@ class ProviderProfileReadinessService:
         if provider_id == 'hsdes':
             return {'quality_facts': 'seeded_preview'}
         return {}
+
+    def _registry(self) -> ProjectProviderProfileRegistry:
+        return self._profile_registry or ProjectProviderProfileRegistry.load_default()
 
     def _chart_binding(self, chart_id: str, support_status: str, candidate_native_fields: list[str],
                        blocker_codes: list[str], required_canonical_fields: list[str] | None = None) -> dict:

@@ -1,5 +1,7 @@
 from atlassian import Jira
 
+from bug_metrics.provider_profile_connection import first_profile_credential_value, profile_connection_value
+
 
 class JiraScopeIssueAdapter:
     def __init__(self, jira_client, page_size: int = 100):
@@ -47,17 +49,22 @@ class JiraScopeIssueAdapter:
             raise ValueError(f"Issue {issue.get('key', '<unknown>')} has partial expanded changelog")
 
 
-def create_jira_client(settings):
-    if settings.METRICS_JIRA_AUTH_MODE == 'server_pat':
+def create_jira_client(settings, connection_settings=None):
+    connection_settings = dict(connection_settings or {})
+    base_url = profile_connection_value(connection_settings, 'base_url', settings.METRICS_JIRA_SERVER_URL)
+    auth_mode = profile_connection_value(connection_settings, 'auth_mode', settings.METRICS_JIRA_AUTH_MODE)
+    email = first_profile_credential_value(connection_settings, ['email', 'username'], settings.METRICS_JIRA_EMAIL)
+    api_token = first_profile_credential_value(connection_settings, ['api_token', 'token', 'password'], settings.METRICS_JIRA_API_TOKEN)
+    if auth_mode == 'server_pat':
         return Jira(
-            url=settings.METRICS_JIRA_SERVER_URL,
-            token=settings.METRICS_JIRA_API_TOKEN,
+            url=base_url,
+            token=api_token,
             verify_ssl=settings.METRICS_JIRA_CA_BUNDLE or settings.METRICS_JIRA_VERIFY_SSL,
         )
     return Jira(
-        url=settings.METRICS_JIRA_SERVER_URL,
-        username=settings.METRICS_JIRA_EMAIL,
-        password=settings.METRICS_JIRA_API_TOKEN,
+        url=base_url,
+        username=email,
+        password=api_token,
         verify_ssl=settings.METRICS_JIRA_CA_BUNDLE or settings.METRICS_JIRA_VERIFY_SSL,
         cloud=True,
     )

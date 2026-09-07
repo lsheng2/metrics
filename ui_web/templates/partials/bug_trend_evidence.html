@@ -1,12 +1,12 @@
 <div class="workbench-evidence-card box" data-workbench-evidence-workspace>
     <div class="workbench-evidence-heading">
         <div class="workbench-evidence-title">
-            <h3 class="title is-5">{{ evidence.selection_title }}</h3>
+            <h3 class="title is-5">{{ evidence.selection_title }}{% include "partials/help_tip.html" with label="Evidence tickets" text="Tickets matching the current chart range and, when selected, the clicked chart bucket and series." %}</h3>
             <p class="is-size-7 has-text-grey">{{ evidence.shown_count }} of {{ evidence.total_count }} evidence tickets shown</p>
         </div>
         <div class="workbench-evidence-actions" aria-label="Evidence actions">
             <details class="workbench-menu">
-                <summary class="button is-small">Columns</summary>
+                <summary class="button is-small">Columns{% include "partials/help_tip.html" with label="Columns" text="Choose which normalized ticket fields are visible in the evidence table." inert=True %}</summary>
                 <div class="workbench-menu-panel">
                     <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="series"> Series</label>
                     <label class="checkbox"><input type="checkbox" checked data-workbench-column-toggle="status"> Status</label>
@@ -32,10 +32,10 @@
                     <option value="asc">Asc</option>
                 </select>
             </div>
-            <button class="button is-small" type="button" data-workbench-evidence-sort>Sort</button>
+            <button class="button is-small" type="button" data-workbench-evidence-sort>Sort{% include "partials/help_tip.html" with label="Sort" text="Sorts the currently displayed evidence rows in the browser without changing the chart selection." inert=True %}</button>
             <span class="tag is-light" data-workbench-ticket-selected-count>0 selected</span>
-            <button class="button is-small" type="button" data-workbench-ticket-bulk>Bulk</button>
-            <a class="button is-small" href="{% url 'ui_web:bug_trend_evidence_export' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}&bucket={{ evidence.bucket_id }}&series={{ evidence.series_name }}&owner={{ evidence.owner|urlencode }}&status={{ evidence.status|urlencode }}&severity={{ evidence.severity|urlencode }}&component={{ evidence.component|urlencode }}&text={{ evidence.text|urlencode }}">Export CSV</a>
+            <button class="button is-small" type="button" data-workbench-ticket-bulk>Bulk{% include "partials/help_tip.html" with label="Bulk" text="Applies a future batch action to the selected evidence tickets. Selection is local to this table." inert=True %}</button>
+            <a class="button is-small" href="{% url 'ui_web:bug_trend_evidence_export' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}&bucket={{ evidence.bucket_id }}&series={{ evidence.series_name }}&owner={{ evidence.owner|urlencode }}&status={{ evidence.status|urlencode }}&severity={{ evidence.severity|urlencode }}&component={{ evidence.component|urlencode }}&text={{ evidence.text|urlencode }}">Export CSV{% include "partials/help_tip.html" with label="Export CSV" text="Exports the current evidence result set with the active chart selection and text filters." inert=True %}</a>
             {% if evidence.has_selection %}
                 <button class="button is-small"
                     hx-get="{% url 'ui_web:bug_trend_evidence' %}?scope_id={{ evidence.scope_id }}&run={{ evidence.calculation_run_id }}&chart_id={{ evidence.active_chart_id }}&begin={{ evidence.begin }}&end={{ evidence.end }}"
@@ -69,10 +69,10 @@
                         <th class="workbench-select-column"><input type="checkbox" aria-label="Select all evidence tickets" data-workbench-ticket-select-all></th>
                         <th data-workbench-field="issue">Issue</th>
                         <th data-workbench-field="summary">Summary</th>
-                        <th data-workbench-field="series">Series</th>
-                        <th data-workbench-field="status">Status</th>
-                        <th data-workbench-field="severity">Severity</th>
-                        <th data-workbench-field="owner">Owner</th>
+                        <th class="has-help-tip" data-workbench-field="series">Series{% include "partials/help_tip.html" with label="Series" text="The chart series that caused this ticket to be included, such as new critical/high or open bugs." %}</th>
+                        <th class="has-help-tip" data-workbench-field="status">Status{% include "partials/help_tip.html" with label="Ticket status" text="The normalized workflow state from the source ticket system." %}</th>
+                        <th class="has-help-tip" data-workbench-field="severity">Severity{% include "partials/help_tip.html" with label="Severity" text="The normalized priority/severity bucket used by Metrics calculations and chart series." %}</th>
+                        <th class="has-help-tip" data-workbench-field="owner">Owner{% include "partials/help_tip.html" with label="Owner" text="The normalized assignee or accountable person from the provider ticket." %}</th>
                         <th data-workbench-field="component">Component</th>
                         <th data-workbench-field="created">Created</th>
                         <th data-workbench-field="updated">Updated</th>
@@ -123,7 +123,7 @@
         <div class="workbench-evidence-detail-splitter" role="separator" aria-orientation="vertical" tabindex="0" data-workbench-splitter="ticket-detail" title="Resize ticket detail pane"></div>
         <aside class="workbench-ticket-detail" data-workbench-ticket-detail aria-label="Ticket detail">
             <header class="workbench-ticket-detail-header">
-                <h4 class="title is-6">Ticket Detail</h4>
+                <h4 class="title is-6">Ticket Detail{% include "partials/help_tip.html" with label="Ticket Detail" text="A compact detail pane for the selected evidence ticket using normalized fields, not the full source-system page." %}</h4>
                 <button class="button is-small" type="button" data-workbench-ticket-detail-close aria-label="Close ticket detail">Close</button>
             </header>
             <div class="workbench-ticket-detail-body">
@@ -147,7 +147,7 @@
                         <dd data-ticket-detail-updated></dd>
                     </dl>
                     <div class="buttons are-small mt-3">
-                        <button class="button is-link" type="button" data-workbench-ticket-ask-ai>Ask AI</button>
+                        <button class="button is-link" type="button" data-workbench-ticket-ask-ai>Ask AI{% include "partials/help_tip.html" with label="Ask AI" text="Starts an AI question using the selected ticket context from this workbench." inert=True %}</button>
                         <a class="button" href="#" target="_blank" rel="noopener noreferrer" data-ticket-detail-source>Open Source</a>
                     </div>
                 </div>

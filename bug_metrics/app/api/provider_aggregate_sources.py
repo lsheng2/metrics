@@ -60,7 +60,8 @@ class ProviderAggregateSourceMixin:
             'mapping_version_hash': '',
             'fact_snapshot_id': '',
         }
-        resolution = self._profile_registry.resolve_profile(query.profile_id)
+        registry = self._registry() if hasattr(self, '_registry') else self._profile_registry
+        resolution = registry.resolve_profile(query.profile_id)
         if resolution.profile is not None:
             profile = resolution.profile
             values.update(profile.source_population)

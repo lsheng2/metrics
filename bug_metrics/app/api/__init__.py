@@ -40,6 +40,8 @@ from .provider_aggregate_contracts import (
 from .provider_aggregates import ProviderChartAggregateService
 from .provider_correlation import ProviderCorrelationService
 from .provider_evidence import ProviderChartEvidenceService
+from .provider_profile_config import ProviderProfileConfigService, SavedProviderProfileConfig
+from .provider_profile_connection_test import ProviderProfileConnectionTestService
 from .provider_profiles import ProviderProfileReadinessService
 from .scope_audit import ScopeAudit, ScopeAuditService
 from .scope_config import SavedScopeConfig, ScopeConfigService, ScopeConfigValidationResult
@@ -66,6 +68,8 @@ class ApiForBugTrend:
         self._provider_ai_context_service = ProviderAiDashboardContextService(self._provider_chart_aggregate_service)
         self._ai_sidecar_probe_service = AiSidecarProbeService()
         self._provider_profile_readiness_service = ProviderProfileReadinessService()
+        self._provider_profile_config_service = ProviderProfileConfigService()
+        self._provider_profile_connection_test_service = ProviderProfileConnectionTestService(self._provider_profile_config_service)
         self._hsdes_projection_service = HsdesProviderProjectionService()
         self._provider_correlation_service = ProviderCorrelationService()
         self._provider_sync_cache_service = ProviderSyncCacheService()
@@ -107,6 +111,42 @@ class ApiForBugTrend:
 
     def list_scope_provider_profile_choices(self) -> list[dict[str, str]]:
         return self._scope_provider_binding_resolver.list_profile_choices()
+
+    def list_provider_profile_configs(self) -> list[SavedProviderProfileConfig]:
+        return self._provider_profile_config_service.list_provider_profile_configs()
+
+    def get_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
+        return self._provider_profile_config_service.get_provider_profile_config(profile_id)
+
+    def new_provider_profile_config(self, provider_id: str = 'jira') -> SavedProviderProfileConfig:
+        return self._provider_profile_config_service.new_provider_profile_config(provider_id)
+
+    def save_provider_profile_config(self, config: SavedProviderProfileConfig) -> SavedProviderProfileConfig:
+        return self._provider_profile_config_service.save_provider_profile_config(config)
+
+    def test_provider_profile_connection(self, config: SavedProviderProfileConfig) -> dict:
+        return self._provider_profile_connection_test_service.test_connection(config).to_dict()
+
+    def duplicate_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
+        return self._provider_profile_config_service.duplicate_provider_profile_config(profile_id)
+
+    def archive_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
+        return self._provider_profile_config_service.archive_provider_profile_config(profile_id)
+
+    def restore_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
+        return self._provider_profile_config_service.restore_provider_profile_config(profile_id)
+
+    def get_provider_profile_delete_impact(self, profile_id: str) -> dict:
+        return self._provider_profile_config_service.get_provider_profile_delete_impact(profile_id).to_dict()
+
+    def delete_archived_provider_profile_config(self, profile_id: str, confirmation: str) -> dict:
+        return self._provider_profile_config_service.delete_archived_provider_profile_config(profile_id, confirmation).to_dict()
+
+    def export_provider_profile_package(self, profile_id: str) -> dict:
+        return self._provider_profile_config_service.export_provider_profile_package(profile_id)
+
+    def import_provider_profile_package(self, package: dict):
+        return self._provider_profile_config_service.import_provider_profile_package(package)
 
     def get_scope_binding_policy(self) -> str:
         return self._scope_provider_binding_resolver.runtime_policy()

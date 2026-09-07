@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Provider Setup{% endblock %}
+
+{% block content %}
+<article class="block provider-setup-page">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:bug_trend' %}">Bug Trend</a></li>
+            <li class="is-active"><a href="#" aria-current="page">Provider Setup</a></li>
+        </ul>
+    </nav>
+
+    <div class="level scope-library-header">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-3">Provider Setup{% include "partials/help_tip.html" with label="Provider Setup" text="Create and maintain provider profiles before they are bound to Dashboard scopes." %}</h2>
+                <p class="subtitle is-6">Profiles own provider connection and onboarding. Scopes own project range, JQL or saved-query details.</p>
+            </div>
+        </div>
+        <div class="level-right">
+            <div class="buttons are-small">
+                <details class="workbench-menu scope-import-menu">
+                    <summary class="button">Import Profile{% include "partials/help_tip.html" with label="Import Profile" text="Imported provider profiles start as drafts so source, mapping and readiness can be reviewed before enablement." inert=True %}</summary>
+                    <div class="workbench-menu-panel scope-import-panel">
+                        <form method="post" enctype="multipart/form-data" class="scope-import-form">
+                            {% csrf_token %}
+                            <input class="input is-small" type="file" name="profile_package" accept="application/json,.json" required aria-label="Choose provider profile JSON package">
+                            <button class="button is-small is-primary" type="submit" name="action" value="import_profile">Import</button>
+                        </form>
+                    </div>
+                </details>
+                <a class="button is-primary" href="{% url 'ui_web:provider_setup' %}?mode=new&provider_id=jira">New Profile</a>
+                <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a>
+            </div>
+        </div>
+    </div>
+
+    {% if saved %}<div class="notification is-success is-light">Provider profile saved.</div>{% endif %}
+    {% if binding_saved %}<div class="notification is-success is-light">Scope binding saved.</div>{% endif %}
+    {% if archived_profile %}<div class="notification is-info is-light">Provider profile {{ archived_profile }} archived.</div>{% endif %}
+    {% if restored_profile %}<div class="notification is-success is-light">Provider profile {{ restored_profile }} restored.</div>{% endif %}
+    {% if deleted_profile %}<div class="notification is-warning is-light">Archived provider profile {{ deleted_profile }} deleted.</div>{% endif %}
+    {% if duplicated_profile %}<div class="notification is-info is-light">Duplicated provider profile {{ duplicated_profile }} as draft.</div>{% endif %}
+    {% if imported_profile %}<div class="notification is-success is-light">Imported provider profile {{ imported_profile }} as draft.</div>{% endif %}
+    {% if import_error %}<div class="notification is-danger is-light">{{ import_error }}</div>{% endif %}
+    {% if delete_error %}<div class="notification is-danger is-light">{{ delete_error }}</div>{% endif %}
+    {% if binding_error %}<div class="notification is-danger is-light">{{ binding_error }}</div>{% endif %}
+    {% if provider_profile_errors %}
+        <div class="notification is-danger is-light">
+            <p class="has-text-weight-semibold">Provider profile was not saved.</p>
+            {% for field_name, message in provider_profile_errors.items %}
+                <p>{{ field_name }}: {{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="provider-overview-strip">
+        <div>
+            <span class="scope-config-kicker">Profile</span>
+            <p>Provider connection, onboarding and cross-scope defaults.</p>
+        </div>
+        <div>
+            <span class="scope-config-kicker">Scope</span>
+            <p>Project, product, JQL, saved query and calculation view.</p>
+        </div>
+        <div>
+            <span class="scope-config-kicker">Safety</span>
+            <p>Archive is reversible; hard delete requires archived state and confirmation.</p>
+        </div>
+        <div>
+            <span class="scope-config-kicker">Color</span>
+            <p>Jira is green, HSD-ES is blue, GitHub is purple; other providers are template-driven.</p>
+        </div>
+    </section>
+
+    <div class="scope-library-summary">
+        <span><strong>{{ provider_setup_summary.total }}</strong> profiles</span>
+        <span><strong>{{ provider_setup_summary.enabled }}</strong> enabled</span>
+        <span><strong>{{ provider_setup_summary.draft }}</strong> drafts</span>
+        <span><strong>{{ provider_setup_summary.archived }}</strong> archived</span>
+        <span><strong>{{ provider_setup_summary.jira }}</strong> Jira</span>
+        <span><strong>{{ provider_setup_summary.hsdes }}</strong> HSD-ES</span>
+    </div>
+
+    <div class="table-container responsive-admin-table-box provider-profile-table-box">
+        <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable provider-profile-table">
+            <colgroup>
+                <col class="provider-col-profile">
+                <col class="provider-col-provider">
+                <col class="provider-col-status">
+                <col class="provider-col-source">
+                <col class="provider-col-hash">
+                <col class="provider-col-actions">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Profile</th>
+                    <th>Provider</th>
+                    <th>Status</th>
+                    <th>Connection</th>
+                    <th>Mapping hash</th>
+                    <th class="has-text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in provider_profile_rows %}
+                    <tr>
+                        <td data-label="Profile">
+                            <strong>{{ row.profile_id }}</strong><br>
+                            <span class="is-size-7">{{ row.display_name }}</span>
+                        </td>
+                        <td data-label="Provider"><span class="tag scope-provider-tag is-provider-{{ row.provider_color }}">{{ row.provider_label }}</span></td>
+                        <td class="provider-status-cell" data-label="Status"><span class="tag {% if row.lifecycle_state == 'enabled' %}is-success{% elif row.lifecycle_state == 'archived' %}is-warning{% else %}is-light{% endif %}">{{ row.lifecycle_state }}</span> <span class="tag is-light">{{ row.source_kind }}</span></td>
+                        <td data-label="Source" title="{{ row.source_summary }}">{{ row.source_summary }}</td>
+                        <td data-label="Mapping hash"><code>{{ row.mapping_version_hash|slice:":12" }}</code></td>
+                        <td class="provider-actions-cell" data-label="Actions">
+                            <div class="provider-row-actions">
+                                <div class="provider-row-primary-actions">
+                                    <a class="button" href="{% url 'ui_web:provider_setup' %}?profile_id={{ row.profile_id }}">Edit</a>
+                                    <a class="button is-primary is-light" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new&provider_id={{ row.provider_id }}&profile_id={{ row.profile_id }}">Create Scope</a>
+                                    <a class="button" href="{% url 'ui_web:provider_setup' %}?export_profile_id={{ row.profile_id }}">Export</a>
+                                    <details class="workbench-menu provider-row-menu">
+                                        <summary class="button">More</summary>
+                                        <div class="workbench-menu-panel">
+                                            {% if row.lifecycle_state != 'archived' %}
+                                                <form class="provider-assign-scope-form" method="post" data-confirm="Assign the selected existing scope to this provider profile?">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
+                                                    <label class="label is-size-7" for="assign-scope-{{ forloop.counter }}">Assign existing scope{% include "partials/help_tip.html" with label="Assign existing scope" text="Use this only when a scope already exists and should use this provider profile. New users should usually choose Create Scope instead." inert=True %}</label>
+                                                    <div class="field has-addons">
+                                                        <div class="control is-expanded">
+                                                            <div class="select is-small is-fullwidth">
+                                                                <select id="assign-scope-{{ forloop.counter }}" name="scope_id" aria-label="Existing scope to assign to {{ row.profile_id }}">
+                                                                    {% for scope in scope_candidates %}
+                                                                        <option value="{{ scope.id }}">{{ scope.name }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="control">
+                                                            <button class="button is-small is-primary" type="submit" name="action" value="bind_scope">Assign</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            {% endif %}
+                                            <form method="post" data-confirm="Duplicate this provider profile as a draft?">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
+                                                <button class="button" type="submit" name="action" value="duplicate_profile">Duplicate</button>
+                                            </form>
+                                            {% if row.lifecycle_state == 'archived' %}
+                                                <form method="post">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
+                                                    <button class="button is-success is-light" type="submit" name="action" value="restore_profile">Restore</button>
+                                                </form>
+                                                <form method="post" data-confirm="Delete this archived provider profile? This does not delete provider facts automatically, but it removes the managed profile config.">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
+                                                    <input class="input is-small" name="delete_confirmation" placeholder="{{ row.delete_confirmation }}" aria-label="Delete confirmation for {{ row.profile_id }}">
+                                                    <button class="button is-danger is-light" type="submit" name="action" value="delete_archived_profile" title="Impact: {{ row.delete_impact.scope_bindings }} bindings, {{ row.delete_impact.fact_snapshots }} snapshots, {{ row.delete_impact.aggregate_artifacts }} aggregates">Delete archived</button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" data-confirm="Archive this provider profile? Bound scopes will require restore or rebinding before provider-backed runtime use.">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
+                                                    <button class="button is-warning is-light" type="submit" name="action" value="archive_profile">Archive</button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </details>
+                                </div>
+                                {% if row.lifecycle_state == 'archived' %}
+                                    <p class="is-size-7 has-text-warning">Restore this profile before binding scopes.</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6">No provider profiles are available yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</article>
+{% endblock %}

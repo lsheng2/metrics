@@ -5,6 +5,7 @@ import uuid
 from django.conf import settings
 
 from bug_metrics.models import BugTrendAuditEvent, BugTrendScopeProviderBinding, JiraScopeConfig
+from bug_metrics.provider_profile_security import without_profile_secret_values
 
 from .provider_profile_registry import ProjectProviderProfile, ProjectProviderProfileRegistry
 
@@ -53,7 +54,7 @@ class ScopeProviderBindingResolver:
     POLICY_EXPLICIT_ONLY = 'explicit_only'
 
     def __init__(self, profile_registry: ProjectProviderProfileRegistry | None = None):
-        self._profile_registry = profile_registry or ProjectProviderProfileRegistry.load_default()
+        self._profile_registry = profile_registry
 
     def runtime_policy(self) -> str:
         policy = str(getattr(settings, 'METRICS_SCOPE_BINDING_POLICY', self.POLICY_COMPATIBILITY_ALLOWED) or '').strip()
@@ -62,7 +63,21 @@ class ScopeProviderBindingResolver:
         return policy
 
     def resolve(self, scope: JiraScopeConfig, enforce_policy: bool = True) -> ScopeProviderBindingResolution:
+        explicit_binding = getattr(scope, 'provider_binding', None)
         if not scope.enabled:
+            if explicit_binding:
+                resolution = self._resolution_from_binding(explicit_binding)
+                return ScopeProviderBindingResolution(
+                    scope_id=str(scope.id),
+                    profile_id=resolution.profile_id,
+                    provider_id=resolution.provider_id,
+                    status=BugTrendScopeProviderBinding.STATUS_DISABLED,
+                    provenance={**resolution.provenance, 'source': 'scope_config'},
+                    blockers=[{
+                        'code': 'scope_disabled',
+                        'message': 'Scope is disabled.',
+                    }],
+                )
             return ScopeProviderBindingResolution(
                 scope_id=str(scope.id),
                 profile_id='',
@@ -74,7 +89,6 @@ class ScopeProviderBindingResolver:
                     'message': 'Scope is disabled.',
                 }],
             )
-        explicit_binding = getattr(scope, 'provider_binding', None)
         if explicit_binding:
             return self._apply_runtime_policy(self._resolution_from_binding(explicit_binding), enforce_policy)
         compatibility = self._compatibility_resolution(scope)
@@ -108,7 +122,7 @@ class ScopeProviderBindingResolver:
 
     def set_explicit(self, scope: JiraScopeConfig, profile_id: str, actor: str = 'local_operator') -> ScopeProviderBindingResolution:
         before = self.resolve(scope, enforce_policy=False)
-        registry_resolution = self._profile_registry.resolve_profile(profile_id)
+        registry_resolution = self._registry().resolve_profile(profile_id)
         if registry_resolution.profile is None:
             raise ValueError(f'Provider profile {profile_id} is not available.')
         profile = registry_resolution.profile
@@ -166,11 +180,12 @@ class ScopeProviderBindingResolver:
                 'profile_id': profile.profile_id,
                 'provider_id': profile.provider_id,
                 'display_name': profile.display_name,
+                'connection_settings': without_profile_secret_values(profile.connection_settings),
                 'scope_labels': dict(profile.scope_labels),
                 'source_population': dict(profile.source_population),
                 'mapping_version_hash': profile.mapping_version_hash,
             }
-            for profile in self._profile_registry.list_profiles()
+            for profile in self._registry().list_profiles()
         ]
 
     def list_binding_audit_events(self, limit: int = 25) -> list[dict]:
@@ -186,7 +201,16 @@ class ScopeProviderBindingResolver:
 
     def _resolution_from_binding(self, binding: BugTrendScopeProviderBinding) -> ScopeProviderBindingResolution:
         if binding.profile_id and binding.provider_id:
-            registry_resolution = self._profile_registry.resolve_profile(binding.profile_id)
+            registry_resolution = self._registry().resolve_profile(binding.profile_id)
+            if registry_resolution.profile is None and registry_resolution.status == 'unavailable':
+                return ScopeProviderBindingResolution(
+                    scope_id=str(binding.scope_id),
+                    profile_id=binding.profile_id,
+                    provider_id=binding.provider_id,
+                    status=BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
+                    provenance={**binding.provenance, 'binding_id': binding.id},
+                    blockers=registry_resolution.blockers,
+                )
             if registry_resolution.profile and registry_resolution.profile.provider_id != binding.provider_id:
                 return ScopeProviderBindingResolution(
                     scope_id=str(binding.scope_id),
@@ -234,7 +258,7 @@ class ScopeProviderBindingResolver:
         )
 
     def _compatibility_resolution(self, scope: JiraScopeConfig) -> ScopeProviderBindingResolution:
-        matches = [profile for profile in self._profile_registry.list_profiles() if self._scope_matches_profile(scope, profile)]
+        matches = [profile for profile in self._registry().list_profiles() if self._scope_matches_profile(scope, profile)]
         if len(matches) == 1:
             profile = matches[0]
             return ScopeProviderBindingResolution(
@@ -350,6 +374,9 @@ class ScopeProviderBindingResolver:
         if not resolution.profile_id or not resolution.provider_id:
             return 'Binding is missing profile or provider.'
         return f'Binding status {resolution.status} cannot be bulk confirmed.'
+
+    def _registry(self) -> ProjectProviderProfileRegistry:
+        return self._profile_registry or ProjectProviderProfileRegistry.load_default()
 
     def _audit_event_payload(self, event: BugTrendAuditEvent) -> dict:
         summary = dict(event.request_summary or {})

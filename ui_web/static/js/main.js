@@ -171,6 +171,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function initializeProviderAuthForms() {
+        document.querySelectorAll('[data-provider-auth-form]').forEach(form => {
+            if (form.dataset.providerAuthInitialized === 'true') {
+                return;
+            }
+            form.dataset.providerAuthInitialized = 'true';
+            const formProviderId = (form.dataset.providerId || '').trim().toLowerCase();
+            const authSelect = form.querySelector('[data-provider-auth-select]');
+            const panels = Array.from(form.querySelectorAll('[data-auth-modes]'));
+            if (!authSelect || panels.length === 0) {
+                return;
+            }
+            function syncAuthPanels() {
+                const selectedMode = authSelect.value;
+                panels.forEach(panel => {
+                    const modes = (panel.dataset.authModes || '').split(/\s+/).filter(Boolean);
+                    const providerIds = (panel.dataset.providerIds || '').split(/\s+/).filter(Boolean);
+                    const providerMatches = providerIds.length === 0 || providerIds.includes(formProviderId);
+                    const isActive = providerMatches && modes.includes(selectedMode);
+                    panel.classList.toggle('is-hidden', !isActive);
+                    panel.querySelectorAll('input, select, textarea').forEach(field => {
+                        if (field.type !== 'hidden') {
+                            field.disabled = !isActive;
+                        }
+                    });
+                });
+            }
+            authSelect.addEventListener('change', syncAuthPanels);
+            syncAuthPanels();
+        });
+    }
+
     const workbenchLastUrlKey = 'metricsWorkbench.lastUrl';
     const workbenchStateParams = [
         'scope_id',
@@ -963,6 +995,7 @@ document.addEventListener('DOMContentLoaded', function() {
     expandInitialActiveMenus();
     initializeDirtyForms();
     initializeConfirmForms();
+    initializeProviderAuthForms();
     initializeDismissibleWorkbenchMenus();
     initializeWorkbenchShell();
     
@@ -986,6 +1019,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.addEventListener('htmx:beforeRequest', showLoadingIndicator);
     document.body.addEventListener('htmx:afterRequest', hideLoadingIndicator);
     document.body.addEventListener('htmx:afterSwap', function() {
+        initializeProviderAuthForms();
         initializeWorkbenchShell();
         if (typeof window.initBugTrendChart === 'function') {
             window.initBugTrendChart();

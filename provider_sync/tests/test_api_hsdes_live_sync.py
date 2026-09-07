@@ -6,6 +6,8 @@ from unittest.mock import patch
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 
+from bug_metrics.app.api.provider_profile_config import ProviderProfileConfigService, provider_profile_config_from_dict
+from bug_metrics.models import ProviderProfileConfig
 from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
 from provider_sync.app.api.hsdes import HsdesHttpClient, HsdesProviderError, HsdesSavedQueryAdapter, HsdesSavedQuerySyncService
 from provider_sync.models import ProviderSyncCursor
@@ -329,6 +331,66 @@ class TestHsdesLiveSync(TestCase):
         self.assertEqual('15017652869', fake_client.requests[0]['query_id'])
         self.assertEqual('ip_fw_sw_sensing.tenant', fake_client.requests[0]['tenant'])
         self.assertEqual('ip_fw_sw_sensing.bug', fake_client.requests[0]['subject'])
+
+    @override_settings(METRICS_HSDES_LIVE_SYNC_ENABLED=True)
+    def test_shouldUseProfileConnectionSettingsForHsdesClientNonSecretOptions(self):
+        # Given
+        ProviderProfileConfigService().save_provider_profile_config(provider_profile_config_from_dict({
+            'profile_id': 'hsdes-provider-default',
+            'provider_id': 'hsdes',
+            'display_name': 'HSD-ES Provider Default',
+            'lifecycle_state': ProviderProfileConfig.LIFECYCLE_ENABLED,
+            'connection_settings': {
+                'base_url': 'https://custom-hsdes.example/rest',
+                'auth_mode': 'basic',
+                'credential_ref': 'settings:METRICS_HSDES_*',
+                'transport': 'urllib',
+                'timeout_seconds': '17',
+                'credentials': {
+                    'username': 'profile-hsdes-user',
+                    'password': 'profile-hsdes-password',
+                    'token': 'profile-hsdes-token',
+                },
+                'onboarding_status': 'ready',
+            },
+            'source_population': {
+                'source_query_ref': '123',
+                'tenant_or_site': 'tenant',
+                'subject_or_issue_type': 'subject',
+            },
+            'field_bindings': {'item_id': {'native_field': 'id'}},
+            'chart_bindings': {'component_bug': {'support_status': 'supported_from_seed_facts'}},
+        }))
+        output = JsonOutput()
+        client_kwargs = {}
+        fake_client = FakeHsdesClient([{'data': [], 'total': 0}])
+
+        def fake_hsdes_client(**kwargs):
+            client_kwargs.update(kwargs)
+            return fake_client
+
+        # When
+        with patch('provider_sync.management.commands.sync_provider_profile.HsdesHttpClient', side_effect=fake_hsdes_client):
+            call_command(
+                'sync_provider_profile',
+                '--profile-id',
+                'hsdes-provider-default',
+                '--begin-ww',
+                '26WW32',
+                '--end-ww',
+                '26WW32',
+                stdout=output,
+            )
+
+        # Then
+        self.assertEqual('success', json.loads(output.value)['status'])
+        self.assertEqual('https://custom-hsdes.example/rest', client_kwargs['base_url'])
+        self.assertEqual('basic', client_kwargs['auth_mode'])
+        self.assertEqual('profile-hsdes-user', client_kwargs['username'])
+        self.assertEqual('profile-hsdes-password', client_kwargs['password'])
+        self.assertEqual('profile-hsdes-token', client_kwargs['token'])
+        self.assertEqual('urllib', client_kwargs['transport'])
+        self.assertEqual(17, client_kwargs['timeout_seconds'])
 
     def test_shouldReturnSafeUnsupportedResultForGenericSyncUnknownProfile(self):
         # Given

@@ -11,14 +11,14 @@
         </ul>
     </nav>
 
-    <h2 class="title is-3">Bug Trend Scope Audit</h2>
+    <h2 class="title is-3">Bug Trend Scope Audit{% include "partials/help_tip.html" with label="Scope Audit" text="Inspection view for one scope, showing source data coverage and unmapped values that may affect calculations." %}</h2>
     <section class="box">
         <h3 class="title is-4">{{ audit.scope_name }}</h3>
-        <p class="is-size-7">Config hash: {{ audit.config_version_hash }}</p>
+        <p class="is-size-7">Config hash{% include "partials/help_tip.html" with label="Config hash" text="Semantic fingerprint of the scope configuration used to compare audit, sync, and calculation outputs." %}: {{ audit.config_version_hash }}</p>
     </section>
 
     <section class="box">
-        <h3 class="title is-4">Data coverage</h3>
+        <h3 class="title is-4">Data coverage{% include "partials/help_tip.html" with label="Data coverage" text="Counts that show whether source issue dates and transitions are complete enough for reliable trend calculations." %}</h3>
         <div class="columns is-multiline">
             <div class="column is-one-third"><strong>Total issues</strong><br>{{ audit.coverage.total_issue_count }}</div>
             <div class="column is-one-third"><strong>Issues with created date</strong><br>{{ audit.coverage.created_count }}</div>
@@ -38,9 +38,9 @@
                     <th>Category</th>
                     <th>Value</th>
                     <th>Count</th>
-                    <th>Mapping</th>
-                    <th>Mapping group</th>
-                    <th>Config handoff</th>
+                    <th class="has-help-tip">Mapping{% include "partials/help_tip.html" with label="Mapping" text="Whether an observed provider value is already mapped into a Metrics calculation category." %}</th>
+                    <th class="has-help-tip">Mapping group{% include "partials/help_tip.html" with label="Mapping group" text="The scope config field that owns this observed value, such as severity or workflow status." %}</th>
+                    <th class="has-help-tip">Config handoff{% include "partials/help_tip.html" with label="Config handoff" text="Shortcut actions that copy unmapped observed values back into Scope Config for operator review." %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,7 +64,7 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="6">No observed values found for this saved scope.</td></tr>
+                    <tr><td colspan="6">No observed values found for this scope.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -33,7 +33,7 @@ class ProviderChartAggregateService(
                  jira_fact_adapter=None, hsdes_fact_adapter=None):
         self._hsdes_seed_fact_repository = hsdes_seed_fact_repository or HsdesSeedFactRepository()
         self._provider_sync_cache_service = provider_sync_cache_service or ProviderSyncCacheService()
-        self._profile_registry = profile_registry or ProjectProviderProfileRegistry.load_default()
+        self._profile_registry = profile_registry
         self._jira_fact_adapter = jira_fact_adapter or JiraCalculationRunFactAdapter()
         self._hsdes_fact_adapter = hsdes_fact_adapter or HsdesCanonicalFactAdapter()
 
@@ -158,7 +158,7 @@ class ProviderChartAggregateService(
         return self._state_result(query, 'unavailable', 'No completed aggregate artifact covers the requested WW range for the current profile.', source_population)
 
     def _resolve_query_profile(self, query):
-        resolution = self._profile_registry.resolve_profile(query.profile_id)
+        resolution = self._registry().resolve_profile(query.profile_id)
         if resolution.profile is None:
             reason = resolution.blockers[0]['message'] if resolution.blockers else f'Provider profile {query.profile_id} is not available.'
             return query, {'status': resolution.status, 'reason': reason}
@@ -173,7 +173,7 @@ class ProviderChartAggregateService(
         return replace(query, provider_id=profile.provider_id), None
 
     def _resolve_chart_support(self, query):
-        profile = self._profile_registry.get_profile(query.profile_id)
+        profile = self._registry().get_profile(query.profile_id)
         binding = profile.chart_bindings.get(query.chart_id, {})
         recipe = ChartRecipeRequirement(
             chart_id=query.chart_id,
@@ -182,11 +182,14 @@ class ProviderChartAggregateService(
             provider_capability='quality_facts',
             evidence_capability='summary_only',
         )
-        return self._profile_registry.resolve_chart_support(
+        return self._registry().resolve_chart_support(
             query.profile_id,
             recipe,
             self._provider_capabilities(query.provider_id),
         )
+
+    def _registry(self) -> ProjectProviderProfileRegistry:
+        return self._profile_registry or ProjectProviderProfileRegistry.load_default()
 
     def _provider_capabilities(self, provider_id):
         if provider_id == 'jira':

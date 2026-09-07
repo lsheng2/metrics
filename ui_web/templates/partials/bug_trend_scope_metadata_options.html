@@ -1,13 +1,145 @@
-<div class="content is-small">
+{% url 'ui_web:bug_trend_scope_config' as scope_config_url %}
+<div class="content is-small scope-metadata-groups">
     <p class="has-text-weight-semibold">Discovered metadata</p>
-    <div class="tags">
-        {% for project in options.projects %}<span class="tag is-link is-light">Project: {{ project.name }}</span>{% endfor %}
-        {% for item_type in options.item_types %}<span class="tag is-info is-light">Type: {{ item_type.name }}</span>{% endfor %}
-        {% for status in options.statuses %}<span class="tag is-light">Status: {{ status.name }}</span>{% endfor %}
-        {% for priority in options.priorities %}<span class="tag is-danger is-light">Priority: {{ priority.name }}</span>{% endfor %}
-        {% for resolution in options.resolutions %}<span class="tag is-success is-light">Resolution: {{ resolution.name }}</span>{% endfor %}
-        {% for field in options.fields %}<span class="tag is-link is-light">Field: {{ field.label }}</span>{% endfor %}
-        {% for component in options.components %}<span class="tag is-primary is-light">Component: {{ component.name }}</span>{% endfor %}
-        {% for version in options.versions %}<span class="tag is-warning is-light">Version: {{ version.name }}</span>{% endfor %}
+    <div class="scope-metadata-grid">
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Projects</strong>
+                <span class="tag is-link is-light">{{ options.projects|length }}</span>
+            </div>
+            <p>Use these only as provider metadata context. Dashboard display uses Project label.</p>
+            <div class="tags">
+                {% for project in options.projects %}
+                    <span class="tag is-link is-light">Project: {{ project.name }}</span>
+                {% empty %}
+                    <span class="tag is-light">No project metadata</span>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Types</strong>
+                <span class="tag is-info is-light">{{ options.item_types|length }}</span>
+            </div>
+            <p>Maps to Bug type values for the trend calculator.</p>
+            <div class="tags">
+                {% for item_type in options.item_types %}
+                    <span class="tag is-info is-light">Type: {{ item_type.name }}</span>
+                    {% if metadata_scope_id %}
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=bug_type_values&add_value={{ item_type.name|urlencode }}">Add as bug type</a>
+                    {% endif %}
+                {% empty %}
+                    <span class="tag is-light">No type metadata</span>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Statuses</strong>
+                <span class="tag is-light">{{ options.statuses|length }}</span>
+            </div>
+            <p>Maps to Open, Fixed, Closed or Reopen status values.</p>
+            <div class="scope-metadata-option-list">
+                {% for status in options.statuses %}
+                    <span class="tag is-light">Status: {{ status.name }}</span>
+                    {% if metadata_scope_id %}
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=open_status_values&add_value={{ status.name|urlencode }}">Add open</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=fixed_status_values&add_value={{ status.name|urlencode }}">Add fixed</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=closed_status_values&add_value={{ status.name|urlencode }}">Add closed</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=reopen_status_values&add_value={{ status.name|urlencode }}">Add reopen</a>
+                    {% endif %}
+                {% empty %}
+                    <span class="tag is-light">No status metadata</span>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Priorities</strong>
+                <span class="tag is-danger is-light">{{ options.priorities|length }}</span>
+            </div>
+            <p>Maps to critical/high or medium/low value groups when Severity field is priority.</p>
+            <div class="scope-metadata-option-list">
+                {% for priority in options.priorities %}
+                    <span class="tag is-danger is-light">Priority: {{ priority.name }}</span>
+                    {% if metadata_scope_id %}
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=critical_high_values&add_value={{ priority.name|urlencode }}">Add critical/high</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=medium_low_values&add_value={{ priority.name|urlencode }}">Add medium/low</a>
+                    {% endif %}
+                {% empty %}
+                    <span class="tag is-light">No priority metadata</span>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Resolutions</strong>
+                <span class="tag is-success is-light">{{ options.resolutions|length }}</span>
+            </div>
+            <p>Maps to fixed or closed resolution values.</p>
+            <div class="scope-metadata-option-list">
+                {% for resolution in options.resolutions %}
+                    <span class="tag is-success is-light">Resolution: {{ resolution.name }}</span>
+                    {% if metadata_scope_id %}
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=fixed_resolution_values&add_value={{ resolution.name|urlencode }}">Add fixed resolution</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=closed_resolution_values&add_value={{ resolution.name|urlencode }}">Add closed resolution</a>
+                    {% endif %}
+                {% empty %}
+                    <span class="tag is-light">No resolution metadata</span>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Fields</strong>
+                <span class="tag is-link is-light">{{ options.fields|length }}</span>
+            </div>
+            <p>Maps provider fields to Dashboard semantic fields such as severity, component, owner, milestone and fix version.</p>
+            <div class="scope-metadata-option-list">
+                {% for field in options.fields %}
+                    <span class="tag is-link is-light">Field: {{ field.label }}</span>
+                    {% if metadata_scope_id %}
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=severity_field&add_value={{ field.id|urlencode }}">Use as severity field</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=component_field&add_value={{ field.id|urlencode }}">Use as component field</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=owner_field&add_value={{ field.id|urlencode }}">Use as owner field</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=milestone_field&add_value={{ field.id|urlencode }}">Use as milestone field</a>
+                        <a class="button is-small" href="{{ scope_config_url }}?scope_id={{ metadata_scope_id|urlencode }}&add_field=fix_version_field&add_value={{ field.id|urlencode }}">Use as fix version field</a>
+                    {% endif %}
+                {% empty %}
+                    <span class="tag is-light">No field metadata</span>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Components</strong>
+                <span class="tag is-primary is-light">{{ options.components|length }}</span>
+            </div>
+            <p>Reference values for query refinement and component coverage checks.</p>
+            <div class="tags">
+                {% for component in options.components %}
+                    <span class="tag is-primary is-light">Component: {{ component.name }}</span>
+                {% empty %}
+                    <span class="tag is-light">No component metadata</span>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="scope-metadata-group">
+            <div class="scope-metadata-group-heading">
+                <strong>Versions</strong>
+                <span class="tag is-warning is-light">{{ options.versions|length }}</span>
+            </div>
+            <p>Reference values for fix version, release or package scoping.</p>
+            <div class="tags">
+                {% for version in options.versions %}
+                    <span class="tag is-warning is-light">Version: {{ version.name }}</span>
+                {% empty %}
+                    <span class="tag is-light">No version metadata</span>
+                {% endfor %}
+            </div>
+        </section>
     </div>
+    {% if not metadata_scope_id %}
+        <p class="is-size-7">Save Draft first to use one-click mapping links. Raw text fields remain editable now.</p>
+    {% endif %}
 </div>

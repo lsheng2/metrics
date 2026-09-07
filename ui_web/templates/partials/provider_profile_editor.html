@@ -1,0 +1,275 @@
+{% with editor=provider_setup_editor profile=provider_setup_editor.profile %}
+<form class="provider-setup-editor" method="post" data-dirty-form data-provider-auth-form data-provider-id="{{ profile.provider_id }}">
+    {% csrf_token %}
+    <input type="hidden" name="id" value="{{ profile.id|default:'' }}">
+    <input type="hidden" name="lifecycle_state" value="{{ profile.lifecycle_state }}">
+    <div class="provider-editor-header">
+        <div>
+            <h3 class="title is-5">Profile Editor{% include "partials/help_tip.html" with label="Profile Editor" text="A guided editor for provider connection, temporary local credentials and readiness metadata." %}</h3>
+            <p class="is-size-7">Provider onboarding and shared defaults are reviewed before handoff to Scope Config. Tokens stay local and are redacted from export.</p>
+        </div>
+        <a class="button is-small" href="{% url 'ui_web:provider_setup' %}">Provider Setup</a>
+    </div>
+    <section class="provider-tab-shell is-provider-{{ editor.provider_color }}">
+        <nav class="tabs is-boxed provider-tabs provider-tab-list" role="tablist" aria-label="Provider type">
+            <ul>
+            {% for provider in editor.provider_options %}
+                {% if provider.enabled %}
+                    <li class="provider-tab-item is-provider-{{ provider.color }} {% if provider.selected %}is-active{% endif %}">
+                        <a class="scope-provider-choice provider-setup-choice is-provider-{{ provider.color }} {% if provider.selected %}is-selected{% endif %}"
+                           role="tab"
+                           aria-selected="{% if provider.selected %}true{% else %}false{% endif %}"
+                           title="{{ provider.summary }}"
+                           href="{% url 'ui_web:provider_setup' %}?mode=new&provider_id={{ provider.provider_id }}">
+                            <span class="provider-tab-main">
+                                {% if provider.selected %}<span class="provider-tab-check" aria-hidden="true">&#10003;</span>{% endif %}
+                                <span class="scope-provider-choice-label">{{ provider.label }}</span>
+                            </span>
+                            <span class="scope-provider-choice-meta">{{ provider.profile_count }} profiles</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="provider-tab-item is-provider-{{ provider.color }} is-disabled {% if provider.selected %}is-active{% endif %}">
+                        <span class="scope-provider-choice provider-setup-choice is-provider-{{ provider.color }} is-disabled"
+                              role="tab"
+                              aria-disabled="true"
+                              title="{{ provider.summary }}">
+                            <span class="provider-tab-main">
+                                {% if provider.selected %}<span class="provider-tab-check" aria-hidden="true">&#10003;</span>{% endif %}
+                                <span class="scope-provider-choice-label">{{ provider.label }}</span>
+                            </span>
+                            <span class="scope-provider-choice-meta">Template only</span>
+                        </span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            </ul>
+        </nav>
+        <div class="provider-tab-body">
+            <input type="hidden" name="provider_id" value="{{ editor.selected_provider_id }}">
+            <section class="scope-provider-detail-panel provider-context-panel is-provider-{{ editor.provider_color }}">
+                <div>
+                    <span class="scope-config-kicker">Provider</span>
+                    <p>{{ editor.provider_label }}</p>
+                </div>
+                <div>
+                    <span class="scope-config-kicker">Metadata</span>
+                    <p>{{ editor.metadata_summary }}</p>
+                </div>
+                {% for detail in editor.detail_rows %}
+                    <div>
+                        <span class="scope-config-kicker">{{ detail.label }}</span>
+                        <p>{{ detail.value }}</p>
+                    </div>
+                {% endfor %}
+            </section>
+            <section class="provider-connection-panel">
+                <input type="hidden" name="connection_settings" value="{{ editor.connection_settings_json }}">
+                <input type="hidden" name="credential_ref" value="{{ profile.connection_settings.credential_ref }}">
+                <div class="provider-form-field">
+                    <label class="label" for="provider-connection-base-url">Base URL <span class="tag is-small is-danger is-light">Required</span></label>
+                    <input class="input" id="provider-connection-base-url" name="connection_base_url" value="{{ profile.connection_settings.base_url }}" placeholder="settings:METRICS_JIRA_SERVER_URL">
+                </div>
+                <div class="provider-form-field">
+                    <label class="label" for="provider-connection-auth-mode">Authentication method <span class="tag is-small is-danger is-light">Required</span></label>
+                    <div class="select is-fullwidth">
+                        <select id="provider-connection-auth-mode" name="connection_auth_mode" data-provider-auth-select>
+                            {% if profile.provider_id == 'jira' %}
+                                <option value="server_pat" {% if profile.connection_settings.auth_mode == 'server_pat' %}selected{% endif %}>API token / PAT</option>
+                                <option value="cloud_basic" {% if profile.connection_settings.auth_mode == 'cloud_basic' %}selected{% endif %}>Email + API token</option>
+                            {% elif profile.provider_id == 'hsdes' %}
+                                <option value="kerberos" {% if profile.connection_settings.auth_mode == 'kerberos' or profile.connection_settings.auth_mode == 'windows_integrated' %}selected{% endif %}>Windows Integrated Auth</option>
+                                <option value="basic" {% if profile.connection_settings.auth_mode == 'basic' %}selected{% endif %}>Username + password</option>
+                                <option value="token" {% if profile.connection_settings.auth_mode == 'token' %}selected{% endif %}>Bearer token</option>
+                            {% elif profile.provider_id == 'github' %}
+                                <option value="token" {% if profile.connection_settings.auth_mode == 'token' %}selected{% endif %}>Personal access token</option>
+                            {% else %}
+                                <option value="{{ profile.connection_settings.auth_mode }}">{{ profile.connection_settings.auth_mode|default:"Provider auth" }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                <div class="provider-form-field provider-system-status-field">
+                    <label class="label">System status{% include "partials/help_tip.html" with label="System status" text="Calculated from the selected provider, authentication method, connection fields and connection test result. It is not manually edited." %}</label>
+                    <div class="provider-system-status">
+                        <span class="tag is-info is-light">{{ editor.connection_status_label }}</span>
+                        {% if provider_connection_test %}
+                            <span class="tag {% if provider_connection_test.status == 'success' %}is-success{% elif provider_connection_test.status == 'configuration_required' %}is-warning{% else %}is-danger{% endif %} is-light">Last test: {{ provider_connection_test.status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+            <section class="provider-credential-panel">
+                <div class="provider-section-heading">
+                    <div>
+                        <span class="scope-config-kicker">Authentication Details</span>
+                        <p>Pick one login method above. Only the fields for that method are used.</p>
+                    </div>
+                    <label class="checkbox is-size-7">
+                        <input type="checkbox" name="clear_connection_credentials">
+                        Clear saved credentials
+                    </label>
+                </div>
+                <div class="provider-auth-panels">
+                    {% if profile.provider_id == 'jira' %}
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode == 'cloud_basic' %}{% else %}is-hidden{% endif %}" data-provider-ids="jira" data-auth-modes="cloud_basic">
+                        <div class="provider-auth-panel-copy">
+                            <strong>Email + API token</strong>
+                            <p>Use this for Jira Cloud-style basic auth where email and API token travel together.</p>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-email">Email</label>
+                            <input class="input" id="provider-connection-email" name="connection_email" value="{{ profile.connection_settings.credentials.email }}" autocomplete="off" placeholder="Jira email" {% if profile.connection_settings.auth_mode != 'cloud_basic' %}disabled{% endif %}>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-api-token-cloud">API token{% include "partials/help_tip.html" with label="API token" text="A saved token is shown as stars. Type a new token to replace it; export removes this value." %}</label>
+                            <input class="input provider-token-mask" id="provider-connection-api-token-cloud" name="connection_api_token" type="password" autocomplete="new-password" value="{% if profile.connection_settings.credentials.api_token %}********{% endif %}" placeholder="{% if profile.connection_settings.credentials.api_token %}********{% else %}Paste Jira API token{% endif %}" {% if profile.connection_settings.auth_mode != 'cloud_basic' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode != 'cloud_basic' %}{% else %}is-hidden{% endif %}" data-provider-ids="jira" data-auth-modes="server_pat">
+                        <div class="provider-auth-panel-copy">
+                            <strong>API token / PAT</strong>
+                            <p>Use this for Jira server PAT auth. No username is required.</p>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-api-token">API token / PAT{% include "partials/help_tip.html" with label="API token" text="A saved token is shown as stars. Type a new token to replace it; export removes this value." %}</label>
+                            <input class="input provider-token-mask" id="provider-connection-api-token" name="connection_api_token" type="password" autocomplete="new-password" value="{% if profile.connection_settings.credentials.api_token %}********{% endif %}" placeholder="{% if profile.connection_settings.credentials.api_token %}********{% else %}Paste Jira PAT{% endif %}" {% if profile.connection_settings.auth_mode == 'cloud_basic' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    {% elif profile.provider_id == 'hsdes' %}
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode == 'basic' %}{% else %}is-hidden{% endif %}" data-provider-ids="hsdes" data-auth-modes="basic">
+                        <div class="provider-auth-panel-copy">
+                            <strong>Username + password</strong>
+                            <p>Use this only when basic auth is enabled for your account.</p>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-username">Username</label>
+                            <input class="input" id="provider-connection-username" name="connection_username" value="{{ profile.connection_settings.credentials.username }}" autocomplete="off" placeholder="Your username" {% if profile.connection_settings.auth_mode != 'basic' %}disabled{% endif %}>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-password">Password</label>
+                            <input class="input" id="provider-connection-password" name="connection_password" value="{{ profile.connection_settings.credentials.password }}" autocomplete="off" placeholder="Your password" {% if profile.connection_settings.auth_mode != 'basic' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode == 'token' %}{% else %}is-hidden{% endif %}" data-provider-ids="hsdes" data-auth-modes="token">
+                        <div class="provider-auth-panel-copy">
+                            <strong>Bearer token</strong>
+                            <p>Use this only when HSD-ES token auth is available.</p>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-token">Bearer token{% include "partials/help_tip.html" with label="Bearer token" text="A saved bearer token is shown as stars. Type a new token to replace it; export removes this value." %}</label>
+                            <input class="input provider-token-mask" id="provider-connection-token" name="connection_token" type="password" autocomplete="new-password" value="{% if profile.connection_settings.credentials.token %}********{% endif %}" placeholder="{% if profile.connection_settings.credentials.token %}********{% else %}Paste bearer token{% endif %}" {% if profile.connection_settings.auth_mode != 'token' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode != 'basic' and profile.connection_settings.auth_mode != 'token' %}{% else %}is-hidden{% endif %}" data-provider-ids="hsdes" data-auth-modes="kerberos windows_integrated">
+                        <div class="provider-auth-panel-copy">
+                            <strong>Windows Integrated Auth</strong>
+                            <p>No username, password, or token is required here. The connection test uses your Windows-integrated session.</p>
+                        </div>
+                    </div>
+                    {% elif profile.provider_id == 'github' %}
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode == 'token' %}{% else %}is-hidden{% endif %}" data-provider-ids="github" data-auth-modes="token">
+                        <div class="provider-auth-panel-copy">
+                            <strong>Personal access token</strong>
+                            <p>Use a GitHub token when the GitHub provider adapter is enabled.</p>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-github-token">GitHub token{% include "partials/help_tip.html" with label="GitHub token" text="A saved token is shown as stars. Type a new token to replace it; export removes this value." %}</label>
+                            <input class="input provider-token-mask" id="provider-connection-github-token" name="connection_token" type="password" autocomplete="new-password" value="{% if profile.connection_settings.credentials.token %}********{% endif %}" placeholder="{% if profile.connection_settings.credentials.token %}********{% else %}Paste GitHub token{% endif %}" {% if profile.connection_settings.auth_mode != 'token' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="provider-auth-panel" data-auth-modes="{{ profile.connection_settings.auth_mode }}">
+                        <div class="provider-auth-panel-copy">
+                            <strong>Provider authentication</strong>
+                            <p>This provider uses custom authentication handled by its adapter.</p>
+                        </div>
+                        <div class="provider-form-field">
+                            <label class="label" for="provider-connection-generic-email">Email</label>
+                            <input class="input" id="provider-connection-generic-email" name="connection_email" value="{{ profile.connection_settings.credentials.email }}" autocomplete="off" placeholder="Provider account email">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+            <section class="provider-mapping-flow">
+                <div>
+                    <span class="scope-config-kicker">Source</span>
+                    <p>Scope Config owns project JQL, saved query id, product and milestone filters. Provider Profile owns connection defaults.</p>
+                </div>
+                <div>
+                    <span class="scope-config-kicker">Metadata</span>
+                    <p>{{ editor.metadata_summary }}</p>
+                </div>
+                <div>
+                    <span class="scope-config-kicker">Field mappings</span>
+                    <p>Native fields map to Dashboard status, severity, component, owner, release and milestone fields.</p>
+                </div>
+                <div>
+                    <span class="scope-config-kicker">Value mappings</span>
+                    <p>Native type, status and severity values fill bug type, open/fixed/closed, critical/high and medium/low elements.</p>
+                </div>
+                <div>
+                    <span class="scope-config-kicker">Readiness</span>
+                    <p>Chart bindings and readiness policy decide Workbench, Data Health, AI and Grafana availability.</p>
+                </div>
+            </section>
+            <section class="provider-form-grid provider-identity-row">
+                <div class="provider-form-field">
+                    <label class="label" for="provider-profile-id">Profile id <span class="tag is-small is-danger is-light">Required</span></label>
+                    <input class="input" id="provider-profile-id" name="profile_id" value="{{ profile.profile_id }}" required>
+                </div>
+                <div class="provider-form-field">
+                    <label class="label" for="provider-display-name">Display name <span class="tag is-small is-danger is-light">Required</span></label>
+                    <input class="input" id="provider-display-name" name="display_name" value="{{ profile.display_name }}" required>
+                </div>
+                <div class="provider-form-field">
+                    <label class="label" for="provider-mapping-version">Mapping version</label>
+                    <input class="input" id="provider-mapping-version" name="mapping_version" type="number" min="1" value="{{ profile.mapping_version }}">
+                </div>
+            </section>
+        </div>
+        <details class="provider-advanced-config" {% if not profile.profile_id %}open{% endif %}>
+            <summary>Advanced JSON configuration</summary>
+            <div class="provider-json-grid">
+                {% for field in editor.json_fields %}
+                    <div class="provider-json-panel">
+                        <label class="label" for="provider-{{ field.name }}">{{ field.label }}</label>
+                        <textarea class="textarea provider-json-field" id="provider-{{ field.name }}" name="{{ field.name }}">{{ field.value }}</textarea>
+                    </div>
+                {% endfor %}
+            </div>
+        </details>
+        {% if provider_connection_test %}
+            <section id="provider-connection-test-result"
+                     class="provider-connection-test-result {% if provider_connection_test.status == 'success' %}is-success{% elif provider_connection_test.status == 'configuration_required' %}is-warning{% else %}is-danger{% endif %}"
+                     role="status"
+                     aria-live="polite">
+                <div class="provider-connection-test-header">
+                    <span class="scope-config-kicker">Connection Test</span>
+                    <span class="tag {% if provider_connection_test.status == 'success' %}is-success{% elif provider_connection_test.status == 'configuration_required' %}is-warning{% else %}is-danger{% endif %} is-light">{{ provider_connection_test.status }}</span>
+                </div>
+                <p class="provider-connection-test-summary">{{ provider_connection_test.summary }}</p>
+                {% if provider_connection_test.details %}
+                    <p class="provider-connection-test-details">
+                        {% for key, value in provider_connection_test.details.items %}
+                            <span>{{ key }}: {{ value }}</span>{% if not forloop.last %} · {% endif %}
+                        {% endfor %}
+                    </p>
+                {% endif %}
+            </section>
+        {% endif %}
+        <div class="provider-editor-actions">
+            <button class="button" type="submit" name="action" value="save_draft">Save Draft</button>
+            <button class="button is-primary" type="submit" name="action" value="enable_profile">Enable Profile</button>
+            <button class="button {% if provider_connection_test.status == 'success' %}is-success{% elif provider_connection_test.status == 'configuration_required' %}is-warning{% elif provider_connection_test %}is-danger{% else %}is-info{% endif %} is-light" type="submit" name="action" value="test_connection" formnovalidate>Test Connection</button>
+            {% if profile.profile_id and profile.lifecycle_state == 'enabled' %}
+                <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new&provider_id={{ profile.provider_id }}&profile_id={{ profile.profile_id }}">Create Scope from Profile</a>
+            {% elif profile.profile_id %}
+                <button class="button" type="button" disabled title="Enable this provider profile before creating a scope from it.">Create Scope from Profile</button>
+            {% endif %}
+        </div>
+        <p class="provider-hash-line">Mapping hash: {{ profile.mapping_version_hash }} Source hash: {{ profile.source_version_hash }}</p>
+    </section>
+</form>
+{% endwith %}

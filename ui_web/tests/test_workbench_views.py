@@ -48,6 +48,9 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('data-workbench-splitter="main-ai"', content)
         self.assertIn('data-workbench-collapse="chart"', content)
         self.assertIn('data-workbench-collapse="ai-assistant"', content)
+        self.assertIn('class="help-tip"', content)
+        self.assertIn('The query scope that drives the chart range', content)
+        self.assertIn('Embedded AI Base chat bound to the selected scope profile', content)
         self.assertNotIn('compact panel ready', content)
         self.assertNotIn('&copy; 2017', content)
 

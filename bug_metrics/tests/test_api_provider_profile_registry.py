@@ -19,6 +19,8 @@ class TestProjectProviderProfileRegistry(SimpleTestCase):
         self.assertEqual(1, profile.mapping_version)
         self.assertEqual(hashlib.sha256('project = "131600" AND component = "team_int_qemu"'.encode('utf-8')).hexdigest(), profile.source_population['source_query_hash'])
         self.assertEqual('metrics_managed_native_query', profile.source_population['ownership_type'])
+        self.assertEqual('settings:METRICS_JIRA_SERVER_URL', profile.connection_settings['base_url'])
+        self.assertEqual('settings:METRICS_JIRA_EMAIL/METRICS_JIRA_API_TOKEN', profile.connection_settings['credential_ref'])
         self.assertEqual('chiplet_ip', profile.scope_labels['ip'])
         self.assertEqual('customfield:project_literal:2a', profile.field_bindings['milestone']['native_field'])
         self.assertEqual('supported', profile.chart_bindings['open_bug_trend']['support_status'])
@@ -35,6 +37,8 @@ class TestProjectProviderProfileRegistry(SimpleTestCase):
         # Then
         self.assertEqual('hsdes', profile.provider_id)
         self.assertEqual('provider_owned_saved_query', profile.source_population['ownership_type'])
+        self.assertEqual('settings:METRICS_HSDES_API_BASE_URL', profile.connection_settings['base_url'])
+        self.assertEqual('settings:METRICS_HSDES_* or Windows Integrated Auth', profile.connection_settings['credential_ref'])
         self.assertEqual('15017652869', profile.source_population['source_query_ref'])
         self.assertEqual('ip_fw_sw_sensing.tenant', profile.source_population['tenant_or_site'])
         self.assertEqual('ip_fw_sw_sensing.bug', profile.source_population['subject_or_issue_type'])

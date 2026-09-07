@@ -3,7 +3,7 @@
     <form class="box" hx-get="{% url 'ui_web:bug_trend' %}" hx-target="#bug-trend-content" hx-swap="outerHTML" hx-indicator="#loading-indicator">
         <div class="columns is-align-items-end">
             <div class="column">
-                <label class="label" for="bug-trend-scope">Scope</label>
+                <label class="label" for="bug-trend-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope used to choose source facts, calculation runs, and evidence tickets for this chart." %}</label>
                 <div class="select is-fullwidth">
                     <select id="bug-trend-scope" name="scope_id">
                         {% for scope in scope_options %}
@@ -13,7 +13,7 @@
                 </div>
             </div>
             <div class="column">
-                <label class="label" for="bug-trend-chart">Chart</label>
+                <label class="label" for="bug-trend-chart">Chart{% include "partials/help_tip.html" with label="Chart" text="The Metrics chart recipe rendered for the selected scope and date range." %}</label>
                 <div class="select is-fullwidth">
                     <select id="bug-trend-chart" name="chart_id">
                         {% for chart in chart_options %}
@@ -34,23 +34,23 @@
                 <button class="button is-primary" type="submit">Apply</button>
             </div>
             <div class="column is-narrow">
-                <a class="button" href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ selected_scope_id }}">Audit</a>
+                <a class="button" href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ selected_scope_id }}">Scope Audit</a>
             </div>
             <div class="column is-narrow">
-                <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scopes</a>
+                <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a>
             </div>
             <div class="column is-narrow">
-                <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ selected_scope_id }}">Config</a>
+                <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ selected_scope_id }}">Scope Config</a>
             </div>
         </div>
     </form>
     {% if run_metadata %}
         <div class="notification {% if run_metadata.freshness_status == 'fresh' %}is-info{% else %}is-warning{% endif %} is-light">
             <p class="has-text-weight-semibold">Calculation run: {{ run_metadata.calculation_run_id }}</p>
-            <p class="is-size-7">Freshness: {{ run_metadata.freshness_status }}</p>
-            <p class="is-size-7">Run config hash: {{ run_metadata.run_config_version_hash }}</p>
-            <p class="is-size-7">Current config hash: {{ run_metadata.current_config_version_hash }}</p>
-            <p class="is-size-7">Coverage: {{ run_metadata.source_coverage_start }} to {{ run_metadata.source_coverage_end }}</p>
+            <p class="is-size-7">Freshness: {{ run_metadata.freshness_status }}{% include "partials/help_tip.html" with label="Freshness" text="Whether this calculation run still matches the latest scope config and source facts." %}</p>
+            <p class="is-size-7">Run config hash: {{ run_metadata.run_config_version_hash }}{% include "partials/help_tip.html" with label="Run config hash" text="The config fingerprint used when this calculation run was produced." %}</p>
+            <p class="is-size-7">Current config hash: {{ run_metadata.current_config_version_hash }}{% include "partials/help_tip.html" with label="Current config hash" text="The current scope fingerprint. If it differs from the run hash, recalculate before trusting current evidence." %}</p>
+            <p class="is-size-7">Coverage: {{ run_metadata.source_coverage_start }} to {{ run_metadata.source_coverage_end }}{% include "partials/help_tip.html" with label="Coverage" text="The source data window included in this calculation run." %}</p>
             <p class="is-size-7">Completed: {{ run_metadata.completed_at }}</p>
             {% if run_metadata.freshness_status != 'fresh' %}
                 <p class="is-size-7 has-text-weight-semibold">Recalculate this scope before using this chart as current evidence.</p>

@@ -1,0 +1,6 @@
+<span class="help-tip{% if inert %} is-icon{% endif %}"
+      {% if not inert %}tabindex="0"{% endif %}
+      role="note"
+      aria-label="{{ label }}: {{ text }}"
+      data-help="{{ text }}"
+      title="{{ text }}">{% if inert %}?{% endif %}</span>

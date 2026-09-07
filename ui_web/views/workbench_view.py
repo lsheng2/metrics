@@ -186,7 +186,7 @@ class WorkbenchView(GracefulTemplateView):
         if not scope_options:
             context['selected_scope_id'] = ''
             context['chart_json'] = '{}'
-            context['unavailable_reason'] = 'Create a saved query scope before opening the workbench chart pane.'
+            context['unavailable_reason'] = 'Create a scope before opening the workbench chart pane.'
             context['run_metadata'] = {}
             return
         if context['workbench_binding_unavailable_reason']:

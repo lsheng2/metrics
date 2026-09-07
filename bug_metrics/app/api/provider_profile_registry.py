@@ -4,6 +4,45 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from django.db import DatabaseError
+
+from bug_metrics.provider_profile_security import without_profile_secret_values
+
+
+def _default_connection_settings(provider_id: str) -> dict[str, str]:
+    provider_id = str(provider_id or '').strip().lower()
+    if provider_id == 'jira':
+        return {
+            'base_url': 'settings:METRICS_JIRA_SERVER_URL',
+            'auth_mode': 'settings:METRICS_JIRA_AUTH_MODE',
+            'credential_ref': 'settings:METRICS_JIRA_EMAIL/METRICS_JIRA_API_TOKEN',
+            'credential_storage': 'settings_or_profile',
+            'onboarding_status': 'deployment_configured',
+        }
+    if provider_id == 'hsdes':
+        return {
+            'base_url': 'settings:METRICS_HSDES_API_BASE_URL',
+            'auth_mode': 'settings:METRICS_HSDES_AUTH_MODE',
+            'credential_ref': 'settings:METRICS_HSDES_* or Windows Integrated Auth',
+            'credential_storage': 'settings_or_profile',
+            'onboarding_status': 'configuration_required',
+        }
+    if provider_id == 'github':
+        return {
+            'base_url': 'settings:METRICS_GITHUB_BASE_URL',
+            'auth_mode': 'token',
+            'credential_ref': 'settings:METRICS_GITHUB_TOKEN',
+            'credential_storage': 'settings_or_profile',
+            'onboarding_status': 'template_only',
+        }
+    return {
+        'base_url': '',
+        'auth_mode': '',
+        'credential_ref': '',
+        'credential_storage': 'settings_or_profile',
+        'onboarding_status': 'configuration_required',
+    }
+
 
 @dataclass(frozen=True, slots=True)
 class ProjectProviderProfile:
@@ -11,6 +50,7 @@ class ProjectProviderProfile:
     provider_id: str
     display_name: str
     enabled: bool
+    connection_settings: dict[str, Any]
     source_population: dict[str, str]
     scope_labels: dict[str, str]
     field_bindings: dict[str, dict[str, Any]]
@@ -20,10 +60,18 @@ class ProjectProviderProfile:
     mapping_version_hash: str
     sync_policy: dict[str, Any]
     readiness_policy: dict[str, Any]
+    lifecycle_state: str = 'enabled'
+    source_kind: str = 'bundled'
+    provenance: dict[str, Any] = None
+    source_version_hash: str = ''
 
     @classmethod
     def from_record(cls, record: dict[str, Any]) -> 'ProjectProviderProfile':
         source_population = dict(record.get('source_population', {}))
+        connection_settings = {
+            **_default_connection_settings(record.get('provider_id', '')),
+            **dict(record.get('connection_settings', {}) or {}),
+        }
         if not source_population.get('source_query_hash'):
             fingerprint = source_population.get('native_query_text') or '|'.join([
                 source_population.get('source_query_ref', ''),
@@ -31,12 +79,13 @@ class ProjectProviderProfile:
                 source_population.get('exclusion_snapshot', ''),
             ])
             source_population['source_query_hash'] = hashlib.sha256(fingerprint.encode('utf-8')).hexdigest() if fingerprint else ''
-        mapping_hash = record.get('mapping_version_hash') or cls._mapping_hash(record, source_population)
+        mapping_hash = record.get('mapping_version_hash') or cls._mapping_hash(record, source_population, connection_settings)
         return cls(
             profile_id=record['profile_id'],
             provider_id=record['provider_id'],
             display_name=record.get('display_name', record['profile_id']),
             enabled=bool(record.get('enabled', True)),
+            connection_settings=connection_settings,
             source_population=source_population,
             scope_labels=dict(record.get('scope_labels', {})),
             field_bindings=dict(record.get('field_bindings', {})),
@@ -46,16 +95,22 @@ class ProjectProviderProfile:
             mapping_version_hash=mapping_hash,
             sync_policy=dict(record.get('sync_policy', {})),
             readiness_policy=dict(record.get('readiness_policy', {})),
+            lifecycle_state=record.get('lifecycle_state', 'enabled' if bool(record.get('enabled', True)) else 'archived'),
+            source_kind=record.get('source_kind', 'bundled'),
+            provenance=dict(record.get('provenance', {}) or {}),
+            source_version_hash=record.get('source_version_hash', source_population.get('source_query_hash', '')),
         )
 
     @staticmethod
-    def _mapping_hash(record: dict[str, Any], source_population: dict[str, str]) -> str:
+    def _mapping_hash(record: dict[str, Any], source_population: dict[str, str],
+                      connection_settings: dict[str, Any]) -> str:
         hash_record = {
             key: value
             for key, value in record.items()
             if key not in {'mapping_version_hash', 'enabled'}
         }
         hash_record['source_population'] = source_population
+        hash_record['connection_settings'] = without_profile_secret_values(connection_settings)
         serialized = json.dumps(hash_record, sort_keys=True, separators=(',', ':'))
         return hashlib.sha256(serialized.encode('utf-8')).hexdigest()
 
@@ -116,7 +171,11 @@ class ProjectProviderProfileRegistry:
         records = []
         for path in sorted(directory.glob('*.json')):
             with path.open(encoding='utf-8') as profile_file:
-                records.append(json.load(profile_file))
+                record = json.load(profile_file)
+                record.setdefault('source_kind', 'bundled')
+                record.setdefault('lifecycle_state', 'enabled' if bool(record.get('enabled', True)) else 'archived')
+                records.append(record)
+        records.extend(cls._managed_profile_records())
         return cls.from_records(records)
 
     @classmethod
@@ -166,6 +225,27 @@ class ProjectProviderProfileRegistry:
         if include_disabled:
             return profiles
         return [profile for profile in profiles if profile.enabled]
+
+    @staticmethod
+    def _managed_profile_records() -> list[dict[str, Any]]:
+        try:
+            from bug_metrics.models import ProviderProfileConfig
+            return [
+                {
+                    **profile.to_profile_record(),
+                    'source_kind': 'managed',
+                    'lifecycle_state': profile.lifecycle_state,
+                    'provenance': dict(profile.provenance or {}),
+                    'source_version_hash': profile.source_version_hash,
+                }
+                for profile in ProviderProfileConfig.objects.order_by('provider_id', 'profile_id')
+            ]
+        except Exception as error:
+            if error.__class__.__name__ in {'DatabaseOperationForbidden', 'OperationalError', 'ProgrammingError'}:
+                return []
+            if isinstance(error, DatabaseError):
+                return []
+            raise
 
     def resolve_chart_support(self, profile_id: str, recipe: ChartRecipeRequirement,
                               provider_capabilities: dict[str, str]) -> ChartSupportResolution:

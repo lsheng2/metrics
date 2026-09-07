@@ -39,7 +39,7 @@ class BugTrendScopeLibraryRow:
     scope: BugTrendScopeLibraryScopeData
     binding: BugTrendScopeBindingData
     source_kind: str = 'saved_scope'
-    source_label: str = 'Saved scope'
+    source_label: str = 'Scope'
     source_detail: str = ''
     can_edit_scope: bool = True
     can_duplicate_scope: bool = True
@@ -53,9 +53,88 @@ class BugTrendProviderProfileChoice:
     profile_id: str
     provider_id: str
     display_name: str
+    connection_settings: dict = None
     scope_labels: dict = None
     source_population: dict = None
     mapping_version_hash: str = ''
+
+
+@dataclass(slots=True)
+class BugTrendProviderSetupOption:
+    provider_id: str
+    label: str
+    summary: str
+    color: str
+    selected: bool
+    enabled: bool
+    profile_count: int
+    metadata_supported: bool
+    metadata_summary: str
+
+
+@dataclass(slots=True)
+class BugTrendProviderSetupDetail:
+    label: str
+    value: str
+    help_text: str
+
+
+@dataclass(slots=True)
+class BugTrendProviderProfileRow:
+    profile_id: str
+    provider_id: str
+    provider_label: str
+    provider_color: str
+    display_name: str
+    lifecycle_state: str
+    source_kind: str
+    source_summary: str
+    mapping_version_hash: str
+    source_version_hash: str
+    delete_impact: dict
+    delete_confirmation: str
+
+
+@dataclass(slots=True)
+class BugTrendProviderSetupEditor:
+    profile: object
+    provider_options: list
+    selected_provider_id: str
+    provider_label: str
+    provider_color: str
+    provider_summary: str
+    source_query_label: str
+    source_query_help: str
+    metadata_supported: bool
+    metadata_summary: str
+    detail_rows: list
+    json_fields: list
+    connection_settings_json: str
+    connection_status_label: str
+
+
+@dataclass(slots=True)
+class BugTrendScopeConfigProviderContext:
+    profile_id: str
+    provider_id: str
+    status: str
+    provenance_summary: str
+    blockers: list
+    profile_choices: list
+    has_saved_scope: bool
+    metadata_provider_id: str
+    metadata_supported: bool
+    metadata_summary: str
+    selected_provider_id: str
+    selected_profile_id: str
+    selected_profile_choices: list
+    provider_options: list
+    provider_label: str
+    provider_color: str
+    provider_summary: str
+    source_query_label: str
+    source_query_help: str
+    detail_rows: list
 
 
 @dataclass(slots=True)

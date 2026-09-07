@@ -250,6 +250,16 @@ class TestBugTrendFacade(TestCase):
         self.assertFalse(duplicate.enabled)
         self.assertEqual(['Bug'], duplicate.bug_type_values)
 
+    def test_shouldApplyMetadataFieldMappingToScopeConfigPreview(self):
+        # Given
+        facade = BugTrendFacade(FakeBugTrendApi())
+
+        # When
+        config = facade.get_scope_config(7, 'severity_field', 'customfield_12345')
+
+        # Then
+        self.assertEqual('customfield_12345', config.severity_field)
+
     def test_shouldReturnChartJsonWithRunAndBucketIds(self):
         # Given
         facade = BugTrendFacade(FakeBugTrendApi())

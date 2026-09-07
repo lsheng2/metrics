@@ -14,6 +14,7 @@
 - `future-target/`: 尚未全部实现的产品目标、策略和 design input。进入实施前必须转成 active OpenSpec change。
   - `ai-base-gcx-metrics-contract.zh.md`: 记录 optional AI base 与 `gcx` 如何通过 Metrics-owned catalog、validator 和 publication precondition 协作。
 - `validation/`: 测试策略、运行手册、C0/C1 evidence 和 validation gate 材料。
+  - `ui-change-quality-gate.zh.md`: UI change 在 OpenSpec proposal/design/tasks 阶段必须定义的视觉、交互和浏览器验收门槛。
 - `historical/`: 研究记录、handoff、postmortem、旧架构说明等非规范材料。
 - `backlog/`: 尚未进入 active OpenSpec change 的候选想法。
 

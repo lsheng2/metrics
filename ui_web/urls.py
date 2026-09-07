@@ -26,7 +26,7 @@ from .views.ai_dashboard_publish_view import (
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
-from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEvidenceExportView, BugTrendScopeAuditView, BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView, BugTrendChartDataApiView, BugTrendEvidenceApiView
+from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEvidenceExportView, BugTrendScopeAuditView, BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView, BugTrendChartDataApiView, BugTrendEvidenceApiView, ProviderSetupView
 from .views.data_health_view import DataHealthView
 from .views.provider_chart_view import ProviderChartDataApiView, ProviderChartEvidenceApiView, ProviderProfileAlignDashboardRangeApiView, ProviderProfileReadinessApiView
 from .views.task_forecast_view import TaskForecastView
@@ -55,6 +55,7 @@ urlpatterns = [
     path(_base_prefix + 'bug-trend/', BugTrendView.as_view(), name='bug_trend'),
      path(_base_prefix + 'ai-dashboard/workflow/', AiDashboardWorkflowView.as_view(), name='ai_dashboard_workflow'),
      path(_base_prefix + 'data-health/', DataHealthView.as_view(), name='data_health'),
+     path(_base_prefix + 'provider-setup/', ProviderSetupView.as_view(), name='provider_setup'),
      path(_base_prefix + 'bug-trend/scope-audit/', BugTrendScopeAuditView.as_view(), name='bug_trend_scope_audit'),
      path(_base_prefix + 'bug-trend/scopes/', BugTrendScopeLibraryView.as_view(), name='bug_trend_scope_library'),
      path(_base_prefix + 'bug-trend/scope-config/', BugTrendScopeConfigView.as_view(), name='bug_trend_scope_config'),

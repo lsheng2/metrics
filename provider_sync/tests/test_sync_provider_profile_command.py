@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.core.management import call_command
 from django.test import TestCase
 
-from bug_metrics.models import JiraScopeConfig
+from bug_metrics.models import JiraScopeConfig, ProviderProfileConfig
 from jira_history.models import JiraIssue
 from jira_sync.models import JiraSyncCursor
 
@@ -30,6 +30,24 @@ class TestSyncProviderProfileCommand(TestCase):
             owner_field='assignee',
             bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
         )
+        ProviderProfileConfig.objects.create(
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            display_name='Chiplet Jira',
+            lifecycle_state=ProviderProfileConfig.LIFECYCLE_ENABLED,
+            connection_settings={
+                'base_url': 'https://jira.profile.example',
+                'auth_mode': 'server_pat',
+                'credentials': {
+                    'email': 'profile-jira-user@example.com',
+                    'api_token': 'profile-jira-token',
+                },
+                'onboarding_status': 'ready',
+            },
+            source_population={'native_query_text': scope.jql},
+            field_bindings={'status': {'native_field': 'status'}},
+            chart_bindings={'open_bug_trend': {'support_status': 'supported'}},
+        )
         adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
         output = StringIO()
 
@@ -53,6 +71,7 @@ class TestSyncProviderProfileCommand(TestCase):
         self.assertEqual('2026-08-09', payload['coverage_end'])
         self.assertEqual(JiraSyncCursor.STATUS_SUCCESS, cursor.status)
         self.assertTrue(JiraIssue.objects.filter(scope=scope, issue_key='STDEL-8942').exists())
+        self.assertEqual('profile-jira-token', create_jira_client.call_args.args[1]['credentials']['api_token'])
 
     def test_shouldReturnConfigurationRequiredWhenJiraProfileHasNoMappedScope(self):
         # Given

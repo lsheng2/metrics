@@ -4,6 +4,8 @@ import uuid
 
 from django.db import models
 
+from bug_metrics.provider_profile_security import without_profile_secret_values
+
 
 def _empty_list():
     return []
@@ -165,6 +167,99 @@ class BugTrendScopeProviderBinding(models.Model):
         return f'{self.scope_id}:{self.profile_id}:{self.provider_id}:{self.status}'
 
 
+class ProviderProfileConfig(models.Model):
+    LIFECYCLE_DRAFT = 'draft'
+    LIFECYCLE_ENABLED = 'enabled'
+    LIFECYCLE_ARCHIVED = 'archived'
+
+    LIFECYCLE_CHOICES = (
+        (LIFECYCLE_DRAFT, 'Draft'),
+        (LIFECYCLE_ENABLED, 'Enabled'),
+        (LIFECYCLE_ARCHIVED, 'Archived'),
+    )
+
+    profile_id = models.CharField(max_length=120, unique=True)
+    provider_id = models.CharField(max_length=80)
+    display_name = models.CharField(max_length=160)
+    lifecycle_state = models.CharField(max_length=40, choices=LIFECYCLE_CHOICES, default=LIFECYCLE_DRAFT)
+    source_population = models.JSONField(default=_empty_dict)
+    connection_settings = models.JSONField(default=_empty_dict)
+    scope_labels = models.JSONField(default=_empty_dict)
+    field_bindings = models.JSONField(default=_empty_dict)
+    value_mappings = models.JSONField(default=_empty_dict)
+    chart_bindings = models.JSONField(default=_empty_dict)
+    sync_policy = models.JSONField(default=_empty_dict)
+    readiness_policy = models.JSONField(default=_empty_dict)
+    mapping_version = models.PositiveIntegerField(default=1)
+    mapping_version_hash = models.CharField(max_length=64, editable=False)
+    source_version_hash = models.CharField(max_length=64, editable=False)
+    provenance = models.JSONField(default=_empty_dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['provider_id', 'lifecycle_state']),
+        ]
+
+    @property
+    def enabled(self) -> bool:
+        return self.lifecycle_state == self.LIFECYCLE_ENABLED
+
+    def save(self, *args, **kwargs):
+        self.mapping_version_hash = self.calculate_mapping_version_hash()
+        self.source_version_hash = self.calculate_source_version_hash()
+        super().save(*args, **kwargs)
+
+    def to_profile_record(self) -> dict:
+        return {
+            'profile_id': self.profile_id,
+            'provider_id': self.provider_id,
+            'display_name': self.display_name,
+            'enabled': self.enabled,
+            'mapping_version': self.mapping_version,
+            'mapping_version_hash': self.mapping_version_hash,
+            'source_population': dict(self.source_population or {}),
+            'connection_settings': dict(self.connection_settings or {}),
+            'scope_labels': dict(self.scope_labels or {}),
+            'field_bindings': dict(self.field_bindings or {}),
+            'value_mappings': dict(self.value_mappings or {}),
+            'chart_bindings': dict(self.chart_bindings or {}),
+            'sync_policy': dict(self.sync_policy or {}),
+            'readiness_policy': dict(self.readiness_policy or {}),
+        }
+
+    def calculate_mapping_version_hash(self) -> str:
+        payload = {
+            'profile_id': self.profile_id,
+            'provider_id': self.provider_id,
+            'display_name': self.display_name,
+            'source_population': self.source_population,
+            'connection_settings': without_profile_secret_values(self.connection_settings),
+            'scope_labels': self.scope_labels,
+            'field_bindings': self.field_bindings,
+            'value_mappings': self.value_mappings,
+            'chart_bindings': self.chart_bindings,
+            'sync_policy': self.sync_policy,
+            'readiness_policy': self.readiness_policy,
+            'mapping_version': self.mapping_version,
+        }
+        encoded_payload = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+        return hashlib.sha256(encoded_payload.encode('utf-8')).hexdigest()
+
+    def calculate_source_version_hash(self) -> str:
+        payload = {
+            'provider_id': self.provider_id,
+            'connection_settings': without_profile_secret_values(self.connection_settings),
+            'source_population': self.source_population,
+        }
+        encoded_payload = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+        return hashlib.sha256(encoded_payload.encode('utf-8')).hexdigest()
+
+    def __str__(self):
+        return f'{self.profile_id}:{self.provider_id}:{self.lifecycle_state}'
+
+
 class BugTrendCalculationRun(models.Model):
     STATUS_RUNNING = 'running'
     STATUS_COMPLETED = 'completed'
@@ -237,6 +332,14 @@ class BugTrendAuditEvent(models.Model):
     EVENT_SCOPE_BINDING_CONFIRMED = 'scope_binding_confirmed'
     EVENT_SCOPE_BINDING_UPDATED = 'scope_binding_updated'
     EVENT_SCOPE_BINDING_BULK_CONFIRMED = 'scope_binding_bulk_confirmed'
+    EVENT_PROVIDER_PROFILE_CREATED = 'provider_profile_created'
+    EVENT_PROVIDER_PROFILE_UPDATED = 'provider_profile_updated'
+    EVENT_PROVIDER_PROFILE_ARCHIVED = 'provider_profile_archived'
+    EVENT_PROVIDER_PROFILE_RESTORED = 'provider_profile_restored'
+    EVENT_PROVIDER_PROFILE_DELETED = 'provider_profile_deleted'
+    EVENT_PROVIDER_PROFILE_DUPLICATED = 'provider_profile_duplicated'
+    EVENT_PROVIDER_PROFILE_IMPORTED = 'provider_profile_imported'
+    EVENT_PROVIDER_PROFILE_EXPORTED = 'provider_profile_exported'
 
     event_type = models.CharField(max_length=80)
     actor = models.CharField(max_length=120)
