@@ -728,13 +728,14 @@ function Test-DashboardAiStack {
     if ($runtimeInfo.app.instanceToken) {
         $appChatAuth.instanceTokenId = $runtimeInfo.app.instanceToken
     }
+    $appChatSessionKey = "metrics.workbench.$JiraProfileId.overview"
     $binding = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/app-chat-bindings/resolve" -Body @{
         sourceAppId = 'metrics-dashboard'
         auth = $appChatAuth
         bindingKey = 'metrics.workbench.overview'
         agentKey = 'metrics.dashboardQuery'
         workspaceKey = $contextBundle.workspace_key
-        sessionKey = "metrics.workbench.$JiraProfileId.overview"
+        sessionKey = $appChatSessionKey
         sessionTitle = "$JiraProfileId Workbench"
         sessionMode = 'reuse_or_create'
         context = @{
@@ -757,9 +758,15 @@ function Test-DashboardAiStack {
         throw 'AI Base app-chat binding did not resolve a chat session.'
     }
     $sessionId = $binding.session.sessionId
-    $firstTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$sessionId/messages" -Body @{
-        content = "Approve and publish a weekly open bug trend chart for chiplet Jira from $BeginWw to $EndWw, only new critical/high."
+    $appChatMessageBase = @{
+        sourceAppId = 'metrics-dashboard'
+        auth = $appChatAuth
+        bindingKey = 'metrics.workbench.overview'
+        sessionKey = $appChatSessionKey
     }
+    $firstTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/app-chat-bindings/messages" -Body ($appChatMessageBase + @{
+        content = "Approve and publish a weekly open bug trend chart for chiplet Jira from $BeginWw to $EndWw, only new critical/high."
+    })
     $firstContent = [string]$firstTurn.assistantMessage.content
     if (-not $firstContent.Contains('Approval request:')) {
         throw 'AI Base chat did not produce a Dashboard publish approval request.'
@@ -791,9 +798,9 @@ function Test-DashboardAiStack {
     if ($approvalDecision.status -ne 'approved') {
         throw "AI Base approval decision was $($approvalDecision.status)."
     }
-    $publishTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/chat/sessions/$sessionId/messages" -Body @{
+    $publishTurn = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/app-chat-bindings/messages" -Body ($appChatMessageBase + @{
         content = "Publish approved $approvalId weekly open bug trend chart for chiplet Jira from $BeginWw to $EndWw, only new critical/high."
-    }
+    })
     $publishContent = [string]$publishTurn.assistantMessage.content
     if (-not $publishContent.Contains('Dashboard chart published to Grafana.')) {
         throw "AI Base chat publish did not report Grafana publication. Response: $publishContent"
@@ -804,12 +811,15 @@ function Test-DashboardAiStack {
     if ($publishedArtifact.artifact.validationResult.status -ne 'published') {
         throw "AI Base artifact publish result was $($publishedArtifact.artifact.validationResult.status)."
     }
-    $authQuery = "authMode=local_sidecar_signed_token&credentialRef=metrics-dashboard-local"
+    $appAuthHeaders = @{
+        'X-AI-Base-App-Auth-Mode' = 'local_sidecar_signed_token'
+        'X-AI-Base-App-Credential-Ref' = 'metrics-dashboard-local'
+    }
     if ($appChatAuth.instanceTokenId) {
-        $authQuery = "$authQuery&instanceTokenId=$([Uri]::EscapeDataString([string]$appChatAuth.instanceTokenId))"
+        $appAuthHeaders['X-AI-Base-App-Instance-Token'] = [string]$appChatAuth.instanceTokenId
     }
     $hostActionActivity = Invoke-WithStackRetry -ScriptBlock {
-        Invoke-RestMethod -Uri "$AiBaseBackendUrl/api/app-chat-bindings/host-actions/activity?sourceAppId=metrics-dashboard&bindingKey=metrics.workbench.overview&sessionId=$sessionId&$authQuery" -TimeoutSec 20
+        Invoke-RestMethod -Uri "$AiBaseBackendUrl/api/app-chat-bindings/host-actions/activity?sourceAppId=metrics-dashboard&bindingKey=metrics.workbench.overview&sessionId=$sessionId" -Headers $appAuthHeaders -TimeoutSec 20
     }
     $openChartAction = @($hostActionActivity.items | Where-Object { $_.actionKind -eq 'metrics.openGrafanaChart' } | Select-Object -Last 1)
     if (-not $openChartAction) {

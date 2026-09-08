@@ -46,7 +46,7 @@ class TestAiBaseWorkbenchAdapter(TestCase):
         METRICS_AI_BASE_INSTANCE_TOKEN='secret-token',
     )
     def test_shouldBuildGenericAppChatUrlWithoutLeakingInstanceToken(self):
-        payload = self.adapter.context(self.state, {'profile_id': 'dashboard_query_agent'})
+        payload = self.adapter.context(self.state, {'profile_id': 'dashboard_query_agent'}, 'http://testserver')
         url = payload['ai_base']['chat_url']
 
         self.assertIn('http://127.0.0.1:48310/?embed=app-chat#/chat?', url)
@@ -54,10 +54,44 @@ class TestAiBaseWorkbenchAdapter(TestCase):
         self.assertIn('bindingKey=metrics.workbench.overview', url)
         self.assertIn('workspaceKey=metrics.hsdes.nvu-ttl-hsdes', url)
         self.assertIn('agentKey=metrics.dashboardQuery', url)
-        self.assertIn('credentialRef=metrics-dashboard-local', url)
+        self.assertNotIn('credentialRef=', url)
+        self.assertNotIn('hostOrigin=', url)
         self.assertNotIn('secret-token', url)
         self.assertEqual('metrics.dashboardQuery', payload['ai_base']['binding_request']['agentKey'])
         self.assertEqual('metrics.workbench.nvu-ttl-hsdes.overview', payload['ai_base']['binding_request']['sessionKey'])
+        self.assertNotIn('instanceTokenId', payload['ai_base']['binding_request']['auth'])
+
+    @override_settings(METRICS_AI_BASE_INSTANCE_TOKEN='settings-token')
+    def test_shouldAttachInstanceTokenToServerSideBindingRequest(self):
+        payload = self.adapter.binding_request(self.state, {'instance_token': 'runtime-token'}, 'http://testserver')
+
+        self.assertEqual('local_sidecar_signed_token', payload['auth']['authMode'])
+        self.assertEqual('metrics-dashboard-local', payload['auth']['credentialRef'])
+        self.assertEqual('runtime-token', payload['auth']['instanceTokenId'])
+        self.assertNotIn('hostOrigin', payload)
+
+    @override_settings(METRICS_AI_BASE_INSTANCE_TOKEN='settings-token')
+    def test_shouldAttachSettingsInstanceTokenWhenSyncingWorkspaceContext(self):
+        calls = []
+        adapter = AiBaseWorkbenchAdapter(
+            'scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort',
+            json_poster=lambda url, payload, timeout: calls.append((url, payload, timeout)) or {'ok': True},
+        )
+        context_bundle = {
+            'sourceAppId': 'metrics-dashboard',
+            'workspaceKey': 'metrics.hsdes.nvu-ttl-hsdes',
+            'workspaceName': 'NVU',
+            'bundleVersion': 'v1',
+            'files': [{'path': 'context.json', 'contentType': 'application/json', 'contentJson': {}}],
+        }
+
+        result = adapter.sync_workspace_context({'base_url': 'http://127.0.0.1:48300'}, context_bundle)
+
+        self.assertEqual({'ok': True}, result)
+        self.assertEqual('http://127.0.0.1:48300/api/app-workspace-context-bundles/sync', calls[0][0])
+        self.assertEqual('settings-token', calls[0][1]['auth']['instanceTokenId'])
+        self.assertEqual('local_sidecar_signed_token', calls[0][1]['auth']['authMode'])
+        self.assertNotIn('auth', context_bundle)
 
     def test_shouldKeepAiBaseCouplingOutOfCoreWorkbenchModules(self):
         guarded_paths = [

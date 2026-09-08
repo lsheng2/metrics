@@ -70,8 +70,8 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('bindingKey=metrics.workbench.overview', content)
         self.assertIn('workspaceKey=metrics.hsdes.nvu-ttl-hsdes', content)
         self.assertIn('agentKey=metrics.dashboardQuery', content)
-        self.assertIn('credentialRef=metrics-dashboard-local', content)
-        self.assertIn('hostOrigin=http%3A%2F%2Ftestserver', content)
+        self.assertNotIn('credentialRef=', content)
+        self.assertNotIn('hostOrigin=', content)
         self.assertIn('binding_request', content)
         self.assertNotIn('secret-token', content)
 

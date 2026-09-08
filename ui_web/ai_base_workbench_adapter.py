@@ -68,7 +68,7 @@ class AiBaseWorkbenchAdapter:
             'chat_url': self.chat_url(state, sidecar_status, host_origin),
             'workspace_key': self.workspace_key_for_state(state),
             'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
-            'binding_request': self.binding_request(state, sidecar_status, host_origin),
+            'binding_request': self.public_binding_request(state, sidecar_status),
             'launcher_command': self._launcher_command,
         }
 
@@ -127,9 +127,14 @@ class AiBaseWorkbenchAdapter:
         base_url = str(sidecar_status.get('base_url') or '').rstrip('/')
         if not base_url:
             raise ValueError('AI Base backend URL is not available.')
+        payload = {
+            **context_bundle,
+            'sourceAppId': context_bundle.get('sourceAppId') or self.source_app_id,
+            'auth': self._binding_auth(sidecar_status),
+        }
         return self._json_poster(
             self._api_url(base_url, '/api/app-workspace-context-bundles/sync'),
-            context_bundle,
+            payload,
             float(getattr(settings, 'METRICS_AI_BASE_TIMEOUT_SECONDS', 3.0)),
         )
 
@@ -145,10 +150,7 @@ class AiBaseWorkbenchAdapter:
         session_key = self._session_key(state)
         request = {
             'sourceAppId': self.source_app_id,
-            'auth': {
-                'authMode': 'local_sidecar_signed_token',
-                'credentialRef': 'metrics-dashboard-local',
-            },
+            'auth': self._binding_auth(sidecar_status),
             'bindingKey': self.default_binding_key,
             'agentKey': self.default_agent_key,
             'workspaceKey': workspace_key,
@@ -178,8 +180,14 @@ class AiBaseWorkbenchAdapter:
             },
             'correlationId': f'metrics-workbench:{state.profile_id}:{state.chart_id}',
         }
-        if host_origin:
-            request['hostOrigin'] = host_origin
+        return request
+
+    def public_binding_request(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
+        request = self.binding_request(state, sidecar_status)
+        public_auth = dict(request.get('auth') or {})
+        public_auth.pop('instanceTokenId', None)
+        public_auth.pop('token', None)
+        request['auth'] = public_auth
         return request
 
     def next_action(self, status: str) -> str:
@@ -219,10 +227,7 @@ class AiBaseWorkbenchAdapter:
             'profileId': state.profile_id,
             'providerId': state.provider_id,
             'correlationId': request['correlationId'],
-            'credentialRef': request['auth']['credentialRef'],
         }
-        if host_origin:
-            query['hostOrigin'] = host_origin
         return query
 
     def _api_url(self, base_url: str, path: str) -> str:
@@ -233,6 +238,19 @@ class AiBaseWorkbenchAdapter:
         request = Request(url, data=data, headers={'Accept': 'application/json', 'Content-Type': 'application/json'})
         with urlopen(request, timeout=timeout_seconds) as response:
             return json.loads(response.read().decode('utf-8'))
+
+    def _binding_auth(self, sidecar_status: dict) -> dict:
+        auth = {
+            'authMode': 'local_sidecar_signed_token',
+            'credentialRef': 'metrics-dashboard-local',
+        }
+        instance_token_id = self._instance_token(sidecar_status)
+        if instance_token_id:
+            auth['instanceTokenId'] = instance_token_id
+        return auth
+
+    def _instance_token(self, sidecar_status: dict) -> str:
+        return str(sidecar_status.get('instance_token') or getattr(settings, 'METRICS_AI_BASE_INSTANCE_TOKEN', '') or '')
 
     def _http_error_detail(self, error: HTTPError) -> dict:
         try:
