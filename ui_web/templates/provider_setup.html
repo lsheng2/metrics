@@ -23,7 +23,7 @@
                 <details class="workbench-menu scope-import-menu">
                     <summary class="button">Import Profile{% include "partials/help_tip.html" with label="Import Profile" text="Imported provider profiles start as drafts so source, mapping and readiness can be reviewed before enablement." inert=True %}</summary>
                     <div class="workbench-menu-panel scope-import-panel">
-                        <form method="post" enctype="multipart/form-data" class="scope-import-form">
+                        <form method="post" enctype="multipart/form-data" class="dashboard-action-form is-stacked scope-import-form">
                             {% csrf_token %}
                             <input class="input is-small" type="file" name="profile_package" accept="application/json,.json" required aria-label="Choose provider profile JSON package">
                             <button class="button is-small is-primary" type="submit" name="action" value="import_profile">Import</button>
@@ -124,7 +124,7 @@
                                         <summary class="button">More</summary>
                                         <div class="workbench-menu-panel">
                                             {% if row.lifecycle_state != 'archived' %}
-                                                <form class="provider-assign-scope-form" method="post" data-confirm="Assign the selected existing scope to this provider profile?">
+                                                <form class="dashboard-action-form is-stacked provider-assign-scope-form" method="post" data-confirm="Assign the selected existing scope to this provider profile?">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
                                                     <label class="label is-size-7" for="assign-scope-{{ forloop.counter }}">Assign existing scope{% include "partials/help_tip.html" with label="Assign existing scope" text="Use this only when a scope already exists and should use this provider profile. New users should usually choose Create Scope instead." inert=True %}</label>
@@ -144,25 +144,25 @@
                                                     </div>
                                                 </form>
                                             {% endif %}
-                                            <form method="post" data-confirm="Duplicate this provider profile as a draft?">
+                                            <form class="dashboard-action-form" method="post" data-confirm="Duplicate this provider profile as a draft?">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
                                                 <button class="button" type="submit" name="action" value="duplicate_profile">Duplicate</button>
                                             </form>
                                             {% if row.lifecycle_state == 'archived' %}
-                                                <form method="post">
+                                                <form class="dashboard-action-form" method="post">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
                                                     <button class="button is-success is-light" type="submit" name="action" value="restore_profile">Restore</button>
                                                 </form>
-                                                <form method="post" data-confirm="Delete this archived provider profile? This does not delete provider facts automatically, but it removes the managed profile config.">
+                                                <form class="dashboard-action-form is-stacked" method="post" data-confirm="Delete this archived provider profile? This does not delete provider facts automatically, but it removes the managed profile config.">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
                                                     <input class="input is-small" name="delete_confirmation" placeholder="{{ row.delete_confirmation }}" aria-label="Delete confirmation for {{ row.profile_id }}">
                                                     <button class="button is-danger is-light" type="submit" name="action" value="delete_archived_profile" title="Impact: {{ row.delete_impact.scope_bindings }} bindings, {{ row.delete_impact.fact_snapshots }} snapshots, {{ row.delete_impact.aggregate_artifacts }} aggregates">Delete archived</button>
                                                 </form>
                                             {% else %}
-                                                <form method="post" data-confirm="Archive this provider profile? Bound scopes will require restore or rebinding before provider-backed runtime use.">
+                                                <form class="dashboard-action-form" method="post" data-confirm="Archive this provider profile? Bound scopes will require restore or rebinding before provider-backed runtime use.">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="profile_id" value="{{ row.profile_id }}">
                                                     <button class="button is-warning is-light" type="submit" name="action" value="archive_profile">Archive</button>

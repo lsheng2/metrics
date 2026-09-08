@@ -25,6 +25,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Editor state banners | `partials/dashboard_editor_state_banners.html` | `dashboard-unsaved-banner`, `dashboard-validation-banner`, `data-dirty-banner`, `data-required-summary` | Provider Profile Config, Scope Config | Static partial ownership tests |
 | Action bar | `main.css` | `dashboard-action-bar`, `dashboard-action-group`, `dashboard-action-cancel` | Editor save/test/cancel/navigation controls | Button-height and gap assertions |
 | Tool/filter form | `main.css` | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | Bug Trend filters, Task Forecast parameters, AI Workflow request, Current Tasks filters, Pull Request filters | Static template checks and browser layout gate |
+| Action form | `main.css` | `dashboard-action-form`, optional `is-stacked` or `is-inline` | Import, export, duplicate, bind, archive, delete, sync, and confirmation forms | Static form ownership tests and visual manifest runner |
 | Component token profile | `lsheng2-ui-design` core, project overlay | `dashboard-admin-v1.json`, `compactDashboard`, project overrides | Buttons, forms, tables, tabs, status feedback | Overlay/static audit plus browser layout gate |
 | Component catalog and visual manifest | `lsheng2-ui-design` core, project overlay | local static HTML catalog, manifest JSON | Shared UI reviews and screenshot capture planning | Static artifact tests plus local UI gate |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
@@ -38,6 +39,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Persistent setup editors must use the Editor form, Form grid, Required state, Dirty state, and Action bar contracts.
 - Filter, search, import, and destructive confirmation forms must not opt into `data-dirty-form` or `data-required-form` unless they become persistent editors.
 - Lightweight dashboard query forms must use the Tool/filter form contract instead of page-local `columns` and button sizing rules.
+- Non-editor mutation, import/export, binding, archive, delete, and sync forms must declare the Action form contract so they remain visible to UI audits without inheriting editor dirty state.
 - Subjective UI quality work must start from the component token profile and project overlay instead of one-off page-level button, font, spacing, or radius decisions.
 - Provider Profile Config and Scope Config must use the same Provider tabs contract so Jira, HSD-ES, GitHub, and future providers are visually and structurally consistent.
 - Provider colors are identity cues only: Jira green, HSD-ES blue, GitHub purple. Do not create separate provider color systems.
@@ -79,5 +81,6 @@ git diff --check
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
+scripts\validate_ui_visual_manifest.ps1
 .venv\Scripts\python.exe manage.py check
 ```

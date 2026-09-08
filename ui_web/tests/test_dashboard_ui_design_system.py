@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from django.test import SimpleTestCase
@@ -14,9 +15,11 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         docs_index_path = project_root / 'docs' / 'README.md'
         openspec_docs_index_path = project_root / 'openspec' / 'docs' / 'README.md'
         validation_script_path = project_root / 'scripts' / 'validate_ui_design_gate.ps1'
+        visual_manifest_script_path = project_root / 'scripts' / 'validate_ui_visual_manifest.ps1'
 
         contract = contract_path.read_text(encoding='utf-8')
         validation_script = validation_script_path.read_text(encoding='utf-8')
+        visual_manifest_script = visual_manifest_script_path.read_text(encoding='utf-8')
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
         css = (Path(__file__).resolve().parents[1] / 'static' / 'css' / 'main.css').read_text(encoding='utf-8')
         script = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
@@ -33,6 +36,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             'dashboard-tool-grid',
             'dashboard-tool-field',
             'dashboard-tool-actions',
+            'dashboard-action-form',
             'dashboard_editor_state_banners.html',
             'dashboard-required-tag',
             'dashboard-validation-banner',
@@ -51,8 +55,13 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         # Then
         self.assertIn('Dashboard UI Design System Contract', contract)
         self.assertIn('scripts\\validate_ui_design_gate.ps1', contract)
+        self.assertIn('scripts\\validate_ui_visual_manifest.ps1', contract)
         self.assertIn('ui_web.tests.test_ui_design_baseline_gate', validation_script)
         self.assertIn('openspec validate standardize-dashboard-ui-design-system --strict', validation_script)
+        self.assertIn('audit_project_ui.py', validation_script)
+        self.assertIn('render_component_catalog.py', validation_script)
+        self.assertIn('create_visual_regression_manifest.py', validation_script)
+        self.assertIn('test_shouldRunVisualRegressionManifestAgainstCoreRoutes', visual_manifest_script)
         self.assertIn('Invoke-Checked', validation_script)
         self.assertIn('$LASTEXITCODE', validation_script)
         for contract_name in expected_contracts:
@@ -93,11 +102,31 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         # Then
         self.assertIn('Dashboard Admin Component Catalog', catalog)
         self.assertIn('dashboard-admin-v1', catalog)
+        self.assertIn('<strong>Action:</strong>', catalog)
         self.assertEqual('lsheng2-ui-design', manifest['owner'])
         self.assertGreaterEqual(len(manifest['viewports']), 3)
         self.assertIn('/provider-setup/', {item['route'] for item in manifest['capturePlan']})
         self.assertIn('component-catalog/dashboard-admin-v1.html', overlay)
         self.assertIn('visual-regression/manifest.json', overlay)
+
+    def test_shouldGiveEveryVisibleFormASharedUiContract(self):
+        # Given
+        template_dir = Path(__file__).resolve().parents[1] / 'templates'
+        shared_form_classes = (
+            'dashboard-edit-form',
+            'dashboard-tool-form',
+            'dashboard-action-form',
+        )
+
+        # Then
+        for path in template_dir.rglob('*.html'):
+            content = path.read_text(encoding='utf-8')
+            for match in re.finditer(r'<form\b[^>]*>', content):
+                form_tag = match.group(0)
+                self.assertTrue(
+                    any(shared_class in form_tag for shared_class in shared_form_classes),
+                    f'{path}:{content.count(chr(10), 0, match.start()) + 1} {form_tag}',
+                )
 
     def test_shouldUseToolFormContractForLightweightDashboardForms(self):
         # Given
@@ -166,6 +195,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('.dashboard-tool-grid', css)
         self.assertIn('.dashboard-tool-field', css)
         self.assertIn('.dashboard-tool-actions', css)
+        self.assertIn('.dashboard-action-form', css)
         self.assertIn('.dashboard-action-bar', css)
         self.assertIn('.dashboard-action-group', css)
         self.assertIn('.dashboard-required-tag', css)

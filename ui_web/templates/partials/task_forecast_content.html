@@ -66,20 +66,20 @@
                                 data-task-id="{{ task_forecast_item.task_id }}"
                                 class="task-row{% if task_forecast_item.level > 0 %} child-task level-{{ task_forecast_item.level }} is-hidden{% endif %}{% if task_forecast_item.is_done %} has-text-grey-light{% endif %}"
                                 id="task-{{ forloop.counter0 }}">
-                                <td style="padding-left: {{ task_forecast_item.level|add:1 }}rem;">
+                                <td class="task-hierarchy-cell">
                                     {% if task_forecast_item.has_children %}
-                                        <button class="task-toggle" data-target="children-after-{{ forloop.counter0 }}" data-parent-level="{{ task_forecast_item.level }}">
+                                        <button class="task-toggle" type="button" data-target="children-after-{{ forloop.counter0 }}" data-parent-level="{{ task_forecast_item.level }}" aria-expanded="false" aria-label="Toggle child tasks for {{ task_forecast_item.task_id }}">
                                             <i class="iconoir-nav-arrow-right expand-icon"></i>
                                         </button>
                                     {% endif %}
-                                    <strong{% if task_forecast_item.is_done %} style="text-decoration: line-through"{% endif %}>
+                                    <strong{% if task_forecast_item.is_done %} class="task-done-text"{% endif %}>
                                         {% if task_forecast_item.task_url %}
                                             <a href="{{ task_forecast_item.task_url }}" target="_blank">{{ task_forecast_item.task_id }}</a>
                                         {% else %}
                                             {{ task_forecast_item.task_id }}
                                         {% endif %}
                                     </strong><br>
-                                    <small{% if task_forecast_item.is_done %} style="text-decoration: line-through"{% endif %}>{{ task_forecast_item.task_title }}</small>
+                                    <small{% if task_forecast_item.is_done %} class="task-done-text"{% endif %}>{{ task_forecast_item.task_title }}</small>
                                 </td>
                                 <td>
                                     {% if task_forecast_item.is_done %}

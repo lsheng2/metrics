@@ -128,7 +128,7 @@ class TestUiDesignBaselineGate(TestCase):
                     'end': '2026-09-07',
                     'chart_id': 'default_bug_trend',
                 }),
-                {},
+                {'tool_form': True},
             ),
         ]
 
@@ -162,6 +162,44 @@ class TestUiDesignBaselineGate(TestCase):
                 if metrics['expects_provider_tabs']:
                     self.assertGreater(metrics['provider_tab_shell_count'], 0, f'{label} {viewport}')
                     self.assertTrue(metrics['selected_provider_check_visible'], f'{label} {viewport}')
+
+    def test_shouldRunVisualRegressionManifestAgainstCoreRoutes(self):
+        scope, run, bucket = self._seed_bound_scope_with_run()
+        project_root = Path(__file__).resolve().parents[2]
+        manifest_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'visual-regression' / 'manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        pages = []
+
+        for capture in manifest['capturePlan']:
+            response = self.client.get(
+                capture['route'],
+                self._visual_manifest_params(capture['route'], scope, run, bucket),
+            )
+            self.assertEqual(200, response.status_code, capture['route'])
+            pages.append((capture['name'], response.content.decode()))
+
+        results = self._measure_visual_manifest_pages(pages, manifest['viewports'])
+
+        for label, viewport_results in results.items():
+            for viewport, metrics in viewport_results.items():
+                self.assertFalse(metrics['page_horizontal_overflow'], f'{label} {viewport}')
+                self.assertEqual([], metrics['clipped_buttons'], f'{label} {viewport}')
+                self.assertEqual([], metrics['unnamed_icon_buttons'], f'{label} {viewport}')
+
+    def _visual_manifest_params(self, route, scope, run, bucket):
+        if route == '/bug-trend/scope-config/':
+            return {'scope_id': scope.id}
+        if route == '/workbench/':
+            return {
+                'scope_id': scope.id,
+                'begin': '2026-09-01',
+                'end': '2026-09-07',
+                'chart_id': 'default_bug_trend',
+                'run': str(run.id),
+                'bucket': str(bucket.id),
+                'series': 'new_critical_high',
+            }
+        return {}
 
     def test_shouldSupportMonkeyUserProviderProfileScopeWorkbenchJourney(self):
         new_jira_page = self.client.get(reverse('ui_web:provider_setup'), {
@@ -279,6 +317,61 @@ class TestUiDesignBaselineGate(TestCase):
         finally:
             browser.close()
             playwright.stop()
+
+    def _measure_visual_manifest_pages(self, pages, viewports):
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            results = {}
+            for label, html in pages:
+                browser_html = self._browser_html(html)
+                results[label] = {}
+                for viewport in viewports:
+                    results[label][viewport['name']] = self._measure_visual_manifest_viewport(
+                        browser,
+                        browser_html,
+                        viewport['width'],
+                        viewport['height'],
+                    )
+            return results
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_visual_manifest_viewport(self, browser, html, width, height):
+        page = browser.new_page(viewport={'width': width, 'height': height})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            return page.evaluate("""
+                () => {
+                    const visible = element => Boolean(
+                        element
+                        && (element.offsetWidth || element.offsetHeight || element.getClientRects().length)
+                    );
+                    const buttonName = button => (
+                        button.getAttribute('aria-label')
+                        || button.getAttribute('title')
+                        || button.innerText
+                        || ''
+                    ).trim();
+                    const buttons = Array.from(document.querySelectorAll('button, a.button')).filter(visible);
+                    const clippedButtons = buttons
+                        .filter(button => button.innerText.trim())
+                        .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
+                        .map(button => button.innerText.trim());
+                    const unnamedIconButtons = buttons
+                        .filter(button => button.querySelector('i[class*="iconoir"], svg'))
+                        .filter(button => !buttonName(button))
+                        .map(button => button.outerHTML.slice(0, 120));
+                    return {
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        clipped_buttons: clippedButtons,
+                        unnamed_icon_buttons: unnamedIconButtons,
+                    };
+                }
+            """)
+        finally:
+            page.close()
 
     def _measure_viewport(self, browser, html, expectations, width, height):
         page = browser.new_page(viewport={'width': width, 'height': height})

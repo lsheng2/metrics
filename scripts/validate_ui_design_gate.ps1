@@ -5,6 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $Python = ".venv\Scripts\python.exe"
+$UiSkillRoot = Join-Path $env:USERPROFILE ".agents\skills\lsheng2-ui-design"
 
 function Invoke-Checked {
     param(
@@ -37,6 +38,10 @@ if ($Broad) {
     Invoke-Checked { & $Python manage.py makemigrations --check --dry-run }
     Invoke-Checked { openspec validate standardize-dashboard-ui-design-system --strict }
     Invoke-Checked { openspec validate consolidate-provider-onboarding-profile --strict }
+    Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\audit_project_ui.py") --project-root . }
+    Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\render_component_catalog.py") --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html" }
+    Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\create_visual_regression_manifest.py") --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json" }
+    Invoke-Checked { scripts\validate_ui_visual_manifest.ps1 }
 }
 
 Invoke-Checked { git diff --check }

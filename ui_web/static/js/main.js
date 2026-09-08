@@ -27,7 +27,11 @@ function initializeTaskForecastToggles() {
             childRows.forEach(row => {
                 if (isExpanded) {
                     row.classList.add('is-hidden');
-                    const childToggle = row.querySelector('.task-toggle i[class*="iconoir"]');
+                    const childButton = row.querySelector('.task-toggle');
+                    const childToggle = childButton ? childButton.querySelector('i[class*="iconoir"]') : null;
+                    if (childButton) {
+                        childButton.setAttribute('aria-expanded', 'false');
+                    }
                     if (childToggle && childToggle.classList.contains('iconoir-nav-arrow-down')) {
                         childToggle.className = 'iconoir-nav-arrow-right';
                     }
@@ -42,6 +46,7 @@ function initializeTaskForecastToggles() {
             if (icon) {
                 icon.className = isExpanded ? 'iconoir-nav-arrow-right' : 'iconoir-nav-arrow-down';
             }
+            this.setAttribute('aria-expanded', String(!isExpanded));
         });
     });
 }

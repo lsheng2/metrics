@@ -54,9 +54,9 @@
       "notes": "Scope editor, provider binding, metadata refresh, action-specific required validation, dirty/cancel state."
     },
     {
-      "name": "bug-trend-scope-library",
-      "url": "http://127.0.0.1:8000/bug-trend/scope-library/",
-      "route": "/bug-trend/scope-library/",
+      "name": "bug-trend-scopes",
+      "url": "http://127.0.0.1:8000/bug-trend/scopes/",
+      "route": "/bug-trend/scopes/",
       "priority": "high",
       "source": "`ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_library.html`, `ui_web/static/css/main.css`, `ui_web/templates/partials/help_tip.html`",
       "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views`",
@@ -82,8 +82,8 @@
     },
     {
       "name": "ai-dashboard-workflow",
-      "url": "http://127.0.0.1:8000/ai-dashboard-workflow/",
-      "route": "/ai-dashboard-workflow/",
+      "url": "http://127.0.0.1:8000/ai-dashboard/workflow/",
+      "route": "/ai-dashboard/workflow/",
       "priority": "normal",
       "source": "`ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/main.css`",
       "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface`",

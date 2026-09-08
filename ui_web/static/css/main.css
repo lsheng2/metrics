@@ -28,6 +28,21 @@
     --dashboard-font-caption: 0.75rem;
     --dashboard-font-control: 0.875rem;
     --dashboard-font-micro: 0.6875rem;
+    --dashboard-font-root: 1rem;
+    --dashboard-font-heading-xl: 1.35rem;
+    --dashboard-font-heading-lg: 1.05rem;
+    --dashboard-font-heading-md: 0.96rem;
+    --dashboard-font-heading-sm: 0.95rem;
+    --dashboard-font-heading-xs: 0.9rem;
+    --dashboard-font-compact: 0.78rem;
+    --dashboard-font-table: 0.8rem;
+    --dashboard-font-table-code: 0.74rem;
+    --dashboard-font-caption-tight: 0.72rem;
+    --dashboard-font-mini: 0.64rem;
+    --dashboard-font-nano: 0.62rem;
+    --dashboard-font-control-compact: 0.85rem;
+    --dashboard-font-workbench: 0.82rem;
+    --dashboard-font-avatar: 10px;
 }
 
 html, body {
@@ -128,7 +143,7 @@ main.column {
 
 .navbar .title {
     color: var(--dashboard-text);
-    font-size: 1rem;
+    font-size: var(--dashboard-font-root);
     font-weight: 700;
     letter-spacing: 0;
     margin: 0;
@@ -167,7 +182,7 @@ main.column {
     top: 50%;
     left: 50%;
     color: color-mix(in srgb, var(--dashboard-text) 62%, transparent);
-    font-size: 0.78rem;
+    font-size: var(--dashboard-font-compact);
     line-height: 0.65;
     transform: translate(-50%, -50%);
     white-space: pre;
@@ -218,7 +233,7 @@ body.has-workbench-shell .dashboard-sidebar-column::before {
     display: block;
     border-bottom: 1px solid var(--dashboard-border);
     color: var(--dashboard-text);
-    font-size: 0.95rem;
+    font-size: var(--dashboard-font-heading-sm);
     font-weight: 700;
     line-height: 1;
     padding: 0.62rem 0.75rem 0.58rem;
@@ -373,20 +388,20 @@ body.has-workbench-shell .dashboard-main-column #main-content {
 }
 
 .title.is-2 {
-    font-size: 1.35rem;
+    font-size: var(--dashboard-font-heading-xl);
 }
 
 .title.is-3 {
-    font-size: 1.05rem;
+    font-size: var(--dashboard-font-heading-lg);
 }
 
 .title.is-4,
 .title.is-5 {
-    font-size: 0.95rem;
+    font-size: var(--dashboard-font-heading-sm);
 }
 
 .subtitle.is-4 {
-    font-size: 0.9rem;
+    font-size: var(--dashboard-font-heading-xs);
 }
 
 .button,
@@ -711,7 +726,7 @@ body.has-workbench-shell .dashboard-main-column #main-content {
     border: 1px solid var(--dashboard-border-strong);
     border-radius: 999px;
     background: color-mix(in srgb, var(--dashboard-accent) 14%, var(--dashboard-surface-soft));
-    font-size: 0.62rem;
+    font-size: var(--dashboard-font-nano);
     font-weight: 800;
     vertical-align: middle;
 }
@@ -861,7 +876,7 @@ span:focus-within > .help-tip::after,
 }
 
 .responsive-admin-table code {
-    font-size: 0.74rem;
+    font-size: var(--dashboard-font-table-code);
 }
 
 @container (max-width: 40rem) {
@@ -957,7 +972,7 @@ span:focus-within > .help-tip::after,
     align-items: center;
     margin-bottom: 0.45rem;
     color: var(--bulma-text);
-    font-size: 0.78rem;
+    font-size: var(--dashboard-font-compact);
 }
 
 .scope-config-provider-panel,
@@ -1042,7 +1057,7 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-provider-choice-label {
-    font-size: 0.96rem;
+    font-size: var(--dashboard-font-heading-md);
     font-weight: 800;
 }
 
@@ -1228,7 +1243,7 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-library-table {
-    font-size: 0.8rem;
+    font-size: var(--dashboard-font-table);
     line-height: 1.2;
 }
 
@@ -1303,7 +1318,7 @@ span:focus-within > .help-tip::after,
     max-width: min(7rem, 52%);
     overflow: hidden;
     color: var(--bulma-text-weak);
-    font-size: 0.72rem;
+    font-size: var(--dashboard-font-caption-tight);
     text-overflow: ellipsis;
     vertical-align: middle;
     white-space: nowrap;
@@ -1416,7 +1431,7 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-binding-audit-table {
-    font-size: 0.78rem;
+    font-size: var(--dashboard-font-compact);
 }
 
 .scope-binding-audit-table th,
@@ -1626,6 +1641,33 @@ span:focus-within > .help-tip::after,
     min-height: 2rem;
     border-radius: var(--dashboard-radius-control);
     padding: 0 0.7rem;
+}
+
+.dashboard-action-form {
+    margin: 0;
+    font-size: var(--dashboard-font-body);
+}
+
+.dashboard-action-form.is-stacked {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.dashboard-action-form.is-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.dashboard-action-form .field {
+    margin-bottom: 0;
+}
+
+.dashboard-action-form .input,
+.dashboard-action-form .select select,
+.dashboard-action-form .button {
+    border-radius: var(--dashboard-radius-control);
 }
 
 .dashboard-validation-banner {
@@ -1947,7 +1989,7 @@ span:focus-within > .help-tip::after,
     background: #22c55e;
     box-shadow: 0 0 0 0.14rem rgba(34, 197, 94, 0.16);
     color: #052e16;
-    font-size: 0.64rem;
+    font-size: var(--dashboard-font-mini);
     font-weight: 900;
     line-height: 1;
 }
@@ -1955,7 +1997,7 @@ span:focus-within > .help-tip::after,
 .provider-setup-choice .scope-provider-choice-label {
     min-width: 0;
     overflow: hidden;
-    font-size: 0.9rem;
+    font-size: var(--dashboard-font-heading-xs);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -2186,7 +2228,7 @@ span:focus-within > .help-tip::after,
 .provider-json-field {
     min-height: 6.1rem;
     font-family: Consolas, "SFMono-Regular", monospace;
-    font-size: 0.75rem;
+    font-size: var(--dashboard-font-caption);
     line-height: 1.32;
     resize: vertical;
 }
@@ -2331,7 +2373,7 @@ span:focus-within > .help-tip::after,
     border-radius: 6px;
     margin-bottom: 0.75rem;
     padding: 0.55rem 0.7rem;
-    font-size: 0.85rem;
+    font-size: var(--dashboard-font-control-compact);
 }
 
 .scope-binding-readiness.is-ready {
@@ -2364,7 +2406,7 @@ span:focus-within > .help-tip::after,
 }
 
 .data-health-page .table {
-    font-size: 0.78rem;
+    font-size: var(--dashboard-font-compact);
 }
 
 .data-health-table-container table {
@@ -2388,6 +2430,30 @@ span:focus-within > .help-tip::after,
 
 .task-filters .buttons {
     flex-wrap: nowrap;
+}
+
+.task-card {
+    background: var(--dashboard-surface-raised);
+}
+
+.task-card.is-health-green {
+    background: rgba(72, 199, 116, 0.12);
+}
+
+.task-card.is-health-yellow {
+    background: rgba(255, 221, 87, 0.2);
+}
+
+.task-card.is-health-orange {
+    background: rgba(255, 159, 67, 0.18);
+}
+
+.task-card.is-health-red {
+    background: rgba(241, 70, 104, 0.12);
+}
+
+.task-card.is-health-gray {
+    background: rgba(150, 150, 150, 0.12);
 }
 
 .loading-indicator-sticky {
@@ -2438,6 +2504,38 @@ details summary::marker {
     pointer-events: none;
 }
 
+.task-hierarchy-cell {
+    padding-left: 1rem;
+}
+
+.task-row.level-1 .task-hierarchy-cell {
+    padding-left: 2rem;
+}
+
+.task-row.level-2 .task-hierarchy-cell {
+    padding-left: 3rem;
+}
+
+.task-row.level-3 .task-hierarchy-cell {
+    padding-left: 4rem;
+}
+
+.task-row.level-4 .task-hierarchy-cell {
+    padding-left: 5rem;
+}
+
+.task-row.level-5 .task-hierarchy-cell {
+    padding-left: 6rem;
+}
+
+.task-row.level-6 .task-hierarchy-cell {
+    padding-left: 7rem;
+}
+
+.task-done-text {
+    text-decoration: line-through;
+}
+
 [class*="iconoir"] {
     width: 1em;
     height: 1em;
@@ -2449,7 +2547,7 @@ details summary::marker {
     width: 24px;
     height: 24px;
     padding: 0;
-    font-size: 10px;
+    font-size: var(--dashboard-font-avatar);
     font-weight: 700;
     border-radius: 4px;
 }
@@ -2571,7 +2669,7 @@ tr.htmx-request .review-loader {
     display: flex;
     align-items: end;
     height: var(--workbench-toolbar-label-height);
-    font-size: 0.72rem;
+    font-size: var(--dashboard-font-caption-tight);
     line-height: 1;
     margin-bottom: 0;
     min-width: 0;
@@ -2613,7 +2711,7 @@ tr.htmx-request .review-loader {
 .workbench-binding-warning {
     margin-bottom: 0;
     padding: 0.42rem 0.65rem;
-    font-size: 0.82rem;
+    font-size: var(--dashboard-font-workbench);
 }
 
 .workbench-apply-field {
@@ -2743,7 +2841,7 @@ tr.htmx-request .review-loader {
     align-items: center;
     gap: 0.28rem;
     color: var(--bulma-text);
-    font-size: 0.72rem;
+    font-size: var(--dashboard-font-caption-tight);
     line-height: 1;
 }
 
@@ -2818,7 +2916,7 @@ tr.htmx-request .review-loader {
     border: 1px solid var(--bulma-border);
     border-radius: 4px;
     color: var(--bulma-text);
-    font-size: 0.75rem;
+    font-size: var(--dashboard-font-caption);
     line-height: 1;
     opacity: 0.9;
     padding: 0.35rem 0.45rem;
@@ -2907,7 +3005,7 @@ tr.htmx-request .review-loader {
 
 .workbench-ai-start-command span {
     color: var(--bulma-text-weak);
-    font-size: 0.72rem;
+    font-size: var(--dashboard-font-caption-tight);
     font-weight: 700;
     letter-spacing: 0;
     text-transform: uppercase;
@@ -2939,7 +3037,7 @@ tr.htmx-request .review-loader {
 .workbench-splitter::before {
     position: absolute;
     color: color-mix(in srgb, var(--bulma-text) 62%, transparent);
-    font-size: 0.85rem;
+    font-size: var(--dashboard-font-control-compact);
     letter-spacing: 0.18rem;
     line-height: 1;
 }
@@ -3064,7 +3162,7 @@ tr.htmx-request .review-loader {
 }
 
 .workbench-evidence-table {
-    font-size: 0.78rem;
+    font-size: var(--dashboard-font-compact);
     white-space: nowrap;
 }
 
@@ -3124,7 +3222,7 @@ tr.htmx-request .review-loader {
     grid-template-columns: 5rem minmax(0, 1fr);
     gap: 0.25rem 0.45rem;
     margin-top: 0.65rem;
-    font-size: 0.78rem;
+    font-size: var(--dashboard-font-compact);
 }
 
 .workbench-ticket-detail-fields dt {
@@ -3186,7 +3284,7 @@ tr.htmx-request .review-loader {
 .workbench-status-url,
 .workbench-status-time {
     color: var(--bulma-text);
-    font-size: 0.78rem;
+    font-size: var(--dashboard-font-compact);
     opacity: 0.75;
 }
 

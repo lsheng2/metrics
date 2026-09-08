@@ -46,7 +46,7 @@
             {% endif %}
         </div>
     </div>
-    <form class="workbench-evidence-filter" hx-get="{% url 'ui_web:bug_trend_evidence' %}" hx-target="#bug-trend-evidence-container" hx-swap="innerHTML">
+    <form class="dashboard-tool-form workbench-evidence-filter" hx-get="{% url 'ui_web:bug_trend_evidence' %}" hx-target="#bug-trend-evidence-container" hx-swap="innerHTML">
         <input type="hidden" name="scope_id" value="{{ evidence.scope_id }}">
         <input type="hidden" name="run" value="{{ evidence.calculation_run_id }}">
         <input type="hidden" name="chart_id" value="{{ evidence.active_chart_id }}">

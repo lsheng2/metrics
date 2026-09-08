@@ -13,8 +13,8 @@
 {% block content %}
 <section class="workbench-shell" aria-label="Metrics Workbench">
     {{ workbench_ai_context|json_script:"workbench-ai-context" }}
-    <form class="workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
-        <div class="workbench-control-grid">
+    <form class="dashboard-tool-form workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+        <div class="dashboard-tool-grid workbench-control-grid">
             <div class="field workbench-toolbar-field workbench-toolbar-field-scope">
                 <label class="label" for="workbench-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope that drives the chart range, evidence tickets, provider binding, and AI workspace context." %}</label>
                 <div class="select is-small is-fullwidth workbench-control-shell">
@@ -118,7 +118,7 @@
                         <p class="is-size-7">Evidence tickets for the current chart range.</p>
                     {% endif %}
                 {% endif %}
-                <form class="mt-3" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+                <form class="dashboard-tool-form mt-3" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
                     <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
                     <input type="hidden" name="profile_id" value="{{ workbench_state.profile_id }}">
                     <input type="hidden" name="provider_id" value="{{ workbench_state.provider_id }}">
@@ -209,7 +209,7 @@
                             <p class="is-size-7 has-text-danger">Workspace sync failed: {{ workbench_ai_workspace_error }}</p>
                         {% endif %}
                         {% if workbench_ai_context.ai_base.chat_gate.can_sync_workspace %}
-                            <form method="post" class="mt-3">
+                            <form method="post" class="dashboard-action-form mt-3">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="sync_ai_workspace">
                                 <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">

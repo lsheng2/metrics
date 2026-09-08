@@ -1,11 +1,5 @@
 {% load avatar_filters %}
-<div class="card mb-3"
-     {% if task.forecast.health_status.name == "GREEN" %}style="background-color: rgba(72, 199, 116, 0.12);"
-     {% elif task.forecast.health_status.name == "YELLOW" %}style="background-color: rgba(255, 221, 87, 0.2);"
-     {% elif task.forecast.health_status.name == "ORANGE" %}style="background-color: rgba(255, 159, 67, 0.18);"
-     {% elif task.forecast.health_status.name == "RED" %}style="background-color: rgba(241, 70, 104, 0.12);"
-     {% elif task.forecast.health_status.name == "GRAY" %}style="background-color: rgba(150, 150, 150, 0.12);"
-     {% endif %}>
+<div class="card mb-3 task-card{% if task.forecast.health_status.name == "GREEN" %} is-health-green{% elif task.forecast.health_status.name == "YELLOW" %} is-health-yellow{% elif task.forecast.health_status.name == "ORANGE" %} is-health-orange{% elif task.forecast.health_status.name == "RED" %} is-health-red{% elif task.forecast.health_status.name == "GRAY" %} is-health-gray{% endif %}">
     <div class="card-content p-3">
         <div class="is-flex is-justify-content-space-between is-align-items-center mb-2">
             <code class="is-size-7">{{ task.id }}</code>

@@ -55,10 +55,10 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 | --- | --- | --- | --- |
 | `/provider-setup/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/provider_setup.html`, `ui_web/templates/provider_profile_config.html`, `ui_web/templates/partials/provider_profile_editor.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_dashboard_ui_design_system` | Provider profile inventory, create/edit/test/import/export/archive/delete, provider color tabs, connection/auth/probe fields. |
 | `/bug-trend/scope-config/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_config.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views ui_web.tests.test_dashboard_ui_design_system` | Scope editor, provider binding, metadata refresh, action-specific required validation, dirty/cancel state. |
-| `/bug-trend/scope-library/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_library.html`, `ui_web/static/css/main.css`, `ui_web/templates/partials/help_tip.html` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views` | Scope inventory, binding controls, import/export/archive/delete, responsive table behavior. |
+| `/bug-trend/scopes/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_library.html`, `ui_web/static/css/main.css`, `ui_web/templates/partials/help_tip.html` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views` | Scope inventory, binding controls, import/export/archive/delete, responsive table behavior. |
 | `/data-health/` | `ui_web/templates/data_health.html`, `ui_web/static/css/main.css`, data-health views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views` | Health/status tables, binding status, AI/provider sync readiness. |
 | `/workbench/` | `ui_web/templates/workbench.html`, `ui_web/static/js/main.js`, workbench views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions` | htmx workbench shell, evidence filters, AI host action state. |
-| `/ai-dashboard-workflow/` | `ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface` | AI/Grafana workflow forms and publication status surfaces. |
+| `/ai-dashboard/workflow/` | `ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface` | AI/Grafana workflow forms and publication status surfaces. |
 
 ## Shared UI Contracts
 
@@ -68,6 +68,7 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 | `dashboard-form-grid` and `dashboard-form-field` | `ui_web/static/css/main.css`, setup templates | Aligned label/control grids for setup forms. | One-off nested cards or page-local grid variants. |
 | `dashboard-action-bar` and `dashboard-action-group` | `ui_web/static/css/main.css`, setup templates | Bottom action bars with grouped primary/secondary/cancel actions. | Per-page button height, spacing, or typography overrides. |
 | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | `ui_web/static/css/main.css`, dashboard query/filter templates | Lightweight non-editor forms for filters, forecast parameters, and workflow request controls. | Persistent setup/edit forms that need dirty or required-state handling. |
+| `dashboard-action-form` | `ui_web/static/css/main.css`, setup/library/workbench templates | Import, export, duplicate, bind, archive, delete, sync, and other non-editor action forms. | Applying dirty editor behavior to confirmation/action forms. |
 | `dashboard-required-tag` | `ui_web/static/css/main.css`, setup templates | Required, required-to-save, required-for-enable, and required-for-test markers. | Raw Bulma danger tags in setup forms without shared class. |
 | `dashboard-validation-banner`, `data-required-form` | `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | Action-specific required-field visual validation. | Browser-only authority without backend validation. |
 | `dashboard-unsaved-banner`, `data-dirty-form` | `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | Dirty/unsaved field marking and cancel guard. | Treating dirty state as validation error. |
@@ -100,6 +101,7 @@ python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_compone
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 scripts\validate_ui_design_gate.ps1
 scripts\validate_ui_design_gate.ps1 -Broad
+scripts\validate_ui_visual_manifest.ps1
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
@@ -170,7 +172,7 @@ Synthetic replacements:
 - Component focus: buttons, typography, forms, tables, tabs/cards, action bars, required/dirty/error/loading/success states, and horizontal overflow.
 - Ignored/generated paths: temporary screenshots, `tmp_ui_validation/`, generated caches, vendored assets, migrations unless a migration UI exists.
 - Findings report location: `.github/skills/lsheng2-ui-design/reports/` for curated reports; temporary audit output stays local unless explicitly committed.
-- Apply-fixes policy: shared tokens/classes/partials first, then template migration, then page-local exceptions only when the pattern is unique and documented.
+- Apply-fixes policy: shared tokens/classes/partials first, then template migration, then page-local exceptions only when the pattern is unique and documented; data-driven avatar colors are allowed inline until a CSS custom-property helper exists.
 
 ## React / Next / Tailwind Notes
 

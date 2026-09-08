@@ -23,7 +23,7 @@
                 <details class="workbench-menu scope-import-menu">
                     <summary class="button">Import Scope File{% include "partials/help_tip.html" with label="Import Scope File" text="Choose a scope JSON package. Imported scopes start as archived drafts so they can be reviewed, bound, validated, and enabled deliberately." inert=True %}</summary>
                     <div class="workbench-menu-panel scope-import-panel">
-                        <form method="post" enctype="multipart/form-data" class="scope-import-form">
+                        <form method="post" enctype="multipart/form-data" class="dashboard-action-form is-stacked scope-import-form">
                             {% csrf_token %}
                             <input class="input is-small" type="file" name="scope_package" accept="application/json,.json" required aria-label="Choose scope JSON package">
                             <button class="button is-small is-primary" type="submit" name="action" value="import_scope">Import</button>
@@ -31,7 +31,7 @@
                     </div>
                 </details>
                 {% if scope_library_summary.compatibility_ready_count %}
-                    <form method="post" data-confirm="Confirm all eligible inferred bindings as explicit?">
+                    <form class="dashboard-action-form" method="post" data-confirm="Confirm all eligible inferred bindings as explicit?">
                         {% csrf_token %}
                         <button class="button is-info is-light" type="submit" name="action" value="bulk_confirm_bindings">
                             Confirm Inferred Bindings ({{ scope_library_summary.compatibility_ready_count }}){% include "partials/help_tip.html" with label="Inferred binding" text="Inferred means the binding was derived for an older scope. Confirming it turns the provider profile link into an explicit operator decision." inert=True %}
@@ -205,7 +205,7 @@
                             <div class="scope-actions">
                                 <div class="buttons is-justify-content-flex-end are-small scope-primary-actions">
                                     {% if binding.can_confirm %}
-                                        <form method="post" data-confirm="Confirm this inferred provider binding as explicit?">
+                                        <form class="dashboard-action-form" method="post" data-confirm="Confirm this inferred provider binding as explicit?">
                                             {% csrf_token %}
                                             <input type="hidden" name="scope_id" value="{{ scope.id }}">
                                             <button class="button is-info is-light" type="submit" name="action" value="confirm_binding">Confirm</button>
@@ -222,13 +222,13 @@
                                             <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
                                             <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}?export_scope_id={{ scope.id }}">Export JSON</a>
                                             {% if scope.enabled %}
-                                                <form method="post" data-confirm="Archive this scope? It will be removed from normal Dashboard, Workbench, and AI Assistant scope selection, while historical runs, evidence, sync cache, and audit records remain preserved. Use Edit > Enable Scope to restore it.">
+                                                <form class="dashboard-action-form" method="post" data-confirm="Archive this scope? It will be removed from normal Dashboard, Workbench, and AI Assistant scope selection, while historical runs, evidence, sync cache, and audit records remain preserved. Use Edit > Enable Scope to restore it.">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="scope_id" value="{{ scope.id }}">
                                                 <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Archive{% include "partials/help_tip.html" with label="Archive scope" text="Safe removal from normal UI and automation. Use this before hard delete because history and audit records stay available." inert=True %}</button>
                                                 </form>
                                             {% else %}
-                                                <form method="post" data-confirm="Delete this archived scope? Related calculation runs, buckets, evidence, Jira history, sync cursor, provider binding and audit records may be removed by cascade.">
+                                                <form class="dashboard-action-form is-stacked" method="post" data-confirm="Delete this archived scope? Related calculation runs, buckets, evidence, Jira history, sync cursor, provider binding and audit records may be removed by cascade.">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="scope_id" value="{{ scope.id }}">
                                                     <input class="input is-small" name="delete_confirmation" placeholder="{{ row.delete_confirmation }}" aria-label="Delete confirmation for {{ scope.name }}">
@@ -239,7 +239,7 @@
                                     </details>
                                 </div>
                                 {% if binding.can_edit and binding.status != "compatibility" %}
-                                    <form class="field has-addons scope-binding-editor" method="post" data-confirm="Save this provider binding as explicit?">
+                                    <form class="dashboard-action-form field has-addons scope-binding-editor" method="post" data-confirm="Save this provider binding as explicit?">
                                         {% csrf_token %}
                                         <input type="hidden" name="scope_id" value="{{ scope.id }}">
                                         <div class="control">
