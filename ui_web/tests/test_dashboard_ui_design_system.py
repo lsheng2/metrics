@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from django.test import SimpleTestCase
@@ -77,6 +78,26 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('## Autonomous Audit Scope', overlay)
         self.assertIn('audit_project_ui.py', overlay)
         self.assertIn('shared tokens/classes/partials first', overlay)
+
+    def test_shouldKeepLocalComponentCatalogAndVisualManifestAvailable(self):
+        # Given
+        project_root = Path(__file__).resolve().parents[2]
+        catalog_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'component-catalog' / 'dashboard-admin-v1.html'
+        manifest_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'visual-regression' / 'manifest.json'
+        overlay_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'templates' / 'project-overlay.md'
+
+        catalog = catalog_path.read_text(encoding='utf-8')
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        overlay = overlay_path.read_text(encoding='utf-8')
+
+        # Then
+        self.assertIn('Dashboard Admin Component Catalog', catalog)
+        self.assertIn('dashboard-admin-v1', catalog)
+        self.assertEqual('lsheng2-ui-design', manifest['owner'])
+        self.assertGreaterEqual(len(manifest['viewports']), 3)
+        self.assertIn('/provider-setup/', {item['route'] for item in manifest['capturePlan']})
+        self.assertIn('component-catalog/dashboard-admin-v1.html', overlay)
+        self.assertIn('visual-regression/manifest.json', overlay)
 
     def test_shouldUseToolFormContractForLightweightDashboardForms(self):
         # Given

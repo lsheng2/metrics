@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "owner": "lsheng2-ui-design",
+  "purpose": "Local visual regression capture plan. It is a manifest for Playwright, browser tests, or manual capture tools; it does not upload artifacts.",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 900
+    }
+  ],
+  "defaultChecks": [
+    "no-page-horizontal-overflow",
+    "no-clipped-action-buttons",
+    "consistent-control-height",
+    "visible-focus-state",
+    "required-dirty-error-loading-success-states-when-applicable",
+    "text-fits-in-buttons-labels-cards-table-cells"
+  ],
+  "componentStateTargets": [
+    "button/default-hover-focus-disabled-loading-danger",
+    "form/default-required-missing-dirty-saving-success-failure",
+    "table/default-empty-loading-selected-archived-error",
+    "tabs/default-selected-hover-focus-disabled",
+    "status-feedback/info-success-warning-danger"
+  ],
+  "capturePlan": [
+    {
+      "name": "provider-setup",
+      "url": "http://127.0.0.1:8000/provider-setup/",
+      "route": "/provider-setup/",
+      "priority": "high",
+      "source": "`ui_web/views/bug_trend_view.py`, `ui_web/templates/provider_setup.html`, `ui_web/templates/provider_profile_config.html`, `ui_web/templates/partials/provider_profile_editor.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/main.css`, `ui_web/static/js/main.js`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_dashboard_ui_design_system`",
+      "notes": "Provider profile inventory, create/edit/test/import/export/archive/delete, provider color tabs, connection/auth/probe fields."
+    },
+    {
+      "name": "bug-trend-scope-config",
+      "url": "http://127.0.0.1:8000/bug-trend/scope-config/",
+      "route": "/bug-trend/scope-config/",
+      "priority": "high",
+      "source": "`ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_config.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/main.css`, `ui_web/static/js/main.js`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views ui_web.tests.test_dashboard_ui_design_system`",
+      "notes": "Scope editor, provider binding, metadata refresh, action-specific required validation, dirty/cancel state."
+    },
+    {
+      "name": "bug-trend-scope-library",
+      "url": "http://127.0.0.1:8000/bug-trend/scope-library/",
+      "route": "/bug-trend/scope-library/",
+      "priority": "high",
+      "source": "`ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_library.html`, `ui_web/static/css/main.css`, `ui_web/templates/partials/help_tip.html`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views`",
+      "notes": "Scope inventory, binding controls, import/export/archive/delete, responsive table behavior."
+    },
+    {
+      "name": "data-health",
+      "url": "http://127.0.0.1:8000/data-health/",
+      "route": "/data-health/",
+      "priority": "high",
+      "source": "`ui_web/templates/data_health.html`, `ui_web/static/css/main.css`, data-health views/facades",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_data_health_views`",
+      "notes": "Health/status tables, binding status, AI/provider sync readiness."
+    },
+    {
+      "name": "workbench",
+      "url": "http://127.0.0.1:8000/workbench/",
+      "route": "/workbench/",
+      "priority": "normal",
+      "source": "`ui_web/templates/workbench.html`, `ui_web/static/js/main.js`, workbench views/facades",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions`",
+      "notes": "htmx workbench shell, evidence filters, AI host action state."
+    },
+    {
+      "name": "ai-dashboard-workflow",
+      "url": "http://127.0.0.1:8000/ai-dashboard-workflow/",
+      "route": "/ai-dashboard-workflow/",
+      "priority": "normal",
+      "source": "`ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface`",
+      "notes": "AI/Grafana workflow forms and publication status surfaces."
+    }
+  ],
+  "artifactPolicy": {
+    "defaultOutputRoot": "tmp_ui_validation/visual-regression",
+    "commitScreenshotsByDefault": false,
+    "sanitizeBeforeSharing": true
+  }
+}

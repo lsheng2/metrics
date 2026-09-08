@@ -44,7 +44,9 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 - Selected density profile: `compactDashboard` for operational dashboard forms, filters, tables, and setup editors.
 - Project overrides: `dashboard-tool-*` uses 2rem controls; setup editors use `dashboard-edit-form`, `dashboard-form-grid`, `dashboard-form-field`, `dashboard-action-bar`, and `dashboard-action-group`; cards/panels stay at 8px radius or below unless an existing Bulma component requires otherwise.
 - Golden/accepted UI surfaces: Provider Profile Config, Bug Trend Scope Config, Provider Setup inventory, Scope Library, Data Health, Workbench, AI Dashboard Workflow.
-- Component catalog location: not created yet; create a local template or static route before adding more shared components.
+- Component catalog location: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`
+- Visual regression manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
+- Screenshot artifact policy: keep screenshots in `tmp_ui_validation/visual-regression` unless explicitly requested; commit only synthetic catalog HTML and manifest JSON.
 - `ui-ux-pro-max` style references: use local dense-dashboard style and UX searches for guidance only; `lsheng2-ui-design` remains the implementation and validation authority.
 
 ## Route / Page Inventory
@@ -94,6 +96,8 @@ Use a target-specific subset for small UI changes and the broader group for shar
 ```sh
 git diff --check
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 scripts\validate_ui_design_gate.ps1
 scripts\validate_ui_design_gate.ps1 -Broad
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
@@ -110,10 +114,12 @@ openspec validate consolidate-provider-onboarding-profile --strict
 
 - Server command: `.venv\Scripts\python.exe manage.py runserver 127.0.0.1:<free-port>`
 - Desktop viewport: 1440x900
+- Tablet viewport: 768x1024
 - Phone viewport: 390x900
 - Routes to capture: changed route plus nearest sibling page that shares the same UI contract.
 - Output directory: local temp directory or project-local ignored folder selected for that run.
 - Diff threshold: target-specific; any horizontal overflow, clipped text, hidden required marker, or misaligned action bar is a failure regardless of pixel threshold.
+- Manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
 - Suggested browser evidence: use Playwright from Django tests or a short one-off local script to assert overflow, control-height delta, state visibility, and focus target.
 
 ## Privacy Boundary
@@ -165,6 +171,14 @@ Synthetic replacements:
 - Ignored/generated paths: temporary screenshots, `tmp_ui_validation/`, generated caches, vendored assets, migrations unless a migration UI exists.
 - Findings report location: `.github/skills/lsheng2-ui-design/reports/` for curated reports; temporary audit output stays local unless explicitly committed.
 - Apply-fixes policy: shared tokens/classes/partials first, then template migration, then page-local exceptions only when the pattern is unique and documented.
+
+## React / Next / Tailwind Notes
+
+- Applies: not currently; this project uses Django/Bulma/htmx.
+- Component/story surface: Django templates and Playwright-backed tests, not a React component tree.
+- Token source: `ui_web/static/css/main.css`.
+- Storybook/harness: none.
+- Build/test commands: use Django validation commands in this overlay.
 
 ## OpenSpec Integration
 

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Admin Component Catalog</title>
+  <style>
+    :root {
+      --body-font: 0.875rem;
+      --caption-font: 0.75rem;
+      --control-font: 0.875rem;
+      --control-height: 2.25rem;
+      --tool-control-height: 2rem;
+      --control-padding: 0.75rem;
+      --compact-gap: 0.5rem;
+      --field-gap: 0.55rem;
+      --section-gap: 1rem;
+      --control-radius: 6px;
+      --panel-radius: 8px;
+      --surface: #ffffff;
+      --background: #f6f8fb;
+      --text: #172033;
+      --muted: #5e6b7f;
+      --border: #d8e0ea;
+      --primary: #2563eb;
+      --primary-strong: #1d4ed8;
+      --success: #14845b;
+      --danger: #c2414b;
+      --warning: #b7791f;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--background);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-size: var(--body-font); }
+    .catalog-shell { max-width: 1180px; margin: 0 auto; padding: 1.25rem; }
+    .catalog-header { margin-bottom: 1rem; }
+    .catalog-header h1 { margin: 0.2rem 0 0.35rem; font-size: 1.55rem; letter-spacing: 0; }
+    .catalog-header p { max-width: 68rem; margin: 0; color: var(--muted); line-height: 1.45; }
+    .eyebrow { margin: 0; color: var(--primary-strong); font-size: var(--caption-font); font-weight: 700; text-transform: uppercase; }
+    .catalog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: var(--section-gap); }
+    .panel { border: 1px solid var(--border); border-radius: var(--panel-radius); background: var(--surface); padding: 1rem; }
+    .panel h2 { margin: 0 0 0.7rem; font-size: 1.02rem; letter-spacing: 0; }
+    .row { display: flex; flex-wrap: wrap; gap: var(--compact-gap); align-items: center; margin: 0.55rem 0; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; min-height: var(--control-height); border: 1px solid var(--border); border-radius: var(--control-radius); background: #fff; color: var(--text); padding: 0 var(--control-padding); font-size: var(--control-font); font-weight: 600; text-decoration: none; }
+    .button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .button.quiet { background: #f8fafc; color: var(--muted); }
+    .button.danger { background: #fff5f5; border-color: #f1aeb5; color: var(--danger); }
+    .button[disabled] { opacity: 0.52; cursor: not-allowed; }
+    .tool .button, .tool input, .tool select { min-height: var(--tool-control-height); height: var(--tool-control-height); }
+    label { display: block; margin-bottom: 0.25rem; color: var(--muted); font-size: var(--caption-font); font-weight: 700; }
+    input, select { width: 100%; height: var(--control-height); border: 1px solid var(--border); border-radius: var(--control-radius); padding: 0 var(--control-padding); font-size: var(--control-font); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--field-gap); }
+    .field-wide { grid-column: 1 / -1; }
+    .required { color: var(--danger); font-size: var(--caption-font); font-weight: 700; }
+    .missing { outline: 2px solid color-mix(in srgb, var(--danger) 55%, transparent); outline-offset: 2px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    th, td { border-bottom: 1px solid var(--border); padding: 0.45rem 0.5rem; text-align: left; }
+    th { color: var(--muted); font-size: var(--caption-font); text-transform: uppercase; }
+    .tabs { display: flex; gap: 0.35rem; border-bottom: 1px solid var(--border); margin-bottom: 0.75rem; }
+    .tab { border: 1px solid transparent; border-bottom: 0; border-radius: var(--control-radius) var(--control-radius) 0 0; padding: 0.48rem 0.7rem; color: var(--muted); font-weight: 700; }
+    .tab[aria-selected="true"] { border-color: var(--border); background: var(--surface); color: var(--primary-strong); }
+    .status { border-radius: var(--control-radius); padding: 0.55rem 0.7rem; border: 1px solid var(--border); }
+    .status.success { border-color: #b7e4ce; background: #f0fff7; color: var(--success); }
+    .status.warning { border-color: #f6d591; background: #fffaf0; color: var(--warning); }
+    .status.danger { border-color: #f1aeb5; background: #fff5f5; color: var(--danger); }
+    .token-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.8rem; }
+    .token-list code { color: var(--primary-strong); }
+    @media (max-width: 720px) {
+      .catalog-shell { padding: 0.85rem; }
+      .catalog-grid, .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="catalog-shell">
+    <header class="catalog-header">
+      <p class="eyebrow">lsheng2-ui-design</p>
+      <h1>Dashboard Admin Component Catalog</h1>
+      <p>Token pack <code>dashboard-admin-v1</code>, density <code>compactDashboard</code>. This is a local static catalog for review and calibration.</p>
+    </header>
+    <section class="catalog-grid">
+      <article class="panel">
+        <h2>Buttons</h2>
+        <div class="row">
+          <button class="button primary">Primary</button>
+          <button class="button">Secondary</button>
+          <button class="button quiet">Quiet</button>
+          <button class="button danger">Danger</button>
+          <button class="button" disabled>Disabled</button>
+        </div>
+        <div class="row tool">
+          <button class="button primary">Tool Apply</button>
+          <button class="button" aria-label="Icon only action">+</button>
+        </div>
+        <p><strong>States:</strong> default, hover, focus-visible, disabled, loading, success, danger</p>
+        <p>Actions that change state, navigate, submit, test, import, export, archive, delete, or apply filters.</p>
+      </article>
+      <article class="panel">
+        <h2>Forms</h2>
+        <div class="form-grid">
+          <div>
+            <label for="catalog-name">Name <span class="required">required</span></label>
+            <input id="catalog-name" value="Project profile">
+          </div>
+          <div>
+            <label for="catalog-provider">Provider</label>
+            <select id="catalog-provider"><option>Jira</option><option>HSD-ES</option><option>GitHub</option></select>
+          </div>
+          <div class="field-wide missing">
+            <label for="catalog-token">Token <span class="required">required for test</span></label>
+            <input id="catalog-token" value="********">
+          </div>
+        </div>
+        <p><strong>Editor:</strong> dashboard-edit-form, dashboard-form-grid, dashboard-form-field, dashboard-action-bar, dashboard-action-group</p>
+        <p><strong>Tool:</strong> dashboard-tool-form, dashboard-tool-grid, dashboard-tool-field, dashboard-tool-actions</p>
+      </article>
+      <article class="panel">
+        <h2>Tables</h2>
+        <table>
+          <thead><tr><th>Name</th><th>Provider</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>NVU Bugs</td><td>HSD-ES</td><td><span class="status success">Ready</span></td><td><button class="button">Edit</button></td></tr>
+            <tr><td>Platform Jira</td><td>Jira</td><td><span class="status warning">Draft</span></td><td><button class="button quiet">Review</button></td></tr>
+          </tbody>
+        </table>
+        <p><strong>States:</strong> default, empty, loading, selected, archived, error</p>
+      </article>
+      <article class="panel">
+        <h2>Tabs</h2>
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" aria-selected="true">Jira selected</button>
+          <button class="tab" role="tab" aria-selected="false">HSD-ES</button>
+          <button class="tab" role="tab" aria-selected="false">GitHub</button>
+        </div>
+        <p>Choose one mode, provider, or page section before filling details.</p>
+        <p><strong>Semantics:</strong> role=tablist, role=tab, aria-selected, role=tabpanel</p>
+      </article>
+      <article class="panel">
+        <h2>Status Feedback</h2>
+        <div class="status success">Connection test passed.</div>
+        <div class="status warning">Unsaved fields are highlighted.</div>
+        <div class="status danger">Fill the highlighted required fields before continuing.</div>
+        <p><strong>Patterns:</strong> dashboard-validation-banner, dashboard-unsaved-banner, dashboard-required-message, is-missing-required, is-required-missing-control</p>
+      </article>
+      <article class="panel">
+        <h2>Density Tokens</h2>
+        <div class="token-list"><div><code>bodyFontSize</code></div><div>0.875rem</div>
+<div><code>captionFontSize</code></div><div>0.75rem</div>
+<div><code>microFontSize</code></div><div>0.6875rem</div>
+<div><code>controlFontSize</code></div><div>0.875rem</div>
+<div><code>controlHeight</code></div><div>2.25rem</div>
+<div><code>toolControlHeight</code></div><div>2rem</div>
+<div><code>controlPaddingInline</code></div><div>0.75rem</div>
+<div><code>compactGap</code></div><div>0.5rem</div>
+<div><code>fieldGap</code></div><div>0.55rem</div>
+<div><code>sectionGap</code></div><div>1rem</div>
+<div><code>controlRadius</code></div><div>6px</div>
+<div><code>panelRadius</code></div><div>8px</div></div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

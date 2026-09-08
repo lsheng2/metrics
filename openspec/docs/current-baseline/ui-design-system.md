@@ -11,6 +11,8 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Browser validation: Django tests with Playwright for layout, required state, dirty state, and monkey-user flows.
 - External design services: not used by default. Local screenshots and local browser metrics are the review evidence.
 - Component token baseline: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`, calibrated through the repo overlay before subjective button, typography, form, table, tab, or feedback-state changes.
+- Component catalog: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`.
+- Visual regression manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`.
 
 ## Contract Table
 
@@ -24,6 +26,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Action bar | `main.css` | `dashboard-action-bar`, `dashboard-action-group`, `dashboard-action-cancel` | Editor save/test/cancel/navigation controls | Button-height and gap assertions |
 | Tool/filter form | `main.css` | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | Bug Trend filters, Task Forecast parameters, AI Workflow request, Current Tasks filters, Pull Request filters | Static template checks and browser layout gate |
 | Component token profile | `lsheng2-ui-design` core, project overlay | `dashboard-admin-v1.json`, `compactDashboard`, project overrides | Buttons, forms, tables, tabs, status feedback | Overlay/static audit plus browser layout gate |
+| Component catalog and visual manifest | `lsheng2-ui-design` core, project overlay | local static HTML catalog, manifest JSON | Shared UI reviews and screenshot capture planning | Static artifact tests plus local UI gate |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
 | Responsive admin table | `main.css` | `responsive-admin-table-box`, `responsive-admin-table`, optional `is-cardable` | Scope Library, Provider Setup, Data Health, audit/readiness tables | Desktop/phone overflow tests |
@@ -74,5 +77,7 @@ Also run:
 ```powershell
 git diff --check
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 .venv\Scripts\python.exe manage.py check
 ```
