@@ -10,6 +10,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Interaction: htmx plus local JavaScript in `ui_web/static/js/main.js`.
 - Browser validation: Django tests with Playwright for layout, required state, dirty state, and monkey-user flows.
 - External design services: not used by default. Local screenshots and local browser metrics are the review evidence.
+- Component token baseline: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`, calibrated through the repo overlay before subjective button, typography, form, table, tab, or feedback-state changes.
 
 ## Contract Table
 
@@ -22,6 +23,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Editor state banners | `partials/dashboard_editor_state_banners.html` | `dashboard-unsaved-banner`, `dashboard-validation-banner`, `data-dirty-banner`, `data-required-summary` | Provider Profile Config, Scope Config | Static partial ownership tests |
 | Action bar | `main.css` | `dashboard-action-bar`, `dashboard-action-group`, `dashboard-action-cancel` | Editor save/test/cancel/navigation controls | Button-height and gap assertions |
 | Tool/filter form | `main.css` | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | Bug Trend filters, Task Forecast parameters, AI Workflow request, Current Tasks filters, Pull Request filters | Static template checks and browser layout gate |
+| Component token profile | `lsheng2-ui-design` core, project overlay | `dashboard-admin-v1.json`, `compactDashboard`, project overrides | Buttons, forms, tables, tabs, status feedback | Overlay/static audit plus browser layout gate |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
 | Responsive admin table | `main.css` | `responsive-admin-table-box`, `responsive-admin-table`, optional `is-cardable` | Scope Library, Provider Setup, Data Health, audit/readiness tables | Desktop/phone overflow tests |
@@ -33,6 +35,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Persistent setup editors must use the Editor form, Form grid, Required state, Dirty state, and Action bar contracts.
 - Filter, search, import, and destructive confirmation forms must not opt into `data-dirty-form` or `data-required-form` unless they become persistent editors.
 - Lightweight dashboard query forms must use the Tool/filter form contract instead of page-local `columns` and button sizing rules.
+- Subjective UI quality work must start from the component token profile and project overlay instead of one-off page-level button, font, spacing, or radius decisions.
 - Provider Profile Config and Scope Config must use the same Provider tabs contract so Jira, HSD-ES, GitHub, and future providers are visually and structurally consistent.
 - Provider colors are identity cues only: Jira green, HSD-ES blue, GitHub purple. Do not create separate provider color systems.
 - Dense admin tables may scroll inside their table container, but the page itself must not horizontally overflow at desktop or phone widths.
@@ -70,5 +73,6 @@ Also run:
 
 ```powershell
 git diff --check
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
 .venv\Scripts\python.exe manage.py check
 ```

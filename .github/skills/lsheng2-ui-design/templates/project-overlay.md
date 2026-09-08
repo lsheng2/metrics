@@ -38,6 +38,15 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 - Spacing/radius source: `--dashboard-radius-*`, form-grid gaps, action-bar gaps, and Bulma spacing utilities in `ui_web/static/css/main.css`.
 - Icon source: existing Iconoir/Bulma usage and project helper templates; prefer existing icon families before adding new icon systems.
 
+## Component Token Profile
+
+- Core token pack: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`
+- Selected density profile: `compactDashboard` for operational dashboard forms, filters, tables, and setup editors.
+- Project overrides: `dashboard-tool-*` uses 2rem controls; setup editors use `dashboard-edit-form`, `dashboard-form-grid`, `dashboard-form-field`, `dashboard-action-bar`, and `dashboard-action-group`; cards/panels stay at 8px radius or below unless an existing Bulma component requires otherwise.
+- Golden/accepted UI surfaces: Provider Profile Config, Bug Trend Scope Config, Provider Setup inventory, Scope Library, Data Health, Workbench, AI Dashboard Workflow.
+- Component catalog location: not created yet; create a local template or static route before adding more shared components.
+- `ui-ux-pro-max` style references: use local dense-dashboard style and UX searches for guidance only; `lsheng2-ui-design` remains the implementation and validation authority.
+
 ## Route / Page Inventory
 
 | route/page | source files | validation command | notes |
@@ -84,6 +93,7 @@ Use a target-specific subset for small UI changes and the broader group for shar
 
 ```sh
 git diff --check
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
 scripts\validate_ui_design_gate.ps1
 scripts\validate_ui_design_gate.ps1 -Broad
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
@@ -147,6 +157,14 @@ Synthetic replacements:
 - Provider Profile owns provider-level onboarding/connection defaults; Scope owns project/range/query operation and binds to a profile.
 - Use local-first scratch diagrams or static wireframes before broad UI redesign; do not use external design services by default.
 - `ui-ux-pro-max` is optional design intelligence; `lsheng2-ui-design` remains the implementation and validation gate.
+
+## Autonomous Audit Scope
+
+- Default pages: Provider Setup, Provider Profile Config, Bug Trend Scope Config, Scope Library, Data Health, Workbench, AI Dashboard Workflow, Current Tasks, Pull Requests, and Task Forecast.
+- Component focus: buttons, typography, forms, tables, tabs/cards, action bars, required/dirty/error/loading/success states, and horizontal overflow.
+- Ignored/generated paths: temporary screenshots, `tmp_ui_validation/`, generated caches, vendored assets, migrations unless a migration UI exists.
+- Findings report location: `.github/skills/lsheng2-ui-design/reports/` for curated reports; temporary audit output stays local unless explicitly committed.
+- Apply-fixes policy: shared tokens/classes/partials first, then template migration, then page-local exceptions only when the pattern is unique and documented.
 
 ## OpenSpec Integration
 

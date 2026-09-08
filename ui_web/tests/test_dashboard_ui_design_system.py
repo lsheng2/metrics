@@ -64,6 +64,20 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
                 str(path),
             )
 
+    def test_shouldDocumentAutonomousUiAuditAndComponentTokenProfile(self):
+        # Given
+        project_root = Path(__file__).resolve().parents[2]
+        overlay_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'templates' / 'project-overlay.md'
+        overlay = overlay_path.read_text(encoding='utf-8')
+
+        # Then
+        self.assertIn('## Component Token Profile', overlay)
+        self.assertIn('dashboard-admin-v1.json', overlay)
+        self.assertIn('compactDashboard', overlay)
+        self.assertIn('## Autonomous Audit Scope', overlay)
+        self.assertIn('audit_project_ui.py', overlay)
+        self.assertIn('shared tokens/classes/partials first', overlay)
+
     def test_shouldUseToolFormContractForLightweightDashboardForms(self):
         # Given
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
