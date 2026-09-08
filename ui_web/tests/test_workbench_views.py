@@ -206,7 +206,7 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
     @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldWarnButRenderProviderPanesForCompatibilityBinding(self):
         # Given
-        scope, run, bucket = self._seed_trend_data()
+        scope, run, bucket = self._seed_trend_data(bind_profile=False)
         BugTrendScopeProviderBinding.objects.create(
             scope=scope,
             profile_id='chiplet-2a-jira',
@@ -234,7 +234,7 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
     @override_settings(METRICS_SCOPE_BINDING_POLICY='explicit_only', METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldBlockCompatibilityBindingWhenPolicyIsExplicitOnly(self):
         # Given
-        scope, run, bucket = self._seed_trend_data()
+        scope, run, bucket = self._seed_trend_data(bind_profile=False)
         BugTrendScopeProviderBinding.objects.create(
             scope=scope,
             profile_id='chiplet-2a-jira',
@@ -686,7 +686,7 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('STDEL-9201', export_content)
         self.assertIn('new_critical_high', export_content)
 
-    def _seed_trend_data(self):
+    def _seed_trend_data(self, bind_profile=True):
         scope = JiraScopeConfig.objects.create(
             name='Workbench trend',
             jql='project = STDEL AND issuetype = Bug',
@@ -716,6 +716,13 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
             new_critical_high_count=1,
             open_count=1,
         )
+        if bind_profile:
+            BugTrendScopeProviderBinding.objects.create(
+                scope=scope,
+                profile_id='chiplet-2a-jira',
+                provider_id='jira',
+                status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+            )
         return scope, run, bucket
 
     def _publish_summary_only_chart(self):

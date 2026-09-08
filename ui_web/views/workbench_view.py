@@ -297,6 +297,13 @@ class WorkbenchView(GracefulTemplateView):
                 'message': 'AI chat is not enabled for this Dashboard process.',
                 'can_sync_workspace': False,
             }
+        if self._scope_binding_needs_registry_profile(scope_binding):
+            return {
+                'ready': False,
+                'status': 'registry_profile_required',
+                'message': self._registry_profile_required_message(scope_binding),
+                'can_sync_workspace': False,
+            }
         if scope_binding['status'] not in {'explicit', 'compatibility'} or not state.profile_id or not state.provider_id:
             return {
                 'ready': False,
@@ -312,6 +319,28 @@ class WorkbenchView(GracefulTemplateView):
                 'can_sync_workspace': False,
             }
         return self.ai_adapter.resolve_chat_binding(state, sidecar_status, self._host_origin())
+
+    def _scope_binding_needs_registry_profile(self, scope_binding: dict) -> bool:
+        blocker_codes = {
+            blocker.get('code', '')
+            for blocker in scope_binding.get('blockers', [])
+            if isinstance(blocker, dict)
+        }
+        return bool(blocker_codes.intersection({
+            'profile_not_found',
+            'profile_disabled',
+            'provider_profile_mismatch',
+            'registered_provider_profile_required',
+        }))
+
+    def _registry_profile_required_message(self, scope_binding: dict) -> str:
+        blockers = [
+            blocker
+            for blocker in scope_binding.get('blockers', [])
+            if isinstance(blocker, dict) and blocker.get('message')
+        ]
+        blocker_message = blockers[0]['message'] if blockers else 'AI chat requires a registry-backed provider profile.'
+        return f'{blocker_message} Rebind this scope in Scope Library.'
 
     def _is_registry_backed_profile(self, profile_id: str, provider_id: str) -> bool:
         return any(
