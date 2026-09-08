@@ -42,12 +42,14 @@ class TestUiDesignBaselineGate(TestCase):
             },
             set(dirty_templates),
         )
+        state_partial = (template_root / 'partials' / 'dashboard_editor_state_banners.html').read_text(encoding='utf-8')
+        self.assertIn('dashboard-unsaved-banner', state_partial)
+        self.assertIn('dashboard-validation-banner', state_partial)
         for path in dirty_templates:
             content = path.read_text(encoding='utf-8')
             self.assertIn('dashboard-edit-form', content, str(path))
             self.assertIn('data-required-form', content, str(path))
-            self.assertIn('dashboard-unsaved-banner', content, str(path))
-            self.assertIn('dashboard-validation-banner', content, str(path))
+            self.assertIn('partials/dashboard_editor_state_banners.html', content, str(path))
             self.assertIn('dashboard-action-bar', content, str(path))
             self.assertIn('dashboard-action-group', content, str(path))
 
@@ -81,6 +83,22 @@ class TestUiDesignBaselineGate(TestCase):
         scope, _, _ = self._seed_bound_scope_with_run()
         responses = [
             ('provider_setup_inventory', self.client.get(reverse('ui_web:provider_setup')), {'table': True}),
+            (
+                'bug_trend',
+                self.client.get(reverse('ui_web:bug_trend'), {
+                    'scope_id': scope.id,
+                    'begin': '2026-09-01',
+                    'end': '2026-09-07',
+                    'chart_id': 'default_bug_trend',
+                }),
+                {'tool_form': True},
+            ),
+            ('task_forecast', self.client.get(reverse('ui_web:task_forecast')), {'tool_form': True}),
+            (
+                'ai_dashboard_workflow',
+                self.client.get(reverse('ui_web:ai_dashboard_workflow')),
+                {'tool_form': True, 'table': True},
+            ),
             (
                 'provider_profile_jira_editor',
                 self.client.get(reverse('ui_web:provider_setup'), {'mode': 'new', 'provider_id': 'jira'}),
@@ -129,6 +147,12 @@ class TestUiDesignBaselineGate(TestCase):
                 self.assertGreater(metrics['visible_button_count'], 0, f'{label} {viewport}')
                 if metrics['expects_table']:
                     self.assertGreater(metrics['responsive_table_count'], 0, f'{label} {viewport}')
+                if metrics['expects_tool_form']:
+                    self.assertGreater(metrics['tool_form_count'], 0, f'{label} {viewport}')
+                    self.assertGreater(metrics['tool_grid_count'], 0, f'{label} {viewport}')
+                    self.assertEqual(0, metrics['tool_form_dirty_count'], f'{label} {viewport}')
+                    self.assertLessEqual(metrics['tool_form_button_height_delta'], 1, f'{label} {viewport}')
+                    self.assertLessEqual(metrics['tool_form_control_height_delta'], 1, f'{label} {viewport}')
                 if metrics['expects_editor']:
                     self.assertEqual(1, metrics['required_summary_count'], f'{label} {viewport}')
                     self.assertEqual(1, metrics['dirty_banner_count'], f'{label} {viewport}')
@@ -285,10 +309,16 @@ class TestUiDesignBaselineGate(TestCase):
                         expects_editor: Boolean(expectations.editor),
                         expects_provider_tabs: Boolean(expectations.provider_tabs),
                         expects_table: Boolean(expectations.table),
+                        expects_tool_form: Boolean(expectations.tool_form),
                         page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
                         visible_button_count: Array.from(document.querySelectorAll('.button')).filter(visible).length,
                         clipped_action_buttons: clippedActionButtons,
                         responsive_table_count: document.querySelectorAll('.responsive-admin-table').length,
+                        tool_form_count: document.querySelectorAll('.dashboard-tool-form').length,
+                        tool_grid_count: document.querySelectorAll('.dashboard-tool-grid').length,
+                        tool_form_dirty_count: document.querySelectorAll('.dashboard-tool-form[data-dirty-form], .dashboard-tool-form[data-required-form]').length,
+                        tool_form_button_height_delta: heightDelta('.dashboard-tool-form .button'),
+                        tool_form_control_height_delta: heightDelta('.dashboard-tool-field .input, .dashboard-tool-field select'),
                         provider_tab_shell_count: document.querySelectorAll('.provider-tab-shell').length,
                         selected_provider_check_visible: selectedChecks.some(check => check.getBoundingClientRect().width >= 14),
                         required_summary_count: document.querySelectorAll('[data-required-summary]').length,

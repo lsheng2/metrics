@@ -29,8 +29,9 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
   - `ui_web/static/js/main.js`
   - `ui_web/templates/base.html`
   - `ui_web/templates/partials/help_tip.html`
+  - `ui_web/templates/partials/dashboard_editor_state_banners.html`
   - `ui_web/templates/partials/provider_profile_editor.html`
-- `ui_web/templates/bug_trend_scope_config.html`
+  - `ui_web/templates/bug_trend_scope_config.html`
 - `openspec/docs/current-baseline/ui-design-system.md`
 - Typography source: `--dashboard-font-*` variables in `ui_web/static/css/main.css` plus Bulma base typography.
 - Color source: `--dashboard-*` variables in `ui_web/static/css/main.css`; provider identity colors are Jira green, HSD-ES blue, GitHub purple.
@@ -55,6 +56,7 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 | `dashboard-edit-form` | `ui_web/static/css/main.css`, setup templates | Any persistent setup/editor form with save/cancel behavior. | Filter/search/action-only forms. |
 | `dashboard-form-grid` and `dashboard-form-field` | `ui_web/static/css/main.css`, setup templates | Aligned label/control grids for setup forms. | One-off nested cards or page-local grid variants. |
 | `dashboard-action-bar` and `dashboard-action-group` | `ui_web/static/css/main.css`, setup templates | Bottom action bars with grouped primary/secondary/cancel actions. | Per-page button height, spacing, or typography overrides. |
+| `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | `ui_web/static/css/main.css`, dashboard query/filter templates | Lightweight non-editor forms for filters, forecast parameters, and workflow request controls. | Persistent setup/edit forms that need dirty or required-state handling. |
 | `dashboard-required-tag` | `ui_web/static/css/main.css`, setup templates | Required, required-to-save, required-for-enable, and required-for-test markers. | Raw Bulma danger tags in setup forms without shared class. |
 | `dashboard-validation-banner`, `data-required-form` | `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | Action-specific required-field visual validation. | Browser-only authority without backend validation. |
 | `dashboard-unsaved-banner`, `data-dirty-form` | `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | Dirty/unsaved field marking and cancel guard. | Treating dirty state as validation error. |
@@ -82,6 +84,8 @@ Use a target-specific subset for small UI changes and the broader group for shar
 
 ```sh
 git diff --check
+scripts\validate_ui_design_gate.ps1
+scripts\validate_ui_design_gate.ps1 -Broad
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views

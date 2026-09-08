@@ -35,6 +35,7 @@ Framework contract:
 Automated coverage now includes:
 
 - Static contract checks for editor forms and shared required classes.
+- Static contract checks for tool/filter forms that should not inherit editor dirty/required behavior.
 - Browser layout checks for Provider Setup, Provider Profile Config, Scope Config, Scope Library, Data Health, and Workbench at desktop and phone widths.
 - Required-field visual checks for Provider Profile and Scope Config.
 - Dirty-field visual checks for Provider Profile and Scope Config.
@@ -56,4 +57,5 @@ Run this when a UI change touches provider setup, scope setup, data-health, work
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions ui_web.tests.test_ai_dashboard_api_surface
+scripts\validate_ui_design_gate.ps1 -Broad
 ```

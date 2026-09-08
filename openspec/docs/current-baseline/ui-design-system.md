@@ -19,7 +19,9 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Form grid | `main.css` | `dashboard-form-grid`, `dashboard-form-field` | Provider connection fields, profile identity, scope semantic fields | Browser control-height assertions |
 | Required state | `main.css`, `main.js` | `dashboard-required-tag`, `dashboard-validation-banner`, `dashboard-required-message`, `is-missing-required`, `is-required-missing-control` | Save Draft, Enable, Test Connection | Action-specific required tests |
 | Dirty state | `main.css`, `main.js` | `dashboard-unsaved-banner`, `is-dirty-field`, `is-dirty-control`, `dirty-marker` | Editable setup forms | Dirty/cancel browser tests |
+| Editor state banners | `partials/dashboard_editor_state_banners.html` | `dashboard-unsaved-banner`, `dashboard-validation-banner`, `data-dirty-banner`, `data-required-summary` | Provider Profile Config, Scope Config | Static partial ownership tests |
 | Action bar | `main.css` | `dashboard-action-bar`, `dashboard-action-group`, `dashboard-action-cancel` | Editor save/test/cancel/navigation controls | Button-height and gap assertions |
+| Tool/filter form | `main.css` | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | Bug Trend filters, Task Forecast parameters, AI Workflow request, Current Tasks filters, Pull Request filters | Static template checks and browser layout gate |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
 | Responsive admin table | `main.css` | `responsive-admin-table-box`, `responsive-admin-table`, optional `is-cardable` | Scope Library, Provider Setup, Data Health, audit/readiness tables | Desktop/phone overflow tests |
@@ -30,6 +32,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 
 - Persistent setup editors must use the Editor form, Form grid, Required state, Dirty state, and Action bar contracts.
 - Filter, search, import, and destructive confirmation forms must not opt into `data-dirty-form` or `data-required-form` unless they become persistent editors.
+- Lightweight dashboard query forms must use the Tool/filter form contract instead of page-local `columns` and button sizing rules.
 - Provider Profile Config and Scope Config must use the same Provider tabs contract so Jira, HSD-ES, GitHub, and future providers are visually and structurally consistent.
 - Provider colors are identity cues only: Jira green, HSD-ES blue, GitHub purple. Do not create separate provider color systems.
 - Dense admin tables may scroll inside their table container, but the page itself must not horizontally overflow at desktop or phone widths.
@@ -54,13 +57,13 @@ Each setup/editor change must cover these states when affected:
 Run the focused design-system gate for UI contract changes:
 
 ```powershell
-.venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system ui_web.tests.test_ui_design_baseline_gate
+scripts\validate_ui_design_gate.ps1
 ```
 
 Run the broader UI gate for provider, scope, data-health, workbench, or shared CSS/JS changes:
 
 ```powershell
-.venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views ui_web.tests.test_data_health_views ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions ui_web.tests.test_ai_dashboard_api_surface ui_web.tests.test_ui_design_baseline_gate
+scripts\validate_ui_design_gate.ps1 -Broad
 ```
 
 Also run:
@@ -69,4 +72,3 @@ Also run:
 git diff --check
 .venv\Scripts\python.exe manage.py check
 ```
-

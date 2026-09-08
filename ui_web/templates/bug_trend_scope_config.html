@@ -333,10 +333,7 @@
             {% endif %}
             <p class="is-size-7">Use Enable Scope to make a validated scope available in Dashboard, Workbench and AI Assistant selection. Use Archive from Scope Library to remove an existing scope from normal selection while preserving history.</p>
         </div>
-        <div class="dashboard-unsaved-banner provider-unsaved-banner is-hidden" data-dirty-banner>
-            Unsaved fields are highlighted. Save changes or cancel editing to reload the persisted baseline.
-        </div>
-        <div class="dashboard-validation-banner is-hidden" data-required-summary="Fill the highlighted required fields before continuing."></div>
+        {% include "partials/dashboard_editor_state_banners.html" with dirty_message="Unsaved fields are highlighted. Save changes or cancel editing to reload the persisted baseline." %}
         <div class="dashboard-action-bar provider-editor-actions scope-editor-actions">
             <div class="dashboard-action-group provider-action-group provider-action-primary">
                 <button class="button" type="submit" name="action" value="save_draft">{% if config.id %}Save Changes{% else %}Save Draft{% endif %}</button>

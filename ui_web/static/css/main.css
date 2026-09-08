@@ -1578,6 +1578,56 @@ span:focus-within > .help-tip::after,
     min-height: 1.24rem;
 }
 
+.dashboard-tool-form {
+    font-size: var(--dashboard-font-body);
+}
+
+.dashboard-tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.55rem;
+    align-items: end;
+}
+
+.dashboard-tool-field {
+    min-width: 0;
+}
+
+.dashboard-tool-field .label {
+    min-height: 1.28rem;
+    margin-bottom: 0.22rem;
+    font-size: var(--dashboard-font-caption);
+    line-height: 1.18;
+}
+
+.dashboard-tool-field .input,
+.dashboard-tool-field .select,
+.dashboard-tool-field .select select {
+    width: 100%;
+    height: 2rem;
+    min-height: 2rem;
+    font-size: var(--dashboard-font-body);
+}
+
+.dashboard-tool-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.dashboard-tool-actions.is-right {
+    justify-content: flex-end;
+}
+
+.dashboard-tool-actions .button,
+.dashboard-tool-actions a.button {
+    height: 2rem;
+    min-height: 2rem;
+    border-radius: var(--dashboard-radius-control);
+    padding: 0 0.7rem;
+}
+
 .dashboard-validation-banner {
     margin: 0.54rem 0 0.62rem;
     border: 1px solid color-mix(in srgb, var(--bulma-danger, #f14668) 42%, transparent);
@@ -2245,7 +2295,9 @@ span:focus-within > .help-tip::after,
     .dashboard-action-bar .button,
     .dashboard-action-bar a.button,
     .provider-editor-actions .button,
-    .provider-editor-actions a.button {
+    .provider-editor-actions a.button,
+    .dashboard-tool-actions .button,
+    .dashboard-tool-actions a.button {
         width: 100%;
     }
 }

@@ -1,8 +1,8 @@
 <article id="bug-trend-content" class="block">
     <h2 class="title is-3">Bug Trend Indicator</h2>
-    <form class="box" hx-get="{% url 'ui_web:bug_trend' %}" hx-target="#bug-trend-content" hx-swap="outerHTML" hx-indicator="#loading-indicator">
-        <div class="columns is-align-items-end">
-            <div class="column">
+    <form class="box dashboard-tool-form" hx-get="{% url 'ui_web:bug_trend' %}" hx-target="#bug-trend-content" hx-swap="outerHTML" hx-indicator="#loading-indicator">
+        <div class="dashboard-tool-grid">
+            <div class="dashboard-tool-field">
                 <label class="label" for="bug-trend-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope used to choose source facts, calculation runs, and evidence tickets for this chart." %}</label>
                 <div class="select is-fullwidth">
                     <select id="bug-trend-scope" name="scope_id">
@@ -12,7 +12,7 @@
                     </select>
                 </div>
             </div>
-            <div class="column">
+            <div class="dashboard-tool-field">
                 <label class="label" for="bug-trend-chart">Chart{% include "partials/help_tip.html" with label="Chart" text="The Metrics chart recipe rendered for the selected scope and date range." %}</label>
                 <div class="select is-fullwidth">
                     <select id="bug-trend-chart" name="chart_id">
@@ -22,24 +22,18 @@
                     </select>
                 </div>
             </div>
-            <div class="column is-one-quarter">
+            <div class="dashboard-tool-field">
                 <label class="label" for="bug-trend-begin">Begin</label>
                 <input class="input" id="bug-trend-begin" type="date" name="begin" value="{{ begin }}">
             </div>
-            <div class="column is-one-quarter">
+            <div class="dashboard-tool-field">
                 <label class="label" for="bug-trend-end">End</label>
                 <input class="input" id="bug-trend-end" type="date" name="end" value="{{ end }}">
             </div>
-            <div class="column is-narrow">
+            <div class="dashboard-tool-actions">
                 <button class="button is-primary" type="submit">Apply</button>
-            </div>
-            <div class="column is-narrow">
                 <a class="button" href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ selected_scope_id }}">Scope Audit</a>
-            </div>
-            <div class="column is-narrow">
                 <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a>
-            </div>
-            <div class="column is-narrow">
                 <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ selected_scope_id }}">Scope Config</a>
             </div>
         </div>

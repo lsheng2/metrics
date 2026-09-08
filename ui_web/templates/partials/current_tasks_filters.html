@@ -1,14 +1,14 @@
 {% if task_filter_panel.fields or lazy_loading_enabled %}
-<form class="task-filters box mb-4"
+<form class="task-filters dashboard-tool-form box mb-4"
       hx-get="{% url 'ui_web:partials_tasks' %}"
       hx-trigger="submit"
       hx-target="#current-tasks-board"
       hx-push-url="true">
     <input type="hidden" name="member_group_id" value="{{ selected_member_group_id|default:'' }}">
     <input type="hidden" name="view" value="{{ view_mode|default:'list' }}">
-    <div class="columns is-multiline is-vcentered is-variable is-2">
+    <div class="dashboard-tool-grid">
         {% for field in task_filter_panel.fields %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-field">
             <div class="select is-small is-fullwidth">
                 <select name="{{ field.param }}">
                     <option value="">All {{ field.label }}</option>
@@ -21,13 +21,13 @@
         {% endfor %}
         {% for field in task_filter_panel.fields %}
             {% if field.param == "health" %}
-                <div class="column is-narrow task-filter-help">
+                <div class="dashboard-tool-field task-filter-help">
                     <span class="is-size-7 has-text-grey">Health{% include "partials/help_tip.html" with label="Health filter" text="Health filtering requires forecast enrichment because the risk signal is calculated from task effort and estimate data." %}</span>
                 </div>
             {% endif %}
         {% endfor %}
         {% if task_filter_panel.fields %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-actions">
             <button type="submit" class="button is-small is-primary">
                 <span class="icon is-small"><i class="iconoir-check"></i></span>
                 <span>Apply</span>
@@ -35,7 +35,7 @@
         </div>
         {% endif %}
         {% if task_filter_panel.has_active_selection %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-actions">
             <a class="button is-small is-light"
                hx-get="{% url 'ui_web:partials_tasks' %}?member_group_id={{ selected_member_group_id|urlencode }}&view={{ view_mode|default:'list' }}"
                hx-target="#current-tasks-board"
@@ -45,7 +45,7 @@
             </a>
         </div>
         {% endif %}
-        <div class="column is-narrow ml-auto">
+        <div class="dashboard-tool-actions is-right">
             <div class="buttons has-addons are-small">
                 <a class="button {% if view_mode == 'list' %}is-primary{% endif %}"
                    hx-get="{% url 'ui_web:partials_tasks' %}"
@@ -68,7 +68,7 @@
             </div>
         </div>
         {% if lazy_loading_enabled and has_groups and view_mode == 'list' %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-actions">
             <div class="buttons has-addons are-small">
                 <button type="button" class="button"
                         hx-get="{% url 'ui_web:partials_tasks' %}?expand_all=true"

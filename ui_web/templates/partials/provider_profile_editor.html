@@ -295,10 +295,7 @@
                 {% endif %}
             </section>
         {% endif %}
-        <div class="dashboard-unsaved-banner provider-unsaved-banner is-hidden" data-dirty-banner>
-            Unsaved fields are highlighted. Save changes or cancel editing to return to the last loaded values.
-        </div>
-        <div class="dashboard-validation-banner is-hidden" data-required-summary="Fill the highlighted required fields before continuing."></div>
+        {% include "partials/dashboard_editor_state_banners.html" %}
         <div class="dashboard-action-bar provider-editor-actions">
             <div class="dashboard-action-group provider-action-group provider-action-primary">
                 <button class="button" type="submit" name="action" value="save_draft">Save Draft</button>

@@ -52,10 +52,10 @@
     <section class="box">
         <h2 class="title is-4">Workflow Request{% include "partials/help_tip.html" with label="Workflow Request" text="A controlled Metrics workflow request that validates chart intent, renderability, and Grafana operation preconditions before publication." %}</h2>
         <p class="is-size-7 has-text-grey mb-3">Contract Endpoint{% include "partials/help_tip.html" with label="Contract Endpoint" text="The Dashboard-owned API route used by AI Base or this form for chart validation and publication checks." %}: <code>{{ workflow_api_url }}</code></p>
-        <form method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
+        <form class="dashboard-tool-form" method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
             {% csrf_token %}
-            <div class="columns is-multiline">
-                <div class="column is-one-third">
+            <div class="dashboard-tool-grid">
+                <div class="dashboard-tool-field">
                     <label class="label" for="profile_id">Profile{% include "partials/help_tip.html" with label="Profile" text="Provider profile that supplies provider id, source query ownership, mapping, supported charts, and workspace identity." %}</label>
                     <div class="select is-fullwidth">
                         <select id="profile_id" name="profile_id">
@@ -67,7 +67,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="column is-one-third">
+                <div class="dashboard-tool-field">
                     <label class="label" for="chart_id">Chart{% include "partials/help_tip.html" with label="Chart" text="The Metrics chart recipe to validate and render for this profile." %}</label>
                     <div class="select is-fullwidth">
                         <select id="chart_id" name="chart_id">
@@ -79,11 +79,11 @@
                         </select>
                     </div>
                 </div>
-                <div class="column is-one-third">
+                <div class="dashboard-tool-field">
                     <label class="label" for="requested_series">Requested Series{% include "partials/help_tip.html" with label="Requested Series" text="Comma-separated chart series requested by the user or AI plan. Unsupported series become recipe gaps instead of silent success." %}</label>
                     <input class="input" id="requested_series" name="requested_series" value="{{ form_values.requested_series }}">
                 </div>
-                <div class="column is-one-quarter">
+                <div class="dashboard-tool-field">
                     <label class="label" for="range_mode">Range Mode{% include "partials/help_tip.html" with label="Range Mode" text="The date grammar for range start/end. WW uses work-week tokens; Date uses calendar dates." %}</label>
                     <div class="select is-fullwidth">
                         <select id="range_mode" name="range_mode">
@@ -92,15 +92,15 @@
                         </select>
                     </div>
                 </div>
-                <div class="column is-one-quarter">
+                <div class="dashboard-tool-field">
                     <label class="label" for="range_start">Range Start</label>
                     <input class="input" id="range_start" name="range_start" value="{{ form_values.range_start }}">
                 </div>
-                <div class="column is-one-quarter">
+                <div class="dashboard-tool-field">
                     <label class="label" for="range_end">Range End</label>
                     <input class="input" id="range_end" name="range_end" value="{{ form_values.range_end }}">
                 </div>
-                <div class="column is-one-quarter">
+                <div class="dashboard-tool-field">
                     <label class="label" for="operation">gcx Operation{% include "partials/help_tip.html" with label="gcx Operation" text="The Grafana connector operation being preflighted, from validation through snapshot or publish." %}</label>
                     <div class="select is-fullwidth">
                         <select id="operation" name="operation">
@@ -111,12 +111,14 @@
                         </select>
                     </div>
                 </div>
-                <div class="column is-full">
+                <div class="dashboard-tool-field">
                     <label class="label" for="panel_title">Panel Title</label>
                     <input class="input" id="panel_title" name="panel_title" value="{{ form_values.panel_title }}">
                 </div>
             </div>
-            <button class="button is-primary" type="submit">Run Metrics Validation</button>
+            <div class="dashboard-tool-actions mt-3">
+                <button class="button is-primary" type="submit">Run Metrics Validation</button>
+            </div>
         </form>
     </section>
 

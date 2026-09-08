@@ -1,13 +1,13 @@
 {% if author_options or iteration_options or release_options %}
-<form class="pr-filters box mb-4"
+<form class="pr-filters dashboard-tool-form box mb-4"
       hx-get="{% url 'ui_web:partials_pull_requests' %}"
       hx-trigger="submit"
       hx-target="#main-content"
       hx-indicator="#loading-indicator"
       hx-push-url="true">
     <input type="hidden" name="member_group_id" value="{{ selected_member_group_id|default:'' }}">
-    <div class="columns is-multiline is-vcentered is-variable is-2">
-        <div class="column is-narrow">
+    <div class="dashboard-tool-grid">
+        <div class="dashboard-tool-field">
             <div class="select is-small is-fullwidth">
                 <select name="author">
                     <option value="">All Authors</option>
@@ -18,7 +18,7 @@
             </div>
         </div>
         {% if iteration_options %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-field">
             <div class="select is-small is-fullwidth">
                 <select name="iteration">
                     <option value="">All Iterations</option>
@@ -30,7 +30,7 @@
         </div>
         {% endif %}
         {% if release_options %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-field">
             <div class="select is-small is-fullwidth">
                 <select name="release">
                     <option value="">All Releases</option>
@@ -41,14 +41,14 @@
             </div>
         </div>
         {% endif %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-actions">
             <button type="submit" class="button is-small is-primary">
                 <span class="icon is-small"><i class="iconoir-check"></i></span>
                 <span>Apply</span>
             </button>
         </div>
         {% if selected_author or selected_iteration or selected_release %}
-        <div class="column is-narrow">
+        <div class="dashboard-tool-actions">
             <a class="button is-small is-light"
                hx-get="{% url 'ui_web:partials_pull_requests' %}?member_group_id={{ selected_member_group_id|urlencode }}"
                hx-target="#main-content"

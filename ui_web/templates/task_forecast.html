@@ -5,13 +5,13 @@
 {% block content %}
 <div class="box">
     <h2 class="title is-3">Forecast Parameters</h2>
-    <form method="post" 
-          hx-post="{% url 'ui_web:task_forecast' %}" 
-          hx-target="#forecast-results" 
+    <form class="dashboard-tool-form" method="post"
+          hx-post="{% url 'ui_web:task_forecast' %}"
+          hx-target="#forecast-results"
           hx-swap="innerHTML">
         {% csrf_token %}
-        <div class="columns">
-            <div class="column">
+        <div class="dashboard-tool-grid">
+            <div class="dashboard-tool-field">
                 <div class="field">
                     <label class="label" for="task_id">Task ID:</label>
                     <div class="control">
@@ -19,7 +19,7 @@
                     </div>
                 </div>
             </div>
-            <div class="column">
+            <div class="dashboard-tool-field">
                 <div class="field">
                     <label class="label" for="start_date">Start Date:</label>
                     <div class="control">
@@ -27,7 +27,7 @@
                     </div>
                 </div>
             </div>
-            <div class="column">
+            <div class="dashboard-tool-field">
                 <div class="field">
                     <label class="label" for="member_group">Velocity for Member Group:</label>
                     <div class="control">
@@ -43,8 +43,8 @@
                 </div>
             </div>
         </div>
-        <div class="columns">
-            <div class="column">
+        <div class="dashboard-tool-grid mt-3">
+            <div class="dashboard-tool-field">
                 <div class="field">
                     <div class="control">
                         <label class="checkbox">
@@ -56,10 +56,8 @@
                 </div>
             </div>
         </div>
-        <div class="field">
-            <div class="control">
-                <button class="button is-primary" type="submit">Generate Forecast</button>
-            </div>
+        <div class="dashboard-tool-actions mt-3">
+            <button class="button is-primary" type="submit">Generate Forecast</button>
         </div>
     </form>
 </div>
