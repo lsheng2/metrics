@@ -159,7 +159,7 @@
                     <th class="scope-col-status has-help-tip">Status{% include "partials/help_tip.html" with label="Status" text="Enabled scopes appear in normal Dashboard, Workbench, and AI selection. Archived scopes are hidden from normal selection while history is preserved." %}</th>
                     <th class="scope-col-binding has-help-tip">Binding{% include "partials/help_tip.html" with label="Binding" text="The link between a scope and a provider profile. explicit is operator-approved; inferred bindings should be confirmed." %}</th>
                     <th class="scope-col-profile has-help-tip">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile selected for this row. It carries provider id, source ownership, mapping, supported charts, and AI workspace identity." %}</th>
-                    <th class="scope-col-provider has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the profile, such as Jira or HSD-ES." %}</th>
+                    <th class="scope-col-provider has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system from the selected provider profile. Unbound scopes show a dash even when a legacy source hint exists." %}</th>
                     <th class="scope-col-hash has-help-tip">Config hash{% include "partials/help_tip.html" with label="Config hash" text="A semantic fingerprint of the scope. It helps detect whether existing sync and calculation outputs are stale after config changes." %}</th>
                     <th class="scope-col-actions has-text-right has-help-tip">Actions{% include "partials/help_tip.html" with label="Actions" text="Edit or duplicate scopes, export portable JSON, archive before removal, or delete already archived scopes." %}</th>
                 </tr>
@@ -188,6 +188,8 @@
                                 <span class="tag is-info is-light scope-binding-status">inferred</span>{% include "partials/help_tip.html" with label="Inferred binding" text="The provider profile was inferred from legacy behavior. Confirm it before strict explicit-only operation." %}
                             {% elif binding.status == "disabled" %}
                                 <span class="tag is-warning is-light scope-binding-status">archived</span>{% include "partials/help_tip.html" with label="Archived binding" text="Provider binding is disabled because the scope is archived. Re-enable the scope after validation before AI or Grafana use." %}
+                            {% elif binding.status == "configuration_required" %}
+                                <span class="tag is-warning is-light scope-binding-status" title="configuration_required">unbound</span>{% include "partials/help_tip.html" with label="Unbound" text="No usable provider profile is bound yet. Select a profile and Save binding before using AI or Grafana workflows." %}
                             {% else %}
                                 <span class="tag is-warning is-light scope-binding-status">{{ binding.status|default:"configuration_required" }}</span>
                             {% endif %}
@@ -197,7 +199,7 @@
                             {% endif %}
                         </td>
                         <td class="scope-col-profile" data-label="Profile" title="{{ binding.profile_id }}">{{ binding.profile_id|default:"-" }}</td>
-                        <td class="scope-col-provider" data-label="Provider">{{ binding.provider_id|default:"-" }}</td>
+                        <td class="scope-col-provider" data-label="Provider">{% if binding.provider_id and binding.status != "configuration_required" %}{{ binding.provider_id }}{% else %}-{% endif %}</td>
                         <td class="scope-col-hash" data-label="Config hash"><code>{{ scope.config_version_hash|slice:":12" }}</code></td>
                         <td class="scope-col-actions" data-label="Actions">
                             <div class="scope-actions">
@@ -262,7 +264,7 @@
                     {% endwith %}
                 {% empty %}
                     <tr>
-                        <td colspan="10">No scopes or provider profiles are available yet.</td>
+                        <td colspan="10">No scopes are available yet.</td>
                     </tr>
                 {% endfor %}
             </tbody>

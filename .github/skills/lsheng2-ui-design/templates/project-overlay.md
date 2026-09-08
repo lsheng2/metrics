@@ -79,6 +79,7 @@ Use a target-specific subset for small UI changes and the broader group for shar
 
 ```sh
 git diff --check
+.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions ui_web.tests.test_ai_dashboard_api_surface
@@ -127,6 +128,7 @@ Synthetic replacements:
 - Provider Profile and Bug Trend Scope Config must remain visually consistent but action-specific required rules differ.
 - Filter/search forms, import forms, and destructive confirm forms should not inherit setup-editor validation behavior unless they explicitly opt in.
 - Temporary screenshots and UI validation folders are local artifacts and should not be staged unless explicitly requested.
+- The current UI baseline audit lives at `.github/skills/lsheng2-ui-design/reports/2026-09-08-ui-baseline-audit.md`.
 
 ## Accepted Design Decisions
 

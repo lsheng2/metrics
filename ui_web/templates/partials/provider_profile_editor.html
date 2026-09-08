@@ -19,6 +19,7 @@
                         <a class="scope-provider-choice provider-setup-choice is-provider-{{ provider.color }} {% if provider.selected %}is-selected{% endif %}"
                            role="tab"
                            aria-selected="{% if provider.selected %}true{% else %}false{% endif %}"
+                           aria-controls="provider-profile-tab-panel"
                            title="{{ provider.summary }}"
                            href="{% url 'ui_web:provider_setup' %}?mode=new&provider_id={{ provider.provider_id }}">
                             <span class="provider-tab-main">
@@ -32,7 +33,9 @@
                     <li class="provider-tab-item is-provider-{{ provider.color }} is-disabled {% if provider.selected %}is-active{% endif %}">
                         <span class="scope-provider-choice provider-setup-choice is-provider-{{ provider.color }} is-disabled"
                               role="tab"
+                              aria-selected="{% if provider.selected %}true{% else %}false{% endif %}"
                               aria-disabled="true"
+                              aria-controls="provider-profile-tab-panel"
                               title="{{ provider.summary }}">
                             <span class="provider-tab-main">
                                 {% if provider.selected %}<span class="provider-tab-check" aria-hidden="true">&#10003;</span>{% endif %}
@@ -45,7 +48,7 @@
             {% endfor %}
             </ul>
         </nav>
-        <div class="provider-tab-body">
+        <div class="provider-tab-body" id="provider-profile-tab-panel" role="tabpanel">
             <input type="hidden" name="provider_id" value="{{ editor.selected_provider_id }}">
             <section class="scope-provider-detail-panel provider-context-panel is-provider-{{ editor.provider_color }}">
                 <div>

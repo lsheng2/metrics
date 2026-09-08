@@ -97,7 +97,8 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('data-confirm="Archive this scope?', content)
         self.assertIn('Dashboard, Workbench, and AI Assistant scope selection', content)
         self.assertIn('Binding', content)
-        self.assertIn('configuration_required', content)
+        self.assertIn('title="configuration_required">unbound</span>', content)
+        self.assertNotIn('>configuration_required</span>', content)
         self.assertIn('Select a registered provider profile, archive this scope, or delete the archived scope.', content)
         self.assertIn('scope-library-summary', content)
         self.assertIn('Policy', content)
@@ -136,6 +137,25 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('nvu-ttl-hsdes (hsdes)', content)
         self.assertNotIn('data-label="Name" title="NVU TTL HSD-ES">NVU TTL HSD-ES</td>', content)
         self.assertNotIn('data-label="Source">\n                            <span class="tag is-info">Provider profile</span>', content)
+
+    def test_shouldRenderUnboundScopeWithoutMisleadingProviderValue(self):
+        # Given
+        JiraScopeConfig.objects.create(
+            name='Legacy Jira provider hint only',
+            jql='project = LEGACY',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('title="configuration_required">unbound</span>', content)
+        self.assertNotIn('data-label="Provider">jira</td>', content)
+        self.assertIn('data-label="Provider">-</td>', content)
 
     def test_shouldKeepScopeLibraryRowActionsCompactInBrowser(self):
         # Given
@@ -211,9 +231,10 @@ class TestBugTrendScopeConfigViews(TestCase):
 
         # Then
         self.assertFalse(results['wide']['page_horizontal_overflow'])
-        self.assertFalse(results['wide']['table_horizontal_overflow'])
+        self.assertTrue(results['wide']['table_horizontal_overflow'])
         self.assertNotEqual('none', results['wide']['hash_column_display'])
         self.assertFalse(results['desktop']['page_horizontal_overflow'])
+        self.assertTrue(results['desktop']['table_horizontal_overflow'])
         self.assertLessEqual(results['desktop']['max_body_row_height'], 42)
         self.assertFalse(results['desktop']['actions_wrap'])
         self.assertNotEqual('none', results['desktop']['hash_column_display'])
@@ -276,8 +297,10 @@ class TestBugTrendScopeConfigViews(TestCase):
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('Legacy visible Jira scope', content)
-        self.assertIn('configuration_required', content)
+        self.assertIn('title="configuration_required">unbound</span>', content)
+        self.assertNotIn('>configuration_required</span>', content)
         self.assertIn('data-label="Profile" title="">-', content)
+        self.assertIn('data-label="Provider">-</td>', content)
         self.assertIn('Select a registered provider profile, archive this scope, or delete the archived scope.', content)
         self.assertNotIn('Confirm this inferred provider binding as explicit?', content)
 
@@ -356,7 +379,8 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('configuration_required', content)
+        self.assertIn('title="configuration_required">unbound</span>', content)
+        self.assertNotIn('>configuration_required</span>', content)
         self.assertIn('Scope is not bound to a provider profile.', content)
         self.assertNotIn('Confirm binding', content)
         self.assertIn('name="profile_id"', content)

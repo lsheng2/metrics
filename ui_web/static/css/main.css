@@ -1223,21 +1223,21 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-library-table-box {
-    --responsive-admin-table-min-width: 76rem;
-    padding: 0.55rem;
+    --responsive-admin-table-min-width: 104rem;
+    padding: 0.75rem;
 }
 
 .scope-library-table {
-    font-size: 0.78rem;
-    line-height: 1.15;
+    font-size: 0.8rem;
+    line-height: 1.2;
 }
 
 .scope-library-table .scope-col-name {
-    width: 14%;
+    width: 16%;
 }
 
 .scope-library-table .scope-col-source {
-    width: 9%;
+    width: 4%;
 }
 
 .scope-library-table .scope-col-ip {
@@ -1245,7 +1245,7 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-library-table .scope-col-project {
-    width: 6%;
+    width: 8%;
 }
 
 .scope-library-table .scope-col-status {
@@ -1253,11 +1253,11 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-library-table .scope-col-binding {
-    width: 16%;
+    width: 13%;
 }
 
 .scope-library-table .scope-col-profile {
-    width: 13%;
+    width: 15%;
 }
 
 .scope-library-table .scope-col-provider {
@@ -1265,11 +1265,11 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-library-table .scope-col-hash {
-    width: 7%;
+    width: 8%;
 }
 
 .scope-library-table .scope-col-actions {
-    width: 19%;
+    width: 20%;
 }
 
 .scope-library-table th.scope-col-actions,
