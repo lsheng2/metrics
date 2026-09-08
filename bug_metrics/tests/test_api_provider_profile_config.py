@@ -54,7 +54,10 @@ class TestProviderProfileConfigService(TestCase):
 
         # Then
         self.assertEqual('configuration_required', result.status)
-        self.assertIn('saved-query id', result.summary)
+        self.assertIn('saved query id', result.summary)
+        self.assertIn('HSD-ES Connection Probe', result.summary)
+        self.assertEqual('HSD-ES saved query id, Tenant, Subject', result.details['missing_fields'])
+        self.assertNotIn('saved_query_id', str(result.details))
 
     def test_shouldLoadManagedProfileThroughRegistryContract(self):
         # Given
@@ -240,6 +243,37 @@ class TestProviderProfileConfigService(TestCase):
         # Then
         self.assertEqual({'api_token': 'active-api-token'}, config.connection_settings['credentials'])
         self.assertEqual('deployment_configured', config.connection_settings['onboarding_status'])
+
+    def test_shouldMapHsdesProbeFieldsFromPostIntoSourcePopulation(self):
+        # When
+        config = provider_profile_config_from_post({
+            'id': '',
+            'profile_id': 'posted-hsdes-probe',
+            'provider_id': 'hsdes',
+            'display_name': 'Posted HSD-ES Probe',
+            'lifecycle_state': ProviderProfileConfig.LIFECYCLE_DRAFT,
+            'mapping_version': '1',
+            'connection_settings': '{}',
+            'connection_base_url': 'https://hsdes.example/rest',
+            'connection_auth_mode': 'kerberos',
+            'credential_ref': 'profile:local',
+            'hsdes_saved_query_id': '15017652869',
+            'hsdes_tenant': 'ip_fw_sw_sensing.tenant',
+            'hsdes_subject': 'ip_fw_sw_sensing.bug',
+            'source_population': '{}',
+            'scope_labels': '{}',
+            'field_bindings': '{}',
+            'value_mappings': '{}',
+            'chart_bindings': '{}',
+            'sync_policy': '{}',
+            'readiness_policy': '{}',
+        })
+
+        # Then
+        self.assertEqual('15017652869', config.source_population['source_query_ref'])
+        self.assertEqual('ip_fw_sw_sensing.tenant', config.source_population['tenant_or_site'])
+        self.assertEqual('ip_fw_sw_sensing.bug', config.source_population['subject_or_issue_type'])
+        self.assertEqual('provider_owned_saved_query', config.source_population['ownership_type'])
 
     def test_shouldEnableProviderOnboardingProfileWithoutAdvancedMappings(self):
         # Given

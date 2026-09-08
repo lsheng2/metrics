@@ -123,6 +123,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const currentValue = field.type === 'checkbox' ? String(field.checked) : field.value;
                     const fieldIsDirty = currentValue !== field.dataset.initialValue;
                     formIsDirty = formIsDirty || fieldIsDirty;
+                    const fieldShell = field.closest('.provider-form-field, .scope-config-form-field, .provider-json-panel, .scope-config-form-field-wide');
+                    field.classList.toggle('is-dirty-control', fieldIsDirty);
+                    if (fieldShell) {
+                        fieldShell.classList.toggle('is-dirty-field', fieldIsDirty);
+                    }
                     const label = field.id ? form.querySelector(`label[for="${field.id}"]`) : null;
                     if (!label) {
                         return;
@@ -130,9 +135,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     let marker = label.querySelector('[data-dirty-marker]');
                     if (fieldIsDirty && !marker) {
                         marker = document.createElement('span');
-                        marker.className = 'tag is-warning is-light ml-2';
+                        marker.className = 'tag is-warning is-light dirty-marker';
                         marker.dataset.dirtyMarker = 'true';
-                        marker.textContent = 'Modified';
+                        marker.textContent = 'Unsaved *';
                         label.appendChild(marker);
                     }
                     if (!fieldIsDirty && marker) {
@@ -148,6 +153,15 @@ document.addEventListener('DOMContentLoaded', function() {
             fields.forEach(field => {
                 field.addEventListener('input', markDirtyFields);
                 field.addEventListener('change', markDirtyFields);
+            });
+
+            form.addEventListener('reset', () => {
+                window.setTimeout(() => {
+                    form.querySelectorAll('[data-provider-auth-select]').forEach(select => {
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                    markDirtyFields();
+                }, 0);
             });
 
             form.querySelectorAll('[data-dirty-guard]').forEach(link => {

@@ -65,22 +65,21 @@ class ProviderProfileConnectionTestService:
         tenant = self._source_value(source_population, ['tenant_or_site', 'tenant'])
         subject = self._source_value(source_population, ['subject_or_issue_type', 'subject'])
         if not query_id or not tenant or not subject:
+            missing_fields = [
+                label
+                for label, value in {
+                    'HSD-ES saved query id': query_id,
+                    'Tenant': tenant,
+                    'Subject': subject,
+                }.items()
+                if not value
+            ]
             return ProviderProfileConnectionTestResult(
                 'configuration_required',
                 config.provider_id,
                 config.profile_id,
-                'HSD-ES connection test needs a saved-query id, tenant and subject in Advanced source settings.',
-                {
-                    'missing': [
-                        label
-                        for label, value in {
-                            'saved_query_id': query_id,
-                            'tenant': tenant,
-                            'subject': subject,
-                        }.items()
-                        if not value
-                    ],
-                },
+                'HSD-ES connection test needs a saved query id, tenant and subject in the HSD-ES Connection Probe fields.',
+                {'missing_fields': ', '.join(missing_fields)},
             )
         try:
             client = (self._hsdes_client_factory or HsdesHttpClient)(

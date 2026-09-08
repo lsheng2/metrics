@@ -58,6 +58,14 @@ class TestProviderSetupViews(TestCase):
         self.assertIn('Authentication Details', content)
         self.assertIn('Clear saved credentials', content)
         self.assertNotIn('Onboarding status', content)
+        self.assertIn('HSD-ES Connection Probe', content)
+        self.assertIn('Dashboard profile key', content)
+        self.assertIn('This is not the HSD-ES saved query id used by Test Connection.', content)
+        self.assertIn('HSD-ES saved query id', content)
+        self.assertIn('name="hsdes_saved_query_id"', content)
+        self.assertIn('name="hsdes_tenant"', content)
+        self.assertIn('name="hsdes_subject"', content)
+        self.assertIn('placeholder="15017652869"', content)
         self.assertIn('https://hsdes-api.intel.com/rest', content)
         self.assertIn('kerberos', content)
         self.assertIn('Windows Integrated Auth', content)
@@ -137,6 +145,28 @@ class TestProviderSetupViews(TestCase):
         self.assertLessEqual(results['desktop']['provider_form_control_height_delta'], 1)
         self.assertLessEqual(results['phone']['provider_form_control_height_delta'], 1)
 
+    def test_shouldMarkUnsavedProviderFieldAndCancelEditingInBrowser(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_setup'), {
+            'mode': 'new',
+            'provider_id': 'hsdes',
+        })
+        results = self._measure_provider_dirty_state(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, results['initial_dirty_fields'])
+        self.assertTrue(results['dirty_field_highlighted'])
+        self.assertTrue(results['dirty_control_highlighted'])
+        self.assertTrue(results['dirty_banner_visible'])
+        self.assertIn('Unsaved *', results['dirty_label_text'])
+        self.assertTrue(results['cancel_button_visible'])
+        self.assertLessEqual(results['action_button_height_delta'], 1)
+        self.assertGreaterEqual(results['action_gap_px'], 8)
+        self.assertEqual('', results['after_cancel_value'])
+        self.assertEqual(0, results['after_cancel_dirty_fields'])
+        self.assertFalse(results['after_cancel_banner_visible'])
+
     def test_shouldSaveProviderProfileDraftFromSetup(self):
         # When
         payload = self._profile_payload()
@@ -199,6 +229,38 @@ class TestProviderSetupViews(TestCase):
         self.assertTrue(result_layout['result_visible'])
         self.assertTrue(result_layout['result_before_actions'])
         self.assertIn('Jira connection succeeded.', result_layout['result_text'])
+
+    @patch('bug_metrics.app.api.provider_profile_connection_test.HsdesHttpClient')
+    def test_shouldTestHsdesConnectionWithVisibleProbeFields(self, hsdes_client):
+        # Given
+        hsdes_client.return_value.execute_saved_query.return_value = {'total': 1, 'data': [{'id': '1'}]}
+        payload = self._hsdes_profile_payload()
+        payload['action'] = 'test_connection'
+        payload['hsdes_saved_query_id'] = '15017652869'
+        payload['hsdes_tenant'] = 'ip_fw_sw_sensing.tenant'
+        payload['hsdes_subject'] = 'ip_fw_sw_sensing.bug'
+
+        # When
+        response = self.client.post(reverse('ui_web:provider_setup'), payload)
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('HSD-ES Connection Probe', content)
+        self.assertIn('value="15017652869"', content)
+        self.assertIn('value="ip_fw_sw_sensing.tenant"', content)
+        self.assertIn('value="ip_fw_sw_sensing.bug"', content)
+        self.assertIn('Connection test: success', content)
+        self.assertIn('HSD-ES saved-query probe succeeded.', content)
+        self.assertNotIn('Advanced source settings', content)
+        hsdes_client.return_value.execute_saved_query.assert_called_once_with(
+            '15017652869',
+            'ip_fw_sw_sensing.tenant',
+            'ip_fw_sw_sensing.bug',
+            ['id'],
+            0,
+            1,
+        )
 
     def test_shouldRenderEnablementErrorsForMissingChartMappings(self):
         # Given
@@ -477,6 +539,21 @@ class TestProviderSetupViews(TestCase):
             'readiness_policy': json.dumps({'ready_status': 'ready'}),
         }
 
+    def _hsdes_profile_payload(self):
+        payload = self._profile_payload()
+        payload.update({
+            'profile_id': 'new-hsdes-profile',
+            'provider_id': 'hsdes',
+            'display_name': 'New HSD-ES Profile',
+            'connection_base_url': 'https://hsdes-api.intel.com/rest',
+            'connection_auth_mode': 'kerberos',
+            'credential_ref': 'profile:local',
+            'source_population': json.dumps({'provider_id': 'hsdes', 'ownership_type': 'provider_owned_saved_query'}),
+            'field_bindings': json.dumps({'item_id': {'native_field': 'id'}}),
+            'chart_bindings': json.dumps({'component_bug': {'support_status': 'supported_from_seed_facts'}}),
+        })
+        return payload
+
     def _measure_provider_setup_layout(self, html):
         html = self._provider_setup_browser_html(html)
         playwright = sync_playwright().start()
@@ -618,6 +695,56 @@ class TestProviderSetupViews(TestCase):
                         };
                     }
                 """)
+            finally:
+                page.close()
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_provider_dirty_state(self, html):
+        html = self._provider_setup_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1280, 'height': 820})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                initial_dirty_fields = page.locator('.is-dirty-field').count()
+                page.fill('#provider-hsdes-saved-query-id', '15017652869')
+                dirty_state = page.evaluate("""
+                    () => {
+                        const field = document.querySelector('#provider-hsdes-saved-query-id');
+                        const shell = field.closest('.provider-form-field');
+                        const label = document.querySelector('label[for="provider-hsdes-saved-query-id"]');
+                        const banner = document.querySelector('[data-dirty-banner]');
+                        const cancel = document.querySelector('[data-dirty-reset]');
+                        const actions = document.querySelector('.provider-editor-actions');
+                        const heights = Array.from(actions.querySelectorAll('.button'))
+                            .map(button => Math.round(button.getBoundingClientRect().height))
+                            .filter(height => height > 0);
+                        return {
+                            dirty_field_highlighted: shell.classList.contains('is-dirty-field'),
+                            dirty_control_highlighted: field.classList.contains('is-dirty-control'),
+                            dirty_banner_visible: banner ? !banner.classList.contains('is-hidden') : false,
+                            dirty_label_text: label ? label.innerText : '',
+                            cancel_button_visible: cancel ? cancel.getBoundingClientRect().height > 0 : false,
+                            action_button_height_delta: Math.max(...heights) - Math.min(...heights),
+                            action_gap_px: Math.round(parseFloat(getComputedStyle(actions).columnGap || getComputedStyle(actions).gap || '0')),
+                        };
+                    }
+                """)
+                page.click('[data-dirty-reset]')
+                after_cancel = page.evaluate("""
+                    () => {
+                        const banner = document.querySelector('[data-dirty-banner]');
+                        return {
+                            after_cancel_value: document.querySelector('#provider-hsdes-saved-query-id').value,
+                            after_cancel_dirty_fields: document.querySelectorAll('.is-dirty-field').length,
+                            after_cancel_banner_visible: banner ? !banner.classList.contains('is-hidden') : false,
+                        };
+                    }
+                """)
+                return {'initial_dirty_fields': initial_dirty_fields, **dirty_state, **after_cancel}
             finally:
                 page.close()
         finally:

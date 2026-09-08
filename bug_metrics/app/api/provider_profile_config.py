@@ -551,6 +551,19 @@ def provider_profile_config_from_post(post_data) -> SavedProviderProfileConfig:
     }
     for field_name in PROFILE_JSON_FIELDS:
         payload[field_name] = post_data.get(field_name, '{}')
+    source_population = _dict_value(payload.get('source_population'))
+    if str(payload['provider_id'] or '').strip().lower() == 'hsdes':
+        for post_name, source_name in {
+            'hsdes_saved_query_id': 'source_query_ref',
+            'hsdes_tenant': 'tenant_or_site',
+            'hsdes_subject': 'subject_or_issue_type',
+        }.items():
+            if post_name in post_data:
+                source_population[source_name] = str(post_data.get(post_name, '') or '').strip()
+        source_population['provider_id'] = 'hsdes'
+        if not source_population.get('ownership_type'):
+            source_population['ownership_type'] = 'provider_owned_saved_query'
+        payload['source_population'] = source_population
     connection_settings = _dict_value(payload.get('connection_settings'))
     connection_settings.pop('onboarding_status', None)
     for post_name, setting_name in {

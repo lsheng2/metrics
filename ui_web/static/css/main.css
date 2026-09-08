@@ -392,10 +392,23 @@ body.has-workbench-shell .dashboard-main-column #main-content {
 .button,
 .input,
 .textarea,
-.select select,
-.tag {
+.select select {
     border-radius: var(--dashboard-radius-control);
     font-size: var(--dashboard-font-control);
+}
+
+.tag {
+    border-radius: var(--dashboard-radius-control);
+    font-size: var(--dashboard-font-caption);
+    font-weight: 700;
+    min-height: 1.52rem;
+    padding: 0 0.5rem;
+}
+
+.tag.is-small {
+    font-size: var(--dashboard-font-micro);
+    min-height: 1.28rem;
+    padding: 0 0.42rem;
 }
 
 .button,
@@ -1436,6 +1449,7 @@ span:focus-within > .help-tip::after,
     margin-bottom: 0.72rem;
 }
 
+.dashboard-form-grid,
 .provider-form-grid,
 .scope-config-form-grid {
     display: grid;
@@ -1445,6 +1459,7 @@ span:focus-within > .help-tip::after,
     align-items: start;
 }
 
+.dashboard-form-field,
 .provider-form-field,
 .scope-config-form-field {
     display: grid;
@@ -1453,6 +1468,7 @@ span:focus-within > .help-tip::after,
     align-content: start;
 }
 
+.dashboard-form-field .label,
 .provider-form-field .label,
 .scope-config-form-field .label {
     display: inline-flex;
@@ -1460,17 +1476,48 @@ span:focus-within > .help-tip::after,
     min-height: 1.38rem;
     margin-bottom: 0.22rem;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.22rem;
     font-size: var(--dashboard-font-caption);
     line-height: 1.15;
-    white-space: nowrap;
+    white-space: normal;
 }
 
+.dashboard-form-field .tag,
 .provider-form-field .tag,
 .scope-config-form-field .tag {
     flex: 0 0 auto;
 }
 
+.dirty-marker {
+    flex: 0 0 auto;
+}
+
+.dashboard-form-field.is-dirty-field,
+.provider-form-field.is-dirty-field,
+.scope-config-form-field.is-dirty-field,
+.provider-json-panel.is-dirty-field,
+.scope-config-form-field-wide.is-dirty-field {
+    border-radius: var(--dashboard-radius-control);
+    background: color-mix(in srgb, var(--bulma-warning, #ffe08a) 13%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bulma-warning, #ffe08a) 48%, transparent);
+}
+
+.dashboard-form-field.is-dirty-field,
+.provider-form-field.is-dirty-field,
+.scope-config-form-field.is-dirty-field,
+.provider-json-panel.is-dirty-field {
+    padding: 0.24rem;
+}
+
+.is-dirty-control {
+    border-color: color-mix(in srgb, var(--bulma-warning, #ffe08a) 76%, var(--dashboard-border)) !important;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--bulma-warning, #ffe08a) 26%, transparent);
+}
+
+.dashboard-form-field .input,
+.dashboard-form-field .select,
+.dashboard-form-field .select select,
 .provider-form-field .input,
 .provider-form-field .select,
 .provider-form-field .select select,
@@ -1482,12 +1529,21 @@ span:focus-within > .help-tip::after,
     min-height: 2rem;
 }
 
+.dashboard-form-field .input,
+.dashboard-form-field .select select,
 .provider-form-field .input,
 .provider-form-field .select select,
 .scope-config-form-field .input,
 .scope-config-form-field .select select {
+    font-size: var(--dashboard-font-body);
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.dashboard-required-tag {
+    font-size: var(--dashboard-font-micro);
+    line-height: 1;
+    min-height: 1.24rem;
 }
 
 .scope-config-form-field .textarea {
@@ -1843,13 +1899,19 @@ span:focus-within > .help-tip::after,
     font-size: var(--dashboard-font-caption);
 }
 
-.provider-credential-panel {
+.dashboard-panel,
+.provider-credential-panel,
+.provider-probe-panel {
     display: grid;
     gap: 0.52rem;
     border: 1px solid var(--dashboard-border);
     border-radius: var(--dashboard-radius-control);
     background: color-mix(in srgb, var(--dashboard-surface-soft) 34%, transparent);
     padding: 0.55rem 0.62rem;
+}
+
+.provider-probe-grid {
+    margin-bottom: 0;
 }
 
 .provider-section-heading {
@@ -2007,6 +2069,17 @@ span:focus-within > .help-tip::after,
     overflow-wrap: anywhere;
 }
 
+.dashboard-unsaved-banner,
+.provider-unsaved-banner {
+    margin-top: 0.64rem;
+    border: 1px solid color-mix(in srgb, var(--bulma-warning, #ffe08a) 50%, var(--dashboard-border));
+    border-radius: var(--dashboard-radius-control);
+    background: color-mix(in srgb, var(--bulma-warning, #ffe08a) 12%, var(--dashboard-surface-soft));
+    color: var(--dashboard-text);
+    padding: 0.52rem 0.66rem;
+    font-size: var(--dashboard-font-caption);
+}
+
 .provider-json-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2025,18 +2098,40 @@ span:focus-within > .help-tip::after,
     resize: vertical;
 }
 
+.dashboard-action-bar,
 .provider-editor-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.7rem;
     align-items: center;
+    justify-content: space-between;
     margin-top: 0.62rem;
     border-top: 1px solid var(--dashboard-border);
-    padding-top: 0.6rem;
+    padding-top: 0.72rem;
 }
 
-.provider-editor-actions .button {
+.dashboard-action-group,
+.provider-action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.dashboard-action-cancel,
+.provider-action-cancel {
+    margin-left: auto;
+}
+
+.dashboard-action-bar .button,
+.dashboard-action-bar a.button,
+.provider-editor-actions .button,
+.provider-editor-actions a.button {
+    height: 2.08rem;
+    min-height: 2.08rem;
     min-width: 6.8rem;
+    border-radius: var(--dashboard-radius-control);
+    padding: 0 0.76rem;
 }
 
 .provider-hash-line {
@@ -2061,6 +2156,18 @@ span:focus-within > .help-tip::after,
     .provider-json-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .dashboard-action-bar,
+    .provider-editor-actions {
+        align-items: stretch;
+    }
+
+    .dashboard-action-group,
+    .provider-action-group,
+    .dashboard-action-cancel,
+    .provider-action-cancel {
+        margin-left: 0;
+    }
 }
 
 @media (max-width: 920px) {
@@ -2082,6 +2189,21 @@ span:focus-within > .help-tip::after,
 
     .provider-section-heading {
         display: grid;
+    }
+
+    .dashboard-action-bar,
+    .provider-editor-actions,
+    .dashboard-action-group,
+    .provider-action-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .dashboard-action-bar .button,
+    .dashboard-action-bar a.button,
+    .provider-editor-actions .button,
+    .provider-editor-actions a.button {
+        width: 100%;
     }
 }
 

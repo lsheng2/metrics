@@ -33,12 +33,19 @@ Provider Setup SHALL use provider setup templates to define provider onboarding,
 - **THEN** related input/select controls SHALL have consistent heights and aligned label rows
 - **AND** the page SHALL avoid horizontal overflow in desktop and phone viewports
 
+#### Scenario: Edited setup fields show unsaved state
+- **WHEN** users change a field in Provider Profile Config or Bug Trend Scope Config before saving
+- **THEN** the changed field cell SHALL show a visible unsaved highlight and marker
+- **AND** the editor SHALL show a Save action and a Cancel Editing action in a consistent bottom action bar
+- **AND** canceling editing SHALL return users to the last loaded or persisted baseline without silently saving changes
+
 #### Scenario: User tests provider profile connectivity
 - **WHEN** a user clicks Test Connection in the provider profile editor
 - **THEN** the system SHALL test the current provider profile connection without saving the profile
 - **AND** Jira profiles SHALL use the configured Jira connection to request server information
 - **AND** HSD-ES profiles SHALL use the configured saved-query probe when query id, tenant and subject are available
-- **AND** HSD-ES profiles without a probe source SHALL return a configuration-required result instead of guessing an undocumented endpoint
+- **AND** HSD-ES profiles SHALL expose normal form fields for saved query id, tenant and subject in an HSD-ES Connection Probe section
+- **AND** HSD-ES profiles without a probe source SHALL return a configuration-required result that points to the HSD-ES Connection Probe section instead of Advanced JSON
 - **AND** the rendered result SHALL not expose raw token values
 
 #### Scenario: Source-specific settings are advanced compatibility details

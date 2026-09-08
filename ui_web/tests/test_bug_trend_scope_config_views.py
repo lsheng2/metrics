@@ -663,11 +663,30 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn('Save Draft', content)
         self.assertIn('Enable Scope', content)
-        self.assertIn('Discard Changes', content)
+        self.assertIn('Cancel Editing', content)
+        self.assertIn('scope-editor-actions', content)
+        self.assertIn('provider-action-cancel', content)
         self.assertIn('data-dirty-form', content)
         self.assertIn('hx-include="closest form"', content)
         self.assertIn('value=""', content)
         self.assertNotIn('Scope Audit', content)
+
+    def test_shouldMarkUnsavedScopeFieldAndShowConsistentEditorActionsInBrowser(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'mode': 'new'})
+        result = self._measure_scope_config_dirty_state(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, result['initial_dirty_fields'])
+        self.assertTrue(result['dirty_field_highlighted'])
+        self.assertTrue(result['dirty_control_highlighted'])
+        self.assertTrue(result['dirty_banner_visible'])
+        self.assertIn('Unsaved *', result['dirty_label_text'])
+        self.assertTrue(result['cancel_button_visible'])
+        self.assertLessEqual(result['action_button_height_delta'], 1)
+        self.assertGreaterEqual(result['action_gap_px'], 8)
+        self.assertFalse(result['page_horizontal_overflow'])
 
     def test_shouldRenderDuplicateEditorAsDisabledDraftWithoutMutatingSource(self):
         # Given
@@ -1010,6 +1029,46 @@ class TestBugTrendScopeConfigViews(TestCase):
                 'desktop': self._measure_scope_config_provider_tabs_viewport(browser, html, 1440, 900),
                 'phone': self._measure_scope_config_provider_tabs_viewport(browser, html, 390, 900),
             }
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_scope_config_dirty_state(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1280, 'height': 820})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                initial_dirty_fields = page.locator('.is-dirty-field').count()
+                page.fill('#scope-name', 'Unsaved scope name')
+                return page.evaluate("""
+                    initialDirtyFields => {
+                        const field = document.querySelector('#scope-name');
+                        const shell = field.closest('.scope-config-form-field');
+                        const label = document.querySelector('label[for="scope-name"]');
+                        const banner = document.querySelector('[data-dirty-banner]');
+                        const cancel = document.querySelector('.scope-editor-actions button[value="discard"]');
+                        const actions = document.querySelector('.scope-editor-actions');
+                        const heights = Array.from(actions.querySelectorAll('.button'))
+                            .map(button => Math.round(button.getBoundingClientRect().height))
+                            .filter(height => height > 0);
+                        return {
+                            initial_dirty_fields: initialDirtyFields,
+                            dirty_field_highlighted: shell.classList.contains('is-dirty-field'),
+                            dirty_control_highlighted: field.classList.contains('is-dirty-control'),
+                            dirty_banner_visible: banner ? !banner.classList.contains('is-hidden') : false,
+                            dirty_label_text: label ? label.innerText : '',
+                            cancel_button_visible: cancel ? cancel.getBoundingClientRect().height > 0 : false,
+                            action_button_height_delta: Math.max(...heights) - Math.min(...heights),
+                            action_gap_px: Math.round(parseFloat(getComputedStyle(actions).columnGap || getComputedStyle(actions).gap || '0')),
+                            page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        };
+                    }
+                """, initial_dirty_fields)
+            finally:
+                page.close()
         finally:
             browser.close()
             playwright.stop()
