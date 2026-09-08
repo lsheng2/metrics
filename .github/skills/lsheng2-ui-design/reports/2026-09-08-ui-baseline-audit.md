@@ -2,6 +2,8 @@
 
 This audit is owned by the repo-local `lsheng2-ui-design` overlay and is intended to stop repeated UI drift in setup-heavy Dashboard pages.
 
+The extracted component contract is maintained in `openspec/docs/current-baseline/ui-design-system.md`.
+
 ## Scope
 
 Reviewed surfaces:
@@ -55,4 +57,3 @@ Run this when a UI change touches provider setup, scope setup, data-health, work
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions ui_web.tests.test_ai_dashboard_api_surface
 ```
-

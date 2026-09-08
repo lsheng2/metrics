@@ -11,6 +11,7 @@
 ## Folders
 
 - `current-baseline/`: 反映当前已实现系统的背景、架构和 contract supporting docs。规范性要求以 `openspec/specs/` 为准。
+  - `openspec/docs/current-baseline/ui-design-system.md`: 当前已实现的 Dashboard UI shared component contracts、使用边界和验证命令。
 - `future-target/`: 尚未全部实现的产品目标、策略和 design input。进入实施前必须转成 active OpenSpec change。
   - `ai-base-gcx-metrics-contract.zh.md`: 记录 optional AI base 与 `gcx` 如何通过 Metrics-owned catalog、validator 和 publication precondition 协作。
 - `validation/`: 测试策略、运行手册、C0/C1 evidence 和 validation gate 材料。

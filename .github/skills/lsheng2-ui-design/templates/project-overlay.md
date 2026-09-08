@@ -30,7 +30,8 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
   - `ui_web/templates/base.html`
   - `ui_web/templates/partials/help_tip.html`
   - `ui_web/templates/partials/provider_profile_editor.html`
-  - `ui_web/templates/bug_trend_scope_config.html`
+- `ui_web/templates/bug_trend_scope_config.html`
+- `openspec/docs/current-baseline/ui-design-system.md`
 - Typography source: `--dashboard-font-*` variables in `ui_web/static/css/main.css` plus Bulma base typography.
 - Color source: `--dashboard-*` variables in `ui_web/static/css/main.css`; provider identity colors are Jira green, HSD-ES blue, GitHub purple.
 - Spacing/radius source: `--dashboard-radius-*`, form-grid gaps, action-bar gaps, and Bulma spacing utilities in `ui_web/static/css/main.css`.
@@ -60,6 +61,8 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 | `provider-tab-shell`, `scope-provider-choice`, `provider-tab-check` | `ui_web/static/css/main.css`, provider/scope templates | Provider selection tabs/cards and provider color identity. | Replacing provider identity with unrelated color systems. |
 | `.help-tip` and `partials/help_tip.html` | `ui_web/templates/partials/help_tip.html`, `ui_web/static/css/main.css` | Text-hover help and selective icon help. | Adding visible question icons for every label. |
 | responsive admin tables | `ui_web/static/css/main.css`, library/data-health templates | Dense dashboard tables with responsive card fallback. | Wide tables that create horizontal page overflow on phone. |
+
+The expanded component-level contract is documented in `openspec/docs/current-baseline/ui-design-system.md`.
 
 ## State Matrix Requirements
 
@@ -129,6 +132,7 @@ Synthetic replacements:
 - Filter/search forms, import forms, and destructive confirm forms should not inherit setup-editor validation behavior unless they explicitly opt in.
 - Temporary screenshots and UI validation folders are local artifacts and should not be staged unless explicitly requested.
 - The current UI baseline audit lives at `.github/skills/lsheng2-ui-design/reports/2026-09-08-ui-baseline-audit.md`.
+- The current shared component contract lives at `openspec/docs/current-baseline/ui-design-system.md`.
 
 ## Accepted Design Decisions
 
