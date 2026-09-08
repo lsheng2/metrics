@@ -38,12 +38,6 @@ class BugTrendScopeLibraryScopeData:
 class BugTrendScopeLibraryRow:
     scope: BugTrendScopeLibraryScopeData
     binding: BugTrendScopeBindingData
-    source_kind: str = 'saved_scope'
-    source_label: str = 'Scope'
-    source_detail: str = ''
-    can_edit_scope: bool = True
-    can_duplicate_scope: bool = True
-    can_disable_scope: bool = True
     delete_impact: dict = None
     delete_confirmation: str = ''
 

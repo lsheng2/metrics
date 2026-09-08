@@ -10,6 +10,7 @@ Current profile records include `source_population`, `field_bindings`, `value_ma
 - Add a `connection_settings` contract with base URL, auth mode, internal credential reference, system-derived onboarding status and optional profile-local temporary credentials.
 - Allow local temporary credentials in `ProviderProfileConfig` for the current phase, while excluding them from exported packages, readiness payloads, audit details and hidden form state.
 - Move source-specific thinking into Scope Config: Jira JQL and HSD-ES saved query are scope/range inputs.
+- Keep Scope Library as a scope inventory only; do not use it as a secondary provider profile inventory.
 - Preserve existing source-heavy profiles for compatibility while new UI copy and defaults guide users toward provider-level profiles.
 
 **Non-Goals:**
@@ -37,6 +38,11 @@ Current profile records include `source_population`, `field_bindings`, `value_ma
   - `credential_ref` is treated as an internal compatibility pointer and `onboarding_status` is represented by a read-only system status in the primary UI.
   - Provider-specific source/mapping JSON remains available under Advanced for compatibility/debugging.
   - Display-only or legacy source-heavy values should not dominate the main editor.
+
+- Provider profile inventory belongs to Provider Setup.
+  - Provider Setup is the only profile-management surface for profile creation, editing, connection tests, export/import, archive/restore and hard deletion.
+  - Scope Library lists saved scopes and their binding state only.
+  - Scope Library must not append unbound provider profiles as read-only rows; users choose available provider profiles from the New/Edit Scope binding controls.
 
 - Scope owns concrete project/range source.
   - Existing `JiraScopeConfig.jql` remains the current scope source field for Jira and HSD-ES compatibility.

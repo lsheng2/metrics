@@ -62,6 +62,19 @@ Provider Setup SHALL use provider setup templates to define provider onboarding,
 - **THEN** the UI SHALL keep them under Advanced JSON configuration
 - **AND** the primary copy SHALL state that concrete JQL/saved-query/project range belongs to Scope Config
 
+#### Scenario: Provider setup owns profile inventory
+- **WHEN** users need to create, inspect, edit, test, export, import, archive, restore or delete provider profiles
+- **THEN** Provider Setup SHALL be the management surface
+- **AND** Scope Library SHALL NOT duplicate provider profile inventory rows
+- **AND** Scope Library SHALL expose profiles only as binding choices for saved scopes
+
+#### Scenario: Deleted provider profile releases scope bindings
+- **WHEN** a user permanently deletes an archived provider profile
+- **THEN** saved scopes that were bound to that profile SHALL remain saved
+- **AND** their provider binding SHALL become `configuration_required`
+- **AND** the stale profile id SHALL be cleared from the visible binding while the provider id remains as a repair hint
+- **AND** the binding audit history SHALL record the cleanup so operators can rebind, archive, or delete the affected scopes intentionally
+
 ### Requirement: Profile packages are portable and non-secret
 Provider Profile export/import SHALL preserve provider connection references and default mapping information without leaking credentials or runtime data by default.
 

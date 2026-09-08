@@ -9,12 +9,12 @@ def resolve_scope_provider_binding(bug_trend_api, scope):
 
 
 class LegacyScopeProviderBindingResolution:
-    def __init__(self, scope_id, profile_id, provider_id):
+    def __init__(self, scope_id, profile_id, provider_id, blockers=None):
         self.scope_id = scope_id
         self.profile_id = profile_id
         self.provider_id = provider_id
         self.status = 'compatibility' if profile_id and provider_id else 'configuration_required'
-        self.blockers = [] if profile_id and provider_id else [{
+        self.blockers = blockers if blockers is not None else [{
             'code': 'scope_provider_binding_missing',
             'message': 'Scope is not bound to a provider profile.',
         }]
@@ -33,9 +33,9 @@ def resolve_scope_profile_binding(scope) -> tuple[str, str]:
             return profile.profile_id, profile.provider_id
     provider_id = fallback_provider_id_for_profile(scope_name)
     if provider_id:
-        return scope_name, provider_id
+        return '', provider_id
     if getattr(scope, 'jql', ''):
-        return scope_name, 'jira'
+        return '', 'jira'
     return '', ''
 
 

@@ -9,7 +9,6 @@ from bug_metrics.provider_profile_security import without_profile_secret_values
 
 from .provider_profile_registry import ProjectProviderProfile, ProjectProviderProfileRegistry
 
-
 @dataclass(frozen=True, slots=True)
 class ScopeProviderBindingResolution:
     scope_id: str
@@ -25,7 +24,6 @@ class ScopeProviderBindingResolution:
             BugTrendScopeProviderBinding.STATUS_EXPLICIT,
             BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
         })
-
 
 @dataclass(frozen=True, slots=True)
 class ScopeProviderBindingBulkConfirmResult:
@@ -48,7 +46,6 @@ class ScopeProviderBindingBulkConfirmResult:
             'skipped': self.skipped,
         }
 
-
 class ScopeProviderBindingResolver:
     POLICY_COMPATIBILITY_ALLOWED = 'compatibility_allowed'
     POLICY_EXPLICIT_ONLY = 'explicit_only'
@@ -61,7 +58,6 @@ class ScopeProviderBindingResolver:
         if policy not in {self.POLICY_COMPATIBILITY_ALLOWED, self.POLICY_EXPLICIT_ONLY}:
             return self.POLICY_COMPATIBILITY_ALLOWED
         return policy
-
     def resolve(self, scope: JiraScopeConfig, enforce_policy: bool = True) -> ScopeProviderBindingResolution:
         explicit_binding = getattr(scope, 'provider_binding', None)
         if not scope.enabled:
@@ -202,23 +198,23 @@ class ScopeProviderBindingResolver:
     def _resolution_from_binding(self, binding: BugTrendScopeProviderBinding) -> ScopeProviderBindingResolution:
         if binding.profile_id and binding.provider_id:
             registry_resolution = self._registry().resolve_profile(binding.profile_id)
-            if registry_resolution.profile is None and registry_resolution.status == 'unavailable':
+            if registry_resolution.profile is None:
                 return ScopeProviderBindingResolution(
-                    scope_id=str(binding.scope_id),
-                    profile_id=binding.profile_id,
-                    provider_id=binding.provider_id,
-                    status=BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
-                    provenance={**binding.provenance, 'binding_id': binding.id},
-                    blockers=registry_resolution.blockers,
+                    str(binding.scope_id),
+                    binding.profile_id if registry_resolution.status == 'unavailable' else '',
+                    binding.provider_id,
+                    BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
+                    {**binding.provenance, 'binding_id': binding.id, 'missing_profile_id': binding.profile_id},
+                    registry_resolution.blockers,
                 )
             if registry_resolution.profile and registry_resolution.profile.provider_id != binding.provider_id:
                 return ScopeProviderBindingResolution(
-                    scope_id=str(binding.scope_id),
-                    profile_id=binding.profile_id,
-                    provider_id=binding.provider_id,
-                    status=BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
-                    provenance={**binding.provenance, 'binding_id': binding.id},
-                    blockers=[{
+                    str(binding.scope_id),
+                    binding.profile_id,
+                    binding.provider_id,
+                    BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
+                    {**binding.provenance, 'binding_id': binding.id},
+                    [{
                         'code': 'provider_profile_mismatch',
                         'message': f'Binding provider {binding.provider_id} does not match provider profile {binding.profile_id}.',
                     }],
@@ -232,8 +228,7 @@ class ScopeProviderBindingResolver:
             blockers=list(binding.blockers or []),
         )
 
-    def _apply_runtime_policy(self, resolution: ScopeProviderBindingResolution,
-                              enforce_policy: bool) -> ScopeProviderBindingResolution:
+    def _apply_runtime_policy(self, resolution: ScopeProviderBindingResolution, enforce_policy: bool) -> ScopeProviderBindingResolution:
         if not enforce_policy:
             return resolution
         if self.runtime_policy() != self.POLICY_EXPLICIT_ONLY:
@@ -284,20 +279,23 @@ class ScopeProviderBindingResolver:
         fallback_provider_id = self._fallback_provider_id(scope)
         if fallback_provider_id:
             return ScopeProviderBindingResolution(
-                scope_id=str(scope.id),
-                profile_id=str(scope.name or ''),
-                provider_id=fallback_provider_id,
-                status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
-                provenance={'source': 'compatibility', 'matched_by': f'legacy_{fallback_provider_id}_scope'},
-                blockers=[],
+                str(scope.id),
+                '',
+                fallback_provider_id,
+                BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
+                {'source': 'compatibility', 'matched_by': f'legacy_{fallback_provider_id}_scope'},
+                [{
+                    'code': 'registered_provider_profile_required',
+                    'message': 'Select a registered provider profile, archive this scope, or delete the archived scope.',
+                }],
             )
         return ScopeProviderBindingResolution(
-            scope_id=str(scope.id),
-            profile_id='',
-            provider_id='',
-            status=BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
-            provenance={'source': 'compatibility'},
-            blockers=[{
+            str(scope.id),
+            '',
+            '',
+            BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED,
+            {'source': 'compatibility'},
+            [{
                 'code': 'scope_provider_binding_missing',
                 'message': 'Scope is not bound to a provider profile.',
             }],

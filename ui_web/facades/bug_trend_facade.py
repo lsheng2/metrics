@@ -59,26 +59,18 @@ class BugTrendFacade:
             ]
         configs_by_id = {config.id: config for config in self.get_scope_library()}
         rows = []
-        represented_profile_ids = set()
         for scope, binding in self._bug_trend_api.list_scope_provider_bindings():
             config = configs_by_id.get(scope.id)
             if not config:
                 continue
             rows.append(self._scope_library_row(config, binding))
-            if binding.profile_id and binding.status in {'explicit', 'compatibility'}:
-                represented_profile_ids.add(binding.profile_id)
-        for profile in self.get_scope_provider_profile_choices():
-            if profile.profile_id in represented_profile_ids:
-                continue
-            rows.append(self._provider_profile_row(profile))
         return rows
 
     def get_scope_library_summary(self, rows=None) -> dict:
         rows = rows if rows is not None else self.get_scope_library_rows()
         return {
             'total': len(rows),
-            'saved_scope_count': sum(1 for row in rows if row.source_kind == 'saved_scope'),
-            'provider_profile_count': sum(1 for row in rows if row.source_kind == 'provider_profile'),
+            'saved_scope_count': len(rows),
             'compatibility_ready_count': sum(1 for row in rows if row.binding.can_confirm),
             'needs_attention_count': sum(1 for row in rows if row.binding.can_edit),
         }
@@ -345,36 +337,6 @@ class BugTrendFacade:
             scope.project_label,
             scope.enabled,
             scope.config_version_hash,
-        )
-
-    def _provider_profile_row(self, profile: BugTrendProviderProfileChoice) -> BugTrendScopeLibraryRow:
-        scope_labels = profile.scope_labels or {}
-        source_population = profile.source_population or {}
-        source_detail = source_population.get('source_query_name') or source_population.get('source_query_ref') or 'provider profile registry'
-        return BugTrendScopeLibraryRow(
-            BugTrendScopeLibraryScopeData(
-                profile.profile_id,
-                profile.display_name or profile.profile_id,
-                scope_labels.get('ip', ''),
-                scope_labels.get('project_or_product', ''),
-                True,
-                profile.mapping_version_hash,
-            ),
-            BugTrendScopeBindingData(
-                profile.profile_id,
-                profile.provider_id,
-                'provider_profile',
-                source_population.get('ownership_type', 'provider_profile_registry'),
-                [],
-                False,
-                False,
-            ),
-            'provider_profile',
-            'Provider profile',
-            source_detail,
-            False,
-            False,
-            False,
         )
 
     def get_chart_data(self, scope_id: int, begin: date, end: date, chart_id: str = 'default_bug_trend') -> BugTrendChartData:

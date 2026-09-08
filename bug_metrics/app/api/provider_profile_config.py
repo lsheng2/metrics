@@ -176,11 +176,12 @@ class ProviderProfileConfigService:
         if confirmation != expected_confirmation:
             raise ValueError({'profile_delete': f'Type {expected_confirmation} to delete this archived provider profile.'})
         impact = self.get_provider_profile_delete_impact(profile.profile_id)
+        binding_cleanup = self._release_scope_bindings_for_deleted_profile(profile)
         self._record_profile_audit(
             BugTrendAuditEvent.EVENT_PROVIDER_PROFILE_DELETED,
             profile,
             self._snapshot(profile),
-            {'deleted': True, 'impact': impact.to_dict(), 'confirmation': confirmation},
+            {'deleted': True, 'impact': impact.to_dict(), 'confirmation': confirmation, 'binding_cleanup': binding_cleanup},
         )
         profile.delete()
         return impact
@@ -434,6 +435,56 @@ class ProviderProfileConfigService:
                 'after': after,
             },
         )
+
+    def _release_scope_bindings_for_deleted_profile(self, profile: ProviderProfileConfig) -> Dict[str, Any]:
+        changed = []
+        for binding in BugTrendScopeProviderBinding.objects.select_related('scope').filter(profile_id=profile.profile_id):
+            before = self._binding_snapshot(binding)
+            binding.profile_id = ''
+            binding.provider_id = profile.provider_id
+            binding.status = BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED
+            binding.provenance = {
+                **dict(binding.provenance or {}),
+                'source': 'provider_profile_deleted',
+                'deleted_profile_id': profile.profile_id,
+                'deleted_provider_id': profile.provider_id,
+            }
+            binding.blockers = [{
+                'code': 'provider_profile_deleted',
+                'message': f'Provider profile {profile.profile_id} was deleted. Select another provider profile, archive this scope, or delete the archived scope.',
+            }]
+            binding.save(update_fields=['profile_id', 'provider_id', 'status', 'provenance', 'blockers', 'updated_at'])
+            after = self._binding_snapshot(binding)
+            changed.append({
+                'scope_id': binding.scope_id,
+                'scope_name': binding.scope.name,
+                'before': before,
+                'after': after,
+            })
+            BugTrendAuditEvent.objects.create(
+                event_type=BugTrendAuditEvent.EVENT_SCOPE_BINDING_UPDATED,
+                actor='local_operator',
+                scope=binding.scope,
+                request_summary={
+                    'operation': 'provider_profile_deleted_binding_cleanup',
+                    'deleted_profile_id': profile.profile_id,
+                    'before': before,
+                    'after': after,
+                },
+            )
+        return {
+            'changed_count': len(changed),
+            'changed': changed,
+        }
+
+    def _binding_snapshot(self, binding: BugTrendScopeProviderBinding) -> Dict[str, Any]:
+        return {
+            'status': binding.status,
+            'profile_id': binding.profile_id,
+            'provider_id': binding.provider_id,
+            'provenance': dict(binding.provenance or {}),
+            'blockers': list(binding.blockers or []),
+        }
 
     def _duplicate_profile_id(self, profile_id: str) -> str:
         candidate = f'{profile_id}-copy'

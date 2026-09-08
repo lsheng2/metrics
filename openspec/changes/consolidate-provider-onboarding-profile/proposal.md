@@ -9,9 +9,10 @@ Provider Profile 现在承担了两种不同职责：一部分是 provider onboa
 - 将 Provider Profile 的主语义改为 provider-level onboarding/connection profile：每种 provider 默认一个 profile，例如 `jira-default`、`hsdes-default`、`github-default`。
 - Profile 主 UI 展示 provider name、base URL、auth mode、temporary local credentials、credential reference、onboarding status 和跨 scope 默认能力；不再把项目 JQL 或 HSD-ES saved query 当作 profile 的主输入。
 - Scope 继续表示某个项目/产品/范围的操作视图，并引用一个 provider profile；Jira JQL、HSD-ES saved query id/name、project/product/milestone 等 source/range 信息属于 scope 或 scope binding。
+- Scope Library 只展示和管理 saved scopes；未绑定的 provider profiles 不再作为只读行混排到 scope 表格中。Provider profile inventory、lifecycle、connection test、export/import 和 archive/delete 统一归 Provider Setup。
 - 保留 legacy source-heavy profiles 的兼容读取能力，避免立即破坏现有 HSD-ES/Jira seed、sync、Grafana、AI flows。
 - Profile export/import 继续是 non-secret package：允许 `credential_ref`，但默认必须排除 token/password/secret/credential material。
-- UI validation 必须覆盖 Provider Setup inventory、Provider Profile Config editor、Scope Config handoff、desktop/mobile overflow、provider tabs/check/color 和 deprecated/display-only field demotion。
+- UI validation 必须覆盖 Provider Setup inventory、Provider Profile Config editor、Scope Library scope-only rows、Scope Config handoff、desktop/mobile overflow、provider tabs/check/color 和 deprecated/display-only field demotion。
 
 ## Capabilities
 
@@ -19,11 +20,11 @@ Provider Profile 现在承担了两种不同职责：一部分是 provider onboa
 
 - `provider-setup-management`: Provider Profile 从 source-specific config 重构为 provider onboarding/connection profile，source-specific settings 退到 scope 或 advanced/legacy compatibility。
 - `provider-profile-registry`: Registry contract exposes connection settings, supports local temporary credentials for runtime, and redacts secrets from exported/readiness payloads.
-- `provider-scope-wizard`: Scope Config references provider profiles while owning project/range/source details.
+- `provider-scope-wizard`: Scope Library manages scopes only, while Scope Config references provider profiles and owns project/range/source details.
 
 ## Impact
 
 - Affected models/API: `ProviderProfileConfig`, `ProjectProviderProfile`, profile import/export, readiness payloads, Jira/HSD-ES sync command.
-- Affected UI: Provider Profile Config editor, Provider Setup list, Scope Config provider handoff copy.
-- Affected tests: provider profile config/registry, HSD-ES sync command, Provider Setup browser layout, Scope Config browser layout.
+- Affected UI: Provider Profile Config editor, Provider Setup list, Scope Library row model, Scope Config provider handoff copy.
+- Affected tests: provider profile config/registry, HSD-ES sync command, Scope Library scope-only rendering, Provider Setup browser layout, Scope Config browser layout.
 - Non-goal: include raw credentials in exported profile packages, readiness payloads, audit details, or page hidden fields.

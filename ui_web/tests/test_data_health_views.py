@@ -134,7 +134,7 @@ class TestDataHealthViews(TestCase):
         )
         BugTrendScopeProviderBinding.objects.create(
             scope=scope,
-            profile_id='Binding health scope',
+            profile_id='chiplet-2a-jira',
             provider_id='jira',
             status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
             provenance={'matched_by': 'legacy_jira_scope'},

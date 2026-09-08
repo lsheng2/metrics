@@ -48,7 +48,7 @@ class TestWorkbenchScopeProfileSync(TestCase):
         self.assertIn('data-provider-id="hsdes"', content)
         self.assertIn('"workspace_key": "metrics.hsdes.nvu-ttl-hsdes"', content)
 
-    def test_shouldResolveDisplayNamedJiraScopeWithoutTrustingStaleQueryBinding(self):
+    def test_shouldRequireRegisteredProfileForDisplayNamedJiraScope(self):
         scope = JiraScopeConfig.objects.create(
             name='NVU / STDEL / Demo STDEL Bug Trend',
             jql='project = STDEL AND issuetype = Bug',
@@ -74,9 +74,9 @@ class TestWorkbenchScopeProfileSync(TestCase):
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn(f'value="{scope.id}"', content)
-        self.assertIn('id="workbench-profile" value="NVU / STDEL / Demo STDEL Bug Trend" readonly data-workbench-derived-field="profile_id"', content)
-        self.assertIn('id="workbench-provider" value="jira" readonly data-workbench-derived-field="provider_id"', content)
-        self.assertIn('data-provider-id="jira"', content)
+        self.assertIn('id="workbench-profile" value="" readonly data-workbench-derived-field="profile_id"', content)
+        self.assertIn('id="workbench-provider" value="" readonly data-workbench-derived-field="provider_id"', content)
+        self.assertIn('Select a registered provider profile, archive this scope, or delete the archived scope.', content)
         self.assertNotIn('id="workbench-profile" name="profile_id"', content)
         self.assertNotIn('id="workbench-provider" name="provider_id"', content)
 

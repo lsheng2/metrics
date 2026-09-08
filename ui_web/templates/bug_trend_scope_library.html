@@ -14,8 +14,8 @@
     <div class="level scope-library-header">
         <div class="level-left">
             <div>
-                <h2 class="title is-3">Scope Library{% include "partials/help_tip.html" with label="Scope Library" text="The operator library for scopes and provider profiles before they become selectable in Dashboard, Workbench, or AI flows." %}</h2>
-                <p class="subtitle is-6">Manage query scopes and provider profiles before they appear in Metrics workflows.</p>
+                <h2 class="title is-3">Scope Library{% include "partials/help_tip.html" with label="Scope Library" text="The operator library for saved scopes before they become selectable in Dashboard, Workbench, or AI flows. Provider profiles are managed in Provider Setup and selected as scope bindings." %}</h2>
+                <p class="subtitle is-6">Manage saved query scopes before they appear in Metrics workflows.</p>
             </div>
         </div>
         <div class="level-right">
@@ -39,6 +39,7 @@
                     </form>
                 {% endif %}
                 <a class="button is-primary" href="{% url 'ui_web:bug_trend_scope_config' %}?mode=new">New Scope</a>
+                <a class="button" href="{% url 'ui_web:provider_setup' %}">Provider Setup</a>
             </div>
         </div>
     </div>
@@ -129,9 +130,7 @@
     </section>
 
     <div class="scope-library-summary">
-        <span><strong>{{ scope_library_summary.total }}</strong> entries</span>
         <span><strong>{{ scope_library_summary.saved_scope_count }}</strong> scopes</span>
-        <span><strong>{{ scope_library_summary.provider_profile_count }}</strong> provider profiles{% include "partials/help_tip.html" with label="Provider profile" text="A named provider and project configuration, such as chiplet-2a-jira or nvu-ttl-hsdes, that Metrics uses for sync, charts, and AI context." %}</span>
         <span><strong>Policy</strong> {{ scope_binding_policy }}{% include "partials/help_tip.html" with label="Binding policy" text="compatibility_allowed keeps inferred legacy bindings usable; explicit_only requires every scope to be intentionally bound before normal use." %}</span>
         <span><strong>{{ scope_library_summary.compatibility_ready_count }}</strong> inferred bindings</span>
         <span><strong>{{ scope_library_summary.needs_attention_count }}</strong> need attention</span>
@@ -154,7 +153,7 @@
             <thead>
                 <tr>
                     <th class="scope-col-name">Name</th>
-                    <th class="scope-col-source has-help-tip">Source{% include "partials/help_tip.html" with label="Source" text="Scope means user-owned query configuration. Provider profile means a registry entry owned by platform/provider configuration." %}</th>
+                    <th class="scope-col-source has-help-tip">Source{% include "partials/help_tip.html" with label="Source" text="Every row is a saved scope. Provider profiles are selected through the binding controls and managed in Provider Setup." %}</th>
                     <th class="scope-col-ip">IP</th>
                     <th class="scope-col-project">Project</th>
                     <th class="scope-col-status has-help-tip">Status{% include "partials/help_tip.html" with label="Status" text="Enabled scopes appear in normal Dashboard, Workbench, and AI selection. Archived scopes are hidden from normal selection while history is preserved." %}</th>
@@ -162,7 +161,7 @@
                     <th class="scope-col-profile has-help-tip">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile selected for this row. It carries provider id, source ownership, mapping, supported charts, and AI workspace identity." %}</th>
                     <th class="scope-col-provider has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the profile, such as Jira or HSD-ES." %}</th>
                     <th class="scope-col-hash has-help-tip">Config hash{% include "partials/help_tip.html" with label="Config hash" text="A semantic fingerprint of the scope. It helps detect whether existing sync and calculation outputs are stale after config changes." %}</th>
-                    <th class="scope-col-actions has-text-right has-help-tip">Actions{% include "partials/help_tip.html" with label="Actions" text="Edit or duplicate scopes, export portable JSON, archive before removal, or open Workflow and Health diagnostics for provider profiles." %}</th>
+                    <th class="scope-col-actions has-text-right has-help-tip">Actions{% include "partials/help_tip.html" with label="Actions" text="Edit or duplicate scopes, export portable JSON, archive before removal, or delete already archived scopes." %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -171,17 +170,12 @@
                     <tr>
                         <td class="scope-col-name scope-library-primary-cell" data-label="Name" title="{{ scope.name }}">{{ scope.name }}</td>
                         <td class="scope-col-source scope-library-source-cell" data-label="Source">
-                            <span class="tag {% if row.source_kind == 'provider_profile' %}is-info{% else %}is-light{% endif %}">{{ row.source_label }}</span>
-                            {% if row.source_detail %}
-                                <span class="scope-binding-provenance" title="{{ row.source_detail }}">{{ row.source_detail }}</span>
-                            {% endif %}
+                            <span class="tag is-light">Scope</span>
                         </td>
                         <td class="scope-col-ip" data-label="IP">{{ scope.ip|default:"-" }}</td>
                         <td class="scope-col-project" data-label="Project" title="{{ scope.project_label }}">{{ scope.project_label|default:"-" }}</td>
                         <td class="scope-col-status" data-label="Status">
-                            {% if row.source_kind == 'provider_profile' %}
-                                <span class="tag is-info is-light">Provider Profile</span>{% include "partials/help_tip.html" with label="Provider profile registry" text="This row comes from provider profile configuration. It is read-only here and acts as a selectable provider target for scopes." %}
-                            {% elif scope.enabled %}
+                            {% if scope.enabled %}
                                 <span class="tag is-success is-light">Enabled</span>{% include "partials/help_tip.html" with label="Enabled" text="This scope passed deployment validation and can be used by Dashboard, Workbench, sync, calculation, and AI flows." %}
                             {% else %}
                                 <span class="tag is-warning is-light">Archived</span>{% include "partials/help_tip.html" with label="Archived" text="Archived scopes are removed from normal selectors while historical runs, evidence, sync cursor, provider binding, and audit records remain available." %}
@@ -192,8 +186,6 @@
                                 <span class="tag is-success is-light scope-binding-status">explicit</span>{% include "partials/help_tip.html" with label="Explicit binding" text="An operator explicitly selected or confirmed this provider profile for the scope." %}
                             {% elif binding.status == "compatibility" %}
                                 <span class="tag is-info is-light scope-binding-status">inferred</span>{% include "partials/help_tip.html" with label="Inferred binding" text="The provider profile was inferred from legacy behavior. Confirm it before strict explicit-only operation." %}
-                            {% elif binding.status == "provider_profile" %}
-                                <span class="tag is-info is-light scope-binding-status">profile</span>{% include "partials/help_tip.html" with label="Profile row" text="This row is the provider profile itself, not a scope that can be edited here." %}
                             {% elif binding.status == "disabled" %}
                                 <span class="tag is-warning is-light scope-binding-status">archived</span>{% include "partials/help_tip.html" with label="Archived binding" text="Provider binding is disabled because the scope is archived. Re-enable the scope after validation before AI or Grafana use." %}
                             {% else %}
@@ -210,48 +202,41 @@
                         <td class="scope-col-actions" data-label="Actions">
                             <div class="scope-actions">
                                 <div class="buttons is-justify-content-flex-end are-small scope-primary-actions">
-                                    {% if row.can_edit_scope %}
-                                        {% if binding.can_confirm %}
-                                            <form method="post" data-confirm="Confirm this inferred provider binding as explicit?">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="scope_id" value="{{ scope.id }}">
-                                                <button class="button is-info is-light" type="submit" name="action" value="confirm_binding">Confirm</button>
-                                            </form>
-                                        {% else %}
-                                            <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
-                                        {% endif %}
-                                        <details class="workbench-menu scope-row-menu">
-                                            <summary class="button" aria-label="More scope actions">More</summary>
-                                            <div class="workbench-menu-panel">
-                                                {% if binding.can_confirm %}
-                                                    <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
-                                                {% endif %}
-                                                {% if row.can_duplicate_scope %}
-                                                    <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
-                                                {% endif %}
-                                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}?export_scope_id={{ scope.id }}">Export JSON</a>
-                                                {% if row.can_disable_scope and scope.enabled %}
-                                                    <form method="post" data-confirm="Archive this scope? It will be removed from normal Dashboard, Workbench, and AI Assistant scope selection, while historical runs, evidence, sync cache, and audit records remain preserved. Use Edit > Enable Scope to restore it.">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="scope_id" value="{{ scope.id }}">
-                                                    <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Archive{% include "partials/help_tip.html" with label="Archive scope" text="Safe removal from normal UI and automation. Use this before hard delete because history and audit records stay available." inert=True %}</button>
-                                                    </form>
-                                                {% elif row.can_disable_scope %}
-                                                    <form method="post" data-confirm="Delete this archived scope? Related calculation runs, buckets, evidence, Jira history, sync cursor, provider binding and audit records may be removed by cascade.">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="scope_id" value="{{ scope.id }}">
-                                                        <input class="input is-small" name="delete_confirmation" placeholder="{{ row.delete_confirmation }}" aria-label="Delete confirmation for {{ scope.name }}">
-                                                        <button class="button is-small is-danger is-light" type="submit" name="action" value="delete_archived" title="Impact: {{ row.delete_impact.calculation_runs }} runs, {{ row.delete_impact.bucket_issues }} bucket issues, {{ row.delete_impact.jira_issues }} Jira issues">Delete archived{% include "partials/help_tip.html" with label="Delete archived" text="Permanent cleanup for already archived scopes. It can remove related calculation runs, buckets, evidence, provider binding, sync cursor, and audit records by cascade." inert=True %}</button>
-                                                    </form>
-                                                {% endif %}
-                                            </div>
-                                        </details>
+                                    {% if binding.can_confirm %}
+                                        <form method="post" data-confirm="Confirm this inferred provider binding as explicit?">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                            <button class="button is-info is-light" type="submit" name="action" value="confirm_binding">Confirm</button>
+                                        </form>
                                     {% else %}
-                                        <a class="button" href="{% url 'ui_web:ai_dashboard_workflow' %}?profile_id={{ binding.profile_id }}">Workflow{% include "partials/help_tip.html" with label="Workflow" text="Opens Metrics validation for chart intent, render preview, and Grafana operation preconditions for this profile." inert=True %}</a>
-                                        <a class="button" href="{% url 'ui_web:data_health' %}">Health{% include "partials/help_tip.html" with label="Health" text="Opens readiness diagnostics for binding, sync cache, calculation freshness, and AI sidecar availability." inert=True %}</a>
+                                        <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
                                     {% endif %}
+                                    <details class="workbench-menu scope-row-menu">
+                                        <summary class="button" aria-label="More scope actions">More</summary>
+                                        <div class="workbench-menu-panel">
+                                            {% if binding.can_confirm %}
+                                                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ scope.id }}">Edit</a>
+                                            {% endif %}
+                                            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?duplicate_scope_id={{ scope.id }}">Duplicate</a>
+                                            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}?export_scope_id={{ scope.id }}">Export JSON</a>
+                                            {% if scope.enabled %}
+                                                <form method="post" data-confirm="Archive this scope? It will be removed from normal Dashboard, Workbench, and AI Assistant scope selection, while historical runs, evidence, sync cache, and audit records remain preserved. Use Edit > Enable Scope to restore it.">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                                <button class="button is-small is-warning is-light" type="submit" name="action" value="disable">Archive{% include "partials/help_tip.html" with label="Archive scope" text="Safe removal from normal UI and automation. Use this before hard delete because history and audit records stay available." inert=True %}</button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" data-confirm="Delete this archived scope? Related calculation runs, buckets, evidence, Jira history, sync cursor, provider binding and audit records may be removed by cascade.">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="scope_id" value="{{ scope.id }}">
+                                                    <input class="input is-small" name="delete_confirmation" placeholder="{{ row.delete_confirmation }}" aria-label="Delete confirmation for {{ scope.name }}">
+                                                    <button class="button is-small is-danger is-light" type="submit" name="action" value="delete_archived" title="Impact: {{ row.delete_impact.calculation_runs }} runs, {{ row.delete_impact.bucket_issues }} bucket issues, {{ row.delete_impact.jira_issues }}">Delete archived{% include "partials/help_tip.html" with label="Delete archived" text="Permanent cleanup for already archived scopes. It can remove related calculation runs, buckets, evidence, provider binding, sync cursor, and audit records by cascade." inert=True %}</button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </details>
                                 </div>
-                                {% if binding.can_edit and row.can_edit_scope and binding.status != "compatibility" %}
+                                {% if binding.can_edit and binding.status != "compatibility" %}
                                     <form class="field has-addons scope-binding-editor" method="post" data-confirm="Save this provider binding as explicit?">
                                         {% csrf_token %}
                                         <input type="hidden" name="scope_id" value="{{ scope.id }}">
@@ -268,7 +253,7 @@
                                             <button class="button is-small is-primary" type="submit" name="action" value="save_binding">Save binding</button>
                                         </div>
                                     </form>
-                                {% elif row.can_edit_scope and not scope.enabled %}
+                                {% elif not scope.enabled %}
                                     <p class="scope-row-hint">Archived: edit, validate, then Enable Scope before provider binding or AI/Grafana use.</p>
                                 {% endif %}
                             </div>

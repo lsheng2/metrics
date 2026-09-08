@@ -18,3 +18,9 @@ Scope Config SHALL treat Provider Profile as provider onboarding/connection auth
 - **WHEN** a user saves a draft scope from a selected provider profile
 - **THEN** the saved scope editor SHALL still show the selected provider profile identity
 - **AND** the binding SHALL remain visible even though the scope runtime status is disabled until the scope is enabled
+
+#### Scenario: Scope Library lists scopes only
+- **WHEN** a provider profile exists but is not referenced by any saved scope
+- **THEN** Scope Library SHALL NOT append a standalone provider profile row for it
+- **AND** Scope Library SHALL continue to show the provider profile as an available binding choice when a saved scope can be bound
+- **AND** Provider Setup SHALL remain the profile inventory and management surface

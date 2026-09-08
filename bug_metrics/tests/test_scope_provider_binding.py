@@ -113,7 +113,7 @@ class TestScopeProviderBindingResolver(TestCase):
         self.assertEqual('stable-jira-profile', binding.profile_id)
         self.assertEqual('jira', binding.provider_id)
 
-    def test_shouldBlockArchivedProfileBindingWithoutBreakingLegacyUnknownBinding(self):
+    def test_shouldBlockUnavailableProfileBindingsWithoutTreatingLegacyIdsAsRegisteredProfiles(self):
         archived_scope = self._scope('Archived profile bound scope', '')
         legacy_scope = self._scope('Legacy profile bound scope', '')
         BugTrendScopeProviderBinding.objects.create(
@@ -135,8 +135,22 @@ class TestScopeProviderBindingResolver(TestCase):
 
         self.assertEqual(BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED, archived_resolution.status)
         self.assertEqual('profile_disabled', archived_resolution.blockers[0]['code'])
-        self.assertEqual(BugTrendScopeProviderBinding.STATUS_COMPATIBILITY, legacy_resolution.status)
-        self.assertEqual('legacy-jira-profile', legacy_resolution.profile_id)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED, legacy_resolution.status)
+        self.assertEqual('', legacy_resolution.profile_id)
+        self.assertEqual('jira', legacy_resolution.provider_id)
+        self.assertEqual('legacy-jira-profile', legacy_resolution.provenance['missing_profile_id'])
+        self.assertEqual('profile_not_found', legacy_resolution.blockers[0]['code'])
+
+    def test_shouldRequireRegisteredProviderProfileForLegacyJiraScopeFallback(self):
+        scope = self._scope('Legacy display-only Jira scope', 'project = LEGACY')
+
+        resolution = self._resolver([]).resolve(scope)
+
+        self.assertEqual('', resolution.profile_id)
+        self.assertEqual('jira', resolution.provider_id)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED, resolution.status)
+        self.assertEqual('legacy_jira_scope', resolution.provenance['matched_by'])
+        self.assertEqual('registered_provider_profile_required', resolution.blockers[0]['code'])
 
     def test_shouldAuditExplicitBindingUpdatesWithOldAndNewSnapshots(self):
         scope = self._scope('Audited Scope', '')

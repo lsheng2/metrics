@@ -10,6 +10,17 @@ class FakeScope:
     name: str
     ip: str
     project_label: str
+    enabled: bool = True
+    config_version_hash: str = 'scope-hash'
+
+
+@dataclass(slots=True)
+class FakeBinding:
+    profile_id: str
+    provider_id: str
+    status: str
+    provenance: dict
+    blockers: list
 
 
 @dataclass(slots=True)
@@ -57,6 +68,34 @@ class FakeBugTrendApi:
 
     def list_scope_configs(self):
         return [FakeScope(7, 'STDEL emulation', 'NVU', 'STDEL')]
+
+    def list_scope_provider_bindings(self):
+        return [(scope, self.resolve_scope_provider_binding(scope)) for scope in self.list_scope_configs()]
+
+    def list_scope_provider_profile_choices(self):
+        return [
+            {
+                'profile_id': 'nvu-ttl-hsdes',
+                'provider_id': 'hsdes',
+                'display_name': 'NVU TTL HSD-ES',
+                'connection_settings': {},
+                'scope_labels': {'ip': 'NVU', 'project_or_product': 'NVU1.0_TTL'},
+                'source_population': {'ownership_type': 'provider_owned_saved_query'},
+                'mapping_version_hash': 'profile-hash',
+            }
+        ]
+
+    def resolve_scope_provider_binding(self, scope):
+        return FakeBinding(
+            'nvu-ttl-hsdes',
+            'hsdes',
+            'explicit',
+            {'source': 'test'},
+            [],
+        )
+
+    def get_scope_delete_impact(self, scope_id):
+        return {}
 
     def get_chart(self, scope_id, begin, end, chart_id='default_bug_trend'):
         return FakeChart(

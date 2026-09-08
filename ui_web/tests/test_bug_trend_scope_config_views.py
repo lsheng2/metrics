@@ -86,25 +86,24 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('STDEL enabled library', content)
         self.assertIn('STDEL draft library', content)
         self.assertIn('scopes', content)
-        self.assertIn('provider profiles', content)
-        self.assertIn('nvu-ttl-hsdes', content)
-        self.assertIn('NVU1.0_TTL', content)
-        self.assertIn('Provider profile', content)
-        self.assertIn('provider_owned_saved_query', content)
-        self.assertIn('Workflow', content)
-        self.assertIn('Health', content)
+        self.assertNotIn('title="NVU TTL HSD-ES">NVU TTL HSD-ES', content)
+        self.assertNotIn('provider_owned_saved_query', content)
+        self.assertNotIn('Provider Profile', content)
+        self.assertNotIn('href="/ai-dashboard/workflow/?profile_id=nvu-ttl-hsdes"', content)
+        self.assertNotIn('href="/data-health/">Health', content)
         self.assertIn(f'?scope_id={enabled_scope.id}', content)
         self.assertIn(f'?duplicate_scope_id={enabled_scope.id}', content)
         self.assertIn('Archive', content)
         self.assertIn('data-confirm="Archive this scope?', content)
         self.assertIn('Dashboard, Workbench, and AI Assistant scope selection', content)
         self.assertIn('Binding', content)
-        self.assertIn('compatibility', content)
-        self.assertIn('Confirm', content)
+        self.assertIn('configuration_required', content)
+        self.assertIn('Select a registered provider profile, archive this scope, or delete the archived scope.', content)
         self.assertIn('scope-library-summary', content)
         self.assertIn('Policy', content)
         self.assertIn('compatibility_allowed', content)
-        self.assertIn('Confirm Inferred Bindings', content)
+        self.assertNotIn('Confirm Inferred Bindings', content)
+        self.assertIn('Provider Setup', content)
         self.assertIn('scope-library-table', content)
         self.assertIn('More', content)
         self.assertIn('Binding Audit History', content)
@@ -117,6 +116,26 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertIn('Archived scopes are removed from normal selectors', content)
         self.assertIn('compatibility_allowed keeps inferred legacy bindings usable', content)
         self.assertIn('The provider profile selected for this row', content)
+
+    def test_shouldNotAppendUnboundProviderProfilesToScopeLibraryRows(self):
+        # Given
+        JiraScopeConfig.objects.create(
+            name='Only visible scope row',
+            jql='project = ONLYSCOPE',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Only visible scope row', content)
+        self.assertIn('nvu-ttl-hsdes (hsdes)', content)
+        self.assertNotIn('data-label="Name" title="NVU TTL HSD-ES">NVU TTL HSD-ES</td>', content)
+        self.assertNotIn('data-label="Source">\n                            <span class="tag is-info">Provider profile</span>', content)
 
     def test_shouldKeepScopeLibraryRowActionsCompactInBrowser(self):
         # Given
@@ -180,7 +199,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         # Given
         JiraScopeConfig.objects.create(
             name='Real Intel Jira 131600 Bug Trend Fixture',
-            jql='project = 131600 AND component = team_int_qemu',
+            jql='project = "131600" AND component = "team_int_qemu"',
             bug_type_values=['Bug'],
             enabled=True,
         )
@@ -220,7 +239,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         )
         BugTrendScopeProviderBinding.objects.create(
             scope=scope,
-            profile_id='STDEL confirm binding',
+            profile_id='chiplet-2a-jira',
             provider_id='jira',
             status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
             provenance={'source': 'test', 'matched_by': 'legacy_jira_scope'},
@@ -236,9 +255,30 @@ class TestBugTrendScopeConfigViews(TestCase):
         binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
         self.assertEqual(302, response.status_code)
         self.assertEqual(BugTrendScopeProviderBinding.STATUS_EXPLICIT, binding.status)
-        self.assertEqual('STDEL confirm binding', binding.profile_id)
+        self.assertEqual('chiplet-2a-jira', binding.profile_id)
         self.assertEqual('jira', binding.provider_id)
         self.assertEqual('scope_provider_binding_resolver', binding.provenance['persisted_by'])
+
+    def test_shouldRenderLegacyFallbackScopeAsConfigurationRequiredWithoutFakeProfile(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='Legacy visible Jira scope',
+            jql='project = LEGACY',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Legacy visible Jira scope', content)
+        self.assertIn('configuration_required', content)
+        self.assertIn('data-label="Profile" title="">-', content)
+        self.assertIn('Select a registered provider profile, archive this scope, or delete the archived scope.', content)
+        self.assertNotIn('Confirm this inferred provider binding as explicit?', content)
 
     def test_shouldBulkConfirmCompatibilityScopeBindingsFromLibrary(self):
         # Given
@@ -256,7 +296,7 @@ class TestBugTrendScopeConfigViews(TestCase):
         )
         BugTrendScopeProviderBinding.objects.create(
             scope=eligible,
-            profile_id='Bulk eligible library',
+            profile_id='chiplet-2a-jira',
             provider_id='jira',
             status=BugTrendScopeProviderBinding.STATUS_COMPATIBILITY,
             provenance={'source': 'test', 'matched_by': 'legacy_jira_scope'},

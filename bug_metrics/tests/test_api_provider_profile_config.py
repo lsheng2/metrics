@@ -5,7 +5,7 @@ from django.test import TestCase
 from bug_metrics.app.api.provider_profile_connection_test import ProviderProfileConnectionTestService
 from bug_metrics.app.api.provider_profile_config import ProviderProfileConfigService, provider_profile_config_from_dict, provider_profile_config_from_post
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
-from bug_metrics.models import BugTrendAuditEvent, ProviderProfileConfig
+from bug_metrics.models import BugTrendAuditEvent, BugTrendScopeProviderBinding, JiraScopeConfig, ProviderProfileConfig
 
 
 class TestProviderProfileConfigService(TestCase):
@@ -546,3 +546,47 @@ class TestProviderProfileConfigService(TestCase):
         self.assertEqual('delete-profile', impact.profile_id)
         self.assertFalse(ProviderProfileConfig.objects.filter(profile_id='delete-profile').exists())
         self.assertTrue(BugTrendAuditEvent.objects.filter(event_type=BugTrendAuditEvent.EVENT_PROVIDER_PROFILE_DELETED).exists())
+
+    def test_shouldReleaseScopeBindingsWhenArchivedProfileIsDeleted(self):
+        # Given
+        service = ProviderProfileConfigService()
+        profile = service.save_provider_profile_config(provider_profile_config_from_dict({
+            'profile_id': 'delete-bound-profile',
+            'provider_id': 'jira',
+            'display_name': 'Delete Bound Profile',
+            'lifecycle_state': ProviderProfileConfig.LIFECYCLE_DRAFT,
+            'source_population': {},
+            'field_bindings': {},
+            'chart_bindings': {},
+        }))
+        scope = JiraScopeConfig.objects.create(
+            name='Bound profile cleanup scope',
+            jql='project = CLEANUP',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id=profile.profile_id,
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+            provenance={'source': 'operator_confirmed'},
+        )
+
+        # When
+        service.archive_provider_profile_config(profile.profile_id)
+        impact = service.delete_archived_provider_profile_config(profile.profile_id, 'DELETE delete-bound-profile')
+
+        # Then
+        binding = BugTrendScopeProviderBinding.objects.get(scope=scope)
+        self.assertEqual(1, impact.scope_bindings)
+        self.assertEqual('', binding.profile_id)
+        self.assertEqual('jira', binding.provider_id)
+        self.assertEqual(BugTrendScopeProviderBinding.STATUS_CONFIGURATION_REQUIRED, binding.status)
+        self.assertEqual('provider_profile_deleted', binding.blockers[0]['code'])
+        self.assertIn('delete-bound-profile', binding.blockers[0]['message'])
+        self.assertTrue(BugTrendAuditEvent.objects.filter(
+            event_type=BugTrendAuditEvent.EVENT_SCOPE_BINDING_UPDATED,
+            scope=scope,
+            request_summary__operation='provider_profile_deleted_binding_cleanup',
+        ).exists())

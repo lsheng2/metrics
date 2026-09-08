@@ -5,7 +5,7 @@
 这份手册面向第一次使用 Metrics Dashboard 的用户。目标是让用户从零开始理解并完成下面的路径：
 
 1. 启动 Dashboard、Grafana 和 AI Base。
-2. 在 Scope Library 中理解已有 provider profile 和 scope。
+2. 在 Provider Setup 中确认可用 provider profile，并在 Scope Library 中理解已有 scope。
 3. 创建或导入一个 scope。
 4. 完成 scope validation 和 deployment。
 5. 确认 provider binding、sync/cache、calculation 和 evidence readiness。
@@ -37,7 +37,20 @@ AI Base backend      : http://127.0.0.1:48300/
 
 如果只是想快速验证已有本地数据，可以使用已有 stack。若想刷新 Jira live 数据，不要加 `-SkipJiraSync`。
 
-## 1. 先打开 Scope Library
+## 1. 先确认 Provider Setup 和 Scope Library 的边界
+
+Provider profile 的管理入口是：
+
+```text
+http://127.0.0.1:8002/provider-setup/
+```
+
+这里负责 profile 的创建、编辑、连接测试、导入导出、归档和删除。示例 profile 包括：
+
+- Jira 示例：`chiplet-2a-jira`
+- HSD-ES 示例：`nvu-ttl-hsdes`
+
+Scope 的管理入口是：
 
 打开：
 
@@ -45,18 +58,18 @@ AI Base backend      : http://127.0.0.1:48300/
 http://127.0.0.1:8002/bug-trend/scopes/
 ```
 
-这里是 scope 的主入口。新用户先看三件事：
+这里只列出 saved scopes。新用户先看三件事：
 
 | 区域 | 作用 | 新用户应该看什么 |
 | --- | --- | --- |
-| 顶部 summary | 当前 scope/profile 数量和 binding policy | 是否已有可用 scope 和 provider profile |
+| 顶部 summary | 当前 scope 数量和 binding policy | 是否已有可用 scope |
 | Scope lifecycle | 从 draft 到 AI/Grafana 的步骤 | 按 1 到 6 的顺序做，不要跳过 validation/sync/calculation |
 | Readiness matrix | 每个能力需要哪些前置条件 | 缺什么字段会影响哪个后续流程 |
 
 重要概念：
 
 - **Scope**：Dashboard 本地保存的查询范围和语义配置。
-- **Provider profile**：项目级 provider 配置，例如 `chiplet-2a-jira` 或 `nvu-ttl-hsdes`。
+- **Provider profile**：provider 连接/onboarding 配置，例如 `chiplet-2a-jira` 或 `nvu-ttl-hsdes`。它在 Provider Setup 中管理，在 Scope Library/Scope Config 中只被 scope 引用。
 - **Binding**：把 scope 绑定到某个 provider profile，使 Workbench / AI / Grafana 知道应该使用哪个 provider context。
 - **Archived**：从正常选择中移除，但保留历史数据。它不是 hard delete。
 
@@ -135,6 +148,8 @@ Dashboard 把 scope 分成几层 readiness：
 
 - Jira 使用 `chiplet-2a-jira`
 - HSD-ES 使用 `nvu-ttl-hsdes`
+
+如果只想管理 profile 本身，不要在 Scope Library 中找 profile 行；请回到 Provider Setup。
 
 ## 5. Archive、Export、Import、Delete
 
@@ -317,7 +332,7 @@ Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 2
 | Scope 无法 Save Draft | name/JQL/bug type/timezone/bucket 格式缺失 | 回到 Scope Config 补基础字段 |
 | Scope 无法 Enable Scope | open/fixed/closed/severity/critical/medium 字段缺失 | 看错误提示，补 deployment 必填字段 |
 | Workbench scope 下拉里看不到 scope | scope 仍是 archived/draft | Edit 后 Enable Scope |
-| AI Workflow profile 不 ready | provider binding 或 provider readiness blocker | 看 Scope Library Binding 和 Data Health |
+| AI Workflow profile 不 ready | provider binding 或 provider readiness blocker | 看 Scope Library Binding、Provider Setup 和 Data Health |
 | Chart 无数据 | sync/cache 或 calculation run 缺失/过期 | 跑 stack sync 或 recalculate |
 | Evidence tickets 不刷新 | chart 不支持 bucket/series evidence | 换支持 evidence 的 chart/series |
 | AI Base 不可用 | sidecar disabled/unreachable | 看底部 status bar 和 Data Health AI Sidecar Health |
@@ -327,7 +342,7 @@ Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 2
 
 一个新用户完成 onboarding 后，应能证明：
 
-- Scope Library 中能看懂 scope、provider profile、binding、archive/export/import/delete archived。
+- Provider Setup 中能看懂 provider profile；Scope Library 中能看懂 scope、binding、archive/export/import/delete archived。
 - 至少一个 scope 已 `Enable Scope`。
 - 该 scope 有 explicit provider binding。
 - Data Health 没有阻塞该 profile/chart 的关键 blocker。
