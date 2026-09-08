@@ -55,7 +55,7 @@
     {% endif %}
 
     {% if config %}
-    <form class="dashboard-edit-form box" method="post" data-dirty-form>
+    <form class="dashboard-edit-form box" method="post" novalidate data-dirty-form data-required-form data-required-actions="save_draft save_enable">
         {% csrf_token %}
         <input type="hidden" name="id" value="{{ config.id|default:'' }}">
         {% if scope_provider_context %}
@@ -195,7 +195,7 @@
         <section class="dashboard-form-grid scope-config-form-grid">
             <div class="dashboard-form-field scope-config-form-field">
                 <label class="label" for="scope-name">Name <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span></label>
-                <input class="input" id="scope-name" name="name" value="{{ config.name }}" required>
+                <input class="input" id="scope-name" name="name" value="{{ config.name }}" required data-required-label="Name" data-required-message="Name is required before saving this scope.">
             </div>
             <div class="dashboard-form-field scope-config-form-field">
                 <label class="label" for="scope-ip">IP{% include "partials/help_tip.html" with label="IP" text="Display label and compatibility matching hint. It does not select Jira project metadata by itself." %}</label>
@@ -208,7 +208,7 @@
         </section>
         <div class="dashboard-form-field scope-config-form-field scope-config-form-field-wide">
             <label class="label" for="scope-jql">{{ scope_provider_context.source_query_label|default:"JQL" }} <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span>{% include "partials/help_tip.html" with label="Source query" text=scope_provider_context.source_query_help %}</label>
-            <textarea class="textarea" id="scope-jql" name="jql" required>{{ config.jql }}</textarea>
+            <textarea class="textarea" id="scope-jql" name="jql" required data-required-label="{{ scope_provider_context.source_query_label|default:'JQL' }}" data-required-message="{{ scope_provider_context.source_query_label|default:'JQL' }} is required before saving this scope.">{{ config.jql }}</textarea>
         </div>
         <section class="box has-background-light">
             <div class="level">
@@ -246,30 +246,30 @@
         </section>
         <section class="dashboard-form-grid scope-config-form-grid">
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-bug-types">Bug type values{% include "partials/help_tip.html" with label="Bug type values" text="Provider issue or ticket types that should be treated as bugs for trend calculations." %}</label>
-                <textarea class="textarea" id="scope-bug-types" name="bug_type_values">{{ config.bug_type_values|join:"\n" }}</textarea>
+                <label class="label" for="scope-bug-types">Bug type values <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span>{% include "partials/help_tip.html" with label="Bug type values" text="Provider issue or ticket types that should be treated as bugs for trend calculations." %}</label>
+                <textarea class="textarea" id="scope-bug-types" name="bug_type_values" required data-required-label="Bug type values" data-required-message="At least one bug type value is required before saving this scope.">{{ config.bug_type_values|join:"\n" }}</textarea>
             </div>
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-critical-high">Critical/high values{% include "partials/help_tip.html" with label="Critical/high values" text="Severity or priority values counted in the critical/high trend series." %}</label>
-                <textarea class="textarea" id="scope-critical-high" name="critical_high_values">{{ config.critical_high_values|join:"\n" }}</textarea>
+                <label class="label" for="scope-critical-high">Critical/high values <span class="dashboard-required-tag tag is-small is-danger is-light">Required for enable</span>{% include "partials/help_tip.html" with label="Critical/high values" text="Severity or priority values counted in the critical/high trend series." %}</label>
+                <textarea class="textarea" id="scope-critical-high" name="critical_high_values" aria-required="true" data-required-actions="save_enable" data-required-label="Critical/high values" data-required-message="At least one critical/high value is required before enabling this scope.">{{ config.critical_high_values|join:"\n" }}</textarea>
             </div>
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-medium-low">Medium/low values{% include "partials/help_tip.html" with label="Medium/low values" text="Severity or priority values counted in lower-severity trend series." %}</label>
-                <textarea class="textarea" id="scope-medium-low" name="medium_low_values">{{ config.medium_low_values|join:"\n" }}</textarea>
+                <label class="label" for="scope-medium-low">Medium/low values <span class="dashboard-required-tag tag is-small is-danger is-light">Required for enable</span>{% include "partials/help_tip.html" with label="Medium/low values" text="Severity or priority values counted in lower-severity trend series." %}</label>
+                <textarea class="textarea" id="scope-medium-low" name="medium_low_values" aria-required="true" data-required-actions="save_enable" data-required-label="Medium/low values" data-required-message="At least one medium/low value is required before enabling this scope.">{{ config.medium_low_values|join:"\n" }}</textarea>
             </div>
         </section>
         <section class="dashboard-form-grid scope-config-form-grid">
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-open-status">Open status values{% include "partials/help_tip.html" with label="Open status values" text="Workflow statuses counted as still open when calculating open bug trend buckets." %}</label>
-                <textarea class="textarea" id="scope-open-status" name="open_status_values">{{ config.open_status_values|join:"\n" }}</textarea>
+                <label class="label" for="scope-open-status">Open status values <span class="dashboard-required-tag tag is-small is-danger is-light">Required for enable</span>{% include "partials/help_tip.html" with label="Open status values" text="Workflow statuses counted as still open when calculating open bug trend buckets." %}</label>
+                <textarea class="textarea" id="scope-open-status" name="open_status_values" aria-required="true" data-required-actions="save_enable" data-required-label="Open status values" data-required-message="At least one open status value is required before enabling this scope.">{{ config.open_status_values|join:"\n" }}</textarea>
             </div>
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-fixed-status">Fixed status values{% include "partials/help_tip.html" with label="Fixed status values" text="Workflow statuses counted as fixed when calculating fixed and closed bug trends." %}</label>
-                <textarea class="textarea" id="scope-fixed-status" name="fixed_status_values">{{ config.fixed_status_values|join:"\n" }}</textarea>
+                <label class="label" for="scope-fixed-status">Fixed status values <span class="dashboard-required-tag tag is-small is-danger is-light">Enable needs fixed or closed</span>{% include "partials/help_tip.html" with label="Fixed status values" text="Workflow statuses counted as fixed when calculating fixed and closed bug trends." %}</label>
+                <textarea class="textarea" id="scope-fixed-status" name="fixed_status_values" aria-required="true" data-required-actions="save_enable" data-required-group="scope-fixed-or-closed" data-required-label="Fixed status values" data-required-message="Add at least one fixed or closed status value before enabling this scope.">{{ config.fixed_status_values|join:"\n" }}</textarea>
             </div>
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-closed-status">Closed status values{% include "partials/help_tip.html" with label="Closed status values" text="Workflow statuses counted as closed or done for terminal bug trend buckets." %}</label>
-                <textarea class="textarea" id="scope-closed-status" name="closed_status_values">{{ config.closed_status_values|join:"\n" }}</textarea>
+                <label class="label" for="scope-closed-status">Closed status values <span class="dashboard-required-tag tag is-small is-danger is-light">Enable needs fixed or closed</span>{% include "partials/help_tip.html" with label="Closed status values" text="Workflow statuses counted as closed or done for terminal bug trend buckets." %}</label>
+                <textarea class="textarea" id="scope-closed-status" name="closed_status_values" aria-required="true" data-required-actions="save_enable" data-required-group="scope-fixed-or-closed" data-required-label="Closed status values" data-required-message="Add at least one fixed or closed status value before enabling this scope.">{{ config.closed_status_values|join:"\n" }}</textarea>
             </div>
         </section>
         <section class="dashboard-form-grid scope-config-form-grid">
@@ -288,8 +288,8 @@
         </section>
         <section class="dashboard-form-grid scope-config-form-grid">
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-severity-field">Severity field{% include "partials/help_tip.html" with label="Severity field" text="Provider field used to classify tickets into critical/high and medium/low trend series." %}</label>
-                <input class="input" id="scope-severity-field" name="severity_field" value="{{ config.severity_field }}">
+                <label class="label" for="scope-severity-field">Severity field <span class="dashboard-required-tag tag is-small is-danger is-light">Required for enable</span>{% include "partials/help_tip.html" with label="Severity field" text="Provider field used to classify tickets into critical/high and medium/low trend series." %}</label>
+                <input class="input" id="scope-severity-field" name="severity_field" value="{{ config.severity_field }}" aria-required="true" data-required-actions="save_enable" data-required-label="Severity field" data-required-message="Severity field is required before enabling this scope.">
             </div>
             <div class="dashboard-form-field scope-config-form-field">
                 <label class="label" for="scope-component-field">Component field</label>
@@ -336,6 +336,7 @@
         <div class="dashboard-unsaved-banner provider-unsaved-banner is-hidden" data-dirty-banner>
             Unsaved fields are highlighted. Save changes or cancel editing to reload the persisted baseline.
         </div>
+        <div class="dashboard-validation-banner is-hidden" data-required-summary="Fill the highlighted required fields before continuing."></div>
         <div class="dashboard-action-bar provider-editor-actions scope-editor-actions">
             <div class="dashboard-action-group provider-action-group provider-action-primary">
                 <button class="button" type="submit" name="action" value="save_draft">{% if config.id %}Save Changes{% else %}Save Draft{% endif %}</button>

@@ -18,3 +18,4 @@
 - [x] 4.1 Add static UI design-system drift tests.
 - [x] 4.2 Add/extend browser tests for Provider Profile and Scope Config button/font/dirty behavior.
 - [x] 4.3 Run focused UI tests, related regression tests, Django check, migration dry-run, OpenSpec strict validation and live browser smoke.
+- [x] 4.4 Add shared required-field visual validation for Dashboard setup editors and browser coverage for missing-field highlights.

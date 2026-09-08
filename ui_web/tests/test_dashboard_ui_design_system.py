@@ -20,6 +20,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             self.assertIn('dashboard-edit-form', content, str(path))
             self.assertIn('dashboard-action-bar', content, str(path))
             self.assertIn('dashboard-unsaved-banner', content, str(path))
+            self.assertIn('data-required-form', content, str(path))
             self.assertIn('Cancel Editing', content, str(path))
 
     def test_shouldRequireSharedRequiredTagClassInSetupEditors(self):
@@ -47,5 +48,19 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('.dashboard-action-bar', css)
         self.assertIn('.dashboard-action-group', css)
         self.assertIn('.dashboard-required-tag', css)
+        self.assertIn('.is-missing-required', css)
+        self.assertIn('.dashboard-required-message', css)
+        self.assertIn('.dashboard-validation-banner', css)
         self.assertIn('.dashboard-unsaved-banner', css)
         self.assertNotIn(".button,\n.input,\n.textarea,\n.select select,\n.tag", css)
+
+    def test_shouldDefineRequiredValidationBehaviorThroughSharedScript(self):
+        # Given
+        script_path = Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js'
+        script = script_path.read_text(encoding='utf-8')
+
+        # Then
+        self.assertIn('function initializeRequiredForms()', script)
+        self.assertIn('[data-required-form]', script)
+        self.assertIn('data-required-message-for', script)
+        self.assertIn('aria-invalid', script)

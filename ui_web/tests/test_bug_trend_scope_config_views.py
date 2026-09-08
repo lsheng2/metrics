@@ -154,6 +154,28 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertFalse(result['import_file_visible_initial'])
         self.assertTrue(result['import_file_visible_after_open'])
 
+    def test_shouldPromptForArchivedScopeDeleteConfirmationInBrowser(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL archived prompt delete',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=False,
+        )
+        response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
+
+        # When
+        result = self._measure_scope_library_delete_confirmation(
+            response.content.decode(),
+            f'DELETE {scope.name}',
+        )
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(result['submitted'])
+        self.assertEqual(f'DELETE {scope.name}', result['posted_confirmation'])
+        self.assertIn(f'DELETE {scope.name}', result['prompt_message'])
+
     def test_shouldAdaptScopeLibraryTableAcrossScreenWidthsInBrowser(self):
         # Given
         JiraScopeConfig.objects.create(
@@ -688,6 +710,32 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertGreaterEqual(result['action_gap_px'], 8)
         self.assertFalse(result['page_horizontal_overflow'])
 
+    def test_shouldHighlightActionRequiredScopeFieldsInBrowser(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'mode': 'new'})
+        result = self._measure_scope_required_validation(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(['name', 'jql', 'bug_type_values'], result['save_draft_missing_names'])
+        self.assertTrue(result['save_draft_summary_visible'])
+        self.assertEqual('scope-name', result['save_draft_focused_id'])
+        self.assertIn('At least one bug type value is required before saving this scope.', result['save_draft_messages'])
+        self.assertEqual(
+            [
+                'critical_high_values',
+                'medium_low_values',
+                'open_status_values',
+                'fixed_status_values',
+                'closed_status_values',
+                'severity_field',
+            ],
+            result['enable_missing_names'],
+        )
+        self.assertTrue(result['enable_summary_visible'])
+        self.assertEqual('scope-critical-high', result['enable_focused_id'])
+        self.assertIn('Add at least one fixed or closed status value before enabling this scope.', result['enable_messages'])
+
     def test_shouldRenderDuplicateEditorAsDisabledDraftWithoutMutatingSource(self):
         # Given
         scope = JiraScopeConfig.objects.create(
@@ -1073,6 +1121,51 @@ class TestBugTrendScopeConfigViews(TestCase):
             browser.close()
             playwright.stop()
 
+    def _measure_scope_required_validation(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1280, 'height': 820})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                page.click('.scope-editor-actions button[value="save_draft"]')
+                save_draft = page.evaluate("""
+                    () => ({
+                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
+                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
+                        focused_id: document.activeElement.id,
+                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
+                    })
+                """)
+                page.fill('#scope-name', 'Required visual scope')
+                page.fill('#scope-jql', 'project = STDEL')
+                page.fill('#scope-bug-types', 'Bug')
+                page.click('.scope-editor-actions button[value="save_enable"]')
+                enable = page.evaluate("""
+                    () => ({
+                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
+                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
+                        focused_id: document.activeElement.id,
+                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
+                    })
+                """)
+                return {
+                    'save_draft_missing_names': save_draft['missing_names'],
+                    'save_draft_summary_visible': save_draft['summary_visible'],
+                    'save_draft_focused_id': save_draft['focused_id'],
+                    'save_draft_messages': save_draft['messages'],
+                    'enable_missing_names': enable['missing_names'],
+                    'enable_summary_visible': enable['summary_visible'],
+                    'enable_focused_id': enable['focused_id'],
+                    'enable_messages': enable['messages'],
+                }
+            finally:
+                page.close()
+        finally:
+            browser.close()
+            playwright.stop()
+
     def _measure_scope_config_provider_tabs_viewport(self, browser, html, width, height):
         page = browser.new_page(viewport={'width': width, 'height': height})
         try:
@@ -1189,6 +1282,47 @@ class TestBugTrendScopeConfigViews(TestCase):
             page.keyboard.press('Escape')
             result['open_after_escape'] = page.locator('.scope-row-menu').first.evaluate('menu => menu.open')
             return result
+        finally:
+            page.close()
+            browser.close()
+            playwright.stop()
+
+    def _measure_scope_library_delete_confirmation(self, html, confirmation):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 1280, 'height': 900})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            page.locator('button[value="delete_archived"]').evaluate("button => { button.closest('details').open = true; }")
+            page.evaluate("""
+                confirmation => {
+                    window.__deleteResult = {
+                        submitted: false,
+                        confirm_message: '',
+                        prompt_message: '',
+                        prompt_default: '',
+                        posted_confirmation: '',
+                    };
+                    window.confirm = message => {
+                        window.__deleteResult.confirm_message = message;
+                        return true;
+                    };
+                    window.prompt = (message, defaultValue) => {
+                        window.__deleteResult.prompt_message = message;
+                        window.__deleteResult.prompt_default = defaultValue || '';
+                        return confirmation;
+                    };
+                    const form = document.querySelector('button[value="delete_archived"]').closest('form');
+                    form.addEventListener('submit', event => {
+                        event.preventDefault();
+                        window.__deleteResult.submitted = true;
+                        window.__deleteResult.posted_confirmation = new FormData(form).get('delete_confirmation') || '';
+                    });
+                }
+            """, confirmation)
+            page.locator('button[value="delete_archived"]').click()
+            return page.evaluate("() => window.__deleteResult")
         finally:
             page.close()
             browser.close()

@@ -15,6 +15,13 @@ Dashboard UI SHALL define reusable design-system tokens and component classes fo
 - **AND** the field label SHALL show a concise unsaved marker
 - **AND** the editor SHALL expose both save and cancel-editing actions without requiring the user to search elsewhere
 
+#### Scenario: User submits a setup editor with required fields missing
+- **WHEN** a user clicks a save, enable or test action in a Dashboard setup editor
+- **THEN** the editor SHALL validate required fields through shared form behavior before submitting the request
+- **AND** missing fields SHALL show a visible field-level highlight, invalid ARIA state and concise inline guidance
+- **AND** action-specific requirements SHALL only block the actions that need those fields
+- **AND** cancel, archive, delete, import and filter forms SHALL NOT inherit setup-editor required-field behavior unless they explicitly opt in
+
 #### Scenario: UI changes touch buttons or fonts
 - **WHEN** a future change modifies Dashboard UI buttons, fonts, tags, form grids or editor actions
 - **THEN** the change SHALL include a design-system validation check or explain why the existing shared component is insufficient

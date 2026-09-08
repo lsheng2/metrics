@@ -19,3 +19,4 @@
 - [x] 4.1 Add focused domain/view/browser tests for connection settings and UI boundaries.
 - [x] 4.2 Run focused regression tests for provider profile, scope config, data health and workbench.
 - [x] 4.3 Run `python manage.py check`, migration dry-run, OpenSpec strict validation and diff whitespace validation.
+- [x] 4.4 Add browser coverage for action-specific required-field highlights in Provider Profile and Scope Config.

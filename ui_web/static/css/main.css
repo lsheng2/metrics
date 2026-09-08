@@ -1515,6 +1515,38 @@ span:focus-within > .help-tip::after,
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--bulma-warning, #ffe08a) 26%, transparent);
 }
 
+.dashboard-form-field.is-missing-required,
+.provider-form-field.is-missing-required,
+.scope-config-form-field.is-missing-required,
+.provider-json-panel.is-missing-required,
+.scope-config-form-field-wide.is-missing-required {
+    border-radius: var(--dashboard-radius-control);
+    background: color-mix(in srgb, var(--bulma-danger, #f14668) 10%, transparent);
+    box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--bulma-danger, #f14668) 52%, transparent),
+        0 0 0 5px color-mix(in srgb, var(--bulma-danger, #f14668) 13%, transparent);
+}
+
+.dashboard-form-field.is-missing-required,
+.provider-form-field.is-missing-required,
+.scope-config-form-field.is-missing-required,
+.provider-json-panel.is-missing-required {
+    padding: 0.24rem;
+}
+
+.is-required-missing-control {
+    border-color: var(--bulma-danger, #f14668) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--bulma-danger, #f14668) 24%, transparent) !important;
+}
+
+.dashboard-required-message {
+    margin: 0.26rem 0 0;
+    color: var(--bulma-danger, #cc0f35);
+    font-size: var(--dashboard-font-caption);
+    font-weight: 650;
+    line-height: 1.25;
+}
+
 .dashboard-form-field .input,
 .dashboard-form-field .select,
 .dashboard-form-field .select select,
@@ -1544,6 +1576,17 @@ span:focus-within > .help-tip::after,
     font-size: var(--dashboard-font-micro);
     line-height: 1;
     min-height: 1.24rem;
+}
+
+.dashboard-validation-banner {
+    margin: 0.54rem 0 0.62rem;
+    border: 1px solid color-mix(in srgb, var(--bulma-danger, #f14668) 42%, transparent);
+    border-radius: var(--dashboard-radius-control);
+    background: color-mix(in srgb, var(--bulma-danger, #f14668) 9%, white);
+    color: var(--bulma-danger, #cc0f35);
+    padding: 0.5rem 0.66rem;
+    font-size: var(--dashboard-font-caption);
+    font-weight: 650;
 }
 
 .scope-config-form-field .textarea {

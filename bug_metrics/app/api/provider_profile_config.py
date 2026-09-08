@@ -79,11 +79,11 @@ class ProviderProfileConfigService:
         provider_id = provider_id or 'jira'
         return SavedProviderProfileConfig(
             id=None,
-            profile_id=self._default_profile_id(provider_id),
+            profile_id='',
             provider_id=provider_id,
-            display_name=self._default_display_name(provider_id),
+            display_name='',
             lifecycle_state=ProviderProfileConfig.LIFECYCLE_DRAFT,
-            connection_settings=default_connection_settings_for_provider(provider_id),
+            connection_settings=blank_connection_settings_for_provider(provider_id),
             source_population={'provider_id': provider_id, 'ownership_type': self._default_ownership_type(provider_id)},
             scope_labels={},
             field_bindings={},
@@ -513,6 +513,17 @@ def default_connection_settings_for_provider(provider_id: str) -> Dict[str, Any]
     }
 
 
+def blank_connection_settings_for_provider(provider_id: str) -> Dict[str, Any]:
+    provider_id = str(provider_id or '').strip().lower()
+    return {
+        'base_url': '',
+        'auth_mode': '',
+        'credential_ref': '',
+        'credential_storage': 'settings_or_profile',
+        'onboarding_status': 'template_only' if provider_id == 'github' else 'configuration_required',
+    }
+
+
 def provider_profile_config_from_dict(payload: Dict[str, Any]) -> SavedProviderProfileConfig:
     provider_id = str(payload.get('provider_id', '') or '').strip()
     connection_settings = {
@@ -617,6 +628,8 @@ def _active_auth_credential_keys(provider_id: str, auth_mode: str) -> set[str]:
     provider_id = str(provider_id or '').strip().lower()
     auth_mode = str(auth_mode or '').strip().lower()
     if provider_id == 'jira':
+        if not auth_mode:
+            return set()
         if auth_mode == 'cloud_basic':
             return {'email', 'api_token'}
         return {'api_token'}

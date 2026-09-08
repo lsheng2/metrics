@@ -45,8 +45,12 @@ class TestProviderSetupViews(TestCase):
         self.assertIn('New profile draft', content)
         self.assertIn('Profile Editor', content)
         self.assertNotIn('provider-profile-table-box', content)
-        self.assertIn('value="hsdes-default"', content)
-        self.assertIn('value="HSD-ES Default"', content)
+        self.assertIn('id="provider-profile-id" name="profile_id" value=""', content)
+        self.assertIn('id="provider-display-name" name="display_name" value=""', content)
+        self.assertIn('id="provider-connection-base-url" name="connection_base_url" value=""', content)
+        self.assertIn('<option value="" selected>Choose authentication method</option>', content)
+        self.assertNotIn('value="hsdes-default"', content)
+        self.assertNotIn('value="HSD-ES Default"', content)
         self.assertIn('provider-setup-choice is-provider-blue is-selected', content)
         self.assertIn('provider-tab-check', content)
         self.assertIn('provider-tab-shell is-provider-blue', content)
@@ -66,8 +70,8 @@ class TestProviderSetupViews(TestCase):
         self.assertIn('name="hsdes_tenant"', content)
         self.assertIn('name="hsdes_subject"', content)
         self.assertIn('placeholder="15017652869"', content)
-        self.assertIn('https://hsdes-api.intel.com/rest', content)
-        self.assertIn('kerberos', content)
+        self.assertIn('placeholder="https://hsdes-api.intel.com/rest"', content)
+        self.assertIn('Not set', content)
         self.assertIn('Windows Integrated Auth', content)
         self.assertIn('Your username', content)
         self.assertNotIn('provider-connection_settings', content)
@@ -90,8 +94,10 @@ class TestProviderSetupViews(TestCase):
         self.assertIn('provider-tab-shell is-provider-purple', content)
         self.assertIn('name="provider_id" value="github"', content)
         self.assertIn('GitHub metadata is template-only until a provider profile and adapter are registered.', content)
-        self.assertIn('settings:METRICS_GITHUB_BASE_URL', content)
-        self.assertIn('settings:METRICS_GITHUB_TOKEN', content)
+        self.assertIn('id="provider-profile-id" name="profile_id" value=""', content)
+        self.assertIn('id="provider-display-name" name="display_name" value=""', content)
+        self.assertIn('placeholder="https://api.github.com"', content)
+        self.assertIn('<option value="" selected>Choose authentication method</option>', content)
 
     def test_shouldRenderOnlyCurrentProviderAuthenticationFields(self):
         # When
@@ -166,6 +172,29 @@ class TestProviderSetupViews(TestCase):
         self.assertEqual('', results['after_cancel_value'])
         self.assertEqual(0, results['after_cancel_dirty_fields'])
         self.assertFalse(results['after_cancel_banner_visible'])
+
+    def test_shouldHighlightActionRequiredProviderFieldsInBrowser(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_setup'), {
+            'mode': 'new',
+            'provider_id': 'hsdes',
+        })
+        results = self._measure_provider_required_validation(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(['profile_id', 'display_name'], results['save_draft_missing_names'])
+        self.assertTrue(results['save_draft_summary_visible'])
+        self.assertEqual('provider-profile-id', results['save_draft_focused_id'])
+        self.assertIn('Dashboard profile key is required before saving this profile.', results['save_draft_messages'])
+        self.assertNotIn('connection_base_url', results['save_draft_missing_names'])
+        self.assertEqual(
+            ['connection_base_url', 'connection_auth_mode', 'hsdes_saved_query_id', 'hsdes_tenant', 'hsdes_subject'],
+            results['test_connection_missing_names'],
+        )
+        self.assertTrue(results['test_connection_summary_visible'])
+        self.assertEqual('provider-connection-base-url', results['test_connection_focused_id'])
+        self.assertIn('HSD-ES saved query id is required for Test Connection.', results['test_connection_messages'])
 
     def test_shouldSaveProviderProfileDraftFromSetup(self):
         # When
@@ -745,6 +774,50 @@ class TestProviderSetupViews(TestCase):
                     }
                 """)
                 return {'initial_dirty_fields': initial_dirty_fields, **dirty_state, **after_cancel}
+            finally:
+                page.close()
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_provider_required_validation(self, html):
+        html = self._provider_setup_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1280, 'height': 820})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                page.click('.provider-editor-actions button[value="save_draft"]')
+                save_draft = page.evaluate("""
+                    () => ({
+                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
+                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
+                        focused_id: document.activeElement.id,
+                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
+                    })
+                """)
+                page.fill('#provider-profile-id', 'hsdes-required-test')
+                page.fill('#provider-display-name', 'HSD-ES Required Test')
+                page.click('.provider-editor-actions button[value="test_connection"]')
+                test_connection = page.evaluate("""
+                    () => ({
+                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
+                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
+                        focused_id: document.activeElement.id,
+                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
+                    })
+                """)
+                return {
+                    'save_draft_missing_names': save_draft['missing_names'],
+                    'save_draft_summary_visible': save_draft['summary_visible'],
+                    'save_draft_focused_id': save_draft['focused_id'],
+                    'save_draft_messages': save_draft['messages'],
+                    'test_connection_missing_names': test_connection['missing_names'],
+                    'test_connection_summary_visible': test_connection['summary_visible'],
+                    'test_connection_focused_id': test_connection['focused_id'],
+                    'test_connection_messages': test_connection['messages'],
+                }
             finally:
                 page.close()
         finally:

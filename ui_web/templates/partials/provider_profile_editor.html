@@ -1,5 +1,5 @@
 {% with editor=provider_setup_editor profile=provider_setup_editor.profile %}
-<form class="dashboard-edit-form provider-setup-editor" method="post" data-dirty-form data-provider-auth-form data-provider-id="{{ profile.provider_id }}">
+<form class="dashboard-edit-form provider-setup-editor" method="post" novalidate data-dirty-form data-required-form data-required-actions="save_draft enable_profile test_connection" data-provider-auth-form data-provider-id="{{ profile.provider_id }}">
     {% csrf_token %}
     <input type="hidden" name="id" value="{{ profile.id|default:'' }}">
     <input type="hidden" name="lifecycle_state" value="{{ profile.lifecycle_state }}">
@@ -67,21 +67,24 @@
                 <input type="hidden" name="connection_settings" value="{{ editor.connection_settings_json }}">
                 <input type="hidden" name="credential_ref" value="{{ profile.connection_settings.credential_ref }}">
                 <div class="dashboard-form-field provider-form-field">
-                    <label class="label" for="provider-connection-base-url">Base URL <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span></label>
-                    <input class="input" id="provider-connection-base-url" name="connection_base_url" value="{{ profile.connection_settings.base_url }}" placeholder="settings:METRICS_JIRA_SERVER_URL">
+                    <label class="label" for="provider-connection-base-url">Base URL <span class="dashboard-required-tag tag is-small is-danger is-light">Required for enable/test</span></label>
+                    <input class="input" id="provider-connection-base-url" name="connection_base_url" value="{{ profile.connection_settings.base_url }}" required aria-required="true" data-required-actions="enable_profile test_connection" data-required-label="Base URL" data-required-message="Base URL is required before enabling or testing this profile." placeholder="{% if profile.provider_id == 'jira' %}https://jira.example.com{% elif profile.provider_id == 'hsdes' %}https://hsdes-api.intel.com/rest{% elif profile.provider_id == 'github' %}https://api.github.com{% else %}Provider base URL{% endif %}">
                 </div>
                 <div class="dashboard-form-field provider-form-field">
-                    <label class="label" for="provider-connection-auth-mode">Authentication method <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span></label>
+                    <label class="label" for="provider-connection-auth-mode">Authentication method <span class="dashboard-required-tag tag is-small is-danger is-light">Required for enable/test</span></label>
                     <div class="select is-fullwidth">
-                        <select id="provider-connection-auth-mode" name="connection_auth_mode" data-provider-auth-select>
+                        <select id="provider-connection-auth-mode" name="connection_auth_mode" required aria-required="true" data-required-actions="enable_profile test_connection" data-required-label="Authentication method" data-required-message="Choose an authentication method before enabling or testing this profile." data-provider-auth-select>
                             {% if profile.provider_id == 'jira' %}
+                                <option value="" {% if not profile.connection_settings.auth_mode %}selected{% endif %}>Choose authentication method</option>
                                 <option value="server_pat" {% if profile.connection_settings.auth_mode == 'server_pat' %}selected{% endif %}>API token / PAT</option>
                                 <option value="cloud_basic" {% if profile.connection_settings.auth_mode == 'cloud_basic' %}selected{% endif %}>Email + API token</option>
                             {% elif profile.provider_id == 'hsdes' %}
+                                <option value="" {% if not profile.connection_settings.auth_mode %}selected{% endif %}>Choose authentication method</option>
                                 <option value="kerberos" {% if profile.connection_settings.auth_mode == 'kerberos' or profile.connection_settings.auth_mode == 'windows_integrated' %}selected{% endif %}>Windows Integrated Auth</option>
                                 <option value="basic" {% if profile.connection_settings.auth_mode == 'basic' %}selected{% endif %}>Username + password</option>
                                 <option value="token" {% if profile.connection_settings.auth_mode == 'token' %}selected{% endif %}>Bearer token</option>
                             {% elif profile.provider_id == 'github' %}
+                                <option value="" {% if not profile.connection_settings.auth_mode %}selected{% endif %}>Choose authentication method</option>
                                 <option value="token" {% if profile.connection_settings.auth_mode == 'token' %}selected{% endif %}>Personal access token</option>
                             {% else %}
                                 <option value="{{ profile.connection_settings.auth_mode }}">{{ profile.connection_settings.auth_mode|default:"Provider auth" }}</option>
@@ -111,6 +114,12 @@
                     </label>
                 </div>
                 <div class="provider-auth-panels">
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode %}is-hidden{% endif %}" data-auth-empty-panel>
+                        <div class="provider-auth-panel-copy">
+                            <strong>Choose authentication method</strong>
+                            <p>Select one login method above to show only the fields used by that method.</p>
+                        </div>
+                    </div>
                     {% if profile.provider_id == 'jira' %}
                     <div class="provider-auth-panel {% if profile.connection_settings.auth_mode == 'cloud_basic' %}{% else %}is-hidden{% endif %}" data-provider-ids="jira" data-auth-modes="cloud_basic">
                         <div class="provider-auth-panel-copy">
@@ -126,7 +135,7 @@
                             <input class="input provider-token-mask" id="provider-connection-api-token-cloud" name="connection_api_token" type="password" autocomplete="new-password" value="{% if profile.connection_settings.credentials.api_token %}********{% endif %}" placeholder="{% if profile.connection_settings.credentials.api_token %}********{% else %}Paste Jira API token{% endif %}" {% if profile.connection_settings.auth_mode != 'cloud_basic' %}disabled{% endif %}>
                         </div>
                     </div>
-                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode != 'cloud_basic' %}{% else %}is-hidden{% endif %}" data-provider-ids="jira" data-auth-modes="server_pat">
+                    <div class="provider-auth-panel {% if profile.connection_settings.auth_mode == 'server_pat' %}{% else %}is-hidden{% endif %}" data-provider-ids="jira" data-auth-modes="server_pat">
                         <div class="provider-auth-panel-copy">
                             <strong>API token / PAT</strong>
                             <p>Use this for Jira server PAT auth. No username is required.</p>
@@ -203,15 +212,15 @@
                 <div class="dashboard-form-grid provider-form-grid provider-probe-grid">
                     <div class="dashboard-form-field provider-form-field">
                         <label class="label" for="provider-hsdes-saved-query-id">HSD-ES saved query id <span class="dashboard-required-tag tag is-small is-danger is-light">Required for test</span></label>
-                        <input class="input" id="provider-hsdes-saved-query-id" name="hsdes_saved_query_id" value="{{ profile.source_population.source_query_ref }}" autocomplete="off" inputmode="numeric" placeholder="15017652869">
+                        <input class="input" id="provider-hsdes-saved-query-id" name="hsdes_saved_query_id" value="{{ profile.source_population.source_query_ref }}" autocomplete="off" inputmode="numeric" aria-required="true" data-required-actions="test_connection" data-required-label="HSD-ES saved query id" data-required-message="HSD-ES saved query id is required for Test Connection." placeholder="15017652869">
                     </div>
                     <div class="dashboard-form-field provider-form-field">
                         <label class="label" for="provider-hsdes-tenant">Tenant <span class="dashboard-required-tag tag is-small is-danger is-light">Required for test</span></label>
-                        <input class="input" id="provider-hsdes-tenant" name="hsdes_tenant" value="{{ profile.source_population.tenant_or_site }}" autocomplete="off" placeholder="ip_fw_sw_sensing.tenant">
+                        <input class="input" id="provider-hsdes-tenant" name="hsdes_tenant" value="{{ profile.source_population.tenant_or_site }}" autocomplete="off" aria-required="true" data-required-actions="test_connection" data-required-label="Tenant" data-required-message="Tenant is required for HSD-ES Test Connection." placeholder="ip_fw_sw_sensing.tenant">
                     </div>
                     <div class="dashboard-form-field provider-form-field">
                         <label class="label" for="provider-hsdes-subject">Subject <span class="dashboard-required-tag tag is-small is-danger is-light">Required for test</span></label>
-                        <input class="input" id="provider-hsdes-subject" name="hsdes_subject" value="{{ profile.source_population.subject_or_issue_type }}" autocomplete="off" placeholder="ip_fw_sw_sensing.bug">
+                        <input class="input" id="provider-hsdes-subject" name="hsdes_subject" value="{{ profile.source_population.subject_or_issue_type }}" autocomplete="off" aria-required="true" data-required-actions="test_connection" data-required-label="Subject" data-required-message="Subject is required for HSD-ES Test Connection." placeholder="ip_fw_sw_sensing.bug">
                     </div>
                 </div>
             </section>
@@ -240,12 +249,12 @@
             </section>
             <section class="dashboard-form-grid provider-form-grid provider-identity-row">
                 <div class="dashboard-form-field provider-form-field">
-                    <label class="label" for="provider-profile-id">Dashboard profile key <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span>{% include "partials/help_tip.html" with label="Dashboard profile key" text="Internal Dashboard identifier such as hsdes-default. This is not the HSD-ES saved query id used by Test Connection." %}</label>
-                    <input class="input" id="provider-profile-id" name="profile_id" value="{{ profile.profile_id }}" required>
+                    <label class="label" for="provider-profile-id">Dashboard profile key <span class="dashboard-required-tag tag is-small is-danger is-light">Required to save</span>{% include "partials/help_tip.html" with label="Dashboard profile key" text="Internal Dashboard identifier such as hsdes-default. This is not the HSD-ES saved query id used by Test Connection." %}</label>
+                    <input class="input" id="provider-profile-id" name="profile_id" value="{{ profile.profile_id }}" required data-required-actions="save_draft enable_profile" data-required-label="Dashboard profile key" data-required-message="Dashboard profile key is required before saving this profile.">
                 </div>
                 <div class="dashboard-form-field provider-form-field">
-                    <label class="label" for="provider-display-name">Display name <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span></label>
-                    <input class="input" id="provider-display-name" name="display_name" value="{{ profile.display_name }}" required>
+                    <label class="label" for="provider-display-name">Display name <span class="dashboard-required-tag tag is-small is-danger is-light">Required to save</span></label>
+                    <input class="input" id="provider-display-name" name="display_name" value="{{ profile.display_name }}" required data-required-actions="save_draft enable_profile" data-required-label="Display name" data-required-message="Display name is required before saving this profile.">
                 </div>
                 <div class="dashboard-form-field provider-form-field">
                     <label class="label" for="provider-mapping-version">Mapping version</label>
@@ -286,6 +295,7 @@
         <div class="dashboard-unsaved-banner provider-unsaved-banner is-hidden" data-dirty-banner>
             Unsaved fields are highlighted. Save changes or cancel editing to return to the last loaded values.
         </div>
+        <div class="dashboard-validation-banner is-hidden" data-required-summary="Fill the highlighted required fields before continuing."></div>
         <div class="dashboard-action-bar provider-editor-actions">
             <div class="dashboard-action-group provider-action-group provider-action-primary">
                 <button class="button" type="submit" name="action" value="save_draft">Save Draft</button>

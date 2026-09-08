@@ -9,6 +9,20 @@ from bug_metrics.models import BugTrendAuditEvent, ProviderProfileConfig
 
 
 class TestProviderProfileConfigService(TestCase):
+    def test_shouldCreateBlankDraftForNewProviderProfile(self):
+        # When
+        config = ProviderProfileConfigService().new_provider_profile_config('hsdes')
+
+        # Then
+        self.assertIsNone(config.id)
+        self.assertEqual('', config.profile_id)
+        self.assertEqual('', config.display_name)
+        self.assertEqual('hsdes', config.provider_id)
+        self.assertEqual('', config.connection_settings['base_url'])
+        self.assertEqual('', config.connection_settings['auth_mode'])
+        self.assertEqual('', config.connection_settings['credential_ref'])
+        self.assertEqual('provider_owned_saved_query', config.source_population['ownership_type'])
+
     @patch('bug_metrics.app.api.provider_profile_connection_test.create_jira_client')
     def test_shouldTestJiraProfileConnectionThroughServerInfo(self, create_jira_client):
         # Given

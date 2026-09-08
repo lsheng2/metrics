@@ -203,9 +203,12 @@ def _profile_value(profile, source_path: str, fallback: str) -> str:
         return fallback
     container_name, _, key = source_path.partition('.')
     if container_name == 'source_population':
-        return str((profile.source_population or {}).get(key, '') or fallback)
+        value = (profile.source_population or {}).get(key, '')
+        return str(value) if value not in {None, ''} else 'Not set'
     if container_name == 'connection_settings':
-        return str((profile.connection_settings or {}).get(key, '') or fallback)
+        value = (profile.connection_settings or {}).get(key, '')
+        return str(value) if value not in {None, ''} else 'Not set'
     if container_name == 'scope_labels':
-        return str((profile.scope_labels or {}).get(key, '') or fallback)
+        value = (profile.scope_labels or {}).get(key, '')
+        return str(value) if value not in {None, ''} else 'Not set'
     return fallback

@@ -6,6 +6,7 @@ Provider Setup SHALL use provider setup templates to define provider onboarding,
 #### Scenario: User configures provider onboarding
 - **WHEN** 用户 opens New Profile or edits an existing provider profile
 - **THEN** the main editor SHALL show provider-level connection/onboarding fields before source or mapping JSON
+- **AND** New Profile SHALL start as a blank draft for the selected provider rather than copying an existing/default profile id, display name, base URL or authentication method
 - **AND** the editor SHALL collect base URL and provider authentication method before showing method-specific credential fields
 - **AND** credential reference SHALL remain an internal or advanced compatibility setting rather than a primary user-facing control
 - **AND** onboarding status SHALL render as a system-derived status and SHALL NOT be user-selectable
@@ -45,8 +46,16 @@ Provider Setup SHALL use provider setup templates to define provider onboarding,
 - **AND** Jira profiles SHALL use the configured Jira connection to request server information
 - **AND** HSD-ES profiles SHALL use the configured saved-query probe when query id, tenant and subject are available
 - **AND** HSD-ES profiles SHALL expose normal form fields for saved query id, tenant and subject in an HSD-ES Connection Probe section
+- **AND** missing Base URL, authentication method or HSD-ES probe fields SHALL be highlighted in the editor before the connection test is submitted
 - **AND** HSD-ES profiles without a probe source SHALL return a configuration-required result that points to the HSD-ES Connection Probe section instead of Advanced JSON
 - **AND** the rendered result SHALL not expose raw token values
+
+#### Scenario: Provider setup uses action-specific required fields
+- **WHEN** a user clicks Save Draft, Enable Profile or Test Connection
+- **THEN** the editor SHALL apply the required fields for that action before submitting
+- **AND** Save Draft SHALL require profile identity fields without requiring connection probe fields
+- **AND** Enable Profile SHALL require profile identity, Base URL and authentication method
+- **AND** Test Connection SHALL require Base URL and authentication method, plus provider-specific probe fields such as HSD-ES saved query id, tenant and subject
 
 #### Scenario: Source-specific settings are advanced compatibility details
 - **WHEN** profile source population, field bindings, value mappings or chart bindings are still needed by existing runtime paths

@@ -751,6 +751,8 @@ class BugTrendFacade:
         auth_mode = str(connection_settings.get('auth_mode', '') or '').strip()
         if not str(connection_settings.get('base_url', '') or '').strip():
             return 'Base URL required'
+        if not auth_mode:
+            return 'Authentication method required'
         if provider_id == 'jira':
             if auth_mode == 'cloud_basic':
                 return 'Ready to test' if credentials.get('email') and credentials.get('api_token') else 'Email and API token required'
