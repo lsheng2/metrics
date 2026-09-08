@@ -193,7 +193,8 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertTrue(result['submitted'])
         self.assertEqual(f'DELETE {scope.name}', result['posted_confirmation'])
-        self.assertIn(f'DELETE {scope.name}', result['prompt_message'])
+        self.assertIn('Type the exact text below into the input box', result['prompt_message'])
+        self.assertIn(f'\n\nDELETE {scope.name}\n\n', result['prompt_message'])
 
     def test_shouldAdaptScopeLibraryTableAcrossScreenWidthsInBrowser(self):
         # Given

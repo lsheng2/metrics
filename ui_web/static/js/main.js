@@ -418,7 +418,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmationField.value = confirmationField.value.trim();
                     return;
                 }
-                const providedConfirmation = window.prompt(`Type ${expectedConfirmation} to confirm deletion.`, confirmationField.value.trim());
+                const providedConfirmation = window.prompt(
+                    `Permanent delete requires a typed confirmation.\n\nType the exact text below into the input box, then click OK:\n\n${expectedConfirmation}\n\nDeletion will not continue unless the text matches exactly.`,
+                    confirmationField.value.trim()
+                );
                 if (providedConfirmation === null) {
                     event.preventDefault();
                     return;
