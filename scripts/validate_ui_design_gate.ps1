@@ -40,6 +40,7 @@ if ($Broad) {
     Invoke-Checked { openspec validate consolidate-provider-onboarding-profile --strict }
     Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\audit_project_ui.py") --project-root . }
     Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\render_component_catalog.py") --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html" }
+    Invoke-Checked { & $Python (Join-Path $UiSkillRoot "scripts\audit_table_metrics.py") --html-file ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html" }
     Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\create_visual_regression_manifest.py") --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json" }
     Invoke-Checked { scripts\validate_ui_visual_manifest.ps1 }
 }

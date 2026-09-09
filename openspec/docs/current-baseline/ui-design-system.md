@@ -31,7 +31,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
 | Responsive admin table | `main.css` | `responsive-admin-table-box`, `responsive-admin-table`, optional `is-cardable` | Scope Library, Provider Setup, Data Health, audit/readiness tables | Desktop/phone overflow tests |
-| Dense dashboard table | `main.css` | `dashboard-dense-table` | Current Tasks, Pull Requests, Task Forecast, velocity task tables, Workbench evidence | Static table-contract audit and browser overflow tests |
+| Dense dashboard table | `main.css` | `dashboard-dense-table` | Current Tasks, Pull Requests, Task Forecast, velocity task tables, Workbench evidence | Static table-contract audit plus browser padding, row-height, button-height, and overflow metrics |
 | Help tip | `partials/help_tip.html`, `main.css` | `help-tip`, optional `is-icon` | Field labels, table headers, low-discoverability actions | Existing help-tip browser tests |
 | Workbench shell | `main.css`, `main.js`, `workbench.html` | `workbench-shell`, `workbench-grid`, `workbench-pane`, `workbench-toolbar`, `workbench-control-grid`, `data-workbench-*` | Workbench chart/evidence/AI split-pane tool | Workbench browser tests and baseline gate |
 
@@ -81,6 +81,7 @@ Also run:
 ```powershell
 git diff --check
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
+.venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_table_metrics.py" --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 scripts\validate_ui_visual_manifest.ps1

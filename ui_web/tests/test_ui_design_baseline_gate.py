@@ -145,6 +145,9 @@ class TestUiDesignBaselineGate(TestCase):
                 self.assertFalse(metrics['page_horizontal_overflow'], f'{label} {viewport}')
                 self.assertEqual([], metrics['clipped_action_buttons'], f'{label} {viewport}')
                 self.assertGreater(metrics['visible_button_count'], 0, f'{label} {viewport}')
+                self.assertEqual([], metrics['table_contract_failures'], f'{label} {viewport}')
+                self.assertEqual([], metrics['table_density_failures'], f'{label} {viewport}')
+                self.assertEqual([], metrics['table_button_failures'], f'{label} {viewport}')
                 if metrics['expects_table']:
                     self.assertGreater(metrics['responsive_table_count'], 0, f'{label} {viewport}')
                 if metrics['expects_tool_form']:
@@ -392,12 +395,56 @@ class TestUiDesignBaselineGate(TestCase):
                             .filter(value => value > 0);
                         return max(heights) - min(heights);
                     };
+                    const tableName = (table, index) => {
+                        const id = table.id ? `#${table.id}` : '';
+                        const className = table.className ? `.${String(table.className).trim().replace(/\\s+/g, '.')}` : '';
+                        return `table[${index}]${id}${className}`;
+                    };
                     const actionButtons = Array.from(document.querySelectorAll('.dashboard-action-bar .button')).filter(visible);
                     const clippedActionButtons = actionButtons
                         .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
                         .map(button => button.innerText.trim());
                     const selectedChecks = Array.from(document.querySelectorAll('.provider-setup-choice.is-selected .provider-tab-check'))
                         .filter(visible);
+                    const tables = Array.from(document.querySelectorAll('table')).filter(visible);
+                    const tableContractFailures = [];
+                    const tableDensityFailures = [];
+                    const tableButtonFailures = [];
+                    tables.forEach((table, index) => {
+                        const name = tableName(table, index);
+                        const hasContract = table.classList.contains('responsive-admin-table')
+                            || table.classList.contains('dashboard-dense-table');
+                        if (!hasContract) {
+                            tableContractFailures.push(name);
+                            return;
+                        }
+                        const cells = Array.from(table.querySelectorAll('th, td')).filter(visible);
+                        const maxPaddingBlock = max(cells.map(cell => {
+                            const style = getComputedStyle(cell);
+                            return parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+                        }));
+                        if (maxPaddingBlock > 12) {
+                            tableDensityFailures.push(`${name} padding ${maxPaddingBlock.toFixed(1)}px`);
+                        }
+                        const bodyRows = Array.from(table.querySelectorAll('tbody tr')).filter(visible);
+                        const maxDenseRowHeight = max(bodyRows.map(row => row.getBoundingClientRect().height));
+                        if (table.classList.contains('dashboard-dense-table') && maxDenseRowHeight > 72) {
+                            tableDensityFailures.push(`${name} row ${maxDenseRowHeight.toFixed(1)}px`);
+                        }
+                        const tableButtons = Array.from(table.querySelectorAll('button, a.button')).filter(visible);
+                        const tableButtonHeights = tableButtons.map(button => button.getBoundingClientRect().height).filter(value => value > 0);
+                        const tableButtonHeightDelta = max(tableButtonHeights) - min(tableButtonHeights);
+                        const clippedTableButtons = tableButtons
+                            .filter(button => button.innerText.trim())
+                            .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
+                            .map(button => button.innerText.trim());
+                        if (tableButtonHeightDelta > 1) {
+                            tableButtonFailures.push(`${name} height delta ${tableButtonHeightDelta.toFixed(1)}px`);
+                        }
+                        if (clippedTableButtons.length) {
+                            tableButtonFailures.push(`${name} clipped ${clippedTableButtons.join(', ')}`);
+                        }
+                    });
                     return {
                         expects_editor: Boolean(expectations.editor),
                         expects_provider_tabs: Boolean(expectations.provider_tabs),
@@ -407,6 +454,9 @@ class TestUiDesignBaselineGate(TestCase):
                         visible_button_count: Array.from(document.querySelectorAll('.button')).filter(visible).length,
                         clipped_action_buttons: clippedActionButtons,
                         responsive_table_count: document.querySelectorAll('.responsive-admin-table').length,
+                        table_contract_failures: tableContractFailures,
+                        table_density_failures: tableDensityFailures,
+                        table_button_failures: tableButtonFailures,
                         tool_form_count: document.querySelectorAll('.dashboard-tool-form').length,
                         tool_grid_count: document.querySelectorAll('.dashboard-tool-grid').length,
                         tool_form_dirty_count: document.querySelectorAll('.dashboard-tool-form[data-dirty-form], .dashboard-tool-form[data-required-form]').length,

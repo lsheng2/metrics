@@ -847,8 +847,8 @@ span:focus-within > .help-tip::after,
     line-height: 1.14;
 }
 
-.responsive-admin-table th,
-.responsive-admin-table td {
+.table.responsive-admin-table th,
+.table.responsive-admin-table td {
     min-width: 0;
     overflow: hidden;
     padding: 0.26rem 0.38rem;
@@ -857,8 +857,8 @@ span:focus-within > .help-tip::after,
     white-space: nowrap;
 }
 
-.dashboard-dense-table th,
-.dashboard-dense-table td {
+.table.dashboard-dense-table th,
+.table.dashboard-dense-table td {
     padding: 0.28rem 0.42rem;
     vertical-align: middle;
 }
@@ -1277,8 +1277,8 @@ span:focus-within > .help-tip::after,
     line-height: 1.08;
 }
 
-.scope-library-table th,
-.scope-library-table td {
+.table.scope-library-table th,
+.table.scope-library-table td {
     padding-top: 0.2rem;
     padding-bottom: 0.2rem;
 }
@@ -1765,13 +1765,13 @@ span:focus-within > .help-tip::after,
 }
 
 .provider-profile-table {
-    font-size: var(--dashboard-font-body);
-    line-height: 1.28;
+    font-size: var(--dashboard-font-table);
+    line-height: 1.14;
 }
 
-.provider-profile-table th,
-.provider-profile-table td {
-    padding: 0.46rem 0.55rem;
+.table.provider-profile-table th,
+.table.provider-profile-table td {
+    padding: 0.28rem 0.42rem;
     vertical-align: middle;
 }
 

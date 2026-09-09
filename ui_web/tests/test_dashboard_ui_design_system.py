@@ -60,6 +60,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('ui_web.tests.test_ui_design_baseline_gate', validation_script)
         self.assertIn('openspec validate standardize-dashboard-ui-design-system --strict', validation_script)
         self.assertIn('audit_project_ui.py', validation_script)
+        self.assertIn('audit_table_metrics.py', validation_script)
         self.assertIn('render_component_catalog.py', validation_script)
         self.assertIn('create_visual_regression_manifest.py', validation_script)
         self.assertIn('test_shouldRunVisualRegressionManifestAgainstCoreRoutes', visual_manifest_script)
