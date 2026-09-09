@@ -27,6 +27,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Tool/filter form | `main.css` | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | Bug Trend filters, Task Forecast parameters, AI Workflow request, Current Tasks filters, Pull Request filters | Static template checks and browser layout gate |
 | Action form | `main.css` | `dashboard-action-form`, optional `is-stacked` or `is-inline` | Import, export, duplicate, bind, archive, delete, sync, and confirmation forms | Static form ownership tests and visual manifest runner |
 | Component token profile | `lsheng2-ui-design` core, project overlay | `dashboard-admin-v1.json`, `compactDashboard`, project overrides | Buttons, forms, tables, tabs, status feedback | Overlay/static audit plus browser layout gate |
+| Audit exceptions | project overlay | `lsheng2-ui-design-audit-exceptions` JSON block | Narrow generated/synthetic table exceptions only | Static audit and browser table metrics audit |
 | Component catalog and visual manifest | `lsheng2-ui-design` core, project overlay | local static HTML catalog, manifest JSON | Shared UI reviews and screenshot capture planning | Static artifact tests plus local UI gate |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
@@ -46,7 +47,9 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Provider colors are identity cues only: Jira green, HSD-ES blue, GitHub purple. Do not create separate provider color systems.
 - Runtime data tables must use either `responsive-admin-table` for admin/cardable inventory tables or `dashboard-dense-table` for complex dashboard tables that need compact typography without changing their table structure.
 - Dense admin tables may scroll inside their table container, but the page itself must not horizontally overflow at desktop or phone widths.
+- Table contract or browser metric exceptions must live in the project overlay `lsheng2-ui-design-audit-exceptions` block with a narrow match and reason; reusable scripts must not hardcode project-specific special cases.
 - Workbench is allowed to keep a separate split-pane shell, but it remains part of the same browser overflow and interaction gate.
+- React/Next/Tailwind support is reserved through the reusable adapter interface; this Django/Bulma/htmx project should keep using the Django validation commands unless the frontend stack changes.
 
 ## State Matrix
 
@@ -81,7 +84,7 @@ Also run:
 ```powershell
 git diff --check
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
-.venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_table_metrics.py" --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html"
+.venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_table_metrics.py" --project-root . --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 scripts\validate_ui_visual_manifest.ps1

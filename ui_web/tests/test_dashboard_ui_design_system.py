@@ -87,6 +87,11 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('dashboard-admin-v1.json', overlay)
         self.assertIn('compactDashboard', overlay)
         self.assertIn('## Autonomous Audit Scope', overlay)
+        self.assertIn('## Audit Exceptions / Allowlist', overlay)
+        self.assertIn('lsheng2-ui-design-audit-exceptions', overlay)
+        self.assertIn('tableContractAllowlist', overlay)
+        self.assertIn('tableMetricsAllowlist', overlay)
+        self.assertIn('Adapter status: reserved for future React/Next/Tailwind/component-tree projects', overlay)
         self.assertIn('audit_project_ui.py', overlay)
         self.assertIn('shared tokens/classes/partials first', overlay)
 

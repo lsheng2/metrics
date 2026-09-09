@@ -176,6 +176,22 @@ Synthetic replacements:
 - Findings report location: `.github/skills/lsheng2-ui-design/reports/` for curated reports; temporary audit output stays local unless explicitly committed.
 - Apply-fixes policy: shared tokens/classes/partials first, then template migration, then page-local exceptions only when the pattern is unique and documented; data-driven avatar colors are allowed inline until a CSS custom-property helper exists.
 
+## Audit Exceptions / Allowlist
+
+Runtime product templates should not use table exceptions. Generated or synthetic local design artifacts can be allowlisted when they intentionally demonstrate raw component structure.
+
+```json lsheng2-ui-design-audit-exceptions
+{
+  "tableContractAllowlist": [
+    {
+      "pathContains": ".github/skills/lsheng2-ui-design/component-catalog/",
+      "reason": "Synthetic local component catalog output is not runtime product UI; runtime Django templates must still use shared table contracts."
+    }
+  ],
+  "tableMetricsAllowlist": []
+}
+```
+
 ## React / Next / Tailwind Notes
 
 - Applies: not currently; this project uses Django/Bulma/htmx.
@@ -183,6 +199,7 @@ Synthetic replacements:
 - Token source: `ui_web/static/css/main.css`.
 - Storybook/harness: none.
 - Build/test commands: use Django validation commands in this overlay.
+- Adapter status: reserved for future React/Next/Tailwind/component-tree projects; do not apply React-specific rules to this repo unless the frontend stack changes.
 
 ## OpenSpec Integration
 
