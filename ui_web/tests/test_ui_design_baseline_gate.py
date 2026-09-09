@@ -43,6 +43,7 @@ from ui_web.data.task_forecast_data import (
     TaskForecastSummaryData,
 )
 from ui_web.data.velocity_threshold_data import VelocityThresholdsData
+from ui_web.data.velocity_task_detail_data import DeveloperVelocitySummary, TaskVelocityData
 
 
 class TestUiDesignBaselineGate(TestCase):
@@ -208,6 +209,7 @@ class TestUiDesignBaselineGate(TestCase):
             ('current_tasks_dense_table', self._dense_current_tasks_html(), {'dense_table': True}),
             ('pull_requests_dense_tables', self._dense_pull_requests_html(), {'dense_table': True}),
             ('task_forecast_dense_table', self._dense_task_forecast_html(), {'dense_table': True}),
+            ('velocity_task_dense_table', self._dense_velocity_task_html(), {'dense_table': True}),
         ]
 
         results = self._measure_baseline_pages(pages)
@@ -232,7 +234,13 @@ class TestUiDesignBaselineGate(TestCase):
             '/current-tasks/',
             '/pull-requests/',
             '/task-forecast/',
+            '/team-velocity/',
+            '/dev-velocity/',
         }.issubset(manifest_routes))
+        for item in manifest['capturePlan']:
+            if item['route'] in {'/team-velocity/', '/dev-velocity/'}:
+                self.assertIn('chart-drilldown-selected', item['stateTargets'])
+                self.assertIn('table-density', item['stateTargets'])
         pages = []
 
         with self._visual_manifest_page_fakes():
@@ -310,6 +318,22 @@ class TestUiDesignBaselineGate(TestCase):
             'forecast_params': TaskForecastParamsData(task_id='TASK-101', task_scope=TaskScope.ALL),
         }))
 
+    def _dense_velocity_task_html(self):
+        return self._fragment_html(render_to_string('partials/velocity_task_table.html', {
+            'tasks': [self._velocity_task_data()],
+            'summary': DeveloperVelocitySummary(
+                total_story_points=3.0,
+                total_time_days=1.0,
+                velocity=3.0,
+                total_task_story_points=5.0,
+                total_estimated_days=2.0,
+                average_deviation_percent=0.0,
+                working_days=1.0,
+                working_days_in_month=22,
+                workload_percent=4.5,
+            ),
+        }))
+
     def _current_task_data(self):
         group = MemberGroupData('core', 'Core Team')
         return TaskData(
@@ -331,6 +355,32 @@ class TestUiDesignBaselineGate(TestCase):
                 project_name='Metrics',
                 url='https://provider.example.test/pr/101',
             ),
+        )
+
+    def _velocity_task_data(self):
+        task = self._current_task_data()
+        return TaskVelocityData(
+            id=task.id,
+            title=task.title,
+            assignment=task.assignment,
+            time_tracking=task.time_tracking,
+            system_metadata=task.system_metadata,
+            story_points=task.story_points,
+            priority=task.priority,
+            child_tasks=task.child_tasks,
+            child_tasks_count=task.child_tasks_count,
+            parent=task.parent,
+            stage=task.stage,
+            iteration=task.iteration,
+            forecast=task.forecast,
+            releases=task.releases,
+            custom_sort_fields=task.custom_sort_fields,
+            linked_pull_request=task.linked_pull_request,
+            developer_story_points=3.0,
+            developer_time_days=1.0,
+            total_estimated_days=2.0,
+            estimated_days=1.2,
+            deviation_percent=0.0,
         )
 
     def _pull_request_data(self):
@@ -539,6 +589,17 @@ class TestUiDesignBaselineGate(TestCase):
         })
         self.assertIn('id="provider-profile-id" name="profile_id" value=""', new_jira_page.content.decode())
         self.assertIn('provider-setup-choice is-provider-green is-selected', new_jira_page.content.decode())
+        profile_required_state = self._measure_required_submit(
+            new_jira_page.content.decode(),
+            'button[name="action"][value="test_connection"]',
+        )
+        self.assertIn('connection_base_url', profile_required_state['invalid_field_names'])
+        self.assertEqual(
+            len(profile_required_state['invalid_field_names']),
+            profile_required_state['invalid_aria_count'],
+        )
+        self.assertGreater(profile_required_state['missing_shell_count'], 0)
+        self.assertTrue(profile_required_state['summary_visible'])
 
         jira_payload = self._jira_profile_payload('monkey-jira-profile')
         with patch('bug_metrics.app.api.provider_profile_connection_test.create_jira_client') as create_jira_client:
@@ -603,6 +664,18 @@ class TestUiDesignBaselineGate(TestCase):
         self.assertEqual(200, scope_response.status_code)
         self.assertIn('option value="monkey-jira-profile" selected', scope_content)
         self.assertIn('scope-provider-choice is-provider-green is-selected', scope_content)
+        scope_required_state = self._measure_required_submit(
+            scope_content,
+            'button[name="action"][value="save_enable"]',
+        )
+        self.assertIn('critical_high_values', scope_required_state['invalid_field_names'])
+        self.assertIn('open_status_values', scope_required_state['invalid_field_names'])
+        self.assertEqual(
+            len(scope_required_state['invalid_field_names']),
+            scope_required_state['invalid_aria_count'],
+        )
+        self.assertGreater(scope_required_state['missing_shell_count'], 0)
+        self.assertTrue(scope_required_state['summary_visible'])
 
         save_scope_response = self.client.post(
             reverse('ui_web:bug_trend_scope_config'),
@@ -665,6 +738,29 @@ class TestUiDesignBaselineGate(TestCase):
                         viewport['height'],
                     )
             return results
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_required_submit(self, html, submitter_selector):
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1440, 'height': 900})
+            page.set_content(self._browser_html(html), wait_until='domcontentloaded')
+            page.click(submitter_selector)
+            return page.evaluate("""
+                () => {
+                    const invalidFields = Array.from(document.querySelectorAll('.is-required-missing-control'));
+                    const summary = document.querySelector('[data-required-summary]');
+                    return {
+                        invalid_field_names: invalidFields.map(field => field.name),
+                        invalid_aria_count: invalidFields.filter(field => field.getAttribute('aria-invalid') === 'true').length,
+                        missing_shell_count: document.querySelectorAll('.is-missing-required').length,
+                        summary_visible: Boolean(summary && !summary.classList.contains('is-hidden') && summary.textContent.trim()),
+                    };
+                }
+            """)
         finally:
             browser.close()
             playwright.stop()

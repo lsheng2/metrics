@@ -84,14 +84,14 @@
     <section class="catalog-grid">
       <article class="panel">
         <h2>Buttons</h2>
-        <div class="row">
+        <div class="row" data-ui-action-group>
           <button class="button primary">Primary</button>
           <button class="button">Secondary</button>
           <button class="button quiet">Quiet</button>
           <button class="button danger">Danger</button>
           <button class="button" disabled>Disabled</button>
         </div>
-        <div class="row tool">
+        <div class="row tool" data-ui-action-group>
           <button class="button primary">Tool Apply</button>
           <button class="button" aria-label="Icon only action">+</button>
         </div>
@@ -100,24 +100,26 @@
       </article>
       <article class="panel">
         <h2>Forms</h2>
-        <div class="form-grid">
-          <div>
+        <form class="dashboard-edit-form" data-ui-form>
+        <div class="form-grid dashboard-form-grid">
+          <div class="dashboard-form-field">
             <label for="catalog-name">Name <span class="required">required</span></label>
-            <input id="catalog-name" value="Project profile">
+            <input id="catalog-name" value="Project profile" data-ui-form-control>
           </div>
-          <div>
+          <div class="dashboard-form-field">
             <label for="catalog-provider">Provider</label>
-            <select id="catalog-provider"><option>Jira</option><option>HSD-ES</option><option>GitHub</option></select>
+            <select id="catalog-provider" data-ui-form-control><option>Jira</option><option>HSD-ES</option><option>GitHub</option></select>
           </div>
-          <div class="field-wide missing">
+          <div class="field-wide missing dashboard-form-field">
             <label for="catalog-token">Token <span class="required">required for test</span></label>
-            <input id="catalog-token" value="********">
+            <input id="catalog-token" value="********" data-ui-form-control>
           </div>
         </div>
-        <div class="row tool">
-          <button class="button">Duplicate</button>
-          <button class="button danger">Delete archived</button>
+        <div class="row tool" data-ui-action-group>
+          <button class="button" data-ui-form-button>Duplicate</button>
+          <button class="button danger" data-ui-form-button>Delete archived</button>
         </div>
+        </form>
         <p><strong>Editor:</strong> dashboard-edit-form, dashboard-form-grid, dashboard-form-field, dashboard-action-bar, dashboard-action-group</p>
         <p><strong>Tool:</strong> dashboard-tool-form, dashboard-tool-grid, dashboard-tool-field, dashboard-tool-actions</p>
         <p><strong>Action:</strong> dashboard-action-form, is-stacked, is-inline</p>

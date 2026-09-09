@@ -105,7 +105,9 @@ Use a target-specific subset for small UI changes and the broader group for shar
 ```sh
 git diff --check
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\generate_ui_checklist.py" --project-root . --target "Dashboard UI change"
 .venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_table_metrics.py" --project-root . --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html"
+.venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_layout_metrics.py" --project-root . --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html" --checks overflow,tables,buttons,forms
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 scripts\validate_ui_design_gate.ps1
@@ -178,6 +180,7 @@ Synthetic replacements:
 ## Autonomous Audit Scope
 
 - Default pages: Provider Setup, Provider Profile Config, Bug Trend Scope Config, Scope Library, Data Health, Workbench, AI Dashboard Workflow, Current Tasks, Pull Requests, and Task Forecast.
+- Extended pages: Team Velocity and Dev Velocity chart controls plus velocity task drilldown tables are included in visual-manifest coverage.
 - Component focus: buttons, typography, forms, tables, tabs/cards, action bars, required/dirty/error/loading/success states, browser-measured table metrics, and horizontal overflow.
 - Ignored/generated paths: temporary screenshots, `tmp_ui_validation/`, generated caches, vendored assets, migrations unless a migration UI exists.
 - Findings report location: `.github/skills/lsheng2-ui-design/reports/` for curated reports; temporary audit output stays local unless explicitly committed.
@@ -195,7 +198,8 @@ Runtime product templates should not use table exceptions. Generated or syntheti
       "reason": "Synthetic local component catalog output is not runtime product UI; runtime Django templates must still use shared table contracts."
     }
   ],
-  "tableMetricsAllowlist": []
+  "tableMetricsAllowlist": [],
+  "layoutMetricsAllowlist": []
 }
 ```
 
@@ -209,6 +213,43 @@ These values match the current `compactDashboard` density profile and are enforc
     "maxPaddingBlock": 12,
     "maxButtonHeightDelta": 1,
     "maxDenseRowHeight": 72
+  },
+  "buttonMetrics": {
+    "maxButtonHeightDelta": 1
+  },
+  "formMetrics": {
+    "maxControlHeightDelta": 1,
+    "maxButtonHeightDelta": 1
+  },
+  "layoutSelectors": {
+    "buttonGroups": [
+      ".dashboard-action-bar",
+      ".dashboard-action-group",
+      ".dashboard-tool-actions",
+      ".scope-primary-actions",
+      ".provider-row-primary-actions",
+      ".workbench-evidence-actions",
+      ".buttons.are-small",
+      "[data-ui-action-group]"
+    ],
+    "forms": [
+      ".dashboard-tool-form",
+      ".dashboard-edit-form",
+      "form[data-ui-form]"
+    ],
+    "formControls": [
+      ".dashboard-tool-field .input",
+      ".dashboard-tool-field select",
+      ".dashboard-form-field .input",
+      ".dashboard-form-field select",
+      "[data-ui-form-control]"
+    ],
+    "formButtons": [
+      ".dashboard-tool-actions .button",
+      ".dashboard-action-bar .button",
+      ".dashboard-action-group .button",
+      "[data-ui-form-button]"
+    ]
   }
 }
 ```

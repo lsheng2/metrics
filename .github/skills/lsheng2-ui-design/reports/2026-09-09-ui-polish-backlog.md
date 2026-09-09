@@ -11,6 +11,8 @@ The durable component contract is maintained in `openspec/docs/current-baseline/
 - Broad UI gate passed after adding visual-manifest coverage for Current Tasks, Pull Requests, and Task Forecast.
 - Dense dashboard table synthetic browser coverage passed for Current Tasks, Pull Requests, and Task Forecast partials.
 - Shared button/action-group and form-control browser metrics are now checked in the baseline gate.
+- Reusable `lsheng2-ui-design` layout metrics now cover tables, shared button groups, and editor/tool forms.
+- Velocity task drilldown dense table coverage is now included in the synthetic browser gate.
 
 ## Compact Dashboard Review
 
@@ -52,10 +54,8 @@ Recommended optional improvements:
 
 | priority | area | opportunity | validation |
 | --- | --- | --- | --- |
-| P3 | Velocity pages | Add synthetic dense-table state coverage for Team Velocity and Dev Velocity task drilldown partials once their fake facade data is centralized. | `ui_web.tests.test_ui_design_baseline_gate` |
-| P3 | Button metrics | Consider promoting the project-proven button/action-group browser metrics into the reusable `lsheng2-ui-design` skill. | skill self-tests plus project broad gate |
-| P3 | Form metrics | Add browser label/control alignment metrics for complex setup forms beyond existing control/button height checks. | Provider Setup and Scope Config Playwright tests |
 | P3 | Visual catalog | Review the generated component catalog with stakeholders before changing token values. | component catalog plus screenshot review |
+| P3 | Chart interaction states | Add screenshot fixtures for selected/hover chart points if chart-drilldown visual taste becomes a product concern. | focused Playwright route capture |
 
 ## Closure
 

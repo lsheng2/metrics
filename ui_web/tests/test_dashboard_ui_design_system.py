@@ -13,6 +13,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         overlay_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'templates' / 'project-overlay.md'
         audit_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'reports' / '2026-09-08-ui-baseline-audit.md'
         polish_backlog_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'reports' / '2026-09-09-ui-polish-backlog.md'
+        checklist_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'reports' / 'ui-change-checklist.md'
         docs_index_path = project_root / 'docs' / 'README.md'
         openspec_docs_index_path = project_root / 'openspec' / 'docs' / 'README.md'
         validation_script_path = project_root / 'scripts' / 'validate_ui_design_gate.ps1'
@@ -62,6 +63,8 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('openspec validate standardize-dashboard-ui-design-system --strict', validation_script)
         self.assertIn('audit_project_ui.py', validation_script)
         self.assertIn('audit_table_metrics.py', validation_script)
+        self.assertIn('audit_layout_metrics.py', validation_script)
+        self.assertIn('generate_ui_checklist.py', contract)
         self.assertIn('render_component_catalog.py', validation_script)
         self.assertIn('create_visual_regression_manifest.py', validation_script)
         self.assertIn('test_shouldRunVisualRegressionManifestAgainstCoreRoutes', visual_manifest_script)
@@ -72,6 +75,8 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             self.assertIn(contract_name, implementation_surface)
         self.assertIn('Compact Dashboard Review', polish_backlog_path.read_text(encoding='utf-8'))
         self.assertIn('Monkey-User Flow Review', polish_backlog_path.read_text(encoding='utf-8'))
+        self.assertIn('Before Editing', checklist_path.read_text(encoding='utf-8'))
+        self.assertIn('audit_layout_metrics.py', checklist_path.read_text(encoding='utf-8'))
         for path in [overlay_path, audit_path, polish_backlog_path, docs_index_path, openspec_docs_index_path]:
             self.assertIn(
                 'openspec/docs/current-baseline/ui-design-system.md',
@@ -94,8 +99,14 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('lsheng2-ui-design-audit-exceptions', overlay)
         self.assertIn('tableContractAllowlist', overlay)
         self.assertIn('tableMetricsAllowlist', overlay)
+        self.assertIn('layoutMetricsAllowlist', overlay)
+        self.assertIn('"buttonMetrics"', overlay)
+        self.assertIn('"formMetrics"', overlay)
+        self.assertIn('"layoutSelectors"', overlay)
         self.assertIn('Adapter status: reserved for future React/Next/Tailwind/component-tree projects', overlay)
         self.assertIn('audit_project_ui.py', overlay)
+        self.assertIn('audit_layout_metrics.py', overlay)
+        self.assertIn('generate_ui_checklist.py', overlay)
         self.assertIn('shared tokens/classes/partials first', overlay)
 
     def test_shouldKeepLocalComponentCatalogAndVisualManifestAvailable(self):
@@ -113,9 +124,22 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('Dashboard Admin Component Catalog', catalog)
         self.assertIn('dashboard-admin-v1', catalog)
         self.assertIn('<strong>Action:</strong>', catalog)
+        self.assertIn('data-ui-action-group', catalog)
+        self.assertIn('data-ui-form', catalog)
         self.assertEqual('lsheng2-ui-design', manifest['owner'])
         self.assertGreaterEqual(len(manifest['viewports']), 3)
         self.assertIn('/provider-setup/', {item['route'] for item in manifest['capturePlan']})
+        self.assertTrue({
+            '/team-velocity/',
+            '/dev-velocity/',
+        }.issubset({item['route'] for item in manifest['capturePlan']}))
+        velocity_captures = [
+            item
+            for item in manifest['capturePlan']
+            if item['route'] in {'/team-velocity/', '/dev-velocity/'}
+        ]
+        self.assertTrue(all('chart-drilldown-selected' in item['stateTargets'] for item in velocity_captures))
+        self.assertTrue(all('table-density' in item['stateTargets'] for item in velocity_captures))
         self.assertIn('component-catalog/dashboard-admin-v1.html', overlay)
         self.assertIn('visual-regression/manifest.json', overlay)
 
