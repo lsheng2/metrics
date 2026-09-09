@@ -246,41 +246,6 @@
                 {% endif %}
             </div>
         </aside>
-
     </div>
-    <footer class="workbench-status-bar" data-workbench-status-bar aria-label="Service status" aria-live="polite">
-        <div class="workbench-status-brand" aria-hidden="true">M</div>
-        <div class="workbench-status-services">
-            {% for service in workbench_service_statuses %}
-                {% if service.target_url %}
-                    <a class="workbench-status-item is-{{ service.tone }}"
-                       href="{{ service.target_url }}"
-                       title="{{ service.reason }} {{ service.next_action }}"
-                       data-service-status="{{ service.display_status }}"
-                       data-service-id="{{ service.service_id }}">
-                {% else %}
-                    <span class="workbench-status-item is-{{ service.tone }}"
-                          title="{{ service.reason }} {{ service.next_action }}"
-                          data-service-status="{{ service.display_status }}"
-                          data-service-id="{{ service.service_id }}">
-                {% endif %}
-                    <span class="workbench-status-dot" aria-hidden="true"></span>
-                    <span class="workbench-status-name">{{ service.label }}:</span>
-                    <span class="workbench-status-state">{{ service.display_status }}</span>
-                    {% if service.detail %}
-                        <span class="workbench-status-detail">{{ service.detail }}</span>
-                    {% endif %}
-                    {% if service.checked_at %}
-                        <span class="workbench-status-time">@ {{ service.checked_at }}</span>
-                    {% endif %}
-                {% if service.target_url %}
-                    </a>
-                {% else %}
-                    </span>
-                {% endif %}
-            {% endfor %}
-        </div>
-        <div class="workbench-job-status" data-workbench-job-status>No active job</div>
-    </footer>
 </section>
 {% endblock %}
