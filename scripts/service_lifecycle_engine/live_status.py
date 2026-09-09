@@ -202,8 +202,26 @@ def merge_service_launch_metadata(
         enriched["started_at"] = metadata.started_at
         enriched["launch_metadata_source"] = metadata.source
     if metadata.diagnostics:
-        enriched["launch_metadata_diagnostics"] = diagnostic_values(metadata.diagnostics)
+        if metadata.source and not enriched.get("launch_metadata_source"):
+            enriched["launch_metadata_source"] = metadata.source
+        enriched["launch_metadata_diagnostics"] = _merged_diagnostics(
+            enriched.get("launch_metadata_diagnostics"),
+            metadata.diagnostics,
+        )
     return enriched
+
+
+def _merged_diagnostics(
+    existing: object,
+    incoming: tuple[ServiceDiagnosticCode | str, ...],
+) -> list[str]:
+    values: list[str] = []
+    if isinstance(existing, (list, tuple)):
+        values.extend(str(item) for item in existing if item)
+    elif existing:
+        values.append(str(existing))
+    values.extend(diagnostic_values(incoming))
+    return list(dict.fromkeys(values))
 
 
 def read_pid_file_value(path: Path) -> int | None:

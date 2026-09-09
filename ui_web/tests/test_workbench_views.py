@@ -1,4 +1,7 @@
 from datetime import date, datetime, timezone
+import json
+import os
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -34,6 +37,12 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertNotIn('data-workbench-pane="utility"', content)
         self.assertNotIn('Settings, Publish, Audit', content)
         self.assertIn('data-workbench-status-bar', content)
+        self.assertIn('data-workbench-job-status', content)
+        self.assertIn('workbench-status-brand', content)
+        self.assertIn('No active job', content)
+        self.assertIn('Dashboard UI:', content)
+        self.assertIn('workbench-status-time">@', content)
+        self.assertNotIn('workbench-status-url', content)
         self.assertIn('workbench-control-grid', content)
         self.assertIn('workbench-toolbar-field-scope', content)
         self.assertIn('id="workbench-scope" name="scope_id" data-workbench-state-trigger="scope"', content)
@@ -53,6 +62,85 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('Embedded AI Base chat bound to the selected scope profile', content)
         self.assertNotIn('compact panel ready', content)
         self.assertNotIn('&copy; 2017', content)
+
+    def test_shouldRenderLifecycleStateInWorkbenchServiceStatusBar(self):
+        # Given
+        with tempfile.TemporaryDirectory() as state_dir:
+            state_path = Path(state_dir) / 'e2e' / 'service-lifecycle-engine' / 'metrics-bug-trend-default.json'
+            state_path.parent.mkdir(parents=True)
+            state_path.write_text(json.dumps({
+                'schema_version': 1,
+                'services': {
+                    'grafana': {
+                        'pid': os.getpid(),
+                        'port': 3210,
+                        'host': '127.0.0.1',
+                        'lifecycle_state': 'ready',
+                        'started_at': '2026-09-09T00:59:35+00:00',
+                        'provenance': {
+                            'capability': 'endpoint_grade',
+                            'wrapper_pid': os.getpid(),
+                            'listener_pid': os.getpid(),
+                        },
+                    },
+                },
+            }), encoding='utf-8')
+
+            # When
+            with override_settings(METRICS_STATE_DIR=state_dir, METRICS_AI_GRAFANA_BASE_URL='http://127.0.0.1:3001'):
+                response = self.client.get(reverse('ui_web:workbench'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('data-service-id="grafana"', content)
+        self.assertIn('data-service-status="connected"', content)
+        self.assertIn('href="http://127.0.0.1:3210"', content)
+
+    def test_shouldNotFallbackToConnectedWhenDashboardLifecycleStateIsStopped(self):
+        # Given
+        with tempfile.TemporaryDirectory() as state_dir:
+            state_path = Path(state_dir) / 'e2e' / 'service-lifecycle-engine' / 'metrics-bug-trend-default.json'
+            state_path.parent.mkdir(parents=True)
+            state_path.write_text(json.dumps({
+                'schema_version': 1,
+                'services': {
+                    'django': {
+                        'pid': os.getpid(),
+                        'port': 8012,
+                        'host': '127.0.0.1',
+                        'lifecycle_state': 'stopped',
+                        'started_at': '2026-09-09T00:59:35+00:00',
+                    },
+                },
+            }), encoding='utf-8')
+
+            # When
+            with override_settings(METRICS_STATE_DIR=state_dir):
+                response = self.client.get(reverse('ui_web:workbench'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('data-service-id="dashboard"', content)
+        self.assertIn('data-service-status="stopped"', content)
+
+    def test_shouldFailClosedWhenWorkbenchLifecycleStateIsCorrupt(self):
+        # Given
+        with tempfile.TemporaryDirectory() as state_dir:
+            state_path = Path(state_dir) / 'e2e' / 'service-lifecycle-engine' / 'metrics-bug-trend-default.json'
+            state_path.parent.mkdir(parents=True)
+            state_path.write_text('{not-json', encoding='utf-8')
+
+            # When
+            with override_settings(METRICS_STATE_DIR=state_dir, METRICS_AI_GRAFANA_BASE_URL='http://127.0.0.1:3001'):
+                response = self.client.get(reverse('ui_web:workbench'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('data-service-id="grafana"', content)
+        self.assertIn('data-service-status="configured"', content)
 
     def test_shouldExposeDefaultWorkbenchPaneRegistry(self):
         # When
@@ -74,7 +162,9 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
     @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldRenderAiBaseUnavailableWithoutBlockingWorkbench(self):
         # When
-        response = self.client.get(reverse('ui_web:workbench'))
+        with tempfile.TemporaryDirectory() as state_dir:
+            with override_settings(METRICS_STATE_DIR=state_dir):
+                response = self.client.get(reverse('ui_web:workbench'))
 
         # Then
         content = response.content.decode()
@@ -83,8 +173,8 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('disabled', content)
         self.assertIn('AI chat is not enabled for this Dashboard process.', content)
         self.assertIn('scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort', content)
-        self.assertIn('Dashboard', content)
-        self.assertIn('available', content)
+        self.assertIn('Dashboard UI:', content)
+        self.assertIn('data-service-status="connected"', content)
         self.assertIn('Grafana', content)
         self.assertIn('configured', content)
         self.assertIn('at ', content)
@@ -286,6 +376,10 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         content = response.content.decode()
         self.assertIn('hx-target=".workbench-shell"', content)
         self.assertIn('Selection: bucket-1 new_critical_high', content)
+        self.assertIn('workbench-evidence-filter-grid', content)
+        self.assertIn('dashboard-tool-field', content)
+        self.assertNotIn('columns is-variable is-2', content)
+        self.assertNotIn('field has-addons', content)
         self.assertIn('name="scope_id" value="', content)
         self.assertIn('name="text" value="display"', content)
         self.assertIn('name="status" value="open"', content)

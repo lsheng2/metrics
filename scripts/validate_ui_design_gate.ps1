@@ -43,6 +43,7 @@ if ($Broad) {
     Invoke-Checked { & $Python (Join-Path $UiSkillRoot "scripts\audit_table_metrics.py") --project-root . --html-file ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html" }
     Invoke-Checked { & $Python (Join-Path $UiSkillRoot "scripts\audit_layout_metrics.py") --project-root . --html-file ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html" --checks overflow,tables,buttons,forms }
     Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\create_visual_regression_manifest.py") --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json" }
+    Invoke-Checked { scripts\refresh_ui_gate_report.ps1 -SkipBrowser }
     Invoke-Checked { scripts\validate_ui_visual_manifest.ps1 }
 }
 

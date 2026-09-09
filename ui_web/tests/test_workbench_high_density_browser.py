@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
+from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupport
 
 
@@ -201,5 +201,11 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
             granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
             new_critical_high_count=2,
             open_count=2,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
         )
         return scope, run, bucket

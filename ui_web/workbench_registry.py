@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from dataclasses import field
 from typing import Sequence
 
 
@@ -33,6 +34,10 @@ class WorkbenchServiceStatus:
     reason: str = ''
     next_action: str = ''
     checked_at: str = ''
+    display_status: str = ''
+    detail: str = ''
+    tone: str = 'neutral'
+    live_snapshot: dict = field(default_factory=dict)
 
 
 def default_workbench_panes() -> Sequence[WorkbenchPane]:

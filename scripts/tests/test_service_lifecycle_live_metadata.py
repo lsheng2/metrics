@@ -136,6 +136,22 @@ def test_live_metadata_shouldMergeLaunchMetadataWithoutOverwritingExistingValue(
     assert "launch_metadata_source" not in existing_payload
 
 
+def test_live_metadata_shouldPreserveLaunchMetadataSourceAndDiagnosticsWhenNoStartedAt() -> None:
+    payload = merge_service_launch_metadata(
+        {
+            "service_id": "api",
+            "launch_metadata_diagnostics": ["state_corrupt"],
+        },
+        ServiceLaunchMetadata(
+            source="service-lifecycle-engine",
+            diagnostics=(ServiceDiagnosticCode.STATE_NOT_LIVE, "state_corrupt"),
+        ),
+    )
+
+    assert payload["launch_metadata_source"] == "service-lifecycle-engine"
+    assert payload["launch_metadata_diagnostics"] == ["state_corrupt", "state_not_live"]
+
+
 def test_live_metadata_shouldSerializeDisplaySnapshotWithoutEndpointAuthority() -> None:
     snapshot = ServiceLiveSnapshot(
         service_name="api",

@@ -47,6 +47,8 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 - Component catalog location: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`
 - Visual regression manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
 - Screenshot artifact policy: keep screenshots in `tmp_ui_validation/visual-regression` unless explicitly requested; commit only synthetic catalog HTML and manifest JSON.
+- Screenshot baseline/diff policy: keep baselines and diffs in `tmp_ui_validation/visual-baselines` and `tmp_ui_validation/visual-diffs` by default; commit no screenshots unless a future review explicitly adopts sanitized baselines.
+- Monkey-user E2E checklist: `.github/skills/lsheng2-ui-design/reports/provider-profile-scope-monkey-e2e-checklist.md`
 - `ui-ux-pro-max` style references: use local dense-dashboard style and UX searches for guidance only; `lsheng2-ui-design` remains the implementation and validation authority.
 
 ## Route / Page Inventory
@@ -110,10 +112,14 @@ python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\generate_ui_ch
 .venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_layout_metrics.py" --project-root . --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html" --checks overflow,tables,buttons,forms
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_ui_gate_report.py" --project-root . --write
 scripts\validate_ui_design_gate.ps1
 scripts\validate_ui_design_gate.ps1 -Broad
 scripts\validate_ui_visual_manifest.ps1
 scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
+scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots -AllManifestRoutes -IncludeHooked
+scripts\refresh_ui_gate_report.ps1 -BaseUrl http://127.0.0.1:8000 -IncludeHooked
+scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
@@ -136,6 +142,8 @@ openspec validate consolidate-provider-onboarding-profile --strict
 - Manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
 - Suggested browser evidence: use Playwright from Django tests or a short one-off local script to assert overflow, control-height delta, state visibility, and focus target.
 - Live route state runner: `scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000`; default scope is Provider Setup and Scope Config because those routes can be validated without external provider data.
+- Full manifest live gate: `scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots`; this runs all manifest routes with project fixture hooks and refreshes the aggregate report.
+- Screenshot diff command: `scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -WithScreenshotDiff`; use `-UpdateBaseline` only after accepting a new local baseline.
 
 ## Privacy Boundary
 
@@ -187,6 +195,7 @@ Synthetic replacements:
 - Ignored/generated paths: temporary screenshots, `tmp_ui_validation/`, generated caches, vendored assets, migrations unless a migration UI exists.
 - Findings report location: `.github/skills/lsheng2-ui-design/reports/` for curated reports; temporary audit output stays local unless explicitly committed.
 - Apply-fixes policy: shared tokens/classes/partials first, then template migration, then page-local exceptions only when the pattern is unique and documented; data-driven avatar colors are allowed inline until a CSS custom-property helper exists.
+- Scoped commit/push policy: refresh `.github/skills/lsheng2-ui-design/reports/ui-gate-report.md` and `.github/skills/lsheng2-ui-design/reports/ui-gate-report.json` before staging UI work; stage only intended UI/skill files and keep `tmp_ui_validation/` local.
 
 ## Audit Exceptions / Allowlist
 
@@ -256,9 +265,19 @@ These values match the current `compactDashboard` density profile and are enforc
 }
 ```
 
+## Visual State Hook Modules
+
+Hooked scenarios use local-only Django fixtures. These hooks render existing templates with synthetic data and do not register production routes or call external providers.
+
+```json lsheng2-ui-design-hook-modules
+{
+  "modules": ["scripts/ui_design_fixture_hooks.py"]
+}
+```
+
 ## Visual State Scenarios
 
-These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`. Scenarios with `requiresHook` need seeded Django fakes or a local fixture server and are skipped by the live route runner unless `-IncludeHooked` is passed.
+These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`. Scenarios with `requiresHook` need seeded Django fakes or a local fixture server and are skipped by the live route runner unless `-IncludeHooked` is passed. Hooked dashboard scenarios map to `scripts/ui_design_fixture_hooks.py`.
 
 ```json lsheng2-ui-design-state-scenarios
 {
@@ -294,7 +313,17 @@ These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/m
         "name": "profile-test-success",
         "stateTarget": "status-feedback/info-success-warning-danger",
         "query": {"mode": "new", "provider_id": "jira"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible", "status-feedback-visible"],
+        "hook": "provider_profile_test_success",
         "requiresHook": "mock provider connection response"
+      },
+      {
+        "name": "profile-test-failure",
+        "stateTarget": "status-feedback/info-success-warning-danger",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible", "status-feedback-visible"],
+        "hook": "provider_profile_test_failure",
+        "requiresHook": "mock provider connection failure"
       }
     ],
     "/bug-trend/scope-config/": [
@@ -337,7 +366,18 @@ These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/m
         "stateTarget": "table/default-empty-loading-selected-archived-error",
         "query": {"author": "Monkey User"},
         "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present", "filter-applied-visible"],
+        "hook": "pull_request_filter_applied",
         "requiresHook": "fake pull request facade data"
+      }
+    ],
+    "/current-tasks/": [
+      {
+        "name": "default",
+        "stateTarget": "table/default-empty-loading-selected-archived-error",
+        "query": {},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "table-contracts-present"],
+        "hook": "current_tasks_fake_data",
+        "requiresHook": "fake current tasks facade data"
       }
     ],
     "/task-forecast/": [
@@ -346,25 +386,54 @@ These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/m
         "stateTarget": "table/default-empty-loading-selected-archived-error",
         "query": {"task_id": "TASK-101", "include_done_tasks": "true"},
         "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "hook": "task_forecast_fake_data",
         "requiresHook": "fake task forecast facade data"
       }
     ],
     "/team-velocity/": [
       {
+        "name": "default",
+        "stateTarget": "chart-drilldown-selected",
+        "query": {"period": "2026-09", "member_group_id": "core"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "hook": "team_velocity_fake_data",
+        "requiresHook": "fake team velocity facade data"
+      },
+      {
         "name": "team-velocity-drilldown-selected",
         "stateTarget": "chart-drilldown-selected",
         "query": {"period": "2026-09", "member_group_id": "core"},
         "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "hook": "team_velocity_fake_data",
         "requiresHook": "fake team velocity facade data"
       }
     ],
     "/dev-velocity/": [
       {
+        "name": "default",
+        "stateTarget": "chart-drilldown-selected",
+        "query": {"period": "2026-09", "developers": "Monkey User", "member_group_id": "core"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "hook": "dev_velocity_fake_data",
+        "requiresHook": "fake developer velocity facade data"
+      },
+      {
         "name": "dev-velocity-drilldown-selected",
         "stateTarget": "chart-drilldown-selected",
         "query": {"period": "2026-09", "developers": "Monkey User", "member_group_id": "core"},
         "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "hook": "dev_velocity_fake_data",
         "requiresHook": "fake developer velocity facade data"
+      }
+    ],
+    "/partials/bug-trend/evidence/": [
+      {
+        "name": "default",
+        "stateTarget": "table/default-empty-loading-selected-archived-error",
+        "query": {},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "table-contracts-present"],
+        "hook": "bug_trend_evidence_fake_data",
+        "requiresHook": "fake bug trend evidence data"
       }
     ]
   }
@@ -379,6 +448,7 @@ These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/m
 - Storybook/harness: none.
 - Build/test commands: use Django validation commands in this overlay.
 - Adapter status: reserved for future React/Next/Tailwind/component-tree projects; do not apply React-specific rules to this repo unless the frontend stack changes.
+- Adapter resolver: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/scripts/resolve_framework_adapter.py --project-root .` should continue to select Django/Bulma/htmx for this repo.
 
 ## OpenSpec Integration
 

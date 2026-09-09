@@ -34,6 +34,9 @@
     "tabs/default-selected-hover-focus-disabled",
     "status-feedback/info-success-warning-danger"
   ],
+  "hookModules": [
+    "scripts/ui_design_fixture_hooks.py"
+  ],
   "capturePlan": [
     {
       "name": "provider-setup",
@@ -88,7 +91,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "hsdes-tab-selected",
@@ -106,7 +111,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "profile-required-missing",
@@ -130,7 +137,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "profile-dirty-unsaved",
@@ -154,7 +163,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "profile-test-success",
@@ -168,10 +179,35 @@
           "checks": [
             "no-page-horizontal-overflow",
             "no-clipped-buttons",
-            "no-unnamed-icon-buttons"
+            "no-unnamed-icon-buttons",
+            "selected-provider-check-visible",
+            "status-feedback-visible"
           ],
           "screenshot": true,
-          "requiresHook": "mock provider connection response"
+          "requiresHook": "mock provider connection response",
+          "hook": "provider_profile_test_success",
+          "hooks": {}
+        },
+        {
+          "name": "profile-test-failure",
+          "stateTarget": "status-feedback/info-success-warning-danger",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "selected-provider-check-visible",
+            "status-feedback-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": "mock provider connection failure",
+          "hook": "provider_profile_test_failure",
+          "hooks": {}
         }
       ]
     },
@@ -211,7 +247,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "jira-scope-tab-selected",
@@ -228,7 +266,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "hsdes-scope-tab-selected",
@@ -245,7 +285,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "scope-required-missing",
@@ -269,7 +311,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         },
         {
           "name": "scope-dirty-unsaved",
@@ -293,7 +337,9 @@
             "selected-provider-check-visible"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "",
+          "hook": "",
+          "hooks": {}
         }
       ]
     },
@@ -448,8 +494,8 @@
       "stateScenarios": [
         {
           "name": "default",
-          "stateTarget": "default",
-          "intent": "Render /current-tasks/ in its default state.",
+          "stateTarget": "table/default-empty-loading-selected-archived-error",
+          "intent": "",
           "query": {},
           "steps": [],
           "checks": [
@@ -459,7 +505,9 @@
             "table-contracts-present"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "fake current tasks facade data",
+          "hook": "current_tasks_fake_data",
+          "hooks": {}
         }
       ]
     },
@@ -508,7 +556,9 @@
             "filter-applied-visible"
           ],
           "screenshot": true,
-          "requiresHook": "fake pull request facade data"
+          "requiresHook": "fake pull request facade data",
+          "hook": "pull_request_filter_applied",
+          "hooks": {}
         }
       ]
     },
@@ -561,7 +611,9 @@
             "table-contracts-present"
           ],
           "screenshot": true,
-          "requiresHook": "fake task forecast facade data"
+          "requiresHook": "fake task forecast facade data",
+          "hook": "task_forecast_fake_data",
+          "hooks": {}
         }
       ]
     },
@@ -586,18 +638,22 @@
       "stateScenarios": [
         {
           "name": "default",
-          "stateTarget": "default",
-          "intent": "Render /team-velocity/ in its default state.",
-          "query": {},
+          "stateTarget": "chart-drilldown-selected",
+          "intent": "",
+          "query": {
+            "period": "2026-09",
+            "member_group_id": "core"
+          },
           "steps": [],
           "checks": [
             "no-page-horizontal-overflow",
             "no-clipped-buttons",
-            "no-unnamed-icon-buttons",
             "table-contracts-present"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "fake team velocity facade data",
+          "hook": "team_velocity_fake_data",
+          "hooks": {}
         },
         {
           "name": "team-velocity-drilldown-selected",
@@ -614,7 +670,9 @@
             "table-contracts-present"
           ],
           "screenshot": true,
-          "requiresHook": "fake team velocity facade data"
+          "requiresHook": "fake team velocity facade data",
+          "hook": "team_velocity_fake_data",
+          "hooks": {}
         }
       ]
     },
@@ -639,18 +697,23 @@
       "stateScenarios": [
         {
           "name": "default",
-          "stateTarget": "default",
-          "intent": "Render /dev-velocity/ in its default state.",
-          "query": {},
+          "stateTarget": "chart-drilldown-selected",
+          "intent": "",
+          "query": {
+            "period": "2026-09",
+            "developers": "Monkey User",
+            "member_group_id": "core"
+          },
           "steps": [],
           "checks": [
             "no-page-horizontal-overflow",
             "no-clipped-buttons",
-            "no-unnamed-icon-buttons",
             "table-contracts-present"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "fake developer velocity facade data",
+          "hook": "dev_velocity_fake_data",
+          "hooks": {}
         },
         {
           "name": "dev-velocity-drilldown-selected",
@@ -668,7 +731,9 @@
             "table-contracts-present"
           ],
           "screenshot": true,
-          "requiresHook": "fake developer velocity facade data"
+          "requiresHook": "fake developer velocity facade data",
+          "hook": "dev_velocity_fake_data",
+          "hooks": {}
         }
       ]
     },
@@ -729,8 +794,8 @@
       "stateScenarios": [
         {
           "name": "default",
-          "stateTarget": "default",
-          "intent": "Render /partials/bug-trend/evidence/ in its default state.",
+          "stateTarget": "table/default-empty-loading-selected-archived-error",
+          "intent": "",
           "query": {},
           "steps": [],
           "checks": [
@@ -740,7 +805,9 @@
             "table-contracts-present"
           ],
           "screenshot": true,
-          "requiresHook": ""
+          "requiresHook": "fake bug trend evidence data",
+          "hook": "bug_trend_evidence_fake_data",
+          "hooks": {}
         }
       ]
     }

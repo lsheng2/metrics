@@ -2,7 +2,11 @@ param(
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [switch]$IncludeHooked,
     [switch]$NoScreenshots,
-    [switch]$AllManifestRoutes
+    [switch]$AllManifestRoutes,
+    [string]$BaselineDir = "",
+    [string]$DiffOutputDir = "tmp_ui_validation\visual-diffs",
+    [double]$MaxDiffRatio = 0.001,
+    [switch]$UpdateBaseline
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,9 +42,18 @@ if ($AllManifestRoutes) {
 $ScenarioArgs = @()
 if ($IncludeHooked) {
     $ScenarioArgs += "--include-hooked"
+    $ScenarioArgs += @("--hook-module", "scripts\ui_design_fixture_hooks.py")
 }
 if ($NoScreenshots) {
     $ScenarioArgs += "--no-screenshots"
+}
+if ($BaselineDir) {
+    $ScenarioArgs += @("--baseline-dir", $BaselineDir)
+    $ScenarioArgs += @("--diff-output-dir", $DiffOutputDir)
+    $ScenarioArgs += @("--max-diff-ratio", $MaxDiffRatio.ToString([Globalization.CultureInfo]::InvariantCulture))
+}
+if ($UpdateBaseline) {
+    $ScenarioArgs += "--update-baseline"
 }
 
 Invoke-Checked {
@@ -54,6 +67,7 @@ Invoke-Checked {
 
 Invoke-Checked {
     & $Python (Join-Path $UiSkillRoot "scripts\run_visual_state_scenarios.py") `
+        --project-root . `
         --manifest $Manifest `
         --base-url $BaseUrl `
         @RouteArgs `

@@ -11,6 +11,10 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Browser validation: Django tests with Playwright for layout, required state, dirty state, and monkey-user flows.
 - Reusable layout audit: `lsheng2-ui-design/scripts/audit_layout_metrics.py` measures rendered page overflow, table density, button groups, and form controls.
 - Live route/state audit: `scripts/validate_ui_live_routes.ps1` runs manifest scenarios against a local server, with hooked data states skipped by default.
+- Hooked visual state audit: `scripts/ui_design_fixture_hooks.py` renders local-only synthetic Django fixtures for data-heavy/provider states when the runner is invoked with `-IncludeHooked`.
+- Aggregate report: `lsheng2-ui-design/scripts/create_ui_gate_report.py` writes `.github/skills/lsheng2-ui-design/reports/ui-gate-report.json` and `.github/skills/lsheng2-ui-design/reports/ui-gate-report.md`.
+- Full manifest gate: `scripts/validate_ui_full_manifest_gate.ps1` runs every manifest route with hooked scenarios and refreshes the aggregate report.
+- Screenshot baseline/diff: optional and local through `run_visual_state_scenarios.py --baseline-dir ... --diff-output-dir ...`.
 - External design services: not used by default. Local screenshots and local browser metrics are the review evidence.
 - Component token baseline: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`, calibrated through the repo overlay before subjective button, typography, form, table, tab, or feedback-state changes.
 - Component catalog: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`.
@@ -32,6 +36,9 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Audit exceptions | project overlay | `lsheng2-ui-design-audit-exceptions` JSON block | Narrow generated/synthetic exceptions only | Static audit plus browser table/layout metrics audit |
 | Component catalog and visual manifest | `lsheng2-ui-design` core, project overlay | local static HTML catalog, manifest JSON | Shared UI reviews and screenshot capture planning | Static artifact tests plus local UI gate |
 | Visual state scenarios | `lsheng2-ui-design` core, project overlay | `lsheng2-ui-design-state-scenarios`, `stateScenarios`, `requiresHook` | Required/dirty/provider tab/filter/chart states on live routes | `scripts\validate_ui_live_routes.ps1` plus manifest tests |
+| Visual state hooks | project overlay, `scripts/ui_design_fixture_hooks.py` | `lsheng2-ui-design-hook-modules`, scenario `hook` names | Provider connection success, PR filter data, forecast hierarchy, velocity drilldown fixtures | Hooked visual state runner |
+| UI gate report | `lsheng2-ui-design` core, project reports | `ui-gate-report.json`, `ui-gate-report.md` | Dashboard-style evidence summary with route counts, live/hooked counts, top risks, and failure screenshots | `create_ui_gate_report.py`, `refresh_ui_gate_report.ps1` |
+| Full manifest live gate | project scripts | `validate_ui_full_manifest_gate.ps1` | One local command for full manifest route/state validation before scoped UI publication | Playwright route metrics, hooked visual states, aggregate report refresh |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
 | Responsive admin table | `main.css` | `responsive-admin-table-box`, `responsive-admin-table`, optional `is-cardable` | Scope Library, Provider Setup, Data Health, audit/readiness tables | Desktop/phone overflow tests |
@@ -53,6 +60,8 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Table, button, form, or browser metric exceptions must live in the project overlay `lsheng2-ui-design-audit-exceptions` block with a narrow match and reason; reusable scripts must not hardcode project-specific special cases.
 - Nontrivial UI changes should generate or update a local checklist before implementation so route, state, component, token, and validation expectations are explicit before CSS or template edits.
 - Live route state scenarios must declare `requiresHook` whenever they need fake provider responses, seeded facade data, or fixture-only chart/table content.
+- Hooked state scenarios must declare a project-local hook name and must use synthetic or sanitized data.
+- Broad UI gates should refresh the aggregate UI gate report so users can review one consolidated pass/fail artifact before scoped commit/push.
 - Workbench is allowed to keep a separate split-pane shell, but it remains part of the same browser overflow and interaction gate.
 - React/Next/Tailwind support is reserved through the reusable adapter interface; this Django/Bulma/htmx project should keep using the Django validation commands unless the frontend stack changes.
 
@@ -94,7 +103,11 @@ python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\generate_ui_checklist.py" --project-root . --target "Dashboard UI change"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_ui_gate_report.py" --project-root . --write
 scripts\validate_ui_visual_manifest.ps1
 scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
+scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots -AllManifestRoutes -IncludeHooked
+scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
+scripts\refresh_ui_gate_report.ps1 -BaseUrl http://127.0.0.1:8000 -IncludeHooked
 .venv\Scripts\python.exe manage.py check
 ```

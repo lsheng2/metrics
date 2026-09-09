@@ -15,7 +15,7 @@
     {{ workbench_ai_context|json_script:"workbench-ai-context" }}
     <form class="dashboard-tool-form workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
         <div class="dashboard-tool-grid workbench-control-grid">
-            <div class="field workbench-toolbar-field workbench-toolbar-field-scope">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-scope">
                 <label class="label" for="workbench-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope that drives the chart range, evidence tickets, provider binding, and AI workspace context." %}</label>
                 <div class="select is-small is-fullwidth workbench-control-shell">
                     <select class="workbench-control-input" id="workbench-scope" name="scope_id" data-workbench-state-trigger="scope">
@@ -28,15 +28,15 @@
                     </select>
                 </div>
             </div>
-            <div class="field workbench-toolbar-field workbench-toolbar-field-profile">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-profile">
                 <label class="label" for="workbench-profile">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile resolved from the selected scope. It is read-only here because Scope Library owns binding." %}</label>
                 <input class="input is-small workbench-control-input" id="workbench-profile" value="{{ workbench_state.profile_id }}" readonly data-workbench-derived-field="profile_id">
             </div>
-            <div class="field workbench-toolbar-field workbench-toolbar-field-provider">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-provider">
                 <label class="label" for="workbench-provider">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the resolved profile, such as Jira or HSD-ES." %}</label>
                 <input class="input is-small workbench-control-input" id="workbench-provider" value="{{ workbench_state.provider_id }}" readonly data-workbench-derived-field="provider_id">
             </div>
-            <div class="field workbench-toolbar-field workbench-toolbar-field-range">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-range">
                 <label class="label" for="workbench-range-mode">Range{% include "partials/help_tip.html" with label="Range" text="The time format used for chart and evidence queries. Work Week uses WW notation; Date uses calendar dates." %}</label>
                 <div class="select is-small is-fullwidth workbench-control-shell">
                     <select class="workbench-control-input" id="workbench-range-mode" name="range_mode">
@@ -45,19 +45,19 @@
                     </select>
                 </div>
             </div>
-            <div class="field workbench-toolbar-field workbench-toolbar-field-chart">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-chart">
                 <label class="label" for="workbench-chart">Chart{% include "partials/help_tip.html" with label="Chart" text="The Metrics chart id to render and connect to evidence selection." %}</label>
                 <input class="input is-small workbench-control-input" id="workbench-chart" name="chart_id" value="{{ active_chart_id }}">
             </div>
-            <div class="field workbench-toolbar-field workbench-toolbar-field-date">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-date">
                 <label class="label" for="workbench-begin">Begin</label>
                 <input class="input is-small workbench-control-input" id="workbench-begin" name="begin" value="{{ workbench_state.begin }}">
             </div>
-            <div class="field workbench-toolbar-field workbench-toolbar-field-date">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-date">
                 <label class="label" for="workbench-end">End</label>
                 <input class="input is-small workbench-control-input" id="workbench-end" name="end" value="{{ workbench_state.end }}">
             </div>
-            <div class="field workbench-toolbar-field workbench-apply-field">
+            <div class="field dashboard-tool-field workbench-toolbar-field workbench-apply-field">
                 <span class="label workbench-apply-label" aria-hidden="true">&nbsp;</span>
                 <button class="button is-primary is-small workbench-apply-button" type="submit">Apply</button>
             </div>
@@ -80,7 +80,7 @@
                         <span class="tag is-light">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</span>
                     {% endif %}
                 </div>
-                <div class="workbench-pane-actions">
+                <div class="workbench-pane-actions" data-ui-action-group>
                     <button class="button is-small" type="button" data-workbench-collapse="chart" aria-expanded="true">Collapse</button>
                 </div>
             </header>
@@ -118,7 +118,7 @@
                         <p class="is-size-7">Evidence tickets for the current chart range.</p>
                     {% endif %}
                 {% endif %}
-                <form class="dashboard-tool-form mt-3" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+                <form class="dashboard-tool-form workbench-evidence-filter mt-3" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
                     <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
                     <input type="hidden" name="profile_id" value="{{ workbench_state.profile_id }}">
                     <input type="hidden" name="provider_id" value="{{ workbench_state.provider_id }}">
@@ -131,26 +131,29 @@
                     <input type="hidden" name="snapshot" value="{{ workbench_state.fact_snapshot_id }}">
                     <input type="hidden" name="bucket" value="{{ workbench_state.selected_bucket_id }}">
                     <input type="hidden" name="series" value="{{ workbench_state.selected_series_name }}">
-                    <div class="field has-addons">
-                        <div class="control is-expanded">
-                            <input class="input is-small" name="text" value="{{ workbench_state.list_filters.text }}" placeholder="Filter evidence text">
+                    <div class="dashboard-tool-grid workbench-evidence-filter-grid">
+                        <div class="dashboard-tool-field workbench-evidence-filter-text">
+                            <label class="label" for="workbench-filter-text">Text</label>
+                            <input class="input is-small" id="workbench-filter-text" name="text" value="{{ workbench_state.list_filters.text }}" placeholder="Filter evidence text">
                         </div>
-                        <div class="control">
+                        <div class="dashboard-tool-field">
+                            <label class="label" for="workbench-filter-status">Status</label>
+                            <input class="input is-small" id="workbench-filter-status" name="status" value="{{ workbench_state.list_filters.status }}" placeholder="Status">
+                        </div>
+                        <div class="dashboard-tool-field">
+                            <label class="label" for="workbench-filter-severity">Severity</label>
+                            <input class="input is-small" id="workbench-filter-severity" name="severity" value="{{ workbench_state.list_filters.severity }}" placeholder="Severity">
+                        </div>
+                        <div class="dashboard-tool-field">
+                            <label class="label" for="workbench-filter-owner">Owner</label>
+                            <input class="input is-small" id="workbench-filter-owner" name="owner" value="{{ workbench_state.list_filters.owner }}" placeholder="Owner">
+                        </div>
+                        <div class="dashboard-tool-field">
+                            <label class="label" for="workbench-filter-component">Component</label>
+                            <input class="input is-small" id="workbench-filter-component" name="component" value="{{ workbench_state.list_filters.component }}" placeholder="Component">
+                        </div>
+                        <div class="dashboard-tool-actions is-right workbench-evidence-filter-actions">
                             <button class="button is-small" type="submit">Filter</button>
-                        </div>
-                    </div>
-                    <div class="columns is-variable is-2">
-                        <div class="column">
-                            <input class="input is-small" name="status" value="{{ workbench_state.list_filters.status }}" placeholder="Status">
-                        </div>
-                        <div class="column">
-                            <input class="input is-small" name="severity" value="{{ workbench_state.list_filters.severity }}" placeholder="Severity">
-                        </div>
-                        <div class="column">
-                            <input class="input is-small" name="owner" value="{{ workbench_state.list_filters.owner }}" placeholder="Owner">
-                        </div>
-                        <div class="column">
-                            <input class="input is-small" name="component" value="{{ workbench_state.list_filters.component }}" placeholder="Component">
                         </div>
                     </div>
                 </form>
@@ -164,7 +167,7 @@
                     <h2 class="title is-5" id="workbench-ai-title">AI Assistant{% include "partials/help_tip.html" with label="AI Assistant" text="Embedded AI Base chat bound to the selected scope profile and synced workspace context when available." %}</h2>
                     <span class="tag is-light">{{ workbench_ai_context.ai_base.status }}</span>
                 </div>
-                <div class="workbench-pane-actions">
+                <div class="workbench-pane-actions" data-ui-action-group>
                     {% if workbench_ai_context.ai_base.chat_ready %}
                         <a class="button is-small" href="{{ workbench_ai_context.ai_base.chat_url }}" target="_blank" rel="noopener">Open</a>
                     {% endif %}
@@ -245,19 +248,39 @@
         </aside>
 
     </div>
-    <footer class="workbench-status-bar" data-workbench-status-bar aria-label="Service status">
-        {% for service in workbench_service_statuses %}
-            <a class="workbench-status-item {% if service.status == 'available' or service.status == 'connected' or service.status == 'ready' %}is-success{% elif service.status == 'configured' %}is-info{% else %}is-warning{% endif %}"
-               href="{{ service.target_url|default:'#' }}"
-               title="{{ service.reason }} {{ service.next_action }}"
-               data-service-id="{{ service.service_id }}">
-                <span class="workbench-status-dot" aria-hidden="true"></span>
-                <span class="workbench-status-name">{{ service.label }}</span>
-                <span class="workbench-status-state">{{ service.status }}</span>
-                <span class="workbench-status-url">{{ service.target_url|default:"-" }}</span>
-                <span class="workbench-status-time">at {{ service.checked_at }}</span>
-            </a>
-        {% endfor %}
+    <footer class="workbench-status-bar" data-workbench-status-bar aria-label="Service status" aria-live="polite">
+        <div class="workbench-status-brand" aria-hidden="true">M</div>
+        <div class="workbench-status-services">
+            {% for service in workbench_service_statuses %}
+                {% if service.target_url %}
+                    <a class="workbench-status-item is-{{ service.tone }}"
+                       href="{{ service.target_url }}"
+                       title="{{ service.reason }} {{ service.next_action }}"
+                       data-service-status="{{ service.display_status }}"
+                       data-service-id="{{ service.service_id }}">
+                {% else %}
+                    <span class="workbench-status-item is-{{ service.tone }}"
+                          title="{{ service.reason }} {{ service.next_action }}"
+                          data-service-status="{{ service.display_status }}"
+                          data-service-id="{{ service.service_id }}">
+                {% endif %}
+                    <span class="workbench-status-dot" aria-hidden="true"></span>
+                    <span class="workbench-status-name">{{ service.label }}:</span>
+                    <span class="workbench-status-state">{{ service.display_status }}</span>
+                    {% if service.detail %}
+                        <span class="workbench-status-detail">{{ service.detail }}</span>
+                    {% endif %}
+                    {% if service.checked_at %}
+                        <span class="workbench-status-time">@ {{ service.checked_at }}</span>
+                    {% endif %}
+                {% if service.target_url %}
+                    </a>
+                {% else %}
+                    </span>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="workbench-job-status" data-workbench-job-status>No active job</div>
     </footer>
 </section>
 {% endblock %}

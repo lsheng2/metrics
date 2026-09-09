@@ -4,7 +4,7 @@
             <h3 class="title is-5">{{ evidence.selection_title }}{% include "partials/help_tip.html" with label="Evidence tickets" text="Tickets matching the current chart range and, when selected, the clicked chart bucket and series." %}</h3>
             <p class="is-size-7 has-text-grey">{{ evidence.shown_count }} of {{ evidence.total_count }} evidence tickets shown</p>
         </div>
-        <div class="workbench-evidence-actions" aria-label="Evidence actions">
+        <div class="workbench-evidence-actions" aria-label="Evidence actions" data-ui-action-group>
             <details class="workbench-menu">
                 <summary class="button is-small">Columns{% include "partials/help_tip.html" with label="Columns" text="Choose which normalized ticket fields are visible in the evidence table." inert=True %}</summary>
                 <div class="workbench-menu-panel">
@@ -54,12 +54,31 @@
         <input type="hidden" name="end" value="{{ evidence.end }}">
         <input type="hidden" name="bucket" value="{{ evidence.bucket_id }}">
         <input type="hidden" name="series" value="{{ evidence.series_name }}">
-        <input class="input is-small" name="text" value="{{ evidence.text }}" placeholder="Text">
-        <input class="input is-small" name="status" value="{{ evidence.status }}" placeholder="Status">
-        <input class="input is-small" name="severity" value="{{ evidence.severity }}" placeholder="Severity">
-        <input class="input is-small" name="owner" value="{{ evidence.owner }}" placeholder="Owner">
-        <input class="input is-small" name="component" value="{{ evidence.component }}" placeholder="Component">
-        <button class="button is-link is-small" type="submit">Filter evidence</button>
+        <div class="dashboard-tool-grid workbench-evidence-filter-grid">
+            <div class="dashboard-tool-field workbench-evidence-filter-text">
+                <label class="label" for="workbench-evidence-text">Text</label>
+                <input class="input is-small" id="workbench-evidence-text" name="text" value="{{ evidence.text }}" placeholder="Text">
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="workbench-evidence-status">Status</label>
+                <input class="input is-small" id="workbench-evidence-status" name="status" value="{{ evidence.status }}" placeholder="Status">
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="workbench-evidence-severity">Severity</label>
+                <input class="input is-small" id="workbench-evidence-severity" name="severity" value="{{ evidence.severity }}" placeholder="Severity">
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="workbench-evidence-owner">Owner</label>
+                <input class="input is-small" id="workbench-evidence-owner" name="owner" value="{{ evidence.owner }}" placeholder="Owner">
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="workbench-evidence-component">Component</label>
+                <input class="input is-small" id="workbench-evidence-component" name="component" value="{{ evidence.component }}" placeholder="Component">
+            </div>
+            <div class="dashboard-tool-actions is-right workbench-evidence-filter-actions">
+                <button class="button is-link is-small" type="submit">Filter evidence</button>
+            </div>
+        </div>
     </form>
     <div class="workbench-evidence-layout is-detail-collapsed" data-workbench-evidence-layout>
         <div class="workbench-evidence-table-wrap">
@@ -146,7 +165,7 @@
                         <dt>Updated</dt>
                         <dd data-ticket-detail-updated></dd>
                     </dl>
-                    <div class="buttons are-small mt-3">
+                    <div class="buttons are-small mt-3" data-ui-action-group>
                         <button class="button is-link" type="button" data-workbench-ticket-ask-ai>Ask AI{% include "partials/help_tip.html" with label="Ask AI" text="Starts an AI question using the selected ticket context from this workbench." inert=True %}</button>
                         <a class="button" href="#" target="_blank" rel="noopener noreferrer" data-ticket-detail-source>Open Source</a>
                     </div>

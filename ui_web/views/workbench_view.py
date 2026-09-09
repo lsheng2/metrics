@@ -1,9 +1,8 @@
 from dataclasses import replace
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
@@ -12,7 +11,8 @@ from django.urls import reverse
 from ..container import ui_web_container
 from ..ai_base_workbench_adapter import AiBaseWorkbenchAdapter
 from ..workbench_grafana import grafana_full_dashboard_url, grafana_panel_embed_url
-from ..workbench_registry import WorkbenchServiceStatus, default_workbench_panes
+from ..workbench_registry import default_workbench_panes
+from ..workbench_service_status import WorkbenchServiceStatusBuilder
 from ..workbench_state import WorkbenchPageQueryState
 from .bug_trend_view import parse_date_query
 from .graceful_template_view import GracefulTemplateView
@@ -72,48 +72,8 @@ class WorkbenchView(GracefulTemplateView):
             return f'{reverse("ui_web:workbench")}?{query}'
         return reverse('ui_web:workbench')
 
-    def _service_statuses(self, sidecar_status: dict) -> list[WorkbenchServiceStatus]:
-        ai_status = sidecar_status.get('status') or 'disabled'
-        grafana_base_url = str(settings.METRICS_AI_GRAFANA_BASE_URL or '').rstrip('/')
-        grafana_status = 'configured' if grafana_base_url else 'unavailable'
-        ai_frontend_url = self.ai_adapter.frontend_base_url(sidecar_status)
-        checked_at = datetime.now().strftime('%H:%M:%S')
-        return [
-            WorkbenchServiceStatus(
-                'dashboard',
-                'Dashboard',
-                'available',
-                reverse('ui_web:homepage'),
-                next_action='If this shell stops responding, restart python manage.py runserver on the Dashboard port.',
-                checked_at=checked_at,
-            ),
-            WorkbenchServiceStatus(
-                'grafana',
-                'Grafana',
-                grafana_status,
-                grafana_base_url,
-                '' if grafana_base_url else 'METRICS_AI_GRAFANA_BASE_URL is empty.',
-                self._grafana_next_action(grafana_base_url),
-                checked_at,
-            ),
-            WorkbenchServiceStatus(
-                'ai-base',
-                'AI Base',
-                ai_status,
-                ai_frontend_url,
-                str(sidecar_status.get('reason') or ''),
-                self.ai_adapter.next_action(ai_status),
-                checked_at,
-            ),
-        ]
-
-    def _grafana_next_action(self, grafana_base_url: str) -> str:
-        if not grafana_base_url:
-            return 'Set METRICS_AI_GRAFANA_BASE_URL and start the Grafana service before using the panel preview.'
-        port = urlparse(grafana_base_url).port
-        if port:
-            return f'If the panel is blank, check that Grafana is listening on port {port}.'
-        return 'If the panel is blank, check the configured Grafana URL and service health.'
+    def _service_statuses(self, sidecar_status: dict):
+        return WorkbenchServiceStatusBuilder(self.ai_adapter, reverse('ui_web:homepage')).build(sidecar_status)
 
     def _state(self, query=None) -> WorkbenchPageQueryState:
         state = WorkbenchPageQueryState.from_query(query or self.request.GET)
