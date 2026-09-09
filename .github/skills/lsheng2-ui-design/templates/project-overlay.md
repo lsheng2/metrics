@@ -267,6 +267,12 @@ These values match the current `compactDashboard` density profile and are enforc
       ".dashboard-action-bar .button",
       ".dashboard-action-group .button",
       "[data-ui-form-button]"
+    ],
+    "formLabels": [
+      ".dashboard-tool-field .label",
+      ".dashboard-form-field .label",
+      ".workbench-toolbar-field .label",
+      "[data-ui-form-label]"
     ]
   }
 }

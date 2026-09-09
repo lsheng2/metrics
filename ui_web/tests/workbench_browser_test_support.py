@@ -155,6 +155,17 @@ class WorkbenchBrowserTestSupport:
                     const shell = document.querySelector('.workbench-shell').getBoundingClientRect();
                     const ai = document.querySelector('[data-workbench-pane="ai-assistant"]').getBoundingClientRect();
                     const status = document.querySelector('[data-workbench-status-bar]').getBoundingClientRect();
+                    const toolbar = document.querySelector('.workbench-toolbar').getBoundingClientRect();
+                    const labels = Array.from(document.querySelectorAll('.workbench-toolbar-field .label')).map(label => {
+                        const field = label.closest('.workbench-toolbar-field').getBoundingClientRect();
+                        const rect = label.getBoundingClientRect();
+                        return {
+                            text: label.innerText.trim(),
+                            clipped: label.scrollHeight > Math.ceil(label.clientHeight) + 1 || label.scrollWidth > Math.ceil(label.clientWidth) + 1,
+                            outsideField: rect.top < field.top - 1 || rect.bottom > field.bottom + 1,
+                            topGap: Math.round(rect.top - toolbar.top),
+                        };
+                    });
                     return {
                         appTop: Math.round(app.top),
                         sidebarTop: Math.round(sidebar.top),
@@ -165,6 +176,8 @@ class WorkbenchBrowserTestSupport:
                         aiWidthVar: getComputedStyle(document.querySelector('#workbench-grid')).getPropertyValue('--workbench-ai-width').trim(),
                         statusBottomGap: Math.round(window.innerHeight - status.bottom),
                         statusHeight: Math.round(status.height),
+                        toolbarLabelClippingCount: labels.filter(label => label.clipped || label.outsideField).length,
+                        toolbarMinLabelTopGap: Math.min(...labels.map(label => label.topGap)),
                     };
                 }
             """)

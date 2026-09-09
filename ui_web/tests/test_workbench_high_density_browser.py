@@ -82,6 +82,8 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         self.assertEqual('40px', result['layout_metrics']['aiWidthVar'])
         self.assertLessEqual(abs(result['layout_metrics']['statusBottomGap']), 1)
         self.assertGreaterEqual(result['layout_metrics']['statusHeight'], 24)
+        self.assertEqual(0, result['layout_metrics']['toolbarLabelClippingCount'])
+        self.assertGreaterEqual(result['layout_metrics']['toolbarMinLabelTopGap'], 4)
         self.assertTrue(result['restored_ai_collapsed'])
         self.assertEqual('AI', result['restored_ai_button_text'])
         self.assertFalse(result['restored_ai_title_visible'])

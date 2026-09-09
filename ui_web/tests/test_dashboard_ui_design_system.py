@@ -51,6 +51,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             'dashboard-tool-grid',
             'dashboard-tool-field',
             'dashboard-tool-actions',
+            'dashboard-top-toolbar',
             'dashboard-action-form',
             'dashboard_editor_state_banners.html',
             'dashboard-required-tag',
@@ -151,6 +152,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('"buttonMetrics"', overlay)
         self.assertIn('"formMetrics"', overlay)
         self.assertIn('"layoutSelectors"', overlay)
+        self.assertIn('"formLabels"', overlay)
         self.assertIn('Adapter status: reserved for future React/Next/Tailwind/component-tree projects', overlay)
         self.assertIn('validate_ui_full_manifest_gate.ps1', overlay)
         self.assertIn('refresh_ui_gate_report.ps1', overlay)
@@ -340,6 +342,22 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             self.assertNotIn('data-dirty-form', content, str(path))
             self.assertNotIn('data-required-form', content, str(path))
 
+    def test_shouldUseTopToolbarContractForPageTopToolForms(self):
+        # Given
+        template_dir = Path(__file__).resolve().parents[1] / 'templates'
+        top_toolbar_templates = [
+            template_dir / 'ai_dashboard_workflow.html',
+            template_dir / 'task_forecast.html',
+            template_dir / 'workbench.html',
+            template_dir / 'partials' / 'bug_trend_content.html',
+            template_dir / 'partials' / 'current_tasks_filters.html',
+            template_dir / 'partials' / 'pull_request_filters.html',
+        ]
+
+        # Then
+        for path in top_toolbar_templates:
+            self.assertIn('dashboard-top-toolbar', path.read_text(encoding='utf-8'), str(path))
+
     def test_shouldRequireSharedDesignSystemClassesForDirtyEditors(self):
         # Given
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
@@ -388,6 +406,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('.dashboard-tool-grid', css)
         self.assertIn('.dashboard-tool-field', css)
         self.assertIn('.dashboard-tool-actions', css)
+        self.assertIn('.dashboard-top-toolbar', css)
         self.assertIn('.dashboard-action-form', css)
         self.assertIn('.dashboard-action-bar', css)
         self.assertIn('.dashboard-action-group', css)

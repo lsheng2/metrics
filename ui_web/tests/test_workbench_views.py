@@ -44,6 +44,7 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('workbench-status-time">@', content)
         self.assertNotIn('workbench-status-url', content)
         self.assertIn('workbench-control-grid', content)
+        self.assertIn('dashboard-top-toolbar workbench-toolbar', content)
         self.assertIn('workbench-toolbar-field-scope', content)
         self.assertIn('id="workbench-scope" name="scope_id" data-workbench-state-trigger="scope"', content)
         self.assertNotIn('onchange="this.form.requestSubmit()"', content)

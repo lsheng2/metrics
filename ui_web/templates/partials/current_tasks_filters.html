@@ -1,5 +1,5 @@
 {% if task_filter_panel.fields or lazy_loading_enabled %}
-<form class="task-filters dashboard-tool-form box mb-4"
+<form class="task-filters dashboard-tool-form dashboard-top-toolbar box mb-4"
       hx-get="{% url 'ui_web:partials_tasks' %}"
       hx-trigger="submit"
       hx-target="#current-tasks-board"

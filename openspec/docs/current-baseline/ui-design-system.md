@@ -32,6 +32,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Editor state banners | `partials/dashboard_editor_state_banners.html` | `dashboard-unsaved-banner`, `dashboard-validation-banner`, `data-dirty-banner`, `data-required-summary` | Provider Profile Config, Scope Config | Static partial ownership tests |
 | Action bar | `main.css` | `dashboard-action-bar`, `dashboard-action-group`, `dashboard-action-cancel` | Editor save/test/cancel/navigation controls | Button-height and gap assertions |
 | Tool/filter form | `main.css` | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | Bug Trend filters, Task Forecast parameters, AI Workflow request, Current Tasks filters, Pull Request filters | Static template checks and browser layout gate |
+| Dense top toolbar | `main.css` | `dashboard-top-toolbar`, safe label row height, compact control height | Workbench top state bar, Bug Trend, Task Forecast, Current Tasks, Pull Requests, AI Dashboard Workflow page-top filter/request bars | Browser label clipping/out-of-field checks, form control height, and overflow checks |
 | Action form | `main.css` | `dashboard-action-form`, optional `is-stacked` or `is-inline` | Import, export, duplicate, bind, archive, delete, sync, and confirmation forms | Static form ownership tests and visual manifest runner |
 | Component token profile | `lsheng2-ui-design` core, project overlay | `dashboard-admin-v1.json`, `compactDashboard`, project overrides | Buttons, forms, tables, tabs, status feedback | Overlay/static audit plus browser layout gate |
 | Audit exceptions | project overlay | `lsheng2-ui-design-audit-exceptions` JSON block | Narrow generated/synthetic exceptions only | Static audit plus browser table/layout metrics audit |
@@ -53,6 +54,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Persistent setup editors must use the Editor form, Form grid, Required state, Dirty state, and Action bar contracts.
 - Filter, search, import, and destructive confirmation forms must not opt into `data-dirty-form` or `data-required-form` unless they become persistent editors.
 - Lightweight dashboard query forms must use the Tool/filter form contract instead of page-local `columns` and button sizing rules.
+- Page-top dense filter bars must use the Dense top toolbar contract so labels, controls, and action buttons align without clipping at compact height.
 - Non-editor mutation, import/export, binding, archive, delete, and sync forms must declare the Action form contract so they remain visible to UI audits without inheriting editor dirty state.
 - Subjective UI quality work must start from the component token profile and project overlay instead of one-off page-level button, font, spacing, or radius decisions.
 - Provider Profile Config and Scope Config must use the same Provider tabs contract so Jira, HSD-ES, GitHub, and future providers are visually and structurally consistent.

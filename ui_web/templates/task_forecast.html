@@ -5,7 +5,7 @@
 {% block content %}
 <div class="box">
     <h2 class="title is-3">Forecast Parameters</h2>
-    <form class="dashboard-tool-form" method="post"
+    <form class="dashboard-tool-form dashboard-top-toolbar" method="post"
           hx-post="{% url 'ui_web:task_forecast' %}"
           hx-target="#forecast-results"
           hx-swap="innerHTML">

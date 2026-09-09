@@ -52,7 +52,7 @@
     <section class="box">
         <h2 class="title is-4">Workflow Request{% include "partials/help_tip.html" with label="Workflow Request" text="A controlled Metrics workflow request that validates chart intent, renderability, and Grafana operation preconditions before publication." %}</h2>
         <p class="is-size-7 has-text-grey mb-3">Contract Endpoint{% include "partials/help_tip.html" with label="Contract Endpoint" text="The Dashboard-owned API route used by AI Base or this form for chart validation and publication checks." %}: <code>{{ workflow_api_url }}</code></p>
-        <form class="dashboard-tool-form" method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
+        <form class="dashboard-tool-form dashboard-top-toolbar" method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
             {% csrf_token %}
             <div class="dashboard-tool-grid">
                 <div class="dashboard-tool-field">

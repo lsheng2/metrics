@@ -1,6 +1,6 @@
 <article id="bug-trend-content" class="block">
     <h2 class="title is-3">Bug Trend Indicator</h2>
-    <form class="box dashboard-tool-form" hx-get="{% url 'ui_web:bug_trend' %}" hx-target="#bug-trend-content" hx-swap="outerHTML" hx-indicator="#loading-indicator">
+    <form class="box dashboard-tool-form dashboard-top-toolbar" hx-get="{% url 'ui_web:bug_trend' %}" hx-target="#bug-trend-content" hx-swap="outerHTML" hx-indicator="#loading-indicator">
         <div class="dashboard-tool-grid">
             <div class="dashboard-tool-field">
                 <label class="label" for="bug-trend-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope used to choose source facts, calculation runs, and evidence tickets for this chart." %}</label>

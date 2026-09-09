@@ -13,7 +13,7 @@
 {% block content %}
 <section class="workbench-shell" aria-label="Metrics Workbench">
     {{ workbench_ai_context|json_script:"workbench-ai-context" }}
-    <form class="dashboard-tool-form workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+    <form class="dashboard-tool-form dashboard-top-toolbar workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
         <div class="dashboard-tool-grid workbench-control-grid">
             <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-scope">
                 <label class="label" for="workbench-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope that drives the chart range, evidence tickets, provider binding, and AI workspace context." %}</label>

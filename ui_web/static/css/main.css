@@ -1641,6 +1641,8 @@ span:focus-within > .help-tip::after,
 }
 
 .dashboard-tool-form {
+    --dashboard-top-toolbar-label-height: 1.08rem;
+    --dashboard-top-toolbar-control-height: 2rem;
     font-size: var(--dashboard-font-body);
 }
 
@@ -1688,6 +1690,17 @@ span:focus-within > .help-tip::after,
     min-height: 2rem;
     border-radius: var(--dashboard-radius-control);
     padding: 0 0.7rem;
+}
+
+.dashboard-top-toolbar {
+    --dashboard-top-toolbar-label-height: 1.08rem;
+    --dashboard-top-toolbar-control-height: 2rem;
+}
+
+.dashboard-top-toolbar .dashboard-tool-field .label {
+    min-height: var(--dashboard-top-toolbar-label-height);
+    line-height: 1.14;
+    overflow: visible;
 }
 
 .dashboard-action-form {
@@ -2653,13 +2666,13 @@ tr.htmx-request .review-loader {
 }
 
 .workbench-toolbar {
-    --workbench-toolbar-label-height: 0.9rem;
+    --workbench-toolbar-label-height: var(--dashboard-top-toolbar-label-height);
     --workbench-toolbar-control-height: 1.95rem;
     border: 1px solid var(--bulma-border);
     border-radius: 6px;
     background: var(--bulma-scheme-main);
     margin-bottom: 0;
-    padding: 0.32rem 0.42rem;
+    padding: 0.36rem 0.42rem 0.34rem;
 }
 
 .workbench-shell .button,
@@ -2708,18 +2721,19 @@ tr.htmx-request .review-loader {
 .workbench-toolbar-field {
     display: grid;
     grid-template-rows: var(--workbench-toolbar-label-height) var(--workbench-toolbar-control-height);
-    gap: 0.12rem;
+    gap: 0.1rem;
     min-width: 0;
 }
 
 .workbench-toolbar-field .label {
     display: flex;
-    align-items: end;
+    align-items: center;
     height: var(--workbench-toolbar-label-height);
     font-size: var(--dashboard-font-caption-tight);
-    line-height: 1;
+    line-height: 1.14;
     margin-bottom: 0;
     min-width: 0;
+    overflow: visible;
 }
 
 .workbench-control-grid .input,
