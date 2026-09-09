@@ -62,6 +62,10 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 | `/current-tasks/` | `ui_web/views/current_tasks_view.py`, `ui_web/templates/current_tasks.html`, `ui_web/templates/partials/current_tasks_content.html`, `ui_web/templates/partials/task_table.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Current task filters, lazy/eager task tables, available members, dense task rows. |
 | `/pull-requests/` | `ui_web/views/pull_requests_view.py`, `ui_web/templates/pull_requests.html`, `ui_web/templates/partials/pull_requests_table.html`, `ui_web/templates/partials/pull_request_summary_table.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Pull request summary, filters, review/gate dense tables. |
 | `/task-forecast/` | `ui_web/views/task_forecast_view.py`, `ui_web/templates/task_forecast.html`, `ui_web/templates/partials/task_forecast_content.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Forecast parameter form, task breakdown dense table, timeline chart shell. |
+| `/team-velocity/` | `ui_web/views/team_velocity_view.py`, `ui_web/templates/team_velocity.html`, `ui_web/templates/partials/team_velocity_content.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Team velocity chart controls and task drilldown placeholder. |
+| `/dev-velocity/` | `ui_web/views/dev_velocity_view.py`, `ui_web/templates/dev_velocity.html`, `ui_web/templates/partials/dev_velocity_content.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Developer velocity chart controls and task drilldown placeholder. |
+| `/bug-trend/scope-audit/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_audit.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Scope audit coverage and observed-values responsive table. |
+| `/partials/bug-trend/evidence/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/partials/bug_trend_evidence.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Bug Trend evidence filters, dense evidence table, and ticket detail shell. |
 
 ## Shared UI Contracts
 
@@ -101,7 +105,7 @@ Use a target-specific subset for small UI changes and the broader group for shar
 ```sh
 git diff --check
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_project_ui.py" --project-root .
-.venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_table_metrics.py" --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html"
+.venv\Scripts\python.exe "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\audit_table_metrics.py" --project-root . --html-file ".github\skills\lsheng2-ui-design\component-catalog\dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 scripts\validate_ui_design_gate.ps1
@@ -192,6 +196,20 @@ Runtime product templates should not use table exceptions. Generated or syntheti
     }
   ],
   "tableMetricsAllowlist": []
+}
+```
+
+## Browser Metric Thresholds
+
+These values match the current `compactDashboard` density profile and are enforced by the local browser metric gate.
+
+```json lsheng2-ui-design-metric-thresholds
+{
+  "tableMetrics": {
+    "maxPaddingBlock": 12,
+    "maxButtonHeightDelta": 1,
+    "maxDenseRowHeight": 72
+  }
 }
 ```
 

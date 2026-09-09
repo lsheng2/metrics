@@ -42,6 +42,7 @@ from ui_web.data.task_forecast_data import (
     TaskForecastRequestData,
     TaskForecastSummaryData,
 )
+from ui_web.data.velocity_threshold_data import VelocityThresholdsData
 
 
 class TestUiDesignBaselineGate(TestCase):
@@ -178,6 +179,8 @@ class TestUiDesignBaselineGate(TestCase):
                 self.assertEqual([], metrics['table_contract_failures'], f'{label} {viewport}')
                 self.assertEqual([], metrics['table_density_failures'], f'{label} {viewport}')
                 self.assertEqual([], metrics['table_button_failures'], f'{label} {viewport}')
+                self.assertEqual([], metrics['button_metric_failures'], f'{label} {viewport}')
+                self.assertEqual([], metrics['form_metric_failures'], f'{label} {viewport}')
                 if metrics['expects_table']:
                     self.assertGreater(metrics['responsive_table_count'], 0, f'{label} {viewport}')
                 if metrics['expects_dense_table']:
@@ -264,6 +267,18 @@ class TestUiDesignBaselineGate(TestCase):
             }
         if route == '/task-forecast/':
             return {'task_id': 'TASK-101', 'include_done_tasks': 'true'}
+        if route == '/bug-trend/scope-audit/':
+            return {'scope_id': scope.id}
+        if route == '/partials/bug-trend/evidence/':
+            return {
+                'scope_id': scope.id,
+                'begin': '2026-09-01',
+                'end': '2026-09-07',
+                'run': str(run.id),
+                'bucket': str(bucket.id),
+                'series': 'new_critical_high',
+                'chart_id': 'default_bug_trend',
+            }
         return {}
 
     def _dense_current_tasks_html(self):
@@ -452,6 +467,33 @@ class TestUiDesignBaselineGate(TestCase):
             task_forecast_facade = FakeTaskForecastFacade()
             task_forecast_convertor = FakeTaskForecastConvertor()
 
+        class FakeVelocityFacade:
+            @staticmethod
+            def has_custom_filter(_member_group_id):
+                return False
+
+            @staticmethod
+            def get_velocity_thresholds():
+                return VelocityThresholdsData([])
+
+            @staticmethod
+            async def get_velocity_reports_data(*_args):
+                return []
+
+            @staticmethod
+            def get_velocity_chart_data(*_args):
+                return None
+
+            @staticmethod
+            def get_story_points_chart_data(*_args):
+                return None
+
+        class FakeTeamVelocityContainer:
+            team_velocity_facade = FakeVelocityFacade()
+
+        class FakeDevVelocityContainer:
+            dev_velocity_facade = FakeVelocityFacade()
+
         self_task = self
         stack = ExitStack()
         stack.enter_context(patch.multiple(
@@ -465,6 +507,14 @@ class TestUiDesignBaselineGate(TestCase):
         stack.enter_context(patch.multiple(
             'ui_web.views.task_forecast_view',
             ui_web_container=FakeTaskForecastContainer(),
+        ))
+        stack.enter_context(patch.multiple(
+            'ui_web.views.team_velocity_view',
+            ui_web_container=FakeTeamVelocityContainer(),
+        ))
+        stack.enter_context(patch.multiple(
+            'ui_web.views.dev_velocity_view',
+            ui_web_container=FakeDevVelocityContainer(),
         ))
         return stack
 
@@ -673,6 +723,13 @@ class TestUiDesignBaselineGate(TestCase):
                             .filter(value => value > 0);
                         return max(heights) - min(heights);
                     };
+                    const heightDeltaWithin = (root, selector) => {
+                        const heights = Array.from(root.querySelectorAll(selector))
+                            .filter(visible)
+                            .map(element => Math.round(element.getBoundingClientRect().height))
+                            .filter(value => value > 0);
+                        return max(heights) - min(heights);
+                    };
                     const tableName = (table, index) => {
                         const id = table.id ? `#${table.id}` : '';
                         const className = table.className ? `.${String(table.className).trim().replace(/\\s+/g, '.')}` : '';
@@ -682,6 +739,37 @@ class TestUiDesignBaselineGate(TestCase):
                     const clippedActionButtons = actionButtons
                         .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
                         .map(button => button.innerText.trim());
+                    const buttonMetricFailures = [];
+                    Array.from(document.querySelectorAll('.dashboard-action-bar, .dashboard-action-group, .dashboard-tool-actions, .scope-primary-actions, .provider-row-primary-actions, .workbench-evidence-actions'))
+                        .filter(visible)
+                        .forEach((group, index) => {
+                            const buttons = Array.from(group.querySelectorAll('button, a.button')).filter(visible);
+                            const heights = buttons.map(button => button.getBoundingClientRect().height).filter(value => value > 0);
+                            const delta = max(heights) - min(heights);
+                            const clipped = buttons
+                                .filter(button => button.innerText.trim())
+                                .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
+                                .map(button => button.innerText.trim());
+                            if (delta > 1) {
+                                buttonMetricFailures.push(`group ${index} height delta ${delta.toFixed(1)}px`);
+                            }
+                            if (clipped.length) {
+                                buttonMetricFailures.push(`group ${index} clipped ${clipped.join(', ')}`);
+                            }
+                        });
+                    const formMetricFailures = [];
+                    Array.from(document.querySelectorAll('.dashboard-tool-form, .dashboard-edit-form'))
+                        .filter(visible)
+                        .forEach((form, index) => {
+                            const controlDelta = heightDeltaWithin(form, '.dashboard-tool-field .input, .dashboard-tool-field select, .dashboard-form-field .input, .dashboard-form-field select');
+                            const buttonDelta = heightDeltaWithin(form, '.dashboard-tool-actions .button, .dashboard-action-bar .button, .dashboard-action-group .button');
+                            if (controlDelta > 1) {
+                                formMetricFailures.push(`form ${index} control height delta ${controlDelta}px`);
+                            }
+                            if (buttonDelta > 1) {
+                                formMetricFailures.push(`form ${index} button height delta ${buttonDelta}px`);
+                            }
+                        });
                     const selectedChecks = Array.from(document.querySelectorAll('.provider-setup-choice.is-selected .provider-tab-check'))
                         .filter(visible);
                     const tables = Array.from(document.querySelectorAll('table')).filter(visible);
@@ -746,6 +834,8 @@ class TestUiDesignBaselineGate(TestCase):
                         table_contract_failures: tableContractFailures,
                         table_density_failures: tableDensityFailures,
                         table_button_failures: tableButtonFailures,
+                        button_metric_failures: buttonMetricFailures,
+                        form_metric_failures: formMetricFailures,
                         tool_form_count: document.querySelectorAll('.dashboard-tool-form').length,
                         tool_grid_count: document.querySelectorAll('.dashboard-tool-grid').length,
                         tool_form_dirty_count: document.querySelectorAll('.dashboard-tool-form[data-dirty-form], .dashboard-tool-form[data-required-form]').length,
@@ -769,6 +859,8 @@ class TestUiDesignBaselineGate(TestCase):
         vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
         main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
         main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
+        if '</head>' not in html:
+            html = self._fragment_html(html)
         return html.replace(
             '</head>',
             f'<style>{vendor_css}\n{main_css}</style></head>',

@@ -12,6 +12,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         contract_path = project_root / 'openspec' / 'docs' / 'current-baseline' / 'ui-design-system.md'
         overlay_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'templates' / 'project-overlay.md'
         audit_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'reports' / '2026-09-08-ui-baseline-audit.md'
+        polish_backlog_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'reports' / '2026-09-09-ui-polish-backlog.md'
         docs_index_path = project_root / 'docs' / 'README.md'
         openspec_docs_index_path = project_root / 'openspec' / 'docs' / 'README.md'
         validation_script_path = project_root / 'scripts' / 'validate_ui_design_gate.ps1'
@@ -69,7 +70,9 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         for contract_name in expected_contracts:
             self.assertIn(contract_name, contract)
             self.assertIn(contract_name, implementation_surface)
-        for path in [overlay_path, audit_path, docs_index_path, openspec_docs_index_path]:
+        self.assertIn('Compact Dashboard Review', polish_backlog_path.read_text(encoding='utf-8'))
+        self.assertIn('Monkey-User Flow Review', polish_backlog_path.read_text(encoding='utf-8'))
+        for path in [overlay_path, audit_path, polish_backlog_path, docs_index_path, openspec_docs_index_path]:
             self.assertIn(
                 'openspec/docs/current-baseline/ui-design-system.md',
                 path.read_text(encoding='utf-8'),

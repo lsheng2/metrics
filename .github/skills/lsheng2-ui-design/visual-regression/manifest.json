@@ -115,6 +115,42 @@
       "source": "`ui_web/views/task_forecast_view.py`, `ui_web/templates/task_forecast.html`, `ui_web/templates/partials/task_forecast_content.html`, `ui_web/static/css/main.css`",
       "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
       "notes": "Forecast parameter form, task breakdown dense table, timeline chart shell."
+    },
+    {
+      "name": "team-velocity",
+      "url": "http://127.0.0.1:8000/team-velocity/",
+      "route": "/team-velocity/",
+      "priority": "normal",
+      "source": "`ui_web/views/team_velocity_view.py`, `ui_web/templates/team_velocity.html`, `ui_web/templates/partials/team_velocity_content.html`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
+      "notes": "Team velocity chart controls and task drilldown placeholder."
+    },
+    {
+      "name": "dev-velocity",
+      "url": "http://127.0.0.1:8000/dev-velocity/",
+      "route": "/dev-velocity/",
+      "priority": "normal",
+      "source": "`ui_web/views/dev_velocity_view.py`, `ui_web/templates/dev_velocity.html`, `ui_web/templates/partials/dev_velocity_content.html`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
+      "notes": "Developer velocity chart controls and task drilldown placeholder."
+    },
+    {
+      "name": "bug-trend-scope-audit",
+      "url": "http://127.0.0.1:8000/bug-trend/scope-audit/",
+      "route": "/bug-trend/scope-audit/",
+      "priority": "high",
+      "source": "`ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_audit.html`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
+      "notes": "Scope audit coverage and observed-values responsive table."
+    },
+    {
+      "name": "partials-bug-trend-evidence",
+      "url": "http://127.0.0.1:8000/partials/bug-trend/evidence/",
+      "route": "/partials/bug-trend/evidence/",
+      "priority": "normal",
+      "source": "`ui_web/views/bug_trend_view.py`, `ui_web/templates/partials/bug_trend_evidence.html`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
+      "notes": "Bug Trend evidence filters, dense evidence table, and ticket detail shell."
     }
   ],
   "artifactPolicy": {

@@ -16,6 +16,10 @@ Reviewed surfaces:
 - Current Tasks
 - Pull Requests
 - Task Forecast
+- Team Velocity
+- Dev Velocity
+- Bug Trend Scope Audit
+- Bug Trend evidence
 
 Framework contract:
 
@@ -39,8 +43,9 @@ Automated coverage now includes:
 
 - Static contract checks for editor forms and shared required classes.
 - Static contract checks for tool/filter forms that should not inherit editor dirty/required behavior.
-- Browser layout checks for Provider Setup, Provider Profile Config, Scope Config, Scope Library, Data Health, Workbench, Current Tasks, Pull Requests, and Task Forecast at desktop and phone widths.
+- Browser layout checks for Provider Setup, Provider Profile Config, Scope Config, Scope Library, Data Health, Workbench, Current Tasks, Pull Requests, Task Forecast, Team Velocity, Dev Velocity, Scope Audit, and Bug Trend evidence at desktop and phone widths.
 - Browser dense-table metric checks for Current Tasks, Pull Requests, Task Forecast, Workbench evidence, and local component catalog tables.
+- Browser button/action-group and form control metric checks for shared dashboard contracts.
 - Required-field visual checks for Provider Profile and Scope Config.
 - Dirty-field visual checks for Provider Profile and Scope Config.
 - Provider Profile connection-test status rendering.
