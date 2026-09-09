@@ -43,7 +43,7 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 - Core token pack: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`
 - Selected density profile: `compactDashboard` for operational dashboard forms, filters, tables, and setup editors.
 - Project overrides: `dashboard-tool-*` uses 2rem controls; setup editors use `dashboard-edit-form`, `dashboard-form-grid`, `dashboard-form-field`, `dashboard-action-bar`, and `dashboard-action-group`; cards/panels stay at 8px radius or below unless an existing Bulma component requires otherwise.
-- Golden/accepted UI surfaces: Provider Profile Config, Bug Trend Scope Config, Provider Setup inventory, Scope Library, Data Health, Workbench, AI Dashboard Workflow.
+- Golden/accepted UI surfaces: Provider Profile Config, Bug Trend Scope Config, Provider Setup inventory, Scope Library, Data Health, Workbench, AI Dashboard Workflow, Current Tasks, Pull Requests, Task Forecast.
 - Component catalog location: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`
 - Visual regression manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
 - Screenshot artifact policy: keep screenshots in `tmp_ui_validation/visual-regression` unless explicitly requested; commit only synthetic catalog HTML and manifest JSON.
@@ -59,6 +59,9 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 | `/data-health/` | `ui_web/templates/data_health.html`, `ui_web/static/css/main.css`, data-health views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views` | Health/status tables, binding status, AI/provider sync readiness. |
 | `/workbench/` | `ui_web/templates/workbench.html`, `ui_web/static/js/main.js`, workbench views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions` | htmx workbench shell, evidence filters, AI host action state. |
 | `/ai-dashboard/workflow/` | `ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface` | AI/Grafana workflow forms and publication status surfaces. |
+| `/current-tasks/` | `ui_web/views/current_tasks_view.py`, `ui_web/templates/current_tasks.html`, `ui_web/templates/partials/current_tasks_content.html`, `ui_web/templates/partials/task_table.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Current task filters, lazy/eager task tables, available members, dense task rows. |
+| `/pull-requests/` | `ui_web/views/pull_requests_view.py`, `ui_web/templates/pull_requests.html`, `ui_web/templates/partials/pull_requests_table.html`, `ui_web/templates/partials/pull_request_summary_table.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Pull request summary, filters, review/gate dense tables. |
+| `/task-forecast/` | `ui_web/views/task_forecast_view.py`, `ui_web/templates/task_forecast.html`, `ui_web/templates/partials/task_forecast_content.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Forecast parameter form, task breakdown dense table, timeline chart shell. |
 
 ## Shared UI Contracts
 

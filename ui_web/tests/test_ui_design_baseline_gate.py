@@ -1,11 +1,15 @@
 import json
+from contextlib import ExitStack
 from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+from django.template.loader import render_to_string
 from django.test import TestCase
 from django.urls import reverse
+from forecast.app.domain.model.enums import TaskScope
 from playwright.sync_api import sync_playwright
+from sd_metrics_lib.utils.enums import HealthStatus
 
 from bug_metrics.models import (
     BugTrendBucket,
@@ -14,6 +18,29 @@ from bug_metrics.models import (
     BugTrendScopeProviderBinding,
     JiraScopeConfig,
     ProviderProfileConfig,
+)
+from ui_web.data.member_data import MemberGroupData
+from ui_web.data.pull_request_data import (
+    ApprovalData,
+    LinkedTaskData,
+    PersonActivitySummaryData,
+    PullRequestData,
+)
+from ui_web.data.task_data import (
+    AssigneeData,
+    AssignmentData,
+    ForecastData,
+    LinkedPullRequestData,
+    ReleaseData,
+    SystemMetadataData,
+    TaskData,
+    TimeTrackingData,
+)
+from ui_web.data.task_forecast_data import (
+    TaskForecastBreakdownItem,
+    TaskForecastParamsData,
+    TaskForecastRequestData,
+    TaskForecastSummaryData,
 )
 
 
@@ -29,6 +56,9 @@ class TestUiDesignBaselineGate(TestCase):
         self.assertIn('ui_web.tests.test_ui_design_baseline_gate', overlay)
         self.assertIn('Provider Setup inventory and Provider Profile Config editor', audit)
         self.assertIn('Monkey-user flow', audit)
+        self.assertIn('Current Tasks', audit)
+        self.assertIn('Pull Requests', audit)
+        self.assertIn('Task Forecast', audit)
 
         dirty_templates = [
             path
@@ -150,6 +180,10 @@ class TestUiDesignBaselineGate(TestCase):
                 self.assertEqual([], metrics['table_button_failures'], f'{label} {viewport}')
                 if metrics['expects_table']:
                     self.assertGreater(metrics['responsive_table_count'], 0, f'{label} {viewport}')
+                if metrics['expects_dense_table']:
+                    self.assertGreater(metrics['dense_table_count'], 0, f'{label} {viewport}')
+                    self.assertLessEqual(metrics['dense_table_max_row_height'], 72, f'{label} {viewport}')
+                    self.assertLessEqual(metrics['dense_table_button_height_delta'], 1, f'{label} {viewport}')
                 if metrics['expects_tool_form']:
                     self.assertGreater(metrics['tool_form_count'], 0, f'{label} {viewport}')
                     self.assertGreater(metrics['tool_grid_count'], 0, f'{label} {viewport}')
@@ -166,20 +200,46 @@ class TestUiDesignBaselineGate(TestCase):
                     self.assertGreater(metrics['provider_tab_shell_count'], 0, f'{label} {viewport}')
                     self.assertTrue(metrics['selected_provider_check_visible'], f'{label} {viewport}')
 
+    def test_shouldKeepDenseDashboardTablesWithinBrowserMetrics(self):
+        pages = [
+            ('current_tasks_dense_table', self._dense_current_tasks_html(), {'dense_table': True}),
+            ('pull_requests_dense_tables', self._dense_pull_requests_html(), {'dense_table': True}),
+            ('task_forecast_dense_table', self._dense_task_forecast_html(), {'dense_table': True}),
+        ]
+
+        results = self._measure_baseline_pages(pages)
+
+        for label, viewport_results in results.items():
+            for viewport, metrics in viewport_results.items():
+                self.assertFalse(metrics['page_horizontal_overflow'], f'{label} {viewport}')
+                self.assertEqual([], metrics['table_contract_failures'], f'{label} {viewport}')
+                self.assertEqual([], metrics['table_density_failures'], f'{label} {viewport}')
+                self.assertEqual([], metrics['table_button_failures'], f'{label} {viewport}')
+                self.assertGreater(metrics['dense_table_count'], 0, f'{label} {viewport}')
+                self.assertLessEqual(metrics['dense_table_max_row_height'], 72, f'{label} {viewport}')
+                self.assertLessEqual(metrics['dense_table_button_height_delta'], 1, f'{label} {viewport}')
+
     def test_shouldRunVisualRegressionManifestAgainstCoreRoutes(self):
         scope, run, bucket = self._seed_bound_scope_with_run()
         project_root = Path(__file__).resolve().parents[2]
         manifest_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'visual-regression' / 'manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest_routes = {item['route'] for item in manifest['capturePlan']}
+        self.assertTrue({
+            '/current-tasks/',
+            '/pull-requests/',
+            '/task-forecast/',
+        }.issubset(manifest_routes))
         pages = []
 
-        for capture in manifest['capturePlan']:
-            response = self.client.get(
-                capture['route'],
-                self._visual_manifest_params(capture['route'], scope, run, bucket),
-            )
-            self.assertEqual(200, response.status_code, capture['route'])
-            pages.append((capture['name'], response.content.decode()))
+        with self._visual_manifest_page_fakes():
+            for capture in manifest['capturePlan']:
+                response = self.client.get(
+                    capture['route'],
+                    self._visual_manifest_params(capture['route'], scope, run, bucket),
+                )
+                self.assertEqual(200, response.status_code, capture['route'])
+                pages.append((capture['name'], response.content.decode()))
 
         results = self._measure_visual_manifest_pages(pages, manifest['viewports'])
 
@@ -202,7 +262,225 @@ class TestUiDesignBaselineGate(TestCase):
                 'bucket': str(bucket.id),
                 'series': 'new_critical_high',
             }
+        if route == '/task-forecast/':
+            return {'task_id': 'TASK-101', 'include_done_tasks': 'true'}
         return {}
+
+    def _dense_current_tasks_html(self):
+        return self._fragment_html(render_to_string('partials/task_table.html', {
+            'tasks': [self._current_task_data()],
+            'show_header': True,
+            'pr_gateway_column_enabled': True,
+            'release_column_enabled': True,
+            'task_table_colspan': 11,
+        }))
+
+    def _dense_pull_requests_html(self):
+        summary = [
+            PersonActivitySummaryData('Monkey User', created_count=1, approved_count=0, changes_requested_count=0),
+            PersonActivitySummaryData('Lead Reviewer', created_count=0, approved_count=1, changes_requested_count=0),
+        ]
+        return self._fragment_html(
+            render_to_string('partials/pull_request_summary_table.html', {'activity_summary': summary})
+            + render_to_string('partials/pull_requests_table.html', {'pull_requests': [self._pull_request_data()]})
+        )
+
+    def _dense_task_forecast_html(self):
+        return self._fragment_html(render_to_string('partials/task_forecast_content.html', {
+            'success': True,
+            'task_forecast': self._task_forecast_summary_data(),
+            'chart_data': '',
+            'include_done_tasks': True,
+            'time_unit': 'days',
+            'forecast_params': TaskForecastParamsData(task_id='TASK-101', task_scope=TaskScope.ALL),
+        }))
+
+    def _current_task_data(self):
+        group = MemberGroupData('core', 'Core Team')
+        return TaskData(
+            id='TASK-101',
+            title='Tighten dense dashboard table behavior',
+            assignment=AssignmentData(AssigneeData('user-1', 'Monkey User'), group),
+            time_tracking=TimeTrackingData(total_spent_time_days=1.5, current_assignee_spent_time_days=0.8),
+            system_metadata=SystemMetadataData('In Progress', 'https://provider.example.test/TASK-101'),
+            story_points=5,
+            child_tasks_count=2,
+            stage='Development',
+            iteration='Sprint 12',
+            forecast=ForecastData(HealthStatus.GREEN, estimation_time_days=2.5),
+            releases=[ReleaseData('rel-1', '2026.015')],
+            linked_pull_request=LinkedPullRequestData(
+                id='101',
+                repository_id='repo-1',
+                project_id='project-1',
+                project_name='Metrics',
+                url='https://provider.example.test/pr/101',
+            ),
+        )
+
+    def _pull_request_data(self):
+        release = ReleaseData('rel-1', '2026.015')
+        return PullRequestData(
+            id='101',
+            title='Align dense table action controls',
+            author_name='Monkey User',
+            status='active',
+            internal_gate=True,
+            url='https://provider.example.test/pr/101',
+            repository='metrics',
+            repository_id='repo-1',
+            project_id='project-1',
+            project_name='Metrics',
+            approvals=[
+                ApprovalData('Lead Reviewer', 'approved', 'main', True),
+                ApprovalData('Dev Reviewer', 'waiting', 'additional', False),
+            ],
+            linked_task=LinkedTaskData(
+                id='TASK-101',
+                url='https://provider.example.test/TASK-101',
+                status='Code Review',
+                iteration='Sprint 12',
+                releases=[release],
+            ),
+        )
+
+    def _task_forecast_summary_data(self):
+        task_forecasts = [
+            TaskForecastBreakdownItem('TASK-101', 'Forecast root task', 5.0, 0, True, False, 'In Progress'),
+            TaskForecastBreakdownItem('TASK-102', 'Child implementation task', 3.0, 1, False, False, 'Development'),
+            TaskForecastBreakdownItem('TASK-103', 'Completed verification task', 1.0, 1, False, True, 'Done'),
+        ]
+        return TaskForecastSummaryData(
+            task_title='SUMMARY',
+            total_estimation_days=9.0,
+            forecasted_start_date=datetime(2026, 9, 9, tzinfo=timezone.utc),
+            forecasted_end_date=datetime(2026, 9, 18, tzinfo=timezone.utc),
+            average_team_velocity=1.2,
+            task_forecasts=task_forecasts,
+            completed_estimation_days=1.0,
+            remaining_estimation_days=8.0,
+        )
+
+    def _visual_manifest_page_fakes(self):
+        class FakeFilterPanel:
+            has_active_selection = False
+
+        class FakeTaskFilterFacade:
+            @staticmethod
+            def parse_selections(_query):
+                return {}
+
+            @staticmethod
+            def requires_full_fetch(_selections):
+                return False
+
+            @staticmethod
+            def get_panel(_tasks, _selections):
+                return FakeFilterPanel()
+
+            @staticmethod
+            def filter_tasks(tasks, _selections):
+                return tasks
+
+        class FakeTasksFacade:
+            @staticmethod
+            def is_lazy_loading_enabled():
+                return False
+
+            @staticmethod
+            def is_release_column_enabled():
+                return True
+
+            @staticmethod
+            def is_pull_request_gateway_column_enabled():
+                return True
+
+            @staticmethod
+            def task_table_colspan():
+                return 11
+
+            async def get_tasks(self, _group_id):
+                return [self_task._current_task_data()]
+
+        class FakeMembersFacade:
+            @staticmethod
+            async def get_available_members(_tasks, _group_id):
+                return []
+
+        class FakeCurrentTasksContainer:
+            tasks_facade = FakeTasksFacade()
+            task_filter_facade = FakeTaskFilterFacade()
+            members_facade = FakeMembersFacade()
+
+        class FakePullRequestsFacade:
+            @staticmethod
+            def is_pull_requests_enabled():
+                return True
+
+            async def get_pull_requests(self, _member_group_id):
+                return [self_task._pull_request_data()]
+
+        class FakePullRequestsContainer:
+            pull_requests_facade = FakePullRequestsFacade()
+
+        class FakeTaskForecastConvertor:
+            @staticmethod
+            def extract_request_data_from_request(request):
+                return TaskForecastRequestData(
+                    task_id=request.GET.get('task_id', 'TASK-101'),
+                    task_scope=TaskScope.ALL if request.GET.get('include_done_tasks') == 'true' else TaskScope.ACTIVE_ONLY,
+                )
+
+        class FakeTaskForecastFacade:
+            @staticmethod
+            async def get_forecast_params_data(request_data):
+                return TaskForecastParamsData(task_id=request_data.task_id, task_scope=request_data.task_scope)
+
+            @staticmethod
+            async def get_task_forecast_hierarchy_data(_request_data):
+                return []
+
+            @staticmethod
+            def get_forecast_chart_from_data(_task_hierarchy):
+                return None
+
+            @staticmethod
+            def get_forecast_summary_from_data(_task_hierarchy):
+                return self_task._task_forecast_summary_data()
+
+        class FakeTaskForecastContainer:
+            task_forecast_facade = FakeTaskForecastFacade()
+            task_forecast_convertor = FakeTaskForecastConvertor()
+
+        self_task = self
+        stack = ExitStack()
+        stack.enter_context(patch.multiple(
+            'ui_web.views.current_tasks_view',
+            ui_web_container=FakeCurrentTasksContainer(),
+        ))
+        stack.enter_context(patch.multiple(
+            'ui_web.views.pull_requests_view',
+            ui_web_container=FakePullRequestsContainer(),
+        ))
+        stack.enter_context(patch.multiple(
+            'ui_web.views.task_forecast_view',
+            ui_web_container=FakeTaskForecastContainer(),
+        ))
+        return stack
+
+    @staticmethod
+    def _fragment_html(fragment):
+        return (
+            '<!doctype html><html lang="en" data-theme="dark" class="has-navbar-fixed-top">'
+            '<head></head>'
+            '<body class="is-flex is-flex-direction-column is-fullheight">'
+            '<div class="columns is-gapless is-flex-grow-1 dashboard-app-layout">'
+            '<main class="column is-flex is-flex-direction-column dashboard-main-column">'
+            '<section class="section is-flex-grow-1"><div class="container"><div id="main-content">'
+            f'{fragment}'
+            '</div></div></section>'
+            '</main></div></body></html>'
+        )
 
     def test_shouldSupportMonkeyUserProviderProfileScopeWorkbenchJourney(self):
         new_jira_page = self.client.get(reverse('ui_web:provider_setup'), {
@@ -407,9 +685,12 @@ class TestUiDesignBaselineGate(TestCase):
                     const selectedChecks = Array.from(document.querySelectorAll('.provider-setup-choice.is-selected .provider-tab-check'))
                         .filter(visible);
                     const tables = Array.from(document.querySelectorAll('table')).filter(visible);
+                    const denseTables = tables.filter(table => table.classList.contains('dashboard-dense-table'));
                     const tableContractFailures = [];
                     const tableDensityFailures = [];
                     const tableButtonFailures = [];
+                    const denseTableRowHeights = [];
+                    const denseTableButtonHeightDeltas = [];
                     tables.forEach((table, index) => {
                         const name = tableName(table, index);
                         const hasContract = table.classList.contains('responsive-admin-table')
@@ -434,6 +715,10 @@ class TestUiDesignBaselineGate(TestCase):
                         const tableButtons = Array.from(table.querySelectorAll('button, a.button')).filter(visible);
                         const tableButtonHeights = tableButtons.map(button => button.getBoundingClientRect().height).filter(value => value > 0);
                         const tableButtonHeightDelta = max(tableButtonHeights) - min(tableButtonHeights);
+                        if (table.classList.contains('dashboard-dense-table')) {
+                            denseTableRowHeights.push(...bodyRows.map(row => row.getBoundingClientRect().height).filter(value => value > 0));
+                            denseTableButtonHeightDeltas.push(tableButtonHeightDelta);
+                        }
                         const clippedTableButtons = tableButtons
                             .filter(button => button.innerText.trim())
                             .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
@@ -449,11 +734,15 @@ class TestUiDesignBaselineGate(TestCase):
                         expects_editor: Boolean(expectations.editor),
                         expects_provider_tabs: Boolean(expectations.provider_tabs),
                         expects_table: Boolean(expectations.table),
+                        expects_dense_table: Boolean(expectations.dense_table),
                         expects_tool_form: Boolean(expectations.tool_form),
                         page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
                         visible_button_count: Array.from(document.querySelectorAll('.button')).filter(visible).length,
                         clipped_action_buttons: clippedActionButtons,
                         responsive_table_count: document.querySelectorAll('.responsive-admin-table').length,
+                        dense_table_count: denseTables.length,
+                        dense_table_max_row_height: max(denseTableRowHeights),
+                        dense_table_button_height_delta: max(denseTableButtonHeightDeltas),
                         table_contract_failures: tableContractFailures,
                         table_density_failures: tableDensityFailures,
                         table_button_failures: tableButtonFailures,

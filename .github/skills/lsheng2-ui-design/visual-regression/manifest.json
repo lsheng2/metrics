@@ -88,6 +88,33 @@
       "source": "`ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/main.css`",
       "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface`",
       "notes": "AI/Grafana workflow forms and publication status surfaces."
+    },
+    {
+      "name": "current-tasks",
+      "url": "http://127.0.0.1:8000/current-tasks/",
+      "route": "/current-tasks/",
+      "priority": "normal",
+      "source": "`ui_web/views/current_tasks_view.py`, `ui_web/templates/current_tasks.html`, `ui_web/templates/partials/current_tasks_content.html`, `ui_web/templates/partials/task_table.html`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
+      "notes": "Current task filters, lazy/eager task tables, available members, dense task rows."
+    },
+    {
+      "name": "pull-requests",
+      "url": "http://127.0.0.1:8000/pull-requests/",
+      "route": "/pull-requests/",
+      "priority": "normal",
+      "source": "`ui_web/views/pull_requests_view.py`, `ui_web/templates/pull_requests.html`, `ui_web/templates/partials/pull_requests_table.html`, `ui_web/templates/partials/pull_request_summary_table.html`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
+      "notes": "Pull request summary, filters, review/gate dense tables."
+    },
+    {
+      "name": "task-forecast",
+      "url": "http://127.0.0.1:8000/task-forecast/",
+      "route": "/task-forecast/",
+      "priority": "normal",
+      "source": "`ui_web/views/task_forecast_view.py`, `ui_web/templates/task_forecast.html`, `ui_web/templates/partials/task_forecast_content.html`, `ui_web/static/css/main.css`",
+      "validationCommand": "`.venv\\Scripts\\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate`",
+      "notes": "Forecast parameter form, task breakdown dense table, timeline chart shell."
     }
   ],
   "artifactPolicy": {

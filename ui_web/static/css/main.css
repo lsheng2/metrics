@@ -859,8 +859,11 @@ span:focus-within > .help-tip::after,
 
 .table.dashboard-dense-table th,
 .table.dashboard-dense-table td {
+    overflow: hidden;
     padding: 0.28rem 0.42rem;
+    text-overflow: ellipsis;
     vertical-align: middle;
+    white-space: nowrap;
 }
 
 .responsive-admin-table .button,

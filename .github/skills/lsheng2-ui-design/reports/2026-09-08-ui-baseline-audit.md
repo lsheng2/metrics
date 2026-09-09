@@ -13,6 +13,9 @@ Reviewed surfaces:
 - Scope Library
 - Data Health
 - Workbench
+- Current Tasks
+- Pull Requests
+- Task Forecast
 
 Framework contract:
 
@@ -36,7 +39,8 @@ Automated coverage now includes:
 
 - Static contract checks for editor forms and shared required classes.
 - Static contract checks for tool/filter forms that should not inherit editor dirty/required behavior.
-- Browser layout checks for Provider Setup, Provider Profile Config, Scope Config, Scope Library, Data Health, and Workbench at desktop and phone widths.
+- Browser layout checks for Provider Setup, Provider Profile Config, Scope Config, Scope Library, Data Health, Workbench, Current Tasks, Pull Requests, and Task Forecast at desktop and phone widths.
+- Browser dense-table metric checks for Current Tasks, Pull Requests, Task Forecast, Workbench evidence, and local component catalog tables.
 - Required-field visual checks for Provider Profile and Scope Config.
 - Dirty-field visual checks for Provider Profile and Scope Config.
 - Provider Profile connection-test status rendering.
@@ -46,6 +50,7 @@ Automated coverage now includes:
 
 - Provider Profile and Scope Config share the same editor form and action-bar primitives.
 - Scope Library and Data Health use responsive admin table primitives.
+- Current Tasks, Pull Requests, Task Forecast, and Workbench evidence use `dashboard-dense-table` primitives and browser row/button/overflow metrics.
 - Workbench uses its own shell because it is a dense split-pane tool, but it is included in the cross-page overflow gate.
 - No new CSS primitive is required for this pass; the missing piece was project-level regression coverage rather than another local style.
 
