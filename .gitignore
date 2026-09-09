@@ -64,6 +64,9 @@ local_settings.py
 db.sqlite3
 state/
 .tmp/
+.zvec-grep/
+tmp_ui_validation/
+tmp_*.png
 
 # Flask stuff:
 instance/

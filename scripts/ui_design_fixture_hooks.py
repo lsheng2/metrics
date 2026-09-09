@@ -129,6 +129,20 @@ def bug_trend_evidence_fake_data(context: dict) -> dict:
     return _html_fixture("bug-trend-evidence-fake-data", fragment)
 
 
+def component_catalog_baseline(context: dict) -> dict:
+    catalog_path = Path(__file__).resolve().parents[1] / ".github" / "skills" / "lsheng2-ui-design" / "component-catalog" / "dashboard-admin-v1.html"
+    return {
+        "fixture": "component-catalog-baseline",
+        "htmlFile": str(catalog_path),
+        "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present",
+        ],
+    }
+
+
 def _html_fixture(fixture_name: str, fragment: str) -> dict:
     return {
         "fixture": fixture_name,

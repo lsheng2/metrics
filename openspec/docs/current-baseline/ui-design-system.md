@@ -14,9 +14,10 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Hooked visual state audit: `scripts/ui_design_fixture_hooks.py` renders local-only synthetic Django fixtures for data-heavy/provider states when the runner is invoked with `-IncludeHooked`.
 - Aggregate report: `lsheng2-ui-design/scripts/create_ui_gate_report.py` writes `.github/skills/lsheng2-ui-design/reports/ui-gate-report.json` and `.github/skills/lsheng2-ui-design/reports/ui-gate-report.md`.
 - Full manifest gate: `scripts/validate_ui_full_manifest_gate.ps1` runs every manifest route with hooked scenarios and refreshes the aggregate report.
-- Screenshot baseline/diff: optional and local through `run_visual_state_scenarios.py --baseline-dir ... --diff-output-dir ...`.
+- Screenshot baseline/diff: required for the sanitized component catalog through `scripts/validate_ui_visual_diff_gate.ps1`; live route screenshot diffs remain local/untracked unless explicitly accepted.
 - External design services: not used by default. Local screenshots and local browser metrics are the review evidence.
 - Component token baseline: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`, calibrated through the repo overlay before subjective button, typography, form, table, tab, or feedback-state changes.
+- Skill portability self-test: `lsheng2-ui-design/scripts/validate_synthetic_fixture.py` validates the reusable Django/Bulma/htmx adapter against a non-product fixture.
 - Component catalog: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`.
 - Visual regression manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`.
 
@@ -39,6 +40,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Visual state hooks | project overlay, `scripts/ui_design_fixture_hooks.py` | `lsheng2-ui-design-hook-modules`, scenario `hook` names | Provider connection success, PR filter data, forecast hierarchy, velocity drilldown fixtures | Hooked visual state runner |
 | UI gate report | `lsheng2-ui-design` core, project reports | `ui-gate-report.json`, `ui-gate-report.md` | Dashboard-style evidence summary with route counts, live/hooked counts, top risks, and failure screenshots | `create_ui_gate_report.py`, `refresh_ui_gate_report.ps1` |
 | Full manifest live gate | project scripts | `validate_ui_full_manifest_gate.ps1` | One local command for full manifest route/state validation before scoped UI publication | Playwright route metrics, hooked visual states, aggregate report refresh |
+| Synthetic visual diff gate | project scripts and committed baselines | `validate_ui_visual_diff_gate.ps1`, `synthetic-baseline-manifest.json`, `visual-regression/baselines/*.png` | Safe screenshot regression for shared component visual drift without provider/project data | `validate_ui_visual_diff_gate.ps1`, baseline refresh only with `-UpdateBaseline` |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
 | Responsive admin table | `main.css` | `responsive-admin-table-box`, `responsive-admin-table`, optional `is-cardable` | Scope Library, Provider Setup, Data Health, audit/readiness tables | Desktop/phone overflow tests |
@@ -104,10 +106,13 @@ python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\generate_ui_ch
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_ui_gate_report.py" --project-root . --write
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\validate_synthetic_fixture.py"
 scripts\validate_ui_visual_manifest.ps1
 scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
 scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots -AllManifestRoutes -IncludeHooked
 scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
+scripts\validate_ui_visual_diff_gate.ps1
+scripts\validate_ui_visual_diff_gate.ps1 -UpdateBaseline
 scripts\refresh_ui_gate_report.ps1 -BaseUrl http://127.0.0.1:8000 -IncludeHooked
 .venv\Scripts\python.exe manage.py check
 ```

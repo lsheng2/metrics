@@ -16,6 +16,7 @@ The durable component contract is maintained in `openspec/docs/current-baseline/
 - Visual state scenarios now cover Provider Setup, Scope Config, Pull Requests, Task Forecast, Team Velocity, and Dev Velocity; states that need fake data are marked with `requiresHook`.
 - Hooked visual state fixtures now use `scripts/ui_design_fixture_hooks.py` through the overlay-declared `lsheng2-ui-design-hook-modules` block.
 - Aggregate UI gate evidence is written to `.github/skills/lsheng2-ui-design/reports/ui-gate-report.md` and `.github/skills/lsheng2-ui-design/reports/ui-gate-report.json`.
+- Safe synthetic screenshot diff evidence is anchored by `.github/skills/lsheng2-ui-design/visual-regression/synthetic-baseline-manifest.json` and committed baselines under `.github/skills/lsheng2-ui-design/visual-regression/baselines/`.
 - Optional CI/pre-push snippets are generated under `.github/skills/lsheng2-ui-design/ci/`.
 
 ## Compact Dashboard Review
@@ -60,6 +61,7 @@ Recommended optional improvements:
 | --- | --- | --- | --- |
 | P3 | Visual catalog | Review the generated component catalog with stakeholders before changing token values. | component catalog plus screenshot review |
 | P3 | Hooked live routes | Add production-safe server-side fixture toggles only if future CI needs full live-route data state coverage instead of local rendered HTML fixtures. | `scripts\validate_ui_live_routes.ps1 -IncludeHooked` |
+| P3 | Live route screenshots | Adopt sanitized live route baselines only after confirming no provider/profile/customer data is visible. | `scripts\validate_ui_full_manifest_gate.ps1 -WithScreenshotDiff -UpdateBaseline` |
 
 ## Closure
 

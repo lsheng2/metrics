@@ -46,8 +46,9 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 - Golden/accepted UI surfaces: Provider Profile Config, Bug Trend Scope Config, Provider Setup inventory, Scope Library, Data Health, Workbench, AI Dashboard Workflow, Current Tasks, Pull Requests, Task Forecast.
 - Component catalog location: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`
 - Visual regression manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
-- Screenshot artifact policy: keep screenshots in `tmp_ui_validation/visual-regression` unless explicitly requested; commit only synthetic catalog HTML and manifest JSON.
-- Screenshot baseline/diff policy: keep baselines and diffs in `tmp_ui_validation/visual-baselines` and `tmp_ui_validation/visual-diffs` by default; commit no screenshots unless a future review explicitly adopts sanitized baselines.
+- Screenshot artifact policy: keep live route screenshots in `tmp_ui_validation/visual-regression` unless explicitly requested.
+- Screenshot baseline/diff policy: committed baselines are allowed only for sanitized synthetic artifacts under `.github/skills/lsheng2-ui-design/visual-regression/baselines`; live route baselines and diffs stay in `tmp_ui_validation/visual-baselines` and `tmp_ui_validation/visual-diffs`.
+- Synthetic visual baseline manifest: `.github/skills/lsheng2-ui-design/visual-regression/synthetic-baseline-manifest.json`.
 - Monkey-user E2E checklist: `.github/skills/lsheng2-ui-design/reports/provider-profile-scope-monkey-e2e-checklist.md`
 - `ui-ux-pro-max` style references: use local dense-dashboard style and UX searches for guidance only; `lsheng2-ui-design` remains the implementation and validation authority.
 
@@ -113,6 +114,7 @@ python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\generate_ui_ch
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_ui_gate_report.py" --project-root . --write
+python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\validate_synthetic_fixture.py"
 scripts\validate_ui_design_gate.ps1
 scripts\validate_ui_design_gate.ps1 -Broad
 scripts\validate_ui_visual_manifest.ps1
@@ -120,6 +122,8 @@ scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshot
 scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots -AllManifestRoutes -IncludeHooked
 scripts\refresh_ui_gate_report.ps1 -BaseUrl http://127.0.0.1:8000 -IncludeHooked
 scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
+scripts\validate_ui_visual_diff_gate.ps1
+scripts\validate_ui_visual_diff_gate.ps1 -UpdateBaseline
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
@@ -140,10 +144,13 @@ openspec validate consolidate-provider-onboarding-profile --strict
 - Output directory: local temp directory or project-local ignored folder selected for that run.
 - Diff threshold: target-specific; any horizontal overflow, clipped text, hidden required marker, or misaligned action bar is a failure regardless of pixel threshold.
 - Manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
+- Synthetic baseline manifest: `.github/skills/lsheng2-ui-design/visual-regression/synthetic-baseline-manifest.json`
 - Suggested browser evidence: use Playwright from Django tests or a short one-off local script to assert overflow, control-height delta, state visibility, and focus target.
 - Live route state runner: `scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000`; default scope is Provider Setup and Scope Config because those routes can be validated without external provider data.
 - Full manifest live gate: `scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots`; this runs all manifest routes with project fixture hooks and refreshes the aggregate report.
-- Screenshot diff command: `scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -WithScreenshotDiff`; use `-UpdateBaseline` only after accepting a new local baseline.
+- Safe screenshot diff command: `scripts\validate_ui_visual_diff_gate.ps1`; it compares the sanitized component catalog against committed baselines.
+- Baseline refresh command: `scripts\validate_ui_visual_diff_gate.ps1 -UpdateBaseline`; use only after accepting intentional shared component visual changes.
+- Live screenshot diff command: `scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -WithScreenshotDiff`; use local/untracked baselines unless a future review explicitly adopts sanitized route-level baselines.
 
 ## Privacy Boundary
 
@@ -277,7 +284,7 @@ Hooked scenarios use local-only Django fixtures. These hooks render existing tem
 
 ## Visual State Scenarios
 
-These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`. Scenarios with `requiresHook` need seeded Django fakes or a local fixture server and are skipped by the live route runner unless `-IncludeHooked` is passed. Hooked dashboard scenarios map to `scripts/ui_design_fixture_hooks.py`.
+These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`. Scenarios with `requiresHook` need seeded Django fakes or a local fixture server and are skipped by the live route runner unless `-IncludeHooked` is passed. Hooked dashboard scenarios map to `scripts/ui_design_fixture_hooks.py`. The committed screenshot baseline uses the separate sanitized `synthetic-baseline-manifest.json` and the `component_catalog_baseline` hook.
 
 ```json lsheng2-ui-design-state-scenarios
 {

@@ -191,11 +191,11 @@
         "projectRoot": "<project-root>",
         "overlayPath": "<project-root>\\.github\\skills\\lsheng2-ui-design\\templates\\project-overlay.md",
         "tokenPack": "<skill-root>\\data\\component-tokens\\dashboard-admin-v1.json",
-        "scannedFiles": 283,
+        "scannedFiles": 284,
         "fixGroups": [],
         "findings": []
       },
-      "outputPreview": "{\n  \"projectRoot\": \"<project-root>\",\n  \"overlayPath\": \"<project-root>\\\\.github\\\\skills\\\\lsheng2-ui-design\\\\templates\\\\project-overlay.md\",\n  \"tokenPack\": \"<skill-root>\\\\data\\\\component-tokens\\\\dashboard-admin-v1.json\",\n  \"scannedFiles\": 283,\n  \"fixGroups\": [],\n  \"findings\": []\n}\n"
+      "outputPreview": "{\n  \"projectRoot\": \"<project-root>\",\n  \"overlayPath\": \"<project-root>\\\\.github\\\\skills\\\\lsheng2-ui-design\\\\templates\\\\project-overlay.md\",\n  \"tokenPack\": \"<skill-root>\\\\data\\\\component-tokens\\\\dashboard-admin-v1.json\",\n  \"scannedFiles\": 284,\n  \"fixGroups\": [],\n  \"findings\": []\n}\n"
     },
     {
       "name": "audit_layout_metrics",

@@ -2,6 +2,7 @@
 set -eu
 
 echo "Running lsheng2-ui-design gate"
+# Broad gate includes scripts\validate_ui_visual_diff_gate.ps1.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "scripts\validate_ui_design_gate.ps1 -Broad"
 echo "Refreshing lsheng2-ui-design report"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "scripts\refresh_ui_gate_report.ps1 -BaseUrl http://127.0.0.1:8000 -IncludeHooked"

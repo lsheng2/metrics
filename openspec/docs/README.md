@@ -18,6 +18,7 @@
   - `ui-change-quality-gate.zh.md`: UI change 在 OpenSpec proposal/design/tasks 阶段必须定义的视觉、交互和浏览器验收门槛。
 - UI gate runtime evidence lives under `.github/skills/lsheng2-ui-design/reports/`; hooked visual state scenarios use the repo-local `scripts/ui_design_fixture_hooks.py` module declared by the overlay.
 - The full manifest UI gate is `scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots`; it runs all manifest routes with hooks and refreshes the aggregate report.
+- The safe synthetic screenshot diff gate is `scripts\validate_ui_visual_diff_gate.ps1`; refresh its committed sanitized baselines with `-UpdateBaseline` only after accepting the visual change.
 - The Provider/Profile/Scope monkey-user E2E checklist lives at `.github/skills/lsheng2-ui-design/reports/provider-profile-scope-monkey-e2e-checklist.md`.
 - `historical/`: 研究记录、handoff、postmortem、旧架构说明等非规范材料。
 - `backlog/`: 尚未进入 active OpenSpec change 的候选想法。

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "owner": "lsheng2-ui-design",
+  "purpose": "Committed synthetic screenshot baseline plan for safe visual diff checks. It uses sanitized local component-catalog HTML and does not capture live provider/project data.",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 900
+    }
+  ],
+  "defaultChecks": [
+    "no-page-horizontal-overflow",
+    "no-clipped-buttons",
+    "no-unnamed-icon-buttons",
+    "table-contracts-present"
+  ],
+  "hookModules": [
+    "scripts/ui_design_fixture_hooks.py"
+  ],
+  "capturePlan": [
+    {
+      "name": "component-catalog-baseline",
+      "url": "",
+      "route": "",
+      "priority": "high",
+      "source": ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html",
+      "validationCommand": "scripts\\validate_ui_visual_diff_gate.ps1",
+      "notes": "Synthetic shared component screenshot baseline for buttons, forms, tables, tabs, status feedback, required state, and dirty state.",
+      "stateTargets": [
+        "button/default-hover-focus-disabled-loading-danger",
+        "form/default-required-missing-dirty-saving-success-failure",
+        "table/default-empty-loading-selected-archived-error",
+        "tabs/default-selected-hover-focus-disabled",
+        "status-feedback/info-success-warning-danger"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "component-catalog/synthetic-baseline",
+          "intent": "Render the sanitized local component catalog as the committed visual baseline.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": "synthetic component catalog fixture",
+          "hook": "component_catalog_baseline",
+          "hooks": {}
+        }
+      ]
+    }
+  ],
+  "artifactPolicy": {
+    "defaultOutputRoot": "tmp_ui_validation/visual-regression",
+    "baselineRoot": ".github/skills/lsheng2-ui-design/visual-regression/baselines",
+    "diffOutputRoot": "tmp_ui_validation/visual-diffs",
+    "commitScreenshotsByDefault": false,
+    "commitSyntheticBaselines": true,
+    "sanitizeBeforeSharing": true
+  }
+}

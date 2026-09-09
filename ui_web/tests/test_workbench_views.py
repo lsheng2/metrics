@@ -65,7 +65,9 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
 
     def test_shouldRenderServiceStatusBarOnNonWorkbenchPages(self):
         # When
-        response = self.client.get(reverse('ui_web:homepage'))
+        with tempfile.TemporaryDirectory() as state_dir:
+            with override_settings(METRICS_STATE_DIR=state_dir):
+                response = self.client.get(reverse('ui_web:homepage'))
 
         # Then
         content = response.content.decode()
@@ -74,6 +76,20 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('Dashboard UI:', content)
         self.assertIn('status-tone-success', content)
         self.assertNotIn('workbench-status-item is-success', content)
+
+    def test_shouldRenderGlobalStatusBarWithoutAiProbeOnNonWorkbenchPages(self):
+        # When
+        with patch('ui_web.context_processors.ui_web_container.bug_trend_facade.get_ai_sidecar_status_payload') as status_payload:
+            status_payload.side_effect = AssertionError('Non-Workbench pages should not run AI sidecar probes.')
+            with tempfile.TemporaryDirectory() as state_dir:
+                with override_settings(METRICS_STATE_DIR=state_dir):
+                    response = self.client.get(reverse('ui_web:homepage'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('data-workbench-status-bar', content)
+        status_payload.assert_not_called()
 
     def test_shouldRenderLifecycleStateInWorkbenchServiceStatusBar(self):
         # Given

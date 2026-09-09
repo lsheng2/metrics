@@ -23,6 +23,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         visual_manifest_script_path = project_root / 'scripts' / 'validate_ui_visual_manifest.ps1'
         live_route_script_path = project_root / 'scripts' / 'validate_ui_live_routes.ps1'
         full_manifest_script_path = project_root / 'scripts' / 'validate_ui_full_manifest_gate.ps1'
+        visual_diff_script_path = project_root / 'scripts' / 'validate_ui_visual_diff_gate.ps1'
         report_refresh_script_path = project_root / 'scripts' / 'refresh_ui_gate_report.ps1'
         hook_script_path = project_root / 'scripts' / 'ui_design_fixture_hooks.py'
 
@@ -31,6 +32,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         visual_manifest_script = visual_manifest_script_path.read_text(encoding='utf-8')
         live_route_script = live_route_script_path.read_text(encoding='utf-8')
         full_manifest_script = full_manifest_script_path.read_text(encoding='utf-8')
+        visual_diff_script = visual_diff_script_path.read_text(encoding='utf-8')
         report_refresh_script = report_refresh_script_path.read_text(encoding='utf-8')
         hook_script = hook_script_path.read_text(encoding='utf-8')
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
@@ -72,6 +74,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('scripts\\validate_ui_visual_manifest.ps1', contract)
         self.assertIn('ui_web.tests.test_ui_design_baseline_gate', validation_script)
         self.assertIn('openspec validate standardize-dashboard-ui-design-system --strict', validation_script)
+        self.assertIn('validate_synthetic_fixture.py', validation_script)
         self.assertIn('audit_project_ui.py', validation_script)
         self.assertIn('audit_table_metrics.py', validation_script)
         self.assertIn('audit_layout_metrics.py', validation_script)
@@ -87,6 +90,9 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('run_visual_state_scenarios.py', full_manifest_script)
         self.assertIn('--include-hooked', full_manifest_script)
         self.assertIn('refresh_ui_gate_report.ps1', full_manifest_script)
+        self.assertIn('synthetic-baseline-manifest.json', visual_diff_script)
+        self.assertIn('--baseline-dir', visual_diff_script)
+        self.assertIn('--diff-output-dir', visual_diff_script)
         self.assertIn('create_ui_gate_report.py', report_refresh_script)
         self.assertIn('--include-hooked', report_refresh_script)
         self.assertIn('ui_design_fixture_hooks.py', live_route_script)
@@ -170,11 +176,14 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         project_root = Path(__file__).resolve().parents[2]
         catalog_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'component-catalog' / 'dashboard-admin-v1.html'
         manifest_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'visual-regression' / 'manifest.json'
+        synthetic_manifest_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'visual-regression' / 'synthetic-baseline-manifest.json'
+        baseline_dir = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'visual-regression' / 'baselines'
         overlay_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'templates' / 'project-overlay.md'
         ci_dir = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'ci'
 
         catalog = catalog_path.read_text(encoding='utf-8')
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        synthetic_manifest = json.loads(synthetic_manifest_path.read_text(encoding='utf-8'))
         overlay = overlay_path.read_text(encoding='utf-8')
         pre_push = (ci_dir / 'pre-push.sample').read_text(encoding='utf-8')
         actions = (ci_dir / 'github-actions-ui-gate.sample.yml').read_text(encoding='utf-8')
@@ -218,11 +227,24 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertEqual('provider_profile_test_failure', provider_scenarios['profile-test-failure']['hook'])
         self.assertIn('status-feedback-visible', provider_scenarios['profile-test-success']['checks'])
         self.assertIn('status-feedback-visible', provider_scenarios['profile-test-failure']['checks'])
+        self.assertEqual('lsheng2-ui-design', synthetic_manifest['owner'])
+        self.assertEqual(['scripts/ui_design_fixture_hooks.py'], synthetic_manifest['hookModules'])
+        self.assertEqual('component_catalog_baseline', synthetic_manifest['capturePlan'][0]['stateScenarios'][0]['hook'])
+        self.assertEqual(
+            '.github/skills/lsheng2-ui-design/visual-regression/baselines',
+            synthetic_manifest['artifactPolicy']['baselineRoot'],
+        )
+        self.assertTrue((baseline_dir / 'component-catalog-baseline-default-desktop.png').exists())
+        self.assertTrue((baseline_dir / 'component-catalog-baseline-default-phone.png').exists())
         self.assertEqual('current_tasks_fake_data', current_tasks_capture['stateScenarios'][0]['hook'])
         self.assertEqual('bug_trend_evidence_fake_data', evidence_capture['stateScenarios'][0]['hook'])
         self.assertIn('component-catalog/dashboard-admin-v1.html', overlay)
         self.assertIn('visual-regression/manifest.json', overlay)
+        self.assertIn('visual-regression/synthetic-baseline-manifest.json', overlay)
+        self.assertIn('validate_ui_visual_diff_gate.ps1', overlay)
+        self.assertIn('validate_ui_visual_diff_gate.ps1', live_note)
         self.assertIn('validate_ui_design_gate.ps1 -Broad', pre_push)
+        self.assertIn('validate_ui_visual_diff_gate.ps1', pre_push)
         self.assertIn('windows-latest', actions)
         self.assertIn('validate_ui_live_routes.ps1', live_note)
         self.assertIn('-IncludeHooked', live_note)
@@ -241,12 +263,13 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             'team_velocity_fake_data',
             'dev_velocity_fake_data',
             'bug_trend_evidence_fake_data',
+            'component_catalog_baseline',
         ]
 
         # Then
         for hook_name in hook_names:
             payload = getattr(ui_design_fixture_hooks, hook_name)({})
-            html = payload['html']
+            html = payload.get('html') or Path(payload['htmlFile']).read_text(encoding='utf-8')
             self.assertIn('<style>', html, hook_name)
             self.assertIn('fixture', payload)
             self.assertNotIn('secret-', html, hook_name)
@@ -256,6 +279,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('dashboard-dense-table', ui_design_fixture_hooks.task_forecast_fake_data({})['html'])
         self.assertIn('dashboard-dense-table', ui_design_fixture_hooks.team_velocity_fake_data({})['html'])
         self.assertIn('dashboard-dense-table', ui_design_fixture_hooks.bug_trend_evidence_fake_data({})['html'])
+        self.assertEqual('component-catalog-baseline', ui_design_fixture_hooks.component_catalog_baseline({})['fixture'])
 
     def test_shouldGiveEveryVisibleFormASharedUiContract(self):
         # Given
