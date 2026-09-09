@@ -63,6 +63,18 @@ class TestWorkbenchViews(WorkbenchBrowserTestSupport, TestCase):
         self.assertNotIn('compact panel ready', content)
         self.assertNotIn('&copy; 2017', content)
 
+    def test_shouldRenderServiceStatusBarOnNonWorkbenchPages(self):
+        # When
+        response = self.client.get(reverse('ui_web:homepage'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('data-workbench-status-bar', content)
+        self.assertIn('Dashboard UI:', content)
+        self.assertIn('status-tone-success', content)
+        self.assertNotIn('workbench-status-item is-success', content)
+
     def test_shouldRenderLifecycleStateInWorkbenchServiceStatusBar(self):
         # Given
         with tempfile.TemporaryDirectory() as state_dir:

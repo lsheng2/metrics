@@ -53,6 +53,7 @@ body {
     background: var(--dashboard-bg);
     color: var(--dashboard-text);
     font-size: var(--dashboard-font-body);
+    padding-bottom: 2rem;
 }
 
 html,
@@ -197,6 +198,7 @@ body.has-workbench-shell {
     height: 100%;
     min-height: 100%;
     overflow: hidden;
+    padding-bottom: 0;
     padding-top: 0 !important;
 }
 
@@ -3364,19 +3366,19 @@ tr.htmx-request .review-loader {
     background: #8998aa;
 }
 
-.workbench-status-item.is-success .workbench-status-dot {
+.workbench-status-item.status-tone-success .workbench-status-dot {
     background: #18c99a;
 }
 
-.workbench-status-item.is-info .workbench-status-dot {
+.workbench-status-item.status-tone-info .workbench-status-dot {
     background: #4ea3ff;
 }
 
-.workbench-status-item.is-warning .workbench-status-dot {
+.workbench-status-item.status-tone-warning .workbench-status-dot {
     background: #b97812;
 }
 
-.workbench-status-item.is-neutral .workbench-status-dot {
+.workbench-status-item.status-tone-neutral .workbench-status-dot {
     background: #738399;
 }
 
