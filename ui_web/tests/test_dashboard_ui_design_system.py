@@ -18,10 +18,12 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         openspec_docs_index_path = project_root / 'openspec' / 'docs' / 'README.md'
         validation_script_path = project_root / 'scripts' / 'validate_ui_design_gate.ps1'
         visual_manifest_script_path = project_root / 'scripts' / 'validate_ui_visual_manifest.ps1'
+        live_route_script_path = project_root / 'scripts' / 'validate_ui_live_routes.ps1'
 
         contract = contract_path.read_text(encoding='utf-8')
         validation_script = validation_script_path.read_text(encoding='utf-8')
         visual_manifest_script = visual_manifest_script_path.read_text(encoding='utf-8')
+        live_route_script = live_route_script_path.read_text(encoding='utf-8')
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
         css = (Path(__file__).resolve().parents[1] / 'static' / 'css' / 'main.css').read_text(encoding='utf-8')
         script = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
@@ -68,6 +70,10 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('render_component_catalog.py', validation_script)
         self.assertIn('create_visual_regression_manifest.py', validation_script)
         self.assertIn('test_shouldRunVisualRegressionManifestAgainstCoreRoutes', visual_manifest_script)
+        self.assertIn('run_visual_state_scenarios.py', live_route_script)
+        self.assertIn('audit_layout_metrics.py', live_route_script)
+        self.assertIn('/provider-setup/', live_route_script)
+        self.assertIn('/bug-trend/scope-config/', live_route_script)
         self.assertIn('Invoke-Checked', validation_script)
         self.assertIn('$LASTEXITCODE', validation_script)
         for contract_name in expected_contracts:
@@ -77,6 +83,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('Monkey-User Flow Review', polish_backlog_path.read_text(encoding='utf-8'))
         self.assertIn('Before Editing', checklist_path.read_text(encoding='utf-8'))
         self.assertIn('audit_layout_metrics.py', checklist_path.read_text(encoding='utf-8'))
+        self.assertIn('run_visual_state_scenarios.py', checklist_path.read_text(encoding='utf-8'))
         for path in [overlay_path, audit_path, polish_backlog_path, docs_index_path, openspec_docs_index_path]:
             self.assertIn(
                 'openspec/docs/current-baseline/ui-design-system.md',
@@ -107,6 +114,10 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('audit_project_ui.py', overlay)
         self.assertIn('audit_layout_metrics.py', overlay)
         self.assertIn('generate_ui_checklist.py', overlay)
+        self.assertIn('lsheng2-ui-design-state-scenarios', overlay)
+        self.assertIn('profile-required-missing', overlay)
+        self.assertIn('scope-required-missing', overlay)
+        self.assertIn('requiresHook', overlay)
         self.assertIn('shared tokens/classes/partials first', overlay)
 
     def test_shouldKeepLocalComponentCatalogAndVisualManifestAvailable(self):
@@ -115,10 +126,14 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         catalog_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'component-catalog' / 'dashboard-admin-v1.html'
         manifest_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'visual-regression' / 'manifest.json'
         overlay_path = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'templates' / 'project-overlay.md'
+        ci_dir = project_root / '.github' / 'skills' / 'lsheng2-ui-design' / 'ci'
 
         catalog = catalog_path.read_text(encoding='utf-8')
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         overlay = overlay_path.read_text(encoding='utf-8')
+        pre_push = (ci_dir / 'pre-push.sample').read_text(encoding='utf-8')
+        actions = (ci_dir / 'github-actions-ui-gate.sample.yml').read_text(encoding='utf-8')
+        live_note = (ci_dir / 'live-route-gate.md').read_text(encoding='utf-8')
 
         # Then
         self.assertIn('Dashboard Admin Component Catalog', catalog)
@@ -140,8 +155,22 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         ]
         self.assertTrue(all('chart-drilldown-selected' in item['stateTargets'] for item in velocity_captures))
         self.assertTrue(all('table-density' in item['stateTargets'] for item in velocity_captures))
+        provider_capture = next(item for item in manifest['capturePlan'] if item['route'] == '/provider-setup/')
+        scope_capture = next(item for item in manifest['capturePlan'] if item['route'] == '/bug-trend/scope-config/')
+        provider_scenarios = {item['name']: item for item in provider_capture['stateScenarios']}
+        scope_scenarios = {item['name']: item for item in scope_capture['stateScenarios']}
+        self.assertIn('profile-required-missing', provider_scenarios)
+        self.assertIn('profile-dirty-unsaved', provider_scenarios)
+        self.assertIn('scope-required-missing', scope_scenarios)
+        self.assertIn('scope-dirty-unsaved', scope_scenarios)
+        self.assertIn('required-summary-visible', provider_scenarios['profile-required-missing']['checks'])
+        self.assertIn('dirty-banner-visible', scope_scenarios['scope-dirty-unsaved']['checks'])
+        self.assertTrue(any(item.get('requiresHook') for item in provider_capture['stateScenarios']))
         self.assertIn('component-catalog/dashboard-admin-v1.html', overlay)
         self.assertIn('visual-regression/manifest.json', overlay)
+        self.assertIn('validate_ui_design_gate.ps1 -Broad', pre_push)
+        self.assertIn('windows-latest', actions)
+        self.assertIn('validate_ui_live_routes.ps1', live_note)
 
     def test_shouldGiveEveryVisibleFormASharedUiContract(self):
         # Given

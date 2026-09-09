@@ -53,6 +53,7 @@
 - [ ] Run static UI audit for the affected focus.
 - [ ] Run `audit_layout_metrics.py` for tables, buttons, and forms.
 - [ ] Run visual manifest or focused browser checks for affected routes.
+- [ ] Run `run_visual_state_scenarios.py` or the project live-route gate for required, dirty, tab, filter, and chart states.
 - [ ] Run focused project tests named in the overlay.
 - [ ] Run `git diff --check` before committing.
 

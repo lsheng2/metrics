@@ -241,6 +241,17 @@ class TestUiDesignBaselineGate(TestCase):
             if item['route'] in {'/team-velocity/', '/dev-velocity/'}:
                 self.assertIn('chart-drilldown-selected', item['stateTargets'])
                 self.assertIn('table-density', item['stateTargets'])
+                self.assertTrue(any(scenario.get('requiresHook') for scenario in item['stateScenarios']))
+            if item['route'] == '/provider-setup/':
+                scenarios = {scenario['name']: scenario for scenario in item['stateScenarios']}
+                self.assertIn('profile-required-missing', scenarios)
+                self.assertIn('profile-dirty-unsaved', scenarios)
+                self.assertIn('required-summary-visible', scenarios['profile-required-missing']['checks'])
+            if item['route'] == '/bug-trend/scope-config/':
+                scenarios = {scenario['name']: scenario for scenario in item['stateScenarios']}
+                self.assertIn('scope-required-missing', scenarios)
+                self.assertIn('scope-dirty-unsaved', scenarios)
+                self.assertIn('dirty-banner-visible', scenarios['scope-dirty-unsaved']['checks'])
         pages = []
 
         with self._visual_manifest_page_fakes():

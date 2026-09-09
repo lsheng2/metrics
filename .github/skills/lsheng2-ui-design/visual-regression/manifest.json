@@ -55,6 +55,124 @@
         "empty",
         "loading",
         "table-density"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /provider-setup/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "jira-tab-selected",
+          "stateTarget": "tabs/default-selected-hover-focus-disabled",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "hsdes-tab-selected",
+          "stateTarget": "tabs/default-selected-hover-focus-disabled",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "hsdes"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "profile-required-missing",
+          "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [
+            {
+              "action": "click",
+              "selector": "button[name='action'][value='test_connection']"
+            }
+          ],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "required-summary-visible",
+            "missing-required-visible",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "profile-dirty-unsaved",
+          "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [
+            {
+              "action": "fill",
+              "selector": "#provider-profile-id",
+              "value": "sample-jira-profile"
+            }
+          ],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "dirty-banner-visible",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "profile-test-success",
+          "stateTarget": "status-feedback/info-success-warning-danger",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons"
+          ],
+          "screenshot": true,
+          "requiresHook": "mock provider connection response"
+        }
       ]
     },
     {
@@ -75,6 +193,108 @@
         "chart-empty",
         "chart-loading",
         "chart-drilldown-selected"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "jira-scope-tab-selected",
+          "stateTarget": "tabs/default-selected-hover-focus-disabled",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "hsdes-scope-tab-selected",
+          "stateTarget": "tabs/default-selected-hover-focus-disabled",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "hsdes"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "scope-required-missing",
+          "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [
+            {
+              "action": "click",
+              "selector": "button[name='action'][value='save_enable']"
+            }
+          ],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "required-summary-visible",
+            "missing-required-visible",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "scope-dirty-unsaved",
+          "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+          "intent": "",
+          "query": {
+            "mode": "new",
+            "provider_id": "jira"
+          },
+          "steps": [
+            {
+              "action": "fill",
+              "selector": "#scope-name",
+              "value": "Sample Scope"
+            }
+          ],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "dirty-banner-visible",
+            "selected-provider-check-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     },
     {
@@ -97,6 +317,23 @@
         "chart-empty",
         "chart-loading",
         "chart-drilldown-selected"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /bug-trend/scopes/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     },
     {
@@ -115,6 +352,23 @@
         "empty",
         "loading",
         "table-density"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /data-health/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     },
     {
@@ -130,6 +384,23 @@
         "empty",
         "loading",
         "table-density"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /workbench/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     },
     {
@@ -142,6 +413,22 @@
       "notes": "AI/Grafana workflow forms and publication status surfaces.",
       "stateTargets": [
         "default"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /ai-dashboard/workflow/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     },
     {
@@ -157,6 +444,23 @@
         "empty",
         "loading",
         "table-density"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /current-tasks/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     },
     {
@@ -172,6 +476,40 @@
         "empty",
         "loading",
         "table-density"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /pull-requests/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "pull-request-filter-applied",
+          "stateTarget": "table/default-empty-loading-selected-archived-error",
+          "intent": "",
+          "query": {
+            "author": "Monkey User"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "table-contracts-present",
+            "filter-applied-visible"
+          ],
+          "screenshot": true,
+          "requiresHook": "fake pull request facade data"
+        }
       ]
     },
     {
@@ -191,6 +529,40 @@
         "chart-empty",
         "chart-loading",
         "chart-drilldown-selected"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /task-forecast/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "forecast-filter-applied",
+          "stateTarget": "table/default-empty-loading-selected-archived-error",
+          "intent": "",
+          "query": {
+            "task_id": "TASK-101",
+            "include_done_tasks": "true"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": "fake task forecast facade data"
+        }
       ]
     },
     {
@@ -210,6 +582,40 @@
         "chart-empty",
         "chart-loading",
         "chart-drilldown-selected"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /team-velocity/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "team-velocity-drilldown-selected",
+          "stateTarget": "chart-drilldown-selected",
+          "intent": "",
+          "query": {
+            "period": "2026-09",
+            "member_group_id": "core"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": "fake team velocity facade data"
+        }
       ]
     },
     {
@@ -229,6 +635,41 @@
         "chart-empty",
         "chart-loading",
         "chart-drilldown-selected"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /dev-velocity/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        },
+        {
+          "name": "dev-velocity-drilldown-selected",
+          "stateTarget": "chart-drilldown-selected",
+          "intent": "",
+          "query": {
+            "period": "2026-09",
+            "developers": "Monkey User",
+            "member_group_id": "core"
+          },
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": "fake developer velocity facade data"
+        }
       ]
     },
     {
@@ -248,6 +689,23 @@
         "chart-empty",
         "chart-loading",
         "chart-drilldown-selected"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /bug-trend/scope-audit/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     },
     {
@@ -267,6 +725,23 @@
         "chart-empty",
         "chart-loading",
         "chart-drilldown-selected"
+      ],
+      "stateScenarios": [
+        {
+          "name": "default",
+          "stateTarget": "default",
+          "intent": "Render /partials/bug-trend/evidence/ in its default state.",
+          "query": {},
+          "steps": [],
+          "checks": [
+            "no-page-horizontal-overflow",
+            "no-clipped-buttons",
+            "no-unnamed-icon-buttons",
+            "table-contracts-present"
+          ],
+          "screenshot": true,
+          "requiresHook": ""
+        }
       ]
     }
   ],

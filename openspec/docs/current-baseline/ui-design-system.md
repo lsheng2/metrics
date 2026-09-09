@@ -10,6 +10,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Interaction: htmx plus local JavaScript in `ui_web/static/js/main.js`.
 - Browser validation: Django tests with Playwright for layout, required state, dirty state, and monkey-user flows.
 - Reusable layout audit: `lsheng2-ui-design/scripts/audit_layout_metrics.py` measures rendered page overflow, table density, button groups, and form controls.
+- Live route/state audit: `scripts/validate_ui_live_routes.ps1` runs manifest scenarios against a local server, with hooked data states skipped by default.
 - External design services: not used by default. Local screenshots and local browser metrics are the review evidence.
 - Component token baseline: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`, calibrated through the repo overlay before subjective button, typography, form, table, tab, or feedback-state changes.
 - Component catalog: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`.
@@ -30,6 +31,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Component token profile | `lsheng2-ui-design` core, project overlay | `dashboard-admin-v1.json`, `compactDashboard`, project overrides | Buttons, forms, tables, tabs, status feedback | Overlay/static audit plus browser layout gate |
 | Audit exceptions | project overlay | `lsheng2-ui-design-audit-exceptions` JSON block | Narrow generated/synthetic exceptions only | Static audit plus browser table/layout metrics audit |
 | Component catalog and visual manifest | `lsheng2-ui-design` core, project overlay | local static HTML catalog, manifest JSON | Shared UI reviews and screenshot capture planning | Static artifact tests plus local UI gate |
+| Visual state scenarios | `lsheng2-ui-design` core, project overlay | `lsheng2-ui-design-state-scenarios`, `stateScenarios`, `requiresHook` | Required/dirty/provider tab/filter/chart states on live routes | `scripts\validate_ui_live_routes.ps1` plus manifest tests |
 | Provider tabs | `main.css`, setup templates | `provider-tab-shell`, `provider-tab-list`, `provider-tab-body`, `scope-provider-choice`, `provider-tab-check`, `role="tablist"`, `role="tab"`, `role="tabpanel"` | Provider Profile Config, Scope Config | Tab shell and selected-check browser tests |
 | Provider colors | `main.css` | `is-provider-green`, `is-provider-blue`, `is-provider-purple` | Jira, HSD-ES, GitHub provider identity | Static CSS/template tests |
 | Responsive admin table | `main.css` | `responsive-admin-table-box`, `responsive-admin-table`, optional `is-cardable` | Scope Library, Provider Setup, Data Health, audit/readiness tables | Desktop/phone overflow tests |
@@ -50,6 +52,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 - Dense admin tables may scroll inside their table container, but the page itself must not horizontally overflow at desktop or phone widths.
 - Table, button, form, or browser metric exceptions must live in the project overlay `lsheng2-ui-design-audit-exceptions` block with a narrow match and reason; reusable scripts must not hardcode project-specific special cases.
 - Nontrivial UI changes should generate or update a local checklist before implementation so route, state, component, token, and validation expectations are explicit before CSS or template edits.
+- Live route state scenarios must declare `requiresHook` whenever they need fake provider responses, seeded facade data, or fixture-only chart/table content.
 - Workbench is allowed to keep a separate split-pane shell, but it remains part of the same browser overflow and interaction gate.
 - React/Next/Tailwind support is reserved through the reusable adapter interface; this Django/Bulma/htmx project should keep using the Django validation commands unless the frontend stack changes.
 
@@ -92,5 +95,6 @@ python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\generate_ui_ch
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\render_component_catalog.py" --project-root . --output ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html"
 python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_regression_manifest.py" --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json"
 scripts\validate_ui_visual_manifest.ps1
+scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
 .venv\Scripts\python.exe manage.py check
 ```

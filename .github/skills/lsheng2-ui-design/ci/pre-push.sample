@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+echo "Running lsheng2-ui-design gate"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "scripts\validate_ui_design_gate.ps1 -Broad"

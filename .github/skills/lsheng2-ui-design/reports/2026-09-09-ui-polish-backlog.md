@@ -13,6 +13,8 @@ The durable component contract is maintained in `openspec/docs/current-baseline/
 - Shared button/action-group and form-control browser metrics are now checked in the baseline gate.
 - Reusable `lsheng2-ui-design` layout metrics now cover tables, shared button groups, and editor/tool forms.
 - Velocity task drilldown dense table coverage is now included in the synthetic browser gate.
+- Visual state scenarios now cover Provider Setup, Scope Config, Pull Requests, Task Forecast, Team Velocity, and Dev Velocity; states that need fake data are marked with `requiresHook`.
+- Optional CI/pre-push snippets are generated under `.github/skills/lsheng2-ui-design/ci/`.
 
 ## Compact Dashboard Review
 
@@ -55,7 +57,7 @@ Recommended optional improvements:
 | priority | area | opportunity | validation |
 | --- | --- | --- | --- |
 | P3 | Visual catalog | Review the generated component catalog with stakeholders before changing token values. | component catalog plus screenshot review |
-| P3 | Chart interaction states | Add screenshot fixtures for selected/hover chart points if chart-drilldown visual taste becomes a product concern. | focused Playwright route capture |
+| P3 | Hooked state fixtures | Add seeded live-route hooks for PR/Forecast/Velocity data pages if screenshot baselines become part of CI. | `scripts\validate_ui_live_routes.ps1 -IncludeHooked` |
 
 ## Closure
 

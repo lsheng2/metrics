@@ -113,6 +113,7 @@ python "C:\Users\lsheng2\.agents\skills\lsheng2-ui-design\scripts\create_visual_
 scripts\validate_ui_design_gate.ps1
 scripts\validate_ui_design_gate.ps1 -Broad
 scripts\validate_ui_visual_manifest.ps1
+scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
@@ -134,6 +135,7 @@ openspec validate consolidate-provider-onboarding-profile --strict
 - Diff threshold: target-specific; any horizontal overflow, clipped text, hidden required marker, or misaligned action bar is a failure regardless of pixel threshold.
 - Manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
 - Suggested browser evidence: use Playwright from Django tests or a short one-off local script to assert overflow, control-height delta, state visibility, and focus target.
+- Live route state runner: `scripts\validate_ui_live_routes.ps1 -BaseUrl http://127.0.0.1:8000`; default scope is Provider Setup and Scope Config because those routes can be validated without external provider data.
 
 ## Privacy Boundary
 
@@ -249,6 +251,121 @@ These values match the current `compactDashboard` density profile and are enforc
       ".dashboard-action-bar .button",
       ".dashboard-action-group .button",
       "[data-ui-form-button]"
+    ]
+  }
+}
+```
+
+## Visual State Scenarios
+
+These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`. Scenarios with `requiresHook` need seeded Django fakes or a local fixture server and are skipped by the live route runner unless `-IncludeHooked` is passed.
+
+```json lsheng2-ui-design-state-scenarios
+{
+  "routes": {
+    "/provider-setup/": [
+      {
+        "name": "jira-tab-selected",
+        "stateTarget": "tabs/default-selected-hover-focus-disabled",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible"]
+      },
+      {
+        "name": "hsdes-tab-selected",
+        "stateTarget": "tabs/default-selected-hover-focus-disabled",
+        "query": {"mode": "new", "provider_id": "hsdes"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible"]
+      },
+      {
+        "name": "profile-required-missing",
+        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "steps": [{"action": "click", "selector": "button[name='action'][value='test_connection']"}],
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "required-summary-visible", "missing-required-visible", "selected-provider-check-visible"]
+      },
+      {
+        "name": "profile-dirty-unsaved",
+        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "steps": [{"action": "fill", "selector": "#provider-profile-id", "value": "sample-jira-profile"}],
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "dirty-banner-visible", "selected-provider-check-visible"]
+      },
+      {
+        "name": "profile-test-success",
+        "stateTarget": "status-feedback/info-success-warning-danger",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "requiresHook": "mock provider connection response"
+      }
+    ],
+    "/bug-trend/scope-config/": [
+      {
+        "name": "default",
+        "stateTarget": "default",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible"]
+      },
+      {
+        "name": "jira-scope-tab-selected",
+        "stateTarget": "tabs/default-selected-hover-focus-disabled",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "selected-provider-check-visible"]
+      },
+      {
+        "name": "hsdes-scope-tab-selected",
+        "stateTarget": "tabs/default-selected-hover-focus-disabled",
+        "query": {"mode": "new", "provider_id": "hsdes"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "selected-provider-check-visible"]
+      },
+      {
+        "name": "scope-required-missing",
+        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "steps": [{"action": "click", "selector": "button[name='action'][value='save_enable']"}],
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "required-summary-visible", "missing-required-visible", "selected-provider-check-visible"]
+      },
+      {
+        "name": "scope-dirty-unsaved",
+        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
+        "query": {"mode": "new", "provider_id": "jira"},
+        "steps": [{"action": "fill", "selector": "#scope-name", "value": "Sample Scope"}],
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "dirty-banner-visible", "selected-provider-check-visible"]
+      }
+    ],
+    "/pull-requests/": [
+      {
+        "name": "pull-request-filter-applied",
+        "stateTarget": "table/default-empty-loading-selected-archived-error",
+        "query": {"author": "Monkey User"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present", "filter-applied-visible"],
+        "requiresHook": "fake pull request facade data"
+      }
+    ],
+    "/task-forecast/": [
+      {
+        "name": "forecast-filter-applied",
+        "stateTarget": "table/default-empty-loading-selected-archived-error",
+        "query": {"task_id": "TASK-101", "include_done_tasks": "true"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "requiresHook": "fake task forecast facade data"
+      }
+    ],
+    "/team-velocity/": [
+      {
+        "name": "team-velocity-drilldown-selected",
+        "stateTarget": "chart-drilldown-selected",
+        "query": {"period": "2026-09", "member_group_id": "core"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "requiresHook": "fake team velocity facade data"
+      }
+    ],
+    "/dev-velocity/": [
+      {
+        "name": "dev-velocity-drilldown-selected",
+        "stateTarget": "chart-drilldown-selected",
+        "query": {"period": "2026-09", "developers": "Monkey User", "member_group_id": "core"},
+        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
+        "requiresHook": "fake developer velocity facade data"
+      }
     ]
   }
 }
