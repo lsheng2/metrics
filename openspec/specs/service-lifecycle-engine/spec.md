@@ -153,6 +153,37 @@
 - **WHEN** the caller disables a runtime projection source for hermetic execution
 - **THEN** live service resolution SHALL ignore that projection source and use explicit inputs or default fallback according to policy
 
+### Requirement: Live service metadata is display-safe and adapter-neutral
+系统 SHALL expose app-neutral live service metadata models for display, diagnostics, and observability consumers without making those models runtime endpoint authority.
+
+#### Scenario: Live service snapshot combines generic evidence
+- **WHEN** a project adapter builds a live service snapshot
+- **THEN** the snapshot SHALL be able to include configured state, lifecycle state, health snapshot, launch metadata, links, actions, provenance, base URL, health URL, and diagnostics
+- **AND** those fields SHALL use project-neutral names and SHALL NOT imply endpoint routing authority
+
+#### Scenario: Health status keeps a small canonical enum
+- **WHEN** a service-specific condition needs to be surfaced to an operator
+- **THEN** the generic health snapshot SHALL use a canonical status such as `degraded`
+- **AND** the service-specific condition SHALL be represented as `reason`, `special_state`, or diagnostics rather than by expanding the core status enum
+
+#### Scenario: Probe requirement is explicit
+- **WHEN** a service health probe is represented by the lifecycle engine
+- **THEN** it SHALL declare whether the probe is required for startup, required for live status, optional observability, or advisory
+- **AND** optional or advisory probe failures SHALL NOT block readiness unless a project adapter explicitly promotes that policy
+
+#### Scenario: Providers supply external facts
+- **WHEN** a downstream project supplies process, PID file, lifecycle state, launch metadata, or health facts
+- **THEN** the package SHALL expose app-neutral provider protocols so tests and consumers can inject those facts without real ports, real processes, platform-specific process files, or project-owned storage layouts
+
+#### Scenario: External launchers record lifecycle state generically
+- **WHEN** a shell, supervisor, or project adapter launches services without calling `ServiceLifecycleEngine.start_service()`
+- **THEN** it SHALL use the generic external service state builder or lifecycle state CLI rather than writing lifecycle JSON by hand
+- **AND** runtime endpoint binding and project-specific health interpretation SHALL remain outside the generic engine
+
+#### Scenario: Diagnostics use stable generic codes
+- **WHEN** lifecycle, launch metadata, or health metadata is unavailable or degraded
+- **THEN** generic helpers SHALL expose stable diagnostic codes for common conditions such as unregistered services, non-live state, missing PID, dead PID, identity mismatch, unavailable start time, authentication-required probes, and probe timeout
+
 ### Requirement: Legacy port lifecycle public surfaces are removed
 系统 SHALL remove legacy `port_lifecycle` public imports, `PortLifecycle` public class usage, and `port_lifecycle_cli.py` public CLI after internal callers migrate to `service_lifecycle_engine`.
 

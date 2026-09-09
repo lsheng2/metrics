@@ -112,6 +112,10 @@ class LifecycleStorageMixin:
         }
         self.state_store.write_json_atomic(self.state_file, payload)
 
+    def record_service_state(self, service_state: ServiceState) -> ServiceState:
+        self._write_service_state(service_state)
+        return service_state
+
     def _write_service_state(self, service_state: ServiceState) -> None:
         with self.state_store.lock(self._store_lock_key("state")):
             state = self._read_state_unlocked()
