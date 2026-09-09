@@ -12,7 +12,7 @@ from ..container import ui_web_container
 from ..ai_base_workbench_adapter import AiBaseWorkbenchAdapter
 from ..workbench_grafana import grafana_full_dashboard_url, grafana_panel_embed_url
 from ..workbench_registry import default_workbench_panes
-from ..workbench_service_status import WorkbenchServiceStatusBuilder
+from ..workbench_service_status import DEFAULT_FULL_STACK_LAUNCHER_COMMAND
 from ..workbench_state import WorkbenchPageQueryState
 from .bug_trend_view import parse_date_query
 from .graceful_template_view import GracefulTemplateView
@@ -20,7 +20,7 @@ from .graceful_template_view import GracefulTemplateView
 
 class WorkbenchView(GracefulTemplateView):
     template_name = 'workbench.html'
-    full_stack_launcher_command = 'powershell -ExecutionPolicy Bypass -File scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort'
+    full_stack_launcher_command = DEFAULT_FULL_STACK_LAUNCHER_COMMAND
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -32,7 +32,6 @@ class WorkbenchView(GracefulTemplateView):
         state = self._state()
         context['build_page_title'] = 'Metrics Workbench'
         context['workbench_panes'] = self._pane_registry()
-        context['workbench_service_statuses'] = self._service_statuses(sidecar_status)
         context['workbench_state'] = state
         context['workbench_chart_query'] = state.chart_query_params()
         context['workbench_evidence_query'] = state.evidence_query_params()
@@ -71,9 +70,6 @@ class WorkbenchView(GracefulTemplateView):
         if query:
             return f'{reverse("ui_web:workbench")}?{query}'
         return reverse('ui_web:workbench')
-
-    def _service_statuses(self, sidecar_status: dict):
-        return WorkbenchServiceStatusBuilder(self.ai_adapter, reverse('ui_web:homepage')).build(sidecar_status)
 
     def _state(self, query=None) -> WorkbenchPageQueryState:
         state = WorkbenchPageQueryState.from_query(query or self.request.GET)

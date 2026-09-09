@@ -22,6 +22,9 @@ from .ai_base_workbench_adapter import AiBaseWorkbenchAdapter
 from .workbench_registry import WorkbenchServiceStatus
 
 
+DEFAULT_FULL_STACK_LAUNCHER_COMMAND = 'powershell -ExecutionPolicy Bypass -File scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort'
+
+
 @dataclass(slots=True)
 class WorkbenchServiceStatusBuilder:
     ai_adapter: AiBaseWorkbenchAdapter
