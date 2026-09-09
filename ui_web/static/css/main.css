@@ -842,6 +842,11 @@ span:focus-within > .help-tip::after,
     table-layout: fixed;
 }
 
+.dashboard-dense-table {
+    font-size: var(--dashboard-font-table);
+    line-height: 1.14;
+}
+
 .responsive-admin-table th,
 .responsive-admin-table td {
     min-width: 0;
@@ -852,19 +857,30 @@ span:focus-within > .help-tip::after,
     white-space: nowrap;
 }
 
+.dashboard-dense-table th,
+.dashboard-dense-table td {
+    padding: 0.28rem 0.42rem;
+    vertical-align: middle;
+}
+
 .responsive-admin-table .button,
+.dashboard-dense-table .button,
 .responsive-admin-table .select.is-small,
-.responsive-admin-table .select.is-small select {
+.dashboard-dense-table .select.is-small,
+.responsive-admin-table .select.is-small select,
+.dashboard-dense-table .select.is-small select {
     height: 1.72rem;
     min-height: 1.72rem;
 }
 
-.responsive-admin-table .button {
+.responsive-admin-table .button,
+.dashboard-dense-table .button {
     font-size: var(--dashboard-font-caption);
     padding: 0 0.48rem;
 }
 
-.responsive-admin-table .tag {
+.responsive-admin-table .tag,
+.dashboard-dense-table .tag {
     max-width: 100%;
     overflow: hidden;
     font-size: inherit;
@@ -875,7 +891,8 @@ span:focus-within > .help-tip::after,
     white-space: nowrap;
 }
 
-.responsive-admin-table code {
+.responsive-admin-table code,
+.dashboard-dense-table code {
     font-size: var(--dashboard-font-table-code);
 }
 
@@ -949,11 +966,12 @@ span:focus-within > .help-tip::after,
 
 .scope-actions {
     display: flex;
-    flex-direction: column;
-    gap: 0.22rem;
-    align-items: flex-end;
-    justify-items: end;
-    min-width: 7.55rem;
+    flex-wrap: nowrap;
+    gap: 0.32rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    justify-items: start;
+    min-width: 18rem;
 }
 
 .scope-library-header {
@@ -968,9 +986,9 @@ span:focus-within > .help-tip::after,
 .scope-library-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem 0.85rem;
+    gap: 0.25rem 0.7rem;
     align-items: center;
-    margin-bottom: 0.45rem;
+    margin-bottom: 0.3rem;
     color: var(--bulma-text);
     font-size: var(--dashboard-font-compact);
 }
@@ -1190,19 +1208,26 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-lifecycle-guide {
-    margin-bottom: 0.55rem;
-    padding: 0.52rem 0.7rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.34rem 0.45rem;
+    align-items: center;
+    margin-bottom: 0.36rem;
+    padding: 0.36rem 0.54rem;
 }
 
 .scope-lifecycle-guide .title {
-    margin-bottom: 0.35rem;
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    line-height: 1.05;
 }
 
 .scope-lifecycle-steps {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.26rem;
     align-items: center;
+    flex: 1 1 auto;
     font-size: var(--dashboard-font-caption);
 }
 
@@ -1212,7 +1237,8 @@ span:focus-within > .help-tip::after,
     align-items: center;
     border: 1px solid var(--dashboard-border);
     border-radius: var(--dashboard-radius-control);
-    padding: 0.18rem 0.38rem;
+    min-height: 1.5rem;
+    padding: 0.08rem 0.32rem;
     white-space: nowrap;
 }
 
@@ -1221,10 +1247,14 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-readiness-help {
-    margin-top: 0.45rem;
+    flex: 0 0 auto;
+    margin-top: 0;
 }
 
 .scope-readiness-help summary.button {
+    height: 1.5rem;
+    min-height: 1.5rem;
+    padding: 0 0.46rem;
     width: max-content;
 }
 
@@ -1239,12 +1269,18 @@ span:focus-within > .help-tip::after,
 
 .scope-library-table-box {
     --responsive-admin-table-min-width: 104rem;
-    padding: 0.75rem;
+    padding: 0.48rem 0.62rem;
 }
 
 .scope-library-table {
     font-size: var(--dashboard-font-table);
-    line-height: 1.2;
+    line-height: 1.08;
+}
+
+.scope-library-table th,
+.scope-library-table td {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
 }
 
 .scope-library-table .scope-col-name {
@@ -1332,7 +1368,7 @@ span:focus-within > .help-tip::after,
     display: flex;
     flex-wrap: nowrap;
     gap: 0.22rem;
-    justify-content: flex-end;
+    justify-content: flex-start;
     margin-bottom: 0;
 }
 
@@ -1344,7 +1380,7 @@ span:focus-within > .help-tip::after,
 .scope-primary-actions .button,
 .scope-primary-actions form .button,
 .scope-row-menu summary.button {
-    min-width: 3.55rem;
+    min-width: 3.28rem;
 }
 
 .scope-row-menu {
@@ -1372,7 +1408,7 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-row-hint {
-    max-width: 13rem;
+    max-width: 12rem;
     color: var(--dashboard-text-muted);
     font-size: var(--dashboard-font-micro);
     line-height: 1.25;
@@ -1404,6 +1440,11 @@ span:focus-within > .help-tip::after,
     .scope-primary-actions {
         align-items: flex-start;
         justify-content: flex-start;
+    }
+
+    .scope-actions {
+        flex-direction: column;
+        min-width: 0;
     }
 
     .scope-row-hint {
@@ -1440,12 +1481,13 @@ span:focus-within > .help-tip::after,
 }
 
 .scope-binding-editor {
-    justify-content: flex-end;
+    justify-content: flex-start;
     margin-bottom: 0;
+    flex-wrap: nowrap;
 }
 
 .scope-binding-editor .select select {
-    max-width: 14rem;
+    max-width: 11.6rem;
 }
 
 .provider-setup-page {

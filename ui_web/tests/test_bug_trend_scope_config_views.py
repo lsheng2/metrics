@@ -224,6 +224,19 @@ class TestBugTrendScopeConfigViews(TestCase):
             bug_type_values=['Bug'],
             enabled=True,
         )
+        explicit_scope = JiraScopeConfig.objects.create(
+            name='Real Intel Jira explicit binding fixture',
+            jql='project = "131600" AND component = "team_int_qemu"',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=explicit_scope,
+            profile_id='chiplet-2a-jira',
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+            provenance={'source': 'test', 'matched_by': 'provider_profile_registry'},
+        )
         response = self.client.get(reverse('ui_web:bug_trend_scope_library'))
 
         # When
@@ -235,8 +248,10 @@ class TestBugTrendScopeConfigViews(TestCase):
         self.assertNotEqual('none', results['wide']['hash_column_display'])
         self.assertFalse(results['desktop']['page_horizontal_overflow'])
         self.assertTrue(results['desktop']['table_horizontal_overflow'])
-        self.assertLessEqual(results['desktop']['max_body_row_height'], 42)
+        self.assertLessEqual(results['desktop']['scope_lifecycle_height'], 58)
+        self.assertLessEqual(results['desktop']['max_body_row_height'], 40)
         self.assertFalse(results['desktop']['actions_wrap'])
+        self.assertLessEqual(results['desktop']['primary_action_left_offset_delta'], 2)
         self.assertNotEqual('none', results['desktop']['hash_column_display'])
         self.assertNotEqual('none', results['desktop']['ip_column_display'])
         self.assertNotEqual('none', results['desktop']['project_column_display'])
@@ -1416,6 +1431,16 @@ class TestBugTrendScopeConfigViews(TestCase):
                 () => {
                     const rows = Array.from(document.querySelectorAll('.scope-library-table tbody tr'));
                     const bodyRowHeights = rows.map(row => Math.round(row.getBoundingClientRect().height));
+                    const primaryActionLeftOffsets = rows
+                        .map(row => {
+                            const cell = row.querySelector('td.scope-col-actions');
+                            const actions = row.querySelector('.scope-primary-actions');
+                            if (!cell || !actions) {
+                                return null;
+                            }
+                            return Math.round(actions.getBoundingClientRect().left - cell.getBoundingClientRect().left);
+                        })
+                        .filter(offset => offset !== null);
                     const firstActions = document.querySelector('tbody tr .scope-primary-actions');
                     const actionRects = firstActions
                         ? Array.from(firstActions.querySelectorAll(':scope > .button, :scope > form .button, :scope > .scope-row-menu > summary.button')).map(button => button.getBoundingClientRect())
@@ -1423,13 +1448,16 @@ class TestBugTrendScopeConfigViews(TestCase):
                     const hashCell = document.querySelector('.scope-library-table tbody td.scope-col-hash');
                     const ipCell = document.querySelector('.scope-library-table tbody td.scope-col-ip');
                     const projectCell = document.querySelector('.scope-library-table tbody td.scope-col-project');
+                    const lifecycle = document.querySelector('.scope-lifecycle-guide');
                     const thead = document.querySelector('.scope-library-table thead');
                     const firstCell = document.querySelector('.scope-library-table tbody td');
                     return {
                         page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
                         table_horizontal_overflow: document.querySelector('.scope-library-table-box').scrollWidth > document.querySelector('.scope-library-table-box').clientWidth + 1,
+                        scope_lifecycle_height: lifecycle ? Math.round(lifecycle.getBoundingClientRect().height) : 0,
                         max_body_row_height: Math.max(...bodyRowHeights),
                         actions_wrap: actionRects.length >= 2 && Math.abs(actionRects[0].top - actionRects[1].top) > 1,
+                        primary_action_left_offset_delta: Math.max(...primaryActionLeftOffsets) - Math.min(...primaryActionLeftOffsets),
                         hash_column_display: hashCell ? getComputedStyle(hashCell).display : '',
                         ip_column_display: ipCell ? getComputedStyle(ipCell).display : '',
                         project_column_display: projectCell ? getComputedStyle(projectCell).display : '',

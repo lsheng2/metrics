@@ -27,7 +27,7 @@ Framework contract:
 - Filter, import, and destructive action forms do not inherit setup-editor validation unless they explicitly opt in.
 - Provider choice is represented as local tabs/cards using `provider-tab-shell`, `scope-provider-choice`, and `provider-tab-check`.
 - Provider colors remain Jira green, HSD-ES blue, GitHub purple.
-- Dense tables must use `responsive-admin-table`; table-local horizontal scroll is acceptable, page-level horizontal overflow is not.
+- Dense tables must use `responsive-admin-table` for cardable admin inventory tables or `dashboard-dense-table` for complex dashboard data tables; table-local horizontal scroll is acceptable, page-level horizontal overflow is not.
 - Required, dirty, disabled, success, warning, and error states must be visible in the changed page and covered by tests before UI closure.
 
 ## Current Coverage

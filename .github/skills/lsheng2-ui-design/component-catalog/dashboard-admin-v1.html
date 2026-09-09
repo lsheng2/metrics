@@ -56,6 +56,8 @@
     .missing { outline: 2px solid color-mix(in srgb, var(--danger) 55%, transparent); outline-offset: 2px; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
     th, td { border-bottom: 1px solid var(--border); padding: 0.45rem 0.5rem; text-align: left; }
+    .dashboard-dense-table { line-height: 1.14; }
+    .dashboard-dense-table th, .dashboard-dense-table td { padding: 0.28rem 0.42rem; }
     th { color: var(--muted); font-size: var(--caption-font); text-transform: uppercase; }
     .tabs { display: flex; gap: 0.35rem; border-bottom: 1px solid var(--border); margin-bottom: 0.75rem; }
     .tab { border: 1px solid transparent; border-bottom: 0; border-radius: var(--control-radius) var(--control-radius) 0 0; padding: 0.48rem 0.7rem; color: var(--muted); font-weight: 700; }
@@ -122,7 +124,7 @@
       </article>
       <article class="panel">
         <h2>Tables</h2>
-        <table>
+        <table class="dashboard-dense-table">
           <thead><tr><th>Name</th><th>Provider</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
             <tr><td>NVU Bugs</td><td>HSD-ES</td><td><span class="status success">Ready</span></td><td><button class="button">Edit</button></td></tr>

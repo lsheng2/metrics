@@ -75,6 +75,7 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 | `provider-tab-shell`, `scope-provider-choice`, `provider-tab-check` | `ui_web/static/css/main.css`, provider/scope templates | Provider selection tabs/cards and provider color identity. | Replacing provider identity with unrelated color systems. |
 | `.help-tip` and `partials/help_tip.html` | `ui_web/templates/partials/help_tip.html`, `ui_web/static/css/main.css` | Text-hover help and selective icon help. | Adding visible question icons for every label. |
 | responsive admin tables | `ui_web/static/css/main.css`, library/data-health templates | Dense dashboard tables with responsive card fallback. | Wide tables that create horizontal page overflow on phone. |
+| `dashboard-dense-table` | `ui_web/static/css/main.css`, dashboard partial templates | Compact typography and control density for complex tables that should keep native table structure. | Raw Bulma tables without a shared density contract. |
 
 The expanded component-level contract is documented in `openspec/docs/current-baseline/ui-design-system.md`.
 

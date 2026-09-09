@@ -47,6 +47,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             'scope-provider-choice',
             'provider-tab-check',
             'responsive-admin-table',
+            'dashboard-dense-table',
             'help-tip',
             'workbench-shell',
             'workbench-grid',
@@ -126,6 +127,24 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
                 self.assertTrue(
                     any(shared_class in form_tag for shared_class in shared_form_classes),
                     f'{path}:{content.count(chr(10), 0, match.start()) + 1} {form_tag}',
+                )
+
+    def test_shouldGiveEveryRuntimeTableASharedDensityContract(self):
+        # Given
+        template_dir = Path(__file__).resolve().parents[1] / 'templates'
+        shared_table_classes = (
+            'responsive-admin-table',
+            'dashboard-dense-table',
+        )
+
+        # Then
+        for path in template_dir.rglob('*.html'):
+            content = path.read_text(encoding='utf-8')
+            for match in re.finditer(r'<table\b[^>]*>', content, flags=re.IGNORECASE):
+                table_tag = match.group(0)
+                self.assertTrue(
+                    any(shared_class in table_tag for shared_class in shared_table_classes),
+                    f'{path}:{content.count(chr(10), 0, match.start()) + 1} {table_tag}',
                 )
 
     def test_shouldUseToolFormContractForLightweightDashboardForms(self):
