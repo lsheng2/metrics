@@ -36,7 +36,7 @@ class WorkbenchListFilters:
 @dataclass(frozen=True, slots=True)
 class WorkbenchPageQueryState:
     scope_id: str = ''
-    profile_id: str = 'chiplet-2a-jira'
+    profile_id: str = ''
     provider_id: str = ''
     range_mode: str = 'ww'
     begin: str = ''
@@ -53,8 +53,6 @@ class WorkbenchPageQueryState:
     def from_query(cls, query):
         return cls(
             scope_id=str(query.get('scope_id', '') or ''),
-            profile_id=str(query.get('profile_id', '') or 'chiplet-2a-jira'),
-            provider_id=str(query.get('provider_id', '') or ''),
             range_mode=str(query.get('range_mode', '') or 'ww'),
             begin=str(query.get('begin', '') or ''),
             end=str(query.get('end', '') or ''),
@@ -69,9 +67,7 @@ class WorkbenchPageQueryState:
 
     def to_query_params(self, include_selection: bool = True, include_list_filters: bool = True) -> dict:
         params = {
-            'profile_id': self.profile_id,
             'scope_id': self.scope_id,
-            'provider_id': self.provider_id,
             'range_mode': self.range_mode,
             'begin': self.begin,
             'end': self.end,

@@ -1,0 +1,371 @@
+from datetime import date, datetime, timezone
+import json
+import os
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from bug_metrics.models import (
+    BugTrendBucket,
+    BugTrendBucketIssue,
+    BugTrendCalculationRun,
+    BugTrendChartDefinition,
+    BugTrendEvidenceContract,
+    BugTrendScopeProviderBinding,
+    JiraScopeConfig,
+)
+from ui_web.workbench_registry import default_workbench_panes
+from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupport
+
+
+from ui_web.tests.workbench_view_test_support import WorkbenchViewTestSupport
+
+
+class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, TestCase):
+    def test_shouldRenderReferenceBugTrendChartFromWorkbenchState(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('bugTrendChart', content)
+        self.assertIn(str(run.id), content)
+        self.assertIn(str(bucket.id), content)
+        self.assertNotIn('Active chart: default_bug_trend', content)
+
+    def test_shouldRenderEvidenceRowsForSelectedReferenceChartBucket(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        BugTrendBucketIssue.objects.create(
+            scope=scope,
+            bucket=bucket,
+            calculation_run=run,
+            series_name='new_critical_high',
+            issue_key='STDEL-9201',
+            summary='Critical media crash',
+            status='Open',
+            severity_value='P1-Critical',
+            component_value='media',
+            owner_value='Alice',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('STDEL-9201', content)
+        self.assertIn('new_critical_high tickets for 26WW32', content)
+        self.assertIn('data-workbench-evidence-workspace', content)
+        self.assertIn('data-workbench-column-toggle="status"', content)
+        self.assertIn('data-workbench-evidence-sort-field', content)
+        self.assertIn('data-workbench-ticket-select-all', content)
+        self.assertIn('data-workbench-ticket-checkbox', content)
+        self.assertIn('data-workbench-ticket-detail', content)
+        self.assertIn('data-workbench-splitter="ticket-detail"', content)
+        self.assertIn('Open Source', content)
+
+    def test_shouldExposeClearSelectionUrlWithoutBucketOrSeries(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+            'status': 'Open',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Clear selection', content)
+        clear_link_start = content.index('<a class="button is-small"')
+        clear_link_end = content.index('>Clear selection</a>', clear_link_start)
+        clear_link = content[clear_link_start:clear_link_end]
+        self.assertIn('run=', clear_link)
+        self.assertIn('status=Open', clear_link)
+        self.assertNotIn('bucket=', clear_link)
+        self.assertNotIn('series=', clear_link)
+
+    def test_shouldShowSummaryOnlyEvidenceStateWithoutStaleRows(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        self._publish_summary_only_chart()
+        BugTrendBucketIssue.objects.create(
+            scope=scope,
+            bucket=bucket,
+            calculation_run=run,
+            series_name='new_critical_high',
+            issue_key='STDEL-9201',
+            summary='Critical media crash',
+            status='Open',
+            severity_value='P1-Critical',
+            component_value='media',
+            owner_value='Alice',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'summary_only_chart',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('summary_only', content)
+        self.assertIn('Summary-only chart has no ticket evidence.', content)
+        self.assertNotIn('STDEL-9201', content)
+
+    def test_shouldRenderCompactGrafanaPanelPreviewAndFullDashboardLink(self):
+        # Given
+        scope, _, _ = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('/d-solo/metrics-bug-trend-c-stock/', content)
+        self.assertIn('panelId=1', content)
+        self.assertIn('Grafana panel preview', content)
+        self.assertIn('Open full Grafana dashboard', content)
+
+    def test_shouldExposeGrafanaSelectionBridgePage(self):
+        # When
+        response = self.client.get(reverse('ui_web:workbench_grafana_selection'), {
+            'scope_id': '1',
+            'run': 'run-1',
+            'bucket': 'bucket-1',
+            'series': 'new_critical_high',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('metrics-workbench:grafana-selection', content)
+        self.assertIn('postMessage', content)
+        self.assertIn("params.get('begin_ww')", content)
+        self.assertIn("params.get('fact_snapshot_id')", content)
+
+    @override_settings(METRICS_AI_GRAFANA_BASE_URL='', METRICS_AI_SIDECAR_ENABLED=False)
+    def test_shouldShowScopedNextActionsWhenDependentServicesAreUnavailable(self):
+        # When
+        response = self.client.get(reverse('ui_web:workbench'))
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Grafana', content)
+        self.assertIn('unavailable', content)
+        self.assertIn('Set METRICS_AI_GRAFANA_BASE_URL and start the Grafana service', content)
+        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
+        self.assertIn('scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort', content)
+
+    def test_shouldKeepLegacyFullPageUrlsReachableFromWorkbenchNavigation(self):
+        # When
+        urls = [
+            reverse('ui_web:bug_trend'),
+            reverse('ui_web:ai_dashboard_workflow'),
+            reverse('ui_web:data_health'),
+        ]
+        responses = [self.client.get(url) for url in urls]
+
+        # Then
+        self.assertEqual([200, 200, 200], [response.status_code for response in responses])
+
+    def test_shouldRefreshWorkbenchFromGrafanaSelectionMessageWithoutLeavingShell(self):
+        # Given
+        main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
+        html = f"""
+            <html>
+            <body>
+                <div id="workbench-grid"></div>
+                <script>
+                    window.htmx = {{
+                        ajax: function(method, url, options) {{
+                            window.lastHtmxCall = {{ method: method, url: url, target: options.target, select: options.select }};
+                        }}
+                    }};
+                </script>
+                <script>{main_js}</script>
+            </body>
+            </html>
+        """
+
+        # When
+        url, location_after_message, htmx_target = self._post_grafana_selection_message(html)
+
+        # Then
+        self.assertIn('/workbench/?', url)
+        self.assertIn('bucket=bucket-1', url)
+        self.assertIn('series=new_critical_high', url)
+        self.assertIn('run=run-1', url)
+        self.assertEqual('.workbench-shell', htmx_target)
+        self.assertIn('/workbench/?', location_after_message)
+
+    @override_settings(
+        METRICS_AI_SIDECAR_ENABLED=False,
+        METRICS_AI_BASE_INSTANCE_TOKEN='secret-token',
+        METRICS_AI_BASE_URL='http://127.0.0.1:48300',
+    )
+    def test_shouldExposeSafeAiPaneContextWithoutSecrets(self):
+        # Given
+        scope = self._bound_scope('nvu-ttl-hsdes', 'hsdes')
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'range_mode': 'ww',
+            'begin': '26WW32',
+            'end': '26WW35',
+            'chart_id': 'open_bug_trend',
+            'run': 'run-1',
+            'bucket': 'bucket-1',
+            'series': 'new_critical_high',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('workbench-ai-context', content)
+        self.assertIn('nvu-ttl-hsdes', content)
+        self.assertIn('new_critical_high', content)
+        self.assertIn('Diagnostics', content)
+        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
+        self.assertNotIn('secret-token', content)
+
+    def test_shouldRefreshWorkbenchEvidenceWhenReferenceChartBarIsClicked(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        BugTrendBucketIssue.objects.create(
+            scope=scope,
+            bucket=bucket,
+            calculation_run=run,
+            series_name='new_critical_high',
+            issue_key='STDEL-9201',
+            summary='Critical media crash',
+            status='Open',
+            severity_value='P1-Critical',
+            component_value='media',
+            owner_value='Alice',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        )
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+        })
+        evidence_response = self.client.get(reverse('ui_web:bug_trend_evidence'), {
+            'scope_id': scope.id,
+            'run': str(run.id),
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+            'chart_id': 'default_bug_trend',
+        })
+
+        # When
+        nonblank_pixels, evidence_text, chart_config = self._render_workbench_chart_and_click_evidence(
+            response,
+            evidence_response,
+        )
+
+        # Then
+        self.assertTrue(nonblank_pixels)
+        self.assertIn('STDEL-9201', evidence_text)
+        self.assertIn('new_critical_high tickets for 26WW32', evidence_text)
+        self.assertIn('run=' + str(run.id), chart_config['evidenceUrl'])
+        self.assertIn('series=new_critical_high', chart_config['evidenceUrl'])
+
+    def test_shouldKeepEvidenceExportConsistentWithWorkbenchSelection(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+        BugTrendBucketIssue.objects.create(
+            scope=scope,
+            bucket=bucket,
+            calculation_run=run,
+            series_name='new_critical_high',
+            issue_key='STDEL-9201',
+            summary='Critical media crash',
+            status='Open',
+            severity_value='P1-Critical',
+            component_value='media',
+            owner_value='Alice',
+            created_at=datetime(2026, 8, 4, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        )
+
+        # When
+        page_response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+        })
+        export_response = self.client.get(reverse('ui_web:bug_trend_evidence_export'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+        })
+
+        # Then
+        page_content = page_response.content.decode()
+        export_content = export_response.content.decode()
+        self.assertEqual(200, page_response.status_code)
+        self.assertEqual(200, export_response.status_code)
+        self.assertIn('STDEL-9201', page_content)
+        self.assertIn('STDEL-9201', export_content)
+        self.assertIn('new_critical_high', export_content)

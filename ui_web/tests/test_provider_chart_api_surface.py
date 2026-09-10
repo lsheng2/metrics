@@ -40,6 +40,36 @@ class TestProviderChartApiSurface(TestCase):
             payload['profile_status_rows'][0]['time_range_action_url'],
         )
 
+    def test_shouldNotInferProviderReadinessFromSameNamedScopeWhenProfileIsMissing(self):
+        # Given
+        JiraScopeConfig.objects.create(
+            name='missing-registry-profile',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:provider_profile_readiness_api'), {
+            'profile_id': 'missing-registry-profile',
+            'range_mode': 'ww',
+            'begin_ww': '26WW01',
+            'end_ww': '26WW35',
+        })
+
+        # Then
+        payload = response.json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('', payload['provider_id'])
+        self.assertEqual('missing-registry-profile', payload['profile_id'])
+        self.assertEqual('unsupported', payload['status'])
+        self.assertEqual('profile_not_found', payload['blockers'][0]['code'])
+
     def test_shouldReturnHtmlRedirectForAlignedGrafanaTimeRange(self):
         # When
         response = self.client.get(reverse('ui_web:provider_profile_align_dashboard_range_api'), {

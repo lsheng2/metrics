@@ -2,6 +2,7 @@ import json
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 from datetime import date, datetime, timezone
 
@@ -9,7 +10,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 
-from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
+from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig, ProviderProfileConfig
 from jira_history.models import JiraIssue, JiraIssueSnapshot, JiraTransition
 from jira_sync.models import JiraSyncCursor
 from jira_sync.out.jira_scope_issue_adapter import JiraScopeIssueAdapter
@@ -42,6 +43,7 @@ class TestSyncJiraScopeCommand(TestCase):
             owner_field='assignee',
             bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
         )
+        self._bind_jira_profile(scope)
         adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
 
         # When
@@ -71,6 +73,7 @@ class TestSyncJiraScopeCommand(TestCase):
             jql='project = STDEL AND issuetype = Bug',
             bug_type_values=['Bug'],
         )
+        self._bind_jira_profile(scope)
         JiraSyncCursor.objects.create(
             scope=scope,
             status=JiraSyncCursor.STATUS_SUCCESS,
@@ -119,6 +122,7 @@ class TestSyncJiraScopeCommand(TestCase):
             jql='project = STDEL AND issuetype = Bug',
             bug_type_values=['Bug'],
         )
+        self._bind_jira_profile(scope)
         JiraSyncCursor.objects.create(
             scope=scope,
             status=JiraSyncCursor.STATUS_SUCCESS,
@@ -163,6 +167,7 @@ class TestSyncJiraScopeCommand(TestCase):
             jql='project = STDEL AND issuetype = Bug',
             bug_type_values=['Bug'],
         )
+        self._bind_jira_profile(scope)
         cursor = JiraSyncCursor.objects.create(
             scope=scope,
             status=JiraSyncCursor.STATUS_SUCCESS,
@@ -183,6 +188,12 @@ class TestSyncJiraScopeCommand(TestCase):
         adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
         bug_metrics_container.bug_trend_api.recalculate_scope.side_effect = RuntimeError('calculation failed')
         bug_metrics_container.bug_trend_api.get_scope.return_value = scope
+        bug_metrics_container.bug_trend_api.resolve_scope_provider_binding.return_value = SimpleNamespace(
+            is_resolved=True,
+            profile_id='sync-jira-profile',
+            provider_id='jira',
+            blockers=[],
+        )
 
         # When / Then
         with self.assertRaises(RuntimeError):
@@ -210,6 +221,7 @@ class TestSyncJiraScopeCommand(TestCase):
             jql='project = STDEL AND issuetype = Bug',
             bug_type_values=['Bug'],
         )
+        self._bind_jira_profile(scope)
         adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
 
         # When / Then
@@ -299,6 +311,7 @@ class TestSyncJiraScopeCommand(TestCase):
             bug_type_values=['Bug'],
             open_status_values=['Open'],
         )
+        self._bind_jira_profile(scope)
         JiraSyncCursor.objects.create(
             scope=scope,
             status=JiraSyncCursor.STATUS_SUCCESS,
@@ -332,6 +345,28 @@ class TestSyncJiraScopeCommand(TestCase):
         issue = JiraIssue.objects.get(scope=scope, issue_key='STDEL-3002')
         self.assertFalse(issue.is_in_current_scope)
         self.assertEqual(0, BugTrendBucket.objects.get(scope=scope).open_count)
+
+    def _bind_jira_profile(self, scope, profile_id='sync-jira-profile'):
+        ProviderProfileConfig.objects.create(
+            profile_id=profile_id,
+            provider_id='jira',
+            display_name='Sync Jira Profile',
+            lifecycle_state=ProviderProfileConfig.LIFECYCLE_ENABLED,
+            connection_settings={
+                'base_url': 'https://jira.profile.example',
+                'auth_mode': 'server_pat',
+                'credentials': {'api_token': 'profile-jira-token'},
+            },
+            source_population={'native_query_text': scope.jql},
+            field_bindings={'status': {'native_field': 'status'}},
+            chart_bindings={'open_bug_trend': {'support_status': 'supported'}},
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id=profile_id,
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
 
     def _jira_issue_payload(self, issue_key='STDEL-8942'):
         return {

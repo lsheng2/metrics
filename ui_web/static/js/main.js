@@ -476,8 +476,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const workbenchLastUrlKey = 'metricsWorkbench.lastUrl';
     const workbenchStateParams = [
         'scope_id',
-        'profile_id',
-        'provider_id',
         'range_mode',
         'begin',
         'end',
@@ -562,19 +560,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return normalizedExplicitUrl;
         }
         const params = new URLSearchParams(window.location.search);
-        ['profileId', 'providerId', 'chartId', 'panelId', 'dashboardUid'].forEach(key => {
+        ['chartId', 'panelId', 'dashboardUid'].forEach(key => {
             if (!payload[key]) {
                 return;
             }
-            const queryKey = key === 'profileId'
-                ? 'profile_id'
-                : key === 'providerId'
-                    ? 'provider_id'
-                    : key === 'chartId'
-                        ? 'chart_id'
-                        : key === 'panelId'
-                            ? 'panel_id'
-                            : 'dashboard_uid';
+            const queryKey = key === 'chartId'
+                ? 'chart_id'
+                : key === 'panelId'
+                    ? 'panel_id'
+                    : 'dashboard_uid';
             params.set(queryKey, String(payload[key]));
         });
         return `${window.location.pathname}?${params.toString()}`;

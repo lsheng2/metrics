@@ -17,7 +17,7 @@ from bug_metrics.app.api import (
 )
 
 from ..container import ui_web_container
-from .bug_trend_view import validate_query_contract
+from .bug_trend_query import validate_query_contract
 
 
 AI_DASHBOARD_CATALOG_REQUIRED_PARAMS = frozenset()

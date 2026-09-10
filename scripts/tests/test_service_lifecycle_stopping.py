@@ -89,6 +89,40 @@ def test_shouldEmitStoppedEventWithPersistedProvenance(tmp_path):
     assert events[0].provenance.capability == ProvenanceCapability.REGISTERED_PROCESS
 
 
+def test_stopServiceShouldValidatePersistedStoppedStateAgainstRunningProcess(tmp_path):
+    terminated_pids = []
+    running_pids = {12345}
+    operations = PlatformOperationSet(
+        process_exists=lambda pid: pid in running_pids,
+        process_matches_command=lambda pid, command: True,
+        terminate_process=lambda pid: terminated_pids.append(pid),
+        wait_process_exit=lambda pid, timeout: running_pids.discard(pid) is None,
+        wait_port_available=lambda host, port, timeout: True,
+    )
+    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", platform_ops=operations)
+    lifecycle.write_state({
+        "api": {
+            "host": "127.0.0.1",
+            "port": 8100,
+            "pid": 12345,
+            "lifecycle_state": "stopped",
+            "command": ["python", "api.py"],
+            "stop_command": [],
+            "provenance": {
+                "wrapper_pid": 12345,
+                "capability": "registered_process",
+            },
+        }
+    })
+
+    result = lifecycle.stop_service("api", graceful_timeout_seconds=0.1)
+
+    assert result.reason == "terminated"
+    assert result.stopped is True
+    assert terminated_pids == [12345]
+    assert lifecycle.read_state()["api"]["lifecycle_state"] == LifecycleState.STOPPED
+
+
 def test_stopServiceShouldNotMarkStoppedWhenOwnedListenerSurvivesWrapperExit(tmp_path):
     events = []
     terminated_pids = []

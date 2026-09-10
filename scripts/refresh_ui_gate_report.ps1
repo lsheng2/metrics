@@ -55,3 +55,8 @@ $ReportArgs += @("--max-diff-ratio", $MaxDiffRatio.ToString([Globalization.Cultu
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
+
+& $Python scripts\compact_ui_design_artifacts.py --project-root . --skip-overlay --skip-manifest
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}

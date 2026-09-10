@@ -26,8 +26,10 @@ from .views.ai_dashboard_publish_view import (
 from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
-from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEvidenceExportView, BugTrendScopeAuditView, BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView, BugTrendChartDataApiView, BugTrendEvidenceApiView, ProviderSetupView
+from .views.bug_trend_scope_views import BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView
+from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEvidenceExportView, BugTrendScopeAuditView, BugTrendChartDataApiView, BugTrendEvidenceApiView
 from .views.data_health_view import DataHealthView
+from .views.provider_setup_view import ProviderSetupView
 from .views.provider_chart_view import ProviderChartDataApiView, ProviderChartEvidenceApiView, ProviderProfileAlignDashboardRangeApiView, ProviderProfileReadinessApiView
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView

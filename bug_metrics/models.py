@@ -1,10 +1,14 @@
-import hashlib
-import json
 import uuid
 
 from django.db import models
 
-from bug_metrics.provider_profile_security import without_profile_secret_values
+from bug_metrics.model_hashes import (
+    SCOPE_SEMANTIC_LIST_FIELD_NAMES,
+    normalize_scope_list_values,
+    provider_mapping_version_hash,
+    provider_source_version_hash,
+    scope_config_version_hash,
+)
 
 
 def _empty_list():
@@ -13,40 +17,6 @@ def _empty_list():
 
 def _empty_dict():
     return {}
-
-
-SCOPE_SEMANTIC_LIST_FIELD_NAMES = (
-    'bug_type_values',
-    'open_status_values',
-    'fixed_status_values',
-    'closed_status_values',
-    'terminal_excluded_status_values',
-    'fixed_resolution_values',
-    'closed_resolution_values',
-    'reopen_status_values',
-    'critical_high_values',
-    'medium_low_values',
-    'display_fields',
-)
-
-
-def normalize_scope_list_values(value):
-    if value is None:
-        return []
-    if isinstance(value, str):
-        raw_items = [value]
-    else:
-        raw_items = list(value)
-    normalized = []
-    for raw_item in raw_items:
-        if raw_item is None:
-            continue
-        raw_text = str(raw_item).replace('\\r\\n', '\n').replace('\\n', '\n').replace('\\r', '\n')
-        for item in raw_text.replace('\r\n', '\n').replace('\r', '\n').replace(',', '\n').split('\n'):
-            text = item.strip()
-            if text and text not in normalized:
-                normalized.append(text)
-    return normalized
 
 
 class JiraScopeConfig(models.Model):
@@ -97,31 +67,7 @@ class JiraScopeConfig(models.Model):
             setattr(self, field_name, normalize_scope_list_values(getattr(self, field_name)))
 
     def calculate_config_version_hash(self) -> str:
-        payload = {
-            'jql': self.jql,
-            'bug_type_values': normalize_scope_list_values(self.bug_type_values),
-            'open_status_values': normalize_scope_list_values(self.open_status_values),
-            'fixed_status_values': normalize_scope_list_values(self.fixed_status_values),
-            'closed_status_values': normalize_scope_list_values(self.closed_status_values),
-            'terminal_excluded_status_values': normalize_scope_list_values(self.terminal_excluded_status_values),
-            'fixed_resolution_values': normalize_scope_list_values(self.fixed_resolution_values),
-            'closed_resolution_values': normalize_scope_list_values(self.closed_resolution_values),
-            'reopen_status_values': normalize_scope_list_values(self.reopen_status_values),
-            'severity_field': self.severity_field,
-            'critical_high_values': normalize_scope_list_values(self.critical_high_values),
-            'medium_low_values': normalize_scope_list_values(self.medium_low_values),
-            'component_field': self.component_field,
-            'owner_field': self.owner_field,
-            'team_field': self.team_field,
-            'milestone_field': self.milestone_field,
-            'fix_version_field': self.fix_version_field,
-            'package_version_field': self.package_version_field,
-            'display_fields': normalize_scope_list_values(self.display_fields),
-            'timezone': self.timezone,
-            'bucket_granularity': self.bucket_granularity,
-        }
-        encoded_payload = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-        return hashlib.sha256(encoded_payload.encode('utf-8')).hexdigest()
+        return scope_config_version_hash(self)
 
     def __str__(self):
         return self.name
@@ -230,31 +176,10 @@ class ProviderProfileConfig(models.Model):
         }
 
     def calculate_mapping_version_hash(self) -> str:
-        payload = {
-            'profile_id': self.profile_id,
-            'provider_id': self.provider_id,
-            'display_name': self.display_name,
-            'source_population': self.source_population,
-            'connection_settings': without_profile_secret_values(self.connection_settings),
-            'scope_labels': self.scope_labels,
-            'field_bindings': self.field_bindings,
-            'value_mappings': self.value_mappings,
-            'chart_bindings': self.chart_bindings,
-            'sync_policy': self.sync_policy,
-            'readiness_policy': self.readiness_policy,
-            'mapping_version': self.mapping_version,
-        }
-        encoded_payload = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-        return hashlib.sha256(encoded_payload.encode('utf-8')).hexdigest()
+        return provider_mapping_version_hash(self)
 
     def calculate_source_version_hash(self) -> str:
-        payload = {
-            'provider_id': self.provider_id,
-            'connection_settings': without_profile_secret_values(self.connection_settings),
-            'source_population': self.source_population,
-        }
-        encoded_payload = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-        return hashlib.sha256(encoded_payload.encode('utf-8')).hexdigest()
+        return provider_source_version_hash(self)
 
     def __str__(self):
         return f'{self.profile_id}:{self.provider_id}:{self.lifecycle_state}'

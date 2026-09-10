@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from django.http import HttpResponse, JsonResponse
 
 from ..container import ui_web_container
-from .bug_trend_view import validate_query_contract
+from .bug_trend_query import validate_query_contract
 from .graceful_template_view import GracefulTemplateView
 
 

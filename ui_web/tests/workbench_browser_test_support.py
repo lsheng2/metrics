@@ -242,7 +242,7 @@ class WorkbenchBrowserTestSupport:
             page.evaluate("""
                 window.localStorage.setItem(
                     'metricsWorkbench.lastUrl',
-                    '/workbench/?scope_id=7&profile_id=chiplet-2a-jira&provider_id=jira'
+                    '/workbench/?scope_id=7'
                 );
             """)
             page.reload(wait_until='domcontentloaded')
@@ -252,7 +252,7 @@ class WorkbenchBrowserTestSupport:
             page.reload(wait_until='domcontentloaded')
             rejected_href = page.locator('#workbench-link').get_attribute('href')
 
-            page.goto('http://testserver/workbench/?scope_id=11&profile_id=nvu-ttl-hsdes&provider_id=hsdes', wait_until='domcontentloaded')
+            page.goto('http://testserver/workbench/?scope_id=11', wait_until='domcontentloaded')
             saved_url = page.evaluate("window.localStorage.getItem('metricsWorkbench.lastUrl')")
             saved_href = page.locator('#workbench-link').get_attribute('href')
             return restored_href, rejected_href, saved_url, saved_href
@@ -292,7 +292,7 @@ class WorkbenchBrowserTestSupport:
                 content_type='text/html',
                 body=child_html,
             ))
-            page.goto('http://testserver/workbench/?scope_id=7&profile_id=chiplet-2a-jira&provider_id=jira', wait_until='domcontentloaded')
+            page.goto('http://testserver/workbench/?scope_id=7', wait_until='domcontentloaded')
             page.evaluate("""
                 () => {
                     window.htmx = {

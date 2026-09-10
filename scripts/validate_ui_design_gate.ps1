@@ -28,11 +28,16 @@ if ($Broad) {
         ui_web.tests.test_dashboard_ui_design_system `
         ui_web.tests.test_provider_setup_views `
         ui_web.tests.test_bug_trend_scope_config_views `
+        ui_web.tests.test_bug_trend_scope_provider_views `
+        ui_web.tests.test_bug_trend_scope_action_views `
+        ui_web.tests.test_bug_trend_scope_metadata_views `
         ui_web.tests.test_data_health_views `
         ui_web.tests.test_workbench_views `
+        ui_web.tests.test_workbench_chart_views `
         ui_web.tests.test_workbench_ai_host_actions `
         ui_web.tests.test_ai_dashboard_api_surface `
-        ui_web.tests.test_ui_design_baseline_gate }
+        ui_web.tests.test_ui_design_baseline_gate `
+        ui_web.tests.test_ui_design_monkey_journey }
 
     Invoke-Checked { & $Python manage.py check }
     Invoke-Checked { & $Python manage.py makemigrations --check --dry-run }
@@ -45,6 +50,7 @@ if ($Broad) {
     Invoke-Checked { & $Python (Join-Path $UiSkillRoot "scripts\audit_layout_metrics.py") --project-root . --html-file ".github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html" --checks overflow,tables,buttons,forms }
     Invoke-Checked { scripts\validate_ui_visual_diff_gate.ps1 }
     Invoke-Checked { & python (Join-Path $UiSkillRoot "scripts\create_visual_regression_manifest.py") --project-root . --output ".github/skills/lsheng2-ui-design/visual-regression/manifest.json" }
+    Invoke-Checked { & $Python scripts\compact_ui_design_artifacts.py --project-root . --skip-report }
     Invoke-Checked { scripts\refresh_ui_gate_report.ps1 -SkipBrowser }
     Invoke-Checked { scripts\validate_ui_visual_manifest.ps1 }
 }

@@ -4,7 +4,6 @@ from bug_metrics.app.api import ProviderChartAggregateQuery, ProviderChartEviden
 from bug_metrics.app.api.provider_aggregate_contracts import PROVIDER_CHART_CONTRACT_VERSION
 from bug_metrics.app.api.provider_aggregates import iso_date_value, ww_range_to_dates
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
-from bug_metrics.models import JiraScopeConfig
 
 
 FIRST_HSDES_ACCESS_CHECK_URL = 'https://hsdes.intel.com/appstore/generalapps/#/pages/community/1607367026?queryId=15017652869'
@@ -68,10 +67,10 @@ class ProviderDashboardFacade:
     def get_provider_profile_readiness_payload(self, provider_id: str, profile_id: str, range_mode: str = 'ww',
                                                begin_ww: str = '', end_ww: str = '', begin_date: str = '',
                                                end_date: str = '') -> dict:
-        resolved_provider_id = self._resolve_provider_id(provider_id, profile_id)
+        resolved_provider_id = self._resolve_provider_id(provider_id, profile_id, allow_unresolved=True)
         readiness = self._bug_trend_api.get_provider_profile_readiness(resolved_provider_id, profile_id)
         readiness['contract_version'] = PROVIDER_CHART_CONTRACT_VERSION
-        readiness['provider_id'] = resolved_provider_id
+        readiness['provider_id'] = readiness.get('provider_id') or resolved_provider_id
         readiness['profile_status_rows'] = [self._profile_status_row(
             readiness,
             self._time_range_action_url(profile_id, range_mode, begin_ww, end_ww, begin_date, end_date),
@@ -84,7 +83,7 @@ class ProviderDashboardFacade:
         self._resolve_provider_id(provider_id, profile_id)
         return self._time_range_action_url(profile_id, range_mode, begin_ww, end_ww, begin_date, end_date)
 
-    def _resolve_provider_id(self, provider_id: str, profile_id: str) -> str:
+    def _resolve_provider_id(self, provider_id: str, profile_id: str, allow_unresolved: bool = False) -> str:
         explicit_provider_id = provider_id or ''
         profile_provider_id = self._provider_id_for_profile(profile_id)
         if explicit_provider_id and profile_provider_id and explicit_provider_id != profile_provider_id:
@@ -93,14 +92,14 @@ class ProviderDashboardFacade:
             return explicit_provider_id
         if profile_provider_id:
             return profile_provider_id
+        if allow_unresolved:
+            return ''
         raise ValueError(f'Provider could not be resolved for profile {profile_id}.')
 
     def _provider_id_for_profile(self, profile_id: str) -> str:
         resolution = self._registry().resolve_profile(profile_id)
         if resolution.profile is not None:
             return resolution.profile.provider_id
-        if JiraScopeConfig.objects.filter(enabled=True, name=profile_id).exists():
-            return 'jira'
         return ''
 
     def _registry(self) -> ProjectProviderProfileRegistry:

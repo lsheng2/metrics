@@ -124,10 +124,10 @@ scripts\refresh_ui_gate_report.ps1 -BaseUrl http://127.0.0.1:8000 -IncludeHooked
 scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
 scripts\validate_ui_visual_diff_gate.ps1
 scripts\validate_ui_visual_diff_gate.ps1 -UpdateBaseline
-.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate
+.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate ui_web.tests.test_ui_design_monkey_journey
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
-.venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views
-.venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions ui_web.tests.test_ai_dashboard_api_surface
+.venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views ui_web.tests.test_bug_trend_scope_provider_views ui_web.tests.test_bug_trend_scope_action_views ui_web.tests.test_bug_trend_scope_metadata_views
+.venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views ui_web.tests.test_workbench_views ui_web.tests.test_workbench_chart_views ui_web.tests.test_workbench_ai_host_actions ui_web.tests.test_ai_dashboard_api_surface
 .venv\Scripts\python.exe manage.py check
 .venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 openspec validate standardize-dashboard-ui-design-system --strict
@@ -209,16 +209,7 @@ Synthetic replacements:
 Runtime product templates should not use table exceptions. Generated or synthetic local design artifacts can be allowlisted when they intentionally demonstrate raw component structure.
 
 ```json lsheng2-ui-design-audit-exceptions
-{
-  "tableContractAllowlist": [
-    {
-      "pathContains": ".github/skills/lsheng2-ui-design/component-catalog/",
-      "reason": "Synthetic local component catalog output is not runtime product UI; runtime Django templates must still use shared table contracts."
-    }
-  ],
-  "tableMetricsAllowlist": [],
-  "layoutMetricsAllowlist": []
-}
+{"tableContractAllowlist":[{"pathContains":".github/skills/lsheng2-ui-design/component-catalog/","reason":"Synthetic local component catalog output is not runtime product UI; runtime Django templates must still use shared table contracts."}],"tableMetricsAllowlist":[],"layoutMetricsAllowlist":[]}
 ```
 
 ## Browser Metric Thresholds
@@ -226,56 +217,7 @@ Runtime product templates should not use table exceptions. Generated or syntheti
 These values match the current `compactDashboard` density profile and are enforced by the local browser metric gate.
 
 ```json lsheng2-ui-design-metric-thresholds
-{
-  "tableMetrics": {
-    "maxPaddingBlock": 12,
-    "maxButtonHeightDelta": 1,
-    "maxDenseRowHeight": 72
-  },
-  "buttonMetrics": {
-    "maxButtonHeightDelta": 1
-  },
-  "formMetrics": {
-    "maxControlHeightDelta": 1,
-    "maxButtonHeightDelta": 1
-  },
-  "layoutSelectors": {
-    "buttonGroups": [
-      ".dashboard-action-bar",
-      ".dashboard-action-group",
-      ".dashboard-tool-actions",
-      ".scope-primary-actions",
-      ".provider-row-primary-actions",
-      ".workbench-evidence-actions",
-      ".buttons.are-small",
-      "[data-ui-action-group]"
-    ],
-    "forms": [
-      ".dashboard-tool-form",
-      ".dashboard-edit-form",
-      "form[data-ui-form]"
-    ],
-    "formControls": [
-      ".dashboard-tool-field .input",
-      ".dashboard-tool-field select",
-      ".dashboard-form-field .input",
-      ".dashboard-form-field select",
-      "[data-ui-form-control]"
-    ],
-    "formButtons": [
-      ".dashboard-tool-actions .button",
-      ".dashboard-action-bar .button",
-      ".dashboard-action-group .button",
-      "[data-ui-form-button]"
-    ],
-    "formLabels": [
-      ".dashboard-tool-field .label",
-      ".dashboard-form-field .label",
-      ".workbench-toolbar-field .label",
-      "[data-ui-form-label]"
-    ]
-  }
-}
+{"tableMetrics":{"maxPaddingBlock":12,"maxButtonHeightDelta":1,"maxDenseRowHeight":72},"buttonMetrics":{"maxButtonHeightDelta":1},"formMetrics":{"maxControlHeightDelta":1,"maxButtonHeightDelta":1},"layoutSelectors":{"buttonGroups":[".dashboard-action-bar",".dashboard-action-group",".dashboard-tool-actions",".scope-primary-actions",".provider-row-primary-actions",".workbench-evidence-actions",".buttons.are-small","[data-ui-action-group]"],"forms":[".dashboard-tool-form",".dashboard-edit-form","form[data-ui-form]"],"formControls":[".dashboard-tool-field .input",".dashboard-tool-field select",".dashboard-form-field .input",".dashboard-form-field select","[data-ui-form-control]"],"formButtons":[".dashboard-tool-actions .button",".dashboard-action-bar .button",".dashboard-action-group .button","[data-ui-form-button]"],"formLabels":[".dashboard-tool-field .label",".dashboard-form-field .label",".workbench-toolbar-field .label","[data-ui-form-label]"]}}
 ```
 
 ## Visual State Hook Modules
@@ -283,9 +225,7 @@ These values match the current `compactDashboard` density profile and are enforc
 Hooked scenarios use local-only Django fixtures. These hooks render existing templates with synthetic data and do not register production routes or call external providers.
 
 ```json lsheng2-ui-design-hook-modules
-{
-  "modules": ["scripts/ui_design_fixture_hooks.py"]
-}
+{"modules":["scripts/ui_design_fixture_hooks.py"]}
 ```
 
 ## Visual State Scenarios
@@ -293,164 +233,7 @@ Hooked scenarios use local-only Django fixtures. These hooks render existing tem
 These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`. Scenarios with `requiresHook` need seeded Django fakes or a local fixture server and are skipped by the live route runner unless `-IncludeHooked` is passed. Hooked dashboard scenarios map to `scripts/ui_design_fixture_hooks.py`. The committed screenshot baseline uses the separate sanitized `synthetic-baseline-manifest.json` and the `component_catalog_baseline` hook.
 
 ```json lsheng2-ui-design-state-scenarios
-{
-  "routes": {
-    "/provider-setup/": [
-      {
-        "name": "jira-tab-selected",
-        "stateTarget": "tabs/default-selected-hover-focus-disabled",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible"]
-      },
-      {
-        "name": "hsdes-tab-selected",
-        "stateTarget": "tabs/default-selected-hover-focus-disabled",
-        "query": {"mode": "new", "provider_id": "hsdes"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible"]
-      },
-      {
-        "name": "profile-required-missing",
-        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "steps": [{"action": "click", "selector": "button[name='action'][value='test_connection']"}],
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "required-summary-visible", "missing-required-visible", "selected-provider-check-visible"]
-      },
-      {
-        "name": "profile-dirty-unsaved",
-        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "steps": [{"action": "fill", "selector": "#provider-profile-id", "value": "sample-jira-profile"}],
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "dirty-banner-visible", "selected-provider-check-visible"]
-      },
-      {
-        "name": "profile-test-success",
-        "stateTarget": "status-feedback/info-success-warning-danger",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible", "status-feedback-visible"],
-        "hook": "provider_profile_test_success",
-        "requiresHook": "mock provider connection response"
-      },
-      {
-        "name": "profile-test-failure",
-        "stateTarget": "status-feedback/info-success-warning-danger",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible", "status-feedback-visible"],
-        "hook": "provider_profile_test_failure",
-        "requiresHook": "mock provider connection failure"
-      }
-    ],
-    "/bug-trend/scope-config/": [
-      {
-        "name": "default",
-        "stateTarget": "default",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "selected-provider-check-visible"]
-      },
-      {
-        "name": "jira-scope-tab-selected",
-        "stateTarget": "tabs/default-selected-hover-focus-disabled",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "selected-provider-check-visible"]
-      },
-      {
-        "name": "hsdes-scope-tab-selected",
-        "stateTarget": "tabs/default-selected-hover-focus-disabled",
-        "query": {"mode": "new", "provider_id": "hsdes"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "selected-provider-check-visible"]
-      },
-      {
-        "name": "scope-required-missing",
-        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "steps": [{"action": "click", "selector": "button[name='action'][value='save_enable']"}],
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "required-summary-visible", "missing-required-visible", "selected-provider-check-visible"]
-      },
-      {
-        "name": "scope-dirty-unsaved",
-        "stateTarget": "form/default-required-missing-dirty-saving-success-failure",
-        "query": {"mode": "new", "provider_id": "jira"},
-        "steps": [{"action": "fill", "selector": "#scope-name", "value": "Sample Scope"}],
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "dirty-banner-visible", "selected-provider-check-visible"]
-      }
-    ],
-    "/pull-requests/": [
-      {
-        "name": "pull-request-filter-applied",
-        "stateTarget": "table/default-empty-loading-selected-archived-error",
-        "query": {"author": "Monkey User"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present", "filter-applied-visible"],
-        "hook": "pull_request_filter_applied",
-        "requiresHook": "fake pull request facade data"
-      }
-    ],
-    "/current-tasks/": [
-      {
-        "name": "default",
-        "stateTarget": "table/default-empty-loading-selected-archived-error",
-        "query": {},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "table-contracts-present"],
-        "hook": "current_tasks_fake_data",
-        "requiresHook": "fake current tasks facade data"
-      }
-    ],
-    "/task-forecast/": [
-      {
-        "name": "forecast-filter-applied",
-        "stateTarget": "table/default-empty-loading-selected-archived-error",
-        "query": {"task_id": "TASK-101", "include_done_tasks": "true"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
-        "hook": "task_forecast_fake_data",
-        "requiresHook": "fake task forecast facade data"
-      }
-    ],
-    "/team-velocity/": [
-      {
-        "name": "default",
-        "stateTarget": "chart-drilldown-selected",
-        "query": {"period": "2026-09", "member_group_id": "core"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
-        "hook": "team_velocity_fake_data",
-        "requiresHook": "fake team velocity facade data"
-      },
-      {
-        "name": "team-velocity-drilldown-selected",
-        "stateTarget": "chart-drilldown-selected",
-        "query": {"period": "2026-09", "member_group_id": "core"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
-        "hook": "team_velocity_fake_data",
-        "requiresHook": "fake team velocity facade data"
-      }
-    ],
-    "/dev-velocity/": [
-      {
-        "name": "default",
-        "stateTarget": "chart-drilldown-selected",
-        "query": {"period": "2026-09", "developers": "Monkey User", "member_group_id": "core"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
-        "hook": "dev_velocity_fake_data",
-        "requiresHook": "fake developer velocity facade data"
-      },
-      {
-        "name": "dev-velocity-drilldown-selected",
-        "stateTarget": "chart-drilldown-selected",
-        "query": {"period": "2026-09", "developers": "Monkey User", "member_group_id": "core"},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "table-contracts-present"],
-        "hook": "dev_velocity_fake_data",
-        "requiresHook": "fake developer velocity facade data"
-      }
-    ],
-    "/partials/bug-trend/evidence/": [
-      {
-        "name": "default",
-        "stateTarget": "table/default-empty-loading-selected-archived-error",
-        "query": {},
-        "checks": ["no-page-horizontal-overflow", "no-clipped-buttons", "no-unnamed-icon-buttons", "table-contracts-present"],
-        "hook": "bug_trend_evidence_fake_data",
-        "requiresHook": "fake bug trend evidence data"
-      }
-    ]
-  }
-}
+{"routes":{"/provider-setup/":[{"name":"jira-tab-selected","stateTarget":"tabs/default-selected-hover-focus-disabled","query":{"mode":"new","provider_id":"jira"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","no-unnamed-icon-buttons","selected-provider-check-visible"]},{"name":"hsdes-tab-selected","stateTarget":"tabs/default-selected-hover-focus-disabled","query":{"mode":"new","provider_id":"hsdes"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","no-unnamed-icon-buttons","selected-provider-check-visible"]},{"name":"profile-required-missing","stateTarget":"form/default-required-missing-dirty-saving-success-failure","query":{"mode":"new","provider_id":"jira"},"steps":[{"action":"click","selector":"button[name='action'][value='test_connection']"}],"checks":["no-page-horizontal-overflow","no-clipped-buttons","required-summary-visible","missing-required-visible","selected-provider-check-visible"]},{"name":"profile-dirty-unsaved","stateTarget":"form/default-required-missing-dirty-saving-success-failure","query":{"mode":"new","provider_id":"jira"},"steps":[{"action":"fill","selector":"#provider-profile-id","value":"sample-jira-profile"}],"checks":["no-page-horizontal-overflow","no-clipped-buttons","dirty-banner-visible","selected-provider-check-visible"]},{"name":"profile-test-success","stateTarget":"status-feedback/info-success-warning-danger","query":{"mode":"new","provider_id":"jira"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","no-unnamed-icon-buttons","selected-provider-check-visible","status-feedback-visible"],"hook":"provider_profile_test_success","requiresHook":"mock provider connection response"},{"name":"profile-test-failure","stateTarget":"status-feedback/info-success-warning-danger","query":{"mode":"new","provider_id":"jira"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","no-unnamed-icon-buttons","selected-provider-check-visible","status-feedback-visible"],"hook":"provider_profile_test_failure","requiresHook":"mock provider connection failure"}],"/bug-trend/scope-config/":[{"name":"default","stateTarget":"default","query":{"mode":"new","provider_id":"jira"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","no-unnamed-icon-buttons","selected-provider-check-visible"]},{"name":"jira-scope-tab-selected","stateTarget":"tabs/default-selected-hover-focus-disabled","query":{"mode":"new","provider_id":"jira"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","selected-provider-check-visible"]},{"name":"hsdes-scope-tab-selected","stateTarget":"tabs/default-selected-hover-focus-disabled","query":{"mode":"new","provider_id":"hsdes"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","selected-provider-check-visible"]},{"name":"scope-required-missing","stateTarget":"form/default-required-missing-dirty-saving-success-failure","query":{"mode":"new","provider_id":"jira"},"steps":[{"action":"click","selector":"button[name='action'][value='save_enable']"}],"checks":["no-page-horizontal-overflow","no-clipped-buttons","required-summary-visible","missing-required-visible","selected-provider-check-visible"]},{"name":"scope-dirty-unsaved","stateTarget":"form/default-required-missing-dirty-saving-success-failure","query":{"mode":"new","provider_id":"jira"},"steps":[{"action":"fill","selector":"#scope-name","value":"Sample Scope"}],"checks":["no-page-horizontal-overflow","no-clipped-buttons","dirty-banner-visible","selected-provider-check-visible"]}],"/pull-requests/":[{"name":"pull-request-filter-applied","stateTarget":"table/default-empty-loading-selected-archived-error","query":{"author":"Monkey User"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","table-contracts-present","filter-applied-visible"],"hook":"pull_request_filter_applied","requiresHook":"fake pull request facade data"}],"/current-tasks/":[{"name":"default","stateTarget":"table/default-empty-loading-selected-archived-error","query":{},"checks":["no-page-horizontal-overflow","no-clipped-buttons","no-unnamed-icon-buttons","table-contracts-present"],"hook":"current_tasks_fake_data","requiresHook":"fake current tasks facade data"}],"/task-forecast/":[{"name":"forecast-filter-applied","stateTarget":"table/default-empty-loading-selected-archived-error","query":{"task_id":"TASK-101","include_done_tasks":"true"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","table-contracts-present"],"hook":"task_forecast_fake_data","requiresHook":"fake task forecast facade data"}],"/team-velocity/":[{"name":"default","stateTarget":"chart-drilldown-selected","query":{"period":"2026-09","member_group_id":"core"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","table-contracts-present"],"hook":"team_velocity_fake_data","requiresHook":"fake team velocity facade data"},{"name":"team-velocity-drilldown-selected","stateTarget":"chart-drilldown-selected","query":{"period":"2026-09","member_group_id":"core"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","table-contracts-present"],"hook":"team_velocity_fake_data","requiresHook":"fake team velocity facade data"}],"/dev-velocity/":[{"name":"default","stateTarget":"chart-drilldown-selected","query":{"period":"2026-09","developers":"Monkey User","member_group_id":"core"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","table-contracts-present"],"hook":"dev_velocity_fake_data","requiresHook":"fake developer velocity facade data"},{"name":"dev-velocity-drilldown-selected","stateTarget":"chart-drilldown-selected","query":{"period":"2026-09","developers":"Monkey User","member_group_id":"core"},"checks":["no-page-horizontal-overflow","no-clipped-buttons","table-contracts-present"],"hook":"dev_velocity_fake_data","requiresHook":"fake developer velocity facade data"}],"/partials/bug-trend/evidence/":[{"name":"default","stateTarget":"table/default-empty-loading-selected-archived-error","query":{},"checks":["no-page-horizontal-overflow","no-clipped-buttons","no-unnamed-icon-buttons","table-contracts-present"],"hook":"bug_trend_evidence_fake_data","requiresHook":"fake bug trend evidence data"}]}}
 ```
 
 ## React / Next / Tailwind Notes

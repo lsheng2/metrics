@@ -6,10 +6,10 @@ from ui_web.workbench_grafana import grafana_full_dashboard_url, grafana_panel_e
 
 
 class TestWorkbenchPageQueryState(SimpleTestCase):
-    def test_shouldRoundTripWorkbenchPageQueryStateFromQueryParams(self):
+    def test_shouldParseCanonicalWorkbenchPageQueryStateFromQueryParams(self):
         # Given
         query = QueryDict(
-            'profile_id=nvu-ttl-hsdes&provider_id=hsdes&range_mode=date&begin=2026-08-01&end=2026-08-31'
+            'scope_id=42&profile_id=nvu-ttl-hsdes&provider_id=hsdes&range_mode=date&begin=2026-08-01&end=2026-08-31'
             '&chart_id=open_bug_trend&chart_version=2&run=run-1&snapshot=snapshot-1'
             '&bucket=bucket-1&series=new_critical_high&text=display&status=open&severity=critical'
             '&owner=alice&component=media'
@@ -19,9 +19,9 @@ class TestWorkbenchPageQueryState(SimpleTestCase):
         state = WorkbenchPageQueryState.from_query(query)
 
         # Then
-        self.assertEqual(query['profile_id'], state.profile_id)
-        self.assertEqual('', state.scope_id)
-        self.assertEqual(query['provider_id'], state.provider_id)
+        self.assertEqual('', state.profile_id)
+        self.assertEqual('42', state.scope_id)
+        self.assertEqual('', state.provider_id)
         self.assertEqual(query['range_mode'], state.range_mode)
         self.assertEqual(query['begin'], state.begin)
         self.assertEqual(query['end'], state.end)
@@ -32,6 +32,8 @@ class TestWorkbenchPageQueryState(SimpleTestCase):
         self.assertEqual(query['bucket'], state.selected_bucket_id)
         self.assertEqual(query['series'], state.selected_series_name)
         self.assertEqual(query['text'], state.list_filters.text)
+        self.assertNotIn('profile_id', state.to_query_params())
+        self.assertNotIn('provider_id', state.to_query_params())
 
     def test_shouldKeepChartQuerySeparateFromEvidenceSelectionAndFilters(self):
         # Given

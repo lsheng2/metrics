@@ -59,6 +59,7 @@ class TestAiBaseWorkbenchAdapter(TestCase):
         self.assertNotIn('secret-token', url)
         self.assertEqual('metrics.dashboardQuery', payload['ai_base']['binding_request']['agentKey'])
         self.assertEqual('metrics.workbench.nvu-ttl-hsdes.overview', payload['ai_base']['binding_request']['sessionKey'])
+        self.assertNotIn('credentialRef', payload['ai_base']['binding_request']['auth'])
         self.assertNotIn('instanceTokenId', payload['ai_base']['binding_request']['auth'])
 
     @override_settings(METRICS_AI_BASE_INSTANCE_TOKEN='settings-token')

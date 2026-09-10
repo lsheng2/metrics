@@ -5,22 +5,23 @@ from bug_metrics.models import BugTrendBucket, BugTrendCalculationRun, BugTrendC
 from jira_history.container import jira_history_container
 
 from .ai_context import (
-    DashboardAiPublishApprovalRequest,
     DashboardAiArtifactValidationRequest,
+    DashboardAiPublishApprovalRequest,
     DashboardAiPublishRequest,
     DashboardAiWorkflowRequest,
     DashboardCompositionIntent,
+    GcxPublicationCallbackRequest,
     GcxPublicationPreconditionRequest,
     ProviderActionPlanRequest,
     ProviderAiChartDraftRequest,
     ProviderAiChartExplanationRequest,
     ProviderAiDashboardContextQuery,
     ProviderAiDashboardContextService,
-    GcxPublicationCallbackRequest,
 )
+from .ai_dashboard_api import BugTrendAiDashboardApiMixin
 from .ai_sidecar import AiSidecarProbeService
 from .calculation import BugTrendCalculationService
-from .chart_catalog import AiChartDraftRequest, ChartCatalogService, ChartDefinition, ChartPublishResult, ChartValidationResult, RendererRouteDecisionResult
+from .chart_catalog import ChartCatalogService, ChartDefinition, ChartPublishResult, ChartValidationResult, RendererRouteDecisionResult
 from .chart_data import BUG_TREND_CONTRACT_VERSION, BugTrendChart, BugTrendDataset, BugTrendRunMetadata
 from .data_health import BugTrendCalculationHealth, BugTrendCalculationHealthService
 from .evidence_export import BugTrendEvidenceExport, BugTrendEvidenceExportService
@@ -32,25 +33,27 @@ from .page_query import (
     BugTrendPageQueryState,
     BugTrendTicketListFilters,
 )
+from .provider_aggregates import ProviderChartAggregateService
+from .provider_chart_api import BugTrendProviderChartApiMixin
 from .provider_aggregate_contracts import (
     ProviderChartAggregateQuery,
     ProviderChartAggregateResult,
     ProviderChartEvidenceQuery,
 )
-from .provider_aggregates import ProviderChartAggregateService
 from .provider_correlation import ProviderCorrelationService
 from .provider_evidence import ProviderChartEvidenceService
-from .provider_profile_config import ProviderProfileConfigService, SavedProviderProfileConfig
+from .provider_profile_api import BugTrendProviderProfileApiMixin
+from .provider_profile_config import ProviderProfileConfigService
 from .provider_profile_connection_test import ProviderProfileConnectionTestService
 from .provider_profiles import ProviderProfileReadinessService
 from .scope_audit import ScopeAudit, ScopeAuditService
 from .scope_config import SavedScopeConfig, ScopeConfigService, ScopeConfigValidationResult
-from .scope_provider_binding import ScopeProviderBindingBulkConfirmResult, ScopeProviderBindingResolution, ScopeProviderBindingResolver
+from .scope_provider_binding import ScopeProviderBindingResolver
 from .series import active_bug_trend_series
 from provider_sync.app.api import ProviderSyncCacheService
 
 
-class ApiForBugTrend:
+class ApiForBugTrend(BugTrendProviderProfileApiMixin, BugTrendAiDashboardApiMixin, BugTrendProviderChartApiMixin):
     def __init__(self):
         self._page_query_service = BugTrendPageQueryService(
             self.get_scope,
@@ -85,111 +88,6 @@ class ApiForBugTrend:
 
     def get_scope_config(self, scope_id: int) -> SavedScopeConfig:
         return self._scope_config_service.get_scope_config(scope_id)
-
-    def resolve_scope_provider_binding(self, scope: JiraScopeConfig) -> ScopeProviderBindingResolution:
-        return self._scope_provider_binding_resolver.resolve(scope)
-
-    def backfill_scope_provider_binding(self, scope: JiraScopeConfig, explicit: bool = False,
-                                        actor: str = 'local_operator') -> ScopeProviderBindingResolution:
-        return self._scope_provider_binding_resolver.backfill(scope, explicit, actor)
-
-    def list_scope_provider_bindings(self) -> list[tuple[JiraScopeConfig, ScopeProviderBindingResolution]]:
-        scopes = JiraScopeConfig.objects.order_by('ip', 'project_label', 'name')
-        return [(scope, self._scope_provider_binding_resolver.resolve(scope, enforce_policy=False)) for scope in scopes]
-
-    def confirm_scope_provider_binding(self, scope_id: int, actor: str = 'local_operator') -> ScopeProviderBindingResolution:
-        scope = JiraScopeConfig.objects.get(id=scope_id)
-        return self.backfill_scope_provider_binding(scope, explicit=True, actor=actor)
-
-    def set_scope_provider_binding(self, scope_id: int, profile_id: str, actor: str = 'local_operator') -> ScopeProviderBindingResolution:
-        scope = JiraScopeConfig.objects.get(id=scope_id)
-        return self._scope_provider_binding_resolver.set_explicit(scope, profile_id, actor)
-
-    def bulk_confirm_scope_provider_bindings(self, actor: str = 'local_operator') -> ScopeProviderBindingBulkConfirmResult:
-        scopes = JiraScopeConfig.objects.order_by('ip', 'project_label', 'name')
-        return self._scope_provider_binding_resolver.bulk_confirm_compatibility(scopes, actor)
-
-    def list_scope_provider_profile_choices(self) -> list[dict[str, str]]:
-        return self._scope_provider_binding_resolver.list_profile_choices()
-
-    def list_provider_profile_configs(self) -> list[SavedProviderProfileConfig]:
-        return self._provider_profile_config_service.list_provider_profile_configs()
-
-    def get_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
-        return self._provider_profile_config_service.get_provider_profile_config(profile_id)
-
-    def new_provider_profile_config(self, provider_id: str = 'jira') -> SavedProviderProfileConfig:
-        return self._provider_profile_config_service.new_provider_profile_config(provider_id)
-
-    def save_provider_profile_config(self, config: SavedProviderProfileConfig) -> SavedProviderProfileConfig:
-        return self._provider_profile_config_service.save_provider_profile_config(config)
-
-    def test_provider_profile_connection(self, config: SavedProviderProfileConfig) -> dict:
-        return self._provider_profile_connection_test_service.test_connection(config).to_dict()
-
-    def duplicate_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
-        return self._provider_profile_config_service.duplicate_provider_profile_config(profile_id)
-
-    def archive_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
-        return self._provider_profile_config_service.archive_provider_profile_config(profile_id)
-
-    def restore_provider_profile_config(self, profile_id: str) -> SavedProviderProfileConfig:
-        return self._provider_profile_config_service.restore_provider_profile_config(profile_id)
-
-    def get_provider_profile_delete_impact(self, profile_id: str) -> dict:
-        return self._provider_profile_config_service.get_provider_profile_delete_impact(profile_id).to_dict()
-
-    def delete_archived_provider_profile_config(self, profile_id: str, confirmation: str) -> dict:
-        return self._provider_profile_config_service.delete_archived_provider_profile_config(profile_id, confirmation).to_dict()
-
-    def export_provider_profile_package(self, profile_id: str) -> dict:
-        return self._provider_profile_config_service.export_provider_profile_package(profile_id)
-
-    def import_provider_profile_package(self, package: dict):
-        return self._provider_profile_config_service.import_provider_profile_package(package)
-
-    def get_scope_binding_policy(self) -> str:
-        return self._scope_provider_binding_resolver.runtime_policy()
-
-    def list_scope_binding_audit_events(self, limit: int = 25) -> list[dict]:
-        return self._scope_provider_binding_resolver.list_binding_audit_events(limit)
-
-    def get_scope_provider_binding_health(self) -> dict:
-        rows = []
-        explicit_only_impacted_rows = []
-        counts = {
-            'explicit': 0,
-            'compatibility': 0,
-            'configuration_required': 0,
-            'ambiguous': 0,
-            'disabled': 0,
-        }
-        for scope, binding in self.list_scope_provider_bindings():
-            counts[binding.status] = counts.get(binding.status, 0) + 1
-            row = {
-                'scope_id': scope.id,
-                'scope_name': scope.name,
-                'enabled': scope.enabled,
-                'profile_id': binding.profile_id,
-                'provider_id': binding.provider_id,
-                'status': binding.status,
-                'provenance': binding.provenance,
-                'provenance_summary': binding.provenance.get('matched_by') or binding.provenance.get('source') or '-',
-                'blockers': binding.blockers,
-                'explicit_only_blocking': scope.enabled and binding.status != 'explicit',
-            }
-            rows.append(row)
-            if row['explicit_only_blocking']:
-                explicit_only_impacted_rows.append(row)
-        return {
-            'total': len(rows),
-            'counts': counts,
-            'rows': rows,
-            'runtime_policy': self.get_scope_binding_policy(),
-            'explicit_only_ready': len(explicit_only_impacted_rows) == 0,
-            'explicit_only_blocked_count': len(explicit_only_impacted_rows),
-            'explicit_only_impacted_rows': explicit_only_impacted_rows,
-        }
 
     def validate_scope_config(self, config: SavedScopeConfig) -> ScopeConfigValidationResult:
         return self._scope_config_service.validate_scope_config(config)
@@ -238,68 +136,6 @@ class ApiForBugTrend:
 
     def latest_renderer_route_decision(self, chart_id: str) -> RendererRouteDecisionResult | None:
         return self._chart_catalog_service.latest_renderer_route_decision(chart_id)
-
-    def create_ai_chart_draft(self, request: AiChartDraftRequest) -> ChartDefinition:
-        return self._chart_catalog_service.create_ai_chart_draft(request)
-
-    def get_ai_dashboard_context(self, query: ProviderAiDashboardContextQuery) -> dict:
-        return self._provider_ai_context_service.get_context(query)
-
-    def get_ai_workspace_context_bundle(self, profile_id: str) -> dict:
-        return self._provider_ai_context_service.get_workspace_context_bundle(profile_id)
-
-    def explain_ai_dashboard_chart(self, request: ProviderAiChartExplanationRequest) -> dict:
-        return self._provider_ai_context_service.explain_chart(request)
-
-    def create_ai_provider_chart_draft(self, request: ProviderAiChartDraftRequest) -> dict:
-        return self._provider_ai_context_service.create_chart_draft(request)
-
-    def get_ai_sidecar_status(self) -> dict:
-        return self._ai_sidecar_probe_service.get_status()
-
-    def list_ai_dashboard_composition_catalog(self, profile_id: str = '') -> dict:
-        return self._provider_ai_context_service.list_composition_catalog(profile_id)
-
-    def validate_ai_dashboard_composition_intent(self, request: DashboardCompositionIntent) -> dict:
-        return self._provider_ai_context_service.validate_composition_intent(request)
-
-    def run_ai_dashboard_workflow(self, request: DashboardAiWorkflowRequest) -> dict:
-        workflow = self._provider_ai_context_service.run_composition_workflow(request)
-        workflow['sidecar_readiness'] = self.get_ai_sidecar_status()
-        return workflow
-
-    def validate_ai_dashboard_render_config_draft(self, draft_render_config: dict) -> dict:
-        return self._provider_ai_context_service.validate_render_config_draft(draft_render_config)
-
-    def validate_ai_dashboard_workspace_artifact(self, request: DashboardAiArtifactValidationRequest) -> dict:
-        return self._provider_ai_context_service.validate_workspace_artifact(request)
-
-    def validate_ai_gcx_publication_precondition(self, request: GcxPublicationPreconditionRequest) -> dict:
-        return self._provider_ai_context_service.validate_gcx_publication_precondition(request)
-
-    def record_ai_gcx_publication_callback(self, request: GcxPublicationCallbackRequest) -> dict:
-        return self._provider_ai_context_service.record_gcx_publication_callback(request)
-
-    def publish_ai_grafana_dashboard_demo(self, request: DashboardAiPublishRequest, correlation_id: str) -> dict:
-        return self._provider_ai_context_service.publish_grafana_dashboard_demo(request, correlation_id)
-
-    def request_ai_grafana_publish_approval(self, request: DashboardAiPublishApprovalRequest) -> dict:
-        return self._provider_ai_context_service.request_grafana_publish_approval(request)
-
-    def decide_ai_grafana_publish_approval(self, approval_id: str, decision: str, actor: str = 'local_operator') -> dict:
-        return self._provider_ai_context_service.decide_grafana_publish_approval(approval_id, decision, actor)
-
-    def get_ai_grafana_publish_approval(self, approval_id: str) -> dict:
-        return self._provider_ai_context_service.get_grafana_publish_approval(approval_id)
-
-    def list_ai_grafana_publish_history(self, limit: int = 25) -> dict:
-        return self._provider_ai_context_service.list_grafana_publish_history(limit)
-
-    def list_ai_entry_placements(self) -> List[dict]:
-        return self._provider_ai_context_service.list_entry_placements()
-
-    def create_provider_action_plan(self, request: ProviderActionPlanRequest) -> dict:
-        return self._provider_ai_context_service.create_action_plan(request)
 
     def publish_chart(self, chart_id: str, actor: str = 'local_operator', governance_mode: str = 'personal') -> ChartPublishResult:
         return self._chart_catalog_service.publish_chart(chart_id, actor, governance_mode)
@@ -382,42 +218,6 @@ class ApiForBugTrend:
 
     def recalculate_scope(self, scope_id: int, coverage_start: date, coverage_end: date) -> BugTrendCalculationRun:
         return self._calculation_service.recalculate_scope(scope_id, coverage_start, coverage_end)
-
-    def get_provider_chart_aggregates(self, query: ProviderChartAggregateQuery) -> ProviderChartAggregateResult:
-        return self._provider_chart_aggregate_service.get_aggregates(query)
-
-    def build_hsdes_quality_aggregate_artifact(self, query: ProviderChartAggregateQuery, facts: list[dict]) -> ProviderChartAggregateResult:
-        return self._provider_chart_aggregate_service.build_hsdes_quality_aggregate_artifact(query, facts)
-
-    def get_provider_profile_readiness(self, provider_id: str, profile_id: str) -> dict:
-        return self._provider_profile_readiness_service.get_readiness(provider_id, profile_id)
-
-    def validate_provider_profile_drift(self, provider_id: str, profile_id: str, observed_profile: dict) -> dict:
-        return self._provider_profile_readiness_service.validate_drift(provider_id, profile_id, observed_profile)
-
-    def get_provider_capability_manifest(self, provider_id: str, profile_id: str) -> dict:
-        return self._provider_profile_readiness_service.get_capability_manifest(provider_id, profile_id)
-
-    def normalize_hsdes_search_page(self, profile_id: str, payload: dict) -> dict:
-        return self._hsdes_projection_service.normalize_search_page(profile_id, payload)
-
-    def normalize_hsdes_article_detail(self, profile_id: str, payload: dict) -> dict:
-        return self._hsdes_projection_service.normalize_article_detail(profile_id, payload)
-
-    def generate_provider_correlation_candidates(self, source_facts: list[dict], target_facts: list[dict]) -> list[dict]:
-        return self._provider_correlation_service.generate_candidates(source_facts, target_facts)
-
-    def review_provider_correlation(self, candidate: dict, state: str, reviewer: str) -> dict:
-        return self._provider_correlation_service.review_correlation(candidate, state, reviewer)
-
-    def get_provider_correlation_evidence_view(self, correlations: list[dict]) -> dict:
-        return self._provider_correlation_service.evidence_view(correlations)
-
-    def explain_cross_provider_correlation_risk(self, correlations: list[dict]) -> dict:
-        return self._provider_correlation_service.explain_risk(correlations)
-
-    def get_provider_chart_evidence(self, query: ProviderChartEvidenceQuery) -> dict:
-        return self._provider_chart_evidence_service.get_provider_chart_evidence(query)
 
     def _latest_authoritative_run(self, scope: JiraScopeConfig, begin: date, end: date) -> Optional[BugTrendCalculationRun]:
         return BugTrendCalculationRun.objects.filter(

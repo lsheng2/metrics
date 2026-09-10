@@ -7,7 +7,6 @@ from django.utils import timezone
 
 from bug_metrics.container import bug_metrics_container
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
-from bug_metrics.models import BugTrendScopeProviderBinding
 from jira_history.container import jira_history_container
 from jira_sync.app.api.issue_payload_materializer import JiraIssuePayloadMaterializer
 from jira_sync.models import JiraSyncCursor
@@ -33,7 +32,7 @@ class Command(BaseCommand):
         calculation_started = False
 
         try:
-            adapter = JiraScopeIssueAdapter(create_jira_client(settings, self._connection_settings_for_scope(scope)))
+            adapter = JiraScopeIssueAdapter(create_jira_client(settings, self._connection_settings_for_scope(bug_trend_api, scope)))
             history_api = jira_history_container.jira_history_api
             full_sync = options['full'] or cursor.last_jira_updated_cutoff is None
             current_issues, out_of_scope_issues = self._fetch_issues(adapter, history_api, materializer, scope, cursor, full_sync)
@@ -116,12 +115,14 @@ class Command(BaseCommand):
             issues.extend(adapter.fetch_issues(jql, field_names))
         return issues
 
-    def _connection_settings_for_scope(self, scope):
-        binding = BugTrendScopeProviderBinding.objects.filter(scope=scope, provider_id='jira').first()
-        profile_id = binding.profile_id if binding else scope.name
-        resolution = ProjectProviderProfileRegistry.load_default().resolve_profile(profile_id)
+    def _connection_settings_for_scope(self, bug_trend_api, scope):
+        binding = bug_trend_api.resolve_scope_provider_binding(scope)
+        if not binding.is_resolved or binding.provider_id != 'jira':
+            blocker = binding.blockers[0].get('message', '') if binding.blockers else 'Scope is not bound to a Jira provider profile.'
+            raise CommandError(blocker)
+        resolution = ProjectProviderProfileRegistry.load_default().resolve_profile(binding.profile_id)
         if resolution.profile is None or resolution.profile.provider_id != 'jira':
-            return {}
+            raise CommandError(f'Provider profile {binding.profile_id} is not available for Jira sync.')
         return dict(resolution.profile.connection_settings or {})
 
     def _issue_key_batches(self, issue_keys):

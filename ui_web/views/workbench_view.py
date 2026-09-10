@@ -14,7 +14,7 @@ from ..workbench_grafana import grafana_full_dashboard_url, grafana_panel_embed_
 from ..workbench_registry import default_workbench_panes
 from ..workbench_service_status import DEFAULT_FULL_STACK_LAUNCHER_COMMAND
 from ..workbench_state import WorkbenchPageQueryState
-from .bug_trend_view import parse_date_query
+from .bug_trend_query import parse_date_query
 from .graceful_template_view import GracefulTemplateView
 
 
@@ -75,17 +75,14 @@ class WorkbenchView(GracefulTemplateView):
         state = WorkbenchPageQueryState.from_query(query or self.request.GET)
         today = date.today()
         scope_options = self.bug_trend_facade.get_scope_options()
-        scope_id = state.scope_id or self._default_scope_id(state.profile_id, scope_options)
+        scope_id = state.scope_id or self._default_scope_id(scope_options)
         scope_option = self._scope_option(scope_options, scope_id)
         if scope_option and scope_option.binding_status in {'explicit', 'compatibility'}:
             profile_id = scope_option.profile_id
             provider_id = scope_option.provider_id
-        elif scope_option:
+        else:
             profile_id = ''
             provider_id = ''
-        else:
-            profile_id = state.profile_id
-            provider_id = self._provider_id_for_profile(profile_id) or state.provider_id
         return replace(
             state,
             scope_id=scope_id,
@@ -95,37 +92,16 @@ class WorkbenchView(GracefulTemplateView):
             end=state.end or today.isoformat(),
         )
 
-    def _default_scope_id(self, profile_id: str, scope_options=None) -> str:
+    def _default_scope_id(self, scope_options=None) -> str:
         scope_options = scope_options if scope_options is not None else self.bug_trend_facade.get_scope_options()
         if not scope_options:
             return ''
-        normalized_profile_id = profile_id.lower()
-        for scope in scope_options:
-            if scope.name.lower() == normalized_profile_id:
-                return str(scope.id)
         return str(scope_options[0].id)
 
     def _scope_option(self, scope_options, scope_id: str):
         if not scope_id:
             return None
         return next((scope for scope in scope_options if str(scope.id) == str(scope_id)), None)
-
-    def _provider_id_for_profile(self, profile_id: str) -> str:
-        if not profile_id:
-            return ''
-        try:
-            readiness = self.bug_trend_facade.get_provider_profile_readiness_payload('', profile_id)
-        except Exception:
-            return self._fallback_provider_id_for_profile(profile_id)
-        return str(readiness.get('provider_id') or '') or self._fallback_provider_id_for_profile(profile_id)
-
-    def _fallback_provider_id_for_profile(self, profile_id: str) -> str:
-        normalized_profile = profile_id.lower()
-        if 'hsdes' in normalized_profile:
-            return 'hsdes'
-        if 'jira' in normalized_profile:
-            return 'jira'
-        return ''
 
     def _populate_chart_context(self, context, state: WorkbenchPageQueryState):
         scope_options = self.bug_trend_facade.get_scope_options()
@@ -225,18 +201,11 @@ class WorkbenchView(GracefulTemplateView):
     def _scope_binding_context(self, state: WorkbenchPageQueryState) -> dict:
         scope_option = self._scope_option(self.bug_trend_facade.get_scope_options(), state.scope_id)
         if not scope_option:
-            if state.profile_id and state.provider_id:
-                return {
-                    'status': 'explicit',
-                    'profile_id': state.profile_id,
-                    'provider_id': state.provider_id,
-                    'blockers': [],
-                }
             return {
                 'status': 'configuration_required',
                 'profile_id': '',
                 'provider_id': '',
-                'blockers': [{'message': 'Scope is not bound to a provider profile.'}],
+                'blockers': [{'message': 'Select a saved scope with a provider profile binding.'}],
             }
         return {
             'status': scope_option.binding_status,

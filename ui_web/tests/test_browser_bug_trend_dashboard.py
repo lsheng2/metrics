@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from playwright.sync_api import sync_playwright
 
-from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
+from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig, ProviderProfileConfig
 from jira_history.models import JiraIssue
 
 class TestBugTrendDashboardBrowser(TestCase):
@@ -28,6 +28,7 @@ class TestBugTrendDashboardBrowser(TestCase):
             owner_field='assignee',
             bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
         )
+        self._bind_jira_profile(scope)
         adapter_class.return_value.fetch_issues.return_value = [self._jira_issue_payload()]
 
         # When
@@ -81,6 +82,7 @@ class TestBugTrendDashboardBrowser(TestCase):
             owner_field='assignee',
             bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
         )
+        self._bind_jira_profile(scope)
         adapter_class.return_value.fetch_issues.return_value = [
             self._jira_issue_payload(
                 issue_key='STDEL-9001',
@@ -264,6 +266,28 @@ class TestBugTrendDashboardBrowser(TestCase):
             updated_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
         )
         return scope, run, bucket
+
+    def _bind_jira_profile(self, scope, profile_id='browser-sync-jira-profile'):
+        ProviderProfileConfig.objects.create(
+            profile_id=profile_id,
+            provider_id='jira',
+            display_name='Browser Sync Jira Profile',
+            lifecycle_state=ProviderProfileConfig.LIFECYCLE_ENABLED,
+            connection_settings={
+                'base_url': 'https://jira.profile.example',
+                'auth_mode': 'server_pat',
+                'credentials': {'api_token': 'profile-jira-token'},
+            },
+            source_population={'native_query_text': scope.jql},
+            field_bindings={'status': {'native_field': 'status'}},
+            chart_bindings={'open_bug_trend': {'support_status': 'supported'}},
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id=profile_id,
+            provider_id='jira',
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
 
     def _render_chart_and_click_evidence(self, response, evidence_response):
         playwright = sync_playwright().start()

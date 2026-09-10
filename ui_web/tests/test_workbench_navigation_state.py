@@ -6,10 +6,10 @@ from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupp
 
 
 class TestWorkbenchNavigationState(WorkbenchBrowserTestSupport, TestCase):
-    def test_shouldPreferProfileNamedScopeWhenWorkbenchScopeIsMissing(self):
+    def test_shouldUseFirstScopeWhenWorkbenchScopeIsMissing(self):
         # Given
-        JiraScopeConfig.objects.create(
-            name='tmp empty trend',
+        default_scope = JiraScopeConfig.objects.create(
+            name='aaa default trend',
             jql='project = EMPTY',
             bug_type_values=['Bug'],
             fixed_status_values=['Fixed'],
@@ -42,16 +42,16 @@ class TestWorkbenchNavigationState(WorkbenchBrowserTestSupport, TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn(f'name="scope_id" value="{profile_scope.id}"', content)
-        self.assertIn(f'var-scope_id={profile_scope.id}', content)
-        self.assertNotIn('name="scope_id" value="1"', content)
+        self.assertIn(f'value="{default_scope.id}"', content)
+        self.assertIn(f'var-scope_id={default_scope.id}', content)
+        self.assertNotIn(f'var-scope_id={profile_scope.id}', content)
 
     def test_shouldRestoreLastValidWorkbenchUrlForSidebarNavigation(self):
         # When
         restored_href, rejected_href, saved_url, saved_href = self._exercise_workbench_navigation_state_restore()
 
         # Then
-        self.assertEqual('/workbench/?scope_id=7&profile_id=chiplet-2a-jira&provider_id=jira', restored_href)
+        self.assertEqual('/workbench/?scope_id=7', restored_href)
         self.assertEqual('/workbench/', rejected_href)
-        self.assertEqual('/workbench/?scope_id=11&profile_id=nvu-ttl-hsdes&provider_id=hsdes', saved_url)
-        self.assertEqual('/workbench/?scope_id=11&profile_id=nvu-ttl-hsdes&provider_id=hsdes', saved_href)
+        self.assertEqual('/workbench/?scope_id=11', saved_url)
+        self.assertEqual('/workbench/?scope_id=11', saved_href)

@@ -5,9 +5,9 @@ from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from bug_metrics.container import bug_metrics_container
 from bug_metrics.app.api.provider_aggregate_common import ww_range_to_dates
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
-from bug_metrics.models import JiraScopeConfig
 from bug_metrics.provider_profile_connection import first_profile_credential_value, profile_connection_value, profile_credential_value
 from provider_sync.app.api import ProviderFreshnessStatus
 from provider_sync.app.api.hsdes import HsdesHttpClient, HsdesSavedQueryAdapter, HsdesSavedQuerySyncService
@@ -79,16 +79,16 @@ class Command(BaseCommand):
         self.stdout.write(json.dumps(result, sort_keys=True))
 
     def _sync_jira_profile(self, profile, options):
-        scope = JiraScopeConfig.objects.filter(enabled=True, name=profile.profile_id).first()
+        scope, binding = self._jira_scope_for_profile(profile)
         if scope is None:
             return {
-                'status': 'configuration_required',
+                'status': binding.status if binding else 'configuration_required',
                 'freshness_status': ProviderFreshnessStatus.CONFIGURATION_REQUIRED,
                 'profile_id': profile.profile_id,
                 'provider_id': profile.provider_id,
-                'blockers': [{
+                'blockers': binding.blockers if binding and binding.blockers else [{
                     'code': 'jira_scope_not_mapped',
-                    'message': f'No enabled Jira scope named {profile.profile_id} is mapped to this provider profile.',
+                    'message': f'No enabled Jira scope is bound to provider profile {profile.profile_id}.',
                 }],
             }
         coverage_start, coverage_end = ww_range_to_dates(options['begin_ww'], options['end_ww'])
@@ -114,3 +114,20 @@ class Command(BaseCommand):
             'coverage_end': coverage_end.isoformat(),
             'sync_summary': sync_output.getvalue().strip(),
         }
+
+    def _jira_scope_for_profile(self, profile):
+        bug_trend_api = bug_metrics_container.bug_trend_api
+        blocked_binding = None
+        for scope, relaxed_binding in bug_trend_api.list_scope_provider_bindings():
+            if not scope.enabled or not self._binding_targets_profile(relaxed_binding, profile):
+                continue
+            binding = bug_trend_api.resolve_scope_provider_binding(scope)
+            if binding.is_resolved:
+                return scope, binding
+            blocked_binding = binding
+        return None, blocked_binding
+
+    def _binding_targets_profile(self, binding, profile) -> bool:
+        profile_id = binding.profile_id or binding.provenance.get('compatibility_profile_id', '')
+        provider_id = binding.provider_id or binding.provenance.get('compatibility_provider_id', '')
+        return profile_id == profile.profile_id and provider_id == profile.provider_id

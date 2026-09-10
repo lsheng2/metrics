@@ -120,8 +120,6 @@
                 {% endif %}
                 <form class="dashboard-tool-form workbench-evidence-filter mt-3" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
                     <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
-                    <input type="hidden" name="profile_id" value="{{ workbench_state.profile_id }}">
-                    <input type="hidden" name="provider_id" value="{{ workbench_state.provider_id }}">
                     <input type="hidden" name="range_mode" value="{{ workbench_state.range_mode }}">
                     <input type="hidden" name="begin" value="{{ workbench_state.begin }}">
                     <input type="hidden" name="end" value="{{ workbench_state.end }}">

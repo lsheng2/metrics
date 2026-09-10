@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
-from port_lifecycle.platform_ops import creation_flags
+from service_lifecycle_engine.platform_ops import creation_flags
 
 
 def test_windows_creationFlagsStartServicesWithoutConsoleWindow():

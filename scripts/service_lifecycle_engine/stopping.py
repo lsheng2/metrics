@@ -13,14 +13,13 @@ class LifecycleStoppingMixin:
         service = state.get(name)
         if not service:
             return StopResult(name=name, port=-1, pid=None, stopped=False, forced=False, reason="not_registered", stop_source=StopSource.NOT_REGISTERED)
-        if service.get("lifecycle_state") == LifecycleState.STOPPED.value:
-            return StopResult(name=name, port=int(service.get("port", -1)), pid=int(service["pid"]) if service.get("pid") is not None else None, stopped=True, forced=False, reason="already_stopped")
-
         pid = int(service["pid"])
         port = int(service["port"])
         host = str(service.get("host", "127.0.0.1"))
         listener_identity_url = str(service.get("listener_identity_url") or "")
         provenance = self._provenance_from_service(service)
+        if service.get("lifecycle_state") == LifecycleState.STOPPED.value and self._service_process_fully_stopped(pid, provenance, host, port, listener_identity_url):
+            return StopResult(name=name, port=port, pid=pid, stopped=True, forced=False, reason="already_stopped", provenance=provenance)
         forced = False
         stopped = False
         reason = "not_running"

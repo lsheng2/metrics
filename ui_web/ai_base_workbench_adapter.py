@@ -185,6 +185,7 @@ class AiBaseWorkbenchAdapter:
     def public_binding_request(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
         request = self.binding_request(state, sidecar_status)
         public_auth = dict(request.get('auth') or {})
+        public_auth.pop('credentialRef', None)
         public_auth.pop('instanceTokenId', None)
         public_auth.pop('token', None)
         request['auth'] = public_auth

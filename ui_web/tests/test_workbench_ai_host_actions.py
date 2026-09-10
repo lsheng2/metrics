@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from bug_metrics.models import BugTrendScopeProviderBinding, JiraScopeConfig
 from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupport
 
 
@@ -11,6 +12,7 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
     def test_shouldRenderReadyAiBasePaneWithCurrentContext(self, status_payload):
         # Given
+        scope = self._bound_scope('nvu-ttl-hsdes', 'hsdes')
         status_payload.return_value = {
             'status': 'ready',
             'profile_id': 'dashboard_query_agent',
@@ -20,7 +22,7 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
 
         # When
         response = self.client.get(reverse('ui_web:workbench'), {
-            'profile_id': 'nvu-ttl-hsdes',
+            'scope_id': scope.id,
             'range_mode': 'ww',
             'begin': '26WW32',
             'end': '26WW35',
@@ -45,6 +47,41 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
     def test_shouldRenderAiBasePaneThroughAdapterWhenAppChatModeIsEnabled(self, status_payload):
         # Given
+        scope = self._bound_scope('nvu-ttl-hsdes', 'hsdes')
+        status_payload.return_value = {
+            'status': 'ready',
+            'profile_id': 'dashboard_query_agent',
+            'service_id': 'dashboard-query-agent-app-service',
+            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
+        }
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'range_mode': 'ww',
+            'begin': '26WW32',
+            'end': '26WW35',
+            'chart_id': 'open_bug_trend',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('http://127.0.0.1:48310/?embed=app-chat#/chat?', content)
+        self.assertIn('sourceAppId=metrics-dashboard', content)
+        self.assertIn('bindingKey=metrics.workbench.overview', content)
+        self.assertIn('workspaceKey=metrics.hsdes.nvu-ttl-hsdes', content)
+        self.assertIn('agentKey=metrics.dashboardQuery', content)
+        self.assertNotIn('credentialRef=', content)
+        self.assertNotIn('credentialRef', content)
+        self.assertNotIn('hostOrigin=', content)
+        self.assertIn('binding_request', content)
+        self.assertNotIn('secret-token', content)
+
+    @override_settings(METRICS_AI_BASE_EMBED_MODE='app-chat')
+    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
+    def test_shouldBlockAppChatWhenOnlyUrlProfileAndProviderAreProvided(self, status_payload):
+        # Given
         status_payload.return_value = {
             'status': 'ready',
             'profile_id': 'dashboard_query_agent',
@@ -65,15 +102,10 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('http://127.0.0.1:48310/?embed=app-chat#/chat?', content)
-        self.assertIn('sourceAppId=metrics-dashboard', content)
-        self.assertIn('bindingKey=metrics.workbench.overview', content)
-        self.assertIn('workspaceKey=metrics.hsdes.nvu-ttl-hsdes', content)
-        self.assertIn('agentKey=metrics.dashboardQuery', content)
-        self.assertNotIn('credentialRef=', content)
-        self.assertNotIn('hostOrigin=', content)
-        self.assertIn('binding_request', content)
-        self.assertNotIn('secret-token', content)
+        self.assertIn('"status": "binding_required"', content)
+        self.assertIn('Select a saved scope with a provider profile binding.', content)
+        self.assertNotIn('workspaceKey=metrics.hsdes.nvu-ttl-hsdes', content)
+        self.assertNotIn('workbench-ai-chat-frame', content)
 
     @override_settings(METRICS_AI_BASE_FRONTEND_URL='http://127.0.0.1:48310')
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
@@ -99,8 +131,29 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
         # Then
         self.assertEqual('GET', result['htmx_call']['method'])
         self.assertEqual('.workbench-shell', result['htmx_call']['target'])
-        self.assertIn('profile_id=chiplet-2a-jira', result['htmx_call']['url'])
-        self.assertIn('provider_id=jira', result['htmx_call']['url'])
+        self.assertNotIn('profile_id=chiplet-2a-jira', result['htmx_call']['url'])
+        self.assertNotIn('provider_id=jira', result['htmx_call']['url'])
+        self.assertIn('scope_id=7', result['htmx_call']['url'])
         self.assertIn('chart_id=open_bug_trend', result['htmx_call']['url'])
         self.assertEqual('handled', result['ack']['status'])
         self.assertEqual('metrics-workbench.chart', result['ack']['result']['openedIn'])
+
+    def _bound_scope(self, profile_id, provider_id):
+        scope = JiraScopeConfig.objects.create(
+            name=f'{profile_id} scope',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            fixed_status_values=['Fixed'],
+            closed_status_values=['Closed'],
+            severity_field='priority',
+            critical_high_values=['P1-Critical'],
+            medium_low_values=['P3-Medium'],
+            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
+        )
+        BugTrendScopeProviderBinding.objects.create(
+            scope=scope,
+            profile_id=profile_id,
+            provider_id=provider_id,
+            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
+        )
+        return scope
