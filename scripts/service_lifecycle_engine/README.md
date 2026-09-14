@@ -58,6 +58,22 @@ Health metadata:
 - `health_requirement_affects_startup(requirement)`
 - `health_requirement_affects_liveness(requirement)`
 
+Startup orchestration:
+
+- `ServiceStartNode`
+- `ServiceDependency`
+- `ServiceDependencyRequirement`
+- `ServiceActivationPolicy`
+- `ServiceRestartPolicy`
+- `ServiceStartPlan`
+- `ServiceStartWave`
+- `ServiceLaunchAttempt`
+- `ServiceLaunchStatus`
+- `ServiceStartGraphResult`
+- `ServiceStartupGraphError`
+- `plan_service_startup(nodes, include_services=None)`
+- `start_services_in_dependency_order(nodes, start, max_parallelism=4, include_services=None, run_id=None, now=None, timer=None)`
+
 Diagnostics and conformance:
 
 - `ServiceDiagnosticCode`
@@ -67,6 +83,8 @@ Diagnostics and conformance:
 - `ServiceLifecycleConformanceResult`
 - `run_service_lifecycle_conformance_checks(fixture)`
 - `assert_service_lifecycle_conformance(fixture)`
+- `run_startup_orchestration_conformance_checks(startup_nodes=(), service_name="dashboard")`
+- `assert_startup_orchestration_conformance(startup_nodes=(), service_name="dashboard")`
 
 ## Adapter Pattern
 
@@ -103,3 +121,36 @@ python -m service_lifecycle_engine.lifecycle_state_cli ready \
 ```
 
 Canonical health statuses are intentionally small: `unknown`, `starting`, `ready`, `degraded`, `auth_required`, `unreachable`, and `stopped`. Project-specific conditions should use `reason`, `special_state`, or diagnostics rather than expanding the core enum.
+
+Startup orchestration remains app-neutral. Projects describe services as nodes and dependencies, then provide their own starter callback:
+
+```python
+from service_lifecycle_engine import ServiceDependency, ServiceStartNode, start_services_in_dependency_order
+
+nodes = (
+    ServiceStartNode("database"),
+    ServiceStartNode("api", dependencies=(ServiceDependency("database"),)),
+)
+
+result = start_services_in_dependency_order(
+    nodes,
+    lambda node: {"service": node.service_name},
+    max_parallelism=2,
+)
+```
+
+Required dependency failures skip downstream services. Optional dependencies are soft ordering edges only when the upstream service is part of the selected plan: the engine tries the optional upstream first, records diagnostics if it fails, and does not block the dependent service. Optional dependencies do not force lazy services to start. Lazy and manual services are omitted from the default eager plan unless explicitly selected by the caller or needed as required prerequisites. Restart policy is metadata for adapters and supervisors; the module does not schedule project-specific restarts by itself.
+
+Downstream projects can run the reusable startup orchestration conformance pack directly:
+
+```python
+from service_lifecycle_engine import ServiceDependency, ServiceStartNode, assert_startup_orchestration_conformance
+
+assert_startup_orchestration_conformance(
+    startup_nodes=(
+        ServiceStartNode("database"),
+        ServiceStartNode("api", dependencies=(ServiceDependency("database"),)),
+    ),
+    service_name="api",
+)
+```

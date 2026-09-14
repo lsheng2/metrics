@@ -244,3 +244,37 @@
 #### Scenario: Force request and kill escalation remain distinct
 - **WHEN** explicit force-by-port cleanup gracefully terminates a process
 - **THEN** conformance tests SHALL prove `force_requested` is true, stop source is force-by-port, and `forced` remains false because no kill escalation occurred
+
+### Requirement: Startup orchestration is dependency-aware and app-neutral
+系统 SHALL provide project-neutral startup graph planning for multiple local services. The graph SHALL use service ids, dependency edges, activation policy, restart policy metadata, launch attempts, timing, and diagnostics without requiring project-specific launchers, routes, service names, or runtime endpoint authority.
+
+#### Scenario: Independent services share a startup wave
+- **WHEN** a caller submits eager service nodes where two services have no unresolved selected dependencies
+- **THEN** the startup plan SHALL place those services in the same wave
+- **AND** services that depend on them SHALL appear only in later waves
+
+#### Scenario: Optional dependency is a selected soft ordering edge
+- **WHEN** a service has an optional dependency that is also part of the selected startup plan
+- **THEN** the optional dependency SHALL be attempted in an earlier wave than the dependent service
+- **AND** the optional dependency's failure SHALL be reported as diagnostics rather than blocking the dependent service
+
+#### Scenario: Optional dependency is not an activation trigger
+- **WHEN** a default eager plan includes a service whose optional dependency is lazy or manual
+- **THEN** the optional dependency SHALL NOT be added to the plan only because of that optional edge
+- **AND** the dependent service MAY start without optional dependency diagnostics when the optional upstream was not selected
+
+#### Scenario: Required dependency failure skips downstream
+- **WHEN** a service startup fails
+- **AND** another service requires it
+- **THEN** the dependent service SHALL NOT invoke its starter callback
+- **AND** the result SHALL include a skipped launch attempt with dependency diagnostics
+
+#### Scenario: Parallel startup is opt-in and deterministic
+- **WHEN** multiple services in a wave are ready to start
+- **THEN** no more than the caller-provided `max_parallelism` starter callbacks SHALL run concurrently
+- **AND** result ordering SHALL remain deterministic by input plan order
+
+#### Scenario: Lazy startup and restart policy are declarative
+- **WHEN** a service node declares lazy/manual activation or restart policy
+- **THEN** those declarations SHALL be serializable and visible to adapters
+- **AND** core SHALL NOT schedule project-specific activation triggers or restarts by itself

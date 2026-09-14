@@ -2,7 +2,9 @@ from .config import load_project_name, load_service_specs
 from .conformance import (
     ServiceLifecycleConformanceFixture,
     ServiceLifecycleConformanceResult,
+    assert_startup_orchestration_conformance,
     assert_service_lifecycle_conformance,
+    run_startup_orchestration_conformance_checks,
     run_service_lifecycle_conformance_checks,
 )
 from .diagnostics import ServiceDiagnosticCode, diagnostic_value, diagnostic_values
@@ -55,6 +57,23 @@ from .models import (
     StopResult,
     StopSource,
 )
+from .startup_models import (
+    NowCallback,
+    ServiceActivationPolicy,
+    ServiceDependency,
+    ServiceDependencyRequirement,
+    ServiceLaunchAttempt,
+    ServiceLaunchStatus,
+    ServiceRestartPolicy,
+    ServiceStartGraphResult,
+    ServiceStartNode,
+    ServiceStartPlan,
+    ServiceStartWave,
+    ServiceStartupGraphError,
+    StartServiceCallback,
+    TimerCallback,
+)
+from .startup_orchestration import plan_service_startup, start_services_in_dependency_order
 from .platform_ops import is_port_available, process_exists
 
 from .engine import ServiceLifecycleEngine
@@ -91,9 +110,15 @@ __all__ = [
     "ProvenanceCapability",
     "ResolvedPortPlan",
     "RestartResult",
+    "NowCallback",
+    "ServiceActivationPolicy",
+    "ServiceDependency",
+    "ServiceDependencyRequirement",
     "ServiceDiagnosticCode",
     "ServiceHealthSnapshot",
     "ServiceHealthStatus",
+    "ServiceLaunchAttempt",
+    "ServiceLaunchStatus",
     "ServiceLaunchMetadata",
     "ServiceLifecycleConformanceFixture",
     "ServiceLifecycleConformanceResult",
@@ -101,11 +126,20 @@ __all__ = [
     "ServiceLiveSnapshot",
     "ServiceOperatorAction",
     "ServiceOperatorLink",
+    "ServiceRestartPolicy",
     "ServiceSpec",
+    "ServiceStartGraphResult",
+    "ServiceStartNode",
+    "ServiceStartPlan",
+    "ServiceStartWave",
+    "ServiceStartupGraphError",
     "ServiceState",
     "StopResult",
     "StopSource",
     "SystemClock",
+    "StartServiceCallback",
+    "TimerCallback",
+    "assert_startup_orchestration_conformance",
     "assert_service_lifecycle_conformance",
     "build_external_service_state",
     "build_service_health_snapshot",
@@ -119,6 +153,7 @@ __all__ = [
     "load_service_specs",
     "merge_service_launch_metadata",
     "pid_is_alive",
+    "plan_service_startup",
     "process_exists",
     "provenance_capability_for",
     "read_pid_file_value",
@@ -127,5 +162,7 @@ __all__ = [
     "resolve_owned_listener",
     "resolve_pid_file_launch_metadata",
     "resolve_service_health_status",
+    "run_startup_orchestration_conformance_checks",
     "run_service_lifecycle_conformance_checks",
+    "start_services_in_dependency_order",
 ]

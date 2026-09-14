@@ -18,6 +18,7 @@ from service_lifecycle_engine import (
     LifecycleState,
     ProcessMetadataProvider,
     ServiceDiagnosticCode,
+    ServiceDependency,
     ServiceHealthSnapshot,
     ServiceHealthStatus,
     ServiceLaunchMetadata,
@@ -25,6 +26,8 @@ from service_lifecycle_engine import (
     ServiceLiveSnapshot,
     ServiceOperatorAction,
     ServiceOperatorLink,
+    ServiceStartNode,
+    assert_startup_orchestration_conformance,
     build_external_service_state,
     build_service_health_snapshot,
     health_requirement_affects_liveness,
@@ -35,6 +38,7 @@ from service_lifecycle_engine import (
     resolve_lifecycle_service_launch_metadata,
     resolve_pid_file_launch_metadata,
     resolve_service_health_status,
+    run_startup_orchestration_conformance_checks,
 )
 from service_lifecycle_engine.conformance import (
     ServiceLifecycleConformanceFixture,
@@ -200,10 +204,43 @@ def test_live_metadata_shouldProvideReusableConformanceChecks() -> None:
         "launch_provider",
         "health_provider",
         "health_requirements",
+        "startup_project_graph",
+        "startup_required_failure_skip",
+        "startup_optional_failure_non_blocking",
+        "startup_lazy_manual_selection",
+        "startup_invalid_graphs",
+        "startup_parallelism_and_ordering",
         "live_snapshot",
     ]
     assert all(result.passed for result in results)
     assert_service_lifecycle_conformance(fixture)
+
+
+def test_live_metadata_shouldExposeReusableStartupOrchestrationConformancePack() -> None:
+    results = run_startup_orchestration_conformance_checks(
+        startup_nodes=(
+            ServiceStartNode("database"),
+            ServiceStartNode("api", dependencies=(ServiceDependency("database"),)),
+        ),
+        service_name="api",
+    )
+
+    assert [result.name for result in results] == [
+        "startup_project_graph",
+        "startup_required_failure_skip",
+        "startup_optional_failure_non_blocking",
+        "startup_lazy_manual_selection",
+        "startup_invalid_graphs",
+        "startup_parallelism_and_ordering",
+    ]
+    assert all(result.passed for result in results)
+    assert_startup_orchestration_conformance(
+        startup_nodes=(
+            ServiceStartNode("database"),
+            ServiceStartNode("api", dependencies=(ServiceDependency("database"),)),
+        ),
+        service_name="api",
+    )
 
 
 def test_live_metadata_shouldDetectForbiddenConformancePayloadMarkers() -> None:

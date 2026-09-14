@@ -13,6 +13,13 @@ class ServiceDiagnosticCode(str, Enum):
     STARTED_AT_UNAVAILABLE = "started_at_unavailable"
     PROBE_AUTH_REQUIRED = "probe_auth_required"
     PROBE_TIMEOUT = "probe_timeout"
+    DEPENDENCY_UNKNOWN = "dependency_unknown"
+    DEPENDENCY_CYCLE = "dependency_cycle"
+    DEPENDENCY_FAILED = "dependency_failed"
+    DEPENDENCY_OPTIONAL_FAILED = "dependency_optional_failed"
+    DUPLICATE_SERVICE = "duplicate_service"
+    START_FAILED = "start_failed"
+    START_SKIPPED = "start_skipped"
 
 
 def diagnostic_value(value: ServiceDiagnosticCode | str) -> str:
