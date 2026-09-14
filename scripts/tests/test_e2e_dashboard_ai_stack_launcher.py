@@ -33,6 +33,9 @@ def test_dashboard_ai_stack_smoke_checks_unified_workbench():
     assert "$exitCode -ne 0" in script
     assert "$($exitCode)" in script
     assert "Invoke-WithStackRetry" in script
+    assert "function New-DashboardAppAuth" in script
+    assert "function Add-DashboardAppAuth" in script
+    assert "Add-DashboardAppAuth -Payload $contextBundle -Auth $appAuth" in script
     assert "Invoke-BootLogAudit -Phase 'dashboard-start' -RequireDashboardState" in script
     assert "Test-JiraProfileSyncRunning" in script
     assert "E2E_JIRA_PROFILE_ID" in script

@@ -271,6 +271,33 @@ function Invoke-JsonPostStatus {
     }
 }
 
+function New-DashboardAppAuth {
+    $runtimeInfo = Invoke-WithStackRetry -ScriptBlock {
+        Invoke-RestMethod -Uri "$AiBaseBackendUrl/api/runtime/info" -TimeoutSec 20
+    }
+    $auth = @{
+        authMode = 'local_sidecar_signed_token'
+        credentialRef = 'metrics-dashboard-local'
+    }
+    if ($runtimeInfo.app.instanceToken) {
+        $auth.instanceTokenId = [string]$runtimeInfo.app.instanceToken
+    }
+    return $auth
+}
+
+function Add-DashboardAppAuth {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$Payload,
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Auth
+    )
+
+    $authenticatedPayload = $Payload | Select-Object *
+    $authenticatedPayload | Add-Member -NotePropertyName auth -NotePropertyValue $Auth -Force
+    return $authenticatedPayload
+}
+
 function Stop-DashboardAiStack {
     $dashboardStop = Join-Path $DashboardWorkspace 'scripts\e2e_stop_bug_trend.ps1'
     $aiBaseStop = Join-Path $AiBaseWorkspace 'scripts\stop-minimal-chat-dev.ps1'
@@ -646,7 +673,8 @@ function Test-DashboardAiStack {
     $contextBundle = Invoke-WithStackRetry -ScriptBlock {
         Invoke-RestMethod -Uri "$DashboardBaseUrl/api/ai-dashboard/workspace-context/?profile_id=$JiraProfileId" -TimeoutSec 20
     }
-    $workspaceSync = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/app-workspace-context-bundles/sync" -Body $contextBundle
+    $appAuth = New-DashboardAppAuth
+    $workspaceSync = Invoke-JsonPost -Url "$AiBaseBackendUrl/api/app-workspace-context-bundles/sync" -Body (Add-DashboardAppAuth -Payload $contextBundle -Auth $appAuth)
     if (-not $workspaceSync.workspace.workspaceId) {
         throw 'AI Base workspace context sync did not return a workspace id.'
     }

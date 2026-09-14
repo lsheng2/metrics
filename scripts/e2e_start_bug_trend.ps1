@@ -1,7 +1,7 @@
 param(
     [string]$Workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [ValidateSet('grafana', 'workbench', 'none')]
-    [string]$OpenEntrypoint = 'grafana',
+    [string]$OpenEntrypoint = 'workbench',
     [switch]$ForceByPort
 )
 

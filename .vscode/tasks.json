@@ -60,7 +60,7 @@
         {
             "label": "E2E: Start Bug Trend",
             "type": "shell",
-            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_bug_trend.ps1'; & $script -Workspace $workspace -ForceByPort",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_bug_trend.ps1'; & $script -Workspace $workspace -OpenEntrypoint workbench -ForceByPort",
             "problemMatcher": []
         },
         {
@@ -78,7 +78,25 @@
         {
             "label": "E2E: Restart Bug Trend",
             "type": "shell",
-            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_restart_bug_trend.ps1'; & $script -Workspace $workspace -ForceByPort",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_restart_bug_trend.ps1'; & $script -Workspace $workspace -OpenEntrypoint workbench -ForceByPort",
+            "problemMatcher": []
+        },
+        {
+            "label": "E2E: Start Dashboard AI Stack",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_dashboard_ai_stack.ps1'; & $script -DashboardWorkspace $workspace -ForceByPort",
+            "problemMatcher": []
+        },
+        {
+            "label": "E2E: Stop Dashboard AI Stack",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_stop_dashboard_ai_stack.ps1'; & $script -DashboardWorkspace $workspace -ForceByPort",
+            "problemMatcher": []
+        },
+        {
+            "label": "E2E: Restart Dashboard AI Stack",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_restart_dashboard_ai_stack.ps1'; & $script -DashboardWorkspace $workspace -ForceByPort -SkipJiraSync",
             "problemMatcher": []
         }
     ]

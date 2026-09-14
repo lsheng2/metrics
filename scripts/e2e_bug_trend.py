@@ -39,7 +39,7 @@ def main() -> None:
     parser.add_argument("--end", default="2026-08-09")
     parser.add_argument("--grafana-bin", default=os.environ.get("GRAFANA_BIN", ""))
     parser.add_argument("--grafana-homepath", default=os.environ.get("GRAFANA_HOMEPATH", ""))
-    parser.add_argument("--open-entrypoint", choices=("grafana", "workbench", "none"), default="grafana")
+    parser.add_argument("--open-entrypoint", choices=("grafana", "workbench", "none"), default="workbench")
     parser.add_argument("--force-by-port", action="store_true")
     args = parser.parse_args()
 
