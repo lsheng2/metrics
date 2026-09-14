@@ -141,6 +141,20 @@ class UiDesignBrowserMetricsSupport:
                         return `table[${index}]${id}${className}`;
                     };
                     const actionButtons = Array.from(document.querySelectorAll('.dashboard-action-bar .button')).filter(visible);
+                    const buttonFontWeight = button => {
+                        const weight = getComputedStyle(button).fontWeight;
+                        if (weight === 'normal') {
+                            return 400;
+                        }
+                        if (weight === 'bold') {
+                            return 700;
+                        }
+                        return Number.parseInt(weight, 10) || 400;
+                    };
+                    const visibleButtons = Array.from(document.querySelectorAll('.button')).filter(visible);
+                    const boldButtonLabels = visibleButtons
+                        .filter(button => buttonFontWeight(button) > 400)
+                        .map(button => button.innerText.trim() || button.getAttribute('aria-label') || button.getAttribute('title') || button.outerHTML.slice(0, 80));
                     const clippedActionButtons = actionButtons
                         .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
                         .map(button => button.innerText.trim());
@@ -230,7 +244,9 @@ class UiDesignBrowserMetricsSupport:
                         expects_dense_table: Boolean(expectations.dense_table),
                         expects_tool_form: Boolean(expectations.tool_form),
                         page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-                        visible_button_count: Array.from(document.querySelectorAll('.button')).filter(visible).length,
+                        visible_button_count: visibleButtons.length,
+                        max_button_font_weight: max(visibleButtons.map(buttonFontWeight)),
+                        bold_button_labels: boldButtonLabels,
                         clipped_action_buttons: clippedActionButtons,
                         responsive_table_count: document.querySelectorAll('.responsive-admin-table').length,
                         dense_table_count: denseTables.length,

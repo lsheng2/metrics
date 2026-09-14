@@ -180,6 +180,11 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
                 self.assertFalse(metrics['page_horizontal_overflow'], f'{label} {viewport}')
                 self.assertEqual([], metrics['clipped_action_buttons'], f'{label} {viewport}')
                 self.assertGreater(metrics['visible_button_count'], 0, f'{label} {viewport}')
+                self.assertLessEqual(
+                    metrics['max_button_font_weight'],
+                    400,
+                    f"{label} {viewport} bold buttons: {metrics['bold_button_labels']}",
+                )
                 self.assertEqual([], metrics['table_contract_failures'], f'{label} {viewport}')
                 self.assertEqual([], metrics['table_density_failures'], f'{label} {viewport}')
                 self.assertEqual([], metrics['table_button_failures'], f'{label} {viewport}')
