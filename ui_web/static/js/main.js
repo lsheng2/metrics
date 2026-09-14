@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const banner = form.querySelector('[data-dirty-banner]');
             const fields = Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
                 .filter(field => field.type !== 'hidden' && field.type !== 'submit');
+            const cleanDisabledControls = Array.from(form.querySelectorAll('[data-disable-when-clean]'));
 
             fields.forEach(field => {
                 field.dataset.initialValue = field.type === 'checkbox' ? String(field.checked) : field.value;
@@ -157,6 +158,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     banner.classList.toggle('is-hidden', !formIsDirty);
                 }
                 form.dataset.dirty = String(formIsDirty);
+                cleanDisabledControls.forEach(control => {
+                    control.disabled = !formIsDirty;
+                    control.setAttribute('aria-disabled', String(!formIsDirty));
+                });
             }
 
             fields.forEach(field => {
@@ -180,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             });
+            markDirtyFields();
         });
     }
 

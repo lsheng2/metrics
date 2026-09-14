@@ -103,6 +103,61 @@ class ProviderSetupViewTestSupport:
         finally:
             page.close()
 
+    def _measure_provider_row_menu_visibility(self, html):
+        html = self._provider_setup_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1660, 'height': 760})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                return page.evaluate("""
+                    () => {
+                        const menu = document.querySelector('.provider-row-menu');
+                        if (menu) {
+                            menu.open = true;
+                        }
+                        const panel = document.querySelector('.provider-row-menu .workbench-menu-panel');
+                        const archiveButton = document.querySelector('button[value="archive_profile"]');
+                        const duplicateButton = document.querySelector('button[value="duplicate_profile"]');
+                        const actionCell = archiveButton ? archiveButton.closest('td') : null;
+                        const centerHit = element => {
+                            if (!element) {
+                                return {matches: false, target: ''};
+                            }
+                            const rect = element.getBoundingClientRect();
+                            const hit = document.elementFromPoint(
+                                rect.left + rect.width / 2,
+                                rect.top + rect.height / 2
+                            );
+                            return {
+                                matches: hit === element || element.contains(hit),
+                                target: hit ? `${hit.tagName}.${hit.className} ${hit.textContent}`.trim().slice(0, 120) : '',
+                            };
+                        };
+                        const rectBottom = element => element ? Math.round(element.getBoundingClientRect().bottom) : 0;
+                        const archiveHit = centerHit(archiveButton);
+                        const duplicateHit = centerHit(duplicateButton);
+                        return {
+                            archive_action_in_dom: Boolean(archiveButton),
+                            duplicate_action_in_dom: Boolean(duplicateButton),
+                            archive_button_hit_target: archiveHit.matches,
+                            duplicate_button_hit_target: duplicateHit.matches,
+                            archive_hit_target: archiveHit.target,
+                            duplicate_hit_target: duplicateHit.target,
+                            action_cell_overflow: actionCell ? getComputedStyle(actionCell).overflow : '',
+                            action_cell_bottom: rectBottom(actionCell),
+                            archive_button_bottom: rectBottom(archiveButton),
+                            menu_panel_height: panel ? Math.round(panel.getBoundingClientRect().height) : 0,
+                        };
+                    }
+                """)
+            finally:
+                page.close()
+        finally:
+            browser.close()
+            playwright.stop()
+
     def _provider_setup_browser_html(self, html):
         static_dir = Path(__file__).resolve().parents[1] / 'static'
         vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
@@ -218,6 +273,7 @@ class ProviderSetupViewTestSupport:
                     }
                 """)
                 page.click('[data-dirty-reset]')
+                page.wait_for_function("() => document.querySelectorAll('.is-dirty-field').length === 0")
                 after_cancel = page.evaluate("""
                     () => {
                         const banner = document.querySelector('[data-dirty-banner]');
@@ -229,6 +285,92 @@ class ProviderSetupViewTestSupport:
                     }
                 """)
                 return {'initial_dirty_fields': initial_dirty_fields, **dirty_state, **after_cancel}
+            finally:
+                page.close()
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_existing_provider_editor_action_state(self, html):
+        html = self._provider_setup_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1280, 'height': 820})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                initial = page.evaluate("""
+                    () => {
+                        const save = document.querySelector('.provider-editor-actions button[value="save_draft"]');
+                        const enable = document.querySelector('.provider-editor-actions button[value="enable_profile"]');
+                        const test = document.querySelector('.provider-editor-actions button[value="test_connection"]');
+                        return {
+                            save_text: save ? save.textContent.trim() : '',
+                            save_disabled: save ? save.disabled : false,
+                            enable_disabled: enable ? enable.disabled : false,
+                            test_connection_disabled: test ? test.disabled : true,
+                        };
+                    }
+                """)
+                page.fill('#provider-display-name', 'Chiplet 2A Jira updated')
+                edited = page.evaluate("""
+                    () => {
+                        const save = document.querySelector('.provider-editor-actions button[value="save_draft"]');
+                        const enable = document.querySelector('.provider-editor-actions button[value="enable_profile"]');
+                        const banner = document.querySelector('[data-dirty-banner]');
+                        return {
+                            save_disabled_after_edit: save ? save.disabled : true,
+                            enable_disabled_after_edit: enable ? enable.disabled : false,
+                            dirty_banner_visible_after_edit: banner ? !banner.classList.contains('is-hidden') : false,
+                        };
+                    }
+                """)
+                page.click('[data-dirty-reset]')
+                page.wait_for_function("""
+                    () => {
+                        const save = document.querySelector('.provider-editor-actions button[value="save_draft"]');
+                        return save && save.disabled;
+                    }
+                """)
+                after_reset = page.evaluate("""
+                    () => {
+                        const save = document.querySelector('.provider-editor-actions button[value="save_draft"]');
+                        return {
+                            save_disabled_after_reset: save ? save.disabled : false,
+                        };
+                    }
+                """)
+                return {**initial, **edited, **after_reset}
+            finally:
+                page.close()
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_provider_editor_secondary_surfaces(self, html):
+        html = self._provider_setup_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1280, 'height': 820})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                return page.evaluate("""
+                    () => {
+                        const summary = document.querySelector('.provider-advanced-config summary');
+                        const signature = document.querySelector('.provider-signature-grid');
+                        const signatureValues = Array.from(document.querySelectorAll('.provider-signature-value'));
+                        const summaryStyle = summary ? getComputedStyle(summary) : null;
+                        return {
+                            advanced_summary_height: summary ? Math.round(summary.getBoundingClientRect().height) : 0,
+                            advanced_summary_cursor: summaryStyle ? summaryStyle.cursor : '',
+                            advanced_summary_display: summaryStyle ? summaryStyle.display : '',
+                            signature_item_count: document.querySelectorAll('.provider-signature-item').length,
+                            signature_horizontal_overflow: signature ? signature.scrollWidth > signature.clientWidth + 1 : true,
+                            signature_values_fit: signatureValues.every(value => value.scrollWidth <= value.clientWidth + 1),
+                        };
+                    }
+                """)
             finally:
                 page.close()
         finally:

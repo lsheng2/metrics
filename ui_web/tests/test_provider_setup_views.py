@@ -34,6 +34,21 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertNotIn('>Bind</button>', content)
         self.assertNotIn('provider-setup-editor', content)
 
+    def test_shouldShowArchiveActionWhenProviderRowMoreMenuOpensInBrowser(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_setup'))
+        result = self._measure_provider_row_menu_visibility(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(result['archive_action_in_dom'], result)
+        self.assertTrue(result['duplicate_action_in_dom'], result)
+        self.assertEqual('visible', result['action_cell_overflow'], result)
+        self.assertGreater(result['archive_button_bottom'], result['action_cell_bottom'], result)
+        self.assertGreaterEqual(result['menu_panel_height'], 100, result)
+        self.assertTrue(result['duplicate_button_hit_target'], result)
+        self.assertTrue(result['archive_button_hit_target'], result)
+
     def test_shouldRenderProviderFirstEditorForHsdesProfile(self):
         # When
         response = self.client.get(reverse('ui_web:provider_setup'), {
@@ -153,6 +168,40 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertLessEqual(results['desktop']['context_panel_left_border_width'], 1)
         self.assertLessEqual(results['desktop']['provider_form_control_height_delta'], 1)
         self.assertLessEqual(results['phone']['provider_form_control_height_delta'], 1)
+
+    def test_shouldRenderProviderEditorSecondarySurfacesAsScannableControls(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_setup'), {
+            'profile_id': 'chiplet-2a-jira',
+        })
+        result = self._measure_provider_editor_secondary_surfaces(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertGreaterEqual(result['advanced_summary_height'], 32, result)
+        self.assertEqual('pointer', result['advanced_summary_cursor'], result)
+        self.assertIn(result['advanced_summary_display'], {'flex', 'grid'}, result)
+        self.assertEqual(2, result['signature_item_count'], result)
+        self.assertFalse(result['signature_horizontal_overflow'], result)
+        self.assertTrue(result['signature_values_fit'], result)
+
+    def test_shouldDisableNoopSaveActionsForUnchangedEnabledProviderProfileInBrowser(self):
+        # When
+        response = self.client.get(reverse('ui_web:provider_setup'), {
+            'profile_id': 'chiplet-2a-jira',
+        })
+        result = self._measure_existing_provider_editor_action_state(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('Save Changes', result['save_text'])
+        self.assertTrue(result['save_disabled'], result)
+        self.assertTrue(result['enable_disabled'], result)
+        self.assertFalse(result['test_connection_disabled'], result)
+        self.assertFalse(result['save_disabled_after_edit'], result)
+        self.assertTrue(result['enable_disabled_after_edit'], result)
+        self.assertTrue(result['dirty_banner_visible_after_edit'], result)
+        self.assertTrue(result['save_disabled_after_reset'], result)
 
     def test_shouldMarkUnsavedProviderFieldAndCancelEditingInBrowser(self):
         # When

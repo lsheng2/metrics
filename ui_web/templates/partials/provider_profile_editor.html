@@ -266,7 +266,9 @@
             </section>
         </div>
         <details class="provider-advanced-config" {% if not profile.profile_id %}open{% endif %}>
-            <summary>Advanced JSON configuration</summary>
+            <summary class="provider-advanced-summary">
+                <span>Advanced JSON configuration</span>
+            </summary>
             <div class="provider-json-grid">
                 {% for field in editor.json_fields %}
                     <div class="provider-json-panel">
@@ -298,8 +300,8 @@
         {% include "partials/dashboard_editor_state_banners.html" %}
         <div class="dashboard-action-bar provider-editor-actions">
             <div class="dashboard-action-group provider-action-group provider-action-primary">
-                <button class="button" type="submit" name="action" value="save_draft">Save Draft</button>
-                <button class="button is-primary" type="submit" name="action" value="enable_profile">Enable Profile</button>
+                <button class="button {% if profile.profile_id and profile.lifecycle_state == 'enabled' %}is-primary{% endif %}" type="submit" name="action" value="save_draft" {% if profile.profile_id %}data-disable-when-clean disabled title="Edit a field before saving changes."{% endif %}>{% if profile.profile_id %}Save Changes{% else %}Save Draft{% endif %}</button>
+                <button class="button {% if not profile.profile_id or profile.lifecycle_state != 'enabled' %}is-primary{% endif %}" type="submit" name="action" value="enable_profile" {% if profile.profile_id and profile.lifecycle_state == 'enabled' %}disabled title="This profile is already enabled."{% endif %}>Enable Profile</button>
             </div>
             <div class="dashboard-action-group provider-action-group provider-action-secondary">
                 <button class="button {% if provider_connection_test.status == 'success' %}is-success{% elif provider_connection_test.status == 'configuration_required' %}is-warning{% elif provider_connection_test %}is-danger{% else %}is-info{% endif %} is-light" type="submit" name="action" value="test_connection" formnovalidate>Test Connection</button>
@@ -314,7 +316,16 @@
                 <a class="button is-light" href="{% url 'ui_web:provider_setup' %}" data-dirty-guard>Provider Setup</a>
             </div>
         </div>
-        <p class="provider-hash-line">Mapping hash: {{ profile.mapping_version_hash }} Source hash: {{ profile.source_version_hash }}</p>
+        <section class="provider-signature-grid" aria-label="Provider profile signatures">
+            <div class="provider-signature-item">
+                <span class="scope-config-kicker">Mapping hash</span>
+                <code class="provider-signature-value">{{ profile.mapping_version_hash }}</code>
+            </div>
+            <div class="provider-signature-item">
+                <span class="scope-config-kicker">Source hash</span>
+                <code class="provider-signature-value">{{ profile.source_version_hash }}</code>
+            </div>
+        </section>
     </section>
 </form>
 {% endwith %}
