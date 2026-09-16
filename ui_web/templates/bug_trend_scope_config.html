@@ -349,7 +349,12 @@
                 <button class="button is-light" type="submit" name="action" value="discard" formnovalidate>Cancel Editing</button>
             </div>
         </div>
-        <p class="is-size-7">Config hash: {{ config.config_version_hash }}</p>
+        <section class="dashboard-signature-grid scope-signature-grid" aria-label="Scope configuration signatures">
+            <div class="dashboard-signature-item">
+                <span class="scope-config-kicker">Config hash</span>
+                <code class="dashboard-signature-value">{{ config.config_version_hash }}</code>
+            </div>
+        </section>
     </form>
     {% endif %}
 </article>

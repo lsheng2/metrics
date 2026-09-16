@@ -174,6 +174,26 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertIn('Type the exact text below into the input box', result['prompt_message'])
         self.assertIn(f'\n\nDELETE {scope.name}\n\n', result['prompt_message'])
 
+    def test_shouldRenderScopeEditorHashWithSharedSignatureSpacingInBrowser(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL signature spacing',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            enabled=True,
+        )
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'scope_id': str(scope.id)})
+
+        # When
+        result = self._measure_scope_editor_signature_spacing(response.content.decode())
+
+        # Then
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, result['signature_item_count'], result)
+        self.assertFalse(result['signature_horizontal_overflow'], result)
+        self.assertTrue(result['signature_values_fit'], result)
+        self.assertGreaterEqual(result['actions_to_signature_gap'], 12, result)
+
     def test_shouldAdaptScopeLibraryTableAcrossScreenWidthsInBrowser(self):
         # Given
         JiraScopeConfig.objects.create(

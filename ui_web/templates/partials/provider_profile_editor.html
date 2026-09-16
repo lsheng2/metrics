@@ -316,14 +316,14 @@
                 <a class="button is-light" href="{% url 'ui_web:provider_setup' %}" data-dirty-guard>Provider Setup</a>
             </div>
         </div>
-        <section class="provider-signature-grid" aria-label="Provider profile signatures">
-            <div class="provider-signature-item">
+        <section class="dashboard-signature-grid" aria-label="Provider profile signatures">
+            <div class="dashboard-signature-item">
                 <span class="scope-config-kicker">Mapping hash</span>
-                <code class="provider-signature-value">{{ profile.mapping_version_hash }}</code>
+                <code class="dashboard-signature-value">{{ profile.mapping_version_hash }}</code>
             </div>
-            <div class="provider-signature-item">
+            <div class="dashboard-signature-item">
                 <span class="scope-config-kicker">Source hash</span>
-                <code class="provider-signature-value">{{ profile.source_version_hash }}</code>
+                <code class="dashboard-signature-value">{{ profile.source_version_hash }}</code>
             </div>
         </section>
     </section>

@@ -358,16 +358,20 @@ class ProviderSetupViewTestSupport:
                 return page.evaluate("""
                     () => {
                         const summary = document.querySelector('.provider-advanced-config summary');
-                        const signature = document.querySelector('.provider-signature-grid');
-                        const signatureValues = Array.from(document.querySelectorAll('.provider-signature-value'));
+                        const actions = document.querySelector('.provider-editor-actions');
+                        const signature = document.querySelector('.dashboard-signature-grid');
+                        const signatureValues = Array.from(document.querySelectorAll('.dashboard-signature-value'));
                         const summaryStyle = summary ? getComputedStyle(summary) : null;
+                        const actionsRect = actions ? actions.getBoundingClientRect() : null;
+                        const signatureRect = signature ? signature.getBoundingClientRect() : null;
                         return {
                             advanced_summary_height: summary ? Math.round(summary.getBoundingClientRect().height) : 0,
                             advanced_summary_cursor: summaryStyle ? summaryStyle.cursor : '',
                             advanced_summary_display: summaryStyle ? summaryStyle.display : '',
-                            signature_item_count: document.querySelectorAll('.provider-signature-item').length,
+                            signature_item_count: document.querySelectorAll('.dashboard-signature-item').length,
                             signature_horizontal_overflow: signature ? signature.scrollWidth > signature.clientWidth + 1 : true,
                             signature_values_fit: signatureValues.every(value => value.scrollWidth <= value.clientWidth + 1),
+                            actions_to_signature_gap: actionsRect && signatureRect ? Math.round(signatureRect.top - actionsRect.bottom) : 0,
                         };
                     }
                 """)

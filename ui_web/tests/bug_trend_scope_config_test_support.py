@@ -137,6 +137,35 @@ class BugTrendScopeConfigViewTestSupport:
             browser.close()
             playwright.stop()
 
+    def _measure_scope_editor_signature_spacing(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={'width': 1280, 'height': 820})
+            try:
+                page.set_content(html, wait_until='domcontentloaded')
+                return page.evaluate("""
+                    () => {
+                        const actions = document.querySelector('.scope-editor-actions');
+                        const signature = document.querySelector('.dashboard-signature-grid');
+                        const values = Array.from(document.querySelectorAll('.dashboard-signature-value'));
+                        const actionsRect = actions ? actions.getBoundingClientRect() : null;
+                        const signatureRect = signature ? signature.getBoundingClientRect() : null;
+                        return {
+                            signature_item_count: document.querySelectorAll('.dashboard-signature-item').length,
+                            signature_horizontal_overflow: signature ? signature.scrollWidth > signature.clientWidth + 1 : true,
+                            signature_values_fit: values.every(value => value.scrollWidth <= value.clientWidth + 1),
+                            actions_to_signature_gap: actionsRect && signatureRect ? Math.round(signatureRect.top - actionsRect.bottom) : 0,
+                        };
+                    }
+                """)
+            finally:
+                page.close()
+        finally:
+            browser.close()
+            playwright.stop()
+
     def _measure_scope_required_validation(self, html):
         html = self._scope_library_browser_html(html)
         playwright = sync_playwright().start()

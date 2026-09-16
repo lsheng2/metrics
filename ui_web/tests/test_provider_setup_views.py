@@ -184,6 +184,7 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertEqual(2, result['signature_item_count'], result)
         self.assertFalse(result['signature_horizontal_overflow'], result)
         self.assertTrue(result['signature_values_fit'], result)
+        self.assertGreaterEqual(result['actions_to_signature_gap'], 12, result)
 
     def test_shouldDisableNoopSaveActionsForUnchangedEnabledProviderProfileInBrowser(self):
         # When

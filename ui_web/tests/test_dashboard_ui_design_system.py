@@ -47,6 +47,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             'dashboard-form-field',
             'dashboard-action-bar',
             'dashboard-action-group',
+            'dashboard-signature-grid',
             'dashboard-tool-form',
             'dashboard-tool-grid',
             'dashboard-tool-field',
@@ -398,6 +399,11 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         # Given
         css_path = Path(__file__).resolve().parents[1] / 'static' / 'css' / 'main.css'
         css = css_path.read_text(encoding='utf-8')
+        template_dir = Path(__file__).resolve().parents[1] / 'templates'
+        editor_templates = [
+            template_dir / 'bug_trend_scope_config.html',
+            template_dir / 'partials' / 'provider_profile_editor.html',
+        ]
 
         # Then
         self.assertIn('.dashboard-form-grid', css)
@@ -410,12 +416,20 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         self.assertIn('.dashboard-action-form', css)
         self.assertIn('.dashboard-action-bar', css)
         self.assertIn('.dashboard-action-group', css)
+        self.assertIn('.dashboard-signature-grid', css)
+        self.assertIn('.dashboard-signature-item', css)
+        self.assertIn('.dashboard-signature-value', css)
         self.assertIn('.dashboard-required-tag', css)
         self.assertIn('.is-missing-required', css)
         self.assertIn('.dashboard-required-message', css)
         self.assertIn('.dashboard-validation-banner', css)
         self.assertIn('.dashboard-unsaved-banner', css)
         self.assertNotIn(".button,\n.input,\n.textarea,\n.select select,\n.tag", css)
+        for path in editor_templates:
+            content = path.read_text(encoding='utf-8')
+            self.assertIn('dashboard-signature-grid', content, str(path))
+            self.assertIn('dashboard-signature-item', content, str(path))
+            self.assertIn('dashboard-signature-value', content, str(path))
 
     def test_shouldDefineRequiredValidationBehaviorThroughSharedScript(self):
         # Given

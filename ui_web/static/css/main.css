@@ -2384,22 +2384,22 @@ span:focus-within > .help-tip::after,
     padding: 0 0.76rem;
 }
 
-.provider-signature-grid {
+.dashboard-signature-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.45rem;
-    margin-top: -0.18rem;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: 0.6rem;
+    margin-top: 0.85rem;
 }
 
-.provider-signature-item {
+.dashboard-signature-item {
     min-width: 0;
     border: 1px solid var(--dashboard-border);
     border-radius: var(--dashboard-radius-control);
     background: color-mix(in srgb, var(--dashboard-surface-soft) 72%, transparent);
-    padding: 0.36rem 0.48rem;
+    padding: 0.46rem 0.56rem;
 }
 
-.provider-signature-value {
+.dashboard-signature-value {
     display: block;
     margin-top: 0.16rem;
     color: var(--dashboard-text-muted);
@@ -2425,7 +2425,7 @@ span:focus-within > .help-tip::after,
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .provider-signature-grid {
+    .dashboard-signature-grid {
         grid-template-columns: 1fr;
     }
 

@@ -30,7 +30,7 @@ Framework contract:
 
 ## Baseline Decisions
 
-- Setup/editor forms use `dashboard-edit-form`, `dashboard-form-grid`, `dashboard-form-field`, `dashboard-action-bar`, `dashboard-unsaved-banner`, `dashboard-validation-banner`, and `data-required-form`.
+- Setup/editor forms use `dashboard-edit-form`, `dashboard-form-grid`, `dashboard-form-field`, `dashboard-action-bar`, `dashboard-signature-grid`, `dashboard-unsaved-banner`, `dashboard-validation-banner`, and `data-required-form`.
 - Filter, import, and destructive action forms do not inherit setup-editor validation unless they explicitly opt in.
 - Provider choice is represented as local tabs/cards using `provider-tab-shell`, `scope-provider-choice`, and `provider-tab-check`.
 - Provider colors remain Jira green, HSD-ES blue, GitHub purple.

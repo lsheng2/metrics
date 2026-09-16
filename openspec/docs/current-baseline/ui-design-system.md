@@ -31,6 +31,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 | Dirty state | `main.css`, `main.js` | `dashboard-unsaved-banner`, `is-dirty-field`, `is-dirty-control`, `dirty-marker` | Editable setup forms | Dirty/cancel browser tests |
 | Editor state banners | `partials/dashboard_editor_state_banners.html` | `dashboard-unsaved-banner`, `dashboard-validation-banner`, `data-dirty-banner`, `data-required-summary` | Provider Profile Config, Scope Config | Static partial ownership tests |
 | Action bar | `main.css` | `dashboard-action-bar`, `dashboard-action-group`, `dashboard-action-cancel` | Editor save/test/cancel/navigation controls | Button-height and gap assertions |
+| Signature grid | `main.css` | `dashboard-signature-grid`, `dashboard-signature-item`, `dashboard-signature-value` | Editor bottom config/hash/profile signatures after action bars | Browser gap, overflow, and value-fit assertions |
 | Tool/filter form | `main.css` | `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | Bug Trend filters, Task Forecast parameters, AI Workflow request, Current Tasks filters, Pull Request filters | Static template checks and browser layout gate |
 | Dense top toolbar | `main.css` | `dashboard-top-toolbar`, safe label row height, compact control height | Workbench top state bar, Bug Trend, Task Forecast, Current Tasks, Pull Requests, AI Dashboard Workflow page-top filter/request bars | Browser label clipping/out-of-field checks, form control height, and overflow checks |
 | Action form | `main.css` | `dashboard-action-form`, optional `is-stacked` or `is-inline` | Import, export, duplicate, bind, archive, delete, sync, and confirmation forms | Static form ownership tests and visual manifest runner |
@@ -51,7 +52,7 @@ Normative behavior still lives in OpenSpec specs and active changes; this file e
 
 ## Usage Rules
 
-- Persistent setup editors must use the Editor form, Form grid, Required state, Dirty state, and Action bar contracts.
+- Persistent setup editors must use the Editor form, Form grid, Required state, Dirty state, Action bar, and Signature grid contracts when they render bottom hashes or configuration fingerprints.
 - Filter, search, import, and destructive confirmation forms must not opt into `data-dirty-form` or `data-required-form` unless they become persistent editors.
 - Lightweight dashboard query forms must use the Tool/filter form contract instead of page-local `columns` and button sizing rules.
 - Page-top dense filter bars must use the Dense top toolbar contract so labels, controls, and action buttons align without clipping at compact height.
