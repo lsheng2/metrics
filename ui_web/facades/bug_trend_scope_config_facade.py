@@ -1,5 +1,6 @@
 from bug_metrics.app.api.scope_config import SEMANTIC_LIST_FIELDS, SavedScopeConfig, normalize_scope_list_values, saved_scope_config_from_dict
 from bug_metrics.models import JiraScopeConfig
+from jira_sync.app.api.jira_query_builder import JiraScopeQueryBuilder
 
 from ..data.bug_trend_data import BugTrendProviderProfileChoice, BugTrendScopeBindingData, BugTrendScopeConfigProviderContext, BugTrendScopeLibraryRow, BugTrendScopeLibraryScopeData, BugTrendScopeOption
 from .bug_trend_scope_profile import resolve_scope_provider_binding
@@ -14,6 +15,19 @@ SEMANTIC_MAPPING_TEXT_FIELDS = {
     'fix_version_field',
     'package_version_field',
 }
+
+QUERY_BUILDER_LIST_FIELDS = {
+    'query_builder_issue_types': 'issue_types',
+    'query_builder_components': 'components',
+    'query_builder_affected_versions': 'affected_versions',
+    'query_builder_fix_versions': 'fix_versions',
+    'query_builder_priorities': 'priorities',
+    'query_builder_resolutions': 'resolutions',
+    'query_builder_security_levels': 'security_levels',
+    'query_builder_labels': 'labels',
+}
+
+QUERY_BUILDER_CUSTOM_FIELD_ROWS = range(1, 7)
 
 
 class BugTrendScopeConfigFacadeMixin:
@@ -303,6 +317,8 @@ class BugTrendScopeConfigFacadeMixin:
             timezone=source.timezone,
             bucket_granularity=source.bucket_granularity,
             enabled=False,
+            source_mode=source.source_mode,
+            query_builder_state=dict(source.query_builder_state or {}),
             config_version_hash='',
         )
 
@@ -334,11 +350,20 @@ class BugTrendScopeConfigFacadeMixin:
         return saved, saved.config_version_hash != original_hash
 
     def scope_config_from_post(self, post_data) -> SavedScopeConfig:
+        source_mode = self._source_mode(post_data.get('source_mode', ''))
+        query_builder_state = {}
+        jql = post_data.get('jql', '')
+        if source_mode == JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER:
+            query_builder_state = self._query_builder_state_from_post(post_data)
+            jql = JiraScopeQueryBuilder().build(query_builder_state)
         payload = {field_name: post_data.get(field_name, '') for field_name in [
-            'id', 'name', 'ip', 'project_label', 'jql', 'severity_field', 'component_field',
+            'id', 'name', 'ip', 'project_label', 'severity_field', 'component_field',
             'owner_field', 'team_field', 'milestone_field', 'fix_version_field',
             'package_version_field', 'timezone', 'bucket_granularity',
         ]}
+        payload['source_mode'] = source_mode
+        payload['jql'] = jql
+        payload['query_builder_state'] = query_builder_state
         try:
             payload['id'] = int(payload['id']) if payload['id'] else None
         except ValueError:
@@ -350,6 +375,112 @@ class BugTrendScopeConfigFacadeMixin:
 
     def _parse_list_field(self, value: str) -> list[str]:
         return normalize_scope_list_values(value)
+
+    def source_mode_context(self, config: SavedScopeConfig, query_data=None) -> dict:
+        preview_config = self._preview_source_config(config, query_data)
+        builder_state = dict(preview_config.query_builder_state or {})
+        source_mode = self._source_mode(preview_config.source_mode)
+        return {
+            'mode': source_mode,
+            'custom_jql_active': source_mode == JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL,
+            'query_builder_active': source_mode == JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER,
+            'custom_jql_value': preview_config.jql if source_mode == JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL else config.jql,
+            'query_builder_state': builder_state,
+            'query_builder_jql': JiraScopeQueryBuilder().build(builder_state),
+            'custom_jql_mode': JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL,
+            'query_builder_mode': JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER,
+        }
+
+    def _preview_source_config(self, config: SavedScopeConfig, query_data) -> SavedScopeConfig:
+        if query_data is None or not self._has_query_builder_request(query_data):
+            return config
+        preview = self.scope_config_from_post(query_data)
+        for field_name in [
+            'id',
+            'name',
+            'ip',
+            'project_label',
+            'bug_type_values',
+            'open_status_values',
+            'fixed_status_values',
+            'closed_status_values',
+            'terminal_excluded_status_values',
+            'fixed_resolution_values',
+            'closed_resolution_values',
+            'reopen_status_values',
+            'severity_field',
+            'critical_high_values',
+            'medium_low_values',
+            'component_field',
+            'owner_field',
+            'team_field',
+            'milestone_field',
+            'fix_version_field',
+            'package_version_field',
+            'display_fields',
+            'timezone',
+            'bucket_granularity',
+            'enabled',
+            'config_version_hash',
+        ]:
+            if not getattr(preview, field_name):
+                setattr(preview, field_name, getattr(config, field_name))
+        return preview
+
+    def _has_query_builder_request(self, post_data) -> bool:
+        if post_data.get('source_mode'):
+            return True
+        if post_data.get('query_builder_project'):
+            return True
+        return any(post_data.get(field_name) for field_name in QUERY_BUILDER_LIST_FIELDS)
+
+    def _source_mode(self, raw_source_mode: str) -> str:
+        source_mode = str(raw_source_mode or '').strip()
+        if source_mode == JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER:
+            return JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER
+        return JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL
+
+    def _query_builder_state_from_post(self, post_data) -> dict:
+        state = {}
+        project = str(post_data.get('query_builder_project', '') or '').strip()
+        if project:
+            state['project'] = project
+        for post_field_name, state_field_name in QUERY_BUILDER_LIST_FIELDS.items():
+            values = self._parse_post_values(post_data, post_field_name)
+            if values:
+                state[state_field_name] = values
+        custom_fields = self._query_builder_custom_fields_from_post(post_data)
+        if custom_fields:
+            state['custom_fields'] = custom_fields
+        return state
+
+    def _query_builder_custom_fields_from_post(self, post_data) -> list[dict]:
+        custom_fields = []
+        for field_name, values in self._repeated_custom_field_filters(post_data):
+            if field_name and values:
+                custom_fields.append({'field': field_name, 'values': values})
+        for index in QUERY_BUILDER_CUSTOM_FIELD_ROWS:
+            field_name = str(post_data.get(f'query_builder_custom_field_{index}', '') or '').strip()
+            values = self._parse_post_values(post_data, f'query_builder_custom_values_{index}')
+            if field_name and values:
+                custom_fields.append({'field': field_name, 'values': values})
+        return custom_fields
+
+    def _repeated_custom_field_filters(self, post_data):
+        field_names = self._raw_post_values(post_data, 'query_builder_custom_field')
+        values_list = self._raw_post_values(post_data, 'query_builder_custom_values')
+        for index, field_name in enumerate(field_names):
+            values = values_list[index] if index < len(values_list) else ''
+            yield str(field_name or '').strip(), self._parse_list_field(values)
+
+    def _parse_post_values(self, post_data, field_name: str) -> list[str]:
+        return normalize_scope_list_values(self._raw_post_values(post_data, field_name))
+
+    def _raw_post_values(self, post_data, field_name: str):
+        if hasattr(post_data, 'getlist'):
+            return post_data.getlist(field_name)
+        value = post_data.get(field_name, '')
+        return value if isinstance(value, list) else [value]
 
     def _scope_defaults_from_profile(self, profile_id: str) -> dict:
         profile = self._bug_trend_api.get_provider_profile_config(profile_id)

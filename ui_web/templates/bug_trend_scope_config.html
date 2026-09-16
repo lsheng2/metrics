@@ -185,7 +185,7 @@
             </div>
             <div>
                 <span class="scope-config-kicker">Provider metadata uses</span>
-                <p>Jira project from JQL or Selected Jira projects, plus bug type values. IP and Project label are display/binding hints.</p>
+                <p>Jira project/type context for candidate lookup. IP and Project label are display/binding hints. It is advisory unless selected in Query Builder.</p>
             </div>
             <div>
                 <span class="scope-config-kicker">Dashboard/AI needs</span>
@@ -206,16 +206,113 @@
                 <input class="input" id="scope-project-label" name="project_label" value="{{ config.project_label }}">
             </div>
         </section>
+        {% if scope_provider_context.selected_provider_id == 'jira' %}
+        <section class="scope-config-source-panel" data-source-mode-root>
+            <div class="scope-config-section-heading">
+                <div>
+                    <h3 class="title is-5">Source population{% include "partials/help_tip.html" with label="Source population" text="This source mode is the single authority for Jira ticket membership." %}</h3>
+                    <p class="is-size-7">This source mode is the single authority for Jira ticket membership. The inactive source mode is ignored during save and sync.</p>
+                </div>
+                <div class="buttons has-addons scope-source-mode-switch" role="radiogroup" aria-label="Jira source mode">
+                    <label class="button is-small {% if source_mode_context.custom_jql_active %}is-primary is-selected{% endif %}" for="source-mode-custom-jql">
+                        <input class="is-sr-only" id="source-mode-custom-jql" type="radio" name="source_mode" value="{{ source_mode_context.custom_jql_mode }}" data-source-mode-option {% if source_mode_context.custom_jql_active %}checked{% endif %}>
+                        Custom JQL
+                    </label>
+                    <label class="button is-small {% if source_mode_context.query_builder_active %}is-primary is-selected{% endif %}" for="source-mode-query-builder">
+                        <input class="is-sr-only" id="source-mode-query-builder" type="radio" name="source_mode" value="{{ source_mode_context.query_builder_mode }}" data-source-mode-option {% if source_mode_context.query_builder_active %}checked{% endif %}>
+                        Query Builder
+                    </label>
+                </div>
+            </div>
+            <div class="scope-source-panels">
+                <div class="scope-source-panel {% if not source_mode_context.custom_jql_active %}is-inactive{% endif %}"
+                     data-source-mode-panel="{{ source_mode_context.custom_jql_mode }}"
+                     {% if not source_mode_context.custom_jql_active %}hidden{% endif %}>
+                    <div class="dashboard-form-field scope-config-form-field scope-config-form-field-wide">
+                        <label class="label" for="scope-jql">Custom JQL <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span>{% include "partials/help_tip.html" with label="Custom JQL" text="Jira Query Language used for sync and metadata discovery when Custom JQL is selected. Query Builder fields are ignored in this mode." %}</label>
+                        <textarea class="textarea" id="scope-jql" name="jql" required data-source-mode-input data-source-mode="{{ source_mode_context.custom_jql_mode }}" data-required-label="Custom JQL" data-required-message="Custom JQL is required before saving this scope." {% if not source_mode_context.custom_jql_active %}disabled{% endif %}>{{ source_mode_context.custom_jql_value }}</textarea>
+                    </div>
+                    <p class="is-size-7">Query Builder fields below are an inactive source mode and are ignored unless Query Builder is selected.</p>
+                </div>
+                <div class="scope-source-panel {% if not source_mode_context.query_builder_active %}is-inactive{% endif %}"
+                     data-source-mode-panel="{{ source_mode_context.query_builder_mode }}"
+                     {% if not source_mode_context.query_builder_active %}hidden{% endif %}>
+                    <section class="dashboard-form-grid scope-config-form-grid scope-query-builder-grid">
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-project">Jira project <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span></label>
+                            <input class="input" id="query-builder-project" name="query_builder_project" value="{{ source_mode_context.query_builder_state.project }}" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" data-required-actions="save_draft save_enable" data-required-label="Jira project" data-required-message="Jira project is required before saving a Query Builder scope." {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-issue-types">Issue types</label>
+                            <textarea class="textarea" id="query-builder-issue-types" name="query_builder_issue_types" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.issue_types|join:"\n" }}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-components">Components</label>
+                            <textarea class="textarea" id="query-builder-components" name="query_builder_components" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.components|join:"\n" }}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-affected-versions">Affected versions</label>
+                            <textarea class="textarea" id="query-builder-affected-versions" name="query_builder_affected_versions" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.affected_versions|join:"\n" }}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-fix-versions">Fix versions</label>
+                            <textarea class="textarea" id="query-builder-fix-versions" name="query_builder_fix_versions" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.fix_versions|join:"\n" }}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-priorities">Priorities</label>
+                            <textarea class="textarea" id="query-builder-priorities" name="query_builder_priorities" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.priorities|join:"\n" }}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-resolutions">Resolutions</label>
+                            <textarea class="textarea" id="query-builder-resolutions" name="query_builder_resolutions" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.resolutions|join:"\n" }}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-security-levels">Security levels</label>
+                            <textarea class="textarea" id="query-builder-security-levels" name="query_builder_security_levels" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.security_levels|join:"\n" }}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-labels">Labels</label>
+                            <textarea class="textarea" id="query-builder-labels" name="query_builder_labels" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ source_mode_context.query_builder_state.labels|join:"\n" }}</textarea>
+                        </div>
+                    </section>
+                    <section class="dashboard-form-grid scope-config-form-grid scope-query-builder-grid">
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-custom-field-1">Custom field 1</label>
+                            <input class="input" id="query-builder-custom-field-1" name="query_builder_custom_field_1" placeholder="customfield_31601" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if source_mode_context.query_builder_state.custom_fields.0 %}value="{{ source_mode_context.query_builder_state.custom_fields.0.field }}"{% endif %} {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-custom-values-1">Custom values 1</label>
+                            <textarea class="textarea" id="query-builder-custom-values-1" name="query_builder_custom_values_1" placeholder="One value per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{% if source_mode_context.query_builder_state.custom_fields.0 %}{{ source_mode_context.query_builder_state.custom_fields.0.values|join:"\n" }}{% endif %}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-custom-field-2">Custom field 2</label>
+                            <input class="input" id="query-builder-custom-field-2" name="query_builder_custom_field_2" placeholder="customfield_22600" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if source_mode_context.query_builder_state.custom_fields.1 %}value="{{ source_mode_context.query_builder_state.custom_fields.1.field }}"{% endif %} {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field">
+                            <label class="label" for="query-builder-custom-values-2">Custom values 2</label>
+                            <textarea class="textarea" id="query-builder-custom-values-2" name="query_builder_custom_values_2" placeholder="One value per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{% if source_mode_context.query_builder_state.custom_fields.1 %}{{ source_mode_context.query_builder_state.custom_fields.1.values|join:"\n" }}{% endif %}</textarea>
+                        </div>
+                        <div class="dashboard-form-field scope-config-form-field scope-generated-query-field">
+                            <label class="label" for="query-builder-preview">Generated JQL preview</label>
+                            <textarea class="textarea" id="query-builder-preview" readonly>{% if source_mode_context.query_builder_jql %}{{ source_mode_context.query_builder_jql }}{% else %}No Query Builder filters selected.{% endif %}</textarea>
+                        </div>
+                    </section>
+                    <p class="is-size-7">Custom JQL is an inactive source mode and is ignored while Query Builder is selected.</p>
+                </div>
+            </div>
+        </section>
+        {% else %}
         <div class="dashboard-form-field scope-config-form-field scope-config-form-field-wide">
             <label class="label" for="scope-jql">{{ scope_provider_context.source_query_label|default:"JQL" }} <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span>{% include "partials/help_tip.html" with label="Source query" text=scope_provider_context.source_query_help %}</label>
             <textarea class="textarea" id="scope-jql" name="jql" required data-required-label="{{ scope_provider_context.source_query_label|default:'JQL' }}" data-required-message="{{ scope_provider_context.source_query_label|default:'JQL' }} is required before saving this scope.">{{ config.jql }}</textarea>
         </div>
-        <section class="box has-background-light">
+        {% endif %}
+        <section class="scope-config-section scope-config-metadata-section">
             <div class="level">
                 <div class="level-left">
                     <div>
-                        <h3 class="title is-5">Metadata options{% include "partials/help_tip.html" with label="Metadata options" text="Provider-derived candidates for projects, issue types, statuses, and fields. Refreshing them does not save the scope." %}</h3>
-                        <p class="is-size-7">{{ scope_provider_context.metadata_summary }} IP and Project label are display labels or binding hints.</p>
+                        <h3 class="title is-5">Metadata discovery context{% include "partials/help_tip.html" with label="Metadata discovery context" text="Provider-derived candidates for projects, issue types, statuses, and fields. Refreshing them does not save the scope and is advisory unless selected in Query Builder." %}</h3>
+                        <p class="is-size-7">{{ scope_provider_context.metadata_summary }} Metadata refresh is advisory unless selected in Query Builder. IP and Project label are display labels or binding hints.</p>
                     </div>
                 </div>
                 <div class="level-right">
@@ -232,7 +329,7 @@
             </div>
             {% if scope_provider_context.metadata_supported %}
             <div class="dashboard-form-field scope-config-form-field">
-                <label class="label" for="scope-selected-projects">Selected Jira projects{% include "partials/help_tip.html" with label="Selected Jira projects" text="Optional fallback for metadata refresh when JQL uses filter ids or cannot expose project keys. Comma-separated values are accepted." %}</label>
+                <label class="label" for="scope-selected-projects">Selected Jira projects{% include "partials/help_tip.html" with label="Selected Jira projects" text="Optional fallback for metadata refresh when Custom JQL uses filter ids or cannot expose project keys. This is advisory metadata context unless the project is selected in Query Builder." %}</label>
                 <input class="input" id="scope-selected-projects" name="selected_projects" placeholder="STDEL, 131600">
             </div>
             {% else %}
@@ -244,6 +341,13 @@
                 {% include "partials/bug_trend_scope_metadata.html" %}
             </div>
         </section>
+        <section class="scope-config-section">
+            <div class="scope-config-section-heading">
+                <div>
+                    <h3 class="title is-5">Semantic mapping{% include "partials/help_tip.html" with label="Semantic mapping" text="These fields interpret fetched Jira tickets for bug trend calculation, evidence and display. They do not independently query additional Jira tickets." %}</h3>
+                    <p class="is-size-7">These controls classify and bucket tickets after the selected source query fetches them.</p>
+                </div>
+            </div>
         <section class="dashboard-form-grid scope-config-form-grid">
             <div class="dashboard-form-field scope-config-form-field">
                 <label class="label" for="scope-bug-types">Bug type values <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span>{% include "partials/help_tip.html" with label="Bug type values" text="Provider issue or ticket types that should be treated as bugs for trend calculations." %}</label>
@@ -319,10 +423,22 @@
                 </div>
             </div>
         </section>
+        </section>
+        <section class="scope-config-section">
+            <div class="scope-config-section-heading">
+                <div>
+                    <h3 class="title is-5">Optional display fields{% include "partials/help_tip.html" with label="Optional display fields" text="Additional Jira fields shown in evidence exports or ticket tables. They do not filter Custom JQL unless explicitly selected in Query Builder." %}</h3>
+                    <p class="is-size-7">Use these for evidence columns such as Program Increment, Epic Link, Affected Products, Environment Found, Security Level or Labels.</p>
+                </div>
+            </div>
+            <div class="dashboard-form-field scope-config-form-field scope-config-form-field-wide">
+                <label class="label" for="scope-display-fields">Display fields</label>
+                <textarea class="textarea" id="scope-display-fields" name="display_fields" placeholder="customfield_31601&#10;customfield_19900&#10;security&#10;labels">{{ config.display_fields|join:"\n" }}</textarea>
+            </div>
+        </section>
         <input type="hidden" name="terminal_excluded_status_values" value="{{ config.terminal_excluded_status_values|join:', ' }}">
         <input type="hidden" name="team_field" value="{{ config.team_field }}">
         <input type="hidden" name="package_version_field" value="{{ config.package_version_field }}">
-        <input type="hidden" name="display_fields" value="{{ config.display_fields|join:', ' }}">
         <input type="hidden" name="timezone" value="{{ config.timezone }}">
         <div class="mb-4">
             <span class="label">Dashboard status{% include "partials/help_tip.html" with label="Dashboard status" text="Draft or archived scopes are kept out of normal selectors. Enabled scopes can participate in Dashboard, Workbench, sync, calculation, and AI flows." %}</span>

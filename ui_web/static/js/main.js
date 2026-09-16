@@ -479,6 +479,114 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function initializeScopeSourceModes() {
+        document.querySelectorAll('[data-source-mode-root]').forEach(root => {
+            if (root.dataset.sourceModeInitialized === 'true') {
+                return;
+            }
+            root.dataset.sourceModeInitialized = 'true';
+            const options = Array.from(root.querySelectorAll('[data-source-mode-option]'));
+            const panels = Array.from(root.querySelectorAll('[data-source-mode-panel]'));
+            if (!options.length || !panels.length) {
+                return;
+            }
+
+            function listValues(name) {
+                const field = root.querySelector(`[name="${name}"]`);
+                if (!field) {
+                    return [];
+                }
+                return String(field.value || '')
+                    .replace(/\r\n/g, '\n')
+                    .replace(/\r/g, '\n')
+                    .split(/[\n,]/)
+                    .map(value => value.trim())
+                    .filter((value, index, values) => value && values.indexOf(value) === index);
+            }
+
+            function quoteJqlValue(value) {
+                return /^[A-Za-z0-9_.-]+$/.test(value)
+                    ? value
+                    : `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+            }
+
+            function jqlClause(fieldName, values) {
+                if (!fieldName || !values.length) {
+                    return '';
+                }
+                if (values.length === 1) {
+                    return `${fieldName} = ${quoteJqlValue(values[0])}`;
+                }
+                return `${fieldName} in (${values.map(quoteJqlValue).join(', ')})`;
+            }
+
+            function syncQueryBuilderPreview() {
+                const preview = root.querySelector('#query-builder-preview');
+                if (!preview) {
+                    return;
+                }
+                const clauses = [];
+                const project = root.querySelector('[name="query_builder_project"]');
+                if (project && project.value.trim()) {
+                    clauses.push(jqlClause('project', [project.value.trim()]));
+                }
+                [
+                    ['query_builder_issue_types', 'issuetype'],
+                    ['query_builder_components', 'components'],
+                    ['query_builder_affected_versions', 'versions'],
+                    ['query_builder_fix_versions', 'fixVersions'],
+                    ['query_builder_priorities', 'priority'],
+                    ['query_builder_resolutions', 'resolution'],
+                    ['query_builder_security_levels', 'security'],
+                    ['query_builder_labels', 'labels'],
+                ].forEach(([name, fieldName]) => {
+                    const clause = jqlClause(fieldName, listValues(name));
+                    if (clause) {
+                        clauses.push(clause);
+                    }
+                });
+                [1, 2].forEach(index => {
+                    const field = root.querySelector(`[name="query_builder_custom_field_${index}"]`);
+                    const clause = jqlClause(field ? field.value.trim() : '', listValues(`query_builder_custom_values_${index}`));
+                    if (clause) {
+                        clauses.push(clause);
+                    }
+                });
+                preview.value = clauses.length ? clauses.join(' AND ') : 'No Query Builder filters selected.';
+            }
+
+            function syncSourcePanels() {
+                const activeOption = options.find(option => option.checked) || options[0];
+                const activeMode = activeOption.value;
+                options.forEach(option => {
+                    const label = option.closest('label.button');
+                    if (label) {
+                        label.classList.toggle('is-primary', option.value === activeMode);
+                        label.classList.toggle('is-selected', option.value === activeMode);
+                    }
+                });
+                panels.forEach(panel => {
+                    const isActive = panel.dataset.sourceModePanel === activeMode;
+                    panel.hidden = !isActive;
+                    panel.classList.toggle('is-inactive', !isActive);
+                    panel.querySelectorAll('[data-source-mode-input]').forEach(field => {
+                        field.disabled = !isActive;
+                    });
+                });
+                syncQueryBuilderPreview();
+            }
+
+            options.forEach(option => {
+                option.addEventListener('change', syncSourcePanels);
+            });
+            root.querySelectorAll('[name^="query_builder_"]').forEach(field => {
+                field.addEventListener('input', syncQueryBuilderPreview);
+                field.addEventListener('change', syncQueryBuilderPreview);
+            });
+            syncSourcePanels();
+        });
+    }
+
     const workbenchLastUrlKey = 'metricsWorkbench.lastUrl';
     const workbenchStateParams = [
         'scope_id',
@@ -1263,6 +1371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toggle.addEventListener('click', handleMenuToggle);
     });
     expandInitialActiveMenus();
+    initializeScopeSourceModes();
     initializeDirtyForms();
     initializeProviderAuthForms();
     initializeRequiredForms();
@@ -1290,6 +1399,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.addEventListener('htmx:beforeRequest', showLoadingIndicator);
     document.body.addEventListener('htmx:afterRequest', hideLoadingIndicator);
     document.body.addEventListener('htmx:afterSwap', function() {
+        initializeScopeSourceModes();
         initializeDirtyForms();
         initializeProviderAuthForms();
         initializeRequiredForms();

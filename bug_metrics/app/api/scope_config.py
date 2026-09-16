@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendBucket, BugTrendBucketIssue, BugTrendScopeProviderBinding, JiraScopeConfig, SCOPE_SEMANTIC_LIST_FIELD_NAMES, normalize_scope_list_values
+from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendBucket, BugTrendBucketIssue, BugTrendScopeProviderBinding, JiraScopeConfig, SCOPE_SEMANTIC_LIST_FIELD_NAMES, normalize_query_builder_state, normalize_scope_list_values, normalize_scope_source_mode
 from jira_history.models import JiraIssue, JiraIssueSnapshot, JiraTransition
 from jira_sync.models import JiraSyncCursor
 
@@ -10,6 +10,7 @@ from jira_sync.models import JiraSyncCursor
 SEMANTIC_LIST_FIELDS = SCOPE_SEMANTIC_LIST_FIELD_NAMES
 
 SEMANTIC_TEXT_FIELDS = (
+    'source_mode',
     'jql',
     'severity_field',
     'component_field',
@@ -63,6 +64,8 @@ class SavedScopeConfig:
     timezone: str
     bucket_granularity: str
     enabled: bool
+    source_mode: str = JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL
+    query_builder_state: Dict[str, Any] = field(default_factory=dict)
     config_version_hash: str = ''
 
 
@@ -285,6 +288,7 @@ class ScopeConfigService:
     def _apply_config(self, scope: JiraScopeConfig, config: SavedScopeConfig) -> None:
         for field_name in IDENTITY_TEXT_FIELDS + SEMANTIC_TEXT_FIELDS + SEMANTIC_LIST_FIELDS:
             setattr(scope, field_name, getattr(config, field_name))
+        scope.query_builder_state = config.query_builder_state
         scope.enabled = config.enabled
 
     def _to_saved_scope_config(self, scope: JiraScopeConfig) -> SavedScopeConfig:
@@ -293,7 +297,9 @@ class ScopeConfigService:
             name=scope.name,
             ip=scope.ip,
             project_label=scope.project_label,
+            source_mode=scope.source_mode,
             jql=scope.jql,
+            query_builder_state=dict(scope.query_builder_state or {}),
             bug_type_values=list(scope.bug_type_values),
             open_status_values=list(scope.open_status_values),
             fixed_status_values=list(scope.fixed_status_values),
@@ -345,7 +351,9 @@ def saved_scope_config_from_dict(payload: Dict[str, Any]) -> SavedScopeConfig:
         name=payload.get('name', ''),
         ip=payload.get('ip', ''),
         project_label=payload.get('project_label', ''),
+        source_mode=normalize_scope_source_mode(payload.get('source_mode', JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL)),
         jql=payload.get('jql', ''),
+        query_builder_state=normalize_query_builder_state(payload.get('query_builder_state', {})),
         bug_type_values=normalize_scope_list_values(payload.get('bug_type_values', [])),
         open_status_values=normalize_scope_list_values(payload.get('open_status_values', [])),
         fixed_status_values=normalize_scope_list_values(payload.get('fixed_status_values', [])),
@@ -372,6 +380,8 @@ def saved_scope_config_from_dict(payload: Dict[str, Any]) -> SavedScopeConfig:
 
 
 def normalize_saved_scope_config(config: SavedScopeConfig) -> SavedScopeConfig:
+    config.source_mode = normalize_scope_source_mode(config.source_mode)
+    config.query_builder_state = normalize_query_builder_state(config.query_builder_state)
     for field_name in SEMANTIC_LIST_FIELDS:
         setattr(config, field_name, normalize_scope_list_values(getattr(config, field_name)))
     return config

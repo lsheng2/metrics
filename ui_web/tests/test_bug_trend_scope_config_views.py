@@ -410,3 +410,64 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertIn('Jira Query Language used for sync and metadata discovery', content)
         self.assertIn('The time bucket size for trend calculations', content)
         self.assertNotIn('Save</button>', content)
+
+    def test_shouldRenderMutuallyExclusiveSourceModeSections(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+            'mode': 'new',
+            'source_mode': 'query_builder',
+            'query_builder_project': 'STDEL',
+            'query_builder_issue_types': 'Story',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('Source population', content)
+        self.assertIn('Custom JQL', content)
+        self.assertIn('Query Builder', content)
+        self.assertIn('This source mode is the single authority for Jira ticket membership.', content)
+        self.assertIn('project = STDEL AND issuetype = Story', content)
+        self.assertIn('inactive source mode is ignored', content)
+
+    def test_shouldSaveQueryBuilderScopeThroughScopeConfigView(self):
+        # When
+        response = self.client.post(reverse('ui_web:bug_trend_scope_config'), {
+            'id': '',
+            'name': 'STDEL saved from builder',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'source_mode': 'query_builder',
+            'jql': 'project = SHOULDNOTSAVE',
+            'query_builder_project': 'STDEL',
+            'query_builder_issue_types': 'Story',
+            'query_builder_components': 'team_int_prc',
+            'bug_type_values': 'Story',
+            'open_status_values': '',
+            'fixed_status_values': '',
+            'closed_status_values': '',
+            'terminal_excluded_status_values': '',
+            'fixed_resolution_values': '',
+            'closed_resolution_values': '',
+            'reopen_status_values': '',
+            'severity_field': '',
+            'critical_high_values': '',
+            'medium_low_values': '',
+            'component_field': '',
+            'owner_field': 'assignee',
+            'team_field': '',
+            'milestone_field': '',
+            'fix_version_field': '',
+            'package_version_field': '',
+            'display_fields': 'customfield_31601',
+            'timezone': 'UTC',
+            'bucket_granularity': 'weekly',
+            'action': 'save_draft',
+        })
+
+        # Then
+        scope = JiraScopeConfig.objects.get(name='STDEL saved from builder')
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER, scope.source_mode)
+        self.assertEqual('project = STDEL AND issuetype = Story AND components = team_int_prc', scope.jql)
+        self.assertEqual({'project': 'STDEL', 'issue_types': ['Story'], 'components': ['team_int_prc']}, scope.query_builder_state)

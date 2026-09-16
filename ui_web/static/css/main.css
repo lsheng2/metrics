@@ -1000,10 +1000,20 @@ span:focus-within > .help-tip::after,
 
 .scope-config-provider-panel,
 .scope-config-readiness-strip,
+.scope-config-section,
+.scope-config-source-panel,
 .scope-metadata-group {
     border: 1px solid var(--dashboard-border);
     border-radius: var(--dashboard-radius-panel);
     background: color-mix(in srgb, var(--dashboard-surface-raised) 82%, transparent);
+}
+
+.scope-config-section,
+.scope-config-source-panel {
+    display: grid;
+    gap: 0.62rem;
+    margin-bottom: 0.8rem;
+    padding: 0.75rem;
 }
 
 .scope-config-provider-panel {
@@ -1018,6 +1028,46 @@ span:focus-within > .help-tip::after,
     gap: 0.75rem;
     align-items: flex-start;
     justify-content: space-between;
+}
+
+.scope-config-section-heading .title {
+    margin-bottom: 0.12rem;
+}
+
+.scope-source-mode-switch {
+    flex: 0 0 auto;
+}
+
+.scope-source-mode-switch label.button {
+    gap: 0.35rem;
+}
+
+.scope-source-panels {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.scope-source-panel {
+    min-width: 0;
+}
+
+.scope-source-panel.is-inactive {
+    opacity: 0.72;
+}
+
+.scope-query-builder-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scope-generated-query-field {
+    grid-column: span 3;
+}
+
+.scope-generated-query-field .textarea {
+    min-height: 3.1rem;
+    background: color-mix(in srgb, var(--dashboard-surface-soft) 72%, transparent);
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: var(--dashboard-font-caption);
 }
 
 .scope-provider-choice-grid {
@@ -1463,12 +1513,17 @@ span:focus-within > .help-tip::after,
     .scope-provider-grid,
     .scope-config-readiness-strip,
     .scope-metadata-grid,
+    .scope-query-builder-grid,
     .scope-provider-detail-panel {
         grid-template-columns: 1fr;
     }
 
     .scope-config-section-heading {
         display: grid;
+    }
+
+    .scope-generated-query-field {
+        grid-column: auto;
     }
 }
 

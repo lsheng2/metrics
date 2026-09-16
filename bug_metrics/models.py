@@ -3,8 +3,12 @@ import uuid
 from django.db import models
 
 from bug_metrics.model_hashes import (
+    SCOPE_SOURCE_MODE_CUSTOM_JQL,
+    SCOPE_SOURCE_MODE_QUERY_BUILDER,
     SCOPE_SEMANTIC_LIST_FIELD_NAMES,
+    normalize_query_builder_state,
     normalize_scope_list_values,
+    normalize_scope_source_mode,
     provider_mapping_version_hash,
     provider_source_version_hash,
     scope_config_version_hash,
@@ -22,16 +26,25 @@ def _empty_dict():
 class JiraScopeConfig(models.Model):
     GRANULARITY_DAILY = 'daily'
     GRANULARITY_WEEKLY = 'weekly'
+    SOURCE_MODE_CUSTOM_JQL = SCOPE_SOURCE_MODE_CUSTOM_JQL
+    SOURCE_MODE_QUERY_BUILDER = SCOPE_SOURCE_MODE_QUERY_BUILDER
 
     GRANULARITY_CHOICES = (
         (GRANULARITY_DAILY, 'Daily'),
         (GRANULARITY_WEEKLY, 'Weekly'),
     )
 
+    SOURCE_MODE_CHOICES = (
+        (SOURCE_MODE_CUSTOM_JQL, 'Custom JQL'),
+        (SOURCE_MODE_QUERY_BUILDER, 'Query Builder'),
+    )
+
     name = models.CharField(max_length=120, unique=True)
     ip = models.CharField(max_length=120, blank=True)
     project_label = models.CharField(max_length=120, blank=True)
+    source_mode = models.CharField(max_length=40, choices=SOURCE_MODE_CHOICES, default=SOURCE_MODE_CUSTOM_JQL)
     jql = models.TextField()
+    query_builder_state = models.JSONField(default=_empty_dict)
     bug_type_values = models.JSONField(default=_empty_list)
     open_status_values = models.JSONField(default=_empty_list)
     fixed_status_values = models.JSONField(default=_empty_list)
@@ -63,6 +76,8 @@ class JiraScopeConfig(models.Model):
         super().save(*args, **kwargs)
 
     def normalize_semantic_lists(self):
+        self.source_mode = normalize_scope_source_mode(self.source_mode)
+        self.query_builder_state = normalize_query_builder_state(self.query_builder_state)
         for field_name in SCOPE_SEMANTIC_LIST_FIELD_NAMES:
             setattr(self, field_name, normalize_scope_list_values(getattr(self, field_name)))
 

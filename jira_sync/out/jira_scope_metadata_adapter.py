@@ -121,6 +121,8 @@ class JiraScopeMetadataAdapter:
                 return payload['issuetypes']
             if 'projects' in payload:
                 return [issue_type for project in payload['projects'] for issue_type in project.get('issuetypes', [])]
+            if 'values' in payload:
+                return payload['values']
         return payload
 
     def _status_options(self, payload, project_key: str, selected_item_types: list[str]) -> list[TrackerOption]:
@@ -135,7 +137,15 @@ class JiraScopeMetadataAdapter:
         return options
 
     def _to_options(self, payload, source_name: str, source_context: str) -> list[TrackerOption]:
-        return [self._to_option(item, source_name, source_context) for item in payload or []]
+        return [self._to_option(item, source_name, source_context) for item in self._option_payload(payload)]
+
+    def _option_payload(self, payload):
+        if isinstance(payload, dict):
+            if 'values' in payload:
+                return payload['values']
+            if 'options' in payload:
+                return payload['options']
+        return payload or []
 
     def _to_option(self, item, source_name: str, source_context: str) -> TrackerOption:
         if isinstance(item, dict):

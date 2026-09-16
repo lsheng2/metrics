@@ -215,6 +215,57 @@ class TestBugTrendFacade(TestCase):
         self.assertFalse(saved.enabled)
         self.assertTrue(hash_changed)
 
+    def test_shouldBuildQueryBuilderJqlAndPersistBuilderState(self):
+        # Given
+        bug_trend_api = FakeBugTrendApi()
+        facade = BugTrendFacade(bug_trend_api)
+
+        # When
+        saved, _ = facade.save_scope_config({
+            'id': '',
+            'name': 'STDEL query builder',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'source_mode': 'query_builder',
+            'jql': 'project = OLD',
+            'query_builder_project': 'STDEL',
+            'query_builder_issue_types': 'Story',
+            'query_builder_components': 'team_int_prc',
+            'bug_type_values': 'Story',
+            'bucket_granularity': 'weekly',
+            'action': 'save_draft',
+        })
+
+        # Then
+        self.assertEqual('query_builder', saved.source_mode)
+        self.assertEqual('project = STDEL AND issuetype = Story AND components = team_int_prc', saved.jql)
+        self.assertEqual({'project': 'STDEL', 'issue_types': ['Story'], 'components': ['team_int_prc']}, saved.query_builder_state)
+
+    def test_shouldIgnoreQueryBuilderFiltersWhenSavingCustomJqlMode(self):
+        # Given
+        bug_trend_api = FakeBugTrendApi()
+        facade = BugTrendFacade(bug_trend_api)
+
+        # When
+        saved, _ = facade.save_scope_config({
+            'id': '',
+            'name': 'STDEL custom mode',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'source_mode': 'custom_jql',
+            'jql': 'filter = 131600',
+            'query_builder_project': 'SHOULDNOTAPPLY',
+            'query_builder_issue_types': 'Bug',
+            'bug_type_values': 'Bug',
+            'bucket_granularity': 'weekly',
+            'action': 'save_draft',
+        })
+
+        # Then
+        self.assertEqual('custom_jql', saved.source_mode)
+        self.assertEqual('filter = 131600', saved.jql)
+        self.assertEqual({}, saved.query_builder_state)
+
     def test_shouldCreateEnabledScopeWhenOperatorChoosesSaveAndEnable(self):
         # Given
         bug_trend_api = FakeBugTrendApi()

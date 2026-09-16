@@ -79,6 +79,24 @@ class TestScopeMetadataApi(TestCase):
         self.assertEqual(['Emulation'], [component.name for component in options.components])
         self.assertEqual(['2026.01'], [version.name for version in options.versions])
 
+    def test_shouldDiscoverPagedIssueTypeValuesFromJiraMetadata(self):
+        # Given
+        client = FakeJiraMetadataClient()
+        client.issue_createmeta_issuetypes = lambda project_key: {
+            'maxResults': 50,
+            'startAt': 0,
+            'total': 2,
+            'isLast': True,
+            'values': [{'id': '1', 'name': 'Bug'}, {'id': '12', 'name': 'Story'}],
+        }
+        api = ApiForScopeMetadata({'jira': JiraScopeMetadataAdapter(client)})
+
+        # When
+        options = api.discover_scope_options('jira', 'project = STDEL', [], ['Story'])
+
+        # Then
+        self.assertEqual(['Bug', 'Story'], [item_type.name for item_type in options.item_types])
+
     def test_shouldUseSelectedProjectsWhenQueryCannotBeParsed(self):
         # Given
         api = ApiForScopeMetadata({'jira': JiraScopeMetadataAdapter(FakeJiraMetadataClient())})
@@ -144,6 +162,21 @@ class TestScopeMetadataApi(TestCase):
         # Then
         self.assertEqual([('12345', '131600', None)], client.field_options_requested)
         self.assertEqual(['Critical', 'Medium'], [value.name for value in values])
+
+    def test_shouldDiscoverCustomFieldOptionsFromPagedPayload(self):
+        # Given
+        client = FakeJiraMetadataClient()
+        client.get_custom_field_options = lambda *args, **kwargs: {
+            'options': [{'id': '40000', 'value': 'Cedar Crossing'}, {'id': '40001', 'value': 'Emulation'}],
+            'total': 2,
+        }
+        api = ApiForScopeMetadata({'jira': JiraScopeMetadataAdapter(client)})
+
+        # When
+        values = api.discover_field_values('jira', 'STDEL', ['12'], 'customfield_19900')
+
+        # Then
+        self.assertEqual(['Cedar Crossing', 'Emulation'], [value.name for value in values])
 
     def test_shouldPassNumericIssueTypeIdsWhenDiscoveringCustomFieldValues(self):
         # Given

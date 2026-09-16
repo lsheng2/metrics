@@ -189,7 +189,8 @@ class BugTrendScopeConfigView(GracefulTemplateView):
 
     def _populate_scope_editor_context(self, context, config, query_data=None):
         query_data = query_data or self.request.GET
-        context['scope_metadata'] = self._metadata_options(config)
+        context['source_mode_context'] = self.bug_trend_facade.source_mode_context(config, query_data)
+        context['scope_metadata'] = self._metadata_options(config, query_data)
         context['scope_provider_context'] = self.bug_trend_facade.get_scope_config_provider_context(
             config,
             query_data.get('provider_id', ''),
@@ -197,12 +198,13 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         )
         context['metadata_scope_id'] = str(config.id or '')
 
-    def _metadata_options(self, config):
+    def _metadata_options(self, config, query_data):
         if self.request.GET.get('refresh_metadata') != '1':
             return None
         if self.request.GET.get('provider_id') and self.request.GET.get('provider_id') != 'jira':
             return {'warnings': ['Metadata refresh is currently available for Jira provider only. Use provider profile workflow/readiness for this provider.'], 'options': None}
-        return self.bug_trend_facade.get_scope_metadata_options(config, selected_projects_from_query(self.request.GET))
+        preview_config = self.bug_trend_facade.scope_config_from_post(query_data) if query_data.get('source_mode') else config
+        return self.bug_trend_facade.get_scope_metadata_options(preview_config, selected_projects_from_query(self.request.GET))
 
     def _save_provider_binding_if_selected(self, post_data, scope_id: int) -> bool:
         profile_id = self.bug_trend_facade.selected_scope_provider_profile_id(post_data)

@@ -22,7 +22,28 @@ class TestScopeConfigApi(TestCase):
         self.assertEqual(scope.id, config.id)
         self.assertEqual('STDEL load', config.name)
         self.assertEqual(['P1-Critical'], config.critical_high_values)
+        self.assertEqual(JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL, config.source_mode)
+        self.assertEqual({}, config.query_builder_state)
         self.assertEqual(scope.config_version_hash, config.config_version_hash)
+
+    def test_shouldPersistQueryBuilderStateAndGeneratedJqlAsScopeAuthority(self):
+        # Given
+        config = self._scope_config(name='STDEL query builder', jql='project = STDEL')
+        config.source_mode = JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER
+        config.query_builder_state = {
+            'project': 'STDEL',
+            'issue_types': ['Story'],
+            'components': ['team_int_prc'],
+        }
+
+        # When
+        saved = bug_trend_api.save_scope_config(config)
+        scope = JiraScopeConfig.objects.get(id=saved.id)
+
+        # Then
+        self.assertEqual(JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER, scope.source_mode)
+        self.assertEqual(config.query_builder_state, scope.query_builder_state)
+        self.assertEqual('project = STDEL', scope.jql)
 
     def test_shouldValidateRequiredFieldsAndSemanticShapesBeforeSave(self):
         # Given
@@ -116,6 +137,25 @@ class TestScopeConfigApi(TestCase):
         self.assertEqual(original_hash, event.request_summary['previous_config_version_hash'])
         self.assertEqual(scope.config_version_hash, event.request_summary['current_config_version_hash'])
         self.assertTrue(event.request_summary['semantic_hash_changed'])
+
+    def test_shouldChangeSemanticHashWhenQueryBuilderSelectionChanges(self):
+        # Given
+        scope = self._create_scope(name='STDEL builder hash')
+        original_hash = scope.config_version_hash
+        config = bug_trend_api.get_scope_config(scope.id)
+        config.source_mode = JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER
+        config.query_builder_state = {
+            'project': 'STDEL',
+            'issue_types': ['Story'],
+        }
+
+        # When
+        saved = bug_trend_api.save_scope_config(config)
+        scope.refresh_from_db()
+
+        # Then
+        self.assertNotEqual(original_hash, scope.config_version_hash)
+        self.assertEqual(scope.config_version_hash, saved.config_version_hash)
 
     def test_shouldKeepSemanticHashWhenOnlyDisplayIdentityChanges(self):
         # Given
