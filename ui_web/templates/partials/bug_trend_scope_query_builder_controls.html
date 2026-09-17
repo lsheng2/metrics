@@ -1,0 +1,51 @@
+<section class="dashboard-form-grid scope-config-form-grid scope-query-builder-grid">
+    <div class="dashboard-form-field scope-config-form-field">
+        <label class="label" for="query-builder-project">Jira project <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span></label>
+        <input class="input" id="query-builder-project" name="query_builder_project" value="{{ source_mode_context.query_builder_state.project }}" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" data-required-actions="save_draft save_enable" data-required-label="Jira project" data-required-message="Jira project is required before saving a Query Builder scope." {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+    </div>
+    {% for control in source_mode_context.query_builder_controls %}
+        <div class="dashboard-form-field scope-config-form-field scope-query-builder-control">
+            <label class="label" for="{{ control.manual_id }}">{{ control.label }}</label>
+            {% if control.options %}
+                <div class="scope-query-builder-options" role="group" aria-label="{{ control.label }}">
+                    {% for option in control.options %}
+                        <label class="checkbox scope-query-builder-option" title="{{ option.source }}">
+                            <input type="checkbox" name="{{ control.name }}" value="{{ option.value }}" {% if option.selected %}checked{% endif %} data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+                            <span>{{ option.label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="scope-query-builder-empty">Refresh metadata to choose {{ control.label|lower }} values, or use manual fallback.</p>
+            {% endif %}
+            <textarea class="textarea scope-query-builder-manual" id="{{ control.manual_id }}" name="{{ control.manual_name }}" placeholder="Manual fallback values, one per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ control.manual_value }}</textarea>
+            <p class="is-size-7">{{ control.help_text }}</p>
+        </div>
+    {% endfor %}
+</section>
+<section class="dashboard-form-grid scope-config-form-grid scope-query-builder-grid">
+    {% for row in source_mode_context.query_builder_custom_field_rows %}
+        <div class="dashboard-form-field scope-config-form-field scope-query-builder-custom-field">
+            <label class="label" for="{% if row.field_options %}query-builder-custom-field-{{ row.index }}{% else %}query-builder-custom-field-{{ row.index }}-manual{% endif %}">Custom field {{ row.index }}</label>
+            {% if row.field_options %}
+                <div class="select is-fullwidth">
+                    <select id="query-builder-custom-field-{{ row.index }}" name="query_builder_custom_field_{{ row.index }}" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+                        <option value="" {% if not row.selected_field or row.manual_field %}selected{% endif %}>Choose metadata field</option>
+                        {% for option in row.field_options %}
+                            <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            <input class="input" id="query-builder-custom-field-{{ row.index }}-manual" name="query_builder_custom_field_{{ row.index }}_manual" value="{{ row.manual_field }}" placeholder="Manual field id, e.g. customfield_31601" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field scope-query-builder-custom-values">
+            <label class="label" for="query-builder-custom-values-{{ row.index }}">Custom values {{ row.index }}</label>
+            <textarea class="textarea" id="query-builder-custom-values-{{ row.index }}" name="query_builder_custom_values_{{ row.index }}" placeholder="One value per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ row.values_text }}</textarea>
+        </div>
+    {% endfor %}
+    <div class="dashboard-form-field scope-config-form-field scope-generated-query-field">
+        <label class="label" for="query-builder-preview">Generated JQL preview</label>
+        <textarea class="textarea" id="query-builder-preview" readonly>{% if source_mode_context.query_builder_jql %}{{ source_mode_context.query_builder_jql }}{% else %}No Query Builder filters selected.{% endif %}</textarea>
+    </div>
+</section>

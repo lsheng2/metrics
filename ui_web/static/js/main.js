@@ -481,27 +481,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initializeScopeSourceModes() {
         document.querySelectorAll('[data-source-mode-root]').forEach(root => {
-            if (root.dataset.sourceModeInitialized === 'true') {
-                return;
-            }
-            root.dataset.sourceModeInitialized = 'true';
             const options = Array.from(root.querySelectorAll('[data-source-mode-option]'));
             const panels = Array.from(root.querySelectorAll('[data-source-mode-panel]'));
             if (!options.length || !panels.length) {
                 return;
             }
 
-            function listValues(name) {
-                const field = root.querySelector(`[name="${name}"]`);
-                if (!field) {
-                    return [];
-                }
-                return String(field.value || '')
+            function uniqueValues(values) {
+                return values
+                    .map(value => value.trim())
+                    .filter((value, index, normalizedValues) => value && normalizedValues.indexOf(value) === index);
+            }
+
+            function textValues(value) {
+                return String(value || '')
                     .replace(/\r\n/g, '\n')
                     .replace(/\r/g, '\n')
-                    .split(/[\n,]/)
-                    .map(value => value.trim())
-                    .filter((value, index, values) => value && values.indexOf(value) === index);
+                    .split(/[\n,]/);
+            }
+
+            function fieldValues(field) {
+                if (field.type === 'checkbox' || field.type === 'radio') {
+                    return field.checked ? [field.value] : [];
+                }
+                if (field.tagName === 'SELECT' && field.multiple) {
+                    return Array.from(field.selectedOptions).map(option => option.value);
+                }
+                if (field.tagName === 'SELECT') {
+                    return field.value ? [field.value] : [];
+                }
+                return textValues(field.value);
+            }
+
+            function listValues(name) {
+                const fields = Array.from(root.querySelectorAll(`[name="${name}"]`));
+                if (!fields.length) {
+                    return [];
+                }
+                return uniqueValues(fields.flatMap(fieldValues));
+            }
+
+            function combinedListValues(name) {
+                return uniqueValues(listValues(name).concat(listValues(`${name}_manual`)));
+            }
+
+            function firstValue(name) {
+                const values = listValues(name);
+                return values.length ? values[0] : '';
             }
 
             function quoteJqlValue(value) {
@@ -540,14 +566,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     ['query_builder_security_levels', 'security'],
                     ['query_builder_labels', 'labels'],
                 ].forEach(([name, fieldName]) => {
-                    const clause = jqlClause(fieldName, listValues(name));
+                    const clause = jqlClause(fieldName, combinedListValues(name));
                     if (clause) {
                         clauses.push(clause);
                     }
                 });
-                [1, 2].forEach(index => {
-                    const field = root.querySelector(`[name="query_builder_custom_field_${index}"]`);
-                    const clause = jqlClause(field ? field.value.trim() : '', listValues(`query_builder_custom_values_${index}`));
+                [1, 2, 3, 4, 5, 6].forEach(index => {
+                    const fieldName = firstValue(`query_builder_custom_field_${index}_manual`) || firstValue(`query_builder_custom_field_${index}`);
+                    const clause = jqlClause(fieldName, listValues(`query_builder_custom_values_${index}`));
                     if (clause) {
                         clauses.push(clause);
                     }
@@ -576,10 +602,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 syncQueryBuilderPreview();
             }
 
-            options.forEach(option => {
-                option.addEventListener('change', syncSourcePanels);
-            });
+            if (root.dataset.sourceModeInitialized !== 'true') {
+                options.forEach(option => {
+                    option.addEventListener('change', syncSourcePanels);
+                });
+                root.dataset.sourceModeInitialized = 'true';
+            }
             root.querySelectorAll('[name^="query_builder_"]').forEach(field => {
+                if (field.dataset.queryBuilderPreviewInitialized === 'true') {
+                    return;
+                }
+                field.dataset.queryBuilderPreviewInitialized = 'true';
                 field.addEventListener('input', syncQueryBuilderPreview);
                 field.addEventListener('change', syncQueryBuilderPreview);
             });

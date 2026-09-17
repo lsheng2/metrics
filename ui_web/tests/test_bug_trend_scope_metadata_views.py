@@ -117,6 +117,33 @@ class TestBugTrendScopeMetadataViews(BugTrendScopeConfigViewTestSupport, TestCas
         self.assertIn('add_field=bug_type_values', content)
         self.assertIn('add_field=severity_field', content)
 
+    def test_shouldRenderQueryBuilderControlsForHtmxRefresh(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL query builder metadata controls',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = FakeSuccessfulScopeMetadataFacade()
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {
+                'scope_id': str(scope.id),
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'query_builder_issue_types': 'Bug',
+                'query_builder_components': 'Emulation',
+            })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('id="query-builder-controls"', content)
+        self.assertIn('hx-swap-oob="innerHTML"', content)
+        self.assertIn('name="query_builder_issue_types" value="Bug" checked', content)
+        self.assertIn('name="query_builder_components" value="Emulation" checked', content)
+
     def test_shouldRenderMetadataWarningsAlongsideDiscoveredOptions(self):
         # Given
         scope = JiraScopeConfig.objects.create(

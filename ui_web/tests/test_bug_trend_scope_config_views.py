@@ -13,7 +13,9 @@ from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOpt
 from jira_history.models import JiraIssue
 
 
-from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport
+from bug_metrics.app.api import bug_trend_api
+from ui_web.facades.bug_trend_facade import BugTrendFacade
+from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport, FakeSuccessfulScopeMetadataApi
 
 
 class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase):
@@ -413,12 +415,14 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
 
     def test_shouldRenderMutuallyExclusiveSourceModeSections(self):
         # When
-        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
-            'mode': 'new',
-            'source_mode': 'query_builder',
-            'query_builder_project': 'STDEL',
-            'query_builder_issue_types': 'Story',
-        })
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = BugTrendFacade(bug_trend_api, FakeSuccessfulScopeMetadataApi())
+            response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+                'mode': 'new',
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'query_builder_issue_types': 'Story',
+            })
 
         # Then
         content = response.content.decode()
@@ -429,6 +433,98 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertIn('This source mode is the single authority for Jira ticket membership.', content)
         self.assertIn('project = STDEL AND issuetype = Story', content)
         self.assertIn('inactive source mode is ignored', content)
+
+    def test_shouldRenderMetadataBackedQueryBuilderControlsWhenMetadataIsLoaded(self):
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = BugTrendFacade(bug_trend_api, FakeSuccessfulScopeMetadataApi())
+            response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+                'mode': 'new',
+                'refresh_metadata': '1',
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'query_builder_issue_types': 'Bug',
+                'query_builder_components': 'Emulation',
+            })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('name="query_builder_issue_types" value="Bug" checked', content)
+        self.assertIn('name="query_builder_components" value="Emulation" checked', content)
+        self.assertIn('name="query_builder_issue_types_manual"', content)
+        self.assertIn('name="query_builder_components_manual"', content)
+        self.assertIn('Severity (customfield_12345)', content)
+        self.assertIn('project = STDEL AND issuetype = Bug AND components = Emulation', content)
+
+    def test_shouldAutoLoadMetadataBackedQueryBuilderControlsForSavedBuilderScope(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL saved builder metadata',
+            jql='project = STDEL AND issuetype = Bug AND components = Emulation',
+            bug_type_values=['Bug'],
+            source_mode=JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER,
+            query_builder_state={
+                'project': 'STDEL',
+                'issue_types': ['Bug'],
+                'components': ['Emulation'],
+            },
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = BugTrendFacade(bug_trend_api, FakeSuccessfulScopeMetadataApi())
+            response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+                'scope_id': str(scope.id),
+                'provider_id': 'jira',
+            })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('name="query_builder_issue_types" value="Bug" checked', content)
+        self.assertIn('name="query_builder_components" value="Emulation" checked', content)
+        self.assertNotIn('Refresh metadata to choose issue types values', content)
+
+    def test_shouldRenderQueryBuilderRefreshMetadataButtonNearSourceControls(self):
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+            'mode': 'new',
+            'source_mode': 'query_builder',
+        })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('scope-query-builder-toolbar', content)
+        self.assertIn('Refresh metadata for Query Builder', content)
+        self.assertIn('hx-target="#scope-metadata-options"', content)
+
+    def test_shouldUpdateQueryBuilderPreviewFromMetadataControlsInBrowser(self):
+        # Given
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = BugTrendFacade(bug_trend_api, FakeSuccessfulScopeMetadataApi())
+            response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+                'mode': 'new',
+                'refresh_metadata': '1',
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'query_builder_issue_types': 'Bug',
+                'query_builder_components': 'Emulation',
+            })
+
+        # When
+        results = self._measure_scope_query_builder_metadata_controls(response.content.decode())
+
+        # Then
+        for viewport in results.values():
+            self.assertFalse(viewport['page_horizontal_overflow'])
+            self.assertTrue(viewport['issue_type_checked'])
+            self.assertTrue(viewport['component_checked'])
+            self.assertGreaterEqual(viewport['metadata_option_count'], 6)
+            self.assertGreaterEqual(viewport['custom_field_option_count'], 2)
+            self.assertIn('priority = P1-Critical', viewport['preview_value'])
+            self.assertIn('resolution = Fixed', viewport['preview_value'])
 
     def test_shouldSaveQueryBuilderScopeThroughScopeConfigView(self):
         # When

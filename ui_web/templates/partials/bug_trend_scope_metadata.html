@@ -1,4 +1,9 @@
 {% if scope_metadata %}
+    {% if render_query_builder_oob and source_mode_context %}
+        <div id="query-builder-controls" hx-swap-oob="innerHTML">
+            {% include "partials/bug_trend_scope_query_builder_controls.html" %}
+        </div>
+    {% endif %}
     {% if scope_metadata.warnings %}
         <div class="notification is-warning is-light">
             {% for warning in scope_metadata.warnings %}

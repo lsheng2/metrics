@@ -23,20 +23,34 @@ class FakeScopeMetadataFacade:
         self.selected_projects.append(selected_projects or [])
         return {'warnings': ['Metadata refresh failed: offline'], 'options': None}
 
+    def source_mode_context(self, config, query_data=None, scope_metadata=None):
+        from ui_web.facades.bug_trend_facade import BugTrendFacade
+        from bug_metrics.app.api import bug_trend_api
+        return BugTrendFacade(bug_trend_api).source_mode_context(config, query_data, scope_metadata)
+
+
+class FakeSuccessfulScopeMetadataApi:
+    def discover_scope_options(self, *args, **kwargs):
+        return successful_scope_metadata_options()
+
+
+def successful_scope_metadata_options():
+    return ScopeConfigOptions(
+        projects=[TrackerOption('STDEL', 'STDEL')],
+        item_types=[TrackerOption('1', 'Bug')],
+        statuses=[TrackerOption('11', 'Open')],
+        resolutions=[TrackerOption('21', 'Fixed')],
+        priorities=[TrackerOption('31', 'P1-Critical')],
+        fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
+        components=[TrackerOption('41', 'Emulation')],
+        versions=[TrackerOption('51', '2026.01')],
+    )
+
 
 class FakeSuccessfulScopeMetadataFacade(FakeScopeMetadataFacade):
     def get_scope_metadata_options(self, config, selected_projects=None):
         self.selected_projects.append(selected_projects or [])
-        return ScopeConfigOptions(
-            projects=[TrackerOption('STDEL', 'STDEL')],
-            item_types=[TrackerOption('1', 'Bug')],
-            statuses=[TrackerOption('11', 'Open')],
-            resolutions=[TrackerOption('21', 'Fixed')],
-            priorities=[TrackerOption('31', 'P1-Critical')],
-            fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
-            components=[TrackerOption('41', 'Emulation')],
-            versions=[TrackerOption('51', '2026.01')],
-        )
+        return successful_scope_metadata_options()
 
 
 class FakePartialScopeMetadataFacade(FakeScopeMetadataFacade):
@@ -166,6 +180,38 @@ class BugTrendScopeConfigViewTestSupport:
             browser.close()
             playwright.stop()
 
+    def _measure_scope_query_builder_metadata_controls(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            return {
+                'desktop': self._measure_scope_query_builder_metadata_controls_viewport(browser, html, 1280, 900),
+                'phone': self._measure_scope_query_builder_metadata_controls_viewport(browser, html, 390, 900),
+            }
+        finally:
+            browser.close()
+            playwright.stop()
+
+    def _measure_scope_query_builder_metadata_controls_viewport(self, browser, html, width, height):
+        page = browser.new_page(viewport={'width': width, 'height': height})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            page.locator('input[name="query_builder_priorities"][value="P1-Critical"]').check()
+            page.locator('textarea[name="query_builder_resolutions_manual"]').fill('Fixed')
+            return page.evaluate("""
+                () => ({
+                    page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                    issue_type_checked: Boolean(document.querySelector('input[name="query_builder_issue_types"][value="Bug"]:checked')),
+                    component_checked: Boolean(document.querySelector('input[name="query_builder_components"][value="Emulation"]:checked')),
+                    metadata_option_count: document.querySelectorAll('.scope-query-builder-option input[type="checkbox"]').length,
+                    custom_field_option_count: document.querySelectorAll('select[name="query_builder_custom_field_1"] option').length,
+                    preview_value: document.querySelector('#query-builder-preview').value,
+                })
+            """)
+        finally:
+            page.close()
+
     def _measure_scope_required_validation(self, html):
         html = self._scope_library_browser_html(html)
         playwright = sync_playwright().start()
@@ -218,9 +264,13 @@ class BugTrendScopeConfigViewTestSupport:
             return page.evaluate("""
                 () => {
                     const shell = document.querySelector('.scope-config-provider-panel.provider-tab-shell');
+                    const workflowFrame = document.querySelector('.scope-config-provider-workflow');
                     const tabBody = document.querySelector('.provider-tab-body');
                     const contextGrid = document.querySelector('.scope-provider-grid');
                     const detailPanel = document.querySelector('.scope-provider-detail-panel');
+                    const sourcePanel = document.querySelector('.scope-config-source-panel, textarea[name="jql"]');
+                    const mappingSection = document.querySelector('#scope-bug-types');
+                    const actionBar = document.querySelector('.scope-editor-actions');
                     const profileSelect = document.querySelector('select[name="profile_id"]');
                     const selectedTab = document.querySelector('.provider-tab-list [aria-selected="true"]');
                     const selectedCheck = selectedTab ? selectedTab.querySelector('.provider-tab-check') : null;
@@ -232,6 +282,7 @@ class BugTrendScopeConfigViewTestSupport:
                     const maxHeight = values => values.length ? Math.max(...values) : 0;
                     const minHeight = values => values.length ? Math.min(...values) : 0;
                     const shellBorderColor = shell ? getComputedStyle(shell).borderLeftColor : '';
+                    const workflowBorderColor = workflowFrame ? getComputedStyle(workflowFrame).borderLeftColor : '';
                     return {
                         page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
                         tab_count: document.querySelectorAll('.provider-tab-list [role="tab"]').length,
@@ -249,6 +300,14 @@ class BugTrendScopeConfigViewTestSupport:
                         ),
                         selected_tab_is_hsdes: selectedTab ? selectedTab.textContent.includes('HSD-ES') : false,
                         shell_border_is_blue: shellBorderColor === 'rgb(28, 126, 214)',
+                        workflow_frame_is_blue: workflowBorderColor === 'rgb(28, 126, 214)',
+                        workflow_frame_wraps_work_area: Boolean(
+                            workflowFrame && shell && sourcePanel && mappingSection && actionBar
+                            && workflowFrame.contains(shell)
+                            && workflowFrame.contains(sourcePanel)
+                            && workflowFrame.contains(mappingSection)
+                            && workflowFrame.contains(actionBar)
+                        ),
                         detail_panel_left_border_width: detailPanel ? Math.round(parseFloat(getComputedStyle(detailPanel).borderLeftWidth)) : 0,
                         provider_choice_max_height: maxHeight(providerChoiceHeights),
                         scope_form_control_height_delta: maxHeight(formControlHeights) - minHeight(formControlHeights),

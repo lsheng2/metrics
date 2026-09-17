@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from unittest import TestCase
 
+from bug_metrics.models import JiraScopeConfig
+from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
 from ui_web.facades.bug_trend_facade import BugTrendFacade
 
 
@@ -172,6 +174,24 @@ class FailingScopeMetadataApi:
         raise RuntimeError('metadata discovery must not run')
 
 
+class RecordingScopeMetadataApi:
+    def __init__(self):
+        self.requests = []
+
+    def discover_scope_options(self, provider, query, selected_projects, selected_item_types, refresh=False):
+        self.requests.append({
+            'provider': provider,
+            'query': query,
+            'selected_projects': selected_projects,
+            'selected_item_types': selected_item_types,
+            'refresh': refresh,
+        })
+        return ScopeConfigOptions()
+
+    def discover_field_values(self, *args, **kwargs):
+        return []
+
+
 class TestBugTrendFacade(TestCase):
     def test_shouldExposeSavedScopeOptions(self):
         # Given
@@ -240,6 +260,92 @@ class TestBugTrendFacade(TestCase):
         self.assertEqual('query_builder', saved.source_mode)
         self.assertEqual('project = STDEL AND issuetype = Story AND components = team_int_prc', saved.jql)
         self.assertEqual({'project': 'STDEL', 'issue_types': ['Story'], 'components': ['team_int_prc']}, saved.query_builder_state)
+
+    def test_shouldProjectMetadataBackedQueryBuilderControls(self):
+        # Given
+        facade = BugTrendFacade(FakeBugTrendApi())
+        config = facade.get_scope_config(7)
+        config.source_mode = JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER
+        config.query_builder_state = {
+            'project': 'STDEL',
+            'issue_types': ['Bug', 'Story'],
+            'components': ['Emulation', 'ManualOnly'],
+            'custom_fields': [{'field': 'customfield_12345', 'values': ['Critical']}],
+        }
+        metadata = ScopeConfigOptions(
+            item_types=[TrackerOption('1', 'Bug'), TrackerOption('2', 'Story')],
+            components=[TrackerOption('10', 'Emulation'), TrackerOption('11', 'Simulation')],
+            fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
+        )
+
+        # When
+        context = facade.source_mode_context(config, None, metadata)
+
+        # Then
+        issue_types = context['query_builder_controls'][0]
+        components = context['query_builder_controls'][1]
+        custom_row = context['query_builder_custom_field_rows'][0]
+        self.assertEqual('Issue types', issue_types['label'])
+        self.assertEqual(['Bug', 'Story'], [option['value'] for option in issue_types['options'] if option['selected']])
+        self.assertEqual(['Emulation'], [option['value'] for option in components['options'] if option['selected']])
+        self.assertEqual('ManualOnly', components['manual_value'])
+        self.assertEqual('customfield_12345', custom_row['selected_field'])
+        self.assertEqual(['Severity (customfield_12345)'], [option['label'] for option in custom_row['field_options'] if option['selected']])
+
+    def test_shouldMergeMetadataSelectionsAndManualFallbackWhenSavingQueryBuilder(self):
+        # Given
+        bug_trend_api = FakeBugTrendApi()
+        facade = BugTrendFacade(bug_trend_api)
+
+        # When
+        saved, _ = facade.save_scope_config({
+            'id': '',
+            'name': 'STDEL metadata builder',
+            'ip': 'NVU',
+            'project_label': 'STDEL',
+            'source_mode': 'query_builder',
+            'query_builder_project': 'STDEL',
+            'query_builder_issue_types': ['Bug'],
+            'query_builder_issue_types_manual': 'Story\nBug',
+            'query_builder_components': ['Emulation'],
+            'query_builder_components_manual': 'ManualOnly',
+            'query_builder_custom_field_1': 'customfield_12345',
+            'query_builder_custom_field_1_manual': '',
+            'query_builder_custom_values_1': 'Critical',
+            'bug_type_values': 'Bug',
+            'bucket_granularity': 'weekly',
+            'action': 'save_draft',
+        })
+
+        # Then
+        self.assertEqual(
+            'project = STDEL AND issuetype in (Bug, Story) AND components in (Emulation, ManualOnly) AND customfield_12345 = Critical',
+            saved.jql,
+        )
+        self.assertEqual(
+            {
+                'project': 'STDEL',
+                'issue_types': ['Bug', 'Story'],
+                'components': ['Emulation', 'ManualOnly'],
+                'custom_fields': [{'field': 'customfield_12345', 'values': ['Critical']}],
+            },
+            saved.query_builder_state,
+        )
+
+    def test_shouldUseQueryBuilderIssueTypesForMetadataDiscoveryContext(self):
+        # Given
+        metadata_api = RecordingScopeMetadataApi()
+        facade = BugTrendFacade(FakeBugTrendApi(), metadata_api)
+        config = facade.get_scope_config(7)
+        config.source_mode = JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER
+        config.query_builder_state = {'project': 'STDEL', 'issue_types': ['Story']}
+        config.bug_type_values = []
+
+        # When
+        facade.get_scope_metadata_options(config, ['STDEL'])
+
+        # Then
+        self.assertEqual(['Story'], metadata_api.requests[0]['selected_item_types'])
 
     def test_shouldIgnoreQueryBuilderFiltersWhenSavingCustomJqlMode(self):
         # Given

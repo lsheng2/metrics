@@ -1016,6 +1016,30 @@ span:focus-within > .help-tip::after,
     padding: 0.75rem;
 }
 
+.scope-config-provider-workflow {
+    border: 1px solid var(--dashboard-border);
+    border-left: 0.36rem solid var(--dashboard-border-strong);
+}
+
+.scope-config-provider-workflow.is-provider-green {
+    border-color: #2f9e44;
+    box-shadow: 0 0 0 1px color-mix(in srgb, #2f9e44 15%, transparent);
+}
+
+.scope-config-provider-workflow.is-provider-blue {
+    border-color: #1c7ed6;
+    box-shadow: 0 0 0 1px color-mix(in srgb, #1c7ed6 15%, transparent);
+}
+
+.scope-config-provider-workflow.is-provider-purple {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 1px color-mix(in srgb, #8b5cf6 15%, transparent);
+}
+
+.scope-config-provider-workflow.is-provider-neutral {
+    border-color: var(--dashboard-border-strong);
+}
+
 .scope-config-provider-panel {
     display: grid;
     gap: 0.7rem;
@@ -1057,6 +1081,80 @@ span:focus-within > .help-tip::after,
 
 .scope-query-builder-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scope-query-builder-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.scope-query-builder-toolbar p {
+    margin: 0;
+    color: var(--dashboard-text-muted);
+    line-height: 1.3;
+}
+
+.scope-query-builder-control {
+    grid-template-rows: minmax(1.38rem, auto) auto auto auto;
+}
+
+.scope-query-builder-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.28rem;
+    align-content: flex-start;
+    min-height: 2rem;
+    max-height: 6.6rem;
+    overflow: auto;
+    border: 1px solid var(--dashboard-border);
+    border-radius: var(--dashboard-radius-control);
+    background: color-mix(in srgb, var(--dashboard-surface-soft) 72%, transparent);
+    padding: 0.34rem;
+}
+
+.scope-query-builder-option {
+    display: inline-flex;
+    gap: 0.24rem;
+    align-items: center;
+    min-height: 1.48rem;
+    max-width: 100%;
+    border: 1px solid color-mix(in srgb, var(--dashboard-border) 80%, transparent);
+    border-radius: var(--dashboard-radius-control);
+    background: var(--dashboard-surface-raised);
+    padding: 0.12rem 0.42rem;
+    color: var(--dashboard-text);
+    font-size: var(--dashboard-font-caption);
+    line-height: 1.15;
+}
+
+.scope-query-builder-option span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.scope-query-builder-manual {
+    min-height: 3.1rem;
+    margin-top: 0.35rem;
+}
+
+.scope-query-builder-empty {
+    min-height: 2rem;
+    border: 1px dashed var(--dashboard-border);
+    border-radius: var(--dashboard-radius-control);
+    margin: 0;
+    padding: 0.38rem 0.48rem;
+    color: var(--dashboard-text-muted);
+    font-size: var(--dashboard-font-caption);
+    line-height: 1.25;
+}
+
+.scope-query-builder-custom-field,
+.scope-query-builder-custom-values {
+    align-content: start;
 }
 
 .scope-generated-query-field {
