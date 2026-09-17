@@ -1141,6 +1141,34 @@ span:focus-within > .help-tip::after,
     margin-top: 0.35rem;
 }
 
+.scope-query-builder-advanced {
+    margin-top: 0.34rem;
+}
+
+.scope-query-builder-advanced:not([open]) > :not(summary) {
+    display: none;
+}
+
+.scope-query-builder-advanced summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.6rem;
+    border: 1px solid var(--dashboard-border);
+    border-radius: var(--dashboard-radius-control);
+    padding: 0.12rem 0.44rem;
+    color: var(--dashboard-text-muted);
+    cursor: pointer;
+    font-size: var(--dashboard-font-caption);
+    line-height: 1.15;
+}
+
+.scope-query-builder-advanced summary:hover,
+.scope-query-builder-advanced summary:focus {
+    border-color: var(--dashboard-border-strong);
+    color: var(--dashboard-text);
+    outline: none;
+}
+
 .scope-query-builder-empty {
     min-height: 2rem;
     border: 1px dashed var(--dashboard-border);

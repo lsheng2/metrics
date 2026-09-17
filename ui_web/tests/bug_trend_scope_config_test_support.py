@@ -202,6 +202,9 @@ class BugTrendScopeConfigViewTestSupport:
         try:
             page.set_content(html, wait_until='domcontentloaded')
             page.locator('input[name="query_builder_priorities"][value="P1-Critical"]').check()
+            page.locator('textarea[name="query_builder_resolutions_manual"]').evaluate(
+                "field => { field.closest('details').open = true; }"
+            )
             page.locator('textarea[name="query_builder_resolutions_manual"]').fill('Fixed')
             return page.evaluate("""
                 () => ({
@@ -215,6 +218,33 @@ class BugTrendScopeConfigViewTestSupport:
             """)
         finally:
             page.close()
+
+    def _measure_scope_query_builder_empty_metadata_layout(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 1280, 'height': 900})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            return page.evaluate("""
+                () => {
+                    const isVisible = node => Boolean(node.offsetWidth || node.offsetHeight || node.getClientRects().length);
+                    const advancedControls = Array.from(document.querySelectorAll(
+                        '.scope-query-builder-advanced input, .scope-query-builder-advanced textarea'
+                    ));
+                    return {
+                        visible_advanced_control_count: advancedControls.filter(isVisible).length,
+                        advanced_summary_count: document.querySelectorAll('.scope-query-builder-advanced summary').length,
+                        open_advanced_count: document.querySelectorAll('.scope-query-builder-advanced[open]').length,
+                        empty_messages: Array.from(document.querySelectorAll('.scope-query-builder-empty')).map(node => node.textContent.trim()),
+                        body_text: document.body.innerText,
+                    };
+                }
+            """)
+        finally:
+            page.close()
+            browser.close()
+            playwright.stop()
 
     def _measure_scope_query_builder_searchable_field_picker(self, html):
         html = self._scope_library_browser_html(html)

@@ -16,9 +16,12 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="scope-query-builder-empty">Refresh metadata to choose {{ control.label|lower }} values, or use manual fallback.</p>
+                <p class="scope-query-builder-empty">Add Jira project context, then refresh metadata to choose {{ control.label|lower }} values.</p>
             {% endif %}
-            <textarea class="textarea scope-query-builder-manual" id="{{ control.manual_id }}" name="{{ control.manual_name }}" placeholder="Manual fallback values, one per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ control.manual_value }}</textarea>
+            <details class="scope-query-builder-advanced" {% if control.manual_value %}open{% endif %}>
+                <summary>Advanced input</summary>
+                <textarea class="textarea scope-query-builder-manual" id="{{ control.manual_id }}" name="{{ control.manual_name }}" placeholder="One value per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ control.manual_value }}</textarea>
+            </details>
             <p class="is-size-7">{{ control.help_text }}</p>
         </div>
     {% endfor %}
@@ -33,12 +36,25 @@
                 {% else %}
                     {% include "partials/searchable_pickup_list.html" with field_id_prefix="query-builder-custom-field-" field_name_prefix="query_builder_custom_field_" index=row.index selected_value=row.selected_field placeholder="Choose metadata field" search_placeholder="Search metadata fields" search_label="Search metadata fields" options=row.field_options source_mode=source_mode_context.query_builder_mode enabled=source_mode_context.query_builder_active %}
                 {% endif %}
+            {% else %}
+                <p class="scope-query-builder-empty">Refresh metadata to choose custom fields.</p>
             {% endif %}
-            <input class="input" id="query-builder-custom-field-{{ row.index }}-manual" name="query_builder_custom_field_{{ row.index }}_manual" value="{{ row.manual_field }}" placeholder="Manual field id, e.g. customfield_31601" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+            <details class="scope-query-builder-advanced" {% if row.manual_field %}open{% endif %}>
+                <summary>Advanced field id</summary>
+                <input class="input" id="query-builder-custom-field-{{ row.index }}-manual" name="query_builder_custom_field_{{ row.index }}_manual" value="{{ row.manual_field }}" placeholder="customfield_31601" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
+            </details>
         </div>
         <div class="dashboard-form-field scope-config-form-field scope-query-builder-custom-values">
             <label class="label" for="query-builder-custom-values-{{ row.index }}">Custom values {{ row.index }}</label>
-            <textarea class="textarea" id="query-builder-custom-values-{{ row.index }}" name="query_builder_custom_values_{{ row.index }}" placeholder="One value per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ row.values_text }}</textarea>
+            {% if row.field_options or row.manual_field or row.values_text %}
+                <textarea class="textarea" id="query-builder-custom-values-{{ row.index }}" name="query_builder_custom_values_{{ row.index }}" placeholder="One value per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ row.values_text }}</textarea>
+            {% else %}
+                <p class="scope-query-builder-empty">Choose a custom field before adding values.</p>
+                <details class="scope-query-builder-advanced">
+                    <summary>Advanced values</summary>
+                    <textarea class="textarea" id="query-builder-custom-values-{{ row.index }}" name="query_builder_custom_values_{{ row.index }}" placeholder="One value per line or comma-separated" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>{{ row.values_text }}</textarea>
+                </details>
+            {% endif %}
         </div>
     {% endfor %}
     <div class="dashboard-form-field scope-config-form-field scope-generated-query-field">
