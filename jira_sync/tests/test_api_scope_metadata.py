@@ -45,9 +45,35 @@ class FakeJiraMetadataClient:
     def get_project(self, project_key):
         return {'id': '131600', 'key': project_key}
 
+    def get_all_projects(self):
+        return [
+            {'id': '131600', 'key': 'STDEL', 'name': 'Storage Dashboard'},
+            {'id': '131601', 'key': 'GFX', 'name': 'Graphics'},
+        ]
+
     def get_custom_field_options(self, field_id, project_id, issue_type_id=None, query=None, page=None, limit=None, sort=None, use_all_contexts=None):
         self.field_options_requested.append((field_id, project_id, issue_type_id))
         return [{'id': '40000', 'value': 'Critical'}, {'id': '40001', 'value': 'Medium'}]
+
+
+class FakeProjectPickerJiraMetadataClient(FakeJiraMetadataClient):
+    get_all_projects = None
+
+    def __init__(self):
+        super().__init__()
+        self.picker_requests = []
+
+    def resource_url(self, resource):
+        return f'api/2/{resource}'
+
+    def get(self, url, params=None):
+        self.picker_requests.append((url, params))
+        return {
+            'projects': [
+                {'id': '131600', 'key': 'STDEL', 'name': 'Storage Dashboard'},
+                {'id': '131601', 'key': 'GFX', 'name': 'Graphics'},
+            ],
+        }
 
 
 class TestScopeMetadataApi(TestCase):
@@ -70,7 +96,7 @@ class TestScopeMetadataApi(TestCase):
 
         # Then
         self.assertEqual(original_hash, scope.config_version_hash)
-        self.assertEqual(['STDEL'], [project.id for project in options.projects])
+        self.assertEqual(['STDEL', 'GFX'], [project.id for project in options.projects])
         self.assertEqual(['Bug', 'Feature'], [item_type.name for item_type in options.item_types])
         self.assertEqual(['Open', 'Fixed'], [status.name for status in options.statuses])
         self.assertEqual(['Done'], [resolution.name for resolution in options.resolutions])
@@ -105,8 +131,32 @@ class TestScopeMetadataApi(TestCase):
         options = api.discover_scope_options('jira', 'filter = 131600', ['STDEL'], ['Bug'])
 
         # Then
-        self.assertEqual(['STDEL'], [project.id for project in options.projects])
+        self.assertEqual(['STDEL', 'GFX'], [project.id for project in options.projects])
         self.assertEqual(['Open', 'Fixed'], [status.name for status in options.statuses])
+
+    def test_shouldDiscoverAvailableJiraProjectsWhenNoProjectIsSelected(self):
+        # Given
+        api = ApiForScopeMetadata({'jira': JiraScopeMetadataAdapter(FakeJiraMetadataClient())})
+
+        # When
+        options = api.discover_scope_options('jira', '', [], [])
+
+        # Then
+        self.assertEqual(['STDEL', 'GFX'], [project.id for project in options.projects])
+        self.assertEqual(['STDEL - Storage Dashboard', 'GFX - Graphics'], [project.label for project in options.projects])
+        self.assertIn('Select at least one Jira project before refreshing project-scoped metadata.', options.warnings)
+
+    def test_shouldUseProjectPickerWhenAllProjectsEndpointIsUnavailable(self):
+        # Given
+        client = FakeProjectPickerJiraMetadataClient()
+        api = ApiForScopeMetadata({'jira': JiraScopeMetadataAdapter(client)})
+
+        # When
+        options = api.discover_scope_options('jira', '', [], [])
+
+        # Then
+        self.assertEqual(['STDEL', 'GFX'], [project.id for project in options.projects])
+        self.assertEqual([('api/2/projects/picker', {'query': '', 'maxResults': 100, 'allowEmptyQuery': True})], client.picker_requests)
 
     def test_shouldDiscoverNumericProjectIdFromScopeQuery(self):
         # Given
@@ -116,7 +166,7 @@ class TestScopeMetadataApi(TestCase):
         options = api.discover_scope_options('jira', 'project = 131600 AND issuetype = Bug', [], ['Bug'])
 
         # Then
-        self.assertEqual(['131600'], [project.id for project in options.projects])
+        self.assertEqual(['STDEL', 'GFX', '131600'], [project.id for project in options.projects])
         self.assertEqual(['Open', 'Fixed'], [status.name for status in options.statuses])
 
     def test_shouldDiscoverQuotedProjectKeyFromScopeQuery(self):
@@ -127,7 +177,7 @@ class TestScopeMetadataApi(TestCase):
         options = api.discover_scope_options('jira', 'project = "STDEL" AND issuetype = Bug', [], ['Bug'])
 
         # Then
-        self.assertEqual(['STDEL'], [project.id for project in options.projects])
+        self.assertEqual(['STDEL', 'GFX'], [project.id for project in options.projects])
         self.assertEqual(['Open', 'Fixed'], [status.name for status in options.statuses])
 
     def test_shouldDiscoverMixedProjectTokensFromScopeQuery(self):
@@ -138,11 +188,13 @@ class TestScopeMetadataApi(TestCase):
         options = api.discover_scope_options('jira', 'project in (131600, "STDEL") AND issuetype = Bug', [], ['Bug'])
 
         # Then
-        self.assertEqual(['131600', 'STDEL'], [project.id for project in options.projects])
+        self.assertEqual(['STDEL', 'GFX', '131600'], [project.id for project in options.projects])
 
     def test_shouldWarnWhenNoProjectCanBeResolvedForProjectScopedMetadata(self):
         # Given
-        api = ApiForScopeMetadata({'jira': JiraScopeMetadataAdapter(FakeJiraMetadataClient())})
+        client = FakeJiraMetadataClient()
+        client.get_all_projects = None
+        api = ApiForScopeMetadata({'jira': JiraScopeMetadataAdapter(client)})
 
         # When
         options = api.discover_scope_options('jira', 'filter = 131600', [], ['Bug'])

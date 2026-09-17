@@ -3,6 +3,7 @@
 {% block title %}Bug Trend Scope Config{% endblock %}
 
 {% block content %}
+{% url 'ui_web:bug_trend_scope_metadata' as scope_metadata_url %}
 <article class="block">
     <nav class="breadcrumb" aria-label="breadcrumbs">
         <ul>
@@ -238,15 +239,21 @@
                      data-source-mode-panel="{{ source_mode_context.query_builder_mode }}"
                      {% if not source_mode_context.query_builder_active %}hidden{% endif %}>
                     <div class="scope-query-builder-toolbar">
-                        <p class="is-size-7">Use Jira metadata for selectable values, then add manual fallback values only when metadata is incomplete.</p>
-                        <button class="button is-small" type="button"
-                                hx-get="{% url 'ui_web:bug_trend_scope_metadata' %}"
-                                hx-include="closest form"
-                                hx-target="#scope-metadata-options"
-                                hx-swap="innerHTML">Refresh metadata for Query Builder</button>
+                        <p class="is-size-7">Type values directly, or open a field picker to refresh Jira metadata and search selectable values in place.</p>
                     </div>
                     <div id="query-builder-controls">
                         {% include "partials/bug_trend_scope_query_builder_controls.html" %}
+                    </div>
+                    <div class="scope-query-builder-toolbar scope-query-builder-validation-toolbar">
+                        <p class="is-size-7">Validate values checks the current Query Builder fields against refreshed Jira metadata without saving the scope.</p>
+                        <button class="button is-small is-info" type="button"
+                                hx-get="{{ scope_metadata_url }}?refresh_metadata=1&validate_scope=1"
+                                hx-include="closest form"
+                                hx-target="#scope-metadata-options"
+                                hx-swap="innerHTML">Validate values</button>
+                    </div>
+                    <div id="scope-metadata-options" class="scope-query-builder-metadata-result">
+                        {% include "partials/bug_trend_scope_metadata.html" %}
                     </div>
                     <p class="is-size-7">Custom JQL is an inactive source mode and is ignored while Query Builder is selected.</p>
                 </div>
@@ -258,6 +265,7 @@
             <textarea class="textarea" id="scope-jql" name="jql" required data-required-label="{{ scope_provider_context.source_query_label|default:'JQL' }}" data-required-message="{{ scope_provider_context.source_query_label|default:'JQL' }} is required before saving this scope.">{{ config.jql }}</textarea>
         </div>
         {% endif %}
+        {% if scope_provider_context.selected_provider_id != 'jira' %}
         <section class="scope-config-section scope-config-metadata-section">
             <div class="level">
                 <div class="level-left">
@@ -292,6 +300,7 @@
                 {% include "partials/bug_trend_scope_metadata.html" %}
             </div>
         </section>
+        {% endif %}
         <section class="scope-config-section">
             <div class="scope-config-section-heading">
                 <div>

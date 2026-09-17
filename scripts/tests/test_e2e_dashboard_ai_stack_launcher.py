@@ -40,6 +40,9 @@ def test_dashboard_ai_stack_smoke_checks_unified_workbench():
     assert "Test-JiraProfileSyncRunning" in script
     assert "E2E_JIRA_PROFILE_ID" in script
     assert "-Label 'jira-profile-sync'" in script
+    sync_section = script[script.index("function Sync-JiraProfile"):script.index("function Test-DashboardAiStack")]
+    assert "Invoke-WithDashboardAiEnv -ScriptBlock" in sync_section
+    assert "sync_provider_profile" in sync_section
     assert "A sync is already running for this scope" in script
     assert "Set-Content -Path $logPath -Value 'Jira profile sync already active; continuing with the existing sync state.'" in script
     assert "Write-Host 'Jira profile sync already active; continuing with the existing sync state.'" in script

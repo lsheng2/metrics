@@ -41,6 +41,21 @@ QUERY_BUILDER_MANUAL_CONTROL_DEFINITIONS = (
     ('labels', 'query_builder_labels', 'Labels', 'Jira labels used by the generated JQL.'),
 )
 
+QUERY_BUILDER_VALIDATION_DEFINITIONS = (
+    ('project', 'Jira project', 'projects'),
+    ('issue_types', 'Issue types', 'item_types'),
+    ('components', 'Components', 'components'),
+    ('affected_versions', 'Affected versions', 'versions'),
+    ('fix_versions', 'Fix versions', 'versions'),
+    ('priorities', 'Priorities', 'priorities'),
+    ('resolutions', 'Resolutions', 'resolutions'),
+)
+
+QUERY_BUILDER_UNVERIFIABLE_DEFINITIONS = (
+    ('security_levels', 'Security levels', 'Jira security levels are not returned by this metadata endpoint.'),
+    ('labels', 'Labels', 'Jira labels are not returned by this metadata endpoint.'),
+)
+
 QUERY_BUILDER_CUSTOM_FIELD_ROWS = range(1, 7)
 QUERY_BUILDER_DEFAULT_CUSTOM_FIELD_ROW_COUNT = 2
 
@@ -354,6 +369,34 @@ class BugTrendScopeConfigFacadeMixin:
         except Exception as error:
             return {'warnings': [f'Metadata refresh failed: {error}']}
 
+    def get_query_builder_metadata_validation(self, config: SavedScopeConfig, scope_metadata) -> dict:
+        builder_state = dict(config.query_builder_state or {})
+        metadata_options = self._metadata_options_payload(scope_metadata)
+        rows = []
+        rows.extend(self._query_builder_metadata_validation_rows(builder_state, metadata_options))
+        rows.extend(self._query_builder_custom_field_validation_rows(builder_state, metadata_options))
+        rows.extend(self._query_builder_unverifiable_validation_rows(builder_state))
+        unconfirmed_count = sum(len(row['unconfirmed_values']) for row in rows)
+        checked_count = sum(len(row['confirmed_values']) + len(row['unconfirmed_values']) for row in rows)
+        unchecked_count = sum(len(row['unchecked_values']) for row in rows)
+        if not rows:
+            message = 'No Query Builder values are set yet.'
+            status = 'neutral'
+        elif unconfirmed_count:
+            message = 'Some values were not found in refreshed Jira metadata.'
+            status = 'warning'
+        else:
+            message = 'All checked Query Builder values match refreshed Jira metadata.'
+            status = 'success'
+        return {
+            'status': status,
+            'message': message,
+            'rows': rows,
+            'checked_count': checked_count,
+            'unconfirmed_count': unconfirmed_count,
+            'unchecked_count': unchecked_count,
+        }
+
     def save_scope_config(self, post_data) -> tuple[SavedScopeConfig, bool]:
         config = self.scope_config_from_post(post_data)
         if post_data.get('id') and config.id is None:
@@ -402,6 +445,7 @@ class BugTrendScopeConfigFacadeMixin:
         builder_state = dict(preview_config.query_builder_state or {})
         source_mode = self._source_mode(preview_config.source_mode)
         metadata_options = self._metadata_options_payload(scope_metadata)
+        open_picker = str(query_data.get('open_picker', '') or '').strip() if query_data is not None else ''
         return {
             'mode': source_mode,
             'custom_jql_active': source_mode == JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL,
@@ -409,10 +453,12 @@ class BugTrendScopeConfigFacadeMixin:
             'custom_jql_value': preview_config.jql if source_mode == JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL else config.jql,
             'query_builder_state': builder_state,
             'query_builder_jql': JiraScopeQueryBuilder().build(builder_state),
+            'query_builder_project_options': self._query_builder_project_options(builder_state, metadata_options),
             'query_builder_controls': self._query_builder_controls(builder_state, metadata_options),
             'query_builder_custom_field_rows': self._query_builder_custom_field_rows(builder_state, metadata_options),
             'custom_jql_mode': JiraScopeConfig.SOURCE_MODE_CUSTOM_JQL,
             'query_builder_mode': JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER,
+            'open_picker': open_picker,
         }
 
     def _preview_source_config(self, config: SavedScopeConfig, query_data) -> SavedScopeConfig:
@@ -539,22 +585,31 @@ class BugTrendScopeConfigFacadeMixin:
         )
         return controls
 
+    def _query_builder_project_options(self, builder_state: dict, metadata_options) -> list[dict]:
+        selected_values = normalize_scope_list_values([builder_state.get('project', '')])
+        metadata_items = list(getattr(metadata_options, 'projects', []) or []) if metadata_options else []
+        options, _ = self._query_builder_metadata_option_rows(metadata_items, selected_values)
+        return options
+
     def _metadata_query_builder_control(self, builder_state: dict, metadata_options, definition: tuple[str, str, str, str, str]) -> dict:
         state_key, post_field_name, label, metadata_attribute, help_text = definition
         selected_values = normalize_scope_list_values(builder_state.get(state_key, []))
         metadata_items = list(getattr(metadata_options, metadata_attribute, []) or []) if metadata_options else []
-        options, matched_values = self._query_builder_metadata_option_rows(metadata_items, selected_values)
-        manual_values = [value for value in selected_values if value not in matched_values]
+        options, _ = self._query_builder_metadata_option_rows(metadata_items, selected_values)
         return {
             'key': state_key,
             'name': post_field_name,
-            'manual_name': f'{post_field_name}_manual',
-            'manual_id': f'{post_field_name.replace("_", "-")}-manual',
+            'input_id': post_field_name.replace('_', '-'),
+            'picker_key': state_key,
             'label': label,
             'help_text': help_text,
             'options': options,
-            'manual_value': '\n'.join(manual_values),
+            'value_text': '\n'.join(selected_values),
             'has_metadata': bool(options),
+            'refreshable': True,
+            'placeholder': 'One value per line or comma-separated',
+            'search_placeholder': f'Search {label.lower()}',
+            'empty_message': f'No {label.lower()} metadata. Type a value or refresh after choosing a project.',
         }
 
     def _manual_query_builder_control(self, builder_state: dict, definition: tuple[str, str, str, str]) -> dict:
@@ -562,13 +617,17 @@ class BugTrendScopeConfigFacadeMixin:
         return {
             'key': state_key,
             'name': post_field_name,
-            'manual_name': f'{post_field_name}_manual',
-            'manual_id': f'{post_field_name.replace("_", "-")}-manual',
+            'input_id': post_field_name.replace('_', '-'),
+            'picker_key': state_key,
             'label': label,
             'help_text': help_text,
             'options': [],
-            'manual_value': '\n'.join(normalize_scope_list_values(builder_state.get(state_key, []))),
+            'value_text': '\n'.join(normalize_scope_list_values(builder_state.get(state_key, []))),
             'has_metadata': False,
+            'refreshable': True,
+            'placeholder': 'One value per line or comma-separated',
+            'search_placeholder': f'Search {label.lower()}',
+            'empty_message': f'No {label.lower()} metadata. Type values manually.',
         }
 
     def _query_builder_metadata_option_rows(self, metadata_items: list, selected_values: list[str]) -> tuple[list[dict], set[str]]:
@@ -605,8 +664,12 @@ class BugTrendScopeConfigFacadeMixin:
             selected_matches_metadata = selected_field in {option['value'] for option in field_options}
             rows.append({
                 'index': index,
+                'field_id': f'query-builder-custom-field-{index}',
+                'name': f'query_builder_custom_field_{index}',
                 'selected_field': selected_field,
                 'manual_field': '' if selected_matches_metadata else selected_field,
+                'field_value': selected_field,
+                'picker_key': f'custom_field_{index}',
                 'field_options': [
                     dict(option, selected=option['value'] == selected_field)
                     for option in field_options
@@ -631,6 +694,79 @@ class BugTrendScopeConfigFacadeMixin:
             })
             seen.add(field_id)
         return rows
+
+    def _query_builder_metadata_validation_rows(self, builder_state: dict, metadata_options) -> list[dict]:
+        rows = []
+        for state_key, label, metadata_attribute in QUERY_BUILDER_VALIDATION_DEFINITIONS:
+            raw_values = [builder_state.get(state_key, '')] if state_key == 'project' else builder_state.get(state_key, [])
+            values = normalize_scope_list_values(raw_values)
+            if values:
+                rows.append(self._query_builder_validation_row(label, values, getattr(metadata_options, metadata_attribute, []) if metadata_options else []))
+        return rows
+
+    def _query_builder_custom_field_validation_rows(self, builder_state: dict, metadata_options) -> list[dict]:
+        rows = []
+        field_options = getattr(metadata_options, 'fields', []) if metadata_options else []
+        for index, custom_field in enumerate(builder_state.get('custom_fields', []) or [], start=1):
+            if not isinstance(custom_field, dict):
+                continue
+            field_name = str(custom_field.get('field') or '').strip()
+            if field_name:
+                rows.append(self._query_builder_validation_row(f'Custom field {index}', [field_name], field_options))
+            values = normalize_scope_list_values(custom_field.get('values', []))
+            if values:
+                rows.append({
+                    'label': f'Custom values {index}',
+                    'confirmed_values': [],
+                    'unconfirmed_values': [],
+                    'unchecked_values': values,
+                    'status': 'neutral',
+                    'message': 'Custom field values are not checked by this metadata endpoint.',
+                })
+        return rows
+
+    def _query_builder_unverifiable_validation_rows(self, builder_state: dict) -> list[dict]:
+        rows = []
+        for state_key, label, message in QUERY_BUILDER_UNVERIFIABLE_DEFINITIONS:
+            values = normalize_scope_list_values(builder_state.get(state_key, []))
+            if values:
+                rows.append({
+                    'label': label,
+                    'confirmed_values': [],
+                    'unconfirmed_values': [],
+                    'unchecked_values': values,
+                    'status': 'neutral',
+                    'message': message,
+                })
+        return rows
+
+    def _query_builder_validation_row(self, label: str, values: list[str], metadata_items: list) -> dict:
+        lookup = self._metadata_value_lookup(metadata_items)
+        confirmed_values = [value for value in values if value.casefold() in lookup]
+        unconfirmed_values = [value for value in values if value.casefold() not in lookup]
+        if not metadata_items:
+            message = f'No refreshed Jira metadata was available for {label.lower()}.'
+        elif unconfirmed_values:
+            message = 'Some typed values were not found in refreshed metadata.'
+        else:
+            message = 'All values match refreshed metadata.'
+        return {
+            'label': label,
+            'confirmed_values': confirmed_values,
+            'unconfirmed_values': unconfirmed_values,
+            'unchecked_values': [],
+            'status': 'warning' if unconfirmed_values else 'success',
+            'message': message,
+        }
+
+    def _metadata_value_lookup(self, metadata_items: list) -> set[str]:
+        values = set()
+        for item in metadata_items:
+            for attribute_name in ['id', 'name', 'label']:
+                value = str(getattr(item, attribute_name, '') or '').strip()
+                if value:
+                    values.add(value.casefold())
+        return values
 
     def _scope_defaults_from_profile(self, profile_id: str) -> dict:
         profile = self._bug_trend_api.get_provider_profile_config(profile_id)

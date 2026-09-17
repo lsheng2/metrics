@@ -1,0 +1,81 @@
+<div class="searchable-value-picker {% if open_picker == picker_key %}is-open{% endif %}" data-searchable-value-picker data-searchable-value-picker-mode="{% if multiline %}multi{% else %}single{% endif %}">
+    <div class="field has-addons searchable-value-picker-field">
+        <div class="control is-expanded">
+            {% if multiline %}
+                <textarea class="textarea searchable-value-picker-input"
+                          id="{{ field_id }}"
+                          name="{{ field_name }}"
+                          placeholder="{{ placeholder }}"
+                          data-searchable-value-picker-input
+                          data-source-mode-input
+                          data-source-mode="{{ source_mode }}"
+                          {% if required_actions %}data-required-actions="{{ required_actions }}"{% endif %}
+                          {% if required_label %}data-required-label="{{ required_label }}"{% endif %}
+                          {% if required_message %}data-required-message="{{ required_message }}"{% endif %}
+                          {% if not enabled %}disabled{% endif %}>{{ field_value }}</textarea>
+            {% else %}
+                <input class="input searchable-value-picker-input"
+                       id="{{ field_id }}"
+                       name="{{ field_name }}"
+                       value="{{ field_value }}"
+                       placeholder="{{ placeholder }}"
+                       data-searchable-value-picker-input
+                       data-source-mode-input
+                       data-source-mode="{{ source_mode }}"
+                       {% if required_actions %}data-required-actions="{{ required_actions }}"{% endif %}
+                       {% if required_label %}data-required-label="{{ required_label }}"{% endif %}
+                       {% if required_message %}data-required-message="{{ required_message }}"{% endif %}
+                       {% if not enabled %}disabled{% endif %}>
+            {% endif %}
+        </div>
+        <div class="control">
+            <button class="button searchable-value-picker-toggle"
+                    type="button"
+                    id="{{ field_id }}-toggle"
+                    aria-label="Refresh metadata and choose {{ label }}"
+                    aria-haspopup="listbox"
+                    aria-expanded="{% if open_picker == picker_key %}true{% else %}false{% endif %}"
+                    aria-controls="{{ field_id }}-menu"
+                    title="Refresh metadata and choose {{ label }}"
+                    data-searchable-value-picker-toggle
+                    data-source-mode-input
+                    data-source-mode="{{ source_mode }}"
+                    hx-get="{{ refresh_url }}?refresh_metadata=1&open_picker={{ picker_key|urlencode }}"
+                    hx-include="closest form"
+                    hx-target="#scope-metadata-options"
+                    hx-swap="innerHTML"
+                    {% if not enabled %}disabled{% endif %}>
+            </button>
+        </div>
+    </div>
+    <div class="searchable-value-picker-menu"
+         id="{{ field_id }}-menu"
+         role="presentation"
+         data-searchable-value-picker-menu
+         {% if open_picker != picker_key %}hidden{% endif %}>
+        <input class="input searchable-value-picker-search"
+               type="search"
+               placeholder="{{ search_placeholder }}"
+               aria-label="{{ search_label }}"
+               data-searchable-value-picker-search>
+        <div class="searchable-value-picker-options" role="listbox" aria-labelledby="{{ field_id }}-toggle">
+            {% for option in options %}
+                {% firstof option.value option.name option.id as option_value %}
+                {% firstof option.label option.name option.id as option_label %}
+                <button class="searchable-value-picker-option"
+                        type="button"
+                        role="option"
+                        title="{{ option.source }}"
+                        data-searchable-value-picker-option
+                        data-searchable-value-picker-value="{{ option_value }}"
+                        data-searchable-value-picker-label="{{ option_label }}"
+                        data-searchable-value-picker-search-text="{{ option_label }} {{ option_value }}"
+                        aria-selected="{% if option.selected %}true{% else %}false{% endif %}">
+                    {{ option_label }}
+                </button>
+            {% endfor %}
+        </div>
+        <p class="searchable-value-picker-empty" data-searchable-value-picker-empty {% if options %}hidden{% endif %}>{{ empty_message }}</p>
+    </div>
+    <p class="searchable-value-picker-status is-size-7" data-searchable-value-picker-status>{% if options %}{{ options|length }} metadata choices loaded.{% else %}Click the picker to refresh metadata, or type manually.{% endif %}</p>
+</div>

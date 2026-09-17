@@ -202,6 +202,20 @@ function Invoke-WithTemporaryEnv {
     }
 }
 
+function Invoke-WithDashboardAiEnv {
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$ScriptBlock
+    )
+
+    Invoke-WithTemporaryEnv -Values @{
+        METRICS_AI_SIDECAR_ENABLED = 'true'
+        METRICS_AI_BASE_URL = $AiBaseBackendUrl
+        METRICS_AI_BASE_FRONTEND_URL = $AiBaseFrontendUrl
+        METRICS_AI_BASE_EMBED_MODE = 'app-chat'
+    } -ScriptBlock $ScriptBlock
+}
+
 function Invoke-JsonPost {
     param(
         [Parameter(Mandatory = $true)]
@@ -323,12 +337,7 @@ function Start-DashboardStack {
     }
     $dashboardArgs += @('-OpenEntrypoint', 'none')
 
-    Invoke-WithTemporaryEnv -Values @{
-        METRICS_AI_SIDECAR_ENABLED = 'true'
-        METRICS_AI_BASE_URL = $AiBaseBackendUrl
-        METRICS_AI_BASE_FRONTEND_URL = $AiBaseFrontendUrl
-        METRICS_AI_BASE_EMBED_MODE = 'app-chat'
-    } -ScriptBlock {
+    Invoke-WithDashboardAiEnv -ScriptBlock {
         Invoke-StackScript -ScriptPath $dashboardStart -Arguments $dashboardArgs -Label 'dashboard-start'
     }
 }
@@ -586,20 +595,24 @@ function Sync-JiraProfile {
         Remove-Item -Path $logPath -Force
     }
     $previousErrorActionPreference = $ErrorActionPreference
-    try {
-        $ErrorActionPreference = 'Continue'
-        & $python `
-            (Join-Path $DashboardWorkspace 'manage.py') `
-            sync_provider_profile `
-            --profile-id $JiraProfileId `
-            --begin-ww $BeginWw `
-            --end-ww $EndWw `
-            --force-refresh *> $logPath
-        $exitCode = $LASTEXITCODE
+    Invoke-WithDashboardAiEnv -ScriptBlock {
+        try {
+            $ErrorActionPreference = 'Continue'
+            & $python `
+                (Join-Path $DashboardWorkspace 'manage.py') `
+                sync_provider_profile `
+                --profile-id $JiraProfileId `
+                --begin-ww $BeginWw `
+                --end-ww $EndWw `
+                --force-refresh *> $logPath
+            $script:LastJiraProfileSyncExitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
     }
-    finally {
-        $ErrorActionPreference = $previousErrorActionPreference
-    }
+    $exitCode = $script:LastJiraProfileSyncExitCode
+    $script:LastJiraProfileSyncExitCode = $null
 
     if ($exitCode -eq 0) {
         Get-Content -Path $logPath

@@ -245,7 +245,8 @@ class BugTrendScopeMetadataView(GracefulTemplateView):
 
     def populate_context(self, context, **kwargs):
         scope_id = self.request.GET.get('id') or self.request.GET.get('scope_id')
-        has_draft_payload = any(self.request.GET.get(field_name) for field_name in ['name', 'jql', 'bug_type_values'])
+        has_draft_payload = any(self.request.GET.get(field_name) for field_name in ['name', 'jql', 'bug_type_values', 'source_mode'])
+        has_draft_payload = has_draft_payload or any(field_name.startswith('query_builder_') for field_name in self.request.GET.keys())
         if scope_id and scope_id.isdecimal() and not has_draft_payload:
             config = self.bug_trend_facade.get_scope_config(int(scope_id))
         else:
@@ -259,6 +260,8 @@ class BugTrendScopeMetadataView(GracefulTemplateView):
             context['scope_metadata'] = scope_metadata
             context['source_mode_context'] = self.bug_trend_facade.source_mode_context(config, self.request.GET, scope_metadata)
             context['render_query_builder_oob'] = True
+            if self.request.GET.get('validate_scope') == '1':
+                context['scope_metadata_validation'] = self.bug_trend_facade.get_query_builder_metadata_validation(config, scope_metadata)
         context['metadata_scope_id'] = scope_id if scope_id and scope_id.isdecimal() else ''
 
 

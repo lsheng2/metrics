@@ -42,16 +42,84 @@
         if (!target) {
             return;
         }
+        var parsed = new DOMParser().parseFromString(html, 'text/html');
+        parsed.querySelectorAll('[hx-swap-oob]').forEach(function(oobNode) {
+            var id = oobNode.getAttribute('id');
+            var oobTarget = id ? document.getElementById(id) : null;
+            if (!oobTarget) {
+                oobNode.remove();
+                return;
+            }
+            if (oobNode.getAttribute('hx-swap-oob') === 'innerHTML') {
+                oobTarget.innerHTML = oobNode.innerHTML;
+            } else {
+                oobTarget.outerHTML = oobNode.outerHTML;
+            }
+            oobNode.remove();
+        });
         var selected = null;
         if (options.select) {
-            selected = new DOMParser().parseFromString(html, 'text/html').querySelector(options.select);
+            selected = parsed.querySelector(options.select);
         }
-        var content = selected ? selected.outerHTML : html;
+        var content = selected ? selected.outerHTML : parsed.body.innerHTML;
         if (options.swap === 'outerHTML') {
             target.outerHTML = content;
         } else {
             target.innerHTML = selected ? selected.innerHTML : content;
         }
+    }
+
+    function appendParams(url, params) {
+        var query = params.toString();
+        if (!query) {
+            return url;
+        }
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') + query;
+    }
+
+    function addControlValue(params, control) {
+        if (!control.name || control.disabled) {
+            return;
+        }
+        if ((control.type === 'checkbox' || control.type === 'radio') && !control.checked) {
+            return;
+        }
+        if (control.tagName === 'SELECT' && control.multiple) {
+            Array.prototype.forEach.call(control.selectedOptions, function(option) {
+                params.append(control.name, option.value);
+            });
+            return;
+        }
+        params.append(control.name, control.value);
+    }
+
+    function paramsForIncludedElement(element) {
+        if (!element) {
+            return new URLSearchParams();
+        }
+        if (element.tagName === 'FORM') {
+            return new URLSearchParams(new FormData(element));
+        }
+        var params = new URLSearchParams();
+        element.querySelectorAll('input[name], textarea[name], select[name]').forEach(function(control) {
+            addControlValue(params, control);
+        });
+        return params;
+    }
+
+    function includedElement(trigger) {
+        var include = trigger.getAttribute('hx-include');
+        if (!include) {
+            return null;
+        }
+        if (include.indexOf('closest ') === 0) {
+            return trigger.closest(include.substring('closest '.length).trim());
+        }
+        return document.querySelector(include);
+    }
+
+    function includedUrl(trigger, url) {
+        return appendParams(url, paramsForIncludedElement(includedElement(trigger)));
     }
 
     if (!window.htmx) {
@@ -72,7 +140,7 @@
             return;
         }
         event.preventDefault();
-        var url = trigger.getAttribute('hx-get');
+        var url = includedUrl(trigger, trigger.getAttribute('hx-get'));
         window.htmx.ajax('GET', url, {
             target: trigger.getAttribute('hx-target') || 'body',
             select: trigger.getAttribute('hx-select') || '',
@@ -91,7 +159,7 @@
         event.preventDefault();
         var params = new URLSearchParams(new FormData(form));
         var baseUrl = form.getAttribute('hx-get');
-        var url = baseUrl + (baseUrl.indexOf('?') >= 0 ? '&' : '?') + params.toString();
+        var url = appendParams(baseUrl, params);
         window.htmx.ajax('GET', url, {
             target: form.getAttribute('hx-target') || 'body',
             select: form.getAttribute('hx-select') || '',

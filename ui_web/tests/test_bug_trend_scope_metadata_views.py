@@ -85,7 +85,7 @@ class TestBugTrendScopeMetadataViews(BugTrendScopeConfigViewTestSupport, TestCas
         self.assertEqual(200, response.status_code)
         self.assertEqual([['131600', 'STDEL']], facade.selected_projects)
 
-    def test_shouldRenderDiscoveredFieldOptionsInMetadataPartial(self):
+    def test_shouldHideDiscoveredMetadataCatalogWhileKeepingPickerOptionsInMetadataPartial(self):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL metadata fields',
@@ -101,21 +101,13 @@ class TestBugTrendScopeMetadataViews(BugTrendScopeConfigViewTestSupport, TestCas
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('scope-metadata-grid', content)
-        self.assertIn('Projects', content)
-        self.assertIn('Types', content)
-        self.assertIn('Statuses', content)
-        self.assertIn('Fields', content)
-        self.assertIn('Maps to Bug type values', content)
-        self.assertIn('Project: STDEL', content)
-        self.assertIn('Type: Bug', content)
-        self.assertIn('Status: Open', content)
-        self.assertIn('Priority: P1-Critical', content)
-        self.assertIn('Field: Severity (customfield_12345)', content)
-        self.assertIn('Add as bug type', content)
-        self.assertIn('Use as severity field', content)
-        self.assertIn('add_field=bug_type_values', content)
-        self.assertIn('add_field=severity_field', content)
+        self.assertNotIn('Discovered metadata', content)
+        self.assertNotIn('scope-metadata-grid', content)
+        self.assertNotIn('Add as bug type', content)
+        self.assertNotIn('Use as severity field', content)
+        self.assertIn('data-searchable-value-picker-value="STDEL"', content)
+        self.assertIn('data-searchable-value-picker-value="Bug"', content)
+        self.assertIn('data-searchable-value-picker-value="customfield_12345"', content)
 
     def test_shouldRenderQueryBuilderControlsForHtmxRefresh(self):
         # Given
@@ -141,10 +133,71 @@ class TestBugTrendScopeMetadataViews(BugTrendScopeConfigViewTestSupport, TestCas
         self.assertEqual(200, response.status_code)
         self.assertIn('id="query-builder-controls"', content)
         self.assertIn('hx-swap-oob="innerHTML"', content)
-        self.assertIn('name="query_builder_issue_types" value="Bug" checked', content)
-        self.assertIn('name="query_builder_components" value="Emulation" checked', content)
+        self.assertIn('name="query_builder_issue_types"', content)
+        self.assertIn('Bug</textarea>', content)
+        self.assertIn('name="query_builder_components"', content)
+        self.assertIn('Emulation</textarea>', content)
 
-    def test_shouldRenderMetadataWarningsAlongsideDiscoveredOptions(self):
+    def test_shouldRenderQueryBuilderMetadataValidationWithoutSavingScopeConfig(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL query builder validation',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            source_mode=JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER,
+            query_builder_state={'project': 'STDEL', 'issue_types': ['Bug']},
+        )
+        original_hash = scope.config_version_hash
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = FakeSuccessfulScopeMetadataFacade()
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {
+                'scope_id': str(scope.id),
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'query_builder_issue_types': 'Bug\nManual Type',
+                'query_builder_components': 'Emulation',
+                'query_builder_labels': 'manual-label',
+                'validate_scope': '1',
+            })
+        scope.refresh_from_db()
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(original_hash, scope.config_version_hash)
+        self.assertIn('Some values were not found in refreshed Jira metadata.', content)
+        self.assertIn('Confirmed: Bug', content)
+        self.assertIn('Unconfirmed: Manual Type', content)
+        self.assertIn('Manual-only: manual-label', content)
+
+    def test_shouldReopenRequestedPickerAfterMetadataRefresh(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL query builder picker refresh',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = FakeSuccessfulScopeMetadataFacade()
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {
+                'scope_id': str(scope.id),
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'open_picker': 'issue_types',
+            })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('id="query-builder-issue-types-menu"', content)
+        self.assertIn('searchable-value-picker is-open', content)
+        self.assertIn('data-searchable-value-picker-value="Bug"', content)
+
+    def test_shouldRenderMetadataWarningsWithoutDiscoveredCatalog(self):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL partial metadata',
@@ -161,5 +214,8 @@ class TestBugTrendScopeMetadataViews(BugTrendScopeConfigViewTestSupport, TestCas
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('Unable to load component metadata', content)
-        self.assertIn('Project: STDEL', content)
-        self.assertIn('Field: Severity (customfield_12345)', content)
+        self.assertNotIn('Discovered metadata', content)
+        self.assertNotIn('Project: STDEL', content)
+        self.assertNotIn('Field: Severity (customfield_12345)', content)
+        self.assertIn('data-searchable-value-picker-value="STDEL"', content)
+        self.assertIn('data-searchable-value-picker-value="customfield_12345"', content)

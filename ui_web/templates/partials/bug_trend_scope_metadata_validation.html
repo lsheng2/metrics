@@ -1,0 +1,39 @@
+{% if scope_metadata_validation %}
+<div id="scope-query-builder-validation" class="scope-query-builder-validation notification {% if scope_metadata_validation.status == 'success' %}is-success{% elif scope_metadata_validation.status == 'warning' %}is-warning{% else %}is-info{% endif %} is-light">
+    <p class="has-text-weight-semibold">{{ scope_metadata_validation.message }}</p>
+    <p class="is-size-7">{{ scope_metadata_validation.checked_count }} checked, {{ scope_metadata_validation.unconfirmed_count }} unconfirmed, {{ scope_metadata_validation.unchecked_count }} manual-only.</p>
+    {% if scope_metadata_validation.rows %}
+        <div class="scope-query-builder-validation-grid">
+            {% for row in scope_metadata_validation.rows %}
+                <section class="scope-query-builder-validation-row is-{{ row.status }}">
+                    <div class="scope-query-builder-validation-heading">
+                        <strong>{{ row.label }}</strong>
+                        <span>{{ row.message }}</span>
+                    </div>
+                    {% if row.confirmed_values %}
+                        <div class="tags">
+                            {% for value in row.confirmed_values %}
+                                <span class="tag is-success is-light">Confirmed: {{ value }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if row.unconfirmed_values %}
+                        <div class="tags">
+                            {% for value in row.unconfirmed_values %}
+                                <span class="tag is-warning is-light">Unconfirmed: {{ value }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if row.unchecked_values %}
+                        <div class="tags">
+                            {% for value in row.unchecked_values %}
+                                <span class="tag is-light">Manual-only: {{ value }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </section>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endif %}

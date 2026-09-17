@@ -28,6 +28,11 @@ class FakeScopeMetadataFacade:
         from bug_metrics.app.api import bug_trend_api
         return BugTrendFacade(bug_trend_api).source_mode_context(config, query_data, scope_metadata)
 
+    def get_query_builder_metadata_validation(self, config, scope_metadata):
+        from ui_web.facades.bug_trend_facade import BugTrendFacade
+        from bug_metrics.app.api import bug_trend_api
+        return BugTrendFacade(bug_trend_api).get_query_builder_metadata_validation(config, scope_metadata)
+
 
 class FakeSuccessfulScopeMetadataApi:
     def discover_scope_options(self, *args, **kwargs):
@@ -201,18 +206,17 @@ class BugTrendScopeConfigViewTestSupport:
         page = browser.new_page(viewport={'width': width, 'height': height})
         try:
             page.set_content(html, wait_until='domcontentloaded')
-            page.locator('input[name="query_builder_priorities"][value="P1-Critical"]').check()
-            page.locator('textarea[name="query_builder_resolutions_manual"]').evaluate(
-                "field => { field.closest('details').open = true; }"
-            )
-            page.locator('textarea[name="query_builder_resolutions_manual"]').fill('Fixed')
+            priority_picker = page.locator('[data-searchable-value-picker]:has(#query-builder-priorities)')
+            priority_picker.locator('[data-searchable-value-picker-toggle]').click()
+            priority_picker.locator('[data-searchable-value-picker-option][data-searchable-value-picker-value="P1-Critical"]').click()
+            page.locator('textarea[name="query_builder_resolutions"]').fill('Fixed')
             return page.evaluate("""
                 () => ({
                     page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-                    issue_type_checked: Boolean(document.querySelector('input[name="query_builder_issue_types"][value="Bug"]:checked')),
-                    component_checked: Boolean(document.querySelector('input[name="query_builder_components"][value="Emulation"]:checked')),
-                    metadata_option_count: document.querySelectorAll('.scope-query-builder-option input[type="checkbox"]').length,
-                    custom_field_option_count: document.querySelectorAll('[data-searchable-pickup-list] [data-searchable-pickup-option]').length,
+                    issue_type_value: document.querySelector('textarea[name="query_builder_issue_types"]').value,
+                    component_value: document.querySelector('textarea[name="query_builder_components"]').value,
+                    metadata_option_count: document.querySelectorAll('[data-searchable-value-picker-option]').length,
+                    custom_field_option_count: document.querySelectorAll('.scope-query-builder-custom-field [data-searchable-value-picker-option]').length,
                     preview_value: document.querySelector('#query-builder-preview').value,
                 })
             """)
@@ -235,12 +239,44 @@ class BugTrendScopeConfigViewTestSupport:
                     return {
                         visible_advanced_control_count: advancedControls.filter(isVisible).length,
                         advanced_summary_count: document.querySelectorAll('.scope-query-builder-advanced summary').length,
+                        editable_picker_count: document.querySelectorAll('[data-searchable-value-picker]').length,
+                        picker_statuses: Array.from(document.querySelectorAll('[data-searchable-value-picker-status]')).map(node => node.textContent.trim()),
                         open_advanced_count: document.querySelectorAll('.scope-query-builder-advanced[open]').length,
                         empty_messages: Array.from(document.querySelectorAll('.scope-query-builder-empty')).map(node => node.textContent.trim()),
                         body_text: document.body.innerText,
                     };
                 }
             """)
+        finally:
+            page.close()
+            browser.close()
+            playwright.stop()
+
+    def _measure_scope_query_builder_picker_after_mode_switch(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 1280, 'height': 900})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            before = page.evaluate("""
+                () => ({
+                    query_checked: document.querySelector('#source-mode-query-builder').checked,
+                    project_disabled: document.querySelector('#query-builder-project').disabled,
+                    toggle_disabled: document.querySelector('#query-builder-project-toggle').disabled,
+                    toggle_text: document.querySelector('#query-builder-project-toggle').innerText.trim(),
+                })
+            """)
+            page.locator('label[for="source-mode-query-builder"]').click()
+            after = page.evaluate("""
+                () => ({
+                    query_checked: document.querySelector('#source-mode-query-builder').checked,
+                    project_disabled: document.querySelector('#query-builder-project').disabled,
+                    toggle_disabled: document.querySelector('#query-builder-project-toggle').disabled,
+                    toggle_text: document.querySelector('#query-builder-project-toggle').innerText.trim(),
+                })
+            """)
+            return {'before': before, 'after': after}
         finally:
             page.close()
             browser.close()
@@ -253,23 +289,23 @@ class BugTrendScopeConfigViewTestSupport:
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
         try:
             page.set_content(html, wait_until='domcontentloaded')
-            picker = page.locator('[data-searchable-pickup-list]').first
+            picker = page.locator('.scope-query-builder-custom-field [data-searchable-value-picker]').first
             page.locator('textarea[name="query_builder_custom_values_1"]').fill('Persistent')
-            picker.locator('[data-searchable-pickup-toggle]').click()
-            picker.locator('[data-searchable-pickup-search]').fill('stor')
-            visible_labels = picker.locator('[data-searchable-pickup-option]:visible').evaluate_all(
+            picker.locator('[data-searchable-value-picker-toggle]').click()
+            picker.locator('[data-searchable-value-picker-search]').fill('stor')
+            visible_labels = picker.locator('[data-searchable-value-picker-option]:visible').evaluate_all(
                 'options => options.map(option => option.textContent.trim())'
             )
-            picker.locator('[data-searchable-pickup-option][data-searchable-pickup-value="customfield_36102"]').click()
+            picker.locator('[data-searchable-value-picker-option][data-searchable-value-picker-value="customfield_36102"]').click()
             return page.evaluate("""
                 labels => {
                     const field = document.querySelector('input[name="query_builder_custom_field_1"]');
-                    const menu = document.querySelector('[data-searchable-pickup-menu]');
+                    const menu = document.querySelector('.scope-query-builder-custom-field [data-searchable-value-picker-menu]');
                     const shell = field.closest('.scope-config-form-field');
                     return {
                         visible_labels: labels,
                         selected_value: field.value,
-                        button_label: document.querySelector('[data-searchable-pickup-label]').textContent.trim(),
+                        selected_options: Array.from(document.querySelectorAll('.scope-query-builder-custom-field [data-searchable-value-picker-option][aria-selected="true"]')).map(option => option.textContent.trim()),
                         preview_value: document.querySelector('#query-builder-preview').value,
                         menu_hidden_after_select: menu.hidden,
                         dirty_field_highlighted: shell.classList.contains('is-dirty-field'),

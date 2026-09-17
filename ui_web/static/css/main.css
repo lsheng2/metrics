@@ -1180,12 +1180,15 @@ span:focus-within > .help-tip::after,
     line-height: 1.25;
 }
 
-.searchable-pickup-list {
+.searchable-pickup-list,
+.searchable-value-picker {
     position: relative;
     min-width: 0;
 }
 
-.searchable-pickup-list-toggle {
+.searchable-pickup-list-toggle,
+.searchable-value-picker-toggle {
+    position: relative;
     width: 100%;
     min-height: 2rem;
     justify-content: space-between;
@@ -1193,7 +1196,13 @@ span:focus-within > .help-tip::after,
     text-align: left;
 }
 
-.searchable-pickup-list-toggle::after {
+.searchable-value-picker-toggle {
+    width: var(--dashboard-button-height);
+    padding: 0;
+}
+
+.searchable-pickup-list-toggle::after,
+.searchable-value-picker-toggle::after {
     position: absolute;
     right: 0.76rem;
     top: 50%;
@@ -1207,7 +1216,12 @@ span:focus-within > .help-tip::after,
     transform: translateY(-68%) rotate(45deg);
 }
 
-.searchable-pickup-list.is-open .searchable-pickup-list-toggle::after {
+.searchable-value-picker-toggle::after {
+    right: 0.84rem;
+}
+
+.searchable-pickup-list.is-open .searchable-pickup-list-toggle::after,
+.searchable-value-picker.is-open .searchable-value-picker-toggle::after {
     transform: translateY(-28%) rotate(225deg);
 }
 
@@ -1220,7 +1234,8 @@ span:focus-within > .help-tip::after,
     white-space: nowrap;
 }
 
-.searchable-pickup-list-menu {
+.searchable-pickup-list-menu,
+.searchable-value-picker-menu {
     position: absolute;
     z-index: 60;
     top: calc(100% + 0.22rem);
@@ -1233,18 +1248,21 @@ span:focus-within > .help-tip::after,
     padding: 0.42rem;
 }
 
-.searchable-pickup-list-search {
+.searchable-pickup-list-search,
+.searchable-value-picker-search {
     margin-bottom: 0.34rem;
 }
 
-.searchable-pickup-list-options {
+.searchable-pickup-list-options,
+.searchable-value-picker-options {
     display: grid;
     gap: 0.12rem;
     max-height: 13rem;
     overflow: auto;
 }
 
-.searchable-pickup-list-option {
+.searchable-pickup-list-option,
+.searchable-value-picker-option {
     width: 100%;
     border: 0;
     border-radius: var(--dashboard-radius-control);
@@ -1260,13 +1278,77 @@ span:focus-within > .help-tip::after,
 
 .searchable-pickup-list-option:hover,
 .searchable-pickup-list-option:focus,
-.searchable-pickup-list-option[aria-selected="true"] {
+.searchable-pickup-list-option[aria-selected="true"],
+.searchable-value-picker-option:hover,
+.searchable-value-picker-option:focus,
+.searchable-value-picker-option[aria-selected="true"] {
     background: color-mix(in srgb, var(--bulma-primary, #00d1b2) 20%, transparent);
     outline: none;
 }
 
-.searchable-pickup-list-empty {
+.searchable-pickup-list-empty,
+.searchable-value-picker-empty,
+.searchable-value-picker-status {
     margin: 0.32rem 0 0;
+    color: var(--dashboard-text-muted);
+    font-size: var(--dashboard-font-caption);
+}
+
+.searchable-value-picker-field {
+    margin-bottom: 0.18rem;
+}
+
+.searchable-value-picker-input {
+    min-height: 2.2rem;
+}
+
+textarea.searchable-value-picker-input {
+    min-height: 3.1rem;
+}
+
+.searchable-value-picker.is-refreshing .searchable-value-picker-toggle {
+    color: var(--dashboard-accent-strong);
+}
+
+.scope-query-builder-metadata-result {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.scope-query-builder-validation-toolbar {
+    border-top: 1px solid var(--dashboard-border);
+    margin-top: 0.15rem;
+    padding-top: 0.5rem;
+}
+
+.scope-query-builder-validation {
+    margin-bottom: 0;
+}
+
+.scope-query-builder-validation-grid {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+}
+
+.scope-query-builder-validation-row {
+    border: 1px solid var(--dashboard-border);
+    border-radius: var(--dashboard-radius-control);
+    background: color-mix(in srgb, var(--dashboard-surface) 74%, transparent);
+    padding: 0.42rem;
+}
+
+.scope-query-builder-validation-heading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.28rem;
+}
+
+.scope-query-builder-validation-heading span {
     color: var(--dashboard-text-muted);
     font-size: var(--dashboard-font-caption);
 }

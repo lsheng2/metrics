@@ -450,14 +450,15 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('name="query_builder_issue_types" value="Bug" checked', content)
-        self.assertIn('name="query_builder_components" value="Emulation" checked', content)
-        self.assertIn('name="query_builder_issue_types_manual"', content)
-        self.assertIn('name="query_builder_components_manual"', content)
+        self.assertIn('name="query_builder_issue_types"', content)
+        self.assertIn('Bug</textarea>', content)
+        self.assertIn('name="query_builder_components"', content)
+        self.assertIn('Emulation</textarea>', content)
         self.assertIn('Severity (customfield_12345)', content)
-        self.assertIn('data-searchable-pickup-list', content)
+        self.assertIn('data-searchable-value-picker', content)
         self.assertIn('Search metadata fields', content)
         self.assertIn('project = STDEL AND issuetype = Bug AND components = Emulation', content)
+        self.assertNotIn('Metadata discovery context', content)
 
     def test_shouldAutoLoadMetadataBackedQueryBuilderControlsForSavedBuilderScope(self):
         # Given
@@ -484,9 +485,11 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('name="query_builder_issue_types" value="Bug" checked', content)
-        self.assertIn('name="query_builder_components" value="Emulation" checked', content)
-        self.assertNotIn('Refresh metadata to choose issue types values', content)
+        self.assertIn('name="query_builder_issue_types"', content)
+        self.assertIn('Bug</textarea>', content)
+        self.assertIn('name="query_builder_components"', content)
+        self.assertIn('Emulation</textarea>', content)
+        self.assertNotIn('Add Jira project context, then refresh metadata to choose issue types values.', content)
 
     def test_shouldRenderQueryBuilderRefreshMetadataButtonNearSourceControls(self):
         # When
@@ -499,7 +502,9 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('scope-query-builder-toolbar', content)
-        self.assertIn('Refresh metadata for Query Builder', content)
+        self.assertIn('Validate values', content)
+        self.assertIn('validate_scope=1', content)
+        self.assertIn('open_picker=issue_types', content)
         self.assertIn('hx-target="#scope-metadata-options"', content)
 
     def test_shouldUpdateQueryBuilderPreviewFromMetadataControlsInBrowser(self):
@@ -521,8 +526,8 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         # Then
         for viewport in results.values():
             self.assertFalse(viewport['page_horizontal_overflow'])
-            self.assertTrue(viewport['issue_type_checked'])
-            self.assertTrue(viewport['component_checked'])
+            self.assertEqual('Bug', viewport['issue_type_value'])
+            self.assertEqual('Emulation', viewport['component_value'])
             self.assertGreaterEqual(viewport['metadata_option_count'], 6)
             self.assertGreaterEqual(viewport['custom_field_option_count'], 2)
             self.assertIn('priority = P1-Critical', viewport['preview_value'])
@@ -545,7 +550,7 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         # Then
         self.assertEqual(['Storage (customfield_36102)'], result['visible_labels'])
         self.assertEqual('customfield_36102', result['selected_value'])
-        self.assertEqual('Storage (customfield_36102)', result['button_label'])
+        self.assertEqual(['Storage (customfield_36102)'], result['selected_options'])
         self.assertIn('customfield_36102 = Persistent', result['preview_value'])
         self.assertTrue(result['menu_hidden_after_select'])
         self.assertTrue(result['dirty_field_highlighted'])

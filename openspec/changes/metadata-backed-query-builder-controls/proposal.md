@@ -5,11 +5,15 @@ Jira Scope Config 的 Query Builder 现在仍要求用户手动输入 issue type
 ## What Changes
 
 - Query Builder SHALL use refreshed Jira metadata to render selectable controls for supported source filters, including issue types、components、affected versions、fix versions、priorities 和 resolutions。
-- Query Builder SHALL keep manual fallback inputs for every metadata-backed list so operators can add values that Jira metadata did not return。
+- Query Builder SHALL keep manual-editable value inputs for every metadata-backed list so operators can add values that Jira metadata did not return。
+- Query Builder SHALL consolidate Source population and metadata discovery into one working area. The separate Jira Metadata discovery context section SHALL NOT be shown below the source fields.
+- Metadata-backed fields SHALL expose a searchable picker beside the editable field. Opening the picker SHALL refresh Jira metadata for the current form payload and then show filtered choices.
+- Metadata refresh SHALL be batched per current Query Builder context, not per individual value type: the project, issue type, component, version, priority, resolution and field option lists SHALL update together from the current project and issue-type context.
 - Query Builder SHALL allow selecting a custom Jira field from discovered field metadata, while preserving manual custom field id entry for fields that metadata cannot discover。
 - Query Builder save handling SHALL merge metadata-selected values and manual fallback values into the same persisted builder state and generated JQL。
 - Custom JQL mode SHALL remain independent: metadata-backed Query Builder selections SHALL NOT alter the saved runtime source query while Custom JQL is selected。
 - Metadata refresh SHALL update the visible metadata-backed controls through the existing Django/htmx flow without introducing a JavaScript-heavy frontend framework。
+- Scope Config SHALL provide a pre-save metadata validation action that validates selected and manually typed Query Builder values against refreshed Jira metadata without saving the scope。
 
 ## Capabilities
 

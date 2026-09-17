@@ -6,6 +6,9 @@
            data-searchable-pickup-value-input
            data-dirty-track
            {% if source_mode %}data-source-mode-input data-source-mode="{{ source_mode }}"{% endif %}
+           {% if required_actions %}data-required-actions="{{ required_actions }}"{% endif %}
+           {% if required_label %}data-required-label="{{ required_label }}"{% endif %}
+           {% if required_message %}data-required-message="{{ required_message }}"{% endif %}
            {% if not enabled %}disabled{% endif %}>
     <button class="button searchable-pickup-list-toggle"
             type="button"
@@ -16,7 +19,7 @@
             data-searchable-pickup-toggle
             {% if source_mode %}data-source-mode-input data-source-mode="{{ source_mode }}"{% endif %}
             {% if not enabled %}disabled{% endif %}>
-        <span class="searchable-pickup-list-label" data-searchable-pickup-label>{% if selected_value %}{% for option in options %}{% if option.selected %}{{ option.label }}{% endif %}{% endfor %}{% else %}{{ placeholder }}{% endif %}</span>
+        <span class="searchable-pickup-list-label" data-searchable-pickup-label>{% if selected_value %}{% for option in options %}{% firstof option.value option.name option.id as option_value %}{% if option.selected or option_value == selected_value %}{% firstof option.label option.name option.id %}{% endif %}{% endfor %}{% else %}{{ placeholder }}{% endif %}</span>
     </button>
     <div class="searchable-pickup-list-menu"
          id="{{ field_id_prefix }}{{ index }}-menu"
@@ -39,16 +42,18 @@
                 {{ placeholder }}
             </button>
             {% for option in options %}
+                {% firstof option.value option.name option.id as option_value %}
+                {% firstof option.label option.name option.id as option_label %}
                 <button class="searchable-pickup-list-option"
                         type="button"
                         role="option"
                         title="{{ option.source }}"
                         data-searchable-pickup-option
-                        data-searchable-pickup-value="{{ option.value }}"
-                        data-searchable-pickup-label="{{ option.label }}"
-                        data-searchable-pickup-search-text="{{ option.label }} {{ option.value }}"
-                        aria-selected="{% if option.selected %}true{% else %}false{% endif %}">
-                    {{ option.label }}
+                        data-searchable-pickup-value="{{ option_value }}"
+                        data-searchable-pickup-label="{{ option_label }}"
+                        data-searchable-pickup-search-text="{{ option_label }} {{ option_value }}"
+                        aria-selected="{% if option.selected or option_value == selected_value %}true{% else %}false{% endif %}">
+                    {{ option_label }}
                 </button>
             {% endfor %}
         </div>

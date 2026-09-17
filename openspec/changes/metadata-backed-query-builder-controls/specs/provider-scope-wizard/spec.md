@@ -8,9 +8,22 @@ For Jira-backed Scope Config, Query Builder source population controls SHALL pre
 - **THEN** Scope Config SHALL render selectable source controls for discovered issue types、components、affected versions、fix versions、priorities 和 resolutions
 - **AND** those controls SHALL show previously selected builder values as selected when the page or partial re-renders
 
+#### Scenario: Metadata context is colocated with source population
+- **WHEN** the selected provider is Jira
+- **THEN** metadata discovery controls and status SHALL be rendered inside the Source population Query Builder working area
+- **AND** Scope Config SHALL NOT render a separate Jira Metadata discovery context section below Source population
+- **AND** Scope Config SHALL NOT render a visible discovered metadata catalog for either `Custom JQL` or `Query Builder`
+- **AND** discovered metadata SHALL still power field pickers and validation results
+
+#### Scenario: Picker opening refreshes metadata
+- **WHEN** the operator opens a Query Builder field picker
+- **THEN** Scope Config SHALL refresh Jira metadata using the current form payload
+- **AND** the refreshed picker SHALL open with a type-in search input and filtered results
+- **AND** the refresh SHALL update all related Query Builder metadata-backed fields from the same response
+
 #### Scenario: Manual fallback remains available
 - **WHEN** Jira metadata does not include a value the operator needs
-- **THEN** each metadata-backed source field SHALL still provide a manual fallback input for additional values
+- **THEN** each metadata-backed source field SHALL still provide an editable input for additional values
 - **AND** saving a Query Builder scope SHALL merge selected metadata values and manual fallback values into the generated source query without duplicates
 
 #### Scenario: Labels remain manual
@@ -33,3 +46,9 @@ For Jira-backed Scope Config, Query Builder source population controls SHALL pre
 - **WHEN** metadata refresh re-renders discovered options and Query Builder source controls
 - **THEN** the saved scope SHALL NOT be mutated
 - **AND** generated preview state SHALL come only from the current form payload and metadata response
+
+#### Scenario: Pre-save metadata validation reports unconfirmed values
+- **WHEN** the operator clicks Validate values before saving a Jira Query Builder scope
+- **THEN** Scope Config SHALL refresh metadata for the current form payload without saving the scope
+- **AND** it SHALL report which Query Builder values match discovered metadata and which typed values remain unconfirmed
+- **AND** unconfirmed values SHALL remain editable and saveable as manual fallback values

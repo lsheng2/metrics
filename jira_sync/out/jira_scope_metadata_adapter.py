@@ -12,7 +12,7 @@ class JiraScopeMetadataAdapter:
         project_keys = selected_projects or self._parse_project_keys(query)
         if not project_keys:
             warnings.append('Select at least one Jira project before refreshing project-scoped metadata.')
-        projects = [TrackerOption(id=project_key, name=project_key, label=project_key, source='selected project') for project_key in project_keys]
+        projects = self._discover_projects(project_keys, warnings)
         item_types = self._discover_item_types(project_keys, warnings)
         statuses = self._discover_statuses(project_keys, selected_item_types, warnings)
         return ScopeConfigOptions(
@@ -114,6 +114,64 @@ class JiraScopeMetadataAdapter:
         except Exception as error:
             warnings.append(f'Unable to load field metadata: {error}')
             return []
+
+    def _discover_projects(self, selected_project_keys: list[str], warnings: list[str]) -> list[TrackerOption]:
+        project_method = getattr(self._jira_client, 'get_all_projects', None) or getattr(self._jira_client, 'projects', None)
+        if callable(project_method):
+            try:
+                projects = self._projects_with_selected_keys(
+                    self._deduplicate_options(self._to_project_options(self._project_payload(project_method()))),
+                    selected_project_keys,
+                )
+                if projects:
+                    return projects
+            except Exception as error:
+                warnings.append(f'Unable to load Jira project metadata: {error}')
+        picker_projects = self._discover_picker_projects(warnings)
+        if picker_projects:
+            return self._projects_with_selected_keys(picker_projects, selected_project_keys)
+        return [
+            TrackerOption(id=project_key, name=project_key, label=project_key, source='selected project')
+            for project_key in selected_project_keys
+        ]
+
+    def _discover_picker_projects(self, warnings: list[str]) -> list[TrackerOption]:
+        if not hasattr(self._jira_client, 'get') or not hasattr(self._jira_client, 'resource_url'):
+            return []
+        try:
+            return self._deduplicate_options(self._to_project_options(self._project_payload(self._jira_client.get(
+                self._jira_client.resource_url('projects/picker'),
+                params={'query': '', 'maxResults': 100, 'allowEmptyQuery': True},
+            ))))
+        except Exception as error:
+            warnings.append(f'Unable to load Jira project picker metadata: {error}')
+            return []
+
+    def _to_project_options(self, payload) -> list[TrackerOption]:
+        return [self._to_project_option(item) for item in self._option_payload(payload)]
+
+    def _project_payload(self, payload):
+        if isinstance(payload, dict) and 'projects' in payload:
+            return payload['projects']
+        return payload
+
+    def _to_project_option(self, item) -> TrackerOption:
+        if not isinstance(item, dict):
+            project_key = str(item)
+            return TrackerOption(id=project_key, name=project_key, label=project_key, source='project')
+        project_key = str(item.get('key') or item.get('id') or item.get('name') or '')
+        project_name = str(item.get('name') or project_key)
+        label = f'{project_key} - {project_name}' if project_name and project_name != project_key else project_key
+        return TrackerOption(id=project_key, name=project_key, label=label, source='project')
+
+    def _projects_with_selected_keys(self, projects: list[TrackerOption], selected_project_keys: list[str]) -> list[TrackerOption]:
+        known_project_keys = {project.id for project in projects} | {project.name for project in projects}
+        selected_options = [
+            TrackerOption(id=project_key, name=project_key, label=project_key, source='selected project')
+            for project_key in selected_project_keys
+            if project_key not in known_project_keys
+        ]
+        return projects + selected_options
 
     def _issue_type_payload(self, payload):
         if isinstance(payload, dict):

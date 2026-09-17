@@ -288,8 +288,9 @@ class TestBugTrendFacade(TestCase):
         self.assertEqual('Issue types', issue_types['label'])
         self.assertEqual(['Bug', 'Story'], [option['value'] for option in issue_types['options'] if option['selected']])
         self.assertEqual(['Emulation'], [option['value'] for option in components['options'] if option['selected']])
-        self.assertEqual('ManualOnly', components['manual_value'])
+        self.assertEqual('Emulation\nManualOnly', components['value_text'])
         self.assertEqual('customfield_12345', custom_row['selected_field'])
+        self.assertEqual('customfield_12345', custom_row['field_value'])
         self.assertEqual(['Severity (customfield_12345)'], [option['label'] for option in custom_row['field_options'] if option['selected']])
 
     def test_shouldMergeMetadataSelectionsAndManualFallbackWhenSavingQueryBuilder(self):
@@ -346,6 +347,37 @@ class TestBugTrendFacade(TestCase):
 
         # Then
         self.assertEqual(['Story'], metadata_api.requests[0]['selected_item_types'])
+
+    def test_shouldReportQueryBuilderValuesNotFoundInRefreshedMetadata(self):
+        # Given
+        facade = BugTrendFacade(FakeBugTrendApi())
+        config = facade.get_scope_config(7)
+        config.source_mode = JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER
+        config.query_builder_state = {
+            'project': 'STDEL',
+            'issue_types': ['Bug', 'Manual Type'],
+            'components': ['Emulation'],
+            'labels': ['manual-label'],
+            'custom_fields': [{'field': 'customfield_99999', 'values': ['Manual Value']}],
+        }
+        metadata = ScopeConfigOptions(
+            projects=[TrackerOption('STDEL', 'STDEL')],
+            item_types=[TrackerOption('1', 'Bug')],
+            components=[TrackerOption('41', 'Emulation')],
+            fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
+        )
+
+        # When
+        validation = facade.get_query_builder_metadata_validation(config, metadata)
+
+        # Then
+        self.assertEqual('warning', validation['status'])
+        self.assertEqual(2, validation['unconfirmed_count'])
+        rows_by_label = {row['label']: row for row in validation['rows']}
+        self.assertEqual(['Bug'], rows_by_label['Issue types']['confirmed_values'])
+        self.assertEqual(['Manual Type'], rows_by_label['Issue types']['unconfirmed_values'])
+        self.assertEqual(['customfield_99999'], rows_by_label['Custom field 1']['unconfirmed_values'])
+        self.assertEqual(['manual-label'], rows_by_label['Labels']['unchecked_values'])
 
     def test_shouldIgnoreQueryBuilderFiltersWhenSavingCustomJqlMode(self):
         # Given
