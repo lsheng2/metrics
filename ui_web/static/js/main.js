@@ -114,29 +114,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initializeDirtyForms() {
         document.querySelectorAll('[data-dirty-form]').forEach(form => {
-            if (form.dataset.dirtyInitialized === 'true') {
-                return;
-            }
-            form.dataset.dirtyInitialized = 'true';
             const banner = form.querySelector('[data-dirty-banner]');
-            const fields = Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
-                .filter(field => field.type !== 'hidden' && field.type !== 'submit');
             const cleanDisabledControls = Array.from(form.querySelectorAll('[data-disable-when-clean]'));
 
-            fields.forEach(field => {
+            function dirtyFields() {
+                return Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'))
+                    .filter(field => (field.type !== 'hidden' || field.hasAttribute('data-dirty-track')) && field.type !== 'submit');
+            }
+
+            function setInitialFieldValue(field) {
+                if (field.dataset.dirtyFieldInitialized === 'true') {
+                    return;
+                }
                 field.dataset.initialValue = field.type === 'checkbox' ? String(field.checked) : field.value;
-            });
+            }
 
             function markDirtyFields() {
                 let formIsDirty = false;
-                fields.forEach(field => {
+                const dirtyShells = new Map();
+                dirtyFields().forEach(field => {
+                    setInitialFieldValue(field);
                     const currentValue = field.type === 'checkbox' ? String(field.checked) : field.value;
                     const fieldIsDirty = currentValue !== field.dataset.initialValue;
                     formIsDirty = formIsDirty || fieldIsDirty;
                     const fieldShell = field.closest('.provider-form-field, .scope-config-form-field, .provider-json-panel, .scope-config-form-field-wide');
                     field.classList.toggle('is-dirty-control', fieldIsDirty);
                     if (fieldShell) {
-                        fieldShell.classList.toggle('is-dirty-field', fieldIsDirty);
+                        dirtyShells.set(fieldShell, Boolean(dirtyShells.get(fieldShell)) || fieldIsDirty);
                     }
                     const label = field.id ? form.querySelector(`label[for="${field.id}"]`) : null;
                     if (!label) {
@@ -154,6 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         marker.remove();
                     }
                 });
+                dirtyShells.forEach((fieldIsDirty, fieldShell) => {
+                    fieldShell.classList.toggle('is-dirty-field', fieldIsDirty);
+                });
                 if (banner) {
                     banner.classList.toggle('is-hidden', !formIsDirty);
                 }
@@ -164,27 +171,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            fields.forEach(field => {
+            dirtyFields().forEach(field => {
+                if (field.dataset.dirtyFieldInitialized === 'true') {
+                    return;
+                }
+                setInitialFieldValue(field);
+                field.dataset.dirtyFieldInitialized = 'true';
                 field.addEventListener('input', markDirtyFields);
                 field.addEventListener('change', markDirtyFields);
             });
 
-            form.addEventListener('reset', () => {
-                window.setTimeout(() => {
-                    form.querySelectorAll('[data-provider-auth-select]').forEach(select => {
-                        select.dispatchEvent(new Event('change', { bubbles: true }));
-                    });
-                    markDirtyFields();
-                }, 0);
-            });
-
-            form.querySelectorAll('[data-dirty-guard]').forEach(link => {
-                link.addEventListener('click', event => {
-                    if (form.dataset.dirty === 'true' && !window.confirm('Discard unsaved changes?')) {
-                        event.preventDefault();
-                    }
+            if (form.dataset.dirtyInitialized !== 'true') {
+                form.dataset.dirtyInitialized = 'true';
+                form.addEventListener('reset', () => {
+                    window.setTimeout(() => {
+                        form.querySelectorAll('[data-provider-auth-select]').forEach(select => {
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                        markDirtyFields();
+                    }, 0);
                 });
-            });
+
+                form.querySelectorAll('[data-dirty-guard]').forEach(link => {
+                    link.addEventListener('click', event => {
+                        if (form.dataset.dirty === 'true' && !window.confirm('Discard unsaved changes?')) {
+                            event.preventDefault();
+                        }
+                    });
+                });
+            }
             markDirtyFields();
         });
     }
@@ -441,6 +456,99 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (confirmationField.value !== expectedConfirmation) {
                     event.preventDefault();
                     confirmationField.focus();
+                }
+            });
+        });
+    }
+
+    function initializeSearchablePickupLists() {
+        document.querySelectorAll('[data-searchable-pickup-list]').forEach(pickupList => {
+            if (pickupList.dataset.searchablePickupInitialized === 'true') {
+                return;
+            }
+            pickupList.dataset.searchablePickupInitialized = 'true';
+            const valueInput = pickupList.querySelector('[data-searchable-pickup-value-input]');
+            const toggle = pickupList.querySelector('[data-searchable-pickup-toggle]');
+            const label = pickupList.querySelector('[data-searchable-pickup-label]');
+            const menu = pickupList.querySelector('[data-searchable-pickup-menu]');
+            const search = pickupList.querySelector('[data-searchable-pickup-search]');
+            const emptyMessage = pickupList.querySelector('[data-searchable-pickup-empty]');
+            const options = Array.from(pickupList.querySelectorAll('[data-searchable-pickup-option]'));
+            if (!valueInput || !toggle || !label || !menu || !search || !options.length) {
+                return;
+            }
+
+            function setOpen(isOpen) {
+                const shouldOpen = isOpen && !toggle.disabled;
+                menu.hidden = !shouldOpen;
+                toggle.setAttribute('aria-expanded', String(shouldOpen));
+                pickupList.classList.toggle('is-open', shouldOpen);
+                if (shouldOpen) {
+                    search.value = '';
+                    filterOptions();
+                    window.setTimeout(() => search.focus(), 0);
+                }
+            }
+
+            function normalizedText(value) {
+                return String(value || '').trim().toLowerCase();
+            }
+
+            function filterOptions() {
+                const query = normalizedText(search.value);
+                let visibleCount = 0;
+                options.forEach(option => {
+                    const isPlaceholder = option.dataset.searchablePickupValue === '';
+                    const text = normalizedText(option.dataset.searchablePickupSearchText || option.textContent);
+                    const isVisible = query ? !isPlaceholder && text.includes(query) : true;
+                    option.hidden = !isVisible;
+                    if (isVisible) {
+                        visibleCount += 1;
+                    }
+                });
+                if (emptyMessage) {
+                    emptyMessage.hidden = visibleCount > 0;
+                }
+            }
+
+            function selectOption(option) {
+                valueInput.value = option.dataset.searchablePickupValue || '';
+                label.textContent = option.dataset.searchablePickupLabel || option.textContent.trim();
+                options.forEach(candidate => {
+                    candidate.setAttribute('aria-selected', String(candidate === option));
+                });
+                valueInput.dispatchEvent(new Event('input', { bubbles: true }));
+                valueInput.dispatchEvent(new Event('change', { bubbles: true }));
+                setOpen(false);
+                toggle.focus();
+            }
+
+            toggle.addEventListener('click', event => {
+                event.preventDefault();
+                setOpen(menu.hidden);
+            });
+            search.addEventListener('input', filterOptions);
+            search.addEventListener('keydown', event => {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    setOpen(false);
+                    toggle.focus();
+                    return;
+                }
+                if (event.key === 'Enter') {
+                    const firstVisibleOption = options.find(option => !option.hidden);
+                    if (firstVisibleOption) {
+                        event.preventDefault();
+                        selectOption(firstVisibleOption);
+                    }
+                }
+            });
+            options.forEach(option => {
+                option.addEventListener('click', () => selectOption(option));
+            });
+            document.addEventListener('click', event => {
+                if (!pickupList.contains(event.target)) {
+                    setOpen(false);
                 }
             });
         });
@@ -1404,6 +1512,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toggle.addEventListener('click', handleMenuToggle);
     });
     expandInitialActiveMenus();
+    initializeSearchablePickupLists();
     initializeScopeSourceModes();
     initializeDirtyForms();
     initializeProviderAuthForms();
@@ -1432,6 +1541,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.addEventListener('htmx:beforeRequest', showLoadingIndicator);
     document.body.addEventListener('htmx:afterRequest', hideLoadingIndicator);
     document.body.addEventListener('htmx:afterSwap', function() {
+        initializeSearchablePickupLists();
         initializeScopeSourceModes();
         initializeDirtyForms();
         initializeProviderAuthForms();

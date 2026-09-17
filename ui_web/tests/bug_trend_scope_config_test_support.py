@@ -41,7 +41,11 @@ def successful_scope_metadata_options():
         statuses=[TrackerOption('11', 'Open')],
         resolutions=[TrackerOption('21', 'Fixed')],
         priorities=[TrackerOption('31', 'P1-Critical')],
-        fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
+        fields=[
+            TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)'),
+            TrackerFieldOption('customfield_36102', 'Storage', 'Storage (customfield_36102)'),
+            TrackerFieldOption('customfield_40030', 'Component Label', 'Component Label (customfield_40030)'),
+        ],
         components=[TrackerOption('41', 'Emulation')],
         versions=[TrackerOption('51', '2026.01')],
     )
@@ -205,12 +209,47 @@ class BugTrendScopeConfigViewTestSupport:
                     issue_type_checked: Boolean(document.querySelector('input[name="query_builder_issue_types"][value="Bug"]:checked')),
                     component_checked: Boolean(document.querySelector('input[name="query_builder_components"][value="Emulation"]:checked')),
                     metadata_option_count: document.querySelectorAll('.scope-query-builder-option input[type="checkbox"]').length,
-                    custom_field_option_count: document.querySelectorAll('select[name="query_builder_custom_field_1"] option').length,
+                    custom_field_option_count: document.querySelectorAll('[data-searchable-pickup-list] [data-searchable-pickup-option]').length,
                     preview_value: document.querySelector('#query-builder-preview').value,
                 })
             """)
         finally:
             page.close()
+
+    def _measure_scope_query_builder_searchable_field_picker(self, html):
+        html = self._scope_library_browser_html(html)
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 1280, 'height': 900})
+        try:
+            page.set_content(html, wait_until='domcontentloaded')
+            picker = page.locator('[data-searchable-pickup-list]').first
+            page.locator('textarea[name="query_builder_custom_values_1"]').fill('Persistent')
+            picker.locator('[data-searchable-pickup-toggle]').click()
+            picker.locator('[data-searchable-pickup-search]').fill('stor')
+            visible_labels = picker.locator('[data-searchable-pickup-option]:visible').evaluate_all(
+                'options => options.map(option => option.textContent.trim())'
+            )
+            picker.locator('[data-searchable-pickup-option][data-searchable-pickup-value="customfield_36102"]').click()
+            return page.evaluate("""
+                labels => {
+                    const field = document.querySelector('input[name="query_builder_custom_field_1"]');
+                    const menu = document.querySelector('[data-searchable-pickup-menu]');
+                    const shell = field.closest('.scope-config-form-field');
+                    return {
+                        visible_labels: labels,
+                        selected_value: field.value,
+                        button_label: document.querySelector('[data-searchable-pickup-label]').textContent.trim(),
+                        preview_value: document.querySelector('#query-builder-preview').value,
+                        menu_hidden_after_select: menu.hidden,
+                        dirty_field_highlighted: shell.classList.contains('is-dirty-field'),
+                    };
+                }
+            """, visible_labels)
+        finally:
+            page.close()
+            browser.close()
+            playwright.stop()
 
     def _measure_scope_required_validation(self, html):
         html = self._scope_library_browser_html(html)

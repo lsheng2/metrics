@@ -1152,6 +1152,97 @@ span:focus-within > .help-tip::after,
     line-height: 1.25;
 }
 
+.searchable-pickup-list {
+    position: relative;
+    min-width: 0;
+}
+
+.searchable-pickup-list-toggle {
+    width: 100%;
+    min-height: 2rem;
+    justify-content: space-between;
+    padding-right: 1.8rem;
+    text-align: left;
+}
+
+.searchable-pickup-list-toggle::after {
+    position: absolute;
+    right: 0.76rem;
+    top: 50%;
+    width: 0.48rem;
+    height: 0.48rem;
+    border: 2px solid var(--dashboard-text-muted);
+    border-top: 0;
+    border-left: 0;
+    content: "";
+    pointer-events: none;
+    transform: translateY(-68%) rotate(45deg);
+}
+
+.searchable-pickup-list.is-open .searchable-pickup-list-toggle::after {
+    transform: translateY(-28%) rotate(225deg);
+}
+
+.searchable-pickup-list-label {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--dashboard-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.searchable-pickup-list-menu {
+    position: absolute;
+    z-index: 60;
+    top: calc(100% + 0.22rem);
+    left: 0;
+    right: 0;
+    border: 1px solid var(--dashboard-border-strong);
+    border-radius: var(--dashboard-radius-control);
+    background: var(--dashboard-surface-raised);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+    padding: 0.42rem;
+}
+
+.searchable-pickup-list-search {
+    margin-bottom: 0.34rem;
+}
+
+.searchable-pickup-list-options {
+    display: grid;
+    gap: 0.12rem;
+    max-height: 13rem;
+    overflow: auto;
+}
+
+.searchable-pickup-list-option {
+    width: 100%;
+    border: 0;
+    border-radius: var(--dashboard-radius-control);
+    background: transparent;
+    padding: 0.34rem 0.42rem;
+    color: var(--dashboard-text);
+    cursor: pointer;
+    font: inherit;
+    line-height: 1.18;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.searchable-pickup-list-option:hover,
+.searchable-pickup-list-option:focus,
+.searchable-pickup-list-option[aria-selected="true"] {
+    background: color-mix(in srgb, var(--bulma-primary, #00d1b2) 20%, transparent);
+    outline: none;
+}
+
+.searchable-pickup-list-empty {
+    margin: 0.32rem 0 0;
+    color: var(--dashboard-text-muted);
+    font-size: var(--dashboard-font-caption);
+}
+
 .scope-query-builder-custom-field,
 .scope-query-builder-custom-values {
     align-content: start;

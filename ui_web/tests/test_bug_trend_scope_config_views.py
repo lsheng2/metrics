@@ -455,6 +455,8 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertIn('name="query_builder_issue_types_manual"', content)
         self.assertIn('name="query_builder_components_manual"', content)
         self.assertIn('Severity (customfield_12345)', content)
+        self.assertIn('data-searchable-pickup-list', content)
+        self.assertIn('Search metadata fields', content)
         self.assertIn('project = STDEL AND issuetype = Bug AND components = Emulation', content)
 
     def test_shouldAutoLoadMetadataBackedQueryBuilderControlsForSavedBuilderScope(self):
@@ -525,6 +527,28 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
             self.assertGreaterEqual(viewport['custom_field_option_count'], 2)
             self.assertIn('priority = P1-Critical', viewport['preview_value'])
             self.assertIn('resolution = Fixed', viewport['preview_value'])
+
+    def test_shouldFilterMetadataFieldPickerFromTypeinSearchInBrowser(self):
+        # Given
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = BugTrendFacade(bug_trend_api, FakeSuccessfulScopeMetadataApi())
+            response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+                'mode': 'new',
+                'refresh_metadata': '1',
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+            })
+
+        # When
+        result = self._measure_scope_query_builder_searchable_field_picker(response.content.decode())
+
+        # Then
+        self.assertEqual(['Storage (customfield_36102)'], result['visible_labels'])
+        self.assertEqual('customfield_36102', result['selected_value'])
+        self.assertEqual('Storage (customfield_36102)', result['button_label'])
+        self.assertIn('customfield_36102 = Persistent', result['preview_value'])
+        self.assertTrue(result['menu_hidden_after_select'])
+        self.assertTrue(result['dirty_field_highlighted'])
 
     def test_shouldSaveQueryBuilderScopeThroughScopeConfigView(self):
         # When

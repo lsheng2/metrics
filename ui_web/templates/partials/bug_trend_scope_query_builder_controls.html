@@ -28,14 +28,11 @@
         <div class="dashboard-form-field scope-config-form-field scope-query-builder-custom-field">
             <label class="label" for="{% if row.field_options %}query-builder-custom-field-{{ row.index }}{% else %}query-builder-custom-field-{{ row.index }}-manual{% endif %}">Custom field {{ row.index }}</label>
             {% if row.field_options %}
-                <div class="select is-fullwidth">
-                    <select id="query-builder-custom-field-{{ row.index }}" name="query_builder_custom_field_{{ row.index }}" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
-                        <option value="" {% if not row.selected_field or row.manual_field %}selected{% endif %}>Choose metadata field</option>
-                        {% for option in row.field_options %}
-                            <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                {% if row.manual_field %}
+                    {% include "partials/searchable_pickup_list.html" with field_id_prefix="query-builder-custom-field-" field_name_prefix="query_builder_custom_field_" index=row.index selected_value="" placeholder="Choose metadata field" search_placeholder="Search metadata fields" search_label="Search metadata fields" options=row.field_options source_mode=source_mode_context.query_builder_mode enabled=source_mode_context.query_builder_active %}
+                {% else %}
+                    {% include "partials/searchable_pickup_list.html" with field_id_prefix="query-builder-custom-field-" field_name_prefix="query_builder_custom_field_" index=row.index selected_value=row.selected_field placeholder="Choose metadata field" search_placeholder="Search metadata fields" search_label="Search metadata fields" options=row.field_options source_mode=source_mode_context.query_builder_mode enabled=source_mode_context.query_builder_active %}
+                {% endif %}
             {% endif %}
             <input class="input" id="query-builder-custom-field-{{ row.index }}-manual" name="query_builder_custom_field_{{ row.index }}_manual" value="{{ row.manual_field }}" placeholder="Manual field id, e.g. customfield_31601" data-source-mode-input data-source-mode="{{ source_mode_context.query_builder_mode }}" {% if not source_mode_context.query_builder_active %}disabled{% endif %}>
         </div>

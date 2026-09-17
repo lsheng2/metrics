@@ -1,0 +1,57 @@
+<div class="searchable-pickup-list" data-searchable-pickup-list>
+    <input type="hidden"
+           id="{{ field_id_prefix }}{{ index }}"
+           name="{{ field_name_prefix }}{{ index }}"
+           value="{{ selected_value }}"
+           data-searchable-pickup-value-input
+           data-dirty-track
+           {% if source_mode %}data-source-mode-input data-source-mode="{{ source_mode }}"{% endif %}
+           {% if not enabled %}disabled{% endif %}>
+    <button class="button searchable-pickup-list-toggle"
+            type="button"
+            id="{{ field_id_prefix }}{{ index }}-toggle"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="{{ field_id_prefix }}{{ index }}-menu"
+            data-searchable-pickup-toggle
+            {% if source_mode %}data-source-mode-input data-source-mode="{{ source_mode }}"{% endif %}
+            {% if not enabled %}disabled{% endif %}>
+        <span class="searchable-pickup-list-label" data-searchable-pickup-label>{% if selected_value %}{% for option in options %}{% if option.selected %}{{ option.label }}{% endif %}{% endfor %}{% else %}{{ placeholder }}{% endif %}</span>
+    </button>
+    <div class="searchable-pickup-list-menu"
+         id="{{ field_id_prefix }}{{ index }}-menu"
+         role="presentation"
+         data-searchable-pickup-menu
+         hidden>
+        <input class="input searchable-pickup-list-search"
+               type="search"
+               placeholder="{{ search_placeholder }}"
+               aria-label="{{ search_label }}"
+               data-searchable-pickup-search>
+        <div class="searchable-pickup-list-options" role="listbox" aria-labelledby="{{ field_id_prefix }}{{ index }}-toggle">
+            <button class="searchable-pickup-list-option"
+                    type="button"
+                    role="option"
+                    data-searchable-pickup-option
+                    data-searchable-pickup-value=""
+                    data-searchable-pickup-label="{{ placeholder }}"
+                    aria-selected="{% if not selected_value %}true{% else %}false{% endif %}">
+                {{ placeholder }}
+            </button>
+            {% for option in options %}
+                <button class="searchable-pickup-list-option"
+                        type="button"
+                        role="option"
+                        title="{{ option.source }}"
+                        data-searchable-pickup-option
+                        data-searchable-pickup-value="{{ option.value }}"
+                        data-searchable-pickup-label="{{ option.label }}"
+                        data-searchable-pickup-search-text="{{ option.label }} {{ option.value }}"
+                        aria-selected="{% if option.selected %}true{% else %}false{% endif %}">
+                    {{ option.label }}
+                </button>
+            {% endfor %}
+        </div>
+        <p class="searchable-pickup-list-empty" data-searchable-pickup-empty hidden>No matching items.</p>
+    </div>
+</div>
