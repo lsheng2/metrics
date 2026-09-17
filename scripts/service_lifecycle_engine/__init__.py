@@ -80,6 +80,21 @@ from .engine import ServiceLifecycleEngine
 from .platform import PlatformOperationSet
 from .provenance import capture_process_provenance, provenance_capability_for, resolve_owned_listener
 from .resolver import LiveServiceResolver
+from .runtime_instance import (
+    ExternalServiceBinding,
+    ExternalServiceMode,
+    RuntimeInstanceIdentity,
+    RuntimeIsolationConflict,
+    RuntimeIsolationConflictCode,
+    RuntimeResourceNamespace,
+    StopAuthorityDecision,
+    detect_runtime_isolation_conflicts,
+    external_service_mode,
+)
+from .runtime_instance_conformance import (
+    assert_runtime_instance_isolation_conformance,
+    run_runtime_instance_isolation_conformance_checks,
+)
 from .state_recording import build_external_service_state
 from .state_store import FilesystemLifecycleStateStore, LifecycleStateStore
 
@@ -88,6 +103,8 @@ __all__ = [
     "Clock",
     "DefaultPidFileReader",
     "DefaultProcessMetadataProvider",
+    "ExternalServiceBinding",
+    "ExternalServiceMode",
     "HealthProbeProvider",
     "HealthProbeRequirement",
     "LaunchMetadataProvider",
@@ -110,6 +127,10 @@ __all__ = [
     "ProvenanceCapability",
     "ResolvedPortPlan",
     "RestartResult",
+    "RuntimeInstanceIdentity",
+    "RuntimeIsolationConflict",
+    "RuntimeIsolationConflictCode",
+    "RuntimeResourceNamespace",
     "NowCallback",
     "ServiceActivationPolicy",
     "ServiceDependency",
@@ -136,9 +157,11 @@ __all__ = [
     "ServiceState",
     "StopResult",
     "StopSource",
+    "StopAuthorityDecision",
     "SystemClock",
     "StartServiceCallback",
     "TimerCallback",
+    "assert_runtime_instance_isolation_conformance",
     "assert_startup_orchestration_conformance",
     "assert_service_lifecycle_conformance",
     "build_external_service_state",
@@ -146,6 +169,8 @@ __all__ = [
     "capture_process_provenance",
     "diagnostic_value",
     "diagnostic_values",
+    "detect_runtime_isolation_conflicts",
+    "external_service_mode",
     "health_requirement_affects_liveness",
     "health_requirement_affects_startup",
     "is_port_available",
@@ -162,6 +187,7 @@ __all__ = [
     "resolve_owned_listener",
     "resolve_pid_file_launch_metadata",
     "resolve_service_health_status",
+    "run_runtime_instance_isolation_conformance_checks",
     "run_startup_orchestration_conformance_checks",
     "run_service_lifecycle_conformance_checks",
     "start_services_in_dependency_order",

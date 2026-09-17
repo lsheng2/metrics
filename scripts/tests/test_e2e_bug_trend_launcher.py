@@ -11,6 +11,7 @@ if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
 import e2e_bug_trend
+from dashboard_runtime_instance_profile import build_dashboard_runtime_instance_profile
 from service_lifecycle_engine import ServiceSpec, ServiceState
 
 
@@ -108,6 +109,19 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
     assert ("profile_step", "write_grafana_config", "run-1", "E2E timing") in calls
     assert ("runtime_specs", ("django", "grafana")) in calls
     assert ("datasource", 9200, 9100) in calls
+
+
+def test_bug_trend_runtime_profile_prioritizes_primary_ports(tmp_path):
+    profile = build_dashboard_runtime_instance_profile(repo_root=tmp_path, workspace_root=tmp_path, port_profile="worktree-1")
+    specs = {
+        "django": ServiceSpec.from_values("django", [8002, 8012, 8022], [sys.executable, "--version"]),
+        "grafana": ServiceSpec.from_values("grafana", [3001, 3051, 3151], ["grafana", "server"]),
+    }
+
+    profiled = e2e_bug_trend.apply_runtime_profile_to_specs(specs, profile)
+
+    assert profiled["django"].preferred_ports == (8012, 8002, 8022)
+    assert profiled["grafana"].preferred_ports == (3051, 3001, 3151)
 
 
 def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_path):

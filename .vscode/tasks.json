@@ -9,94 +9,106 @@
     },
     "tasks": [
         {
-            "label": "Local: Migrate Database",
+            "label": "Current Worktree: Local: Migrate Database",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $python = Join-Path $workspace '.venv\\Scripts\\python.exe'; & $python manage.py migrate",
             "problemMatcher": []
         },
         {
-            "label": "Local: Seed Bug Trend Sample Data",
+            "label": "Current Worktree: Local: Seed Bug Trend Sample Data",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $python = Join-Path $workspace '.venv\\Scripts\\python.exe'; & $python manage.py seed_bug_trend_sample",
-            "dependsOn": "Local: Migrate Database",
+            "dependsOn": "Current Worktree: Local: Migrate Database",
             "problemMatcher": []
         },
         {
-            "label": "Backend: Start Django",
+            "label": "Current Worktree: Backend: Start Django",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\local_start_backend.ps1'; & $script -Workspace $workspace",
             "problemMatcher": []
         },
         {
-            "label": "Backend: Stop Django",
+            "label": "Current Worktree: Backend: Stop Django",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\local_stop_backend.ps1'; & $script",
             "problemMatcher": []
         },
         {
-            "label": "Backend: Restart Django",
+            "label": "Current Worktree: Backend: Restart Django",
             "dependsOrder": "sequence",
-            "dependsOn": ["Backend: Stop Django", "Backend: Start Django"],
+            "dependsOn": ["Current Worktree: Backend: Stop Django", "Current Worktree: Backend: Start Django"],
             "problemMatcher": []
         },
         {
-            "label": "Frontend: Open Bug Trend",
+            "label": "Current Worktree: Frontend: Open Bug Trend",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\local_open_bug_trend.ps1'; & $script",
             "problemMatcher": []
         },
         {
-            "label": "Frontend: Stop Bug Trend",
+            "label": "Current Worktree: Frontend: Stop Bug Trend",
             "type": "shell",
-            "command": "Write-Host 'Frontend is served by Django; stop Backend: Stop Django to stop the local server.'",
+            "command": "Write-Host 'Frontend is served by Django; stop Current Worktree: Backend: Stop Django to stop the local server.'",
             "problemMatcher": []
         },
         {
-            "label": "Frontend: Restart Bug Trend",
+            "label": "Current Worktree: Frontend: Restart Bug Trend",
             "dependsOrder": "sequence",
-            "dependsOn": ["Frontend: Stop Bug Trend", "Frontend: Open Bug Trend"],
+            "dependsOn": ["Current Worktree: Frontend: Stop Bug Trend", "Current Worktree: Frontend: Open Bug Trend"],
             "problemMatcher": []
         },
         {
-            "label": "E2E: Start Bug Trend",
+            "label": "Current Worktree: E2E: Start Bug Trend",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_bug_trend.ps1'; & $script -Workspace $workspace -OpenEntrypoint workbench -ForceByPort",
             "problemMatcher": []
         },
         {
-            "label": "E2E: Stop Bug Trend",
+            "label": "Current Worktree: E2E: Stop Bug Trend",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_stop_bug_trend.ps1'; & $script -Workspace $workspace",
             "problemMatcher": []
         },
         {
-            "label": "E2E: Stop Bug Trend (Force By Port)",
+            "label": "Current Worktree: E2E: Stop Bug Trend (Force By Port)",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_stop_bug_trend.ps1'; & $script -Workspace $workspace -ForceByPort",
             "problemMatcher": []
         },
         {
-            "label": "E2E: Restart Bug Trend",
+            "label": "Current Worktree: E2E: Restart Bug Trend",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_restart_bug_trend.ps1'; & $script -Workspace $workspace -OpenEntrypoint workbench -ForceByPort",
             "problemMatcher": []
         },
         {
-            "label": "E2E: Start Dashboard AI Stack",
+            "label": "Current Worktree: Dashboard AI Stack: Start",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_start_dashboard_ai_stack.ps1'; & $script -DashboardWorkspace $workspace -ForceByPort",
             "problemMatcher": []
         },
         {
-            "label": "E2E: Stop Dashboard AI Stack",
+            "label": "Current Worktree: Dashboard AI Stack: Stop",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_stop_dashboard_ai_stack.ps1'; & $script -DashboardWorkspace $workspace -ForceByPort",
             "problemMatcher": []
         },
         {
-            "label": "E2E: Restart Dashboard AI Stack",
+            "label": "Current Worktree: Dashboard AI Stack: Restart",
             "type": "shell",
             "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\e2e_restart_dashboard_ai_stack.ps1'; & $script -DashboardWorkspace $workspace -ForceByPort -SkipJiraSync",
+            "problemMatcher": []
+        },
+        {
+            "label": "All Worktrees: Dashboard Ports Inventory",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\all_worktrees_dashboard_ports_inventory.ps1'; & $script -Workspace $workspace",
+            "problemMatcher": []
+        },
+        {
+            "label": "All Worktrees: Stop Dashboard Project Services",
+            "type": "shell",
+            "command": "$workspace = '${workspaceFolder}'; $script = Join-Path $workspace 'scripts\\all_worktrees_stop_dashboard_project_services.ps1'; & $script -Workspace $workspace -ForceByPort",
             "problemMatcher": []
         }
     ]

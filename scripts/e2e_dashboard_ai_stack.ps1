@@ -427,6 +427,18 @@ function Get-ProcessTreeIds {
 }
 
 function Get-DashboardLifecycleStatePath {
+    $profilePath = Join-Path $DashboardWorkspace 'state\local\runtime-instance.json'
+    if (Test-Path $profilePath) {
+        try {
+            $profile = Get-Content -Path $profilePath -Raw | ConvertFrom-Json
+            $instanceId = [string]$profile.identity.instance_id
+            if (-not [string]::IsNullOrWhiteSpace($instanceId)) {
+                return (Join-Path $DashboardWorkspace "state\local\instances\$instanceId\service-lifecycle-engine\metrics-bug-trend-$instanceId.json")
+            }
+        }
+        catch {
+        }
+    }
     return (Join-Path $DashboardWorkspace 'state\e2e\service-lifecycle-engine\metrics-bug-trend-default.json')
 }
 

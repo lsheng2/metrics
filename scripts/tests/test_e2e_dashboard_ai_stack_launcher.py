@@ -46,6 +46,8 @@ def test_dashboard_ai_stack_smoke_checks_unified_workbench():
     assert "Write-Warning 'Jira profile sync is already running for this scope" not in script
     assert "Invoke-BootLogAudit -Phase 'ai-base-start' -RequireDashboardState -RequireAiBaseState" in script
     assert "Invoke-BootLogAudit -Phase 'final' -RequireDashboardState -RequireAiBaseState" in script
+    assert "state\\local\\runtime-instance.json" in script
+    assert "state\\local\\instances\\$instanceId\\service-lifecycle-engine\\metrics-bug-trend-$instanceId.json" in script
     assert "workbench-ai-context" in script
     assert "Metrics Workbench" in script
 

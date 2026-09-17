@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 import argparse
-import base64
-import json
 import os
 import shutil
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 import uuid
 from pathlib import Path
 from typing import Callable, Mapping, Protocol, Sequence, TypeVar
 
+from dashboard_runtime_instance_profile import (
+    ScrumDashboardRuntimeInstanceProfile,
+    load_or_create_dashboard_runtime_instance_profile,
+    prioritize_profile_port,
+)
+import e2e_bug_trend_runtime as runtime_ops
 from e2e_grafana_runtime import write_runtime_grafana_config
 from service_lifecycle_engine import ServiceLifecycleEngine, ServiceSpec, load_project_name, load_service_specs
 
@@ -29,7 +31,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Start/stop the Bug Trend E2E runtime.")
     parser.add_argument("action", choices=("start", "stop", "restart"))
     parser.add_argument("--workspace", default=str(Path(__file__).resolve().parents[1]))
-    parser.add_argument("--instance", default="default")
+    parser.add_argument("--instance", default="")
+    parser.add_argument("--port-profile", default=os.environ.get("METRICS_DASHBOARD_PORT_PROFILE", ""))
     parser.add_argument("--service-config", default=str(Path(__file__).with_name("e2e_bug_trend.services.json")))
     parser.add_argument("--django-ports", default="")
     parser.add_argument("--grafana-ports", default="")
@@ -45,25 +48,37 @@ def main() -> None:
 
     workspace = Path(args.workspace).resolve()
     service_config = Path(args.service_config).resolve()
+    runtime_profile = load_or_create_dashboard_runtime_instance_profile(
+        workspace_root=workspace,
+        repo_root=workspace,
+        port_profile=_blank_to_none(args.port_profile),
+        instance_id=_blank_to_none(args.instance) or _blank_to_none(os.environ.get("METRICS_DASHBOARD_RUNTIME_INSTANCE_ID", "")),
+    )
     lifecycle = ServiceLifecycleEngine(
         project_name=load_project_name(service_config, "metrics-bug-trend"),
         workspace=workspace,
-        instance_name=args.instance,
-        state_directory=workspace / "state" / "e2e" / "service-lifecycle-engine",
+        instance_name=runtime_profile.lifecycle_instance_name,
+        state_directory=runtime_profile.service_lifecycle_state_dir,
     )
     run_id = str(uuid.uuid4())
 
     if args.action == "stop":
-        stop_runtime(lifecycle, args, run_id)
+        stop_runtime(lifecycle, args, run_id, runtime_profile)
     else:
-        start_runtime(args, workspace, lifecycle, run_id)
+        start_runtime(args, workspace, lifecycle, runtime_profile, run_id)
 
 
-def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: ServiceLifecycleEngine, run_id: str | None = None) -> None:
+def start_runtime(
+    args: argparse.Namespace,
+    workspace: Path,
+    lifecycle: ServiceLifecycleEngine,
+    runtime_profile: ScrumDashboardRuntimeInstanceProfile | None = None,
+    run_id: str | None = None,
+) -> None:
     grafana_bin = resolve_grafana_bin(args.grafana_bin)
     grafana_homepath = resolve_grafana_homepath(args.grafana_homepath, grafana_bin)
     python_executable = sys.executable
-    specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath)
+    specs = apply_runtime_profile_to_specs(load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath), runtime_profile)
     runtime_scope_id = args.scope_id
 
     def after_prepare(stop_results: Sequence[object]) -> None:
@@ -92,7 +107,10 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: ServiceL
         django_port = port_plan["django"]
         grafana_port = port_plan["grafana"]
         runtime_grafana_config = profile_step(lifecycle, "write_grafana_config", lambda: write_runtime_grafana_config(workspace, grafana_port), run_id=run_id)
-        runtime_specs = load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath, grafana_config=runtime_grafana_config)
+        runtime_specs = apply_runtime_profile_to_specs(
+            load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath, grafana_config=runtime_grafana_config),
+            runtime_profile,
+        )
         print(f"E2E selected ports: Django={django_port}, Grafana={grafana_port}")
         return (runtime_specs["django"], runtime_specs["grafana"])
 
@@ -119,10 +137,15 @@ def start_runtime(args: argparse.Namespace, workspace: Path, lifecycle: ServiceL
         profile_step(lifecycle, "open_browser", lambda: open_browser(entrypoint_url), run_id=run_id)
     print(f"E2E Bug Trend is ready: {entrypoint_url or workbench_url}")
 
-def stop_runtime(lifecycle: ServiceLifecycleEngine, args: argparse.Namespace, run_id: str | None = None) -> None:
+def stop_runtime(
+    lifecycle: ServiceLifecycleEngine,
+    args: argparse.Namespace,
+    run_id: str | None = None,
+    runtime_profile: ScrumDashboardRuntimeInstanceProfile | None = None,
+) -> None:
     results = profile_step(lifecycle, "stop_registered_services", lambda: lifecycle.stop_all(graceful_timeout_seconds=5.0), run_id=run_id)
     if args.force_by_port:
-        results.extend(profile_step(lifecycle, "force_stop_by_ports", lambda: lifecycle.force_stop_by_ports(force_stop_specs(args), graceful_timeout_seconds=0.5), run_id=run_id))
+        results.extend(profile_step(lifecycle, "force_stop_by_ports", lambda: lifecycle.force_stop_by_ports(force_stop_specs(args, runtime_profile), graceful_timeout_seconds=0.5), run_id=run_id))
     print_stop_results(results, empty_message="No E2E services registered.")
 
 def print_stop_results(results: Sequence[object], empty_message: str = "") -> None:
@@ -135,9 +158,9 @@ def print_stop_results(results: Sequence[object], empty_message: str = "") -> No
         print(f"{result.name} {status} on 127.0.0.1:{result.port}")
 
 
-def force_stop_specs(args: argparse.Namespace) -> tuple[ServiceSpec, ...]:
+def force_stop_specs(args: argparse.Namespace, runtime_profile: ScrumDashboardRuntimeInstanceProfile | None = None) -> tuple[ServiceSpec, ...]:
     specs = load_specs(args, Path(args.workspace).resolve(), sys.executable, args.grafana_bin or "grafana", args.grafana_homepath or "")
-    return tuple(specs.values())
+    return tuple(apply_runtime_profile_to_specs(specs, runtime_profile).values())
 
 def load_specs(
     args: argparse.Namespace,
@@ -177,6 +200,23 @@ def replace_ports(spec: ServiceSpec, ports: tuple[int, ...]) -> ServiceSpec:
         graceful_timeout_seconds=spec.graceful_timeout_seconds,
         port_release_timeout_seconds=spec.port_release_timeout_seconds,
     )
+
+
+def apply_runtime_profile_to_specs(
+    specs: Mapping[str, ServiceSpec],
+    runtime_profile: ScrumDashboardRuntimeInstanceProfile | None,
+) -> dict[str, ServiceSpec]:
+    if runtime_profile is None:
+        return dict(specs)
+    return {
+        name: replace_ports(spec, prioritize_profile_port(spec.preferred_ports, runtime_profile, name))
+        for name, spec in specs.items()
+    }
+
+
+def _blank_to_none(value: str | None) -> str | None:
+    text = str(value or "").strip()
+    return text or None
 
 
 def run(command: list[str], workspace: Path) -> None:
@@ -239,161 +279,29 @@ def resolve_grafana_homepath(configured: str, grafana_bin: str) -> str:
     return str(binary_path.parent)
 
 
+request_json = runtime_ops.request_json
+assert_http_ok = runtime_ops.assert_http_ok
+grafana_dashboard_url = runtime_ops.grafana_dashboard_url
+workbench_url_for = runtime_ops.workbench_url_for
+entrypoint_url_for = runtime_ops.entrypoint_url_for
+write_e2e_summary = runtime_ops.write_e2e_summary
+open_browser = runtime_ops.open_browser
+
+
 def configure_grafana_datasource(grafana_port: int, django_port: int) -> None:
-    metrics_url = f"http://127.0.0.1:{django_port}"
-    payload = {
-        "name": "Metrics Bug Trend API",
-        "uid": "metrics-bug-trend-api",
-        "type": "yesoreyeram-infinity-datasource",
-        "access": "proxy",
-        "url": metrics_url,
-        "isDefault": True,
-        "jsonData": {
-            "allowedHosts": [metrics_url],
-            "auth_method": "none",
-            "global_queries": [],
-            "timeoutInSeconds": 60,
-        },
-        "editable": True,
-    }
-    upsert_grafana_datasource(grafana_port, payload)
-
-
-def upsert_grafana_datasource(grafana_port: int, payload: dict[str, object]) -> None:
-    try:
-        request_json("PUT", f"http://127.0.0.1:{grafana_port}/api/datasources/uid/metrics-bug-trend-api", payload)
-    except urllib.error.HTTPError as error:
-        if error.code != 404:
-            raise
-        request_json("POST", f"http://127.0.0.1:{grafana_port}/api/datasources", payload)
+    runtime_ops.request_json = request_json
+    runtime_ops.configure_grafana_datasource(grafana_port, django_port)
 
 
 def import_grafana_dashboard(workspace: Path, grafana_port: int, django_port: int, scope_id: str, begin: str, end: str) -> None:
-    artifact = workspace / "ops" / "grafana" / "bug_trend_dashboard.json"
-    dashboard = json.loads(artifact.read_text(encoding="utf-8"))
-    for variable in dashboard["templating"]["list"]:
-        if variable["name"] == "scope_id":
-            variable["query"] = scope_id
-            variable["current"] = {"text": scope_id, "value": scope_id}
-        if variable["name"] == "begin":
-            variable["query"] = begin
-            variable["current"] = {"text": begin, "value": begin}
-        if variable["name"] == "end":
-            variable["query"] = end
-            variable["current"] = {"text": end, "value": end}
-    rewrite_workbench_links(dashboard, django_port)
-    request_json(
-        "POST",
-        f"http://127.0.0.1:{grafana_port}/api/dashboards/db",
-        {"dashboard": dashboard, "overwrite": True, "message": "Import Metrics Bug Trend C-stock dashboard"},
-    )
-
-
-def rewrite_workbench_links(dashboard: dict[str, object], django_port: int) -> None:
-    base_url = f"http://127.0.0.1:{django_port}"
-    for panel in dashboard.get("panels", []):
-        if not isinstance(panel, dict):
-            continue
-        defaults = panel.get("fieldConfig", {}).get("defaults", {})
-        for link in defaults.get("links", []):
-            if not isinstance(link, dict):
-                continue
-            link_url = str(link.get("url", ""))
-            if link_url.startswith("/workbench/"):
-                link["url"] = base_url + link_url
+    runtime_ops.request_json = request_json
+    runtime_ops.import_grafana_dashboard(workspace, grafana_port, django_port, scope_id, begin, end)
 
 
 def validate_runtime(workspace: Path, grafana_port: int, django_port: int, scope_id: str, begin: str, end: str) -> None:
-    assert_http_ok(f"http://127.0.0.1:{django_port}/api/charts/data/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend")
-    assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/datasources/uid/metrics-bug-trend-api", auth=True)
-    assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/plugins/yesoreyeram-infinity-datasource/settings", auth=True)
-    assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/datasources/proxy/uid/metrics-bug-trend-api/api/charts/data/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend", auth=True)
-    dashboard = request_json("GET", f"http://127.0.0.1:{grafana_port}/api/dashboards/uid/metrics-bug-trend-c-stock")
-    target_url = dashboard["dashboard"]["panels"][0]["targets"][0]["url"]
-    link_url = dashboard["dashboard"]["panels"][0]["fieldConfig"]["defaults"]["links"][0]["url"]
-    if "chart_id=default_bug_trend" not in target_url or "chart_id=default_bug_trend" not in link_url:
-        raise RuntimeError("Imported Grafana dashboard is missing chart_id=default_bug_trend")
-    if f"http://127.0.0.1:{django_port}/workbench/grafana-selection/" not in link_url:
-        raise RuntimeError("Imported Grafana dashboard evidence link does not return to the Dashboard workbench")
-
-
-def request_json(method: str, url: str, payload: dict[str, object] | None = None) -> dict[str, object]:
-    data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    request = urllib.request.Request(url, data=data, method=method)
-    request.add_header("Authorization", basic_auth())
-    if payload is not None:
-        request.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(request, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
-def assert_http_ok(url: str, auth: bool = False) -> None:
-    request = urllib.request.Request(url)
-    if auth:
-        request.add_header("Authorization", basic_auth())
-    deadline = time.monotonic() + 10.0
-    last_error = None
-    while True:
-        try:
-            with urllib.request.urlopen(request, timeout=10) as response:
-                if not 200 <= response.status < 300:
-                    raise RuntimeError(f"Expected HTTP 2xx from {url}, got {response.status}")
-                return
-        except urllib.error.HTTPError as error:
-            raise RuntimeError(f"Expected HTTP 2xx from {url}, got {error.code}") from error
-        except urllib.error.URLError as error:
-            last_error = error
-            if time.monotonic() >= deadline:
-                raise RuntimeError(f"Expected HTTP 2xx from {url}, got connection error {type(error.reason).__name__}") from error
-            time.sleep(0.25)
-
-
-def basic_auth() -> str:
-    token = base64.b64encode(b"admin:admin").decode("ascii")
-    return f"Basic {token}"
-
-
-def grafana_dashboard_url(grafana_port: int, scope_id: str, begin: str, end: str) -> str:
-    return f"http://127.0.0.1:{grafana_port}/d/metrics-bug-trend-c-stock/metrics-bug-trend-c-stock-spike?orgId=1&var-scope_id={scope_id}&var-begin={begin}&var-end={end}"
-
-
-def workbench_url_for(django_port: int, scope_id: str, begin: str, end: str) -> str:
-    return f"http://127.0.0.1:{django_port}/workbench/?scope_id={scope_id}&begin={begin}&end={end}&chart_id=default_bug_trend"
-
-
-def entrypoint_url_for(open_entrypoint: str, dashboard_url: str, workbench_url: str) -> str:
-    if open_entrypoint == "grafana":
-        return dashboard_url
-    if open_entrypoint == "workbench":
-        return workbench_url
-    return ""
-
-
-def write_e2e_summary(workspace: Path, django_port: int, grafana_port: int, dashboard_url: str, workbench_url: str) -> None:
-    summary_path = workspace / "state" / "e2e" / "bug_trend_ports.json"
-    summary_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_path.write_text(
-        json.dumps(
-            {
-                "django_port": django_port,
-                "grafana_port": grafana_port,
-                "dashboard_url": dashboard_url,
-                "workbench_url": workbench_url,
-            },
-            indent=2,
-            sort_keys=True,
-        ),
-        encoding="utf-8",
-    )
-
-
-def open_browser(url: str) -> None:
-    if sys.platform == "win32":
-        os.startfile(url)  # type: ignore[attr-defined]
-        return
-    opener = "open" if sys.platform == "darwin" else "xdg-open"
-    if shutil.which(opener):
-        subprocess.Popen([opener, url])
+    runtime_ops.request_json = request_json
+    runtime_ops.assert_http_ok = assert_http_ok
+    runtime_ops.validate_runtime(workspace, grafana_port, django_port, scope_id, begin, end)
 
 
 if __name__ == "__main__":

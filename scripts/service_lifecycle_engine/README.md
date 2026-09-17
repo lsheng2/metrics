@@ -74,6 +74,19 @@ Startup orchestration:
 - `plan_service_startup(nodes, include_services=None)`
 - `start_services_in_dependency_order(nodes, start, max_parallelism=4, include_services=None, run_id=None, now=None, timer=None)`
 
+Runtime instance isolation:
+
+- `RuntimeInstanceIdentity`
+- `RuntimeResourceNamespace`
+- `ExternalServiceMode`
+- `ExternalServiceBinding`
+- `StopAuthorityDecision`
+- `RuntimeIsolationConflict`
+- `RuntimeIsolationConflictCode`
+- `detect_runtime_isolation_conflicts(bindings)`
+- `run_runtime_instance_isolation_conformance_checks(owner=..., consumer=..., service_name="service")`
+- `assert_runtime_instance_isolation_conformance(owner=..., consumer=..., service_name="service")`
+
 Diagnostics and conformance:
 
 - `ServiceDiagnosticCode`
@@ -89,6 +102,10 @@ Diagnostics and conformance:
 ## Adapter Pattern
 
 Projects should keep their own launcher paths, health probes, links, authorization behavior, and runtime endpoint authority outside this package. The generic module provides common models and helpers; adapters translate project facts into those models.
+
+Runtime instance isolation follows the same adapter boundary. The generic engine validates and derives safe identities, namespaces, external service ownership modes, stop decisions, and conflict diagnostics. A project adapter decides how one `RuntimeInstanceIdentity` maps to ports, state roots, Docker compose project names, database names, queue prefixes, generated env files, browser caches, and endpoint bindings.
+
+The authority order for project adapters should be explicit CLI/env values first, durable runtime profile second, generated compatibility projections third, and hardcoded defaults last. Generated env files are projections of the durable profile; they are not the durable source of truth.
 
 External launchers that do not call `ServiceLifecycleEngine.start_service()` can still publish generic state:
 
@@ -151,6 +168,21 @@ assert_startup_orchestration_conformance(
         ServiceStartNode("database"),
         ServiceStartNode("api", dependencies=(ServiceDependency("database"),)),
     ),
+    service_name="api",
+)
+```
+
+Downstream projects can also run the reusable runtime isolation conformance pack:
+
+```python
+from service_lifecycle_engine import (
+    RuntimeInstanceIdentity,
+    assert_runtime_instance_isolation_conformance,
+)
+
+assert_runtime_instance_isolation_conformance(
+    owner=RuntimeInstanceIdentity("local-tools", "owner"),
+    consumer=RuntimeInstanceIdentity("local-tools", "consumer"),
     service_name="api",
 )
 ```

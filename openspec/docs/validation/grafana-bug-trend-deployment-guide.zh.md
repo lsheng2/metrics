@@ -21,7 +21,7 @@
 .venv\Scripts\python.exe manage.py runserver 8002
 ```
 
-本仓库 demo 也可以使用 VS Code task `Backend: Start Django`。
+本仓库 demo 也可以使用 VS Code task `Current Worktree: Backend: Start Django`。
 
 2. Metrics API 可以访问：
 
@@ -137,7 +137,7 @@ curl.exe --noproxy 127.0.0.1 "http://127.0.0.1:3001/api/health"
 {"database":"ok","version":"13.2.0"}
 ```
 
-使用 VS Code task `E2E: Start Bug Trend` 或 `E2E: Restart Bug Trend` 时，脚本会优先选择 `3001`，如果端口被占用则尝试 `3011`、`3021`、`3031`、`3051`。实际端口和 dashboard URL 会写入：
+使用 VS Code task `Current Worktree: E2E: Start Bug Trend` 或 `Current Worktree: E2E: Restart Bug Trend` 时，脚本会优先选择 `3001`，如果端口被占用则尝试 `3011`、`3021`、`3031`、`3051`。实际端口和 dashboard URL 会写入：
 
 ```text
 state/e2e/bug_trend_ports.json

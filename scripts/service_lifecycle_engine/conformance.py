@@ -20,6 +20,8 @@ from .live_status import (
     ServiceLiveSnapshot,
 )
 from .models import LifecycleState
+from .runtime_instance import RuntimeInstanceIdentity
+from .runtime_instance_conformance import run_runtime_instance_isolation_conformance_checks
 from .startup_models import (
     ServiceActivationPolicy,
     ServiceDependency,
@@ -41,6 +43,8 @@ class ServiceLifecycleConformanceFixture:
     health_provider: HealthProbeProvider
     startup_nodes: tuple[ServiceStartNode, ...] = ()
     forbidden_payload_markers: tuple[str, ...] = ()
+    runtime_isolation_owner: RuntimeInstanceIdentity | None = None
+    runtime_isolation_consumer: RuntimeInstanceIdentity | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +69,7 @@ def run_service_lifecycle_conformance_checks(
             startup_nodes=fixture.startup_nodes,
             service_name=fixture.service_name,
         ),
+        *_runtime_instance_results(fixture),
     ]
     if launch_result.passed and health_result.passed:
         results.append(_check_live_snapshot(fixture))
@@ -111,6 +116,18 @@ def assert_startup_orchestration_conformance(
     if failures:
         detail = "; ".join(f"{failure.name}: {failure.detail}" for failure in failures)
         raise AssertionError(detail)
+
+
+def _runtime_instance_results(fixture: ServiceLifecycleConformanceFixture) -> tuple[ServiceLifecycleConformanceResult, ...]:
+    if fixture.runtime_isolation_owner is None and fixture.runtime_isolation_consumer is None:
+        return ()
+    if fixture.runtime_isolation_owner is None or fixture.runtime_isolation_consumer is None:
+        return (ServiceLifecycleConformanceResult("runtime_isolation_fixture", False, "owner and consumer identities must be provided together"),)
+    return run_runtime_instance_isolation_conformance_checks(
+        owner=fixture.runtime_isolation_owner,
+        consumer=fixture.runtime_isolation_consumer,
+        service_name=fixture.service_name,
+    )
 
 
 def _check_process_provider(fixture: ServiceLifecycleConformanceFixture) -> ServiceLifecycleConformanceResult:
