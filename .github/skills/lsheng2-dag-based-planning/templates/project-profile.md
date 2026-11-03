@@ -15,6 +15,7 @@ Everything repository-specific lives here so the DAG workflow stays portable.
 ## Source Roots
 
 - `tasks/`
+- `project_management/`
 - `forecast/`
 - `velocity/`
 - `pull_requests/`
@@ -45,6 +46,7 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 ## Test Roots
 
 - `tasks/tests/`
+- `project_management/tests/`
 - `forecast/tests/`
 - `velocity/tests/`
 - `pull_requests/tests/`
@@ -178,6 +180,7 @@ Use `update-required`, `no-doc-change`, or `deferred-with-trigger` with owner pa
 Common authority boundaries in this repository:
 
 - Task search and enrichment owner: `tasks/` public API plus repositories.
+- Project/stage owner: `project_management/` public API, immutable source descriptors and CLI; query/report scope must never default to a named project instance.
 - Forecast owner: `forecast/` public API and domain calculators.
 - Velocity owner: `velocity/` public API and calculators.
 - Pull-request owner: `pull_requests/` public API and policy/review gates.

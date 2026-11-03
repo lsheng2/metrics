@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/project-reporting/review-1/strict-summary-input.schema.json",
+  "title": "Draft strict summary input projection",
+  "allOf": [
+    {"$ref": "summary-review.schema.json#/$defs/input"},
+    {
+      "properties": {
+        "profile_revision": {"const": "project-reporting.summary@review-1"},
+        "required_parts": {"const": ["facts", "comments", "history"]},
+        "coverage": {
+          "properties": {
+            "facts": {"const": "complete"},
+            "comments": {"const": "complete"},
+            "history": {"const": "complete"}
+          }
+        }
+      }
+    }
+  ]
+}

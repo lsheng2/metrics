@@ -1,0 +1,22 @@
+{
+  "kind": "summary",
+  "binding": {
+    "project_id": "project-alpha", "stage_id": "release-1",
+    "provider": "jira", "site": "https://tracker.example.invalid", "stable_id": "10001",
+    "rule_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+    "principal_id": "fixture-source-principal"
+  },
+  "profile_revision": "project-reporting.summary@review-1",
+  "base_summary_id": "summary-1", "target_capture_id": "capture-2", "output_language": "en",
+  "what": "Intermittent failure during validation.",
+  "current_position": "The item is marked Fixed. The failure was reproduced on r7; a rerun on r8 is requested.",
+  "verification": "The supplied evidence does not confirm that the r8 rerun passed.",
+  "next_actions": [
+    {
+      "action": "Rerun validation on build r8.", "owner_id": "qa-b", "owner_basis": "explicit",
+      "owner_quote": "Bob (qa-b), please rerun validation on build r8.",
+      "owner_confirmed": false, "state": "open", "evidence": ["c-ref"]
+    }
+  ],
+  "blockers": [], "limitations": [], "evidence": ["fields-ref", "b-ref", "c-ref"]
+}

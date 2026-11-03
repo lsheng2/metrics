@@ -1,0 +1,15 @@
+<main style="width:100%; box-sizing:border-box; padding:24px; background:#ffffff; color:#1f2933; font-family:Segoe UI, Arial, sans-serif; font-size:14px; line-height:1.45;">
+  <header style="border-bottom:2px solid #0f766e; padding-bottom:12px; margin-bottom:18px;">
+    <h1 style="margin:0 0 8px 0; color:#0f766e; font-size:24px; font-weight:700;">Daily standup report</h1>
+    <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+      <tbody>
+        <tr><th style="width:28%; text-align:left; border:1px solid #cbd5e1; padding:6px;">Project / stage</th><td style="border:1px solid #cbd5e1; padding:6px;">{{ metadata.project_name }} / {{ metadata.stage_name }}</td></tr>
+        <tr><th style="text-align:left; border:1px solid #cbd5e1; padding:6px;">Report date</th><td style="border:1px solid #cbd5e1; padding:6px;">{{ metadata.report_date }}</td></tr>
+        <tr><th style="text-align:left; border:1px solid #cbd5e1; padding:6px;">Source cutoff / timezone</th><td style="border:1px solid #cbd5e1; padding:6px;">{{ metadata.source_as_of }} / {{ metadata.timezone }}</td></tr>
+        <tr><th style="text-align:left; border:1px solid #cbd5e1; padding:6px;">Baseline / edition</th><td style="border:1px solid #cbd5e1; padding:6px;">{{ metadata.baseline }} / {{ metadata.edition_state }} draft {{ metadata.draft_id }} revision {{ metadata.revision }}</td></tr>
+        <tr><th style="text-align:left; border:1px solid #cbd5e1; padding:6px;">Provenance</th><td style="border:1px solid #cbd5e1; padding:6px;">capture {{ metadata.capture_id }}; source commit {{ metadata.source_commit }}; rule {{ metadata.rule_hash }}; comparison {{ metadata.comparison_policy_hash }}; template {{ metadata.template_hash }}; renderer {{ metadata.renderer_version }}{% if metadata.revision_hash %}; revision hash {{ metadata.revision_hash }}{% endif %}</td></tr>
+      </tbody>
+    </table>
+  </header>
+  {% include "body.html" %}
+</main>

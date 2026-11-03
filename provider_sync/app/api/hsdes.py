@@ -2,9 +2,9 @@ import hashlib
 import json
 import base64
 import os
-import subprocess
 from urllib import error, parse, request
 
+from bug_metrics.app.api.provider_connections import ConnectionError, create_bound_hsdes_opener, create_bound_hsdes_powershell_runner
 from bug_metrics.app.api.hsdes_projection import HsdesProviderProjectionService
 from bug_metrics.app.api.provider_aggregate_contracts import (
     FIRST_HSDES_PROFILE_ID,
@@ -23,6 +23,15 @@ class HsdesProviderError(Exception):
         self.category = category
 
 
+def connection_failure_category(code):
+    return {
+        "PROVIDER_AUTH_FAILED": "auth_failed",
+        "PROVIDER_PERMISSION_DENIED": "permission_denied",
+        "PROVIDER_REDIRECT_UNSUPPORTED": "redirect_unsupported",
+        "PROVIDER_NETWORK_ERROR": "network_error",
+    }.get(code, "configuration_required")
+
+
 class HsdesHttpClient:
     def __init__(self, base_url: str, auth_mode: str = 'kerberos', username: str = '',
                  password: str = '', token: str = '', timeout_seconds: int = 30, opener=None,
@@ -33,9 +42,9 @@ class HsdesHttpClient:
         self._password = password
         self._token = token
         self._timeout_seconds = timeout_seconds
-        self._opener = opener or request.urlopen
+        self._opener = opener or create_bound_hsdes_opener(self._base_url)
         self._transport = transport
-        self._powershell_runner = powershell_runner or subprocess.run
+        self._powershell_runner = powershell_runner or create_bound_hsdes_powershell_runner(self._base_url)
 
     def execute_saved_query(self, query_id, tenant, subject, field_names, start_at, max_results):
         query = parse.urlencode({
@@ -53,10 +62,12 @@ class HsdesHttpClient:
         try:
             with self._opener(http_request, timeout=self._timeout_seconds) as response:
                 payload = self._decode_payload(response.read())
+        except ConnectionError as exception:
+            raise HsdesProviderError(connection_failure_category(exception.code), str(exception)) from None
         except error.HTTPError as exception:
             raise HsdesProviderError(self._http_error_category(exception.code), f'HSD-ES HTTP {exception.code}') from exception
         except error.URLError as exception:
-            raise HsdesProviderError('network_error', str(exception.reason)) from exception
+            raise HsdesProviderError('network_error', 'HSD-ES network request failed.') from None
         except json.JSONDecodeError as exception:
             raise HsdesProviderError('malformed_payload', 'HSD-ES response was not valid JSON.') from exception
         return self._validate_payload(payload)
@@ -90,25 +101,12 @@ class HsdesHttpClient:
         return self._transport == 'auto' and self._auth_mode in {'kerberos', 'windows_integrated'} and os.name == 'nt'
 
     def _execute_with_powershell(self, url: str) -> dict:
-        escaped_url = url.replace("'", "''")
-        script = (
-            '$ProgressPreference = "SilentlyContinue"; '
-            f"$response = Invoke-WebRequest -Uri '{escaped_url}' "
-            f'-UseDefaultCredentials -UseBasicParsing -TimeoutSec {self._timeout_seconds} '
-            '-Headers @{Accept="application/json"}; '
-            '$response.Content'
-        )
-        encoded_script = base64.b64encode(script.encode('utf-16le')).decode('ascii')
         try:
-            completed = self._powershell_runner(
-                ['powershell', '-NoProfile', '-EncodedCommand', encoded_script],
-                capture_output=True,
-                text=True,
-                timeout=self._timeout_seconds + 5,
-                env=dict(os.environ),
-            )
-        except (OSError, subprocess.TimeoutExpired) as exception:
-            raise HsdesProviderError('network_error', str(exception)) from exception
+            completed = self._powershell_runner.run(url, self._timeout_seconds)
+        except ConnectionError as exception:
+            raise HsdesProviderError(connection_failure_category(exception.code), str(exception)) from None
+        except Exception as exception:
+            raise HsdesProviderError('network_error', 'HSD-ES network request failed.') from None
         if completed.returncode != 0:
             raise HsdesProviderError(self._powershell_error_category(completed.stderr), self._redacted_error(completed.stderr))
         if not completed.stdout.strip() and completed.stderr.strip():

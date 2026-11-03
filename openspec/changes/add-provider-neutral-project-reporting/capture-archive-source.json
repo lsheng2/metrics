@@ -1,0 +1,385 @@
+{
+  "schema_version": 2,
+  "status": "architect_sidecar_source_closure",
+  "created_for": "W3.ARCHIVE implementation packet",
+  "target_root": "D:/AIGC/scrum_dashboard",
+  "target_artifacts_owned_by_this_task": [
+    ".tmp/project-reporting-w3/archive-packet-draft.md",
+    ".tmp/project-reporting-w3/archive-source-closure.json"
+  ],
+  "amendment_summary": [
+    "METRICS_PROJECT_ARCHIVE_ROOT now defaults empty and must be explicit absolute external data path.",
+    "portalocker==4.4.1 is approved and local wheel presence was observed.",
+    "Undefined ProviderIdentity was replaced by CaptureSourceIdentity.",
+    "Snapshot input no longer depends on pre-existing CapturedWorkItem.",
+    "Raw-page read authority now resolves through actor/project/stage/capture committed manifest.",
+    "Git transaction protocol now uses alternate-index plumbing, commit-tree and update-ref CAS.",
+    "Raw page manifests are durable before capture finalization.",
+    "W3 tests no longer assert W4 accepted baseline or index projection behavior."
+  ],
+  "target_sources_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "target repository rules"
+    },
+    {
+      "path": "AI_CONTRACT.md",
+      "purpose": "required by prior project entry when present",
+      "status": "absent_in_target_checkout"
+    },
+    {
+      "path": "openspec/changes/add-provider-neutral-project-reporting/provider-access.md",
+      "purpose": "coverage section 7 and provider identity/credential boundaries"
+    },
+    {
+      "path": "openspec/changes/add-provider-neutral-project-reporting/integration-execution.md",
+      "purpose": "W3.ARCHIVE, W4.INDEX, W4.DELTA, W4.IMPORT dependencies and consumers"
+    },
+    {
+      "path": "openspec/changes/add-provider-neutral-project-reporting/migration-catalog.md",
+      "purpose": "MIG-08 and MIG-10 reuse boundaries"
+    },
+    {
+      "path": "openspec/changes/add-provider-neutral-project-reporting/design.md",
+      "purpose": "project-stage identity, provider capture, W4 delta/history, reuse boundaries"
+    },
+    {
+      "path": "openspec/changes/add-provider-neutral-project-reporting/tasks.md",
+      "purpose": "current ledger and project domain scope"
+    },
+    {
+      "path": "project_management/app/domain/contracts.py",
+      "purpose": "current ProjectActor, ScopeDescriptor, ProjectSummary, StageSummary, ProjectDetail"
+    },
+    {
+      "path": "project_management/app/domain/service.py",
+      "purpose": "current owner/stage source-status orchestration"
+    },
+    {
+      "path": "project_management/app/spi/repository.py",
+      "purpose": "current repository protocol"
+    },
+    {
+      "path": "project_management/out/orm_repository.py",
+      "purpose": "current owner, stage and audit persistence behavior"
+    }
+  ],
+  "target_runtime_observations": {
+    "requirements": {
+      "python": "docs/tasks state Python3.13.7 for current execution",
+      "django": "requirements.txt pins Django==6.0.7"
+    },
+    "wheels": [
+      {
+        "path": ".tmp/project-reporting-w3/wheels/portalocker-4.4.1-py3-none-any.whl",
+        "size_bytes": 129702,
+        "decision": "approved_for_W3_ARCHIVE_dependency"
+      },
+      {
+        "path": ".tmp/project-reporting-w3/wheels/pywin32-312-cp313-cp313-win_amd64.whl",
+        "size_bytes": 6914298,
+        "decision": "present_from_previous_W3_CREDENTIALS_preparation_not_required_by_archive_packet"
+      }
+    ],
+    "codebase_memory": {
+      "project": "D-AIGC-scrum_dashboard",
+      "indexed_at": "2026-11-01T07:11:48Z",
+      "coverage_note": "Graph lookup was used as a positive aid in the first draft; exact source files were read because several paths reported metadata_changed or not_tracked."
+    }
+  },
+  "donor": {
+    "root": "D:/AIGC/chiplet_programmgr",
+    "commit": "3d06b7a4a25434ee2fa133c9b4bef5f9c7c1366d",
+    "authority": "git ls-tree and git show at pinned commit only",
+    "runtime_mismatch": {
+      "donor_requires_python": ">=3.14",
+      "target_python": "3.13.x",
+      "donor_dependency_observed": "portalocker==4.4.1",
+      "disposition": "do not install or import donor package; adapt source ideas into target modules"
+    }
+  },
+  "donor_source_blobs": [
+    {
+      "path": "src/standup/storage/git.py",
+      "blob": "6c38a8e52a35bdfedcb25e76fb89ffacfe4c4b8f",
+      "disposition": "adapt controlled Git CLI environment and output/time bounds; combine with target alternate-index commit-tree/update-ref protocol"
+    },
+    {
+      "path": "src/standup/storage/repository.py",
+      "blob": "a2ffe3b37de3d452cf66aeb5ee9d2073b1b9d9cd",
+      "disposition": "adapt independent regular repository bootstrap identity and portalocker owner lock; reject installation lifecycle, whole-tree scans and remote inheritance"
+    },
+    {
+      "path": "src/standup/storage/objects.py",
+      "blob": "5a0855eb1904f4073b121a62bc51a0a83af383d7",
+      "disposition": "adapt content-addressed external object storage and integrity verification"
+    },
+    {
+      "path": "src/standup/storage/archive.py",
+      "blob": "bc6b861ebca47cb989ca086276406b9ea370a81a",
+      "disposition": "adapt checkpoint idempotency and committed-byte verification; replace worktree git add/commit with alternate-index CAS protocol"
+    },
+    {
+      "path": "src/standup/storage/staging.py",
+      "blob": "b482ab86129256232b1291813fb3673777facb23",
+      "disposition": "adapt whitelist, staging hash and same-intent retry ideas; add durable per-raw-page manifests"
+    },
+    {
+      "path": "src/standup/storage/paths.py",
+      "blob": "02e04cbfefa95062e85ba24184e3fae761bc8bba",
+      "disposition": "adapt bounded ordinary-file path and atomic write helpers; keep Windows path/reparse safety"
+    },
+    {
+      "path": "src/standup/storage/versioning.py",
+      "blob": "27ae27b5694307253b68785aaf4ea3c88b4f42ca",
+      "disposition": "adapt source identity marker and chain continuity semantics; archive derives sequence and predecessor"
+    },
+    {
+      "path": "src/standup/domain/values.py",
+      "blob": "04452b9eb6231eaebc873f03c159b5ef4bda3b4f",
+      "disposition": "adapt canonical JSON, UTC timestamp and content hash utilities"
+    },
+    {
+      "path": "src/standup/domain/snapshots.py",
+      "blob": "aba01e6d93018db1bc75987aeae53c17a5f50159",
+      "disposition": "adapt coverage and immutable source snapshot validation; replace Jira field names with provider-neutral facts/comments/history/attachments/dependencies"
+    },
+    {
+      "path": "src/standup/domain/archive.py",
+      "blob": "f8649b2488873216374d20fcc52f0187a47fc37c",
+      "disposition": "adapt manifest/ref DTO patterns only; target DTOs live in project_management/app/domain/captures.py"
+    },
+    {
+      "path": "src/standup/storage/admission.py",
+      "blob": "984423da6d275e8aa3d716a67002e4e30af860e0",
+      "disposition": "adapt explicit admission concept; replace donor installation registry/free-space policy with root/stage configured budget lock"
+    },
+    {
+      "path": "src/standup/domain/resources.py",
+      "blob": "1a311e7b310407867c488db4700d4ab59d1ee053",
+      "disposition": "adapt StorageGrowth shape for root/stage bytes/files, in-progress allocation and Git growth estimates"
+    },
+    {
+      "path": "src/standup/storage/jira_codec.py",
+      "blob": "28dd6185a897fe5c8cb20a71d16e0523285d551e",
+      "disposition": "reference for segmented raw evidence only; target API remains provider-neutral"
+    },
+    {
+      "path": "src/standup/storage/jira_snapshot.py",
+      "blob": "146f1db1470a5906fb9746178bec1bd4d3ff8802",
+      "disposition": "reference for raw request/page bytes resolving into canonical snapshot; rewrite provider-neutral"
+    },
+    {
+      "path": "src/standup/storage/capture_validation.py",
+      "blob": "c68f4a738b1c385bdd17edaa63327b5349f1cf01",
+      "disposition": "reference for manifest validation; target validates project/stage/provider/endpoint/principal/rule identity and counts"
+    },
+    {
+      "path": "src/standup/storage/capture_reads.py",
+      "blob": "d5324e7231e114067e073d0721047bc01cf69ad9",
+      "disposition": "reference for resolving retained capture bytes; target read API resolves through committed manifest authority"
+    },
+    {
+      "path": "src/standup/storage/source_headers.py",
+      "blob": "a82db0dc55c8c8ab7cc8bd3a1a33a5e7a517c529",
+      "disposition": "reference for source-read header binding; target uses request_fingerprint and page manifests"
+    },
+    {
+      "path": "src/standup/jira_evidence.py",
+      "blob": "00f44acc3dd45c7f7523210cc2daf68ee5bd35ba",
+      "disposition": "reference only for raw evidence envelope validation; no Jira-only DTO in W3 archive API"
+    },
+    {
+      "path": "src/standup/domain/jira.py",
+      "blob": "859975090a375b2ba587a1a484d9385913b83c89",
+      "disposition": "reference only; provider-specific capture belongs to W3.GATEWAY/CAPTURE"
+    },
+    {
+      "path": "src/standup/domain/jira_values.py",
+      "blob": "66280e5e7852e600bac5a0f795a1ac86282d0a67",
+      "disposition": "reference only; do not encode Jira comment format into archive authority"
+    }
+  ],
+  "donor_resource_blobs": [
+    {
+      "path": "pyproject.toml",
+      "blob": "2327ef245044924d797917011d1951d72261695a",
+      "disposition": "runtime/dependency mismatch evidence; no target install"
+    },
+    {
+      "path": "src/standup/schema.py",
+      "blob": "d238808eb42d309dd14025eb4bb374b0f8fcb7a8",
+      "disposition": "reference for schema validation approach; target may use dataclass validation first"
+    },
+    {
+      "path": "src/standup/schemas/capture-manifest.schema.json",
+      "blob": "c1e5800416c3ecf213dd024baf8642cdc8e1d453",
+      "disposition": "reference for manifest schema fields; rewrite provider-neutral"
+    },
+    {
+      "path": "src/standup/schemas/issue-snapshot.schema.json",
+      "blob": "82579adfd2501e76ae2ee5124bd43b1f5b57e7b1",
+      "disposition": "reference for source snapshot schema; replace issue naming"
+    },
+    {
+      "path": "src/standup/schemas/jira-evidence.schema.json",
+      "blob": "2145f5555f0ac837cd636a17a0001dc0d98fcb38",
+      "disposition": "reference only; provider-specific"
+    },
+    {
+      "path": "docs/development/archive-services.md",
+      "blob": "f41876a63b9e6e703aeb072a9b0b45dd00e6192f",
+      "disposition": "background reference for donor archive behavior; not target status evidence"
+    },
+    {
+      "path": "docs/development/index-resources.md",
+      "blob": "cd1ccfc0bf53db1825ea32024690c14945bb7e2b",
+      "disposition": "background reference for donor index/resource behavior; W4 only"
+    },
+    {
+      "path": "openspec/changes/add-durable-standup-workspaces/specs/run-archive/spec.md",
+      "blob": "bf1a95e36cc773717e0e7e8fbddd6101a0deeff4",
+      "disposition": "background reference for donor archive requirements; not target status evidence"
+    },
+    {
+      "path": "openspec/changes/add-durable-standup-workspaces/specs/resource-governance/spec.md",
+      "blob": "c67a346a86950ca323a88e221f4e15e8f3ddf557",
+      "disposition": "background reference for donor resource rules; target rejects disk-free coupling"
+    }
+  ],
+  "donor_test_blobs": [
+    {
+      "path": "tests/integration/test_archive.py",
+      "blob": "82a6313f6305f129c397ce40597360089a2b7610",
+      "disposition": "map retry, dirty worktree, staging, partial, artifact integrity and Git env negatives to target tests"
+    },
+    {
+      "path": "tests/integration/test_archive_lineage.py",
+      "blob": "58059fbd626cff01c0b5df0bf44cc8979334595b",
+      "disposition": "map capture predecessor/source identity continuity tests"
+    },
+    {
+      "path": "tests/integration/test_archive_publication.py",
+      "blob": "dc02b96da360bf815417f7697345e0f4e9695031",
+      "disposition": "defer publication and accepted-source assertions to W4/W5; do not claim in W3"
+    },
+    {
+      "path": "tests/integration/test_archive_security.py",
+      "blob": "2643d020e04bd002024c1aebd47e741e58209bcf",
+      "disposition": "map Git directory, hidden index, branch, hook/filter, bootstrap recovery negatives"
+    },
+    {
+      "path": "tests/unit/test_budget.py",
+      "blob": "18f1fcd3bf47227e87dbab41435f89bea1898e6c",
+      "disposition": "map failed admission and preserved accounting ideas to target archive quota"
+    },
+    {
+      "path": "tests/unit/test_budget_edges.py",
+      "blob": "51dace4dbfffb848c5424fb5264b5d3269cbea2e",
+      "disposition": "map missing/corrupt accounting refusal and deadline edge cases"
+    },
+    {
+      "path": "tests/unit/test_budget_policy_transition.py",
+      "blob": "da0391c1c8b310ec8ed8081c33c41b6bbb2e4bb6",
+      "disposition": "reference only; target does not port donor free-space policy"
+    },
+    {
+      "path": "tests/unit/test_budget_review.py",
+      "blob": "7f93ae9a7675e77271016c53cebac76e38f2aec8",
+      "disposition": "map deadline/admission timing cases"
+    },
+    {
+      "path": "tests/integration/test_jira_evidence_archive.py",
+      "blob": "8b4da231b1e10872139056a07e8f20c3c95caf03",
+      "disposition": "reference for raw evidence archive checks; target provider-neutralizes names"
+    },
+    {
+      "path": "tests/integration/test_run_identical_recapture.py",
+      "blob": "c3c17ddeabc4e127b9cf1e0c040f0dd05d74af32",
+      "disposition": "reference for identical retry/recapture behavior; no run service in W3 archive"
+    },
+    {
+      "path": "tests/support/archive_cases.py",
+      "blob": "cee62f0d14e6cba53392ea045bc2f3f8b348340a",
+      "disposition": "fixture pattern reference; do not import donor support code"
+    },
+    {
+      "path": "tests/support/captures.py",
+      "blob": "e7de131b931e52acadb1a53a4569275a52842413",
+      "disposition": "fixture pattern reference; provider-neutral target builders required"
+    }
+  ],
+  "deferred_donor_blobs_not_in_w3_archive": [
+    {
+      "path": "src/standup/storage/index.py",
+      "blob": "ce1291bafb3d2f7a79dc8a92b0ad85a179526029",
+      "deferred_to": "W4.INDEX"
+    },
+    {
+      "path": "src/standup/storage/index_acceptance.py",
+      "blob": "6d2ca8b8e5a4ee43e6a6d0d7108e263dd563246d",
+      "deferred_to": "W4.INDEX/W5.ACCEPT"
+    },
+    {
+      "path": "src/standup/storage/import_archive.py",
+      "blob": "fd52d5909ee25c873dd2d80eb5de13aaf02b562e",
+      "deferred_to": "W4.IMPORT"
+    },
+    {
+      "path": "src/standup/domain/delta.py",
+      "blob": "ba5bc338adf072298b8909f1e5d0939452204fa2",
+      "deferred_to": "W4.DELTA"
+    },
+    {
+      "path": "src/standup/domain/delta_contracts.py",
+      "blob": "3d5083d20bfbc1c6f90fa72505e350862dd0cbee",
+      "deferred_to": "W4.DELTA"
+    },
+    {
+      "path": "src/standup/domain/history_import.py",
+      "blob": "1356e2e4593b989972c9034861b21492cbbb440b",
+      "deferred_to": "W4.IMPORT"
+    },
+    {
+      "path": "src/standup/schemas/delta.schema.json",
+      "blob": "f017d794625a158a17b080c5c3e8b8baaaa65212",
+      "deferred_to": "W4.DELTA"
+    },
+    {
+      "path": "src/standup/schemas/history-import.schema.json",
+      "blob": "ba2b4c69172ac2bce62536d5c622a93d21113ab1",
+      "deferred_to": "W4.IMPORT"
+    },
+    {
+      "path": "tests/integration/test_import_archive.py",
+      "blob": "4674d6f039a5b3610a3c4e25d0a260632723debb",
+      "deferred_to": "W4.IMPORT"
+    },
+    {
+      "path": "tests/unit/test_index_recapture_equivalence.py",
+      "blob": "f12ccc2521d57193a68335aa4fb7019aa355d18c",
+      "deferred_to": "W4.INDEX"
+    }
+  ],
+  "explicit_rejections": [
+    "No donor package import, editable install or PYTHONPATH link.",
+    "No donor .local, runtime process ownership, service controller, scheduler or installation registry.",
+    "No donor Git remote or remote qualification inheritance.",
+    "No whole-volume free-space/capacity scan.",
+    "No Jira-only storage path grammar as target public API.",
+    "No legacy data import in W3.ARCHIVE.",
+    "No W4 accepted baseline, accepted CAS or projection test claimed by W3.ARCHIVE."
+  ],
+  "attribution": {
+    "rule": "If implementation copies donor code structure or adapted functions, preserve donor path, commit and blob in code review notes or implementation source comments where appropriate.",
+    "this_draft": "No donor code bytes were copied into production source by this sidecar task."
+  },
+  "not_yet_qualified": [
+    "No source, requirements, settings, OpenSpec, migration, tests or runtime files were changed.",
+    "No archive root is configured.",
+    "No wheel was installed.",
+    "No Git archive was initialized.",
+    "No product tests or runtime actions were run.",
+    "W4.INDEX, W4.DELTA accepted-baseline behavior, W4.IMPORT, W5.ACCEPT, W6.PUBLISH and W7.RUN remain future unqualified nodes."
+  ]
+}

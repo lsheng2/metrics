@@ -26,9 +26,9 @@ class FailingCalculationJiraHistoryContainer:
 
 
 class TestSyncJiraScopeCommand(TestCase):
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldSyncSavedScopeIntoDurableHistoryAndTrendBuckets(self, adapter_class, create_jira_client):
+    def test_shouldSyncSavedScopeIntoDurableHistoryAndTrendBuckets(self, adapter_class, jira_factory):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',
@@ -113,9 +113,9 @@ class TestSyncJiraScopeCommand(TestCase):
                 stdout=StringIO(),
             )
 
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldUseBaseScopeJqlAndClearCurrentStateWhenFullSyncExpandsCoverage(self, adapter_class, create_jira_client):
+    def test_shouldUseBaseScopeJqlAndClearCurrentStateWhenFullSyncExpandsCoverage(self, adapter_class, jira_factory):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',
@@ -158,9 +158,9 @@ class TestSyncJiraScopeCommand(TestCase):
         self.assertFalse(JiraIssue.objects.filter(scope=scope, issue_key='STALE-1').exists())
 
     @patch('jira_sync.management.commands.sync_jira_scope.bug_metrics_container')
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldNotPromoteFullSyncCoverageWhenRecalculationFails(self, adapter_class, create_jira_client, bug_metrics_container):
+    def test_shouldNotPromoteFullSyncCoverageWhenRecalculationFails(self, adapter_class, jira_factory, bug_metrics_container):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',
@@ -212,9 +212,9 @@ class TestSyncJiraScopeCommand(TestCase):
         self.assertEqual(datetime(2026, 8, 9, tzinfo=timezone.utc).date(), cursor.latest_reliable_bucket_end)
         self.assertTrue(JiraIssue.objects.filter(scope=scope, issue_key='STABLE-1').exists())
 
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldPersistFailedCalculationRunWhenRecalculationRollsBackSyncTransaction(self, adapter_class, create_jira_client):
+    def test_shouldPersistFailedCalculationRunWhenRecalculationRollsBackSyncTransaction(self, adapter_class, jira_factory):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL failed calculation artifact',
@@ -301,9 +301,9 @@ class TestSyncJiraScopeCommand(TestCase):
                 stdout=StringIO(),
             )
 
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldRemoveKnownIssueFromCurrentScopeWhenIncrementalUpdateNoLongerMatchesScopeJql(self, adapter_class, create_jira_client):
+    def test_shouldRemoveKnownIssueFromCurrentScopeWhenIncrementalUpdateNoLongerMatchesScopeJql(self, adapter_class, jira_factory):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "task": "W5.JOIN",
+  "strategy": "Reuse the existing Dashboard capture/archive owner, port selected donor semantics, and add the new Task SDK consumer. This does not claim whole donor modules were migrated.",
+  "donor_commit": "3d06b7a4a25434ee2fa133c9b4bef5f9c7c1366d",
+  "semantic_ports": [
+    {
+      "source": "src/standup/domain/delta.py",
+      "blob": "ba5bc338adf072298b8909f1e5d0939452204fa2",
+      "target": "project_management/app/domain/summary_input.py",
+      "retained": "Complete-source admission and every-retained-version unchanged proof.",
+      "not_ported": "Full cumulative delta, visibility rebuild and fragment handling.",
+      "tests": ["test_summary_input.py", "test_summary_journal.py"]
+    },
+    {
+      "source": "src/standup/domain/evidence.py",
+      "blob": "86bead001a33a6c9790e56521bbc8d2b66812b72",
+      "target": "project_management/app/domain/summary_validation.py",
+      "retained": "Source-version identity, evidence membership and exact value hashes.",
+      "not_ported": "General donor snapshot-pointer and span schemas.",
+      "tests": ["test_summary_acceptance.py"]
+    },
+    {
+      "source": "src/standup/analysis_ownership.py",
+      "blob": "f308cab781bf0722ac817a3e895e41af4952d5f7",
+      "target": "project_management/app/domain/summary_validation.py",
+      "retained": "Unconfirmed owners, known source identities and exact cited narrative quotes.",
+      "not_ported": "Due-date fields and fragmented narrative reconstruction.",
+      "tests": ["test_summary_acceptance.py"]
+    },
+    {
+      "source": "src/standup/analysis_language.py",
+      "blob": "a4bf1e01215ec96f118ebd7be0d512ece85a9fd0",
+      "target": "project_management/app/domain/summary_validation.py",
+      "retained": "Source-string/person extraction and source-quote/non-ASCII narrative checks.",
+      "not_ported": "Lingua language detection; this synthetic-only slice does not qualify arbitrary model prose.",
+      "tests": ["test_summary_acceptance.py"]
+    }
+  ],
+  "existing_dashboard_owners_reused": [
+    "project_management/app/api/__init__.py",
+    "project_management/services/capture.py",
+    "provider_sync/app/api/access.py",
+    "project_management/services/capture_archive.py",
+    "project_management/storage/repository.py",
+    "project_management/storage/locks.py",
+    "project_management/storage/admission.py",
+    "scripts/service_lifecycle_engine/platform.py"
+  ],
+  "new_boundary_code": [
+    "project_management/services/summary_analysis.py",
+    "project_management/services/summary_journal.py",
+    "project_management/services/summary_journal_reads.py",
+    "project_management/out/ai_task_contract.py"
+  ],
+  "base_runtime": {
+    "base_commit": "2332d549ab69a7e927865acd0e3db2a19295c609",
+    "source_delta_sha256": "c5534b86913b2bf4867b6352f1e8c0d185b50378c9626dbf424b98aa181e8fe3",
+    "full_base_tree_sha256": "db92bb903a5d47aeffe3707ef5da27b3dc031b0c7e28bdde527ccb8bf66ac261",
+    "verified_files": 844,
+    "original_repository_modified": false
+  }
+}

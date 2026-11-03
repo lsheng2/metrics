@@ -18,6 +18,7 @@ Current MVP goal: Intel Jira bug trend indicator dashboard for saved Jira scopes
 | `pull_requests/` | PR discovery, review conversion, reviewer policy gates |
 | `ui_web/` | Django views, facades, templates, htmx partials, UI data federation |
 | `metrics/` | Django settings, URLs, middleware, deployment settings |
+| `project_management/` | Provider-neutral projects, immutable stage source definitions and local project_catalog CLI; report/UI work continues in add-provider-neutral-project-reporting |
 
 Planned MVP owner additions:
 
@@ -38,7 +39,9 @@ Planned MVP owner additions:
 7. `jira_scope_config` is the single authority for project-specific bug trend semantics; environment variables own connectivity only.
 8. Bug trend dashboards read durable local history and aggregate artifacts, not live Jira queries on every page load.
 9. Multi-provider first: Jira is the first rich work-item provider, not the architecture boundary. New tracker/work-item/AI workflow designs must define provider-neutral contracts and UI semantics first, then implement Jira, GitHub, Azure DevOps, or other systems as adapters with declared capabilities.
-10. Do not create parallel product surfaces per provider. Shared concepts such as connection profile, work-item facts, metadata discovery, scope query/filter, action plan, approval/audit, and dashboard consumption belong in provider-neutral contracts; provider-specific modules own only external API quirks, auth, pagination, field identity, and sync implementation.
+10. Project-management execution now lives in this Dashboard checkout. Chiplet is an instance only; never use its project ID, query or name as a production default. Jira and HSD-ES use the same project/stage contracts with honest per-provider coverage.
+11. Do not create parallel product surfaces per provider. Shared concepts such as connection profile, work-item facts, metadata discovery, scope query/filter, action plan, approval/audit, and dashboard consumption belong in provider-neutral contracts; provider-specific modules own only external API quirks, auth, pagination, field identity, and sync implementation.
+12. AI Base/SDK early-development policy (2026-11-01): coordinated breaking API changes are allowed and preferred over unnecessary permanent compatibility layers. Follow [API-EVO-01](../../openspec/changes/add-provider-neutral-project-reporting/ai-api-evolution.md) for versioned change records and per-app Agent handoffs; preserve security, evidence and business acceptance, not obsolete signatures. This is a design policy, not proof of migration or permission to delete data.
 
 ## Common Validation
 

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ stage.name }} - {% trans "Report workbench" %}{% endblock %}
+{% block page_title %}{% trans "Report workbench" %}{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+            <li class="is-active"><a href="#" aria-current="page">{{ stage.name }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-4">{{ stage.name }}</h2>
+                <p class="subtitle is-6"><code>{{ stage.key }}</code> · {{ source_state.label }}</p>
+            </div>
+        </div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+
+    {% if report_unavailable %}
+        <div class="notification is-warning is-light" role="status">{% trans "Report archive is not configured." %}</div>
+    {% endif %}
+    {% if archive_stage_status == "absent" %}
+        <div class="notification is-info is-light" role="status">{% trans "Archive has not been initialized for this stage yet." %}</div>
+    {% endif %}
+
+    <section class="block">
+        <div class="level">
+            <div class="level-left"><h3 class="title is-5">{% trans "Run stage report" %}</h3></div>
+            <div class="level-right">
+                {% if run.runtime_ready %}
+                    <span class="tag is-success is-light">{% trans "Runtime ready" %}</span>
+                {% else %}
+                    <span class="tag is-warning is-light">{% trans "Runtime disabled" %}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if run.run_form %}
+            <form method="post" action="{% url 'ui_web:project_run_submit' detail.project.id stage.id %}" class="dashboard-edit-form">
+                {% csrf_token %}
+                {{ run.run_form.command_id }}
+                {{ run.run_form.expected_stage_hash }}
+                {{ run.run_form.template_version }}
+                <div class="dashboard-form-grid">
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ run.run_form.template_id.id_for_label }}">{{ run.run_form.template_id.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ run.run_form.template_id.id_for_label }}" name="{{ run.run_form.template_id.html_name }}">
+                            {% for value, label in run.run_form.fields.template_id.choices %}
+                                <option value="{{ value }}" {% if run.run_form.template_id.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ run.run_form.timezone.id_for_label }}">{{ run.run_form.timezone.label }}</label>
+                        <input class="input" id="{{ run.run_form.timezone.id_for_label }}" name="{{ run.run_form.timezone.html_name }}" value="{{ run.run_form.timezone.value|default:'Asia/Shanghai' }}">
+                    </div>
+                    <div class="dashboard-action-group">
+                        <button class="button is-primary" type="submit"{% if not run.runtime_ready %} disabled aria-disabled="true"{% endif %}>
+                            <span class="icon is-small"><i class="iconoir-play-solid"></i></span>
+                            <span>{% trans "Run stage report" %}</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        {% endif %}
+        <div class="table-container responsive-admin-table-box mt-3">
+            <table class="table is-fullwidth is-narrow dashboard-dense-table">
+                <thead><tr><th>{% trans "Operation" %}</th><th>{% trans "State" %}</th><th>{% trans "Revision" %}</th><th>{% trans "Created" %}</th><th></th></tr></thead>
+                <tbody>
+                    {% for operation in run.operations %}
+                        <tr>
+                            <td><code>{{ operation.operation_id }}</code></td>
+                            <td>{{ operation.state }}</td>
+                            <td>{{ operation.revision }}</td>
+                            <td>{{ operation.created_at }}</td>
+                            <td><a class="button is-small" href="{% url 'ui_web:project_run_status' detail.project.id stage.id operation.operation_id %}">{% trans "Open" %}</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">{% trans "No run operations yet." %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="block">
+        <div class="level">
+            <div class="level-left"><h3 class="title is-5">{% trans "Source captures" %}</h3></div>
+        </div>
+        <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-narrow dashboard-dense-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "Capture" %}</th>
+                        <th>{% trans "Complete" %}</th>
+                        <th>{% trans "Membership" %}</th>
+                        <th>{% trans "Checkout" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for capture in captures %}
+                        <tr>
+                            <td><code>{{ capture.capture_id }}</code></td>
+                            <td>{% if capture.complete %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+                            <td>{% if capture.membership_complete %}{% trans "Complete" %}{% else %}{% trans "Partial" %}{% endif %}</td>
+                            <td>{{ capture.checkout_state }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">{% trans "No retained source capture is available." %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if capture_next_cursor %}
+            <nav class="pagination is-small" role="navigation" aria-label="{% trans "Capture pages" %}">
+                <a class="pagination-next" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}?capture_after={{ capture_next_cursor|urlencode }}&draft_offset={{ draft_offset }}&publication_offset={{ publication_offset }}">{% trans "Next captures" %}</a>
+            </nav>
+        {% endif %}
+    </section>
+
+    <section class="block">
+        <h3 class="title is-5">{% trans "Create saved draft" %}</h3>
+        <form method="post" action="{% url 'ui_web:report_draft_create' detail.project.id stage.id %}" class="dashboard-edit-form">
+            {% csrf_token %}
+            {{ create_form.command_id }}
+            {{ create_form.capture_after }}
+            {{ create_form.template_version }}
+            {% if create_form.non_field_errors %}
+                <div class="notification is-danger is-light" role="alert">{{ create_form.non_field_errors|join:", " }}</div>
+            {% endif %}
+            <div class="dashboard-form-grid">
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ create_form.capture_id.id_for_label }}">{{ create_form.capture_id.label }}</label>
+                    <div class="select is-fullwidth"><select id="{{ create_form.capture_id.id_for_label }}" name="{{ create_form.capture_id.html_name }}">
+                        {% for value, label in create_form.fields.capture_id.choices %}
+                            <option value="{{ value }}" {% if create_form.capture_id.value == value or default_capture_id == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select></div>
+                    {% for error in create_form.capture_id.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ create_form.template_id.id_for_label }}">{{ create_form.template_id.label }}</label>
+                    <div class="select is-fullwidth"><select id="{{ create_form.template_id.id_for_label }}" name="{{ create_form.template_id.html_name }}">
+                        {% for value, label in create_form.fields.template_id.choices %}
+                            <option value="{{ value }}" {% if create_form.template_id.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select></div>
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ create_form.timezone.id_for_label }}">{{ create_form.timezone.label }}</label>
+                    <input class="input" id="{{ create_form.timezone.id_for_label }}" name="{{ create_form.timezone.html_name }}" value="{{ create_form.timezone.value|default:'Asia/Shanghai' }}">
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ create_form.purpose.id_for_label }}">{{ create_form.purpose.label }}</label>
+                    <div class="select is-fullwidth"><select id="{{ create_form.purpose.id_for_label }}" name="{{ create_form.purpose.html_name }}">
+                        {% for value, label in create_form.fields.purpose.choices %}
+                            <option value="{{ value }}" {% if create_form.purpose.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select></div>
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ create_form.baseline_publication_id.id_for_label }}">{{ create_form.baseline_publication_id.label }}</label>
+                    <div class="select is-fullwidth"><select id="{{ create_form.baseline_publication_id.id_for_label }}" name="{{ create_form.baseline_publication_id.html_name }}">
+                        {% for value, label in create_form.fields.baseline_publication_id.choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select></div>
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ create_form.parent_publication_id.id_for_label }}">{{ create_form.parent_publication_id.label }}</label>
+                    <div class="select is-fullwidth"><select id="{{ create_form.parent_publication_id.id_for_label }}" name="{{ create_form.parent_publication_id.html_name }}">
+                        {% for value, label in create_form.fields.parent_publication_id.choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select></div>
+                </div>
+                <div class="dashboard-action-group">
+                    <button class="button is-primary" type="submit"{% if not can_create_draft %} disabled aria-disabled="true"{% endif %}>
+                        <span class="icon is-small"><i class="iconoir-plus"></i></span>
+                        <span>{% trans "Create draft" %}</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="block">
+        <h3 class="title is-5">{% trans "Saved drafts" %}</h3>
+        <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-narrow dashboard-dense-table">
+                <thead><tr><th>{% trans "Draft" %}</th><th>{% trans "Revision" %}</th><th>{% trans "Source cutoff" %}</th><th>{% trans "Updated" %}</th><th>{% trans "State" %}</th><th></th></tr></thead>
+                <tbody>
+                    {% for draft in drafts.items %}
+                        <tr>
+                            <td><code>{{ draft.draft_id }}</code></td>
+                            <td>{{ draft.revision }} <code>{{ draft.revision_hash|slice:":12" }}</code></td>
+                            <td>{{ draft.source_as_of }}</td>
+                            <td>{{ draft.updated_at }}</td>
+                            <td>{{ draft.state }}</td>
+                            <td><a class="button is-small" href="{% url 'ui_web:report_draft_edit' detail.project.id stage.id draft.draft_id %}">{% trans "Open" %}</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">{% trans "No saved drafts yet." %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if draft_previous_offset != None or drafts.next_offset != None %}
+            <nav class="pagination is-small" role="navigation" aria-label="{% trans "Draft pages" %}">
+                {% if draft_previous_offset != None %}<a class="pagination-previous" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}?draft_offset={{ draft_previous_offset }}&publication_offset={{ publication_offset }}{% if capture_after %}&capture_after={{ capture_after|urlencode }}{% endif %}">{% trans "Previous drafts" %}</a>{% endif %}
+                {% if drafts.next_offset != None %}<a class="pagination-next" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}?draft_offset={{ drafts.next_offset }}&publication_offset={{ publication_offset }}{% if capture_after %}&capture_after={{ capture_after|urlencode }}{% endif %}">{% trans "Next drafts" %}</a>{% endif %}
+            </nav>
+        {% endif %}
+    </section>
+
+    <section class="block">
+        <h3 class="title is-5">{% trans "Published editions" %}</h3>
+        <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-narrow dashboard-dense-table">
+                <thead><tr><th>{% trans "Publication" %}</th><th>{% trans "Draft revision" %}</th><th>{% trans "Source cutoff" %}</th><th>{% trans "Finalized" %}</th><th>{% trans "Commit" %}</th><th></th></tr></thead>
+                <tbody>
+                    {% for publication in publications.items %}
+                        <tr>
+                            <td><code>{{ publication.manifest.publication_id }}</code></td>
+                            <td>{{ publication.manifest.draft_revision }}</td>
+                            <td>{{ publication.manifest.source_as_of }}</td>
+                            <td>{{ publication.manifest.finalized_at }}</td>
+                            <td><code>{{ publication.commit_id|slice:":12" }}</code></td>
+                            <td><a class="button is-small" href="{% url 'ui_web:report_publication' detail.project.id stage.id publication.manifest.publication_id %}">{% trans "Open" %}</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">{% trans "No published editions yet." %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if publication_previous_offset != None or publications.next_offset != None %}
+            <nav class="pagination is-small" role="navigation" aria-label="{% trans "Publication pages" %}">
+                {% if publication_previous_offset != None %}<a class="pagination-previous" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}?draft_offset={{ draft_offset }}&publication_offset={{ publication_previous_offset }}{% if capture_after %}&capture_after={{ capture_after|urlencode }}{% endif %}">{% trans "Previous publications" %}</a>{% endif %}
+                {% if publications.next_offset != None %}<a class="pagination-next" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}?draft_offset={{ draft_offset }}&publication_offset={{ publications.next_offset }}{% if capture_after %}&capture_after={{ capture_after|urlencode }}{% endif %}">{% trans "Next publications" %}</a>{% endif %}
+            </nav>
+        {% endif %}
+    </section>
+</article>
+{% endblock %}

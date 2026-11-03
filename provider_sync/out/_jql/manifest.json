@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "node_tested": "22.18.0",
+  "ast_version": "4.2.0",
+  "parser_version": "3.1.0",
+  "esbuild_version": "0.28.2",
+  "bundle_sha256": "6754d16147630b8b56352306658b817d8565c2a99a03a123e3bef89aae578f45",
+  "lock_sha256": "d5965073023004286c6058e2861bb08e7c016b6cee25e21f8800686b246460f9",
+  "entry_sha256": "dcb187af241900f6df253fccaf7a1aea8f190b81d20e205e6d5787dda065081c",
+  "licenses_sha256": "fe75f7cd9051ced02a4a1dc632e997237578eba898125ca3a7bd70e211e3e804",
+  "external": [
+    "assert",
+    "util"
+  ],
+  "packages": {
+    "node_modules/@atlaskit/jql-ast": {
+      "version": "4.2.0",
+      "integrity": "sha512-x4TC+PKR+V5JAfrQu+dSKn5ySGHB7MuVpGUUuw6F7Ye07YgZQ0c4J5vd0wZyRxWHrtaytS+Xn2NzRn/KINR/VQ==",
+      "resolved": "https://registry.npmjs.org/@atlaskit/jql-ast/-/jql-ast-4.2.0.tgz",
+      "license": "Apache-2.0"
+    },
+    "node_modules/@atlaskit/jql-parser": {
+      "version": "3.1.0",
+      "integrity": "sha512-5pc3ndM+EFFiGnCYyakw2ivlYIBzMylx9dnHpLC5eliF4YDjqttPuopGrIyFzoyPvc9WZpJ10US50XEUVB19gw==",
+      "resolved": "https://registry.npmjs.org/@atlaskit/jql-parser/-/jql-parser-3.1.0.tgz",
+      "license": "Apache-2.0"
+    },
+    "node_modules/@babel/runtime": {
+      "version": "7.29.10",
+      "integrity": "sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.29.10.tgz",
+      "license": "MIT"
+    },
+    "node_modules/antlr4ts": {
+      "version": "0.5.0-alpha.4",
+      "integrity": "sha512-WPQDt1B74OfPv/IMS2ekXAKkTZIHl88uMetg6q3OTqgFxZ/dxDXI0EWLyZid/1Pe6hTftyg5N7gel5wNAGxXyQ==",
+      "resolved": "https://registry.npmjs.org/antlr4ts/-/antlr4ts-0.5.0-alpha.4.tgz",
+      "license": "BSD-3-Clause"
+    },
+    "node_modules/lodash": {
+      "version": "4.18.1",
+      "integrity": "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.18.1.tgz",
+      "license": "MIT"
+    },
+    "node_modules/memoize-one": {
+      "version": "6.0.0",
+      "integrity": "sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==",
+      "resolved": "https://registry.npmjs.org/memoize-one/-/memoize-one-6.0.0.tgz",
+      "license": "MIT"
+    }
+  }
+}

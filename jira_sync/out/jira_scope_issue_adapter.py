@@ -1,6 +1,6 @@
 from atlassian import Jira
 
-from bug_metrics.provider_profile_connection import first_profile_credential_value, profile_connection_value
+from bug_metrics.app.api.provider_connections import create_provider_connection_resolver
 
 
 class JiraScopeIssueAdapter:
@@ -50,21 +50,16 @@ class JiraScopeIssueAdapter:
 
 
 def create_jira_client(settings, connection_settings=None):
-    connection_settings = dict(connection_settings or {})
-    base_url = profile_connection_value(connection_settings, 'base_url', settings.METRICS_JIRA_SERVER_URL)
-    auth_mode = profile_connection_value(connection_settings, 'auth_mode', settings.METRICS_JIRA_AUTH_MODE)
-    email = first_profile_credential_value(connection_settings, ['email', 'username'], settings.METRICS_JIRA_EMAIL)
-    api_token = first_profile_credential_value(connection_settings, ['api_token', 'token', 'password'], settings.METRICS_JIRA_API_TOKEN)
-    if auth_mode == 'server_pat':
-        return Jira(
-            url=base_url,
-            token=api_token,
-            verify_ssl=settings.METRICS_JIRA_CA_BUNDLE or settings.METRICS_JIRA_VERIFY_SSL,
-        )
-    return Jira(
-        url=base_url,
-        username=email,
-        password=api_token,
-        verify_ssl=settings.METRICS_JIRA_CA_BUNDLE or settings.METRICS_JIRA_VERIFY_SSL,
-        cloud=True,
-    )
+    resolver = create_provider_connection_resolver(settings, _NoProfileRegistry())
+    if connection_settings is None:
+        return resolver.resolve_jira_settings(settings).open_jira_client(Jira)
+    return resolver.resolve_record({
+        'profile_id': 'legacy-jira-client',
+        'provider_id': 'jira',
+        'connection_settings': dict(connection_settings or {}),
+    }).open_jira_client(Jira)
+
+
+class _NoProfileRegistry:
+    def resolve_profile(self, profile_id):
+        raise KeyError(profile_id)

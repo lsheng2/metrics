@@ -1,0 +1,325 @@
+{
+  "schema_version": 2,
+  "request_resolution_packet": {
+    "design": "provider-list-resolution.md",
+    "owner": "W3.LISTS.B",
+    "source_strategy": "Reuse current bound connection and capture session accounting; port donor explicit key/id resolution checks without importing its runtime.",
+    "targets": [
+      "provider_sync/app/api/access_contracts.py",
+      "provider_sync/app/api/list_identity.py",
+      "provider_sync/services/capture_session.py",
+      "provider_sync/services/list_identity.py",
+      "provider_sync/out/capture_reader.py",
+      "provider_sync/tests/test_provider_request_session.py",
+      "provider_sync/tests/test_provider_list_identity.py",
+      "provider_sync/tests/test_capture_reader.py"
+    ],
+    "donor_reference": {
+      "path": "src/standup/adapters/jira_scope.py",
+      "blob": "78c3743a863000414952a47fc2e36679c6f724ef"
+    }
+  },
+  "status": "architect_planning_source_closure_revised",
+  "created_for": "W3.LISTS implementation packet",
+  "target_root": "D:/AIGC/scrum_dashboard",
+  "donor_root": "D:/AIGC/chiplet_programmgr",
+  "donor_commit": "3d06b7a4a25434ee2fa133c9b4bef5f9c7c1366d",
+  "target_artifacts_owned_by_this_task": [
+    "openspec/changes/add-provider-neutral-project-reporting/provider-lists.md",
+    "openspec/changes/add-provider-neutral-project-reporting/provider-lists-source.json",
+    ".tmp/project-reporting-w3/lists-plan-report.md"
+  ],
+  "accepted_coordinator_rulings": [
+    "scoped optional ScopeSelection.frozen_list_id",
+    "actor-aware catalog with full affected-consumer census",
+    "project-owned immutable frozen-list table",
+    "openpyxl==3.1.5 pin",
+    "HSD saved_query uses neither scope_id nor frozen_list_id; list is mutually exclusive with Jira scope and optional per provider"
+  ],
+  "current_target_evidence": {
+    "dashboard_head": "12f7ac285d1bba7f125b947a11a3deaa2fd5d330",
+    "graph_generation": "2026-11-01T07:11:48Z",
+    "graph_limitation": "search_graph returned only ProjectManagementService; current source reads are authoritative for this packet",
+    "existing_project_api": [
+      "project_management/app/domain/contracts.py",
+      "project_management/app/domain/service.py",
+      "project_management/app/api/__init__.py",
+      "project_management/app/spi/catalog.py",
+      "project_management/app/spi/repository.py",
+      "project_management/out/dashboard_scope_catalog.py",
+      "project_management/out/orm_repository.py",
+      "project_management/management/commands/project_catalog.py",
+      "ui_web/views/project_management_views.py",
+      "ui_web/project_forms.py",
+      "ui_web/project_sources.py"
+    ],
+    "existing_provider_identity_api": [
+      "project_management/app/domain/captures.py",
+      "provider_sync/app/api/access_contracts.py",
+      "provider_sync/app/api/access.py",
+      "provider_sync/app/spi/capture.py",
+      "provider_sync/services/capture_session.py",
+      "provider_sync/services/capture_lease.py",
+      "provider_sync/out/capture_reader.py",
+      "provider_sync/out/jira_scope.py"
+    ],
+    "observed_dependency_gap": "Resolved for parser preparation: openpyxl3.1.5 and et-xmlfile2.0.0 installed from local wheels; pip check passed. Runtime Stage/list behavior remains unimplemented."
+  },
+  "copy_with_minimal_adaptation": [
+    {
+      "donor_path": "src/standup/adapters/spreadsheet_archive.py",
+      "donor_blob": "55be271453f6a78bf83a75ed23c8d5666e12efad",
+      "size_bytes": 7440,
+      "functions_or_values": [
+        "WorkbookLimits -> SpreadsheetBounds",
+        "selected_limits",
+        "check_now",
+        "validate_archive",
+        "_xml_parser",
+        "_WorksheetOrder"
+      ],
+      "target_paths": [
+        "project_management/app/domain/spreadsheet.py",
+        "project_management/out/spreadsheet_archive.py",
+        "project_management/tests/test_provider_lists_archive.py"
+      ],
+      "adaptation": "Rename errors and bounds, keep ZIP/XML validation behavior, keep worksheets=32, keep pre-openpyxl DTD/entity refusal and row/cell-order validation. Preserve the split archive guard file shape rather than combining parser layers."
+    },
+    {
+      "donor_path": "src/standup/adapters/spreadsheet.py",
+      "donor_blob": "5d3210006f779e144d7ba71b993e6d135be21a03",
+      "size_bytes": 7148,
+      "functions_or_values": [
+        "inspect_workbook",
+        "extract_workbook",
+        "_workbook",
+        "_selection",
+        "_token",
+        "_diagnostic",
+        "_rows"
+      ],
+      "target_paths": [
+        "project_management/out/spreadsheet.py",
+        "project_management/app/api/spreadsheet.py",
+        "project_management/app/domain/spreadsheet.py"
+      ],
+      "adaptation": "Keep workbook/row/formula diagnostics; replace Jira-only identifier validation with provider strategy callbacks. Preserve the split workbook extraction file shape rather than merging with archive guard or service logic."
+    }
+  ],
+  "rewrite_or_dashboard_specific": [
+    {
+      "donor_path": "src/standup/services/spreadsheet_inputs.py",
+      "donor_blob": "69241fbf98edb60677717bd8b1e4e213f1bb3c83",
+      "size_bytes": 5104,
+      "target_paths": [
+        "project_management/services/provider_lists.py",
+        "project_management/tests/test_provider_lists_service.py",
+        "project_management/tests/test_provider_list_resolution.py"
+      ],
+      "reuse": "Reuse authorize-before-read, one-shot byte loader, source hash binding, lower limits, deadline and recheck-before-return semantics. Rewrite workspace revision/binding logic for ProjectActor/project/profile/pre-stage resolver."
+    },
+    {
+      "donor_path": "src/standup/cli_spreadsheet.py",
+      "donor_blob": "76e3e7210ea0814b58f836f7730a10e47a967c6f",
+      "size_bytes": 3071,
+      "target_paths": [
+        "project_management/management/commands/project_lists.py",
+        "project_management/tests/test_project_lists_command.py"
+      ],
+      "reuse": "Reuse local path safety and JSON command patterns. Rewrite old data-root/runtime binding into Django management command, ProjectActor local_operator, and explicit online resolver args."
+    },
+    {
+      "donor_path": "src/standup/runtime_inputs.py",
+      "donor_blob": "60426cb1f5dcfb758da8a939ce7c8c00e4bba88a",
+      "size_bytes": 1979,
+      "target_paths": [
+        "project_management/container.py"
+      ],
+      "reuse": "Construction-pattern evidence only for request-scoped service and inherited deadlines. Do not port old runtime/bootstrap owner model."
+    },
+    {
+      "donor_path": null,
+      "donor_blob": null,
+      "size_bytes": 0,
+      "target_paths": [
+        "provider_sync/app/api/access_contracts.py",
+        "provider_sync/services/capture_session.py",
+        "provider_sync/out/capture_reader.py",
+        "provider_sync/tests/test_provider_request_session.py",
+        "provider_sync/tests/test_capture_reader.py",
+        "provider_sync/tests/test_provider_capture_gateway.py"
+      ],
+      "reuse": "Dashboard-specific extension: add ProviderRequestContext and ProviderReadSession for pre-stage ID resolution without fake Stage IDs. Keep ArchivePageSink only on CaptureSession with AccessContext. Add narrow Jira key issue-read allowlist."
+    },
+    {
+      "donor_path": null,
+      "donor_blob": null,
+      "size_bytes": 0,
+      "target_paths": [
+        "project_management/app/domain/scope_inputs.py",
+        "project_management/services/provider_lists.py",
+        "project_management/out/orm_repository.py",
+        "project_management/models.py",
+        "project_management/tests/test_provider_lists_repository.py"
+      ],
+      "reuse": "Dashboard-specific approval protocol: ApprovalProjection hash excludes verified_at, usage, credential/runtime receipts and issue updated markers; ProjectFrozenList stores workbook bytes and full population while Stage descriptor stores compact reference only."
+    },
+    {
+      "donor_path": null,
+      "donor_blob": null,
+      "size_bytes": 0,
+      "target_paths": [
+        "provider_sync/app/api/access_contracts.py",
+        "provider_sync/app/api/access.py",
+        "provider_sync/services/capture_lease.py",
+        "provider_sync/out/jira_scope.py",
+        "project_management/services/capture.py",
+        "provider_sync/tests/test_provider_access_consumers.py"
+      ],
+      "reuse": "Dashboard-specific frozen membership protocol: MembershipObservation.fixed_population is None for dynamic membership and populated for frozen lists; missing_members carry reason codes and never fabricate WorkItemMarker.updated/current facts."
+    }
+  ],
+  "test_mapping": [
+    {
+      "donor_path": "tests/unit/test_spreadsheet_inputs.py",
+      "donor_blob": "2fce3474115c5fb5b55ba0564e499bcf7e2b15b9",
+      "size_bytes": 7366,
+      "target_paths": [
+        "project_management/tests/test_provider_lists_parser.py"
+      ],
+      "mapping": "Extraction, diagnostics, formula, empty range, candidate limit, cancellation and hard-bound parser tests."
+    },
+    {
+      "donor_path": "tests/unit/test_spreadsheet_archive.py",
+      "donor_blob": "2ba4c652948b301d5527eef0b07ab5a940c211ce",
+      "size_bytes": 8701,
+      "target_paths": [
+        "project_management/tests/test_provider_lists_archive.py"
+      ],
+      "mapping": "ZIP/XML/pathological workbook tests, including DTD/entity, duplicate members, unsafe paths and ambiguous rows."
+    },
+    {
+      "donor_path": "tests/unit/test_spreadsheet_preparation.py",
+      "donor_blob": "b275cbfa85b9487e47ba53c4f6609ad6d4dde022",
+      "size_bytes": 6082,
+      "target_paths": [
+        "project_management/tests/test_provider_lists_service.py",
+        "project_management/tests/test_provider_lists_repository.py"
+      ],
+      "mapping": "Authorization-before-read, no mutation, source changed, row errors block apply, concurrent change and deadline tests."
+    },
+    {
+      "donor_path": "tests/unit/test_spreadsheet_cli.py",
+      "donor_blob": "cbbd830dab039c44aabeebb9f0a4aecc59141dea",
+      "size_bytes": 6388,
+      "target_paths": [
+        "project_management/tests/test_project_lists_command.py"
+      ],
+      "mapping": "Inspect/preview/confirm command JSON, row-diagnostic exit, source-hash mismatch, safe path and explicit online args."
+    },
+    {
+      "donor_path": "tests/unit/test_spreadsheet_runtime.py",
+      "donor_blob": "7b0a157b216e9458460f0f0564775d0bcf192e09",
+      "size_bytes": 4509,
+      "target_paths": [
+        "project_management/tests/test_provider_lists_service.py"
+      ],
+      "mapping": "Construction and deadline inheritance evidence only; old runtime binding is not ported."
+    },
+    {
+      "donor_path": "tests/integration/test_spreadsheet_cli_native.py",
+      "donor_blob": "60be024dadbd6f93286d65ecd5d23f9647432405",
+      "size_bytes": 2878,
+      "target_paths": [
+        "project_management/tests/test_project_lists_command.py"
+      ],
+      "mapping": "Native read-only subprocess check adapted to Django command; no hosts, services or models."
+    },
+    {
+      "donor_path": null,
+      "donor_blob": null,
+      "size_bytes": 0,
+      "target_paths": [
+        "provider_sync/tests/test_provider_request_session.py",
+        "provider_sync/tests/test_capture_reader.py",
+        "provider_sync/tests/test_provider_capture_gateway.py"
+      ],
+      "mapping": "New Dashboard tests for minimal request-budget context, no archive sink before Stage, old AccessContext UUID regressions, Jira key issue path allowlist, and unchanged capture sink behavior."
+    },
+    {
+      "donor_path": null,
+      "donor_blob": null,
+      "size_bytes": 0,
+      "target_paths": [
+        "project_management/tests/test_provider_lists_repository.py",
+        "project_management/tests/test_provider_lists_service.py"
+      ],
+      "mapping": "New Dashboard tests for ApprovalProjection replay with different verified_at/usage/updated, exact old Jira/HSD selection JSON idempotence, existing Stage replay before file/provider reads, compact descriptor with 500 long IDs, and corrupt workbook artifact not blocking population reads."
+    },
+    {
+      "donor_path": null,
+      "donor_blob": null,
+      "size_bytes": 0,
+      "target_paths": [
+        "provider_sync/tests/test_provider_access_consumers.py",
+        "project_management/tests/test_capture_pipeline.py"
+      ],
+      "mapping": "New Dashboard tests for frozen SourceResolutionInput dispatch, fixed_population versus members conversion, missing_members reason codes, and no false complete/unchanged summary."
+    },
+    {
+      "donor_path": "tests/web/test_spreadsheet_http_inputs.py",
+      "donor_blob": "931f7d03b1518152d526760282cbbe24eb98ba57",
+      "size_bytes": 6395,
+      "target_paths": [
+        "ui_web/tests/test_project_stage_views.py"
+      ],
+      "mapping": "Future UI adapter evidence only. W3.LISTS does not implement browser upload."
+    }
+  ],
+  "documentation_evidence": [
+    {
+      "donor_path": "docs/development/spreadsheet-inputs.md",
+      "donor_blob": "2fdc5bd9deebc0491868d034ddbd40b315ea725d",
+      "size_bytes": 7201,
+      "target_paths": [
+        "openspec/docs/current-baseline/project-reporting.md"
+      ],
+      "use": "Truth-sync reference after implementation only."
+    },
+    {
+      "donor_path": "openspec/changes/add-durable-standup-workspaces/design/api-contracts.md",
+      "donor_blob": "c98bccb34fed124ad70905e75f835c16fc98446f",
+      "size_bytes": 120533,
+      "target_paths": [
+        "openspec/changes/add-provider-neutral-project-reporting/provider-lists.md"
+      ],
+      "use": "Design-history evidence for workbook bytes, source hash, formula/ZIP bounds and frozen-membership semantics."
+    }
+  ],
+  "non_goals": [
+    "No live Jira, HSD, AI Base, browser, server or model call during packet preparation.",
+    "No donor runtime, workspace, data-root, keeper, old web UI or old ledger port.",
+    "No raw descriptor, local workbook path, token or credential in Stage descriptor, audit, model input or JSON output.",
+    "No default Chiplet project, first enabled profile, first enabled scope, or Jira fallback for HSD.",
+    "No shell disk-free check."
+  ],
+  "focused_commands_after_implementation": [
+    ".venv/Scripts/python.exe -m pytest project_management/tests/test_provider_lists_parser.py project_management/tests/test_provider_lists_archive.py -q --ds=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe -m pytest project_management/tests/test_provider_lists_service.py project_management/tests/test_provider_list_resolution.py -q --ds=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe -m pytest project_management/tests/test_provider_lists_repository.py project_management/tests/test_provider_lists_catalog.py -q --ds=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe -m pytest project_management/tests/test_project_lists_command.py -q --ds=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe -m pytest project_management/tests/test_stage_preview.py project_management/tests/test_scope_catalog.py project_management/tests/test_project_command.py -q --ds=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe -m pytest provider_sync/tests/test_provider_request_session.py provider_sync/tests/test_capture_reader.py -q --ds=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe -m pytest provider_sync/tests/test_provider_access_consumers.py provider_sync/tests/test_provider_capture_gateway.py -q --ds=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe manage.py makemigrations project_management --check --dry-run --settings=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe manage.py check --settings=provider_sync.tests.connection_test_settings",
+    ".venv/Scripts/python.exe scripts/check_file_size_limits.py --include-untracked",
+    ".venv/Scripts/python.exe scripts/check_diff_whitespace.py --include-untracked",
+    "openspec validate add-provider-neutral-project-reporting --strict --no-interactive"
+  ],
+  "remaining_design_dependencies": [
+    "HSD online article-ID qualification may stay partial but must be explicit in strategy output.",
+    "Implementation must prove exact old Jira and HSD selection JSON layouts still replay and hash as before.",
+    "Capture/report consumers must use fixed_population is None to distinguish dynamic membership from frozen population and must reject complete/unchanged summary when missing_members is nonempty."
+  ]
+}

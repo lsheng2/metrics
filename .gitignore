@@ -56,6 +56,7 @@ coverage.xml
 
 # Translations
 *.mo
+!ui_web/locale/zh_Hans/LC_MESSAGES/django.mo
 *.pot
 
 # Django stuff:

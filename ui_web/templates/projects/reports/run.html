@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Run status" %} - {{ stage.name }}{% endblock %}
+{% block page_title %}{% trans "Run status" %}{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
+            <li class="is-active"><a href="#" aria-current="page">{% trans "Run status" %}</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-4">{% trans "Run status" %}</h2>
+                <p class="subtitle is-6"><code>{{ operation.operation_id }}</code></p>
+            </div>
+        </div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+
+    <p class="notification is-warning is-light" data-run-poll-error hidden>
+        {% trans "Error" %}: <code>RUN_STATUS_UNAVAILABLE</code>
+        <a href="{% url 'ui_web:project_run_status' detail.project.id stage.id operation.operation_id %}">{% trans "Run status" %}</a>
+    </p>
+    {% include "projects/reports/run_status_fragment.html" %}
+</article>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/project_run_status.js' %}" defer></script>
+{% endblock %}

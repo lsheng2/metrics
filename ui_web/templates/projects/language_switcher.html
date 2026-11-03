@@ -1,0 +1,19 @@
+{% load i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<form method="post" action="{% url 'ui_web:project_language' %}" class="dashboard-action-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ project_language_return_url }}">
+    <div class="field has-addons">
+        <div class="control">
+            <div class="select is-small">
+                <select name="language" aria-label="{% trans "Language" %}">
+                    <option value="en" {% if CURRENT_LANGUAGE|slice:":2" == "en" %}selected{% endif %}>English</option>
+                    <option value="zh-hans" {% if CURRENT_LANGUAGE == "zh-hans" %}selected{% endif %}>简体中文</option>
+                </select>
+            </div>
+        </div>
+        <div class="control">
+            <button class="button is-small" type="submit">{% trans "Apply" %}</button>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "status": "verified-source-reference-not-ported",
+  "packet": "provider-foundation.md",
+  "donor_root": "D:/AIGC/chiplet_programmgr",
+  "donor_commit": "3d06b7a4a25434ee2fa133c9b4bef5f9c7c1366d",
+  "sources": [
+    {
+      "path": "src/standup/adapters/jira_credentials.py",
+      "blob": "66e902744e27375e0daf5ad6fa9b95d7d40da732",
+      "target": "bug_metrics/provider_connections/windows_files.py",
+      "retain": ["single selected source", "printable token validation", "same-handle protected DACL and reparse checks"],
+      "adapt": ["safe target errors instead of JiraTransport.fail", "frozen source identity receipt", "target protected CREATE_NEW support"]
+    },
+    {
+      "path": "tests/contract/test_jira_credentials.py",
+      "blob": "fdf542b1aadf83a193b24255dc329f859689f6df",
+      "target": "provider_sync/tests/test_provider_credentials_native.py",
+      "retain": ["protected source acceptance", "invalid selected value no fallback", "permissions rejected"],
+      "adapt": ["actual native target tests", "synthetic dedicated root only", "profile/CAS consumers"]
+    },
+    {
+      "path": "src/standup/deployment_fs.py",
+      "blob": "d2bd349abcaab467facf3315754e786840a37d73",
+      "target": "bug_metrics/provider_connections/windows_files.py",
+      "retain": ["unambiguous local paths", "reparse ancestors rejected"],
+      "adapt": ["credential-store ownership rather than donor installation ownership"]
+    },
+    {
+      "path": "src/standup/adapters/jira_transport.py",
+      "blob": "57558ebb7d7cbf3c2a32d008ff1ad7fd039c1c0b",
+      "target": "bug_metrics/provider_connections/request_session.py",
+      "retain": ["one credential identity", "redirect refusal", "no cookie fallback"],
+      "adapt": ["requests.Session/atlassian existing client instead of donor httpx stack"],
+      "copy_code": false
+    },
+    {
+      "path": "pyproject.toml",
+      "blob": "2327ef245044924d797917011d1951d72261695a",
+      "target": "requirements.txt",
+      "retain": ["pywin32==312 on Windows"],
+      "adapt": ["target remains Python3.13 and Django6", "do not install standup package"],
+      "copy_code": false
+    }
+  ],
+  "direct_dependency_disposition": {
+    "pywin32": "pinned target dependency for native Windows file protection",
+    "tomllib": "target Python3.13 standard library",
+    "standup.deployment_fs.inspect_ancestors": "small path policy adaptation in windows_files; no donor runtime import",
+    "standup.adapters.jira_transport.fail": "replace with target ConnectionError",
+    "standup.domain.errors.DomainError": "not imported",
+    "standup.schema": "not imported",
+    "donor config and installation registry": "not imported",
+    "donor JQL/Node parser": "not needed by credential leaf"
+  },
+  "new_implementation_not_donor_reuse": [
+    "provider-neutral endpoint/settings/profile resolver",
+    "safe opaque client factory",
+    "versioned protected secret metadata",
+    "preview and profile-row CAS adoption",
+    "legacy consumer migration",
+    "JSON CLI and redacted audit"
+  ],
+  "verification": {
+    "method": "git rev-parse pinned_commit:path matched donor blobs",
+    "native_target_tests": "not-yet-implemented",
+    "license_policy": "owner-provided internal donor code; preserve original notices in any copied block; no third-party source copied from dependency packages"
+  }
+}

@@ -1,6 +1,7 @@
-{% load static %}
+{% load static i18n %}
+{% get_current_language as CURRENT_LANGUAGE %}
 <!doctype html>
-<html lang="en" data-theme="dark" class="has-navbar-fixed-top {% block html_class %}{% endblock %}">
+<html lang="{% if CURRENT_LANGUAGE|slice:':2' == 'en' %}en{% else %}{{ CURRENT_LANGUAGE }}{% endif %}" data-theme="dark" class="has-navbar-fixed-top {% block html_class %}{% endblock %}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,6 +36,10 @@
                             <a href="{% url 'ui_web:workbench' %}"
                                data-workbench-nav-link
                                {% if request.resolver_match.url_name == 'workbench' %}class="is-active"{% endif %}>Workbench</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'ui_web:projects' %}"
+                               {% if request.resolver_match.url_name == 'projects' or request.resolver_match.url_name == 'project_detail' or request.resolver_match.url_name == 'project_stage_preview' %}class="is-active"{% endif %}>{% trans "Projects" %}</a>
                         </li>
                         <li>
                             {% if global_available_member_groups %}

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ draft.snapshot.project_name }} - {% trans "Draft report" %}{% endblock %}
+{% block page_title %}{% trans "Draft report" %}{% endblock %}
+
+{% block content %}
+<article class="block" data-report-editor data-draft-id="{{ draft.draft_id }}" data-revision="{{ draft.revision }}" data-revision-hash="{{ draft.revision_hash }}" data-snapshot-hash="{{ draft.snapshot_hash }}" data-template-hash="{{ draft.template_definition.template_hash }}" data-clipboard-url="{{ clipboard_url }}"
+         data-message-payload-missing="{% trans "Clipboard payload is not available." %}"
+         data-message-download-fallback="{% trans "Copy payload could not be loaded. Download HTML is still available." %}"
+         data-message-ready="{% trans "Saved revision is ready to copy." %}"
+         data-message-save-before-copy="{% trans "Save this revision before copying." %}"
+         data-message-native-unavailable="{% trans "Native formatted clipboard is not available. Download HTML instead." %}"
+         data-message-copied="{% trans "Copied formatted report." %}"
+         data-message-copy-failed="{% trans "Copy was not completed. Download HTML is still available." %}">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
+            <li class="is-active"><a href="#" aria-current="page">{% trans "Draft" %} {{ draft.revision }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-4">{{ draft.snapshot.project_name }} · {{ draft.snapshot.stage_name }}</h2>
+                <p class="subtitle is-6">
+                    {% trans "Revision" %} {{ draft.revision }} <code>{{ draft.revision_hash }}</code><br>
+                    {% trans "Source cutoff" %}: {{ draft.snapshot.source_as_of }} · {% trans "Capture" %}: <code>{{ draft.snapshot.capture_id }}</code>
+                </p>
+            </div>
+        </div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+
+    {% if draft.state == "finalized" %}
+        <div class="notification is-info is-light">{% trans "This edition is finalized. Create a revision from the publication page before editing." %}</div>
+    {% endif %}
+    <div class="notification is-warning is-light is-hidden" data-report-dirty-banner role="status">{% trans "Unsaved edits disable copy and finalization." %}</div>
+    <div class="notification is-light" data-report-copy-status role="status">{% trans "Copy waits for the saved revision payload." %}</div>
+
+    {% if draft.state == "draft" %}
+    <form method="post" action="{% url 'ui_web:report_draft_save' detail.project.id stage.id draft.draft_id %}" class="dashboard-edit-form" data-report-save-form>
+        {% csrf_token %}
+        {{ save_form.command_id }}
+        {{ save_form.expected_revision }}
+        {{ save_form.template_version }}
+        {{ save_form.note_edit_id }}
+        {{ save_form.override_edit_id }}
+
+        <div class="buttons has-addons">
+            <button class="button is-primary" type="submit"{% if draft.state != "draft" %} disabled aria-disabled="true"{% endif %}>
+                <span class="icon is-small"><i class="iconoir-check"></i></span>
+                <span>{% trans "Save" %}</span>
+            </button>
+            <button class="button" type="button" data-report-copy-button disabled aria-disabled="true">
+                <span class="icon is-small"><i class="iconoir-list"></i></span>
+                <span>{% trans "Copy formatted report" %}</span>
+            </button>
+            <a class="button" href="{{ download_url }}">
+                <span class="icon is-small"><i class="iconoir-download"></i></span>
+                <span>{% trans "Download HTML" %}</span>
+            </a>
+        </div>
+
+        {% if edit_rows %}
+            <section class="block">
+                <h3 class="title is-5">{% trans "Saved edits" %}</h3>
+                {% for edit in edit_rows %}
+                    <div class="box">
+                        <input type="hidden" name="edit_id" value="{{ edit.edit_id }}">
+                        <input type="hidden" name="edit_kind" value="{{ edit.kind }}">
+                        <input type="hidden" name="edit_target" value="{{ edit.target }}">
+                        <div class="columns is-variable is-2">
+                            <div class="column is-one-quarter">
+                                <label class="label">{% trans "Edit action" %}</label>
+                                <div class="select is-fullwidth">
+                                    <select name="edit_operation" data-report-dirty-field>
+                                        <option value="keep">{% trans "Keep" %}</option>
+                                        <option value="remove">{% trans "Remove" %}</option>
+                                    </select>
+                                </div>
+                                <p class="help">{{ edit.target_label }}{% if edit.author %}<br>{% trans "Edited by" %} {{ edit.author }} {{ edit.edited_at }}{% endif %}</p>
+                            </div>
+                            <div class="column">
+                                <label class="label">{% if edit.kind == "note" %}{% trans "Meeting note" %}{% else %}{% trans "Narrative override" %}{% endif %}</label>
+                                <textarea class="textarea" name="edit_text" rows="3" data-report-dirty-field>{{ edit.text }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <section class="block">
+            <h3 class="title is-5">{% trans "Add notes" %}</h3>
+            {% for slot in new_note_slots %}
+                <div class="columns is-variable is-2">
+                    <input type="hidden" name="edit_id" value="{{ slot.edit_id }}">
+                    <input type="hidden" name="edit_kind" value="note">
+                    <input type="hidden" name="edit_operation" value="add">
+                    <div class="column is-one-quarter">
+                        <label class="label">{% trans "Note target" %}</label>
+                        <div class="select is-fullwidth">
+                            <select name="edit_target" data-report-dirty-field>
+                                <option value="">{% trans "Select target" %}</option>
+                                {% for value, label in target_choices.note_targets %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <label class="label">{% trans "Meeting note" %}</label>
+                        <textarea class="textarea" name="edit_text" rows="3" data-report-dirty-field></textarea>
+                    </div>
+                </div>
+            {% endfor %}
+        </section>
+
+        <section class="block">
+            <h3 class="title is-5">{% trans "Add narrative overrides" %}</h3>
+            {% for slot in new_override_slots %}
+                <div class="columns is-variable is-2">
+                    <input type="hidden" name="edit_id" value="{{ slot.edit_id }}">
+                    <input type="hidden" name="edit_kind" value="narrative_override">
+                    <input type="hidden" name="edit_operation" value="add">
+                    <div class="column is-one-quarter">
+                        <label class="label">{% trans "Narrative field" %}</label>
+                        <div class="select is-fullwidth">
+                            <select name="edit_target" data-report-dirty-field>
+                                <option value="">{% trans "Select field" %}</option>
+                                {% for value, label in target_choices.override_targets %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <label class="label">{% trans "Narrative override" %}</label>
+                        <textarea class="textarea" name="edit_text" rows="3" data-report-dirty-field></textarea>
+                    </div>
+                </div>
+            {% endfor %}
+        </section>
+
+        <div class="dashboard-form-grid">
+            <div class="dashboard-form-field">
+                <label class="label" for="{{ save_form.template_id.id_for_label }}">{{ save_form.template_id.label }}</label>
+                <div class="select is-fullwidth"><select id="{{ save_form.template_id.id_for_label }}" name="{{ save_form.template_id.html_name }}" data-report-dirty-field>
+                    {% for value, label in save_form.fields.template_id.choices %}
+                        <option value="{{ value }}" {% if save_form.template_id.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select></div>
+            </div>
+            <div class="dashboard-form-field">
+                <label class="label" for="{{ save_form.note_target.id_for_label }}">{{ save_form.note_target.label }}</label>
+                <div class="select is-fullwidth"><select id="{{ save_form.note_target.id_for_label }}" name="{{ save_form.note_target.html_name }}" data-report-dirty-field>
+                    {% for value, label in save_form.fields.note_target.choices %}
+                        <option value="{{ value }}" {% if save_form.note_target.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select></div>
+                <textarea class="textarea" name="{{ save_form.note_text.html_name }}" id="{{ save_form.note_text.id_for_label }}" rows="4" data-report-dirty-field>{{ save_form.note_text.value|default_if_none:"" }}</textarea>
+                {% for error in save_form.note_text.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+            </div>
+            <div class="dashboard-form-field">
+                <label class="label" for="{{ save_form.override_target.id_for_label }}">{{ save_form.override_target.label }}</label>
+                <div class="select is-fullwidth"><select id="{{ save_form.override_target.id_for_label }}" name="{{ save_form.override_target.html_name }}" data-report-dirty-field>
+                    {% for value, label in save_form.fields.override_target.choices %}
+                        <option value="{{ value }}" {% if save_form.override_target.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select></div>
+                <textarea class="textarea" name="{{ save_form.override_text.html_name }}" id="{{ save_form.override_text.id_for_label }}" rows="4" data-report-dirty-field>{{ save_form.override_text.value|default_if_none:"" }}</textarea>
+                {% for error in save_form.override_text.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+            </div>
+        </div>
+    </form>
+    {% endif %}
+
+    {% if draft.state == "draft" %}
+    <form method="post" action="{% url 'ui_web:report_draft_finalize' detail.project.id stage.id draft.draft_id %}" class="dashboard-action-form mt-4">
+        {% csrf_token %}
+        {{ finalize_form.command_id }}
+        {{ finalize_form.expected_revision }}
+        <label class="checkbox">
+            <input type="checkbox" name="{{ finalize_form.confirm.html_name }}" required data-report-finalize-confirm>
+            {% trans "Finalize this exact saved revision" %} {{ draft.revision }} <code>{{ draft.revision_hash|slice:":12" }}</code>
+        </label>
+        <button class="button is-warning is-light" type="submit" data-report-finalize-button{% if draft.state != "draft" %} data-server-disabled="true" disabled aria-disabled="true"{% endif %}>
+            <span class="icon is-small"><i class="iconoir-archive"></i></span>
+            <span>{% trans "Finalize and commit" %}</span>
+        </button>
+    </form>
+    {% endif %}
+
+    {% if resume_form %}
+        <form method="post" action="{% url 'ui_web:report_draft_resume' detail.project.id stage.id draft.draft_id %}" class="dashboard-action-form mt-4">
+            {% csrf_token %}
+            {{ resume_form.command_id }}
+            <button class="button is-warning" type="submit">
+                <span class="icon is-small"><i class="iconoir-refresh-double"></i></span>
+                <span>{% trans "Resume finalization" %}</span>
+            </button>
+            <p class="help">{% trans "Uses the original retained finalization command." %}</p>
+        </form>
+    {% endif %}
+
+    <section class="block mt-5">
+        <h3 class="title is-5">{% trans "Source state" %}</h3>
+        <p>
+            {% trans "Coverage" %}: {% if draft.snapshot.coverage.complete %}{% trans "complete" %}{% else %}{% trans "partial" %}{% endif %} ·
+            {% trans "Accepted" %}: {{ draft.snapshot.coverage.accepted_count }} ·
+            {% trans "Pending" %}: {{ draft.snapshot.coverage.pending_count }}
+        </p>
+    </section>
+
+    <section class="block">
+        <h3 class="title is-5">{% trans "Publication target" %}</h3>
+        <p>
+            {% trans "Registered archive" %}: <code>{{ publication_target.archive_id }}</code><br>
+            {% trans "Project" %}: {{ detail.project.name }} <code>{{ publication_target.project_id }}</code><br>
+            {% trans "Stage" %}: {{ stage.name }} <code>{{ publication_target.stage_id }}</code>
+        </p>
+    </section>
+
+    <section class="block">
+        <h3 class="title is-5">{% trans "Preview" %}</h3>
+        <iframe title="{% trans "Saved report preview" %}" src="{{ render_url }}" sandbox style="width:100%; min-height:720px; border:1px solid #d9dee8; background:#fff;"></iframe>
+    </section>
+</article>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/project_reports.js' %}"></script>
+{% endblock %}

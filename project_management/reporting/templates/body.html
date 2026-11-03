@@ -1,0 +1,123 @@
+{% if timeline %}
+  <section style="margin:0 0 18px 0;">
+    <h2 style="margin:0 0 8px 0; color:#0f766e; font-size:18px;">Weekly timeline</h2>
+    <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+      <thead>
+        <tr>
+          <th style="width:18%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Issue</th>
+          <th style="width:22%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Title</th>
+          {% for day in timeline.days %}
+            <th style="text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">{{ day.report_date }}<br>{{ day.state }}<br>Publication {{ day.publication_id }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in timeline.rows %}
+          <tr>
+            <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">{{ row.display_key }}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">{{ row.title }}</td>
+            {% for cell in row.cells %}
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">{{ cell.text }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if timeline.day_events %}
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed; margin-top:10px;">
+        <thead><tr><th style="width:16%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Date</th><th style="width:24%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Source identity</th><th style="text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Day event</th></tr></thead>
+        <tbody>
+          {% for event in timeline.day_events %}
+            <tr>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top;">{{ event.report_date }}</td>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">{{ event.identity }}</td>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">{{ event.event_id }} {{ event.kind }} before {{ event.before }} after {{ event.after }} occurred {{ event.occurred_at }} observed {{ event.observed_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </section>
+{% endif %}
+{% for section in sections %}
+  {% if section == "key_messages" %}
+    <section style="margin:0 0 18px 0;">
+      <h2 style="margin:0 0 8px 0; color:#0f766e; font-size:18px;">Key messages</h2>
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <thead><tr><th style="width:18%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Message</th><th style="text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Text and provenance</th><th style="width:24%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Sources</th></tr></thead>
+        <tbody>
+          {% for message in key_messages %}
+            <tr>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top;">{{ message.message_id }}</td>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">{{ message.text.text }}{% if message.text.edited %}<br><strong>{{ message.text.provenance }}</strong><br>Original: {{ message.text.original }}{% endif %}</td>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">{{ message.source_refs }}</td>
+            </tr>
+          {% endfor %}
+          {% for note in report_notes %}
+            <tr><td style="border:1px solid #cbd5e1; padding:6px;">Meeting note</td><td style="border:1px solid #cbd5e1; padding:6px; overflow-wrap:anywhere;"><span style="white-space:pre-wrap;">{{ note.text }}</span><br>{{ note.provenance }}</td><td style="border:1px solid #cbd5e1; padding:6px;">Human note</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% elif section == "changes" %}
+    <section style="margin:0 0 18px 0;">
+      <h2 style="margin:0 0 8px 0; color:#0f766e; font-size:18px;">Changes</h2>
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <thead><tr><th style="width:16%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Event</th><th style="width:14%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Kind</th><th style="text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Before / after</th><th style="width:26%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Times and refs</th></tr></thead>
+        <tbody>
+          {% for event in events %}
+            <tr>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top;">{{ event.event_id }}</td>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top;">{{ event.kind }}</td>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">Before: {{ event.before }}<br>After: {{ event.after }}</td>
+              <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">Occurred: {{ event.occurred_at }}<br>Observed: {{ event.observed_at }}<br>Refs: {{ event.source_refs }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% elif section == "register" %}
+    <section style="margin:0 0 18px 0;">
+      <h2 style="margin:0 0 8px 0; color:#0f766e; font-size:18px;">Issue register</h2>
+      {% for group in groups %}
+        <h3 style="margin:10px 0 6px 0; color:#334155; font-size:15px;">{{ group.label }}</h3>
+        <table style="width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:10px;">
+          <thead><tr><th style="width:13%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Issue</th><th style="width:14%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Status / assignee</th><th style="text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Narrative, actions and notes</th><th style="width:23%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Evidence / coverage</th></tr></thead>
+          <tbody>
+            {% for row in group.rows %}
+              <tr>
+                <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;"><strong>{{ row.display_key }}</strong><br>{{ row.title }}<br>{% if row.source_url_href %}<a href="{{ row.source_url_href }}" style="color:#0f766e;">{{ row.source_url_text }}</a>{% else %}{{ row.source_url_text }}{% endif %}{% if "source_hash" in optional_columns %}<br>Source hash: {{ row.source_hash }}{% endif %}</td>
+                <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">Status: {{ row.status }}<br>Assignee: {{ row.assignee }}<br>Pending reason: {{ row.pending_reason }}{% if "summary_time" in optional_columns %}<br>Summary as of: {{ row.summary_as_of }}{% endif %}<br>Summary: {{ row.summary_id }} r{{ row.summary_revision }}</td>
+                <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">
+                  <strong>What:</strong> {{ row.what.text }}{% if row.what.edited %}<br>{{ row.what.provenance }}<br>Original: {{ row.what.original }}{% endif %}<br>
+                  <strong>Current position:</strong> {{ row.current_position.text }}{% if row.current_position.edited %}<br>{{ row.current_position.provenance }}<br>Original: {{ row.current_position.original }}{% endif %}<br>
+                  <strong>Verification:</strong> {{ row.verification.text }}{% if row.verification.edited %}<br>{{ row.verification.provenance }}<br>Original: {{ row.verification.original }}{% endif %}
+                  {% for action in row.actions %}
+                    <br><strong>Action {{ action.index }}:</strong> {{ action.action.text }}{% if action.action.edited %}<br>{{ action.action.provenance }}<br>Original: {{ action.action.original }}{% endif %}
+                    <br><strong>Next owner:</strong> {{ action.owner_display.text }}{% if action.owner_display.edited %}<br>{{ action.owner_display.provenance }}<br>Original: {{ action.owner_display.original }}<br>Human proposal; source confirmed: {{ action.owner_confirmed }}{% endif %}
+                    <br>Owner basis: {{ action.owner_basis }}; Action state: {{ action.state }}; owner quote: {{ action.owner_quote }}; action evidence: {{ action.evidence_refs }}; source confirmed: {{ action.owner_confirmed }}
+                    {% for note in action.notes %}<br>Meeting note: <span style="white-space:pre-wrap;">{{ note.text }}</span><br>{{ note.provenance }}{% endfor %}
+                  {% endfor %}
+                  {% for note in row.notes %}<br>Meeting note: <span style="white-space:pre-wrap;">{{ note.text }}</span><br>{{ note.provenance }}{% endfor %}
+                </td>
+                <td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top; overflow-wrap:anywhere;">Coverage: {% for item in row.coverage_items %}{{ item.label }}={{ item.value }}; {% endfor %}<br>Blockers: {{ row.blocker_refs }}<br>Limitations: {{ row.limitation_refs }}<br>Evidence refs: {% for item in row.evidence %}{{ item.ref_id }} {% endfor %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endfor %}
+    </section>
+  {% elif section == "coverage" %}
+    <section style="margin:0 0 18px 0;">
+      <h2 style="margin:0 0 8px 0; color:#0f766e; font-size:18px;">Evidence and coverage</h2>
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:10px;">
+        <thead><tr><th style="width:34%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Coverage item</th><th style="text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Value</th></tr></thead>
+        <tbody>{% for item in coverage_items %}<tr><td style="border:1px solid #cbd5e1; padding:6px;">{{ item.label }}</td><td style="border:1px solid #cbd5e1; padding:6px; overflow-wrap:anywhere;">{{ item.value }}</td></tr>{% endfor %}</tbody>
+      </table>
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <thead><tr><th style="width:14%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Issue</th><th style="width:13%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Ref</th><th style="width:22%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Capture / pointer</th><th style="width:18%; text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Source hashes</th><th style="text-align:left; border:1px solid #cbd5e1; padding:6px; background:#ecfeff;">Literal value</th></tr></thead>
+        <tbody>{% for group in evidence_groups %}{% for evidence in group.evidence %}<tr><td style="border:1px solid #cbd5e1; padding:6px;">{{ group.display_key }}</td><td style="border:1px solid #cbd5e1; padding:6px;">{{ evidence.ref_id }}</td><td style="border:1px solid #cbd5e1; padding:6px; overflow-wrap:anywhere;">{{ evidence.capture_id }} / {{ evidence.pointer }}</td><td style="border:1px solid #cbd5e1; padding:6px; overflow-wrap:anywhere;">Issue: {{ group.source_hash }}<br>Evidence: {{ evidence.source_hash }}</td><td style="border:1px solid #cbd5e1; padding:6px; overflow-wrap:anywhere;">{{ evidence.value }}</td></tr>{% endfor %}{% endfor %}</tbody>
+      </table>
+    </section>
+  {% endif %}
+{% endfor %}

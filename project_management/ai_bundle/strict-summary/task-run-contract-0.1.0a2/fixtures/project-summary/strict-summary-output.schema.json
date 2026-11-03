@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.invalid/project-reporting/review-1/strict-summary-output.schema.json",
+  "title": "Draft raw model summary projection without application-derived input_hash",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind", "binding", "profile_revision", "base_summary_id", "target_capture_id",
+    "output_language", "what", "current_position", "verification", "next_actions",
+    "blockers", "limitations", "evidence"
+  ],
+  "properties": {
+    "kind": {"const": "summary"},
+    "binding": {"$ref": "summary-review.schema.json#/$defs/binding"},
+    "profile_revision": {"const": "project-reporting.summary@review-1"},
+    "base_summary_id": {"type": ["string", "null"]},
+    "target_capture_id": {"$ref": "summary-review.schema.json#/$defs/text"},
+    "output_language": {"const": "en"},
+    "what": {"$ref": "summary-review.schema.json#/$defs/text"},
+    "current_position": {"$ref": "summary-review.schema.json#/$defs/text"},
+    "verification": {"$ref": "summary-review.schema.json#/$defs/text"},
+    "next_actions": {
+      "type": "array", "maxItems": 64,
+      "items": {"$ref": "summary-review.schema.json#/$defs/action"}
+    },
+    "blockers": {"$ref": "summary-review.schema.json#/$defs/ids"},
+    "limitations": {"$ref": "summary-review.schema.json#/$defs/ids"},
+    "evidence": {
+      "allOf": [{"$ref": "summary-review.schema.json#/$defs/ids"}],
+      "minItems": 1
+    }
+  }
+}

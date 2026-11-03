@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "status": "DASHBOARD_SYNTHETIC_BUSINESS_JOIN_ACCEPTED",
+  "workPackageId": "W5.JOIN",
+  "qualification": "synthetic_business_join_only",
+  "contractVersion": "task-run/1",
+  "frozenDesignSha256": "ff7899333c8ed8f0717b47fc7c1d6a6e5928db575a15553d2501045f123719da",
+  "source": {
+    "repository": "D:/AIGC/scrum_dashboard",
+    "branch": "mvp/intel-jira-connectivity",
+    "baseCommit": "12f7ac285d1bba7f125b947a11a3deaa2fd5d330",
+    "kind": "uncommitted scoped implementation",
+    "manifest": "D:/AIGC/scrum_dashboard/.tmp/task-run-w5/final-candidate.json",
+    "manifestSha256": "aa3fb06271d17671077ac5c2a9344302b57a56475ef7e63124db700132bb44d9",
+    "files": 42,
+    "committedOrPushed": false
+  },
+  "sdk": {
+    "version": "0.1.0a2",
+    "wheelSha256": "32e54c5f443e39daa55190c4de142ac6c12478204d8fba6bf9909149c3b365f9",
+    "contractManifestSha256": "e7386f82d2bf3963feccc28cfbfda732b9eddb829831d5ba660b50554e5f81c4",
+    "a1EnvironmentPreserved": true
+  },
+  "jointFixture": {
+    "owner": "Dashboard validation",
+    "usesUnmodifiedBaseFactory": true,
+    "usesPeerDefaultPlaceholderLauncher": false,
+    "baseCommit": "2332d549ab69a7e927865acd0e3db2a19295c609",
+    "baseTreeSha256": "db92bb903a5d47aeffe3707ef5da27b3dc031b0c7e28bdde527ccb8bf66ac261",
+    "sourceDeliverySha256": "c5534b86913b2bf4867b6352f1e8c0d185b50378c9626dbf424b98aa181e8fe3",
+    "verifiedSourceFiles": 844,
+    "scopeKey": "projects.ce455823-84d3-46e0-b96c-57436b9d78b8.stages.a016c779-9ca1-4ef6-a026-2480f4141d55",
+    "runStoreId": "store_23ae1bd1f25d4c63a979b9a879a304f2",
+    "runId": "run_61c6cc8acbaa4859a11110b138576716"
+  },
+  "observedOutcome": {
+    "captureId": "39ef264e-3999-4b2d-87cf-cbf290bcf5a1",
+    "attemptId": "20a20421-c87c-5a78-b6c0-55b71ba7c1d7",
+    "inputSha256": "2997fc3409cbf737721becf83ced25e182712df2469d0a7be5b33c913a325359",
+    "resultSha256": "e193d8ef26b377436fb3740d3a51e20265454ae8ce6cfda4ce7afcabd0ca43c5",
+    "acceptedSummaryId": "3dd7b99e-1f62-5eb4-8e73-7cca3189dda5",
+    "acceptedRevision": 1,
+    "syntheticExecutions": 1,
+    "recreatedServiceNoWork": true,
+    "originalResultContentPreserved": true,
+    "allThreeCommentsRetained": true,
+    "longRawCommentCharacters": 13061,
+    "normalProcessExit": true,
+    "launcherAndWorkerAbsent": true,
+    "elapsedSeconds": 96.829
+  },
+  "evidence": {
+    "directory": "D:/AIGC/scrum_dashboard/.tmp/task-run-w5/runs/0221de2b-4577-43d6-823c-72edfba648a9",
+    "businessReceipt": "receipt.json",
+    "artifactVerification": "artifact-verification.json",
+    "cleanupReceipt": "cleanup.json",
+    "fastCoreAndSafety": "27 passed, 43 subtests, 3.86 seconds",
+    "finalCombinedFast": "30 passed, 43 subtests, 5.93 seconds",
+    "nativeJournal": "2 passed, 135.24 seconds",
+    "finalHarnessGuards": "10 passed, 4 subtests, 4.24 seconds",
+    "finalBaseImportProbe": "D:/AIGC/scrum_dashboard/.tmp/task-run-w5/final-import-probe/base-import-probe.log",
+    "guardEvidenceScope": "Final source pin, complete inventory, connect_ex and external cache-prefix changes have narrow validation and independent review; they do not modify the verified CORE, SDK or Base source."
+  },
+  "independentReview": {
+    "agent": "Einstein",
+    "id": "01a19a4d-7eec-7a51-aefc-855e012352a5",
+    "model": "gpt-5.5",
+    "reasoningEffort": "xhigh",
+    "coreReady": true,
+    "harnessReady": true,
+    "openFindings": 0
+  },
+  "counterpartFeedback": "w5-base-feedback.md",
+  "notQualified": [
+    "real Jira or HSD access in this joined scenario",
+    "real model execution or model content quality",
+    "full cumulative delta, chunks, imports, attachments or external dependencies",
+    "report publication",
+    "native Run crash recovery or formal deployment",
+    "entire W3-W7, old T12 or the combined dirty worktree"
+  ],
+  "nextBoundary": "Base owns versioned schema/SDK/backend improvements; Dashboard retains the remaining original leaf tasks. No frozen a2 artifact or Base repository was modified."
+}

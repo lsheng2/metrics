@@ -1,4 +1,5 @@
 import base64
+import hmac
 import json
 from typing import Optional, Dict
 
@@ -30,6 +31,7 @@ class BasicAuthMiddleware:
         return None
 
     def __call__(self, request):
+        request.metrics_basic_auth_username = None
         users = self._load_users()
         if not users:
             return self.get_response(request)
@@ -47,7 +49,9 @@ class BasicAuthMiddleware:
         except Exception:
             return self._unauthorized()
 
-        if users.get(username) == password:
+        expected_password = users.get(username)
+        if expected_password is not None and hmac.compare_digest(str(expected_password), password):
+            request.metrics_basic_auth_username = username
             return self.get_response(request)
         return self._unauthorized()
 

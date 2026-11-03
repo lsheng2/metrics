@@ -11,9 +11,9 @@ from jira_sync.models import JiraSyncCursor
 
 
 class TestSyncProviderProfileCommand(TestCase):
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldSyncJiraProfileThroughGenericProviderProfileCommand(self, adapter_class, create_jira_client):
+    def test_shouldSyncJiraProfileThroughGenericProviderProfileCommand(self, adapter_class, jira_factory):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='Renamed chiplet Jira scope',
@@ -77,7 +77,8 @@ class TestSyncProviderProfileCommand(TestCase):
         self.assertEqual('2026-08-09', payload['coverage_end'])
         self.assertEqual(JiraSyncCursor.STATUS_SUCCESS, cursor.status)
         self.assertTrue(JiraIssue.objects.filter(scope=scope, issue_key='STDEL-8942').exists())
-        self.assertEqual('profile-jira-token', create_jira_client.call_args.args[1]['credentials']['api_token'])
+        self.assertEqual('profile-jira-token', jira_factory.call_args.kwargs['token'])
+        self.assertIn('session', jira_factory.call_args.kwargs)
 
     def test_shouldReturnConfigurationRequiredWhenJiraProfileHasNoMappedScope(self):
         # Given

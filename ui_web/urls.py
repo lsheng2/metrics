@@ -31,6 +31,34 @@ from .views.bug_trend_view import BugTrendView, BugTrendEvidenceView, BugTrendEv
 from .views.data_health_view import DataHealthView
 from .views.provider_setup_view import ProviderSetupView
 from .views.provider_chart_view import ProviderChartDataApiView, ProviderChartEvidenceApiView, ProviderProfileAlignDashboardRangeApiView, ProviderProfileReadinessApiView
+from .views.project_management_views import (
+    ProjectArchiveView,
+    ProjectDetailView,
+    ProjectLanguageView,
+    ProjectListView,
+    ProjectStageConfirmView,
+    ProjectStagePreviewView,
+)
+from .views.project_reports import (
+    ProjectStageReportView,
+    ReportDraftClipboardView,
+    ReportDraftCreateView,
+    ReportDraftDownloadView,
+    ReportDraftEditView,
+    ReportDraftFinalizeView,
+    ReportDraftRenderView,
+    ReportDraftResumeView,
+    ReportDraftSaveView,
+    ReportPublicationDownloadView,
+    ReportPublicationRevisionView,
+    ReportPublicationView,
+)
+from .views.project_run_views import (
+    ProjectRunCancelView,
+    ProjectRunResumeView,
+    ProjectRunStatusView,
+    ProjectRunSubmitView,
+)
 from .views.task_forecast_view import TaskForecastView
 from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
 from .views.workbench_view import WorkbenchGrafanaSelectionView, WorkbenchView
@@ -61,6 +89,44 @@ urlpatterns = [
      path(_base_prefix + 'bug-trend/scope-audit/', BugTrendScopeAuditView.as_view(), name='bug_trend_scope_audit'),
      path(_base_prefix + 'bug-trend/scopes/', BugTrendScopeLibraryView.as_view(), name='bug_trend_scope_library'),
      path(_base_prefix + 'bug-trend/scope-config/', BugTrendScopeConfigView.as_view(), name='bug_trend_scope_config'),
+     path(_base_prefix + 'projects/', ProjectListView.as_view(), name='projects'),
+     path(_base_prefix + 'projects/language/', ProjectLanguageView.as_view(), name='project_language'),
+     path(_base_prefix + 'projects/<uuid:project_id>/', ProjectDetailView.as_view(), name='project_detail'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/',
+          ProjectStageReportView.as_view(), name='project_stage_reports'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/',
+          ReportDraftCreateView.as_view(), name='report_draft_create'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/runs/',
+          ProjectRunSubmitView.as_view(), name='project_run_submit'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/runs/<uuid:operation_id>/',
+          ProjectRunStatusView.as_view(), name='project_run_status'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/runs/<uuid:operation_id>/cancel/',
+          ProjectRunCancelView.as_view(), name='project_run_cancel'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/runs/<uuid:operation_id>/resume/',
+          ProjectRunResumeView.as_view(), name='project_run_resume'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/',
+          ReportDraftEditView.as_view(), name='report_draft_edit'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/save/',
+          ReportDraftSaveView.as_view(), name='report_draft_save'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/render/',
+          ReportDraftRenderView.as_view(), name='report_draft_render'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/download/',
+          ReportDraftDownloadView.as_view(), name='report_draft_download'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/clipboard/',
+          ReportDraftClipboardView.as_view(), name='report_draft_clipboard'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/finalize/',
+          ReportDraftFinalizeView.as_view(), name='report_draft_finalize'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/resume/',
+          ReportDraftResumeView.as_view(), name='report_draft_resume'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/publications/<uuid:publication_id>/',
+          ReportPublicationView.as_view(), name='report_publication'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/publications/<uuid:publication_id>/revisions/',
+          ReportPublicationRevisionView.as_view(), name='report_publication_revision'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/publications/<uuid:publication_id>/download/',
+          ReportPublicationDownloadView.as_view(), name='report_publication_download'),
+     path(_base_prefix + 'projects/<uuid:project_id>/preview/', ProjectStagePreviewView.as_view(), name='project_stage_preview'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/', ProjectStageConfirmView.as_view(), name='project_stage_confirm'),
+     path(_base_prefix + 'projects/<uuid:project_id>/archive/', ProjectArchiveView.as_view(), name='project_archive'),
 
     # Partials for HTMX
     path(_base_prefix + 'partials/tasks/', CurrentTasksView.as_view(), name='partials_tasks'),

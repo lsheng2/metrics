@@ -1,0 +1,622 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: scrum-dashboard-projects-w2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-01 00:00+0000\n"
+"PO-Revision-Date: 2026-11-01 00:00+0000\n"
+"Last-Translator: Dashboard Team\n"
+"Language-Team: zh_Hans\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Project key"
+msgstr "项目键"
+
+msgid "Project name"
+msgstr "项目名称"
+
+msgid "Stage key"
+msgstr "阶段键"
+
+msgid "Stage name"
+msgstr "阶段名称"
+
+msgid "Source"
+msgstr "来源"
+
+msgid "Preview ID"
+msgstr "预览ID"
+
+msgid "Archive this project"
+msgstr "归档此项目"
+
+msgid "Use lower-case letters, numbers, underscore or dash."
+msgstr "请使用小写字母、数字、下划线或短横线。"
+
+msgid "Enter a name from 1 to 160 characters."
+msgstr "请输入1到160个字符的名称。"
+
+msgid "Projects"
+msgstr "项目"
+
+msgid "Create and inspect provider-neutral project containers."
+msgstr "创建并查看提供方中立的项目容器。"
+
+msgid "Create project"
+msgstr "创建项目"
+
+msgid "Create"
+msgstr "创建"
+
+msgid "Name"
+msgstr "名称"
+
+msgid "Key"
+msgstr "键"
+
+msgid "State"
+msgstr "状态"
+
+msgid "Created"
+msgstr "创建时间"
+
+msgid "Archived"
+msgstr "已归档"
+
+msgid "Active"
+msgstr "活动"
+
+msgid "No projects yet."
+msgstr "还没有项目。"
+
+msgid "Previous"
+msgstr "上一页"
+
+msgid "Next"
+msgstr "下一页"
+
+msgid "Stages"
+msgstr "阶段"
+
+msgid "Provider"
+msgstr "提供方"
+
+msgid "Source state"
+msgstr "来源状态"
+
+msgid "Definition hash"
+msgstr "定义哈希"
+
+msgid "No stages yet."
+msgstr "还没有阶段。"
+
+msgid "Add stage"
+msgstr "添加阶段"
+
+msgid "Preview"
+msgstr "预览"
+
+msgid "Archive"
+msgstr "归档"
+
+msgid "Preview stage"
+msgstr "预览阶段"
+
+msgid "Endpoint"
+msgstr "端点"
+
+msgid "Source reference"
+msgstr "来源引用"
+
+msgid "Query kind"
+msgstr "查询类型"
+
+msgid "Query"
+msgstr "查询"
+
+msgid "Confirm stage"
+msgstr "确认阶段"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "Language"
+msgstr "语言"
+
+msgid "Apply"
+msgstr "应用"
+
+msgid "Preview is not valid."
+msgstr "预览无效。"
+
+msgid "Project preview requires server-side sessions."
+msgstr "项目预览需要服务器端会话。"
+
+msgid "Project is not available."
+msgstr "项目不可用。"
+
+msgid "Archived projects cannot accept new stages."
+msgstr "已归档项目不能添加新阶段。"
+
+msgid "Project key is already used with different details."
+msgstr "项目键已被不同详情使用。"
+
+msgid "Project request is invalid."
+msgstr "项目请求无效。"
+
+msgid "Source selection is invalid."
+msgstr "来源选择无效。"
+
+msgid "The selected source is not available."
+msgstr "所选来源不可用。"
+
+msgid "Source changed. Preview the stage again."
+msgstr "来源已变更。请重新预览阶段。"
+
+msgid "Project stage limit has been reached."
+msgstr "项目阶段数量已达到上限。"
+
+msgid "Project storage is busy. Retry the same request later."
+msgstr "项目存储繁忙。请稍后重试同一请求。"
+
+msgid "Stage key is already bound to a different definition."
+msgstr "阶段键已绑定到不同定义。"
+
+msgid "Current"
+msgstr "当前"
+
+msgid "Source changed"
+msgstr "来源已变更"
+
+msgid "Unavailable"
+msgstr "不可用"
+
+msgid "Project request failed"
+msgstr "项目请求失败"
+
+msgid "Back to projects"
+msgstr "返回项目"
+
+msgid "Reports"
+msgstr "报告"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "Report workbench"
+msgstr "报告工作台"
+
+msgid "Report archive is not configured."
+msgstr "报告归档尚未配置。"
+
+msgid "Source captures"
+msgstr "来源捕获"
+
+msgid "Run full stack"
+msgstr "运行全流程"
+
+msgid "Capture"
+msgstr "捕获"
+
+msgid "Complete"
+msgstr "完整"
+
+msgid "Membership"
+msgstr "成员范围"
+
+msgid "Checkout"
+msgstr "检出状态"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "No"
+msgstr "否"
+
+msgid "Partial"
+msgstr "部分"
+
+msgid "No retained source capture is available."
+msgstr "没有可用的保留来源捕获。"
+
+msgid "Create saved draft"
+msgstr "创建已保存草稿"
+
+msgid "Create draft"
+msgstr "创建草稿"
+
+msgid "Saved drafts"
+msgstr "已保存草稿"
+
+msgid "Draft"
+msgstr "草稿"
+
+msgid "Revision"
+msgstr "修订"
+
+msgid "Source cutoff"
+msgstr "来源截止时间"
+
+msgid "Updated"
+msgstr "更新时间"
+
+msgid "No saved drafts yet."
+msgstr "还没有已保存草稿。"
+
+msgid "Published editions"
+msgstr "已发布版本"
+
+msgid "Publication"
+msgstr "发布版本"
+
+msgid "Draft revision"
+msgstr "草稿修订"
+
+msgid "Finalized"
+msgstr "定稿时间"
+
+msgid "Commit"
+msgstr "提交"
+
+msgid "No published editions yet."
+msgstr "还没有已发布版本。"
+
+msgid "Draft report"
+msgstr "草稿报告"
+
+msgid "This edition is finalized. Create a revision from the publication page before editing."
+msgstr "此版本已定稿。编辑前请先从发布页创建修订。"
+
+msgid "Unsaved edits disable copy and finalization."
+msgstr "存在未保存编辑时，复制和定稿会被禁用。"
+
+msgid "Copy waits for the saved revision payload."
+msgstr "复制会等待已保存修订的内容。"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Copy formatted report"
+msgstr "复制格式化报告"
+
+msgid "Download HTML"
+msgstr "下载 HTML"
+
+msgid "Finalize this exact saved revision"
+msgstr "定稿此精确已保存修订"
+
+msgid "Finalize and commit"
+msgstr "定稿并提交"
+
+msgid "Coverage"
+msgstr "覆盖情况"
+
+msgid "complete"
+msgstr "完整"
+
+msgid "partial"
+msgstr "部分"
+
+msgid "Accepted"
+msgstr "已接受"
+
+msgid "Pending"
+msgstr "待处理"
+
+msgid "Saved report preview"
+msgstr "已保存报告预览"
+
+msgid "Published report"
+msgstr "已发布报告"
+
+msgid "Published edition"
+msgstr "已发布版本"
+
+msgid "Finalized by"
+msgstr "定稿人"
+
+msgid "Manifest hash"
+msgstr "清单哈希"
+
+msgid "Download text"
+msgstr "下载文本"
+
+msgid "Daily standup"
+msgstr "每日站会"
+
+msgid "Weekly timeline"
+msgstr "每周时间线"
+
+msgid "Standup"
+msgstr "站会"
+
+msgid "Historical export"
+msgstr "历史导出"
+
+msgid "Source capture"
+msgstr "来源捕获"
+
+msgid "Template"
+msgstr "模板"
+
+msgid "Timezone"
+msgstr "时区"
+
+msgid "Baseline publication"
+msgstr "基线发布版本"
+
+msgid "Parent publication"
+msgstr "父发布版本"
+
+msgid "Purpose"
+msgstr "用途"
+
+msgid "No baseline"
+msgstr "无基线"
+
+msgid "No parent publication"
+msgstr "无父发布版本"
+
+msgid "Timezone is not available."
+msgstr "时区不可用。"
+
+msgid "Note target"
+msgstr "备注目标"
+
+msgid "Meeting note"
+msgstr "会议备注"
+
+msgid "Narrative field"
+msgstr "叙述字段"
+
+msgid "Narrative override"
+msgstr "叙述覆盖"
+
+msgid "Select target"
+msgstr "选择目标"
+
+msgid "Select field"
+msgstr "选择字段"
+
+msgid "Choose a target and enter text before saving."
+msgstr "保存前请选择目标并输入文本。"
+
+msgid "Whole report"
+msgstr "整份报告"
+
+msgid "Report request is invalid."
+msgstr "报告请求无效。"
+
+msgid "Report is not available."
+msgstr "报告不可用。"
+
+msgid "Report revision has changed. Save or reload before continuing."
+msgstr "报告修订已变化。继续前请保存或重新加载。"
+
+msgid "Report source material has changed. Create a new draft."
+msgstr "报告来源材料已变化。请创建新草稿。"
+
+msgid "Report template is not supported."
+msgstr "报告模板不受支持。"
+
+msgid "Report edit target is not valid."
+msgstr "报告编辑目标无效。"
+
+msgid "Report finalization is still pending."
+msgstr "报告定稿仍在进行中。"
+
+msgid "Report is already finalized."
+msgstr "报告已定稿。"
+
+msgid "Report is over the configured limit."
+msgstr "报告超过配置限制。"
+
+msgid "Report artifact is invalid."
+msgstr "报告工件无效。"
+
+msgid "Report request failed."
+msgstr "报告请求失败。"
+
+msgid "Clipboard payload is not available."
+msgstr "剪贴板内容不可用。"
+
+msgid "Copy payload could not be loaded. Download HTML is still available."
+msgstr "无法加载复制内容。仍可下载 HTML。"
+
+msgid "Saved revision is ready to copy."
+msgstr "已保存修订可复制。"
+
+msgid "Save this revision before copying."
+msgstr "复制前请先保存此修订。"
+
+msgid "Native formatted clipboard is not available. Download HTML instead."
+msgstr "原生格式化剪贴板不可用。请改为下载 HTML。"
+
+msgid "Copied formatted report."
+msgstr "已复制格式化报告。"
+
+msgid "Copy was not completed. Download HTML is still available."
+msgstr "复制未完成。仍可下载 HTML。"
+
+msgid "Report edit list is not valid."
+msgstr "报告编辑列表无效。"
+
+msgid "Saved edits"
+msgstr "已保存编辑"
+
+msgid "Edit action"
+msgstr "编辑操作"
+
+msgid "Keep"
+msgstr "保留"
+
+msgid "Remove"
+msgstr "移除"
+
+msgid "Edited by"
+msgstr "编辑者"
+
+msgid "Add notes"
+msgstr "添加备注"
+
+msgid "Add narrative overrides"
+msgstr "添加叙述覆盖"
+
+msgid "Resume finalization"
+msgstr "继续定稿"
+
+msgid "Uses the original retained finalization command."
+msgstr "使用原始保留的定稿命令。"
+
+msgid "Create revision"
+msgstr "创建修订"
+
+msgid "New revisions are only available for standup publications."
+msgstr "只有站会发布版本可创建新修订。"
+
+msgid "Select capture"
+msgstr "选择捕获"
+
+msgid "Capture pages"
+msgstr "捕获分页"
+
+msgid "Next captures"
+msgstr "下一页捕获"
+
+msgid "Draft pages"
+msgstr "草稿分页"
+
+msgid "Previous drafts"
+msgstr "上一页草稿"
+
+msgid "Next drafts"
+msgstr "下一页草稿"
+
+msgid "Publication pages"
+msgstr "发布版本分页"
+
+msgid "Previous publications"
+msgstr "上一页发布版本"
+
+msgid "Next publications"
+msgstr "下一页发布版本"
+
+msgid "Publication target"
+msgstr "发布目标"
+
+msgid "Registered archive"
+msgstr "已注册归档"
+
+msgid "Project"
+msgstr "项目"
+
+msgid "Stage"
+msgstr "阶段"
+
+msgid "Archive has not been initialized for this stage yet."
+msgstr "此阶段的归档尚未初始化。"
+
+msgid "Run stage report"
+msgstr "运行阶段报告"
+
+msgid "Runtime ready"
+msgstr "运行时就绪"
+
+msgid "Runtime disabled"
+msgstr "运行时已禁用"
+
+msgid "Operation"
+msgstr "操作"
+
+msgid "No run operations yet."
+msgstr "尚无运行操作。"
+
+msgid "Run status"
+msgstr "运行状态"
+
+msgid "Command"
+msgstr "命令"
+
+msgid "Execution mode"
+msgstr "执行模式"
+
+msgid "Deadline"
+msgstr "截止时间"
+
+msgid "Cancel requested"
+msgstr "已请求取消"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Items"
+msgstr "条目"
+
+msgid "Attempt"
+msgstr "尝试"
+
+msgid "Summary"
+msgstr "摘要"
+
+msgid "Produced draft"
+msgstr "生成的草稿"
+
+msgid "Produced draft revision %(revision)s"
+msgstr "生成的草稿修订 %(revision)s"
+
+msgid "Open latest draft"
+msgstr "打开最新草稿"
+
+msgid "Back to stage"
+msgstr "返回阶段"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Resume"
+msgstr "恢复"
+
+msgid "Run request is invalid."
+msgstr "运行请求无效。"
+
+msgid "Run operation was not found."
+msgstr "未找到运行操作。"
+
+msgid "Run runtime is not available."
+msgstr "运行时不可用。"
+
+msgid "Run operation is busy."
+msgstr "运行操作忙碌。"
+
+msgid "Run command conflicts with the stored request."
+msgstr "运行命令与已存储请求冲突。"
+
+msgid "Run operation revision has changed."
+msgstr "运行操作修订已变化。"
+
+msgid "Run source changed. Refresh the stage before running."
+msgstr "运行来源已变化。运行前请刷新阶段。"
+
+msgid "Run limit has been reached."
+msgstr "已达到运行限制。"
+
+msgid "Run deadline has expired."
+msgstr "运行截止时间已过。"
+
+msgid "Run operation was interrupted."
+msgstr "运行操作已中断。"
+
+msgid "Run capture outcome is uncertain."
+msgstr "运行捕获结果不确定。"
+
+msgid "Run storage is invalid."
+msgstr "运行存储无效。"
+
+msgid "Run storage is unavailable."
+msgstr "运行存储不可用。"
+
+msgid "Run request failed."
+msgstr "运行请求失败。"

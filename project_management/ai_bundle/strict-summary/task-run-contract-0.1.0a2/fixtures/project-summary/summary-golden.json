@@ -1,0 +1,70 @@
+{
+  "input": {
+    "fixture_version": "review-1",
+    "profile_revision": "project-reporting.summary@review-1",
+    "binding": {
+      "project_id": "project-alpha", "stage_id": "release-1",
+      "provider": "jira", "site": "https://tracker.example.invalid", "stable_id": "10001",
+      "rule_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "principal_id": "fixture-source-principal"
+    },
+    "target_capture_id": "capture-2",
+    "baseline": {
+      "summary_id": "summary-1", "accepted_revision": 1, "capture_id": "capture-1",
+      "text": "Intermittent validation failure; logs and rerun are pending."
+    },
+    "required_parts": ["facts", "comments", "history"],
+    "coverage": {"facts": "complete", "comments": "complete", "history": "complete"},
+    "delta": {
+      "from_capture_id": "capture-1", "to_capture_id": "capture-2",
+      "added_ids": ["comment-b", "comment-c"], "updated_ids": [], "deleted_ids": []
+    },
+    "evidence": [
+      {
+        "ref_id": "fields-ref", "capture_id": "capture-2", "kind": "field", "source_id": "fields",
+        "json_pointer": "/fields",
+        "source_hash": "1e9362841ebaec41ee5976118287372a0d81e0971e8aa5533da8b59693e13094",
+        "value": {"status": "Fixed", "assignee_id": "dev-a"}
+      },
+      {
+        "ref_id": "b-ref", "capture_id": "capture-2", "kind": "comment", "source_id": "comment-b",
+        "json_pointer": "/comments/comment-b",
+        "source_hash": "7d07166ce97003e92f1dd48858480af501718679548371495731194bb5c70225",
+        "value": {"author_id": "dev-a", "body": "Logs attached. Failure reproduced on build r7."}
+      },
+      {
+        "ref_id": "c-ref", "capture_id": "capture-2", "kind": "comment", "source_id": "comment-c",
+        "json_pointer": "/comments/comment-c",
+        "source_hash": "03346c046d0143d07127adc15e097c502df3ea4479f1df5a49f961555d85f04a",
+        "value": {"author_id": "dev-a", "body": "Bob (qa-b), please rerun validation on build r8."}
+      }
+    ]
+  },
+  "candidate": {
+    "kind": "summary",
+    "binding": {
+      "project_id": "project-alpha", "stage_id": "release-1",
+      "provider": "jira", "site": "https://tracker.example.invalid", "stable_id": "10001",
+      "rule_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "principal_id": "fixture-source-principal"
+    },
+    "profile_revision": "project-reporting.summary@review-1",
+    "input_hash": "eba2828c61642439c09db05a27c5d4512db48014b6012635cfa0065524e927ca",
+    "base_summary_id": "summary-1", "target_capture_id": "capture-2", "output_language": "en",
+    "what": "Intermittent failure during validation.",
+    "current_position": "The item is marked Fixed. The failure was reproduced on r7; a rerun on r8 is requested.",
+    "verification": "The supplied evidence does not confirm that the r8 rerun passed.",
+    "next_actions": [
+      {
+        "action": "Rerun validation on build r8.", "owner_id": "qa-b", "owner_basis": "explicit",
+        "owner_quote": "Bob (qa-b), please rerun validation on build r8.",
+        "owner_confirmed": false, "state": "open", "evidence": ["c-ref"]
+      }
+    ],
+    "blockers": [], "limitations": [], "evidence": ["fields-ref", "b-ref", "c-ref"]
+  },
+  "acceptance_context": {
+    "authorized": true, "current_summary_id": "summary-1", "current_accepted_revision": 1,
+    "current_target_capture_id": "capture-2", "current_profile_revision": "project-reporting.summary@review-1"
+  }
+}

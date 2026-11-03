@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-03",
+  "scope": "synthetic_workflow_without_editor",
+  "result": "passed",
+  "execution_mode": "synthetic",
+  "repository": "D:/AIGC/scrum_dashboard",
+  "run_directory": "D:/AIGC/scrum_dashboard_validation/full-stack/7b1f3cc9-7fb4-4bf3-acdc-f4dbb5c4b510",
+  "actual_components": [
+    "Django project and stage ownership",
+    "manual run worker and durable operation journal",
+    "provider capture adapter and local data Git",
+    "installed task-run/1 SDK 0.1.0a2",
+    "AI Base loopback HTTP and retained Run store",
+    "summary acceptance and versioned drafts",
+    "HTML and plain-text downloads",
+    "explicit browser-confirmed publication"
+  ],
+  "synthetic_components": ["Jira transport responses", "AI Base executor output"],
+  "base": {
+    "run_store_id": "store_c175086756304382acdc45c95cd3cd40",
+    "run_id": "run_fd287b74fa034b2da05cd4b2be86abfc",
+    "total_runs": 1,
+    "executor_dispatches": 1,
+    "original_result_preserved": true
+  },
+  "first_success": {
+    "operation_id": "962c0282-b098-5002-9012-9596254ec0a1",
+    "capture_id": "ded07860-4d6c-5227-bc7d-0b462ef94559",
+    "summary_id": "eaa87356-1e9c-54e4-a50b-30abe4ab5cf8",
+    "draft_id": "0805a617-331c-5c5c-883a-808223ddd0dd",
+    "draft_revision": 1,
+    "human_text_edited": false,
+    "complete_comment_ids": ["201", "202", "203"]
+  },
+  "publication": {
+    "publication_id": "6c497813-5a1b-5875-8bef-5f7f436d8deb",
+    "data_git_commit": "06d00bccb2b919313f4f742adb728eeae7aed38f",
+    "manifest_sha256": "336af099487fac6c36b70ac101e7f5b2bdf4891341ccab1171d557c1b790d472",
+    "html_sha256": "554d88f7b085b56e31226697836039c019bf3b681f67569f5c81607aa7ce5e7d",
+    "plain_text_sha256": "8466ff3fb9436ec58e7db92e2fa31498792d494586bd82cb6567630b0e1ff3ee",
+    "downloads_match_git_bytes": true,
+    "downloads_unchanged_after_restart": true
+  },
+  "unchanged_repeat": {
+    "operation_id": "5be20c49-5726-5a6b-9b7b-2402dd7b13fb",
+    "capture_id": "54fd1b99-565b-546b-af91-0002478798dc",
+    "draft_id": "044c2300-6410-5e2d-924f-16d991cfcf06",
+    "state": "draft_ready",
+    "item_state": "no_work",
+    "new_analysis_attempts": 0,
+    "new_base_runs": 0,
+    "accepted_summary_bytes_unchanged": true,
+    "actual_browser_auto_refresh": true,
+    "terminal_polling_stopped": true
+  },
+  "preservation": {
+    "original_failed_operation_unchanged": true,
+    "failed_capture_sealed_partial": true,
+    "previous_w2_w5_files_hash_matched": 6,
+    "original_base_store_reused": true,
+    "old_source_copies_preserved": true
+  },
+  "browser": {
+    "actual": "Ego Lite",
+    "target": "desktop Chrome",
+    "equivalence": "user-approved",
+    "observed_engine": "Chrome/156.0.0.0",
+    "standalone_viewport_width": 1920,
+    "standalone_table_rows": 26,
+    "screenshots": "unavailable_not_qualified"
+  },
+  "evidence_relative_to_run": [
+    "evidence/artifact-chain-verification.json",
+    "evidence/browser-finalization.json",
+    "evidence/publication-downloads.json",
+    "evidence/unchanged-browser-run.json",
+    "evidence/unchanged-chain-verification.json",
+    "evidence/standalone-report-view.json",
+    "evidence/failed-capture-partial-seal.json",
+    "evidence/stop/a8963fb7-19fb-454d-9c97-ce763a2c8a32/stop-receipt.json",
+    "evidence/stop/0632f195-3035-4a82-82d7-a3c795b960b6/stop-receipt.json"
+  ],
+  "review_records_relative_to_repository": [
+    ".tmp/html-reports/qualify-review-r1/store-fix-review.md",
+    ".tmp/html-reports/qualify-review-r1/page-size-fix-review.md",
+    ".tmp/html-reports/qualify-review-r1/run-poll-review.md"
+  ],
+  "final_service_state": "normally_stopped",
+  "deferred": [
+    "WYSIWYG editor delivery and integration",
+    "formatted clipboard and Outlook paste qualification",
+    "editor iframe presentation",
+    "live Jira or model qualification",
+    "cumulative multi-day delta and remaining W3-W7 tasks",
+    "official deployment and scheduling"
+  ],
+  "side_effects_not_performed": [
+    "real Jira/HSD writes",
+    "paid model calls",
+    "email sending",
+    "production data migration",
+    "code Git commit or push",
+    "automatic scheduling"
+  ]
+}

@@ -1,0 +1,1 @@
+{"additionalProperties":false,"properties":{"reasonCode":{"const":"caller_requested","title":"Reasoncode","type":"string"},"scopeKey":{"maxLength":200,"minLength":1,"pattern":"^[A-Za-z0-9._:-]+$","title":"Scopekey","type":"string"}},"required":["scopeKey","reasonCode"],"title":"RunCancelRequest","type":"object"}

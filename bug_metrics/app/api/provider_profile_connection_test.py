@@ -2,9 +2,10 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from django.conf import settings
+from atlassian import Jira
 
-from bug_metrics.provider_profile_connection import first_profile_credential_value, profile_connection_value, profile_credential_value
-from jira_sync.out.jira_scope_issue_adapter import create_jira_client
+from bug_metrics.app.api.provider_connections import ConnectionError, create_provider_connection_resolver
+from bug_metrics.provider_connections.contracts import ERROR_MESSAGES
 from provider_sync.app.api.hsdes import HsdesHttpClient, HsdesProviderError
 
 from .provider_profile_config import ProviderProfileConfigService, SavedProviderProfileConfig
@@ -44,14 +45,15 @@ class ProviderProfileConnectionTestService:
 
     def _test_jira_connection(self, config: SavedProviderProfileConfig) -> ProviderProfileConnectionTestResult:
         try:
-            server_info = (self._jira_client_factory or create_jira_client)(settings, config.connection_settings).get_server_info()
+            resolved = create_provider_connection_resolver(settings, _NoProfileRegistry()).resolve_record(config)
+            server_info = resolved.open_jira_client(self._jira_client_factory or Jira).get_server_info()
             return ProviderProfileConnectionTestResult(
                 'success',
                 config.provider_id,
                 config.profile_id,
                 'Jira connection succeeded.',
                 {
-                    'base_url': profile_connection_value(config.connection_settings, 'base_url', settings.METRICS_JIRA_SERVER_URL),
+                    'base_url': resolved.info.endpoint.base_url,
                     'server_title': self._server_info_value(server_info, 'serverTitle'),
                     'version': self._server_info_value(server_info, 'version'),
                 },
@@ -82,15 +84,8 @@ class ProviderProfileConnectionTestService:
                 {'missing_fields': ', '.join(missing_fields)},
             )
         try:
-            client = (self._hsdes_client_factory or HsdesHttpClient)(
-                base_url=profile_connection_value(config.connection_settings, 'base_url', settings.METRICS_HSDES_API_BASE_URL),
-                auth_mode=profile_connection_value(config.connection_settings, 'auth_mode', settings.METRICS_HSDES_AUTH_MODE),
-                username=profile_credential_value(config.connection_settings, 'username', settings.METRICS_HSDES_USERNAME),
-                password=profile_credential_value(config.connection_settings, 'password', settings.METRICS_HSDES_PASSWORD),
-                token=first_profile_credential_value(config.connection_settings, ['token', 'api_token'], settings.METRICS_HSDES_TOKEN),
-                timeout_seconds=int(profile_connection_value(config.connection_settings, 'timeout_seconds', settings.METRICS_HSDES_TIMEOUT_SECONDS)),
-                transport=profile_connection_value(config.connection_settings, 'transport', settings.METRICS_HSDES_HTTP_TRANSPORT),
-            )
+            resolved = create_provider_connection_resolver(settings, _NoProfileRegistry()).resolve_record(config)
+            client = resolved.open_hsdes_client(self._hsdes_client_factory or HsdesHttpClient)
             payload = client.execute_saved_query(query_id, tenant, subject, ['id'], 0, 1)
             return ProviderProfileConnectionTestResult(
                 'success',
@@ -110,7 +105,7 @@ class ProviderProfileConnectionTestService:
                 config.provider_id,
                 config.profile_id,
                 'HSD-ES connection failed.',
-                {'category': error.category, 'error': self._redacted_message(str(error), config.connection_settings)},
+                {'category': error.category, 'error': 'Provider connection failed.'},
             )
         except Exception as error:
             return self._failed_result(config, 'HSD-ES connection failed.', error)
@@ -122,6 +117,8 @@ class ProviderProfileConnectionTestService:
             return config
         merged_connection_settings = dict(saved.connection_settings or {})
         incoming_connection_settings = dict(config.connection_settings or {})
+        if self._endpoint_or_auth_changed(merged_connection_settings, incoming_connection_settings):
+            return config
         merged_credentials = {
             **dict(merged_connection_settings.get('credentials') or {}),
             **dict(incoming_connection_settings.get('credentials') or {}),
@@ -132,13 +129,21 @@ class ProviderProfileConnectionTestService:
         config.connection_settings = merged_connection_settings
         return config
 
+    def _endpoint_or_auth_changed(self, saved_settings: dict[str, Any], incoming_settings: dict[str, Any]) -> bool:
+        for key in ['base_url', 'auth_mode']:
+            if key in incoming_settings and saved_settings.get(key) not in {None, ''}:
+                if incoming_settings.get(key) != saved_settings.get(key):
+                    return True
+        return False
+
     def _failed_result(self, config: SavedProviderProfileConfig, summary: str, error: Exception) -> ProviderProfileConnectionTestResult:
+        code = error.code if isinstance(error, ConnectionError) else 'INTERNAL_ERROR'
         return ProviderProfileConnectionTestResult(
             'failed',
             config.provider_id,
             config.profile_id,
             summary,
-            {'error': self._redacted_message(str(error), config.connection_settings)},
+            {'error': ERROR_MESSAGES.get(code, ERROR_MESSAGES['INTERNAL_ERROR']), 'code': code},
         )
 
     def _redacted_message(self, message: str, connection_settings: dict[str, Any]) -> str:
@@ -167,3 +172,8 @@ class ProviderProfileConnectionTestService:
             if isinstance(payload.get(key), list):
                 return len(payload[key])
         return 0
+
+
+class _NoProfileRegistry:
+    def resolve_profile(self, profile_id):
+        raise KeyError(profile_id)

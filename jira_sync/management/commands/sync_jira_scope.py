@@ -4,13 +4,15 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
+from atlassian import Jira
 
+from bug_metrics.app.api.provider_connections import ConnectionError, create_provider_connection_resolver
 from bug_metrics.container import bug_metrics_container
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
 from jira_history.container import jira_history_container
 from jira_sync.app.api.issue_payload_materializer import JiraIssuePayloadMaterializer
 from jira_sync.models import JiraSyncCursor
-from jira_sync.out.jira_scope_issue_adapter import JiraScopeIssueAdapter, create_jira_client
+from jira_sync.out.jira_scope_issue_adapter import JiraScopeIssueAdapter
 
 
 class Command(BaseCommand):
@@ -32,7 +34,7 @@ class Command(BaseCommand):
         calculation_started = False
 
         try:
-            adapter = JiraScopeIssueAdapter(create_jira_client(settings, self._connection_settings_for_scope(bug_trend_api, scope)))
+            adapter = JiraScopeIssueAdapter(self._open_jira_client_for_scope(bug_trend_api, scope))
             history_api = jira_history_container.jira_history_api
             full_sync = options['full'] or cursor.last_jira_updated_cutoff is None
             current_issues, out_of_scope_issues = self._fetch_issues(adapter, history_api, materializer, scope, cursor, full_sync)
@@ -66,6 +68,8 @@ class Command(BaseCommand):
             cursor.status = JiraSyncCursor.STATUS_FAILED
             cursor.last_error = str(error)
             cursor.save(update_fields=['status', 'last_error', 'updated_at'])
+            if isinstance(error, ConnectionError):
+                raise CommandError(str(error)) from None
             raise
 
     def _claim_cursor(self, scope, coverage_start, coverage_end, full_sync):
@@ -115,15 +119,20 @@ class Command(BaseCommand):
             issues.extend(adapter.fetch_issues(jql, field_names))
         return issues
 
-    def _connection_settings_for_scope(self, bug_trend_api, scope):
+    def _open_jira_client_for_scope(self, bug_trend_api, scope):
+        registry = ProjectProviderProfileRegistry.load_default()
+        profile = self._profile_for_scope(bug_trend_api, scope, registry)
+        return create_provider_connection_resolver(settings, registry).resolve_record(profile).open_jira_client(Jira)
+
+    def _profile_for_scope(self, bug_trend_api, scope, registry):
         binding = bug_trend_api.resolve_scope_provider_binding(scope)
         if not binding.is_resolved or binding.provider_id != 'jira':
             blocker = binding.blockers[0].get('message', '') if binding.blockers else 'Scope is not bound to a Jira provider profile.'
             raise CommandError(blocker)
-        resolution = ProjectProviderProfileRegistry.load_default().resolve_profile(binding.profile_id)
+        resolution = registry.resolve_profile(binding.profile_id)
         if resolution.profile is None or resolution.profile.provider_id != 'jira':
             raise CommandError(f'Provider profile {binding.profile_id} is not available for Jira sync.')
-        return dict(resolution.profile.connection_settings or {})
+        return resolution.profile
 
     def _issue_key_batches(self, issue_keys):
         batch_size = 50

@@ -1,0 +1,88 @@
+{% load i18n %}
+<div id="project-run-status-fragment" data-operation-id="{{ operation.operation_id }}"{% if operation.state != "draft_ready" and operation.state != "partial" and operation.state != "canceled" and operation.state != "failed" %} data-run-status-url="{% url 'ui_web:project_run_status' detail.project.id stage.id operation.operation_id %}"{% endif %}>
+    <section class="block">
+        <h2 class="title is-4">{{ operation.state }}</h2>
+    </section>
+
+    <section class="block">
+        <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-narrow dashboard-dense-table">
+                <tbody>
+                    <tr><th>{% trans "Operation" %}</th><td><code>{{ operation.operation_id }}</code></td></tr>
+                    <tr><th>{% trans "Command" %}</th><td><code>{{ operation.command_id }}</code></td></tr>
+                    <tr><th>{% trans "Execution mode" %}</th><td>{{ operation.execution_mode }}</td></tr>
+                    <tr><th>{% trans "Created" %}</th><td>{{ operation.created_at }}</td></tr>
+                    <tr><th>{% trans "Deadline" %}</th><td>{{ operation.deadline_at }}</td></tr>
+                    <tr><th>{% trans "Revision" %}</th><td>{{ operation.revision }}</td></tr>
+                    <tr><th>{% trans "Capture" %}</th><td><code>{{ operation.capture_id }}</code></td></tr>
+                    <tr><th>{% trans "Cancel requested" %}</th><td>{% if operation.cancel_requested %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td></tr>
+                    {% if operation.error_code %}<tr><th>{% trans "Error" %}</th><td><code>{{ operation.error_code }}</code></td></tr>{% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if operation.item_results %}
+        <section class="block">
+            <h3 class="title is-5">{% trans "Items" %}</h3>
+            <div class="table-container responsive-admin-table-box">
+                <table class="table is-fullwidth is-narrow dashboard-dense-table">
+                    <thead><tr><th>{% trans "Source" %}</th><th>{% trans "State" %}</th><th>{% trans "Attempt" %}</th><th>{% trans "Summary" %}</th><th>{% trans "Error" %}</th></tr></thead>
+                    <tbody>
+                        {% for item in operation.item_results %}
+                            <tr>
+                                <td><code>{{ item.source_key_hash|slice:":12" }}</code></td>
+                                <td>{{ item.state }}</td>
+                                <td>{% if item.attempt_id %}<code>{{ item.attempt_id }}</code>{% endif %}</td>
+                                <td>{% if item.accepted_summary_id %}<code>{{ item.accepted_summary_id }}</code>{% endif %}</td>
+                                <td>{% if item.error_code %}<code>{{ item.error_code }}</code>{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+
+    {% if links.produced_revision_url %}
+        <section class="block">
+            <h3 class="title is-5">{% trans "Produced draft" %}</h3>
+            <div class="buttons">
+                <a class="button" href="{{ links.produced_revision_url }}">
+                    <span class="icon is-small"><i class="iconoir-page"></i></span>
+                    <span>{% blocktrans with revision=operation.draft_revision %}Produced draft revision {{ revision }}{% endblocktrans %}</span>
+                </a>
+                <a class="button" href="{{ links.latest_draft_url }}">
+                    <span class="icon is-small"><i class="iconoir-edit-pencil"></i></span>
+                    <span>{% trans "Open latest draft" %}</span>
+                </a>
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="block">
+        <div class="buttons">
+            <a class="button" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{% trans "Back to stage" %}</a>
+            {% if operation.state == "queued" or operation.state == "capturing" or operation.state == "analyzing" or operation.state == "cancel_requested" %}
+                <form method="post" action="{% url 'ui_web:project_run_cancel' detail.project.id stage.id operation.operation_id %}">
+                    {% csrf_token %}
+                    {{ cancel_form.expected_revision }}
+                    <button class="button is-warning is-light" type="submit">
+                        <span class="icon is-small"><i class="iconoir-xmark"></i></span>
+                        <span>{% trans "Cancel" %}</span>
+                    </button>
+                </form>
+            {% endif %}
+            {% if operation.state == "interrupted" %}
+                <form method="post" action="{% url 'ui_web:project_run_resume' detail.project.id stage.id operation.operation_id %}">
+                    {% csrf_token %}
+                    {{ resume_form.expected_revision }}
+                    <button class="button is-primary" type="submit">
+                        <span class="icon is-small"><i class="iconoir-refresh-double"></i></span>
+                        <span>{% trans "Resume" %}</span>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </section>
+</div>

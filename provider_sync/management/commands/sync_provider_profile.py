@@ -3,12 +3,12 @@ from io import StringIO
 
 from django.conf import settings
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
+from bug_metrics.app.api.provider_connections import ConnectionError, create_provider_connection_resolver
 from bug_metrics.container import bug_metrics_container
 from bug_metrics.app.api.provider_aggregate_common import ww_range_to_dates
 from bug_metrics.app.api.provider_profile_registry import ProjectProviderProfileRegistry
-from bug_metrics.provider_profile_connection import first_profile_credential_value, profile_connection_value, profile_credential_value
 from provider_sync.app.api import ProviderFreshnessStatus
 from provider_sync.app.api.hsdes import HsdesHttpClient, HsdesSavedQueryAdapter, HsdesSavedQuerySyncService
 
@@ -23,6 +23,15 @@ class Command(BaseCommand):
         parser.add_argument('--force-refresh', action='store_true')
 
     def handle(self, *args, **options):
+        try:
+            return self._handle(*args, **options)
+        except (ConnectionError, CommandError):
+            self.stdout.write(json.dumps({
+                'status': 'failed', 'profile_id': options['profile_id'],
+                'error_category': 'provider_error',
+            }, sort_keys=True))
+
+    def _handle(self, *args, **options):
         profile_id = options['profile_id']
         registry = ProjectProviderProfileRegistry.load_default()
         resolution = registry.resolve_profile(profile_id)
@@ -58,15 +67,7 @@ class Command(BaseCommand):
                 'reason': 'Set METRICS_HSDES_LIVE_SYNC_ENABLED=true and configure backend HSD-ES credentials to run live sync.',
             }, sort_keys=True))
             return
-        client = HsdesHttpClient(
-            base_url=profile_connection_value(profile.connection_settings, 'base_url', settings.METRICS_HSDES_API_BASE_URL),
-            auth_mode=profile_connection_value(profile.connection_settings, 'auth_mode', settings.METRICS_HSDES_AUTH_MODE),
-            username=profile_credential_value(profile.connection_settings, 'username', settings.METRICS_HSDES_USERNAME),
-            password=profile_credential_value(profile.connection_settings, 'password', settings.METRICS_HSDES_PASSWORD),
-            token=first_profile_credential_value(profile.connection_settings, ['token', 'api_token'], settings.METRICS_HSDES_TOKEN),
-            timeout_seconds=int(profile_connection_value(profile.connection_settings, 'timeout_seconds', settings.METRICS_HSDES_TIMEOUT_SECONDS)),
-            transport=profile_connection_value(profile.connection_settings, 'transport', settings.METRICS_HSDES_HTTP_TRANSPORT),
-        )
+        client = create_provider_connection_resolver(settings, registry).resolve_record(profile).open_hsdes_client(HsdesHttpClient)
         result = HsdesSavedQuerySyncService(
             adapter=HsdesSavedQueryAdapter(client),
             profile_registry=registry,

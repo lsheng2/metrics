@@ -1,4 +1,3 @@
-import base64
 import json
 import urllib.error
 from unittest.mock import patch
@@ -75,22 +74,17 @@ class TestHsdesLiveSync(TestCase):
         # Given
         calls = []
 
-        def fake_runner(command, capture_output, text, timeout, env):
-            calls.append({
-                'command': command,
-                'capture_output': capture_output,
-                'text': text,
-                'timeout': timeout,
-                'url': command[-2],
-            })
-            return FakeProcess(stdout=json.dumps({'data': [{'id': '16000000001'}], 'total': 1}), stderr='', returncode=0)
+        class FakeRunner:
+            def run(self, url, timeout_seconds):
+                calls.append({'url': url, 'timeout_seconds': timeout_seconds})
+                return FakeProcess(stdout=json.dumps({'data': [{'id': '16000000001'}], 'total': 1}), stderr='', returncode=0)
 
         client = HsdesHttpClient(
             base_url='https://hsdes-api.intel.com/rest',
             auth_mode='kerberos',
             timeout_seconds=15,
             transport='powershell',
-            powershell_runner=fake_runner,
+            powershell_runner=FakeRunner(),
         )
 
         # When
@@ -98,10 +92,8 @@ class TestHsdesLiveSync(TestCase):
 
         # Then
         self.assertEqual(1, page['total'])
-        decoded_script = base64.b64decode(calls[0]['command'][-1]).decode('utf-16le')
-        self.assertIn('-EncodedCommand', calls[0]['command'])
-        self.assertIn('-UseDefaultCredentials', decoded_script)
-        self.assertIn('/rest/query/execution/15017652869?', decoded_script)
+        self.assertEqual(15, calls[0]['timeout_seconds'])
+        self.assertIn('/rest/query/execution/15017652869?', calls[0]['url'])
 
     def test_shouldNormalizeHsdesHttpErrorsIntoSafeCategories(self):
         # Given / When / Then
@@ -388,7 +380,7 @@ class TestHsdesLiveSync(TestCase):
         self.assertEqual('basic', client_kwargs['auth_mode'])
         self.assertEqual('profile-hsdes-user', client_kwargs['username'])
         self.assertEqual('profile-hsdes-password', client_kwargs['password'])
-        self.assertEqual('profile-hsdes-token', client_kwargs['token'])
+        self.assertEqual('', client_kwargs['token'])
         self.assertEqual('urllib', client_kwargs['transport'])
         self.assertEqual(17, client_kwargs['timeout_seconds'])
 

@@ -23,10 +23,10 @@ class TestProviderProfileConfigService(TestCase):
         self.assertEqual('', config.connection_settings['credential_ref'])
         self.assertEqual('provider_owned_saved_query', config.source_population['ownership_type'])
 
-    @patch('bug_metrics.app.api.provider_profile_connection_test.create_jira_client')
-    def test_shouldTestJiraProfileConnectionThroughServerInfo(self, create_jira_client):
+    @patch('bug_metrics.app.api.provider_profile_connection_test.Jira')
+    def test_shouldTestJiraProfileConnectionThroughServerInfo(self, jira_factory):
         # Given
-        create_jira_client.return_value.get_server_info.return_value = {
+        jira_factory.return_value.get_server_info.return_value = {
             'serverTitle': 'Jira Test',
             'version': '10.0',
         }
@@ -37,7 +37,6 @@ class TestProviderProfileConfigService(TestCase):
             'connection_settings': {
                 'base_url': 'https://jira.profile.example',
                 'auth_mode': 'server_pat',
-                'credential_ref': 'profile:local',
                 'credentials': {'api_token': 'secret-token'},
             },
         })
@@ -48,7 +47,8 @@ class TestProviderProfileConfigService(TestCase):
         # Then
         self.assertEqual('success', result.status)
         self.assertEqual('Jira Test', result.details['server_title'])
-        self.assertEqual('https://jira.profile.example', create_jira_client.call_args.args[1]['base_url'])
+        self.assertEqual('https://jira.profile.example', jira_factory.call_args.kwargs['url'])
+        self.assertEqual('secret-token', jira_factory.call_args.kwargs['token'])
 
     def test_shouldAskForHsdesProbeSourceBeforeSavedQueryConnectionTest(self):
         # Given

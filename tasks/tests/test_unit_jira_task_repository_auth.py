@@ -59,7 +59,14 @@ class TestJiraTaskRepositoryAuth(unittest.TestCase):
         JiraTaskRepository(config)
 
         # then
-        jira_client.assert_called_once_with(url="https://jira.devtools.intel.com", token="pat", verify_ssl=True)
+        kwargs = jira_client.call_args.kwargs
+        self.assertEqual("https://jira.devtools.intel.com", kwargs["url"])
+        self.assertEqual("pat", kwargs["token"])
+        self.assertEqual(True, kwargs["verify_ssl"])
+        self.assertIn("session", kwargs)
+        self.assertEqual(30, kwargs["timeout"])
+        self.assertFalse(kwargs["backoff_and_retry"])
+        self.assertFalse(kwargs["retry_with_header"])
 
     @patch("tasks.out.jira_task_repository.Jira")
     def test_shouldUseConfiguredCaBundleForServerDataCenterPersonalAccessToken(self, jira_client):
@@ -77,11 +84,11 @@ class TestJiraTaskRepositoryAuth(unittest.TestCase):
         JiraTaskRepository(config)
 
         # then
-        jira_client.assert_called_once_with(
-            url="https://jira.devtools.intel.com",
-            token="pat",
-            verify_ssl="C:/certs/intel-ca.pem",
-        )
+        kwargs = jira_client.call_args.kwargs
+        self.assertEqual("https://jira.devtools.intel.com", kwargs["url"])
+        self.assertEqual("pat", kwargs["token"])
+        self.assertEqual("C:\\certs\\intel-ca.pem", kwargs["verify_ssl"])
+        self.assertIn("session", kwargs)
 
     @patch("tasks.out.jira_task_repository.Jira")
     def test_shouldKeepCloudBasicAuthenticationWhenServerPatIsNotConfigured(self, jira_client):
@@ -97,13 +104,14 @@ class TestJiraTaskRepositoryAuth(unittest.TestCase):
         JiraTaskRepository(config)
 
         # then
-        jira_client.assert_called_once_with(
-            url="https://example.atlassian.net",
-            username="pm@example.com",
-            password="api-token",
-            verify_ssl=True,
-            cloud=True,
-        )
+        kwargs = jira_client.call_args.kwargs
+        self.assertEqual("https://example.atlassian.net", kwargs["url"])
+        self.assertEqual("pm@example.com", kwargs["username"])
+        self.assertEqual("api-token", kwargs["password"])
+        self.assertEqual(True, kwargs["verify_ssl"])
+        self.assertEqual(True, kwargs["cloud"])
+        self.assertIn("session", kwargs)
+        self.assertEqual(30, kwargs["timeout"])
 
     @patch("tasks.out.jira_task_repository.JiraServerTaskProvider")
     @patch("tasks.out.jira_task_repository.CachingTaskProvider")

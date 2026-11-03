@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Project request failed" %}{% endblock %}
+{% block page_title %}{% trans "Project request failed" %}{% endblock %}
+
+{% block content %}
+<article class="block">
+    <div class="notification is-danger is-light" role="alert">{{ message }}</div>
+    <a class="button" href="{% url 'ui_web:projects' %}"><span class="icon is-small"><i class="iconoir-nav-arrow-left"></i></span><span>{% trans "Back to projects" %}</span></a>
+</article>
+{% endblock %}

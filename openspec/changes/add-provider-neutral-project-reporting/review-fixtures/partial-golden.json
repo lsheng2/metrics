@@ -1,0 +1,54 @@
+{
+  "input": {
+    "fixture_version": "review-1",
+    "profile_revision": "project-reporting.summary@review-1",
+    "binding": {
+      "project_id": "project-alpha", "stage_id": "release-1",
+      "provider": "jira", "site": "https://tracker.example.invalid", "stable_id": "10001",
+      "rule_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "principal_id": "fixture-source-principal"
+    },
+    "target_capture_id": "capture-2",
+    "baseline": {
+      "summary_id": "summary-1", "accepted_revision": 1, "capture_id": "capture-1",
+      "text": "Intermittent validation failure; logs and rerun are pending."
+    },
+    "required_parts": ["facts", "comments", "history"],
+    "coverage": {"facts": "complete", "comments": "partial", "history": "complete"},
+    "delta": {
+      "from_capture_id": "capture-1", "to_capture_id": "capture-2",
+      "added_ids": [], "updated_ids": [], "deleted_ids": []
+    },
+    "evidence": [
+      {
+        "ref_id": "fields-ref", "capture_id": "capture-2", "kind": "field", "source_id": "fields",
+        "json_pointer": "/fields",
+        "source_hash": "1e9362841ebaec41ee5976118287372a0d81e0971e8aa5533da8b59693e13094",
+        "value": {"status": "Fixed", "assignee_id": "dev-a"}
+      }
+    ]
+  },
+  "candidate": {
+    "kind": "partial",
+    "binding": {
+      "project_id": "project-alpha", "stage_id": "release-1",
+      "provider": "jira", "site": "https://tracker.example.invalid", "stable_id": "10001",
+      "rule_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "principal_id": "fixture-source-principal"
+    },
+    "profile_revision": "project-reporting.summary@review-1",
+    "input_hash": "3ca01734bb488efc1bafc959aa1587902ff827640f9d9d55a0d872f6b1c7538f",
+    "base_summary_id": "summary-1", "target_capture_id": "capture-2", "output_language": "en",
+    "what": "Intermittent validation failure previously reported.",
+    "current_position": "The field snapshot says Fixed; current comment progress is not fully available.",
+    "verification": "No complete verification conclusion is available.",
+    "next_actions": [],
+    "blockers": [],
+    "limitations": ["Comment coverage is partial. Preserve the prior accepted summary and pending actions."],
+    "evidence": ["fields-ref"]
+  },
+  "acceptance_context": {
+    "authorized": true, "current_summary_id": "summary-1", "current_accepted_revision": 1,
+    "current_target_capture_id": "capture-2", "current_profile_revision": "project-reporting.summary@review-1"
+  }
+}

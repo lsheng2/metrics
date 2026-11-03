@@ -2,6 +2,21 @@
 
 A Django-based team velocity and task tracking dashboard that connects to JIRA and Azure DevOps to provide insights into your development process.
 
+## Project Management And Reporting
+
+Generic project/stage management is being implemented in this Dashboard checkout.
+Chiplet is a project instance, not the application boundary. The first slice provides
+a local `project_catalog` CLI and authenticated desktop project/stage forms with English
+and Simplified Chinese labels. The synthetic capture-to-HTML/data-Git workflow,
+restart and unchanged-summary reuse passed actual full-stack qualification.
+The textarea editor is transitional: a separate Agent owns the required WYSIWYG
+integration; editor/clipboard/Outlook acceptance remains pending.
+Jira/HSD-ES source
+definitions are previewed and frozen. Live reporting and the full delta pipeline are
+not yet qualified.
+See the [current guide](openspec/docs/current-baseline/project-reporting.md) and
+[execution plan](openspec/changes/add-provider-neutral-project-reporting/tasks.md).
+
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![Django 6.0+](https://img.shields.io/badge/django-6.0+-green.svg)

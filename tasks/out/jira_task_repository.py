@@ -8,6 +8,8 @@ from sd_metrics_lib.sources.story_points import FunctionStoryPointExtractor
 from sd_metrics_lib.sources.tasks import CachingTaskProvider
 from sd_metrics_lib.utils.worktime import WorkTimeExtractor, SIMPLE_WORKTIME_EXTRACTOR, BoundarySimpleWorkTimeExtractor
 
+from bug_metrics.app.api.provider_connections import ProviderConnectionResolver
+
 from .convertors.jira import JiraTaskConverter
 from .jira_server_task_provider import JiraServerTaskProvider
 from .story_point_extractors import extract_jira_story_points
@@ -37,16 +39,7 @@ class JiraTaskRepository(TaskRepository):
 
     @staticmethod
     def _create_jira_client(jira_config):
-        if jira_config.uses_server_pat():
-            return Jira(url=jira_config.jira_server_url,
-                        token=jira_config.jira_api_token,
-                        verify_ssl=jira_config.ssl_verification())
-        return Jira(url=jira_config.jira_server_url,
-                    username=jira_config.jira_email,
-                    password=jira_config.jira_api_token,
-                    verify_ssl=jira_config.ssl_verification(),
-                    cloud=True
-                    )
+        return ProviderConnectionResolver(None, _NoProfileRegistry()).resolve_jira_config(jira_config).open_jira_client(Jira)
 
     async def find_all(self, search_criteria: Optional[TaskSearchCriteria] = None,
                        enrichment: Optional[EnrichmentOptions] = None) -> List[Task]:
@@ -144,3 +137,8 @@ class JiraTaskRepository(TaskRepository):
         for stage_name, statuses in config.workflow.stages.items():
             all_statuses.extend(statuses)
         return all_statuses
+
+
+class _NoProfileRegistry:
+    def resolve_profile(self, profile_id):
+        raise KeyError(profile_id)

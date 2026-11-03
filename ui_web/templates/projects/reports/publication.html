@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Published report" %}{% endblock %}
+{% block page_title %}{% trans "Published report" %}{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
+            <li class="is-active"><a href="#" aria-current="page">{{ publication.manifest.publication_id }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-4">{% trans "Published edition" %}</h2>
+                <p class="subtitle is-6"><code>{{ publication.manifest.publication_id }}</code></p>
+            </div>
+        </div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+
+    <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-narrow dashboard-dense-table">
+            <tbody>
+                <tr><th>{% trans "Draft" %}</th><td><code>{{ publication.manifest.draft_id }}</code></td></tr>
+                <tr><th>{% trans "Draft revision" %}</th><td>{{ publication.manifest.draft_revision }} <code>{{ publication.manifest.draft_revision_hash }}</code></td></tr>
+                <tr><th>{% trans "Source cutoff" %}</th><td>{{ publication.manifest.source_as_of }}</td></tr>
+                <tr><th>{% trans "Finalized by" %}</th><td>{{ publication.manifest.finalized_by }}</td></tr>
+                <tr><th>{% trans "Finalized" %}</th><td>{{ publication.manifest.finalized_at }}</td></tr>
+                <tr><th>{% trans "Commit" %}</th><td><code>{{ publication.commit_id }}</code> · {{ publication.checkout_state }}</td></tr>
+                <tr><th>{% trans "Manifest hash" %}</th><td><code>{{ publication.manifest_sha256 }}</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="buttons">
+        <a class="button" href="{% url 'ui_web:report_publication_download' detail.project.id stage.id publication.manifest.publication_id %}?format=html">
+            <span class="icon is-small"><i class="iconoir-download"></i></span>
+            <span>{% trans "Download HTML" %}</span>
+        </a>
+        <a class="button" href="{% url 'ui_web:report_publication_download' detail.project.id stage.id publication.manifest.publication_id %}?format=plain_text">
+            <span class="icon is-small"><i class="iconoir-download"></i></span>
+            <span>{% trans "Download text" %}</span>
+        </a>
+    </div>
+
+    {% if publication.manifest.purpose == "standup" %}
+        <form method="post" action="{% url 'ui_web:report_publication_revision' detail.project.id stage.id publication.manifest.publication_id %}" class="dashboard-action-form mt-4">
+            {% csrf_token %}
+            {{ revision_form.command_id }}
+            {{ revision_form.template_version }}
+            <div class="field">
+                <label class="label" for="{{ revision_form.template_id.id_for_label }}">{{ revision_form.template_id.label }}</label>
+                <div class="select">
+                    <select id="{{ revision_form.template_id.id_for_label }}" name="{{ revision_form.template_id.html_name }}">
+                        {% for value, label in revision_form.fields.template_id.choices %}
+                            <option value="{{ value }}" {% if revision_form.template_id.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button class="button is-primary" type="submit">
+                <span class="icon is-small"><i class="iconoir-plus"></i></span>
+                <span>{% trans "Create revision" %}</span>
+            </button>
+        </form>
+    {% else %}
+        <div class="notification is-light">{% trans "New revisions are only available for standup publications." %}</div>
+    {% endif %}
+</article>
+{% endblock %}

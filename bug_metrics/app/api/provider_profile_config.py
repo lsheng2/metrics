@@ -1,6 +1,9 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List
 
+from django.db import transaction
+from django.db.models import F
+
 from bug_metrics.models import BugTrendAuditEvent, BugTrendScopeProviderBinding, ProviderProfileConfig
 from provider_sync.models import ProviderAggregateArtifact, ProviderFact, ProviderFactSnapshot, ProviderSyncCursor
 
@@ -68,11 +71,20 @@ class ProviderProfileConfigService(ProviderProfilePersistenceMixin):
             readiness_policy={'ready_status': 'configuration_required'},
         )
 
+    @transaction.atomic
     def save_provider_profile_config(self, config: SavedProviderProfileConfig) -> SavedProviderProfileConfig:
         errors = self.validate_provider_profile_config(config)
         if errors:
             raise ValueError(errors)
         profile = ProviderProfileConfig.objects.get(id=config.id) if config.id else ProviderProfileConfig()
+        if profile.pk:
+            matched = ProviderProfileConfig.objects.filter(
+                pk=profile.pk, updated_at=profile.updated_at,
+                connection_settings=profile.connection_settings,
+            ).update(connection_settings=F('connection_settings'))
+            if matched != 1:
+                raise ValueError({'connection_settings': 'Profile changed. Reload before saving.'})
+            profile.refresh_from_db()
         before = self._snapshot(profile) if profile.id else {}
         self._merge_existing_credentials(profile, config)
         self._apply_config(profile, config)
@@ -247,6 +259,16 @@ class ProviderProfileConfigService(ProviderProfilePersistenceMixin):
 
     def _merge_existing_credentials(self, profile: ProviderProfileConfig, config: SavedProviderProfileConfig) -> None:
         connection_settings = dict(config.connection_settings or {})
+        existing_connection_settings = dict(profile.connection_settings or {})
+        if profile.id and existing_connection_settings.get('credential_storage') == 'protected_file':
+            for key in ('credentials', 'credential_values', 'credential_source', '_clear_credentials',
+                        'api_token', 'token', 'password', 'username', 'email'):
+                connection_settings.pop(key, None)
+            for key, value in existing_connection_settings.items():
+                if key.startswith('credential_'):
+                    connection_settings[key] = value
+            config.connection_settings = connection_settings
+            return
         clear_credentials = bool(connection_settings.pop('_clear_credentials', False))
         if clear_credentials:
             connection_settings.pop('credentials', None)

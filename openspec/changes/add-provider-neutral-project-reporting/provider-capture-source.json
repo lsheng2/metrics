@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "status": "ported-candidate-awaiting-independent-review",
+  "donor": "D:/AIGC/chiplet_programmgr",
+  "commit": "3d06b7a4a25434ee2fa133c9b4bef5f9c7c1366d",
+  "node_tested": "22.18.0",
+  "files": {
+    "src/standup/adapters/_jql/THIRD-PARTY-LICENSES.txt": "3a179fcff696ef83272adf5628bef2acf10febb7",
+    "src/standup/adapters/_jql/manifest.json": "cd72128b21c9d764ee0509349d9e4afaae62cd94",
+    "src/standup/adapters/_jql/parser.cjs": "1148e5c4cdda6b37eb3dd4c651ecf811946e81cd",
+    "src/standup/adapters/_jql/parser.cjs.LEGAL.txt": "b9f135be1cbe42af656fdf203b5e2b2c7abee40a",
+    "src/standup/adapters/jql.py": "fb5b628ecbc1e10e29b280d61c3dc7f14501822c",
+    "src/standup/adapters/jql_process.py": "a26471c9631ad2bf90e34afe942ab9a03ee4009b",
+    "src/standup/adapters/jira_capture.py": "959fdc9a67e5066f2d03bac0e8a117ae5d555bd6",
+    "src/standup/adapters/jira_scope.py": "78c3743a863000414952a47fc2e36679c6f724ef",
+    "src/standup/jira_consistency.py": "126f093c7f57ccfd09b931dcaa302bd2b7e3311e",
+    "src/standup/domain/jira.py": "859975090a375b2ba587a1a484d9385913b83c89",
+    "src/standup/domain/jira_values.py": "66280e5e7852e600bac5a0f795a1ac86282d0a67",
+    "tests/contract/test_jira_capture.py": "852807ec90a9b6dc30e78985dfc54f6d078d46ac",
+    "tests/contract/test_jira_scope.py": "6841f2f4d8cbdf966121cb3d8a5d7ce78c4ab5a2",
+    "tests/contract/test_jira_consistency.py": "3a55233dc2bcb436ed42fbcaff6b69f0da1f4ecb"
+  },
+  "disposition": {
+    "parser resources": "copy pinned bytes and all legal notices; qualify actual Node utility",
+    "jql wrapper and process": "adapt to target errors and source session deadline, retain bounded process behavior",
+    "jira capture and pagination": "port behavior to explicit archive-sink reader and provider-neutral DTOs",
+    "consistency": "retain pure known-plugin address-only comparison; never rewrite raw fields",
+    "tests": "port selected positive/refusal scenarios to actual target adapters",
+    "errors, schema and config dependencies": "replace donor wrappers with existing target contracts; do not import standup",
+    "donor installation, budget, worker": "not copied; target lease/session/archive are owners"
+  },
+  "target_mapping": {
+    "src/standup/adapters/_jql": "provider_sync/out/_jql: four byte-identical resources; .gitattributes disables text/filter conversion",
+    "src/standup/adapters/jql.py": "provider_sync/out/jql.py: adapted imports, slots DTO and safe target errors",
+    "src/standup/adapters/jql_process.py": "provider_sync/out/jql_process.py: bounded Windows utility process adapted to target errors",
+    "src/standup/adapters/jira_scope.py": "provider_sync/out/jira_scope.py and jira_pages.py: explicit lease, principal and source-resolution DTO",
+    "src/standup/adapters/jira_capture.py": "provider_sync/out/jira_capture.py: provider-neutral snapshot and archive callback",
+    "src/standup/jira_consistency.py": "provider_sync/out/jira_consistency.py: same schema-qualified address-only projection; raw data unchanged",
+    "donor contract tests": "provider_sync/tests/test_jira_capture_contract.py and project_management/tests/test_capture_pipeline.py: target public API and real temporary Git, not donor test counts"
+  }
+}
