@@ -47,7 +47,9 @@ from scripts.validation.project_full_stack_identity import (
     validate_process_proof,
     wait_valid_connection,
 )
-from scripts.validation.project_summary_support import probe_base_imports, verify_base_source, verify_installed_sdk
+from scripts.validation.project_summary_support import (
+    probe_base_imports, sdk_selection, sdk_selection_digest, verify_base_source, verify_installed_sdk,
+)
 
 
 PROJECT_NAME = 'dashboard-full-stack'
@@ -56,6 +58,8 @@ APP_NAME = 'project-app'
 BASE_NAME = 'ai-base'
 SAFE_STOP_SECONDS = 620
 APPROVED_CLEAN_WORK_ROOT = ROOT / '.tmp' / 'task-run-w5-clean-merged-20261103'
+APPROVED_SDK020_WORK_ROOT = ROOT / '.tmp' / 'sdk-020-join-20261105'
+APPROVED_WORK_ROOTS = (APPROVED_CLEAN_WORK_ROOT, APPROVED_SDK020_WORK_ROOT)
 
 
 def default_base_python() -> Path:
@@ -63,7 +67,7 @@ def default_base_python() -> Path:
 
 
 def qualify_work_root(value: Path) -> Path:
-    return resolve_qualification_work_root(value, ROOT, APPROVED_CLEAN_WORK_ROOT)
+    return resolve_qualification_work_root(value, ROOT, APPROVED_WORK_ROOTS)
 
 
 def prepare(args) -> dict:
@@ -79,6 +83,7 @@ def prepare(args) -> dict:
     data_root = ensure_data_root(args.data_root)
     run_dir = create_run_dir(data_root)
     initialize_run_dir(run_dir, data_root)
+    args.run_dir = run_dir
     sys.pycache_prefix = str(run_dir / 'environment' / 'pycache-prepare')
     os.environ['DJANGO_SETTINGS_MODULE'] = 'scripts.validation.project_full_stack_settings'
     os.environ['METRICS_PROJECT_FULL_STACK_RUN_DIR'] = str(run_dir)
@@ -107,8 +112,9 @@ def prepare(args) -> dict:
         'pack_root': str(pack_root),
         'app_python': sys.executable,
         'base_source_provenance': provenance,
-        'sdk_version': '0.1.0a2',
+        'sdk_version': sdk_selection(work)['sdk_version'],
         'sdk_wheel_sha256': wheel_sha,
+        'sdk_selection_sha256': sdk_selection_digest(work),
         'contract_pack_manifest_sha256': hashlib.sha256((pack_root / 'manifest.json').read_bytes()).hexdigest(),
         'catalog': fixture,
         'auth': {
@@ -138,7 +144,7 @@ def lifecycle(run_dir: Path, platform_ops: PlatformOperationSet | None = None) -
 def trusted_manifest(run_dir: Path) -> dict:
     manifest = read_json(run_dir / 'runtime-manifest.json')
     validate_manifest(run_dir, manifest, root=ROOT, default_base_python=default_base_python(),
-                      app_python=Path(sys.executable), allowed_work_roots=(APPROVED_CLEAN_WORK_ROOT,))
+                      app_python=Path(sys.executable), allowed_work_roots=APPROVED_WORK_ROOTS)
     return manifest
 
 
@@ -147,7 +153,7 @@ def relocate_work_root(args) -> dict:
     work = qualify_work_root(args.work_root)
     manifest = read_json(run_dir / 'runtime-manifest.json')
     updated = relocated_manifest(run_dir, manifest, work, root=ROOT, default_base_python=default_base_python(),
-                                 app_python=Path(sys.executable), allowed_work_roots=(APPROVED_CLEAN_WORK_ROOT,))
+                                 app_python=Path(sys.executable), allowed_work_roots=APPROVED_WORK_ROOTS)
     write_json(run_dir / 'runtime-manifest.json', updated, replace=True)
     return {'status': 'relocated', 'run_dir': str(run_dir), 'work_root': str(work), 'execution_mode': 'synthetic'}
 

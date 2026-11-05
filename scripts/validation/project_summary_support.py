@@ -1,4 +1,5 @@
 import hashlib
+from importlib import metadata
 import json
 import os
 from pathlib import Path
@@ -16,6 +17,13 @@ BASE_COMMIT = '2332d549ab69a7e927865acd0e3db2a19295c609'
 BASE_TREE_SHA = 'db92bb903a5d47aeffe3707ef5da27b3dc031b0c7e28bdde527ccb8bf66ac261'
 SOURCE_SHA = 'c5534b86913b2bf4867b6352f1e8c0d185b50378c9626dbf424b98aa181e8fe3'
 WHEEL_SHA = '32e54c5f443e39daa55190c4de142ac6c12478204d8fba6bf9909149c3b365f9'
+SDK020_SELECTION = {
+    'schema_version': 1,
+    'selection_id': 'sdk020-summary-a2',
+    'sdk_version': '0.2.0a1',
+    'sdk_wheel_sha256': '1ab6c7aa7255abeb4637734f65613827d39593ff72b7ef9d630885922c2dd134',
+    'contract_pack_manifest_sha256': 'e7386f82d2bf3963feccc28cfbfda732b9eddb829831d5ba660b50554e5f81c4',
+}
 
 
 def digest(data):
@@ -168,28 +176,69 @@ async def probe():
 asyncio.run(probe())
 """
     with TemporaryDirectory(dir=data_directory) as temporary:
-        result = subprocess.run(
-            [str(python), '-I', '-X', f'pycache_prefix={Path(temporary) / "pycache"}',
-             '-c', code, str(source / 'services/app-service')],
-            cwd=temporary, env=child_environment(Path(temporary)),
-            capture_output=True, text=True, timeout=30,
-        )
-    with (evidence_directory / 'base-import-probe.log').open('x', encoding='utf-8') as stream:
-        stream.write(result.stdout + result.stderr)
-    if result.returncode or 'BASE_FACTORY_IMPORT_OK' not in result.stdout:
+        output = b''
+        try:
+            result = subprocess.run(
+                [str(python), '-I', '-B', '-X', 'importtime', '-c', code, str(source / 'services/app-service')],
+                cwd=temporary, env=child_environment(Path(temporary)),
+                capture_output=True, timeout=30,
+            )
+            output = result.stdout + result.stderr
+        except subprocess.TimeoutExpired as error:
+            output = (error.stdout or b'') + (error.stderr or b'')
+            raise
+        finally:
+            with (evidence_directory / 'base-import-probe.log').open('xb') as stream:
+                stream.write(output)
+    if result.returncode or b'BASE_FACTORY_IMPORT_OK' not in result.stdout:
         raise RuntimeError('The isolated Base factory import probe failed.')
 
 
+def sdk_selection(work):
+    path = work / 'sdk-selection.json'
+    if not path.exists():
+        return {'sdk_version': '0.1.0a2', 'sdk_wheel_sha256': WHEEL_SHA}
+    try:
+        value = json.loads(path.read_text(encoding='utf-8'))
+        if value != SDK020_SELECTION or type(value.get('schema_version')) is not int:
+            raise ValueError
+    except (OSError, ValueError, TypeError):
+        raise ValueError('SDK selection is not an approved release combination.') from None
+    return value
+
+
+def sdk_selection_digest(work):
+    path = work / 'sdk-selection.json'
+    return digest(path.read_bytes()) if path.is_file() else None
+
+
 def verify_installed_sdk(work, sdk_module):
-    wheel = work / 'artifacts' / 'ai_base_application_sdk-0.1.0a2-py3-none-any.whl'
-    if digest(wheel.read_bytes()) != WHEEL_SHA:
+    selection = sdk_selection(work)
+    wheel = work / 'artifacts' / f'ai_base_application_sdk-{selection["sdk_version"]}-py3-none-any.whl'
+    if digest(wheel.read_bytes()) != selection['sdk_wheel_sha256']:
         raise ValueError('SDK wheel digest mismatch.')
     installed = Path(sdk_module.__file__).resolve().parent
     with zipfile.ZipFile(wheel) as archive:
-        for name in ('__init__.py', 'client.py'):
-            if (installed / name).read_bytes() != archive.read(f'ai_base_application_sdk/{name}'):
+        expected = {name.removeprefix('ai_base_application_sdk/'): archive.read(name)
+                    for name in archive.namelist()
+                    if name.startswith('ai_base_application_sdk/') and not name.endswith('/')}
+        for name, content in expected.items():
+            path = (installed / name).resolve(strict=True)
+            if not path.is_relative_to(installed) or path.read_bytes() != content:
                 raise ValueError('Installed SDK bytes differ from the delivered wheel.')
-    return WHEEL_SHA
+        actual = {path.relative_to(installed).as_posix() for path in installed.rglob('*')
+                  if path.is_file() and '__pycache__' not in path.parts}
+        if actual != set(expected):
+            raise ValueError('Installed SDK package inventory differs from the delivered wheel.')
+        distribution = metadata.distribution('ai-base-application-sdk')
+        if (distribution.version != selection['sdk_version']
+                or Path(distribution.locate_file('')).resolve() != installed.parent):
+            raise ValueError('Installed SDK metadata identity differs from the selected package.')
+        for name in ('METADATA', 'WHEEL'):
+            relative = f'ai_base_application_sdk-{selection["sdk_version"]}.dist-info/{name}'
+            if Path(distribution.locate_file(relative)).read_bytes() != archive.read(relative):
+                raise ValueError('Installed SDK metadata bytes differ from the delivered wheel.')
+    return selection['sdk_wheel_sha256']
 
 
 def write_json(path, value):

@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-11-05",
+  "status": "SDK020_JOIN_PASSED",
+  "qualification": "synthetic_only",
+  "change_complete": false,
+  "tasks": ["SDK020.JOIN", "SDK020.JOIN.R", "SDK020.JOIN.REPLAN"],
+  "source": {
+    "dashboard_baseline_commit": "331ab65d13a1a299e2f587fe55bd1f97278aad35",
+    "kind": "working_tree_source_hashes_bound_by_native_receipts_not_a_clean_checkout_claim",
+    "native_bound_files": 889,
+    "native_runtime_or_fixture_changes_after_qualification": [],
+    "post_qualification_test_only_refinement": "project_management/tests/test_project_sdk_join_selection.py",
+    "refinement_validation": ".tmp/sdk-020-join-20261105/selection-final.xml",
+    "protected_preexisting_dirty_files": 252,
+    "protected_files_changed": 0,
+    "integrity_receipt": ".tmp/sdk-020-join-20261105/source-integrity-final.json"
+  },
+  "sdk": {
+    "python_version": "0.2.0a1",
+    "wheel_sha256": "1ab6c7aa7255abeb4637734f65613827d39593ff72b7ef9d630885922c2dd134",
+    "wire_version": "task-run/1",
+    "pack_version": "0.1.0a2",
+    "pack_manifest_sha256": "e7386f82d2bf3963feccc28cfbfda732b9eddb829831d5ba660b50554e5f81c4",
+    "profile": "project-reporting.summary@review-1",
+    "selection": ".tmp/sdk-020-join-20261105/sdk-selection.json",
+    "interpreter": ".tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe",
+    "dependency_sharing": "site.addsitedir of the existing Dashboard host site-packages; new SDK remains local and first",
+    "dependencies": {"django": "6.0.7", "httpx": "0.28.1", "jsonschema": "4.26.0", "pywin32": "312"},
+    "main_environment_sdk_version": "0.1.0a2",
+    "main_environment_upgraded": false
+  },
+  "base": {
+    "owner_head_observed": "b9c508b6aec2908f621fa5fc99f26ab92f8f7c5e",
+    "selected_source_base_commit": "2332d549ab69a7e927865acd0e3db2a19295c609",
+    "selected_source_delivery_sha256": "c5534b86913b2bf4867b6352f1e8c0d185b50378c9626dbf424b98aa181e8fe3",
+    "selected_base_tree_sha256": "db92bb903a5d47aeffe3707ef5da27b3dc031b0c7e28bdde527ccb8bf66ac261",
+    "verified_source_files": 844,
+    "counterpart_source_modified": false,
+    "released_artifacts_modified": false
+  },
+  "tests": [
+    {"evidence": "selection-green.xml", "top_level_passed": 22, "subtests_passed": 8},
+    {"evidence": "selection-final.xml", "top_level_passed": 8, "scope": "strengthened selection assertion; overlaps selection-green"},
+    {"evidence": "legacy-driver-green.xml", "top_level_passed": 21},
+    {"evidence": "fixture-consumers-green.xml", "top_level_passed": 4},
+    {"evidence": "faults-green.xml", "top_level_passed": 5},
+    {"evidence": "import-diagnostic-green.xml", "top_level_passed": 2}
+  ],
+  "test_evidence_root": ".tmp/sdk-020-join-20261105",
+  "native": {
+    "root": "D:/AIGC/scrum_dashboard_validation/sdk-020-join-20261105/ba8d6d47-3924-4f2c-a00a-538a597c580d",
+    "business_elapsed_seconds": 839.149,
+    "dispatch_count": 6,
+    "duplicate_submit_dispatches": 0,
+    "run_store_id": "store_5829b2dd14504ed9b941aec4f82275c2",
+    "cases_passed": ["J020-01", "J020-02", "J020-03", "J020-04", "J020-05", "J020-06"],
+    "wrong_result_variants": ["wrong_store", "wrong_digest", "wrong_evidence"],
+    "wrong_evidence_error": "ANALYSIS_EVIDENCE_INVALID",
+    "canceled_result_accepted_count": 0,
+    "cancel_remote_stop": "not_requested",
+    "normal_stops": 2,
+    "forced_stops": 0,
+    "owned_services_stopped": true,
+    "evidence": [
+      {"path": "evidence/sdk020-business.json", "sha256": "ce972013bf08f0574e8c3e18feda66bbc0fa31599d957fb14680a14749141a25"},
+      {"path": "evidence/sdk020-run-b34536f9-6bde-46b9-b3b7-a795a96032a9/receipt.json", "sha256": "aff49d6ba67ab6724f19ed1f76a5a68470c9aeecc99c41b53b0494ba066f572a"},
+      {"path": "evidence/sdk020-reopen.json", "sha256": "0eaaa0d3eed543b8839339056fd19f2cd0cddc7636bbe2f17a6312abe4bb0421"},
+      {"path": "evidence/sdk020-reopen-dd6ad2df-85b4-4014-9e24-21c1bd677f27/receipt.json", "sha256": "ac9248e214ea4638514abbf5bb3ba910f4a8a703ae28af100f9301bed8355764"},
+      {"path": "evidence/stop/dfb037b4-54c4-4404-b2cf-fbdc4303f402/stop-receipt.json", "sha256": "2ada1a9231ad88fbf30601605bf1e0f74df3d3d6b7baa8b1271edb6d83392feb"},
+      {"path": "evidence/stop/f6022e44-1535-4b7a-a487-c9ef9db359d2/stop-receipt.json", "sha256": "40ea6ae79754786df0b479135e9a446153be99070647f8792c3a087b1d16643f"}
+    ]
+  },
+  "review": {
+    "source_quality": "PASS",
+    "evidence_completeness": "PASS",
+    "open_findings": 0,
+    "report": ".tmp/sdk-020-join-20261105/independent-review.md"
+  },
+  "failure_history": {
+    "retained": true,
+    "original_prepare_run": "e87542e4-6da2-45d3-a67d-0db4c7dea847",
+    "issues": ["old polluted fixture root", "pywin32 pth setup in shared dependencies", "Base import probe timeout without retained diagnostics"],
+    "import_timeout_increased": false,
+    "import_only_diagnostic_seconds": 13.326,
+    "original_import_delay_exact_cause_established": false
+  },
+  "next_node": "W6.AUTHOR.DAILY",
+  "refreeze": {
+    "verdict": "CONTINUE",
+    "actions": [
+      {"node": "W6.AUTHOR.DAILY", "action": "continue", "reason": "SDK prerequisite passed; the missing actual next-day inherited-reference editor consumer remains explicit"},
+      {"node": "W6.AUTHOR.ASSIST", "action": "continue", "reason": "still depends on DAILY.REPLAN and a distinct authoring@1 profile"},
+      {"node": "W6.AUTHOR.JOIN", "action": "continue", "reason": "still depends on ASSIST.REPLAN and does not reuse SDK-only qualification as full-week proof"}
+    ],
+    "post_refreeze_preflight_result": "PASS",
+    "preflight_evidence": ".tmp/sdk-020-join-20261105/independent-review.md#sdk020joinreplan-review"
+  },
+  "remaining_work": [
+    "DAILY inherited-reference cross-day mounted editor closure",
+    "ASSIST authoring profile, candidate Apply and Save",
+    "full-week authoring and export qualification",
+    "Outlook qualification"
+  ],
+  "not_authorized_this_window": [
+    "real provider or model execution",
+    "formal deployment, production migration, scheduling or sending"
+  ],
+  "base_capabilities_still_deferred": [
+    "general loader",
+    "durable events",
+    "standalone TestKit"
+  ]
+}

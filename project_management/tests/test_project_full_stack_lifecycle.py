@@ -321,14 +321,14 @@ def running_owned_services(tmp_path, *, graceful_after):
     return run_dir, engine, platform
 
 
-def prepared_run_without_services(tmp_path):
+def prepared_run_without_services(tmp_path, *, work=None):
     data_root = tmp_path / 'data'
     ensure_data_root(data_root)
     run_dir = data_root / str(uuid.uuid4())
     run_dir.mkdir(parents=True)
     initialize_run_dir(run_dir, data_root)
     write_json(run_dir / 'fixture-vector.json', {'schema_version': 1})
-    write_json(run_dir / 'runtime-manifest.json', manifest(run_dir))
+    write_json(run_dir / 'runtime-manifest.json', manifest(run_dir, work=work))
     return run_dir
 
 
@@ -388,8 +388,8 @@ print(json.dumps({'same_store': second.state.task_run_service.run_store_id == st
 """
 
 
-def manifest(run_dir: Path):
-    work = Path.cwd() / '.tmp' / 'task-run-w5'
+def manifest(run_dir: Path, *, work=None):
+    work = work or Path.cwd() / '.tmp' / 'task-run-w5-clean-merged-20261103'
     pack_root = work / 'artifacts' / 'contract-pack'
     project_id = str(uuid.uuid4())
     stage_id = str(uuid.uuid4())
@@ -459,7 +459,7 @@ def base_connection(pid, launch):
         'grantRevision': 'dashboard-join-1',
         'limitPolicyRevision': 'base-b-cancel-synthetic-1',
         'stopFile': str(launch.stop_file),
-        'packRoot': str(Path.cwd() / '.tmp' / 'task-run-w5' / 'artifacts' / 'contract-pack'),
+        'packRoot': read_json(launch.directory.parents[2] / 'runtime-manifest.json')['pack_root'],
         'launchId': launch.launch_id,
         'exitFile': str(launch.exit_file),
     }

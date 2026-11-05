@@ -18,7 +18,7 @@ def test_should_accept_approved_clean_work_root_alias():
 
 def test_should_relocate_manifest_to_clean_work_root_without_changing_business_identity(tmp_path):
     clean = Path.cwd() / '.tmp' / 'task-run-w5-clean-merged-20261103'
-    run_dir = prepared_run_without_services(tmp_path)
+    run_dir = prepared_run_without_services(tmp_path, work=Path.cwd() / '.tmp/task-run-w5')
     before = read_json(run_dir / 'runtime-manifest.json')
 
     result = project_full_stack.relocate_work_root(SimpleNamespace(run_dir=run_dir, work_root=clean))

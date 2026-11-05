@@ -1,7 +1,8 @@
 # Execution After IP-SDK020-READY
 
-Date: 2026-11-05. Status: specified, not authorized to execute in the current pre-integration window.
-The user requires waiting at IP. Execution state stays in [tasks.md](tasks.md).
+Date: 2026-11-05. Status: authorized after the user's explicit release of the reached IP.
+Necessary small counterpart fixes are allowed; immutable releases and historical evidence remain
+unchanged. Execution state stays in [tasks.md](tasks.md).
 This appendix consumes [SDK 0.2 integration contract](sdk-020-integration.md), the existing
 [authoring contracts](report-authoring-contracts.md), [continuity](report-continuity.md) and
 [validation matrix](report-authoring-validation.md). It does not replace those authoritative values.
@@ -29,7 +30,8 @@ artifacts, affected checks and preflight result; they do not silently cancel req
 
 ## 2. SDK020.JOIN: First Actual HTTP Consumer
 
-Owner: Dashboard joined driver and app code; Base owner handles public SDK/service defects only.
+Owner: Dashboard joined driver and app code; necessary small SDK/service fixes may be implemented
+in Base under the user's integration authorization and recorded separately for its owner.
 Entry: READY receipt is valid, user releases the stop, final SDK bytes still match, source/fixture
 and process ownership are declared, and no unqualified live configuration is used.
 
@@ -43,6 +45,16 @@ This first JOIN edit includes `scripts/validation/project_summary_support.py` an
 SDK expectations in `project_full_stack.py`; they still encode the old SDK choice today.
 The handoff is ready for that integration development, not a claim that the old joined command
 already runs unchanged against SDK0.2. Publish a new fixture selection, never retag an old run.
+
+The new fixture root is `.tmp/sdk-020-join-20261105/`. Its `sdk-selection.json` fixes the
+SDK version/wheel digest and unchanged pack digest. The driver accepts only the published
+selection; legacy roots retain their original SDK identity for historical inspection/cleanup.
+The joined interpreter is `app-venv/Scripts/python.exe` under this root, with the delivered
+wheel installed locally and a `.pth` entry for the existing Dashboard host dependencies.
+This dependency-sharing path and actual versions are recorded in the environment receipt;
+the local SDK must precede the shared legacy package in both module and metadata resolution.
+Every app/worker/CLI child uses the manifest's same interpreter. No main-venv upgrade or
+mutation of a running service is part of this integration.
 
 ### Fixture And Construction Contract
 
@@ -90,6 +102,17 @@ app and Base IDs, side-effect counts, result bytes, acceptance state and normal 
 An old a2 joined report or Base's 599-test baseline is not a new 0.2 joined qualification.
 Exit only on these selected semantics and cleanup, then SDK020.JOIN.R/REPLAN.
 
+The 2026-11-05 selected candidate passed these cases; see
+[the delivery receipt](sdk-020-join-delivery.json). Its driver is
+`scripts/validation/project_sdk_join.py run --run-dir <owned-run-dir>`, followed by
+the existing launcher `stop`, `start`, the driver `reopen`, and final `stop`.
+Use the joined venv interpreter for every command. Faults occur after actual HTTP
+responses; only their focused unit tests use MockTransport. The evidence-only
+wrong-evidence variant keeps transport hashes consistent to reach the application's
+semantic evidence validator. A canceled business result does not prove remote work
+was stopped: this candidate explicitly recorded `remote_stop=not_requested`.
+The driver is an application qualification helper, not a new SDK TestKit or journal.
+
 ## 3. DAILY Closure With The Selected SDK
 
 Owner paths remain the existing DAILY service/store/worker, CLI, forms, routes and tests in tasks.
@@ -127,6 +150,14 @@ and the corresponding preparation/preservation tests. Extend a narrow missing ca
 re-running every old module. Cross-day frontend steps use mounted Milkdown, not a textarea fixture.
 Exit: reachable manual/changed-items paths, preservation and refusals mapped to current evidence.
 DAILY.REPLAN fixes the ASSIST entry snapshot and any affected proof before new implementation.
+
+Current source preflight: the implemented UI owner is `ui_web/views/report_daily.py`
+with `ui_web/facades/report_daily.py`, not the early placeholder `report_preparations.py`.
+The existing `TestReportDailyUiBrowser.test_shouldPrepareManualDailyEditPaintReopenFinalizeAndPreviewNextDay`
+stops at next-day preview. The next narrow test must create Tuesday, edit an inherited
+persistent reference through the mounted editor, Save/reopen/Finalize and compare Monday's
+unchanged fragment/hash. This is missing consumer evidence, not a reason to rerun all closed
+CONTENT/EDIT/REFERENCES/TEMPLATES/HISTORY tests or to claim DAILY is already complete.
 
 ## 4. ASSIST: Profile, Candidate, Apply And Save
 

@@ -4,6 +4,7 @@ import subprocess
 import sys
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from project_management.storage.paths import ensure_configured_archive_root
 from scripts.validation.project_summary_support import (
@@ -13,6 +14,18 @@ from scripts.validation.project_summary_support import (
 
 
 class TestProjectSummaryJoinSafety(unittest.TestCase):
+    def test_shouldRetainBaseImportTimeoutDiagnostics(self):
+        with TemporaryDirectory() as root:
+            directory = Path(root)
+            data, evidence = directory / 'data', directory / 'evidence'
+            data.mkdir()
+            evidence.mkdir()
+            failure = subprocess.TimeoutExpired('synthetic-probe', 30, output=b'phase reached\n', stderr=b'import tail\n')
+            with patch('scripts.validation.project_summary_support.subprocess.run', side_effect=failure):
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    probe_base_imports(Path(sys.executable), directory / 'source', data, evidence)
+            self.assertIn('import tail', (evidence / 'base-import-probe.log').read_text())
+
     def test_shouldRejectAReplacedBaseTreeArchiveBeforeTrustingItsOwnFileHashes(self):
         with TemporaryDirectory() as root:
             work = Path(root)

@@ -7,7 +7,9 @@ profile_source: repo-local. agent_routing_mode: single-agent implementation with
 
 This appendix and [post-integration execution](sdk-020-post-integration.md) refine the existing
 reporting change. They do not create a second plan, replace task-run/1, reopen FZ-01, or authorize
-live providers/models. The user explicitly requires stopping at `IP-SDK020-READY`.
+live providers/models. The pre-integration stop at `IP-SDK020-READY` was reached and explicitly
+released by the user on 2026-11-05; the restrictions below remain the pre-IP contract, not a
+prohibition on the separately authorized JOIN.
 
 ## 1. Stop Boundary And Ownership
 
@@ -31,8 +33,12 @@ not treated as application networking or permission to connect to a Base server.
 | Later business work | No requirement to build editor, Jira scope or reporting history | DAILY, ASSIST, exports, week simulation and source/summary/editorial invariants |
 
 Missing optional loader/events/TestKit capabilities do not block this integration.
-An actual public contract defect is returned to Base with the original failing request shape
-and sanitized evidence; Dashboard must not patch Base source or fabricate an unsupported result.
+An actual public contract defect is recorded with the original failing request shape and
+sanitized evidence. The 2026-11-05 integration authorization permits necessary small fixes in
+the Base owner's checkout, with focused regression tests and a separately identified candidate.
+It does not permit mutating released wheels, old source snapshots, receipts or results; a
+changed package/source must be explicitly versioned and selected before joined qualification.
+Larger contract changes require owner coordination.
 
 ## 2. Exact Supported Combination
 

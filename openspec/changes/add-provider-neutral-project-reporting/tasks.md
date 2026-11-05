@@ -17,13 +17,50 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
-2026-11-05用户已明确恢复一个有界窗口：补齐SDK新计划及集成后spec，
+2026-11-05用户明确释放`IP-SDK020-READY`并授权开始集成；必要的Base小问题可直接修复。
+`SDK020.JOIN`、`JOIN.R`及`JOIN.REPLAN`已通过；当前可续跑节点为`W6.AUTHOR.DAILY`。
+本文件仍是唯一状态。被测Dashboard main基线为`331ab65d`，实际工作树源码hash另行绑定；
+原作者层及Scope/config/CSS WIP不纳入本批发布，不恢复旧chiplet T12。
+真实provider/model、正式部署/调度/发送仍未执行。
+
+J020-01..06均有真实本地HTTP/应用服务/数据Git证据：首票接受并生成可渲染草稿；
+丢失提交响应后原key/deadline/store恢复且仅1次POST；错误store/hash/evidence均不接受；
+同源再采集不新建分析attempt、不增加dispatch；取消后迟到结果不接受；
+正常停止并重开同一store，原Run/草稿/摘要字节保持不变。总计6次独立合成执行，
+不是6次真实模型调用。两次停止均normal、无force，所属测试进程已退出，原8017未动。
+业务资格用时839.149s；固定SDK0.2.0a1、原a2 pack及Base844文件快照未改变。
+Base owner已提交`b9c508b6`；本轮未修改对端源码或制品。
+
+交付与证据索引：[sdk-020-join-delivery.json](sdk-020-join-delivery.json)。
+本地证据根`.tmp/sdk-020-join-20261105/`；实际数据根
+`D:/AIGC/scrum_dashboard_validation/sdk-020-join-20261105/ba8d6d47-3924-4f2c-a00a-538a597c580d/`。
+独立review的源码和最终证据均PASS；原缺少终态回执的问题已关闭。
+最终只强化一项包字节拒绝断言，8tests通过2.32s；未改变运行代码/fixture，也未重跑业务。
+最终完整性记录区分该test-only变化与889个原native绑定文件；252个原有dirty文件字节未变。
+旧legacy目录污染、pywin32路径设置及首次导入探针超时的失败材料均保留；
+未放宽30s导入期限，禁止写字节码的独立探针通过13.326s，不反推首次超时的精确原因。
+
+后续仍是`W6.AUTHOR.DAILY`缺失的跨日实际编辑链，随后ASSIST和整周JOIN。
+SDK通过不等于WYSIWYG/clipboard/Outlook或整个作者层验收。沿用单一writer、
+限定独立评审及本tasks，不重新规划已完成SDK，也不要求Base先实现deferred loader/events/TestKit。
+
+JOIN.REPLAN限定独立复核为CONTINUE：`refreeze_actions`为DAILY、ASSIST、full-week
+各continue，仍保持DAILY.REPLAN和ASSIST.REPLAN依赖。实际DAILY view/facade路径及
+现有测试只preview次日的缺口已核对；authoring@1独立profile仍是ASSIST实施前提。
+`updated_artifacts`为本tasks、sdk-020-post-integration.md、sdk-020-join-delivery.json及
+current-baseline/sdk-020-integration.md。`post_refreeze_preflight_result=PASS`，
+依据为`independent-review.md`的SDK020.JOIN.REPLAN段、上述精确源码检查及OpenSpec严格校验；
+这不是DAILY/ASSIST已经通过的运行证据。
+
+### Completed Pre-Integration Checkpoint
+
+2026-11-05用户此前恢复一个有界窗口：补齐SDK新计划及集成后spec，
 先做scoped commit/push，再执行集成点前工作，停在`IP-SDK020-READY`。
 本轮唯一实施协调者在Dashboard `main`；Base仓库只读，不恢复旧chiplet T12。
 
 规范已以`1c2e0aa`提交并推送origin/main，远端SHA已核对一致。
 `SDK020.PLAN.R`、`ARTIFACT`、`APP`、`PRE`与`REPLAN`已完成。
-当前状态：**waiting at IP-SDK020-READY**。已停止功能执行，等待用户明确释放集成点。
+当时状态：**waiting at IP-SDK020-READY**。该停止点现已由用户释放。
 精确API/版本/拒绝路径/命令在[sdk-020-integration.md](sdk-020-integration.md)；
 集成后的真实HTTP、DAILY、ASSIST、周模拟与出口在
 [sdk-020-post-integration.md](sdk-020-post-integration.md)。
@@ -912,9 +949,9 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] SDK020.APP Update the exact dependency/runtime version pair with real installed-SDK RED/GREEN tests; preserve all application validators.
 - [x] SDK020.PRE Run the explicit application-network-free consumer selection and record source-bound readiness plus protected-WIP integrity.
 - [x] SDK020.REPLAN Confirm next joined packet is reachable, classify retained evidence, record IP-SDK020-READY and stop for the user.
-- [ ] SDK020.JOIN After explicit release of IP, execute the new-SDK real local HTTP consumer cases J020-01..06.
-- [ ] SDK020.JOIN.R Review the joined candidate, source/acceptance evidence and owned cleanup.
-- [ ] SDK020.JOIN.REPLAN Refreeze DAILY/ASSIST prerequisites and affected evidence before continuing authoring execution.
+- [x] SDK020.JOIN After explicit release of IP, execute the new-SDK real local HTTP consumer cases J020-01..06.
+- [x] SDK020.JOIN.R Review the joined candidate, source/acceptance evidence and owned cleanup.
+- [x] SDK020.JOIN.REPLAN Refreeze DAILY/ASSIST prerequisites and affected evidence before continuing authoring execution.
 - [x] W6.AUTHOR.PLAN.R Review Authoring V2 scope/error policy, template selection and schema migration before implementation. User approved; bounded first-CONTENT review recorded below.
 - [x] W6.AUTHOR.VA Freeze RA01-72, source consumer inventory and exact validation commands; RA70-72 deferred to W7.SCHEDULE. First CONTENT slice qualified to start, not product pass.
 - [x] W6.AUTHOR.CONTENT Add schema2 fragment persistence, safe rendering and old-revision compatibility. Standalone backend qualified; nonempty reference/Assist receipts remain fail-closed until their owning leaves.
@@ -1032,7 +1069,9 @@ Spec: [SDK contract](sdk-020-integration.md), [post-IP execution](sdk-020-post-i
 [observable requirements](specs/sdk-consumer-integration/spec.md).
 Goal: use the delivered 0.2.0a1 Python client with the original a2 pack, preserving app authority.
 Architecture: existing app adapter plus isolated installed client; no new service or execution engine.
-The user's scope ends at IP-SDK020-READY; post-IP nodes are specified, not yet released.
+The pre-integration scope ended at IP-SDK020-READY. The user released this stop on
+2026-11-05; SDK020.JOIN and subsequent dependency-ordered execution are now authorized,
+with real providers/models, formal deployment and scheduling still excluded.
 
 | Node | depends_on | owner_paths / deliverable |
 | --- | --- | --- |
@@ -1041,7 +1080,7 @@ The user's scope ends at IP-SDK020-READY; post-IP nodes are specified, not yet r
 | SDK020.APP | SDK020.ARTIFACT | requirements-ai-task.txt, out/ai_task_contract.py, tests/test_sdk_020_compatibility.py, scripts/validation/run_project_sdk_preintegration.py and shared run_report_authoring_tests.py explicit isolation mode; narrow exact version migration |
 | SDK020.PRE | SDK020.APP | same owned code/test paths; three explicit test files, no Base import or application network, separately counted Windows socketpair IPC, source-bound JUnit/receipt |
 | SDK020.REPLAN | SDK020.PRE | tasks + IP receipt; verify post-IP source/fixture paths, carry forward valid evidence, stop and wait |
-| SDK020.JOIN | SDK020.REPLAN + explicit user release | scripts/validation/project_full_stack*.py, project_summary_support.py, project_management/tests/test_project_full_stack_lifecycle.py and tests for J020 cases; refresh old SDK expectations, then joined 0.2 HTTP and app acceptance |
+| SDK020.JOIN | SDK020.REPLAN + explicit user release | scripts/validation/project_full_stack*.py, project_summary_support.py, project_sdk_join*.py, project_management/tests/test_project_full_stack_lifecycle.py and tests for J020 cases; refresh old SDK expectations, then joined 0.2 HTTP and app acceptance |
 | SDK020.JOIN.R | SDK020.JOIN | exact joined scope review and normal-stop evidence |
 | SDK020.JOIN.REPLAN | SDK020.JOIN.R | tasks and post-IP appendix; refreeze DAILY/ASSIST, no new task authority |
 
