@@ -4,6 +4,30 @@
 这份文件只维护双方责任、输入输出、依赖、联合验收和交付方式，不维护第二份任务勾选状态。
 基座协议继续以FZ-01冻结的task-run/1为准，本文件不重开协议设计。
 
+## 2026-11-05 Current SDK Integration Boundary
+
+当前选择Base已交付Python SDK0.2.0a1及未改写a2 pack；完整hash/API/测试和停止条件见
+[SDK 0.2 integration](sdk-020-integration.md)，后续各步见
+[post-integration execution](sdk-020-post-integration.md)。
+本轮用户授权Dashboard补spec、scoped commit/push、执行集成点前迁移与隔离验证，
+然后在`IP-SDK020-READY`等待；这不是启动Base HTTP、DAILY/ASSIST/整周JOIN的授权。
+
+Base owner已完成本批公共SDK制品，继续拥有SDK/API缺陷修复及版本交付。
+Dashboard owner负责依赖与AiTaskContract精确组合门禁、受影响业务消费者和后续联合fixture。
+双方只修改自己的仓库。Base不等待Dashboard编辑器，Dashboard不等待后置loader/events/TestKit。
+SDK接收成功不等于Base HTTP联合验证；联合成功也不等于完整作者层或真实模型资格。
+本节以下的早期就绪状态/催办文本保留历史，不覆盖当前tasks或重新授权旧执行指令。
+
+2026-11-03最新作者层需求见[Report Authoring V2](report-authoring-v2.md)：
+WYSIWYG-only、`#ID`唯一触发、用户版本模板、显式AI填写及错误策略。
+后续确认的逐票/状态/AR/人工格式继承/稳定行序及跨周、每日触发统一见
+[报告连续性](report-continuity.md)。HISTORY/DAILY归Dashboard，基座仅负责既有Task执行；
+新增note不改原RunResult，来源/分析/正式报告基线分别推进，W7定时默认关闭。
+一个作者层协调者可统一实施，不再要求用户另请编辑器Agent；
+本次仅设计，不恢复任何产品运行。模板渲染/人工编辑/工单补全不调用模型；
+显式AI填写是独立authoring profile的任务，必须有其自身注册/授权/资格，不能借summary@review-1运行。
+复用task-run/1与SDK；公共协议若真有缺口仍由基座维护方冻结，不在Dashboard伪造能力。
+
 2026-11-02报告侧新增需求见[HTML模板与人工定稿](html-report-authoring.md)：
 Dashboard负责模板、原始摘要投影、草稿/人工注释、邮件HTML复制和人工确认的数据Git提交。
 这些动作不调用模型，不回写RunResult，也不向模型隐式加入人工编辑。

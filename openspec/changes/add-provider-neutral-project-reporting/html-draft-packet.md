@@ -4,6 +4,11 @@ Status: execution detail for W6.HTML.EDIT / FINALIZE, dependent on SOURCE/RENDER
 Parent: [HTML authoring](html-report-authoring.md).
 No new Git writer, worker or source authority. State only in tasks.md.
 
+Version boundary: this packet describes implemented schema1. The proposed
+[Authoring V2 contracts](report-authoring-contracts.md) add exact schema2 readers,
+overlays, template snapshots and finalization packets. Old bytes/hash rules here remain;
+do not reinterpret schema1 text or accept schema2 via a relaxed schema1 parser.
+
 ## Construction And Boundaries
 
 ```text

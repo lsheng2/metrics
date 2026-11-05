@@ -2,6 +2,12 @@
 
 Status: accepted direction; implementation is staged by tasks.md.
 
+2026-11-05用户授权补齐新SDK计划、scoped commit/push并只执行到最近集成点。
+[SDK 0.2迁移与停靠契约](sdk-020-integration.md)固定版本/API/验证和`IP-SDK020-READY`；
+[集成点后执行细节](sdk-020-post-integration.md)定义联合HTTP、DAILY、ASSIST及整周验收。
+本轮只恢复集成点前工作；到点后等待，不自动启动后续联合测试或真实调用。
+下文早期实施状态是历史背景；当前状态仅由tasks当前入口维护。
+
 技术附录（同一方案，不维护独立执行状态）：
 [应用接入包](application-integration.md)、[统一Provider访问/凭据](provider-access.md)、
 [源码移植目录](migration-catalog.md)。这些新增接口尚未实现，W1原评审不自动覆盖它们。
@@ -16,7 +22,19 @@ Dashboard只拥有consumer适配和领域接受；不得把本应用的Jira/英�
 不冒充W3-W7均已实施就绪；C0仍只是SDK进件证据。
 2026-11-02用户确认[HTML模板与人工定稿](html-report-authoring.md)，
 对应[分层验收](html-report-validation.md)。这是报告层补充，不修改基座冻结协议；
-HTML为首选输出，原Markdown/Excel要求保留。当前尚未实现编辑/复制/定稿界面。
+HTML为首选输出，原Markdown/Excel要求保留。当前后台与过渡界面已有实现，
+直接富文本编辑/复制及Outlook仍未验收。
+2026-11-03后续要求统一见[Report Authoring V2](report-authoring-v2.md)：
+只WYSIWYG、`#ID`唯一触发、Stage路由及详细错误策略、用户自建版本模板与显式AI填写。
+其[契约](report-authoring-contracts.md)、[补全](report-completion.md)、
+[验收](report-authoring-validation.md)属于本change；
+执行只在tasks的W6.AUTHOR维护，不另建Chiplet或编辑器项目。
+组件/字段细节是本轮建议，产品尚未实现；不再要求用户另请编辑器Agent，
+也不把早先“模板设计器backlog”作为取消新需求的依据。
+随后几轮已确认的逐票/AR/来源状态前缀、人工颜色保留、稳定行序与累计note，
+以及新补齐的跨周和触发默认值，统一见[报告连续性架构](report-continuity.md)。
+source/analysis/editorial 三种基线分开，定稿Git确认是正式日报基线提交点；
+周视图和定时准备不冒充正式定稿。本次只更新设计，产品节点仍未实施。
 用户随后要求连续执行到full-stack；[手动全栈切片](manual-full-stack.md)定义运行入口、
 共享业务服务、单worker归属、取消/恢复和FS01-FS10。准备好的报告编辑器本身不等于
 采集至报告全链路已完成，真实provider/model资格也不由合成链路代替。

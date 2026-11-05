@@ -9,6 +9,12 @@ Execution state belongs only to [tasks](tasks.md); acceptance cases are in
 
 ## 1. Decision And Scope
 
+2026-11-03 amendment: [Report Authoring V2](report-authoring-v2.md) supersedes
+only the built-in-only/template-designer-backlog and separate-editor-Agent assumptions.
+It adds WYSIWYG-only content, hash-ID completion, user template versions and explicit AI fill
+as proposed contracts. HTML-first, source provenance and exact finalization remain.
+The schema1 implementation below is not proof that Authoring V2 is implemented.
+
 The user approved reusable daily/weekly report templates and requested HTML as
 the primary report, formatted copy into email, manual edits/notes and an explicit
 choice to commit the finished report to Git.
@@ -23,12 +29,14 @@ Alternatives not selected:
   loses structured provenance and permits active content. Not first-release scope.
 - Generating each format with an LLM spends tokens and can change facts. Rendering,
   comparison and manual edits must not invoke an LLM.
-- A general drag-and-drop template designer adds an independent product. Built-in
-  templates and validated options are enough for the first deliverable.
+- A general pixel-layout designer remains outside scope. The first implementation
+  used built-in templates; the later user requirement adds a constrained visual
+  block/slot template library through Authoring V2.
 
 HTML becomes the default format. Existing required Markdown/Excel work remains;
 HTML delivery must not silently retire it. Management-review templates, offline
-HTML editing/reimport and a template designer are backlog, not demo blockers.
+HTML editing/reimport and unrestricted layout design remain backlog.
+User-authored block/slot templates are explicitly planned in W6.AUTHOR.TEMPLATES.
 Do not implement email sending, email-account integration, remote Git setup or
 automatic push in this change.
 
@@ -69,6 +77,9 @@ caller paths, raw CSS, prompts or uploaded templates. Core scope/coverage metada
 pending rows and unresolved actions cannot be hidden by a standup template.
 Template identity contains ID, version, package content hash and renderer version.
 Changing presentation does not change the Stage rule, AI profile or model input.
+This is the built-in schema1 implementation. V2 user templates are validated application
+documents, not arbitrary replacements for Django source. Structure and fill-policy hashes
+are separate; only an explicit AI operation consumes the filling instructions.
 
 Maintain distinct authorities:
 
@@ -239,9 +250,10 @@ their original language and are marked as human/source text, not auto-translated
 
 2026-11-03 user correction supersedes the former textarea-first choice:
 the target is direct WYSIWYG editing of rendered rich text through an existing
-open-source component. The user's separate editor Agent owns that integration.
+open-source component. The authoring coordinator owns that integration; the latest
+request does not require a separate user-supplied editor Agent.
 Current literal-text forms are transitional, not accepted editor functionality.
-The workflow Agent does not expand their editor-specific test matrix.
+The completed non-editor workflow did not expand its editor-specific test matrix.
 The current APIs, required versioned rich-text input boundary, ownership and
 deferred integration tests are in [editor handoff](rich-text-editor-handoff.md).
 Preserve server validation, provenance and immutable revisions; never mark
@@ -391,6 +403,10 @@ Quota, malformed-template, escaping, stale revision and write failures leave
 source/summary/publication checkpoints unchanged.
 
 ## 9. Incremental Delivery
+
+The original HTML delivery below remains a historical bounded slice. Its source/edit/finalization
+evidence is retained; new schema2/templates/completion/AI behaviors use W6.AUTHOR
+and do not inherit full acceptance from this earlier slice.
 
 The narrow HTML demo lane depends on W1/W2, W3.ARCHIVE/GATEWAY/CAPTURE and W5.JOIN,
 not every remaining W3-W7 capability. It reads the already verified first complete

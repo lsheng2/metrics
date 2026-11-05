@@ -86,6 +86,9 @@ Reports SHALL use a verified provider-neutral report snapshot and versioned
 templates. HTML SHALL be the primary presentation and copy/export format, while
 required Markdown and Excel capabilities remain in scope. Rendering SHALL NOT
 call a model, query a provider, change a stage rule or advance an analysis checkpoint.
+用户自建模板的版本、填写槽和受控数据区 SHALL 遵循同change的
+[report-authoring capability](../report-authoring/spec.md)，不能以现有内置模板选择替代。
+显式AI填写属于独立候选操作，不是本条的rendering。
 
 #### Scenario: User changes report purpose or presentation
 - **WHEN** an operator selects a supported daily or weekly template over the same retained snapshot

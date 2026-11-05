@@ -17,6 +17,276 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
+2026-11-05用户已明确恢复一个有界窗口：补齐SDK新计划及集成后spec，
+先做scoped commit/push，再执行集成点前工作，停在`IP-SDK020-READY`。
+本轮唯一实施协调者在Dashboard `main`；Base仓库只读，不恢复旧chiplet T12。
+
+当前节点为`SDK020.PLAN.R`，随后`ARTIFACT -> APP -> PRE -> REPLAN`。
+精确API/版本/拒绝路径/命令在[sdk-020-integration.md](sdk-020-integration.md)；
+集成后的真实HTTP、DAILY、ASSIST、周模拟与出口在
+[sdk-020-post-integration.md](sdk-020-post-integration.md)。
+只按既有accepted scope做补充，不重开SDK中立性讨论或FZ-01。
+
+停止点前使用独立`SDK 0.2.0a1`安装target和短命隔离测试进程，原a2 pack不变。
+证据根`.tmp/sdk-020-preintegration-20261105/`。不升级主`.venv`，
+不启动Base HTTP/联合业务流程，不触碰既有8017服务。
+已有作者层实现是未提交WIP，原Scope/config/main.css等改动不纳入本批代码提交。
+本轮规格提交不表示这些未提交代码已发布；历史限定验证只按有效依赖复用。
+达到停止点后记录实际测试/制品/源码身份并等待用户明确释放，不执行`SDK020.JOIN`。
+
+## Earlier Pause Checkpoint
+
+2026-11-05 10:28 +08:00，用户明确要求安全暂停并做执行复盘。
+此前“执行到底”和完整工作周测试授权暂停适用；本轮只读取证据、维护暂停状态和复盘，
+不恢复源码实施、产品测试、服务启动或外部调用。恢复须以用户新的明确指令为准。
+
+冻结位置：Dashboard `main`，HEAD `5d83933dc3d3c4f1673ec680c5ee2d03da8f9aed`；
+作者层改动仍未commit/push，其他Scope/config/main.css改动保持不动。
+唯一证据根`.tmp/authoring-main-20261103/`，本文件仍是唯一任务状态。
+
+已关闭CONTENT、EDIT、REFERENCES、TEMPLATES、HISTORY的限定合成资格。
+DAILY后端与C界面已有分组验证；最后独立评审
+`daily-ui-review/r1/review.md`在冻结39路径内未发现P0-P3问题。
+暂停复盘只读核对这39个工作树文件与manifest一致，没有重新执行测试。
+该评审不覆盖整周、ASSIST、继承reference的完整每日浏览器链或外部资格；
+DAILY总节点保持未勾选，ASSIST与完整JOIN尚未实施/执行。
+
+安全收尾：协调者测试会话均已退出；最后只读reviewer确认无活动会话并已关闭。
+当前goal工具无活动目标。本轮无所属测试进程；11月2日已存在的8017服务
+（PID83404/50700）不属于本轮，未停止，不宣称全机无服务。
+
+复盘与下一阶段建议：
+[2026-11-05作者层执行复盘](../../../../chiplet_programmgr/docs/development/2026-11-05-report-authoring-postmortem.md)。
+恢复后先复用已冻结证据核对DAILY尚缺的消费者，不重开已关闭的全包评审；
+后续仍欠ASSIST、导出/复制、2026-10-26..30及11-02整周JOIN、最终R/REPLAN。
+这些是暂停交接和建议，不是新执行授权或另一套任务清单。
+
+## Last Pre-Pause Checkpoint (Historical)
+
+2026-11-05，继续用户已授权的作者层实施及完整合成工作周测试，直接Dashboard `main`。
+代码HEAD仍为`5d83933`，本轮未commit/push；他人Scope/config/main.css改动保留。
+所有子代理固定GPT-5.5/xhigh，一名生产writer。证据根`.tmp/authoring-main-20261103/`。
+
+已关闭叶：CONTENT、EDIT、REFERENCES、TEMPLATES、HISTORY（各自限定合成资格）。
+HISTORY最终来源：`history-core-review/fix3/review.md`、
+`history-persistence-review/{fix4,matrix-final}/review.md`、`history-ui-review/final/review.md`。
+编辑器固定Milkdown7.23.0，本地bundle`f537a725...`；最后B2修复20browser126.40s、
+Node10及最终直接反例通过。完整周JOIN仍没有执行，不能把这些结果称为全功能验收。
+
+DAILY A与worker首切片已独立通过：
+`daily-core-review/final/review.md`、`daily-worker-review/fix1/review.md`。
+reprepare journal/active authority通过`daily-reprepare-review/journal-final/review.md`；
+旧内部prepared兼容，受控binding缺失/降级/失活、事件链CAS及采集后检查均有直接证据。
+
+preservation业务与最后schema边界已关闭，最终依据
+`daily-preservation-review/schema-enums-final/review.md`；报告为`daily-preservation-report.md`。
+协调者修正缺字段fixture及两个enum类型守卫：RED8失败/60通过1.52s，GREEN68通过1.03s；
+两文件配置size与whitespace通过。旧schema-final错误归属的review保留，不再作为未决项。
+当前唯一生产writer为协调者，接续`daily-ui-brief.md`已有WIP。
+Gibbs最后session94157已结束；owner与空capture测试构造已修。
+首条Chrome真实已存capture/纯人工流程通过152.65s：生成、红色note、Save/reopen、
+Finalize后才推进次日baseline，SDK client创建为0。修复实际空note hash被模板输出为
+字符串None的问题，原失败与HTTP响应均保留；表单8反例和只读准备API2用例也通过。
+当前补pending gap/保留错误输入、详情与reprepare、稳定runtime接线、CLI/JSON/locale；
+尚未独立review DAILY，不把首链通过当作整个DAILY完成。
+08:28后检查：pending/详情10tests178.68s、runtime去重2tests20.99s、
+CLI/首次只读3tests94.02s、注册worker的真实Chrome刷新链155.04s已通过。
+已定稿manual关联纠错与离线saved-capture重建2tests179.20s通过；
+UI重放优先级/损坏记录等25tests91.93s通过。原失败均保留。
+继续DAILY收口：模式切换/未资格AI禁用、changed_items重建、首次无archive的完整准备、
+严格JSON/CSRF/locale、最终浏览器与独立review。新增反例先行，暂不派发ASSIST/JOIN。
+当前最后RED：mode controls、changed-items reprepare、control schema bool/float；
+不把已有局部绿色当作这些新增边界完成。无活动子代理。
+基线保留于`daily-ui-base/`，全部结果沿`daily-ui-report.md`。
+JOIN依赖只读核验通过：固定Base844文件、SDK0.1.0a2原wheel；
+未启动服务/模型。无并行源码writer，DAILY尚未勾选。
+随后ASSIST、JOIN、最终R/REPLAN；保留数据/真实资格不自动扩大。
+各brief是本tasks子步骤说明，不维护独立完成状态。
+
+JOIN必须执行2026-10-26..30和11-02换周；同源三票、逐日不同人工note/颜色，
+真实app/ORM/编辑器/数据Git、首日installedSDK+localBaseHTTP synthetic executor，
+后续无变化零新AI调用，保存/重开/定稿/正常重启及逐日证据，详见validation第7节。
+模拟日期不修改系统时钟或真实票据时间。真实provider/paidmodel、生产DB迁移、
+正式调度和发送未启用；Outlook/live资格另列。无新正式常驻服务。
+测试只用无dotenv隔离入口`scripts/validation/run_report_authoring_tests.py`和显式路径；
+现存8017 runserver不属于本任务测试，不控制；ownedpytest按原session有界收尾。
+
+## Earlier Authoring Execution
+
+2026-11-04：用户已授权直接在main完成作者层实施与测试；工作树基线5d83933，
+保留其他agent的Scope/config dirty文件；本轮尚未commit/push。
+CONTENT/EDIT/REFERENCES已完成各自合成资格，不代表整个作者流程通过。
+证据根`.tmp/authoring-main-20261103/`，当前子代理固定GPT-5.5/xhigh。
+REFERENCES最终依据为`references-backend-review/fix3/review.md`与
+`references-capture-review/review.md`；旧UI发现和失败截图保留，不是当前未决清单。
+最后completion10browser70.57s、runtime5browser29.60s及Node9通过。
+
+TEMPLATES的standalone主链已通过合成资格，后续intake新发现固定content预览丢格式，
+总节点重新打开，修复明确归入HISTORY B的pinned body消费者接线；core不依赖该显示路径。
+A/B依据`templates-library-review/fix2/review.md`、`templates-render-review/fix1/review.md`；
+C依据`templates-ui-review/fix2/review.md`最终PASS，原8项及保存/销毁竞态已关闭。
+最后browser5tests47.06s、受影响20tests11.75s（含共享locale）及Node10通过。
+独立追加的paint浏览器反例1test8.63s确认readonly表格不覆盖子节点人工颜色；
+原CSS疑点经schema/renderer复核撤回，未为该疑点改变生产CSS。
+源码/截图证据见`templates-ui-report.md`和`template-report-fix2-contrast-desktop.png`；
+原失败截图保留。协调者26路径物理size检查15个适用源码PASS。
+
+HISTORY A core已通过独立复查，最终`history-core-review/fix3/review.md`，
+直接33tests3.46s、前fix2受影响55tests4.69s；完整证据`history-core-report.md`。
+错误baseline、日期重放、summary身份、AR去重/关联、跨周和seed引用问题均已闭环；
+来源fixture旧协议修复后13tests42.21s通过，原失败仍保留。
+HISTORY B1后端已通过限定独立复查，最终证据为
+`history-persistence-review/fix4/review.md`及`matrix-final/review.md`。
+三日/跨周真实临时Git、旧六文件不变、恢复CAS、同/旧日纠错、周视图精确选版及
+AR后日解决保留均有证据，完整命令/失败/候选见`history-persistence-report.md`。
+最后action merge经无dotenv入口4tests67.28s，matrix/renderer7tests0.61s，
+协调者对应5文件sizePASS；未以早期historical_export豁免版本作为通过结论。
+原失败和每轮frozen diff仍保留，普通daily来源/归属/基线保护未关闭。
+
+B2已通过独立review，最终`history-ui-review/final/review.md`，
+原period语义/显式series/子editor销毁及fallback标签问题关闭。
+20browser126.40s、continuity completion2tests57.03s、Node10及最终两条直接test通过；
+完整证据`history-ui-report.md`，后续模板richpreview重开项也关闭。
+DAILY A已通过独立review，最终`daily-core-review/final/review.md`；
+前两轮剩余问题已修复，最终route reverse/resolve+终态重放2tests44.56s，
+直接service/store/link19tests156.91s、受影响76tests177.39s及原run9tests证据保留。
+当前窗口：DAILY B后端，按`daily-worker-brief.md`接原worker版本化刷新/reprepare，
+先public service/worker，再HTTP/CLI/按钮。每个子包仍只维护本DAILY一个节点。
+22:35约60分钟检查：Popper为唯一writer，run_daily_values/project_run_daily_worker/
+report_preparation_worker等WIP已落地，但未收到实际firstchain绿色；不宣称接口已验收。
+协调者已要求先真实UserTemplate publicprepare->manual refresh worker->oneauthoreddraft，
+避免只用旧builtin测试模板放行新协议；UI/ASSIST/JOIN不启动。继续该最小边界并取具体结果，
+不为等待另派并行writer。原源码基线`daily-worker-base/`保留。
+后续worker首切片通过`daily-worker-review/fix1/review.md`：original/effective绑定、
+采集后取消及request/seed/draftselection/draft恢复验证已闭环，16pathsizePASS。
+store7tests0.61s、cancel29.98s、11recovery152.29s、9compat/public55.94s；
+完整report为`daily-worker-report.md`。Popper/Parfit已关闭，源码无常驻服务。
+当前转`daily-reprepare-brief.md`补终态重建/active slot替换，不把已定稿同选项shell当完整重建。
+UI/CLI/继承reference可编辑资格、ASSIST/JOIN仍未执行。
+2026-11-05当前：Epicurus唯一writer，reprepare首链5tests282.86s仅部分证据；
+Hume在`daily-reprepare-review/review.md`指出adopted-intent不同请求误绑定等P0/P1。
+随后journal/admission直接18tests272.32s，但parent CAS/故障位置和source超限未闭环，
+不能冻结为完成。当前按`daily-reprepare-fix.md`先收口journal/active authority，
+新server-only prepared authority和draft immutable binding已写入continuity同设计；
+旧internal prepared流程须兼容，受控missing/corrupt/downgrade必须拒绝。
+不使用扫描全部seed或missingintent放行。完整人工preservation仍待后续子包。
+原framework服务8017是已存在非本次测试进程，不控制/停止；ownedpytest均按原session收尾。
+reprepare journal/authority已由`daily-reprepare-review/journal-final/review.md`闭环，
+event-chain parentCAS和capture后active checkpoints4tests103.76s、16受影响128.40s；
+对应5文件size通过。原writer/reviewer关闭。
+当前`daily-preservation-brief.md`仅做完整人工内容/refresh后续保存保留与dispatch恢复，
+不再重开已关闭journal；DAILY UI/CLI与ASSIST/JOIN仍未开始。未最终验收reprepare或DAILY。
+仍一名生产writer；未启动ASSIST/JOIN，不把历史编辑验收当每日生成或整周完成。
+原main无commit/push。
+DAILY A完整初稿/修复报告分别`daily-core-report.md`、`daily-core-fix-report.md`、
+`daily-core-fix2-report.md`。A通过不代表刷新/手动按钮/整周已实现或live资格已获准。
+15:44 B2 checkpoint：Rawls为唯一writer；连续模板->series隔离browser通过，
+colored current note保存/重开15.61s，visible persistent/action/move原子保存12.29s，
+精确证据`history-ui-report.md`。首次matrix截图发现ticket/prefix/AR低对比和当日note重复，
+当前定点修display消费者；原截图`history-ui-colored-matrix-reopen.png`保留。
+历史readonly、period/linked入口、系列policy/locale/反例仍待完成，未勾总节点。
+Base固定副本844files与installedSDK批准wheel已只读复核；未启动Base或模型。
+16:02 B2截图intake：虽然已有DOM绿色，matrix ticket/AR仍白字白底且current前缀缺失。
+根因是contrast测试只查一层透明背景、缺元素时返回7冒充通过；当前暂停扩展其他UI，
+先修实际背景递归/必需前缀断言和局部样式，不放宽阈值。旧截图文件被writer覆盖，
+不能继续声称该文件保存首次失败；首次图仍在工具对话，后续截图必须独立文件名。
+period/linked页面已有窄测试，但尚无最终B2review。编码未停整任务，只收窄当前交付问题。
+17:32更新：必需prefix+实际背景contrast已修并由协调者查看新截图
+`history-ui-colored-matrix-contrast-fixed.png`确认票号/来源前缀可见、无当日重复body。
+12页面测试拆分后92.38s通过；fixed template rich preview9.20s，
+currentnote真实#endpoint/receipt/save14.75s及history/weekly前置拒绝已通过。
+既有persistent编辑/清空/carry、report-level新增与AR正文已获可见控件证据；
+Chinese labels/stale policy10.89s通过。Rawls继续B2剩余weekly选择创建、policy/lifecycle/
+打包门禁；未做最终独立review，HISTORY/TEMPLATES总节点仍未勾。
+后续DAILY还须覆盖继承persistent中的#link再次编辑，不以只读历史保存替代可编辑保真。
+DAILY/ASSIST/JOIN仍未实施。DAILY worker版本化readiness已准备；
+全部沿本文件原节点，无第二任务状态。
+ASSIST的独立就绪复核见`assist-readiness.md`，仅证明独立profile/SDK/存储边界可实施，
+不是AI功能已经通过；已核对固定Base副本的profiles/grants注入签名。
+09:04阶段检查：本恢复窗口关闭C保存/销毁反例与下游readiness，未执行整周。
+颜色疑点用一次实际保存/渲染反例裁决，不换编辑器或重跑全栈。
+恢复核对发现模板C只提供standalone v1 starter；HISTORY集成负责新增可视化v2
+连续日报/周报starter和matrix选项，使用户能直接创建合法series，不要求raw JSON。
+这是既定v2模板消费者接线，不更改旧模板版本或hash。
+
+JOIN必须执行validation第7节的完整合成周（2026-10-26..30及11-02换周）：
+同源三票、每日不同人工note/颜色、保存重开/定稿/周中正常重启、逐日证据。
+首日走已安装SDK/真实本地BaseHTTP与synthetic executor；后续无变化不新增AI调用。
+尚未执行，不预报通过。真provider/model及Outlook资格与合成JOIN分别报告。
+真实provider/model、生产DB迁移、正式调度和发送均未启用；合成检验不扩授权。
+协调者8137演示进程已验证归属并停止；测试server按用例创建/关闭，无正式常驻服务。
+已落地无dotenv入口`scripts/validation/run_report_authoring_tests.py`配显式目标。
+原用户Scope两个超限文件仍未动；每个任务实际改动集合单独门禁。
+
+## Earlier Authoring Checkpoints
+
+2026-11-03用户已明确批准从规格进入实施，并直接在本地main执行。
+本地main已从dce92c9快进至已集成基线5d83933，29个原dirty路径保持不变，
+未推送origin/main。下方“仅文档/未恢复”描述是此前窗口历史，不覆盖本次实施授权。
+本窗口使用原W6.AUTHOR ledger；CONTENT后端由一名实现者写入，
+协调者负责组件资格/文档与后续集成，子代理均GPT-5.5/xhigh。
+真实provider/model、生产DB迁移、调度激活和发送仍按独立授权执行。
+当前最小动作：CONTENT已关闭，进入EDIT真实富文本页面。19:07起的首个约60分钟检查点
+选择先收口后端，修复两轮后Ohm的`content-review-r3/review.md`确认最后问题关闭。
+修复1受影响67tests/166.37s，修复2所选10tests/10.61s；
+协调者新增实际Git schema2闭环1test/67.26s、物理size23文件PASS。
+证据位于`.tmp/authoring-main-20261103/`；没有provider/model调用或生产迁移。
+EDIT由Kant单写入；后续正文就地编辑和浏览器保存200/颜色重开/409保留输入已获得窄证据，
+但Noether的`edit-review-r1/review.md`确认JSON脚本嵌入、action丢失、多段paste、
+保存中编辑/离页保护、未聚焦格式及打包/locale/维护测试缺口。
+当前执行`edit-fix-r1.md`，先处理数据与安全反例再完善adapter，不勾EDIT或派发REFERENCES。
+协调者实际size显示两个Python文件418/411，需职责拆分而非沿用报告的非空行计数。
+原浏览器失败记录与窄绿色分别保留，不以旧测试代表新修复/全功能验收。
+EDIT fix1的safe JSON/action保留/多段paste/预聚焦格式/打包locale已获得复查支持，
+16tests/3subtests含2条维护浏览器链通过；James在`edit-review-r2/review.md`确认其余缺口。
+当前fix2只关闭uncertain-save局部B、inline替换/paint、pending mount、task/table与实际size，
+并补相应维护浏览器反例。原型运行器已停止；不因已有窄绿色推进下一叶。
+后续检查发现原writer报告与未改动的源码不符，已停止并保留全部WIP，不再等价续跑大包。
+EDIT内部按两份串行子包收口：`edit-lifecycle-brief.md`与`edit-runtime-brief.md`，
+仍只有本节点一个状态。Goodall完成生命周期4条真实browser反例31.13s，
+受影响16tests/3subtests26.84s，Node6及metadata consumer通过；
+独立Lagrange已在`edit-lifecycle-review/final/review.md`关闭最后语言确认问题，
+生命周期5条browser36.02s、相关Node通过。2026-11-04继续原授权，Dalton单写入
+`edit-runtime-brief.md`原生编辑器子包；不把午夜或用户追加整周验收误作新业务运行。
+生命周期通过不代表EDIT全部关闭，native inline/paint/history/controls仍须实际验证。
+2026-11-04 EDIT关闭：Dalton原生runtime4browser22.09s通过，
+Erdos在`edit-runtime-review/final/review.md`关闭hardbreak最后问题；生命周期5browser
+及受影响Node/HTTP/浏览器证据见同目录reports。协调者actualsize13文件PASS。
+native history为唯一undo authority，原adapter临时snapshot undo已移除；bundle固定
+`6b99202919a6a4b407dd7893392edca88e92b6facbb660f52af016ee7c4bffcd`。
+保留两项非阻断后续检查：工具栏state-disabled、CommonMark输入规则的未覆盖边界，
+在JOIN/REFERENCES受影响时验证；不宣称所有RA或整周已通过。
+当前下一叶REFERENCES，单写入者消费已复核receipt/admission契约；无真实资格自动启用。
+REFERENCES首候选52tests/9subtests94.59s为部分证据；Lovelace复核发现8组缺口，
+位于`references-review-r1/review.md`。Mencius先按`references-backend-fix.md`修后端
+锁/额度/成员证明/当前Jira身份/严格HTTP/publicAPI，再按独立UI子包修定位与事件。
+不勾REFERENCES；当前reported10文件size漏掉原report_sources410，已要求全触及集合验证。
+Ruling: Jira重命名返回新current_key合法，但stable_id必须与scope成员精确相同，
+不能因为key相同就接受另一个stable_id；这是原canonical current_key语义，不要求旧key永久不变。
+代价是旧ID不再匹配时需当前scope别名处理，不扩大来源访问或隐式换票。
+协调者干净合成草稿Chrome检查`clean-editor.json/png`确认16区域、无textarea/横向溢出、
+来源Fixed/In Analysis、复制payload就绪；同时发现本地Iconoir缺glyph和白底标题低对比，
+由REFERENCES当前单writer做定点资产/可读性修复，不改用户dirty main.css，不扩全局美化。
+Ego24完成DOM检查后关闭；其截图超时单列不冒充截图通过，也未自动升级Ego0.6.2.5。
+当前只读演示helper端口8137，launcher56128/child32744归协调者，
+后续代码变化需按同候选正常重启；它不是JOIN或整周资格。
+后续REFERENCES候选演进前已核对上述两进程command并停止，避免继续展示旧导入组合；
+不是产品停止/恢复资格测试，未删除任何演示数据。新UI浏览器验收用独立测试server。
+REFERENCES backendfix1的15tests37.17s及14tests/9subtests3.78s已记录，
+Hegel在`references-backend-review/`复核冻结源码；Mencius仅写不相交的UI子包，
+不得改待review后端。UI工作要求见`references-ui-fix.md`，仍未勾本节点。
+REFERENCES backend闭环：Hegel在`references-backend-review/fix3/review.md`确认PASS。
+fix2的27tests/4subtests89.34s及fix3固定membership5tests/2subtests107.88s为对应证据；
+原准入hash/限额、同commit pages/object、currentprincipal、非draft拒绝及旧receipt校验已修。
+UI仍有3条失败见`references-ui-report.md`，Mencius继续仅UI收口；
+不要将backend通过当作浮窗/整个REFERENCES完成。
+后续UI5browser41.67s通过，Mendel复查关闭原定位/销毁，指出Esc/caret重查、
+same-text重新capture、过长ID静默丢弃、options集合校验、locale和旧请求abort缺口。
+当前writer仅修此6组UI，backend维持已审冻结。记录在`references-ui-review/review.md`；
+没有勾REFERENCES，尚未开始TEMPLATES产品代码。
+可复用无dotenv测试入口已纳入`scripts/validation/run_report_authoring_tests.py`；
+协调者实际size7文件PASS，原用户Scope两个超限文件仍未动。
+
 2026-11-03最新要求：只保留WYSIWYG，`#ID`为唯一工单补全触发；
 用户可创建模板并人工或显式AI填写，需要错误/架构/API/执行细节。
 本窗口只整理OpenSpec，不实施、测试产品或重新启动已停止服务。
@@ -25,6 +295,10 @@ base and Dashboard keep separate canonical implementation ledgers.
 一个协调者可依明确文件边界统一交付，独立review仍保留。
 W6.HTML.UI/R和新作者功能继续未完成；保留既有后台/非编辑工作流证据，
 旧绿色不代表schema2、用户模板、工单补全或AI填写已验收。
+后续确认的逐票/AR/来源状态前缀、稳定顺序、人工颜色保留与跨日累计，
+以及跨周seed/未结束AR、手动每日准备/默认禁用定时，已细化为
+[report continuity](report-continuity.md)。新增HISTORY/DAILY叶和RA41-72；
+只有规格更新，无产品节点完成。W7.SCHEDULE是延后资格，不默认启用。
 
 Current workflow window is complete at a safe handoff. W7.E2E.QUALIFY is closed
 only for the user-approved non-editor synthetic workflow. No broader W3-W7
@@ -506,6 +780,8 @@ Actual response/auth/row-pagination qualification remains W3.GATEWAY/HSD, not as
 | PM-SDK-INTAKE high | delivered wheel/pack hashes and qualification | base artifacts -> C0 copied/installed consumer -> C0.R/W4.REPLAN | C0-01..12: valid and invalid responses, no source import/retry/network/synthetic-to-provider upgrade |
 | PM-PORT high | pinned donor source/resources/behavior | migration-catalog.md + leaf source closure -> actual destination API/tests | target runtime/import/provider negative cases; donor-only green is insufficient |
 | PM-EDIT-V2 / PM-TEMPLATE-V1 / PM-COMPLETION / PM-AI-DRAFT / PM-PUBLICATION-V2 high | 本轮作者层新增契约，不覆盖旧W1 authority | [authoring validation](report-authoring-validation.md)提供精确producer/consumer/反例；仅W6.AUTHOR消费 | RA01-40，不能继承旧HTML绿色 |
+| PM-PAINT-V2 / PM-CONTINUITY / PM-PREPARE high | 用户有效富文本、raw状态、系列基线/周周期/稳定行序和准备幂等 | 同附录的保存/renderer/归档/翌日/CLI/UI消费者；HISTORY/DAILY加入原lane | RA41-69，旧样张检查非生产资格 |
+| PM-SCHEDULE high, deferred | 显式启用的调度adapter | W7.SCHEDULE -> 同一preparation API/journal，不直接finalize | RA70-72，须独立配置/授权/环境 |
 
 Owner paths W1: project_management/**, metrics/settings/defaults.py (app registration only),
 README.md, openspec/changes/add-provider-neutral-project-reporting/**,
@@ -617,13 +893,25 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.HTML.FINALIZE Confirm exact draft revision into existing data Git with original-byte recovery/download.
 - [ ] W6.HTML.UI Summary: consume W6.AUTHOR.EDIT/JOIN for existing authoring acceptance; current textarea is transitional, no separate user-provided Agent prerequisite.
 - [ ] W6.HTML.R Review the bounded authoring slice and actual desktop/copy/Git evidence; email-client qualification reported separately if unavailable.
-- [ ] W6.AUTHOR.PLAN.R Review Authoring V2 scope/error policy, template selection and schema migration before implementation.
-- [ ] W6.AUTHOR.VA Freeze RA01-40, source consumer inventory and exact validation commands.
-- [ ] W6.AUTHOR.CONTENT Add schema2 fragment/receipt persistence, safe rendering and old-revision compatibility.
-- [ ] W6.AUTHOR.EDIT Integrate one WYSIWYG component and the shared editor adapter; no source mode.
-- [ ] W6.AUTHOR.REFERENCES Implement #ID query, Stage routing, membership/permission/freshness and three-format popup.
-- [ ] W6.AUTHOR.TEMPLATES Add user template library, version-CAS, visual block/slot editing and pinned draft creation.
+- [ ] SDK020.PLAN.R Freeze the selected SDK/pack contract, pre-IP work and post-IP APIs/fixtures; review and publish scoped specifications before implementation.
+- [ ] SDK020.ARTIFACT Verify final owner receipt/wheel/pack; install SDK into an owned separate target without changing the main environment.
+- [ ] SDK020.APP Update the exact dependency/runtime version pair with real installed-SDK RED/GREEN tests; preserve all application validators.
+- [ ] SDK020.PRE Run the explicit no-socket consumer selection and record source-bound readiness plus protected-WIP integrity.
+- [ ] SDK020.REPLAN Confirm next joined packet is reachable, classify retained evidence, record IP-SDK020-READY and stop for the user.
+- [ ] SDK020.JOIN After explicit release of IP, execute the new-SDK real local HTTP consumer cases J020-01..06.
+- [ ] SDK020.JOIN.R Review the joined candidate, source/acceptance evidence and owned cleanup.
+- [ ] SDK020.JOIN.REPLAN Refreeze DAILY/ASSIST prerequisites and affected evidence before continuing authoring execution.
+- [x] W6.AUTHOR.PLAN.R Review Authoring V2 scope/error policy, template selection and schema migration before implementation. User approved; bounded first-CONTENT review recorded below.
+- [x] W6.AUTHOR.VA Freeze RA01-72, source consumer inventory and exact validation commands; RA70-72 deferred to W7.SCHEDULE. First CONTENT slice qualified to start, not product pass.
+- [x] W6.AUTHOR.CONTENT Add schema2 fragment persistence, safe rendering and old-revision compatibility. Standalone backend qualified; nonempty reference/Assist receipts remain fail-closed until their owning leaves.
+- [x] W6.AUTHOR.EDIT Integrate one WYSIWYG component and the shared editor adapter; no source mode. Scoped lifecycle/native-runtime review closed; whole-flow JOIN remains separate.
+- [x] W6.AUTHOR.REFERENCES Implement #ID query, Stage routing, membership/permission/freshness and three-format popup. Backend and UI scoped reviews closed; live Jira/HSDES qualifications remain separate and disabled.
+- [x] W6.AUTHOR.TEMPLATES Add user template library, version-CAS, visual block/slot editing and pinned draft creation. Fixed-content rich preview follow-up closed by B2 browser/review.
+- [x] W6.AUTHOR.HISTORY Add effective rich-text daily history, source-status prefixes, stable row order and weekly carry-forward. Core/B1/B2 scoped synthetic qualification closed; daily trigger and whole-week JOIN remain separate.
+- [ ] W6.AUTHOR.DAILY Add manual daily preparation, editorial baseline selection/CAS, pending-draft handling and same-day idempotency.
+- [ ] W6.AUTHOR.DAILY.REPLAN Bind the qualified DAILY consumer to ASSIST target/profile/save boundaries without reopening unaffected history.
 - [ ] W6.AUTHOR.ASSIST Add explicit AI candidates using a separately qualified authoring profile.
+- [ ] W6.AUTHOR.ASSIST.REPLAN Verify authoring-profile HTTP qualification and provenance consumers before the final week.
 - [ ] W6.AUTHOR.JOIN Validate actual authoring/save/copy/finalization; separate live-provider and Outlook qualification.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
@@ -637,6 +925,7 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W7.E2E.QUALIFY Run same-candidate synthetic full-stack browser -> actual SDK/Base HTTP -> saved HTML/download -> confirmed Git and unchanged repeat; editor/copy integration is deferred under the 2026-11-03 user split. Evidence: manual-workflow-delivery.json.
 - [ ] W7.DEPLOY Verify new installation paths, identity, legacy coexistence and required recovery.
 - [ ] W7.PROTECTION Port backup/retention/remote/scheduling contracts with explicit inactive activation gates.
+- [ ] W7.SCHEDULE Qualify the optional disabled-by-default scheduler over the same daily preparation API; no automatic finalization.
 - [ ] CLOSE.R Full matched-candidate integration, required live qualifications and unresolved issues.
 
 ## W6 Authoring V2
@@ -644,7 +933,7 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 Goal：用户在同一报告界面使用自建模板、富文本、`#ID`和AI候选，保存可恢复修订并显式定稿。
 Spec：[delta](specs/report-authoring/spec.md)、[design](report-authoring-v2.md)、
 [contracts](report-authoring-contracts.md)、[completion](report-completion.md)、
-[validation](report-authoring-validation.md)。
+[continuity](report-continuity.md)、[validation](report-authoring-validation.md)。
 profile_source：repo-local；agent_routing_mode：single-agent实施协调，独立Architect Planner Reviewer。
 使用writing-plans/TDD；不复制另一份勾选ledger。Implementation Engineer由同一协调者兼任，
 Validation Engineer只在VA有独立验证风险时派发，Debugger当前跳过（不是故障实施请求）。
@@ -652,15 +941,56 @@ Validation Engineer只在VA有独立验证风险时派发，Debugger当前跳过
 
 ### Scope And Preflight
 
+- 2026-11-03执行授权更新：直接main，baseline5d83933；用户工作树不stash/重置/自动暂存。
+  Mill（GPT-5.5/xhigh）复核PLAN.R+VA为PASS_WITH_FOLLOWUP：未发现阻断首CONTENT切片的
+  新架构缺口；必须先RED，显式选择project_management/provider_sync路径，
+  schema2 UI/真实editor/live/Outlook不能冒领旧schema1绿色。
+  原源码默认pytest路径不含project_management/provider_sync，禁止仅跑默认pytest宣称覆盖。
+  合成执行器见`.tmp/authoring-main-20261103/run-tests.py`，不加载.env或用户数据库。
+  每个后续叶开工前复核本叶确切边界，新增缺口回此计划修订而非跳过。
+- Ruling: 用户明确指定main，替代SDD默认隔离worktree；任务状态只在本文件维护，
+  `.tmp/authoring-main-20261103/`只存brief/证据，不能成为第二套完成ledger。
+  保留原权限/归属/旧字节守卫，直接main的代价是需要精确范围review，不能混提交他人改动。
+- 组件前置探针：固定npm vditor4.0.1 sha512-CyajvPNE8fjCgEAzAaSxVEEWwQMJ5FTIVkNn3k+5IRaldqGwPRr8Dx2QLALHGCby8L/AJ6pQXjXiSPUGhHGmDw==
+  的public html2md/setValue/getHTML在Chrome合成输入中丢foreground/background。
+  原始结果在`.tmp/authoring-main-20261103/vditor-qualification.json`；不得用于真实编辑器保真。
+  按既定备选评估Milkdown公开schema接口，不改核心fork或降级颜色需求。
+- Ruling: 固定采用`@milkdown/kit@7.23.0`的公开schema/JSON与transaction接口；
+  本地Chrome156.0.8078.74禁网络探针通过paint、格式link、undo、输入及destroy/remount。
+  `.tmp/authoring-main-20261103/milkdown-qualification.json`和PNG为能力证据；
+  npm integrity=`sha512-WNu4cZXY33l224gLuyRWaQdPDotsPJ3yBn0+FGobaqH6aEt8G/QxIC1MIUV8Uxj07lMP6aIfaW4ilNLTjAMCmw==`。
+  public JSON映射满足格式保留，避免Vditor已观察到的丢失；判断错误的代价是重做adapter，
+  不改变中立fragment/存储契约。实际UI/save/reopen/paste/clipboard资格仍由EDIT/JOIN完成。
+- 同一组件探针补充通过h3、quote、task/ordered list、code、hardbreak、header-only table
+  和reference_id公开属性扩展。UI隔离执行器`run-ui-tests.py`的原生产route首个测试
+  1passed/5.05s，只证明测试装配可用；不计新作者页面验收。
+- CONTENT首候选18文件已冻结到`.tmp/authoring-main-20261103/content-review-r1/`供独立review。
+  实现者报告新测试10passed/8.20s、指定回归33passed/164.06s；协调者物理size17文件PASS。
+  尚未勾CONTENT：必须关闭兼容/精确schema/恢复问题，不能以报告中的绿色代替review。
+- Ruling: 额外publication_edges失败不能因“optional”被忽略。现有race fixture仅改HEAD，
+  与`html-draft-packet.md`允许无关Git append的语义规则冲突；修为真实source变化反例，
+  并保留head-only成功用例。代价是补齐测试而非改变生产source校验；旧失败记录仍保留。
+- CONTENT review1：Dirac确认3项Important，旧模板原地改动破坏旧草稿、schema2 edits字段偏离契约、
+  损坏packet在完整校验前append。原实现者按`content-fix-r1.md`统一修复；不勾CONTENT。
+- Ruling: rich模板使用独立版本（允许builtin version2），保留version1原模板字节/hash。
+  schema1首次save_authored是显式升级点，可绑定已知作者模板后继；create仍要求精确版本。
+  代价是维护必要的旧模板资源，不开放任意registry/忽略hash，不改变现有已归档字节。
+
 - 本轮设计baseline为HEAD `12f7ac285d1bba7f125b947a11a3deaa2fd5d330` 加现有dirty工作树。
   `project_management/`、Provider基础服务、report UI与本change均有未提交文件；
   不把它们全部当本轮新写或自动暂存。其他Scope UI、credentials、runtime、AI Base源码不修改。
 - 新接口的源码/fixture/环境资格分开。现有W6.HTML和W7合成回执只按依赖复用。
-- 固定Vditor4.0.1是候选，不是已安装；只WYSIWYG，`#ID`唯一触发，
+- 原固定Vditor4.0.1候选已被上述Milkdown资格决定替代；只WYSIWYG，`#ID`唯一触发，
   无源码模式/裸ID/URL/hotkey/button补全，无全站React/Vue迁移。
 - 对source事实/slot结构和额度采用contracts数值；网络/AI不在render/save锁内。
 - HTML-first/emailcopy、原Markdown/Excel、双语、owner/CSRF/原Git writer都保留。
 - 先人工模板闭环，再AI；未合格provider/profile明确unsupported，不以fake取代live验收。
+- 本次连续性文档核对HEAD为`5d83933dc3d3c4f1673ec680c5ee2d03da8f9aed`。
+  原作者层docs、Scope UI和`.github/skills/lsheng2-coding/config.json`仍有dirty改动；
+  本窗口只写本change/当前guide/README，不修改他方源码，不自动commit/push。
+- fragment v2增加受限RGB/高亮/链接内格式；同周累计、周seed、来源状态、独立票行和AR契约
+  不从Markdown或原AI文本恢复。真正组件保真是EDIT的前置验证，不能静默降级。
+- source/analysis/editorial基线分开；手动准备与Save不定稿；W7.SCHEDULE未启用。
 
 本lane是一个实现wave，各叶串行交付并独立验证；若任一叶发现需要扩大authority或换组件，
 回到PLAN.R重定范围，不循环局部修补。下一大波必须经过末尾REPLAN。
@@ -668,15 +998,59 @@ Validation Engineer只在VA有独立验证风险时派发，Debugger当前跳过
 | Node | depends_on | Deliverable / readiness |
 | --- | --- | --- |
 | W6.AUTHOR.PLAN.R | 已有W6.HTML.EDIT/FINALIZE、已确认功能方向 | 边界与错误策略获准；设计review不是产品通过 |
-| W6.AUTHOR.VA | W6.AUTHOR.PLAN.R | 新/旧schema、source保护、AI与外部资格矩阵完整 |
+| W6.AUTHOR.VA | W6.AUTHOR.PLAN.R | RA01-72、颜色/新旧schema、source保护、跨周/基线与外部资格矩阵完整 |
 | W6.AUTHOR.CONTENT | W6.AUTHOR.VA | builtin模板的schema2可保存/重放/渲染，schema1原字节不变 |
 | W6.AUTHOR.EDIT | W6.AUTHOR.CONTENT | 真实组件编辑/dirty/undo，保存重开格式不丢 |
 | W6.AUTHOR.REFERENCES | W6.AUTHOR.EDIT | exact #ID -> scoped reader ->3项；错误不改原文 |
 | W6.AUTHOR.TEMPLATES | W6.AUTHOR.REFERENCES | 用户模板到报告人工填写闭环，无AI依赖 |
-| W6.AUTHOR.ASSIST | W6.AUTHOR.TEMPLATES + authoring profile前提 | task-run候选/审批/取消；无真实资格只做fake边界验证 |
-| W6.AUTHOR.JOIN | W6.AUTHOR.ASSIST | 同候选app/editor/storage/已安装SDK联合验证 |
+| W6.AUTHOR.HISTORY | W6.AUTHOR.TEMPLATES | 一票一行、保存后的有效富文本/颜色跨日跨周原样继承，状态只取source |
+| W6.AUTHOR.DAILY | W6.AUTHOR.HISTORY；本次恢复序列先经SDK020.JOIN.REPLAN | 明确baseline/meeting/来源选择、同日去重、人工未定稿保护；独立人工证据可复用 |
+| W6.AUTHOR.DAILY.REPLAN | W6.AUTHOR.DAILY | 固定ASSIST target/profile/save消费者、证据失效范围及下一步 |
+| W6.AUTHOR.ASSIST | W6.AUTHOR.DAILY.REPLAN + authoring profile前提 | task-run候选/审批/取消；无真实资格只做fake边界验证 |
+| W6.AUTHOR.ASSIST.REPLAN | W6.AUTHOR.ASSIST | profile合成HTTP及provenance链可达，整周输入/验收条件固定 |
+| W6.AUTHOR.JOIN | W6.AUTHOR.ASSIST.REPLAN | 同候选app/editor/storage/已安装SDK联合验证 |
 | W6.AUTHOR.R | W6.AUTHOR.JOIN | 精确diff与RA证据review；外部未验证项单列 |
 | W6.AUTHOR.REPLAN | W6.AUTHOR.R | 原剩余W6.RENDER/PUBLISH及W7逐项continue/amend，不删除未交付 |
+
+### SDK020: Preparation And Integration Gates
+
+Spec: [SDK contract](sdk-020-integration.md), [post-IP execution](sdk-020-post-integration.md),
+[observable requirements](specs/sdk-consumer-integration/spec.md).
+Goal: use the delivered 0.2.0a1 Python client with the original a2 pack, preserving app authority.
+Architecture: existing app adapter plus isolated installed client; no new service or execution engine.
+The user's scope ends at IP-SDK020-READY; post-IP nodes are specified, not yet released.
+
+| Node | depends_on | owner_paths / deliverable |
+| --- | --- | --- |
+| SDK020.PLAN.R | accepted Base delivery and current user request | this change's connected specs, new current SDK guide; exact API/consumer/refusal/stop mapping and scoped publication |
+| SDK020.ARTIFACT | SDK020.PLAN.R | owned .tmp/sdk-020-preintegration-20261105 artifact copy/target; hash-verified wheel, unchanged bundled pack and recorded dependency roots |
+| SDK020.APP | SDK020.ARTIFACT | requirements-ai-task.txt, out/ai_task_contract.py, tests/test_sdk_020_compatibility.py, scripts/validation/run_project_sdk_preintegration.py and shared run_report_authoring_tests.py explicit isolation mode; narrow exact version migration |
+| SDK020.PRE | SDK020.APP | same owned code/test paths; three explicit test files, no Base import or real sockets, source-bound JUnit/receipt |
+| SDK020.REPLAN | SDK020.PRE | tasks + IP receipt; verify post-IP source/fixture paths, carry forward valid evidence, stop and wait |
+| SDK020.JOIN | SDK020.REPLAN + explicit user release | scripts/validation/project_full_stack*.py, project_summary_support.py, project_management/tests/test_project_full_stack_lifecycle.py and tests for J020 cases; refresh old SDK expectations, then joined 0.2 HTTP and app acceptance |
+| SDK020.JOIN.R | SDK020.JOIN | exact joined scope review and normal-stop evidence |
+| SDK020.JOIN.REPLAN | SDK020.JOIN.R | tasks and post-IP appendix; refreeze DAILY/ASSIST, no new task authority |
+
+Steps before IP:
+
+1. Verify the Base release receipt and exact wheel/a2 manifest/21 file hashes. Copy only selected
+   artifacts to the owned evidence root; do not install into the active main environment.
+2. Install the copied wheel with `pip --no-index --no-deps --target` as specified in the SDK contract.
+3. Add tests that load the real selected package and refuse unapproved version/mutated pack combinations.
+   Add the bounded runner around the existing no-dotenv test entry; verify real socket attempts refuse.
+4. Run the exact command in the SDK contract before production edits. Expected RED is
+   ANALYSIS_CONTRACT_INVALID from the old package-version admission, not a missing dependency.
+5. Change only the requirements pin and existing compatibility guard to SDK_VERSION='0.2.0a1'.
+   Preserve manifest/profile/schema/evidence/owner/CAS logic and rerun the same explicit selection.
+6. Check actual changed source sizes, whitespace, source/artifact identities and excluded dirty files.
+   Write the readiness receipt only for nonempty passing tests with zero real network calls.
+7. SDK020.REPLAN records `action=continue`, the next node, exact supporting evidence and remaining
+   post-IP gates, then waits. If a real dependency gap is found, record amend and the precise gap;
+   do not start a Base service to discover it through a full workflow.
+
+Production API signatures, runner invariants, S020-01..08 and J020-01..06 are specified in the two
+appendices. Use TDD at the actual app boundary; these are not a second implementation checklist.
+The existing full authoring scope remains below; none is closed by the SDK preparation commit.
 
 ### CONTENT: Versioned Editing Foundation
 
@@ -688,6 +1062,8 @@ Files：新增 `project_management/app/domain/report_authoring.py`、
 `reporting/html.py`、`services/report_publication.py`、`services/report_publication_reads.py`
 及现有report namespace validator。400行以上模块按本职责拆辅助，不重构整个归档模块。
 Tests：`test_report_authoring_content.py`、`test_report_authoring_migration.py`，RA01-06/20。
+新增RA41/46/66：fragment v1 reader与v2 paint、链接内runs、颜色hash、未知样式拒绝；
+同步schema2 context/manifest/intent exact字段及消费者。先独立文档，矩阵context由HISTORY接入。
 
 Consumes：schema1 DTO、canonical_bytes、write_bytes/root-stage锁。
 Produces：RichTextFragment、AuthoredEdit、AuthoringTemplateSelection、schema2 reader/renderer、
@@ -715,7 +1091,8 @@ def test_legacy_text_remains_literal(legacy_draft, authoring_service):
 ### EDIT: WYSIWYG Host Adapter
 
 Files：新增 `ui_web/static/js/report_editor/{index,adapter,fragment_codec}.js`、
-`ui_web/static/vendor/vditor/4.0.1/` 固定资产/manifest；
+`ui_web/static/vendor/milkdown/7.23.0/` 固定bundle/许可证/manifest，
+对应局部build入口/lockfile；不引入全站前端构建框架；
 修改 `templates/projects/reports/editor.html`、`ui_web/report_forms.py`、
 `views/project_reports.py`、`facades/project_reports.py`、`static/js/project_reports.js`；
 locale定点追加，不重写全局main.js。
@@ -723,8 +1100,9 @@ Tests：`ui_web/tests/report_editor_test.mjs`、`test_report_authoring_views.py`
 Consumes：CONTENT schema2、原target/save/clipboard/finalize。
 Produces：contracts的EditorHandle、真实mounted编辑区与v2 payload。
 
-1. RED：link/list/table编辑保存重开不丢；source区不可改；源码开关不存在。
-2. 固定manifest、语言/Lute/图标本地资产，禁localStorage和未配置upload。
+1. RED：link/list/table/文字颜色/高亮编辑保存重开不丢，补全不清paint；
+   只改颜色也dirty，历史淡化不覆盖显式颜色；source区不可改；源码开关不存在。RA41/42。
+2. 固定manifest、Milkdown及传递依赖/图标本地资产，禁localStorage和未配置upload。
 3. 用公开组件API实现fragment codec/target级编辑，DOM不作为服务端authority。
 4. 接dirty/command/Copy/Finalize，替代textarea＋iframe编辑；不关闭CSP来修预览错误。
 5. 运行Node/views及真实组件桌面小样；语义不能映射则回PLAN.R，不静默降纯文本或fork核心。
@@ -739,6 +1117,9 @@ Files：新增 `project_management/app/{api,domain}/report_completion.py`、
 `out/jira_reference.py`、`out/hsdes_reference.py`；
 新增 `ui_web/views/report_completion.py`、`static/js/report_editor/completion.js`，
 仅在现有 `urls.py`、locale/defaults_metrics.py追加本能力route/config。
+同一叶拥有`storage/report_reference_admission.py`与`services/report_reference_receipts.py`；
+窄扩展`provider_sync/app/spi/capture.py`的retry_after、AccessError HTTP metadata及
+`services/capture_session.py`/`out/capture_reader.py`相应消费者，保持旧code。
 Tests：RA07-20、`test_report_completion.py`、`provider_sync/tests/test_reference_lookup.py`。
 
 Consumes：Stage、ScopeMembershipSnapshot、公共connection resolver、EditorHandle。
@@ -749,6 +1130,13 @@ Produces：CompletionResult、签名ReferenceObservation和safe fragments。
 3. 接#唯一触发、防抖/限流/epoch、3变体、disabled owner和错误提示。
 4. HSD在无实际字段/auth资格时拒绝；tests注入合成SPI，不冒充live。
 5. 跑REFERENCES/Node命令；source/hash/Git/模型账目不变；被移动token不能写入。
+6. Readiness补充：2026-11-03Confucius只读复核指出receipt关联与live admission两处设计缺口；
+   已在contracts Reference Association Algorithm和completion Deployment/Transport中精确定义，
+   不再用完整编辑段落hash拒绝合法人工改字/paint，不允许只凭client reference_id信任provider。
+   验证新增跨service第31次拒绝、锁外网络、disabled0上游、404阶段语义和Retry-After；
+   Confucius对两处amendment窄复核为CODE_READY，见
+   `.tmp/authoring-main-20261103/references-readiness.md`；不启用真实资格，
+   仍等待EDIT行为门禁后才进入REFERENCES。
 
 ```python
 def test_absent_member_never_fetches_outside_scope(report_case, reader_that_raises):
@@ -770,6 +1158,8 @@ Files：新增 `project_management/models_report_templates.py`，现有 `models.
 `templates/projects/report_templates/{list,editor}.html`、
 `static/js/report_editor/template_builder.js`，定点接项目导航/URL。
 Tests：RA21-28，`test_report_template_library.py`、`test_report_template_compilation.py`。
+document/fill policy v2的meeting_matrix定义与daily_note_instructions一并校验；
+模板模式是规则，具体票据位置/历史由HISTORY管理，不能把企业note复制进模板。
 
 Consumes：CONTENT schema、EDIT adapter、Project owner/ORM、builtin registry。
 Produces：ReportTemplateService、revision/usage/command/use、pinned template_snapshot、
@@ -780,6 +1170,84 @@ ready/draft校验与可视化创建入口。
 3. 创建模板v1->报告填写->模板v2；已有draft仍用v1，use先于archive可恢复，新use被拒绝。
 4. 库GET/选择/排版不调用AI/工单；copy只复制结构/固定模板文字，无报告业务值。
 5. 跑TEMPLATES、合成DB迁移、桌面人工填写；不迁移用户db或清其他运行。
+6. Readiness补充：Cicero定位user-template registry接线及先于HISTORY的context缺口，
+   已在contracts Pinned User Template Rendering/Standalone Before Continuity细化
+   `UserTemplateSelection`、完整use request绑定、`render_pinned`及独立schema1人工链。
+   v2 matrix库结构可保存，但无prepared context仍拒绝创建报告，不假造HISTORY。
+   该叶同时拥有原draft/render/finalize/schema reader的精确新增消费者；source/Git authority不改。
+
+### HISTORY: Daily and Weekly Continuity
+
+Files：新增 `project_management/app/{api,domain}/report_continuity.py`、
+`services/report_continuity.py`、`reporting/meeting_matrix.py`、
+`storage/report_continuity_reads.py`、`models_report_series.py`、对应未占用migration；
+同职责新增`storage/report_prepared_context.py`及context reader，
+按continuity Prepared Context Contract提供DAILY将消费的真实服务器seed，不接受HTTP自报历史；
+修改 `models.py`、`services/report_drafts.py`、`services/report_publication.py`、
+`services/report_publication_reads.py`、`storage/report_publication_packets.py`、
+schema/namespace validators；UI经 `facades/project_reports.py` 提供period/context和常驻备注；
+新增 `ui_web/report_series_forms.py`、`views/report_series.py`、
+`templates/projects/reports/series.html`，经公共create/list/get/save policy API接
+`reports/series/`、detail/policy routes，不能隐式按Stage/title建系列。
+Tests：`test_report_continuity.py`、`test_report_week_rollover.py`、
+`test_report_meeting_matrix.py`、`test_report_continuity_publication.py`，RA43/47-57/63-69。
+同叶core窄扩展`services/report_templates.py`的continuity_prepare use和read_use，
+按continuity Prepared Context Contract核验持久use hash，不在stage锁内写DB。
+
+Consumes：CONTENT片段v2、模板v2、既有SourceKey/ReportSelection和六文件publication。
+Produces：continuity附录的SeriesPolicyRevision、MeetingIdentity、DailyNote/ReportAction、
+DailyAuthoringContext、RowOrderSnapshot，及create/save series、preview/read_period公共服务。
+series设置用Project ORM事务；daily内容用原draft/publication writer，不建第二真相库。
+
+1. RED：人工删改/颜色/链接定稿后day2/day3逐片段相同，旧AI句子不复活；比较canonical fragment。
+2. RED：共享PR三行、raw source状态前缀、无历史状态不倒填、稳定append/显式reorder/移出重返。
+3. RED：series显式create/get/save policy-CAS，GET不创建；新周最后有效note + 更早未结束AR + 常驻备注；保留原日/色/状态，
+   周五缺失、跨年、未知日历、另一Stage、历史坏hash均有明确反例。
+4. 实现按PublicationRef读有效context，按note/action稳定ID去重，周内累积与周seed投影；
+   生成新的context/hash并复用原revision/六文件校验，过限不裁剪。
+5. 实现baseline-CAS和commit后可重建head、weekly_view/旧日correction不抢head；
+   失败按原packet恢复，不重新解析模型/工单。
+6. 运行validation的HISTORY命令与原report publication/source安全用例，
+   验收状态是“真实持久化/渲染链通过”，不是样张脚本通过。
+7. Readiness补充：Volta指出同源重放可能复活人工删句及HISTORY/DAILY context生产循环，
+   已在continuity的Current Day Without New Source Content/Prepared Context Contract明确
+   initial/unchanged/pending分支、服务器空槽note ID、不可变seed及commit前baseline CAS。
+   不把no_work独自作为新日note生成依据，不在seed建立第二套业务状态。
+
+反例使用公开服务和合成日期：Day1改为红字并删AI一句 -> 定稿 -> Day2 -> Day3 ->
+NextWeek，断言每个继承note.body_hash等于Day1定稿hash，同时原publication字节不变。
+独立验证输出日期不同导致全文HTML hash不同是预期，不能错用全文相等判断内容继承。
+
+### DAILY: Explicit Draft Preparation
+
+Files：新增 `project_management/app/{api,domain}/report_preparation.py`、
+`services/report_preparation.py`、`storage/report_preparations.py`；
+修改原 `services/project_runs.py`、其draft构造消费者、run request validator和
+`management/commands/project_run.py`；新增 `ui_web/views/report_preparations.py`、
+相应forms/facade，定点接Stage reports模板/URL/locale，不改全局调度或他仓服务。
+Tests：`test_report_preparation.py`、`ui_web/tests/test_report_preparation_views.py`，
+RA44/52/53/58-64/68；旧project_run schema1重放回归。
+明确同时覆盖`app/domain/run_values.py`、`run_admission_values.py`、原operation存储/recovery
+及worker版本分派，按continuity Daily Worker Dispatch冻结schema2，旧schema1字节不变。
+
+Consumes：HISTORY preview/context/period、原run worker、已合格source/AI接口。
+Produces：ReportPreparationService.prepare、BaselinePreview、PreparationResult、
+持久meeting slot/固定意图、手动“生成今日草稿”和从saved capture人工填写入口。
+
+1. RED：只有POST准备可运行；GET/切周/午夜零副作用；manual_only不依赖Base。
+2. RED：I/O前持久占位；同command不同payload拒绝，不同command同meeting仅一operation，
+   返回原effective selection+差异提示，已有编辑直接返回；
+   前日未定稿默认pending，显式确认gap记录不删除原稿。
+3. 实现先冻结series/template/baseline/meeting，再沿原run推进到draft_ready；
+   changed_items模式只在明确授权下分析，旧source/AI水位与editorial分别维护。
+4. 接显式source刷新/reprepare API及POST，校验终态operation/draft revision后才替换active slot，
+   原draft/fragment保留，冲突返回review要求不覆盖；scheduler不能调用；
+   original-command恢复保留runKey/预算/原日期，source drift检查不减弱。
+5. 验证Save/AI接受/weekly_view不推进daily baseline；只有用户精确Finalize且Git确认推进。
+6. 运行DAILY命令/原worker相关消费者，确认旧schema1操作和非编辑已发布文件可读。
+7. Peirce只读readiness已定位worker总是legacy草稿/总是要求Base的实际缺口；
+   版本化准备意图先于capture、context_hash在compose后生成，manual_only backend=null，
+   saved_capture不派worker。不能提交尚未存在的context_hash或创建多余schema1草稿。
 
 ### ASSIST: Explicit Candidate Filling
 
@@ -787,7 +1255,7 @@ Files：新增 `project_management/app/{api,domain}/report_assists.py`、
 `services/report_assists.py`、`storage/report_assists.py`、`out/report_ai_task.py`、
 `ai_bundle/report-authoring/{profile,input.schema,output.schema}.json` 与受控prompt；
 新增 `ui_web/views/report_assists.py`、`static/js/report_editor/assist.js`，
-定点改URL/locale。Tests：RA29-32/39，`test_report_assists.py`。
+定点改URL/locale。Tests：RA29-32/39/45/62，`test_report_assists.py`。
 
 Consumes：已保存draft/template/slot、Base task-run/1、安装SDK和固定pack。
 Produces：AssistStatus/Candidate、input/result provenance、Apply-to-dirty及Save再次校验。
@@ -803,23 +1271,88 @@ Produces：AssistStatus/Candidate、input/result provenance、Apply-to-dirty及S
 
 JOIN owner_paths为前述实现闭包、
 `ui_web/tests/test_report_authoring_browser.py`、
+`ui_web/tests/test_report_authoring_week_browser.py`、
+`scripts/validation/run_report_authoring_week.py`、
 `project_management/tests/test_report_authoring_exports.py`、当前guide/本change。
 不启动旧保留演示或改另仓worker。Consumes：各叶固定hash/tests；
-Produces：RA35-40、原HT28-30相同候选结果与未决列表。
+Produces：RA35-40/67-69、原HT28-30相同候选结果与未决列表。
 
 1. 先验证app＋schema2＋真实编辑器＋fakeProvider＋BaseHTTP合成executor＋临时Git。
 2. 一条用户链：模板->Stage/已存capture->人工填写->#ID成功/错误->AI候选接受/拒绝->
    Save/reload->stale第二窗口拒绝->copy/download->显式finalize->原字节下载。
+   再追加真实编辑器着色/删除->次日->第三日->跨周seed，验证来源状态、AR、stable order、
+   旧fragment canonical hash与截图格式；不把静态样张的渲染检查当成本链通过。
 3. 新片段在HTML/plain/Markdown/Excel输出均验；Outlook、real Jira/HSD是获准环境单独资格。
 4. R围绕精确diff/证据，不重做全库审计；未完成原W6/7、live/Outlook不勾选。
 5. REPLAN裁定continue/amend/supersede/retire，记录 `refreeze_actions`、
    `updated_artifacts`、`rerun_gates`、`post_refreeze_preflight_result`；
    后续原W6.RENDER/PUBLISH消费本lane变化前必须依赖此gate。
+6. 2026-11-03用户追加的整周full-stack验收为JOIN必需场景：完整走
+   2026-10-26..30（合成ISO WW44）及11-02换周，相同工单数据、逐日不同人工note/
+   颜色/格式，Save/reopen/Finalize/正常重启并保留每日证据。
+   精确步骤与拒绝条件见validation第7节；不是先执行此场景跳过HISTORY/DAILY实现，
+   不修改系统日期、真实工单或增加真实模型授权。
 
-Preflight：Registry -> consumer -> RA01-40 -> node及唯一checkbox一致。
+Preflight：Registry -> consumer -> RA01-72 -> node及唯一checkbox一致，RA70-72归W7.SCHEDULE。
 只认实际退出结果，collect-only/空选择/目录存在/上游probe不是行为通过。
 新增方法须有production consumer；命令见validation，缺源码时不执行缺路径命令。
 小型反例先于全栈，新信息才升级。本设计窗口没有产品节点完成，不改旧[x]。
+
+### W7 Schedule Boundary
+
+W7.SCHEDULE依赖W6.AUTHOR.REPLAN、W6.REPLAN及W7.DEPLOY的运行身份/凭据资格；
+W7.PROTECTION管理共同激活边界。owner_paths限定
+`project_management/management/commands/project_run.py`、`out/report_schedule.py`、
+`app/domain/report_schedule.py`、`tests/test_report_schedule.py`、相关部署配置与运维文档。
+Consumes：同一ReportPreparationService和meeting slot；Produces：显式启用的调度adapter。
+先用合成clock执行RA70-72，再按单独授权测试真实任务。默认disabled、misfire=skip，
+不补造日报、不自动finalize；本次文档更新不注册任何系统任务或启动服务。
+
+### 2026-11-03 Design Receipt
+
+本轮仅改规格/文档，新增5份作者层文档（含report-authoring能力delta），
+父design/proposal/HTML接口handoff与current guide同步；旧Chiplet仅更新导航与研究状态。
+OpenSpec `validate add-provider-neutral-project-reporting --strict --no-interactive` 最终exit0；
+初次因旧Requirement加入过长说明而strict失败，已把独立行为保留在新capability并重验。
+新5文件11个本地链接、代码围栏/空白、40个唯一RA场景、
+10个唯一且未勾选W6.AUTHOR节点通过机械核对。文档通过不等于这些场景已执行。
+
+Hooke（GPT-5.5/xhigh）对authoring-v2/contracts/completion做一次独立设计review，
+发现2个P1/2个P2：membership证明、schema2精确定稿包、系统数据块必需输出和template-use并发。
+修订增加typed membership projection、V2 manifest/intent exact keys、
+Data Projection Invariants、DB ReportTemplateUse线性化及对应RA15/23/26，
+限定复查确认4项closed，无新直接P1/P2。它不是整库审计或完整测试架构资格；
+W6.AUTHOR.PLAN.R/VA保留未完成，待用户确认详细设计和执行包最终冻结。
+
+既有whitespace门禁exit0。size门禁仍因原有
+`ui_web/tests/bug_trend_scope_config_test_support.py`650行、
+`ui_web/tests/test_bug_trend_scope_config_views.py`624行超过600失败，未修改/豁免。
+本轮文件均是Markdown；当前size规则不覆盖openspec/**/*.md，不能以零选中称独立size通过。
+未运行产品pytest、browser、Provider/模型、migration或服务启动。
+工作期间另一方提交将HEAD由12f7ac2推进至5d83933；保留其产品与任务提交，
+本代理没有执行commit/push，也不把他方提交当作本轮新功能已实现。
+
+### Continuity Design Receipt
+
+2026-11-03本次只补规格/架构/执行设计：report-continuity为同change新附录，
+同步authoring/contracts/spec/validation/tasks、父design/proposal/handoff、README和current guide。
+新增HISTORY/DAILY后共12个W6.AUTHOR唯一未勾选节点；RA01-72共72场景，
+其中RA41-72为本轮新增，RA70-72归默认禁用的W7.SCHEDULE，非当前手动交付资格。
+原13项本地样张测试不是这些生产场景的验收证据。
+
+已执行：`openspec validate add-provider-neutral-project-reporting --strict --no-interactive` exit0；
+12份文档的102个本地链接/围栏、72个唯一RA、12个未勾选节点及HISTORY->DAILY->ASSIST依赖
+机械检查通过；既有diff whitespace脚本和限定范围`git diff --check`通过。
+全局size仍仅因原未修改的Scope UI两测试文件650/624行超过600失败，未修改或豁免。
+未运行manage.py/产品用例、浏览器、provider/模型、迁移、系统调度或Git提交推送。
+
+Bohr（GPT-5.5/xhigh）独立审阅提出1个P1和2个P2：
+矩阵非必需、series创建API缺失、同日race与command冲突混淆。
+修订加入v2矩阵ready/prepare硬门槛、明确series/API/HTTP/UI所有权、
+两层幂等和显式reprepare；限定复核三项均closed。
+这不是全库审计、产品测试或PLAN.R/VA最终实施资格，全部实现节点仍未完成。
+实际外部workweek映射、具体provider/profile、编辑器paint往返和scheduler运行身份
+仍按相应任务资格验证，不以文档通过冒充环境已就绪。
 
 ## Prior HTML Delivery
 

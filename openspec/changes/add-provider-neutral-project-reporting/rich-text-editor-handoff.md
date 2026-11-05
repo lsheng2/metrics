@@ -1,16 +1,26 @@
 # Rich-Text Editor Handoff
 
-Decision date: 2026-11-03. Owner: the user's separate editor Agent.
+Decision date: 2026-11-03. Owner: one authoring coordinator; no separate user-arranged Agent prerequisite.
 Docs impact: user workflow, API integration and validation.
 Task status remains only in [tasks](tasks.md).
+
+最新详细设计是[Report Authoring V2](report-authoring-v2.md)、
+[versioned contracts](report-authoring-contracts.md)和
+[#ID/error policy](report-completion.md)，执行仅tasks的W6.AUTHOR。
+颜色/高亮、人工有效正文跨日跨周保留和手动准备见[continuity](report-continuity.md)；
+fragment v2颜色与链接内格式须证明公开组件API往返，不以有损Markdown保存冒充保真。
+当前HTML样张不等于真实编辑器资格，RA41-72均属待验证契约。
+用户已确认无源码模式、`#ID`唯一触发、可视化自建模板与人工/显式AI填写。
+本文件保留既有API/资格边界；下文“editor Agent”表示实现角色，可由同一协调者承担，
+不表示用户需要再找另一位Agent。新增设计不自动恢复产品执行。
 
 ## Accepted Requirement And Ownership
 
 The user requires direct editing of rendered rich text, not a Markdown/text
 textarea beside a preview. The previous textarea-first choice in
 html-report-authoring section6 is superseded. A maintained open-source editor
-component is approved in principle; component selection and its exact document
-format belong to the editor Agent, not a second implementation in this lane.
+component is approved in principle. Component selection and application-owned
+document format have a proposed contract in Authoring V2, not a second implementation.
 
 The workflow Agent closes capture -> actual SDK/Base HTTP -> accepted summary
 -> saved report -> HTML/plain download -> explicit local data-Git publication.
@@ -50,9 +60,9 @@ targets, and add/keep/remove operations. Domain `ReportEdit.text` is currently
 literal text, not Markdown or trusted HTML. Existing support must not be
 advertised as lossless rich-text persistence.
 
-If the component needs formatting beyond that contract, the editor Agent
-proposes and implements a versioned structured-document/edit DTO, allowlist,
-server validation, serializer and renderer adapter with the workflow owner.
+Authoring V2 defines the required versioned structured-document/edit DTO, allowlist,
+server validation, serializer and renderer adapter. Implementation follows its
+reviewed tasks and preserves the workflow owner's verified boundaries.
 Never insert raw editor HTML into `ReportEdit.text` and mark it safe, silently
 strip formatting to claim success, or rewrite existing revision hashes.
 Old revisions remain readable; new format/version and migration behavior must
