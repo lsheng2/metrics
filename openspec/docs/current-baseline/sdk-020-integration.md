@@ -60,6 +60,9 @@ for exact source, artifact, test and native evidence references.
 This qualifies SDK consumption, not the entire authoring workflow. DAILY's actual
 next-day inherited-reference edit, the separately qualified ASSIST profile/Apply/Save,
 the full-week simulation and declared export/Outlook gates remain in the reporting plan.
+The approved [delivery sequence](../../changes/add-provider-neutral-project-reporting/delivery-sequence.md)
+now places a bounded changed-ticket cumulative-analysis slice between DAILY and ASSIST.
+That work belongs to Dashboard input/acceptance/report consumers, not another SDK redesign.
 The temporary joined services are stopped; the existing 8017 service is unchanged.
 The main SDK source fingerprints and separately checked package version are unchanged.
 This is not a complete inventory audit of every file in the main virtual environment.

@@ -15,6 +15,8 @@ This repository is currently being developed from Windows VS Code. Use PowerShel
 5. Do not print secrets from `.env`, PATs, cookies, or Authorization headers.
 6. If a command fails, first check whether the failure is shell syntax or path syntax before changing code.
 7. Use focused validation before broad test runs.
+8. Reporting commands use the selected SDK interpreter and no-dotenv runner described in
+   `docs/development/reporting-delivery.md`; the ordinary active Python may be the retained legacy SDK.
 
 ## Common Commands
 

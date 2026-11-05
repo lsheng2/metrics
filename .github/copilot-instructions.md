@@ -1,10 +1,11 @@
 # Copilot Instructions
 
-Canonical repo-level instruction entrypoint for AI coding in this repository.
+Copilot entrypoint. [AI_CONTRACT.md](../AI_CONTRACT.md) is the single repository
+development contract shared with Codex and Claude; this file is a routing index.
 
 ## Load Order
 
-1. Root `CLAUDE.md` for architecture, testing, frontend, and configuration rules.
+1. Root `AI_CONTRACT.md` for development authority, architecture, testing and safety.
 2. `.github/ai-governance/README.md` and the matching BKM file when the task touches coding flow, validation, shell commands, comments, or closure claims.
 3. Target module files and nearby tests before editing.
 4. Shared `lsheng2-dag-based-planning` skill plus `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` when a task needs DAG-backed planning, multi-agent handoff, or review gates.
@@ -14,7 +15,8 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 1. This is a Django modular monolith for software delivery metrics.
 2. Module communication goes through public APIs under each module's `app/api/` package.
 3. Domain code stays framework-free and uses `@dataclass(slots=True)` for dataclasses.
-4. UI code uses semantic HTML, Bulma, htmx, and Chart.js. Avoid React-style frontend architecture.
+4. UI code uses semantic HTML, Bulma, htmx and Chart.js; the approved local Milkdown adapter
+   provides report editing. Avoid a replacement frontend architecture.
 5. External tracker behavior should reuse `sd-metrics-lib` where practical.
 6. Secrets belong in `.env` or deployment environment variables and must not be committed or pasted into docs, tests, or chat output.
 7. Multi-provider first: Jira is the first rich work-item provider, not the platform boundary. New tracker/work-item/AI workflow designs must separate provider-neutral contracts, facts, scopes, action plans, audit, and UI flows from provider-specific adapters such as Jira, GitHub, Azure DevOps, or future systems. Do not create parallel product modules per provider unless the module owns external integration details only.
@@ -31,10 +33,11 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 
 ## Implementation Rules
 
-1. Start from the owning module and the nearest existing test.
+1. Start from the current task frontier, owning module and nearest existing test.
 2. Keep changes inside the module boundary unless the public API contract must change.
-3. Use focused tests first: `pytest path/to/test_file.py::TestClass::test_method`.
-4. Run `python manage.py check` for configuration or Django integration changes.
+3. Use focused tests first, with explicit module paths. Reporting uses the selected environment
+   and no-dotenv entry in `docs/development/reporting-delivery.md`.
+4. Run isolated Django `check` for configuration or Django integration changes.
 5. Before review of a nontrivial code wave, run `python scripts/check_file_size_limits.py --include-untracked` and `python scripts/check_diff_whitespace.py --include-untracked`.
 6. Use `.github/ai-governance/closure-verification-policy.md` before making broad completion claims.
 
@@ -59,8 +62,10 @@ Canonical repo-level instruction entrypoint for AI coding in this repository.
 
 ## Local Pitfalls
 
-1. `pytest.ini` does not include `pull_requests/tests/`; for pull-request work, run the focused `python -m pytest pull_requests/tests/... -q` command explicitly.
-2. `README.md` and `CLAUDE.md` mention different dev-server ports (`8000` vs `8002`); preserve the command used by the current task or ask before standardizing docs.
+1. Default pytest paths omit `pull_requests`, `project_management` and `provider_sync`; select
+   affected modules explicitly and do not treat a default test run as reporting acceptance.
+2. Preserve the task's owned runtime/port and selected interpreter. The existing 8017 service
+   and the retained legacy `.venv` are not the current reporting validation environment.
 3. Do not simplify Azure PR pagination in `AzurePullRequestRepository`; short/overlapping Azure pages require fixed-stride paging plus de-duplication.
 4. For Intel Jira setup/current-state details, prefer links in `openspec/docs/historical/implementation-start.md` and `openspec/docs/current-baseline/architecture-manual.md`; never paste `.env` secrets into docs, tests, or chat output.
 5. Do not build or polish bug/feature charts before the durable Jira history and calculation-run artifacts exist and have focused validation.

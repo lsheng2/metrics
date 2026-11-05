@@ -32,7 +32,7 @@ Planned MVP owner additions:
 
 1. Modules communicate through public APIs under `app/api/`.
 2. Domain code remains pure Python and framework-free.
-3. UI uses semantic HTML, Bulma, htmx, and Chart.js.
+3. UI uses semantic HTML, Bulma, htmx and Chart.js, plus the approved local Milkdown report editor.
 4. Dataclasses use `@dataclass(slots=True)`.
 5. External tracker behavior should reuse `sd-metrics-lib` when practical.
 6. Secrets stay in `.env` or deployment environment variables and must not appear in committed files, docs, tests, or chat output.
@@ -54,8 +54,11 @@ python scripts/check_diff_whitespace.py --include-untracked
 
 ## Local Pitfalls
 
-1. `pytest.ini` default `testpaths` excludes `pull_requests/tests/`; run pull-request tests explicitly when touching that module.
-2. `README.md` uses `python manage.py runserver 8000`, while `CLAUDE.md` mentions port `8002`. Follow the task's current runtime context unless you are intentionally reconciling the docs.
+1. Default pytest paths omit `pull_requests`, `project_management` and `provider_sync`.
+   Select affected paths explicitly; reporting uses the no-dotenv entry and selected SDK environment
+   in `docs/development/reporting-delivery.md`.
+2. Follow the task's owned runtime/port. Do not reuse the unrelated 8017 service or silently upgrade
+   the retained legacy `.venv`; current reporting validation uses SDK 0.2.0a1 with the original a2 pack.
 3. Azure PR list pagination can return short or overlapping pages. Keep fixed-stride paging and de-duplication in the repository adapter.
 4. Intel Jira MVP setup/current-state notes live under `openspec/docs/historical/`, architecture details live under `openspec/docs/current-baseline/`, and normative requirements live under `openspec/specs/`; link to those docs instead of copying their content into AI guidance.
 5. If a Jira token, PAT, cookie, or Authorization header appears in chat or logs, treat it as exposed and recommend rotation.

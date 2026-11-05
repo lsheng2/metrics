@@ -25,6 +25,16 @@ project_management/provider_sync，执行必须显式给出目标路径。
 首个CONTENT仅关闭自己的L0/L1部分；不宣称编辑器、补全、模板设计器或完整日报已交付。
 项目当前桌面Chrome/Ego优先，手机/其他浏览器仍是已确认backlog，不混入当前完成口径。
 
+2026-11-05用户批准的[交付重排](delivery-sequence.md)先补DAILY的实际两天链，
+再补变化工单增量、ASSIST及导出样本，最后执行原整周。
+RA43/45/52/63的补充消费者为
+`ui_web/tests/test_report_daily_ui_browser.py::TestReportDailyUiBrowser::test_shouldCarryEditablePersistentReferenceIntoActualNextDay`：
+周一已保存/定稿的常驻引用在真正创建的周二仍可编辑相邻文字/颜色，保存重开定稿；
+周一fragment和publication不变，重复准备不重复工作，历史引用不重新上游查询。
+该名称是当前实施目标，实际结果只由tasks及回执证明。
+原整周的每日同源输入不证明真实增量，需另有accepted A -> captured B/failure -> captured C
+的输入/接受/报告读取证明；不因此改写原周模拟或削减任何安全/外部资格要求。
+
 ## 1. Authority Matrix
 
 | Contract / risk | Producer | Consumers | 必须拒绝的反例 |
@@ -36,7 +46,7 @@ project_management/provider_sync，执行必须显式给出目标路径。
 | PM-PUBLICATION-V2 / high | draft/template/receipt规范 -> existing publication writer | 六文件namespace validator、resume、download、HTML/Markdown/Excel/clipboard | RA05/06/34-38：schema1破坏、重复提交、未持久化即成功、导出漏字段/真实时间 |
 | PM-PAINT-V2 / high | `app/domain/report_authoring.py`、`static/js/report_editor/fragment_codec.js` | `storage/report_drafts.py`、`reporting/fragment_renderers.py`、publication reader、clipboard/export | RA41-46/66/67：颜色/高亮/链接格式丢失、只改颜色未保存、Markdown有损回写 |
 | PM-CONTINUITY / high | `services/report_continuity.py`、`app/domain/report_continuity.py` | `report_drafts.py`、`reporting/meeting_matrix.py`、`report_publication_reads.py`、新日准备和period view | RA43/47-57/63-69：错误基线、错票/跨stage继承、旧日状态倒填、人工修改被AI覆盖 |
-| PM-PREPARE / high | `services/report_preparation.py`、原`project_runs.py` | `ui_web/views/report_preparations.py`、`project_run`CLI、`storage/report_preparations.py`、原worker | RA52/53/58-64：同日重复派发、旧command重选基线、Save假报正式baseline |
+| PM-PREPARE / high | `services/report_preparation.py`、原`project_runs.py` | `ui_web/views/report_daily.py`、`ui_web/facades/report_daily.py`、`project_run`CLI、`storage/report_preparations.py`、原worker | RA52/53/58-64：同日重复派发、旧command重选基线、Save假报正式baseline |
 | PM-SCHEDULE / high, deferred W7 | 获准调度adapter | 同一preparation API、原operation journal和部署CLI | RA70-72：默认激活、手动race、missed回填、跨午夜改原日期、自动finalize |
 
 每个生产接口有当前调用者或明确计划调用者；不将 `tests/` 作为唯一 consumer。

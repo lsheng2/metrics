@@ -1,6 +1,9 @@
 # Integration Leaf Packets
 
 本附录细化tasks.md的W3-W7，不维护第二份勾选/完成状态。
+2026-11-05用户批准的当前交付前沿见[delivery-sequence](delivery-sequence.md)：
+它在已有W3能力上先完成DAILY和有界变化源分析，再进入ASSIST/整周。
+下表仍约束完整W3-W7退出条件；不把名单/附件/HSD的全部实现误当成该窄切片的前置。
 当前跨仓执行与验收handoff统一在[execution-handoff](execution-handoff.md)，
 C0准确任务/用例在[sdk-intake-plan](sdk-intake-plan.md)。下方BASE-A章节保留交付证据和背景，
 不作为另一份独立可更新的分工或任务状态。

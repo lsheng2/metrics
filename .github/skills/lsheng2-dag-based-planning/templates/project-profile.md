@@ -11,6 +11,9 @@ Everything repository-specific lives here so the DAG workflow stays portable.
 - Plan location: `openspec/docs/` for stable architecture or implementation plans; `.github/` for AI workflow/customization changes.
 - Shell: PowerShell on Windows.
 - Runtime: Python from the active environment; project commands use `python manage.py ...` and `python -m pytest ...`.
+- Development authority: root `AI_CONTRACT.md`; AGENTS/CLAUDE/Copilot are routing entries.
+- Reporting exception: use the fixed SDK environment and no-dotenv test entry documented in
+  `docs/development/reporting-delivery.md`; do not infer the reporting interpreter from the active shell.
 
 ## Source Roots
 
@@ -36,6 +39,8 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 - `.agents/skills/`
 - `.github/copilot-instructions.md`
 - `.github/file-size-limits.json`
+- `AI_CONTRACT.md`
+- `AGENTS.md`
 - `CLAUDE.md`
 - `README.md`
 - `openspec/docs/`
@@ -57,6 +62,8 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 
 ## Doc Truth Roots
 
+- `AI_CONTRACT.md`
+- `AGENTS.md`
 - `CLAUDE.md`
 - `README.md`
 - `openspec/docs/`
@@ -87,6 +94,9 @@ $python = Join-Path (Get-Location) '.venv/Scripts/python.exe'
 ```
 
 Focused test commands are examples only. Each DAG node must name the focused tests for its actual owner path before using them as closure evidence.
+For reporting and dirty-worktree packets, use the documented explicit environment/path selection;
+plain `pytest` is not a report-module acceptance command. Documentation-only changes use their
+structure/link/whitespace checks, not unrelated product or browser suites.
 
 ## Validation Command Evidence Policy
 

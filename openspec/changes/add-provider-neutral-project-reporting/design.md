@@ -2,10 +2,12 @@
 
 Status: accepted direction; implementation is staged by tasks.md.
 
-2026-11-05用户授权补齐新SDK计划、scoped commit/push并只执行到最近集成点。
-[SDK 0.2迁移与停靠契约](sdk-020-integration.md)固定版本/API/验证和`IP-SDK020-READY`；
-[集成点后执行细节](sdk-020-post-integration.md)定义联合HTTP、DAILY、ASSIST及整周验收。
-本轮只恢复集成点前工作；到点后等待，不自动启动后续联合测试或真实调用。
+2026-11-05用户已释放SDK集成点，SDK020真实本地HTTP合成资格已通过。
+随后批准Dashboard交付复评及开始执行，当前顺序由
+[delivery sequence](delivery-sequence.md)补充本设计：
+治理/环境、两天人工闭环、真实变化的增量闭环、ASSIST、导出样本、整周/跨周。
+[SDK契约](sdk-020-integration.md)和[交付回执](sdk-020-join-delivery.json)保留原证据；
+本次不修改已发布SDK/pack，不自动启动真实provider/model或正式部署。
 下文早期实施状态是历史背景；当前状态仅由tasks当前入口维护。
 
 技术附录（同一方案，不维护独立执行状态）：

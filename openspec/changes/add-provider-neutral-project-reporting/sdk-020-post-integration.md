@@ -14,16 +14,22 @@ Base SDK release + SDK020.ARTIFACT + SDK020.APP + SDK020.PRE
  -> SDK020.REPLAN -> IP-SDK020-READY [STOP HERE]
  -> explicit release of stop -> SDK020.JOIN
  -> SDK020.JOIN.R / REPLAN
+ -> DELIVERY.PLAN.R / DELIVERY.GOV
  -> W6.AUTHOR.DAILY closure
  -> W6.AUTHOR.DAILY.REPLAN
+ -> W4.DELTA.PLAN.R / W4.DELTA.CORE / R / REPLAN
  -> W6.AUTHOR.ASSIST service/profile/save + UI
  -> W6.AUTHOR.ASSIST.REPLAN
+ -> W6.AUTHOR.EXPORT.SAMPLE
  -> W6.AUTHOR.JOIN full week / exports
  -> W6.AUTHOR.R -> W6.AUTHOR.REPLAN -> remaining W6/W7
 ```
 
 Pure manual DAILY work has no inherent SDK dependency; its independent existing evidence remains
 valid unless affected. This selected resumed sequence deliberately reaches the SDK stop first.
+The user subsequently approved [the reordered delivery frontier](delivery-sequence.md).
+Its changed-ticket slice precedes ASSIST/the final week; the SDK-only qualification does not
+prove cumulative analysis. Full provider/import/deployment tasks are retained separately.
 Changing a shared dependency invalidates only affected evidence, not every historical green test.
 Replan nodes classify the next packet as continue/amend/supersede/retire and record reason, changed
 artifacts, affected checks and preflight result; they do not silently cancel required scenarios.

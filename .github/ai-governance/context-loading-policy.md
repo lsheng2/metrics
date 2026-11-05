@@ -5,8 +5,8 @@ Status: active BKM.
 ## Default Order
 
 1. User request and selected files.
-2. `CLAUDE.md`.
-3. `.github/copilot-instructions.md`.
+2. Root `AI_CONTRACT.md`.
+3. Current OpenSpec task frontier and relevant current guide; agent entrypoints route to the same contract.
 4. The specific BKM file relevant to the task.
 5. Target module code and nearest tests.
 6. Broader docs only when the local owner path is still ambiguous.
@@ -26,5 +26,7 @@ Status: active BKM.
 
 1. Do not load the whole repo narrative for a one-file fix.
 2. Prefer owning abstractions and nearby tests over broad exploration.
-3. If a stable behavior or public contract changes, check whether `README.md`, `CLAUDE.md`, or `openspec/docs/` need truth-sync.
+3. If a stable behavior or public contract changes, check README and the corresponding current guide.
 4. When in a dirty worktree, separate pre-existing changes from the files owned by the current task.
+5. Historical checkpoints are load-on-demand. Do not repeatedly read the whole execution history
+   or copy it into each subagent brief. Check the current source/evidence identity before reuse.

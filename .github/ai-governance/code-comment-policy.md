@@ -2,7 +2,8 @@
 
 Status: active BKM.
 
-This repo prefers readable names and simple structure over comments. Root `CLAUDE.md` says not to add production code comments by default; this BKM defines the rare exceptions.
+This repo prefers readable names and simple structure over comments. `AI_CONTRACT.md`
+allows the focused explanatory comments below; there is no contradictory absolute ban.
 
 ## Add A Comment Only When It Explains
 

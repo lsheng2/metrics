@@ -23,3 +23,17 @@ Use this before claiming a class of work is complete, review-ready, or fully cov
 2. For Django settings, URL, view, template, or container changes, run `python manage.py check` unless blocked.
 3. For behavior changes, run the focused test that exercises the owner path; broad tests may supplement but should not replace it.
 4. If validation cannot run, state the blocker and residual risk.
+
+## Scope And Evidence
+
+Follow the selected environment and risk-based layers in `AI_CONTRACT.md`.
+Reporting tests always name explicit paths; default pytest discovery misses the reporting modules.
+Do not run product or browser suites solely because documentation changed.
+For a dirty worktree use the declared packet's size/whitespace selection and inspect staged bytes;
+unrelated failures remain visible but are not permission to edit or stage another owner's work.
+
+One business invariant may need several assertions or complementary layer checks.
+HTTP ownership/CSRF, templates, schema boundaries and actual container wiring require tests
+where they enforce a contract. Never omit them because an old guide called them presentation.
+Expected pending evidence is a readiness state; it is not automatically a new product defect.
+Review source, relevant evidence and next-wave readiness together where this avoids duplicate review.
