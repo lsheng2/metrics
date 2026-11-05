@@ -66,3 +66,24 @@ Stage only approved paths. The retained authoring WIP is not all another owner's
 publish its verified closure separately from unrelated Scope/config/style edits.
 A working-tree qualification is not a clean-install or formal deployment qualification.
 Normal stop, emergency cleanup and still-running unrelated services are separate statements.
+
+## DAILY Evidence
+
+The current bounded packet is recorded in
+[DAILY delivery evidence](../../openspec/changes/add-provider-neutral-project-reporting/daily-delivery.md).
+The template counterexample exercises a single day's cell so another column cannot mask
+reversed history/current-note ordering. The browser chain additionally proves actual next-day
+creation, reference preservation, human text/paint and publication identity.
+Observe GET/POST responses before waiting for navigation; retain failed attempts independently.
+Same-meeting replay with changed effective choices intentionally returns 409 and the original
+result. Test the visible unapplied-choice message and publication link; do not assume every
+idempotent return redirects or change the service to silently ignore selected choices.
+Only the complete chain plus its scoped review closes DAILY. This is not the full-week,
+changed-source AI, clipboard/Outlook or clean-release qualification.
+
+The 2026-11-05 manual two-day chain and three direct template cases are qualified in the
+current worktree. The existing publication is reachable from a same-day conflict result;
+history is displayed before the current source-status prefix within each cell.
+Product/test files still depend on the retained authoring WIP, so the checkpoint publishes
+its docs/receipt separately from a complete source release. Request latency and the recorded
+native diagnostic incident remain explicit limitations, not implied fixes.

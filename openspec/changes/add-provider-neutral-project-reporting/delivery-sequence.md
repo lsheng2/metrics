@@ -56,6 +56,9 @@ whitespace and OpenSpec strict checks. These are documentation gates, not produc
 Owner: `ui_web/tests/test_report_daily_ui_browser.py` and the minimum affected existing editor,
 daily facade/view, reference, preparation or save consumer if the new test exposes a defect.
 Do not preemptively rewrite the completed history or preservation algorithms.
+The observed fixes own `ui_web/templates/projects/reports/{pinned_blocks,daily_preparation}.html`
+and `ui_web/tests/test_report_history_template.py`: chronological cell content and a consumed
+existing-publication link, with direct template counterexamples before browser verification.
 
 Existing production APIs:
 
@@ -88,6 +91,9 @@ Only the upstream reference boundary is synthetic; do not seed final authoring J
    chronological source-derived prefixes and the Tuesday editorial head.
 6. Repeated preparation of the same meeting returns the existing work. No Base client is created,
    and Tuesday does not issue a new upstream lookup merely to preserve/edit the inherited link.
+   Matching effective choices redirect; changed choices return 409 with the original result.
+   After Finalize, a fresh preview can name a different baseline. Verify its unapplied-baseline
+   message, the original publication link and exactly two drafts, not an unconditional 302.
 
 Use `docs/development/reporting-delivery.md`'s explicit command and unique evidence paths.
 Preserve response status/body before navigation waits; capture edited/reopened/finalized screenshots.
@@ -124,6 +130,12 @@ same admitted input, compares the original accepted revision, writes the next re
 the reader verifies that same derivation instead of assuming every record is initial.
 No metadata-only hash success may replace the semantic evidence/owner checks.
 
+The same gate freezes `_require_no_pending_analysis`: an older accepted attempt must not block
+later revisions merely because it is not the latest accepted attempt. Verified terminal failure
+may permit a different-input attempt; unresolved submission must still be observed by its original
+key and must block conflicting dispatch. A timeout is not evidence of terminal failure, and
+reclassification must not change an existing key, request, deadline or consumed budget.
+
 Required tests, frozen by PLAN.R before implementation:
 
 - `test_shouldBuildCumulativeInputFromAcceptedBaseline`: accepted A, captured B then C, all
@@ -136,6 +148,10 @@ Required tests, frozen by PLAN.R before implementation:
   changed while a result was in flight; no accepted or editorial advancement.
 - `test_shouldReuseUnchangedPostDeltaWithoutInference`: capture after accepted revision 2 has no
   semantic change; no new attempt/dispatch and accepted bytes are unchanged.
+- `test_shouldAdmitChangedInputAfterEarlierAcceptedRevisions`: older accepted attempts do not
+  become false pending blockers after revision 2, while only one new intent is admitted.
+- `test_shouldKeepUnknownPriorSubmissionBlockingNewDispatch`: capturing C while B's submission
+  remains unknown retains original-key recovery and does not issue a competing request.
 
 L0 pure delta/evidence first, L1 real archive/CAS second, then one synthetic installed-SDK/local-HTTP
 changed-source slice. Re-run affected initial/no-change/recovery consumers, not all old SDK tests.

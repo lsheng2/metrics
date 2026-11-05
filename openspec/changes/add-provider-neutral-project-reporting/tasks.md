@@ -21,10 +21,29 @@ base and Dashboard keep separate canonical implementation ledgers.
 本轮沿Dashboard main，基线`eb8de2e`；SDK020已通过，不重跑其全部资格。
 唯一执行状态仍在本文件，新统一开发契约为`AI_CONTRACT.md`。
 
-`DELIVERY.PLAN.R`为READY，`DELIVERY.GOV`已完成文档/环境检查；当前执行`W6.AUTHOR.DAILY`。
-先交付“一票两天、继承常驻备注和引用、改色、Save/reopen/Finalize”的真实编辑链，
-不把“预览次日”当成次日已生成。新增次日proof若已通过，不为制造RED修改正确产品代码；
-发现产品缺陷时，先以直接反例复现再作最小修复。
+`DELIVERY.PLAN.R`、`DELIVERY.GOV`、`W6.AUTHOR.DAILY`和`DAILY.REPLAN`已通过限定范围门禁。
+治理文档已以`9852e37`推送并核对origin/main。实际两天链1 passed / 466.75s，
+三项模板反例修复后3 passed / 3.04s，隔离Django check通过；未重跑全历史suite。
+已验证实际生成周二、人工note/颜色/链接继承、Save/reopen/Finalize、周一六文件不变，
+以及同日冲突返回原publication且不新增第三稿。修复仅在两个模板，服务端冲突保护不变。
+源码限定复审已关闭，最终运行由协调者绑定；四次未通过/中断证据仍保留，原生异常根因未定。
+完整回执见[daily-delivery.md](daily-delivery.md)及[daily-delivery.json](daily-delivery.json)。
+本阶段只发布文档/回执；产品与测试改动依赖既有未提交作者层，留待完整源码闭包提交。
+这不是clean-install、正式部署、完整工作周或整个topic完成。
+
+当前下一门禁为`W4.DELTA.PLAN.R`，未开始DELTA/ASSIST实现。DAILY.REPLAN对增量入口作amend：
+必须同时冻结输入、接受revision、报告读取及旧attempt准入；未知提交继续原key观察，
+不能因timeout重置key/deadline/预算。Git读取路径的实测延迟另行剖析，未声称性能已通过。
+`refreeze_actions=[{action:amend,reason:DELTA entry must classify prior accepted/terminal/unknown attempts}]`；
+`updated_artifacts`为本仓相对路径：
+`openspec/changes/add-provider-neutral-project-reporting/delivery-sequence.md`、
+`openspec/changes/add-provider-neutral-project-reporting/daily-delivery.md`、
+`openspec/changes/add-provider-neutral-project-reporting/daily-delivery.json`、
+`openspec/changes/add-provider-neutral-project-reporting/tasks.md`及
+`docs/development/reporting-delivery.md`；
+`rerun_gates=[DAILY full browser chain,template regressions,isolated Django check,OpenSpec strict,scoped size/whitespace]`。
+`post_refreeze_preflight_result={method:source/consumer/review/evidence and next-gate dependency cross-check,result:PASS}`。
+ASSIST、导出样本、原整周/跨周及完整provider/import/deployment任务继续保留。
 
 获准顺序：[delivery-sequence.md](delivery-sequence.md)。
 治理/环境 -> DAILY短链及提交 -> 增量输入/接受/报告读取闭环 -> ASSIST单目标 ->
@@ -189,8 +208,8 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.AUTHOR.REFERENCES Implement #ID query, Stage routing, membership/permission/freshness and three-format popup. Backend and UI scoped reviews closed; live Jira/HSDES qualifications remain separate and disabled.
 - [x] W6.AUTHOR.TEMPLATES Add user template library, version-CAS, visual block/slot editing and pinned draft creation. Fixed-content rich preview follow-up closed by B2 browser/review.
 - [x] W6.AUTHOR.HISTORY Add effective rich-text daily history, source-status prefixes, stable row order and weekly carry-forward. Core/B1/B2 scoped synthetic qualification closed; daily trigger and whole-week JOIN remain separate.
-- [ ] W6.AUTHOR.DAILY Add manual daily preparation, editorial baseline selection/CAS, pending-draft handling and same-day idempotency.
-- [ ] W6.AUTHOR.DAILY.REPLAN Bind the qualified DAILY consumer to ASSIST target/profile/save boundaries without reopening unaffected history.
+- [x] W6.AUTHOR.DAILY Add manual daily preparation, editorial baseline selection/CAS, pending-draft handling and same-day idempotency.
+- [x] W6.AUTHOR.DAILY.REPLAN Bind qualified manual DAILY evidence and the DELTA-first gate; preserve ASSIST profile/save boundaries and unaffected history.
 - [ ] W4.DELTA.PLAN.R Freeze the bounded cumulative-input/acceptance/reader contract and old-data compatibility before coding the changed-ticket slice.
 - [ ] W4.DELTA.CORE Implement and verify the same bounded analysis-input contract in prepare, acceptance and report reads; preserve failed-analysis cumulative changes and no-work reuse.
 - [ ] W4.DELTA.CORE.R Review the changed-source slice and applicable SDK/reader evidence; do not close full W4/W5 or live qualification.
@@ -293,7 +312,7 @@ Validation Engineer只在VA有独立验证风险时派发，Debugger当前跳过
 | DELIVERY.PLAN.R | SDK020.JOIN.REPLAN + 用户批准交付重排 | 统一契约/文档路由及首个DAILY实际消费者就绪复核 |
 | DELIVERY.GOV | DELIVERY.PLAN.R | 精简代理入口、历史分离、选定环境/no-dotenv路由；不改真实服务 |
 | W6.AUTHOR.DAILY | W6.AUTHOR.HISTORY + DELIVERY.GOV | 明确baseline/meeting/来源选择、同日去重、人工未定稿保护；独立人工证据可复用 |
-| W6.AUTHOR.DAILY.REPLAN | W6.AUTHOR.DAILY | 固定ASSIST target/profile/save消费者、证据失效范围及下一步 |
+| W6.AUTHOR.DAILY.REPLAN | W6.AUTHOR.DAILY | 绑定DAILY证据、DELTA.PLAN.R准入及后续ASSIST target/profile/save边界 |
 | W4.DELTA.PLAN.R | W6.AUTHOR.DAILY.REPLAN + 已有W3 archive/gateway/capture | 同时冻结增量输入、接受revision及报告读取；完整W4仍保留 |
 | W4.DELTA.CORE | W4.DELTA.PLAN.R | accepted基线累积变化、失败不丢B/C、revision2可进入报告 |
 | W4.DELTA.CORE.R | W4.DELTA.CORE | 当前源码/fixture与变化源合成证据闭包复核 |

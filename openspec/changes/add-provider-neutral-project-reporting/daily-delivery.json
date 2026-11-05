@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-05",
+  "status": "qualified_worktree_manual_daily_slice",
+  "git_head_during_test": "9852e37ed5ac83843fceb80231721137ad46d437",
+  "scope": "Synthetic saved-capture manual authoring for 2026-11-02 and 2026-11-03",
+  "environment": {
+    "python": ".tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe",
+    "sdk": "0.2.0a1",
+    "contract_pack": "unchanged task-run/1 a2",
+    "runner": "scripts/validation/run_report_authoring_tests.py",
+    "dotenv": false
+  },
+  "changed_runtime_files": {
+    "ui_web/templates/projects/reports/pinned_blocks.html": "fd885ba4bba50ec2cac520abef6cddbfc2a488dd65c8a1f4e7807e613d218f74",
+    "ui_web/templates/projects/reports/daily_preparation.html": "c7c653857f8d764ec0f45e8cc9c06c441006c883d285efd3f2d194b8061dbfbb"
+  },
+  "test_files": {
+    "ui_web/tests/test_report_daily_ui_browser.py": "35e4ff95a2b1032503e58b2181ae946a47478a487c5487319f14ec84dc3bd655",
+    "ui_web/tests/test_report_history_template.py": "c9445a2d7a3b84e26764f2c11ee698ed8fc6b3b42ea4b9ddf0eb4c073690b9e5"
+  },
+  "tests": [
+    {
+      "node": "ui_web/tests/test_report_history_template.py",
+      "passed": 3,
+      "pytest_seconds": 3.04,
+      "junit": ".tmp/dashboard-delivery-20261105/daily-template-final-green.xml"
+    },
+    {
+      "node": "ui_web/tests/test_report_daily_ui_browser.py::TestReportDailyUiBrowser::test_shouldCarryEditablePersistentReferenceIntoActualNextDay",
+      "passed": 1,
+      "pytest_seconds": 466.75,
+      "junit": ".tmp/dashboard-delivery-20261105/daily-two-day-attempt-05.xml"
+    }
+  ],
+  "django_check": "PASS, isolated no-dotenv settings, zero silenced checks",
+  "evidence_directory": ".tmp/dashboard-delivery-20261105/daily-two-day-199e2d7e-b773-49bf-a6f3-7776a6764b4b",
+  "result_sha256": "d2c0548aa76c0d1149b6180726d08a68d7072b180d7c00a0e62c167a6a195270",
+  "tuesday_report_sha256": "74b74a2d348764b28f9b4f3a2a8bf43275960144966ae0fc6b0adb2ea1ee5229",
+  "synthetic_reference_lookups": 1,
+  "sdk_client_creations": 0,
+  "same_day_replay": "409 with unapplied baseline; original publication opened; exactly two drafts",
+  "protected_wip": {
+    "manifest": ".tmp/dashboard-delivery-20261105/protected-worktree.json",
+    "manifest_sha256": "18d9cb0dbf009049ea8736edb57437eb33d40e14904ee7b8ad049db0749b1d89",
+    "checked_paths": 252,
+    "intended_changed_paths": [
+      "ui_web/templates/projects/reports/daily_preparation.html",
+      "ui_web/templates/projects/reports/pinned_blocks.html",
+      "ui_web/tests/test_report_daily_ui_browser.py"
+    ],
+    "other_paths_unchanged": 249
+  },
+  "reviews": [
+    ".tmp/dashboard-delivery-20261105/daily-source-review.md",
+    ".tmp/dashboard-delivery-20261105/daily-fix-review.md",
+    ".tmp/dashboard-delivery-20261105/daily-replay-review.md"
+  ],
+  "review_binding": "Product/template assertions reviewed; final browser file differs from the last review only by removing temporary timed faulthandler diagnostics. Coordinator bound the final runtime evidence.",
+  "limitations": [
+    "Full workweek, AI Assist, changed-source analysis, live providers/models and Outlook remain unqualified here.",
+    "Request latency remains a separate profiling item; this is not a performance acceptance.",
+    "Attempt 04 native access violation is retained as an unresolved diagnostic incident, not explained by the later pass.",
+    "Product changes remain with existing authoring WIP; this receipt does not establish a clean-checkout source release."
+  ]
+}
