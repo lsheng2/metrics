@@ -21,12 +21,13 @@ It SHALL use a separately installed SDK and the actual application consumer with
 transport. It SHALL NOT start Base HTTP, change the main environment or control an unrelated service.
 
 #### Scenario: Pre-integration proof succeeds
-- **WHEN** nonempty selected consumer tests pass with exact package/pack identity and no real socket attempts
+- **WHEN** nonempty selected consumer tests pass with exact package/pack identity and no application network attempts
 - **THEN** the coordinator SHALL preserve a source-bound readiness receipt
+- **AND** Windows standard-library socketpair IPC SHALL be scoped and counted separately without allowing arbitrary loopback connections
 - **AND** SHALL stop before joined integration until the user explicitly releases the integration point
 
 #### Scenario: Qualification fails or imports the wrong SDK
-- **WHEN** the selected target is wrong, a package byte differs, a real network attempt occurs, or a test fails
+- **WHEN** the selected target is wrong, a package byte differs, an application network attempt occurs, or a test fails
 - **THEN** the result SHALL remain failed/not-ready with the actual evidence
 - **AND** SHALL NOT be relabeled as an integrated or deployed application
 

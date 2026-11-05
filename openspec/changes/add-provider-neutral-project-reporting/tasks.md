@@ -21,11 +21,25 @@ base and Dashboard keep separate canonical implementation ledgers.
 先做scoped commit/push，再执行集成点前工作，停在`IP-SDK020-READY`。
 本轮唯一实施协调者在Dashboard `main`；Base仓库只读，不恢复旧chiplet T12。
 
-当前节点为`SDK020.PLAN.R`，随后`ARTIFACT -> APP -> PRE -> REPLAN`。
+规范已以`1c2e0aa`提交并推送origin/main，远端SHA已核对一致。
+`SDK020.PLAN.R`、`ARTIFACT`、`APP`、`PRE`与`REPLAN`已完成。
+当前状态：**waiting at IP-SDK020-READY**。已停止功能执行，等待用户明确释放集成点。
 精确API/版本/拒绝路径/命令在[sdk-020-integration.md](sdk-020-integration.md)；
 集成后的真实HTTP、DAILY、ASSIST、周模拟与出口在
 [sdk-020-post-integration.md](sdk-020-post-integration.md)。
 只按既有accepted scope做补充，不重开SDK中立性讨论或FZ-01。
+
+前置测试发现Windows asyncio通过stdlib socketpair建立内部唤醒通道；
+验证模式已细化为禁止业务网络、单独计数该内部IPC，不放开任意localhost。
+原失败回执保留。依赖和AiTaskContract精确选择已同步至0.2.0a1；
+最终25tests/19subtests通过2.64s，业务network_attempts=0，stdlib socketpair IPC单列7次，
+未导入Base模块、未启动Base HTTP，主SDK仍0.1.0a2且原包字节未变。
+测试回执为`runs/dafa6bd9-de70-4069-83e3-059865f07d42/receipt.json`；
+JUnit的44条包含子用例，不宣称44个独立顶层测试。
+五文件限定独立源码复核无发现；没有重跑/宣称Base、完整作者层或安装部署验收。
+SDK源文件指纹检查不是整venv清单审计；协调者另核对主SDK版本未变。
+4个改动Python文件通过配置size门禁，252个其余dirty路径hash保持不变。
+下一动作仍是SDK020.JOIN的驱动/fixture版本准备，必须另获释放后才执行。
 
 停止点前使用独立`SDK 0.2.0a1`安装target和短命隔离测试进程，原a2 pack不变。
 证据根`.tmp/sdk-020-preintegration-20261105/`。不升级主`.venv`，
@@ -893,11 +907,11 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.HTML.FINALIZE Confirm exact draft revision into existing data Git with original-byte recovery/download.
 - [ ] W6.HTML.UI Summary: consume W6.AUTHOR.EDIT/JOIN for existing authoring acceptance; current textarea is transitional, no separate user-provided Agent prerequisite.
 - [ ] W6.HTML.R Review the bounded authoring slice and actual desktop/copy/Git evidence; email-client qualification reported separately if unavailable.
-- [ ] SDK020.PLAN.R Freeze the selected SDK/pack contract, pre-IP work and post-IP APIs/fixtures; review and publish scoped specifications before implementation.
-- [ ] SDK020.ARTIFACT Verify final owner receipt/wheel/pack; install SDK into an owned separate target without changing the main environment.
-- [ ] SDK020.APP Update the exact dependency/runtime version pair with real installed-SDK RED/GREEN tests; preserve all application validators.
-- [ ] SDK020.PRE Run the explicit no-socket consumer selection and record source-bound readiness plus protected-WIP integrity.
-- [ ] SDK020.REPLAN Confirm next joined packet is reachable, classify retained evidence, record IP-SDK020-READY and stop for the user.
+- [x] SDK020.PLAN.R Freeze the selected SDK/pack contract, pre-IP work and post-IP APIs/fixtures; review and publish scoped specifications before implementation.
+- [x] SDK020.ARTIFACT Verify final owner receipt/wheel/pack; install SDK into an owned separate target without changing the main environment.
+- [x] SDK020.APP Update the exact dependency/runtime version pair with real installed-SDK RED/GREEN tests; preserve all application validators.
+- [x] SDK020.PRE Run the explicit application-network-free consumer selection and record source-bound readiness plus protected-WIP integrity.
+- [x] SDK020.REPLAN Confirm next joined packet is reachable, classify retained evidence, record IP-SDK020-READY and stop for the user.
 - [ ] SDK020.JOIN After explicit release of IP, execute the new-SDK real local HTTP consumer cases J020-01..06.
 - [ ] SDK020.JOIN.R Review the joined candidate, source/acceptance evidence and owned cleanup.
 - [ ] SDK020.JOIN.REPLAN Refreeze DAILY/ASSIST prerequisites and affected evidence before continuing authoring execution.
@@ -1025,7 +1039,7 @@ The user's scope ends at IP-SDK020-READY; post-IP nodes are specified, not yet r
 | SDK020.PLAN.R | accepted Base delivery and current user request | this change's connected specs, new current SDK guide; exact API/consumer/refusal/stop mapping and scoped publication |
 | SDK020.ARTIFACT | SDK020.PLAN.R | owned .tmp/sdk-020-preintegration-20261105 artifact copy/target; hash-verified wheel, unchanged bundled pack and recorded dependency roots |
 | SDK020.APP | SDK020.ARTIFACT | requirements-ai-task.txt, out/ai_task_contract.py, tests/test_sdk_020_compatibility.py, scripts/validation/run_project_sdk_preintegration.py and shared run_report_authoring_tests.py explicit isolation mode; narrow exact version migration |
-| SDK020.PRE | SDK020.APP | same owned code/test paths; three explicit test files, no Base import or real sockets, source-bound JUnit/receipt |
+| SDK020.PRE | SDK020.APP | same owned code/test paths; three explicit test files, no Base import or application network, separately counted Windows socketpair IPC, source-bound JUnit/receipt |
 | SDK020.REPLAN | SDK020.PRE | tasks + IP receipt; verify post-IP source/fixture paths, carry forward valid evidence, stop and wait |
 | SDK020.JOIN | SDK020.REPLAN + explicit user release | scripts/validation/project_full_stack*.py, project_summary_support.py, project_management/tests/test_project_full_stack_lifecycle.py and tests for J020 cases; refresh old SDK expectations, then joined 0.2 HTTP and app acceptance |
 | SDK020.JOIN.R | SDK020.JOIN | exact joined scope review and normal-stop evidence |
@@ -1051,6 +1065,16 @@ Steps before IP:
 Production API signatures, runner invariants, S020-01..08 and J020-01..06 are specified in the two
 appendices. Use TDD at the actual app boundary; these are not a second implementation checklist.
 The existing full authoring scope remains below; none is closed by the SDK preparation commit.
+
+SDK020.REPLAN receipt:
+`refreeze_actions=[{node:SDK020.JOIN,action:continue,reason:existing driver refresh and J020 cases
+are explicitly specified; SDK/pack artifacts and retained Base fixture entry exist}]`.
+`updated_artifacts=[sdk-020-integration.md,specs/sdk-consumer-integration/spec.md,tasks.md]`;
+the Windows socketpair clarification separates runtime IPC from forbidden application networking.
+`rerun_gates=[network-policy direct tests,installed-SDK consumer selection,OpenSpec strict,scoped size/whitespace]`.
+`post_refreeze_preflight_result={method:artifact/source-path and exact API/fixture dependency review,result:PASS}`.
+This admits integration development only after user release, not execution of the old joined
+driver unchanged. Authoring WIP, DAILY/ASSIST/full-week/real-provider gates remain open.
 
 ### CONTENT: Versioned Editing Foundation
 

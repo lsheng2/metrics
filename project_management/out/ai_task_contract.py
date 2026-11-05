@@ -15,6 +15,7 @@ from project_management.app.domain.summary_validation import validate_candidate
 
 MANIFEST_SHA = 'e7386f82d2bf3963feccc28cfbfda732b9eddb829831d5ba660b50554e5f81c4'
 PROFILE_ID = 'project-reporting.summary@review-1'
+SDK_VERSION = '0.2.0a1'
 
 
 def _deny_schema(uri):
@@ -47,7 +48,7 @@ class AiTaskContract:
         try:
             root = Path(pack_root).resolve(strict=True)
             manifest_bytes = cls._read(root, 'manifest.json')
-            if version('ai-base-application-sdk') != '0.1.0a2' or sha256_bytes(manifest_bytes) != MANIFEST_SHA:
+            if version('ai-base-application-sdk') != SDK_VERSION or sha256_bytes(manifest_bytes) != MANIFEST_SHA:
                 raise ValueError
             manifest = decode_json(manifest_bytes)
             if manifest['qualification'] != 'synthetic_only' or len(manifest['files']) != 21:

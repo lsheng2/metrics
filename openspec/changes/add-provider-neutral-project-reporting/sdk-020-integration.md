@@ -17,8 +17,10 @@ its installed-client and domain rejection tests pass in an isolated process, and
 work packet has concrete interfaces, fixtures and exit criteria.
 
 It does not mean an AI Base HTTP service was started, a joined run passed, the main environment
-was upgraded, or DAILY/ASSIST/the full week was completed. No real socket, including loopback,
-is permitted during this pre-integration qualification.
+was upgraded, or DAILY/ASSIST/the full week was completed. Application networking, including
+loopback HTTP/direct connections, is forbidden. Windows Python's standard-library socketpair
+uses a loopback self-pipe for asyncio; that runtime-only IPC is scoped and counted separately,
+not treated as application networking or permission to connect to a Base server.
 
 | Boundary | AI Base owner | Dashboard owner |
 | --- | --- | --- |
@@ -195,15 +197,24 @@ changed manifest/profile bytes, not just search for a new string in source.
 test entry, not a second test framework. The shared entry will expose:
 
 ```text
-run_tests(arguments, *, allow_loopback=True, network_attempts=None) -> int
+run_tests(arguments, *, allow_loopback=True, network_attempts=None, runtime_ipc_attempts=None) -> int
 ```
 
 Its ordinary CLI keeps the existing loopback-only policy. The pre-integration caller passes
-`allow_loopback=False` and a counter list; the same innermost guards cover connect, connect_ex,
+`allow_loopback=False` and separate application/runtime counter lists; the same innermost guards cover connect, connect_ex,
 create_connection and getaddrinfo before settings setup and during pytest. Every refusal appends
 only an operation label, not a URL/credential. An outer monkeypatch alone is insufficient because
 the existing runner installs its own socket guards. Guard tests prove both the unchanged ordinary
 loopback policy and strict refusal/counter behavior using fake underlying callables, not real TCP.
+
+Implementation discovery: Python3.13 on Windows creates an asyncio self-pipe through the
+standard-library socketpair fallback. The first strict run refused that internal connection.
+Use a context-local allowance only while the captured standard-library socketpair function
+creates its own connected peers; only its numeric loopback connect is allowed and recorded as
+`socketpair.connect`. DNS, arbitrary loopback HTTP and all other connects still fail.
+The allowance resets on return/error and cannot leak to another thread/context.
+This is test instrumentation, not a hostile-code sandbox. Preserve the original failed receipt;
+do not relabel its refused IPC attempts as a successful qualification.
 
 The new wrapper:
 
@@ -212,8 +223,9 @@ The new wrapper:
    metadata origins, and compares package source bytes with the wheel.
 3. Adds the current Dashboard source root, not Base source, and calls the shared
    `run_tests(..., allow_loopback=False, network_attempts=attempts)` for isolated Django settings.
-4. Forbids every real socket connection/DNS lookup, including localhost; SDK transport is
-   explicit MockTransport. It does not import Base, create a server, or alter user settings.
+4. Forbids application socket connections/DNS lookups, including localhost; SDK transport is
+   explicit MockTransport. Only the separately counted standard-library socketpair IPC above
+   is permitted. It does not import Base, create an HTTP server, or alter user settings.
 5. Selects only the three files below, writes unique JUnit/receipt files and propagates failures.
    `passed` requires nonzero tests, no failures/errors/skips and zero real network attempts.
 
@@ -260,13 +272,16 @@ source_commit, source_files[{path,sha256}],
 sdk_version, sdk_wheel_sha256, sdk_module_path, dependency_versions,
 pack_version, pack_manifest_sha256, pack_files_checked,
 test_selection[], junit_path, tests, failures, errors, skipped, exit_code,
-network_attempts=0, joined_http_started=false, main_environment_modified=false,
+network_policy_revision=2, network_attempts=0, runtime_ipc_socketpair_attempts,
+joined_http_started=false, main_environment_modified=false,
 base_owner_change, base_receipt_sha256, next_node=SDK020.JOIN
 ```
 
 Record source WIP separately from the committed plan baseline; do not invent a commit containing
 uncommitted code. A failed qualification still writes its real failure receipt and never READY.
 No receipt is permission to start the next node automatically.
+The receipt's test counters come from JUnit and may include unittest subtests; report the
+top-level pytest summary separately rather than presenting their sum as independent test cases.
 
 Before stopping: all owned commands must exit, unrelated dirty files remain unchanged, and the
 current tasks section must say `waiting at IP-SDK020-READY`. Provide the exact first joined action
