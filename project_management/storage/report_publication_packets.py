@@ -11,6 +11,10 @@ from project_management.app.domain.report_publication_contracts import (
     manifest_from_mapping,
     publication_path,
 )
+from project_management.app.domain.report_publication_validation import (
+    PublicationValidationContext,
+    validate_publication_files,
+)
 from project_management.storage.admission import GrowthEstimate, admit, finalize_growth
 from project_management.storage.paths import read_bytes, validate_uuid, write_bytes
 
@@ -91,9 +95,35 @@ class ReportFinalizationPacketStore:
                 or manifest.finalized_at != payload['finalized_at'] or manifest.finalized_by != payload['finalized_by']
                 or bytes_hash(files['manifest.json']) != payload['file_hashes']['manifest.json']):
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        if manifest.schema_version != payload['schema_version']:
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        self._verify_authored_fields(manifest, payload)
         if any(manifest.file_hashes[name] != payload['file_hashes'][name] for name in MANIFEST_HASHED_FILES):
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        try:
+            validate_publication_files(payload['publication_id'], files, self._context(), payload['finalized_by'])
+        except ReportError as error:
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID') from error
         return payload, files
+
+    def _verify_authored_fields(self, manifest, payload) -> None:
+        if manifest.schema_version == 1:
+            return
+        fields = (
+            'authoring_schema',
+            'template_snapshot_hash',
+            'template_document_hash',
+            'fill_policy_hash',
+            'edits_hash',
+            'series_id',
+            'report_role',
+            'meeting_key',
+            'period_key',
+            'continuity_hash',
+        )
+        for field in fields:
+            if getattr(manifest, field) != payload[field]:
+                raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
 
     def _committed(self, payload, files) -> bool:
         try:
@@ -113,3 +143,11 @@ class ReportFinalizationPacketStore:
 
     def _admit(self, draft_root: Path, growth: GrowthEstimate) -> None:
         admit(self.archive_root, self.repository.stage_root, draft_root, self.archive_limits, growth)
+
+    def _context(self):
+        return PublicationValidationContext(
+            self.repository.project.id,
+            self.repository.stage.id,
+            self.repository.owner_subject,
+            self.repository.stage.definition_hash,
+        )

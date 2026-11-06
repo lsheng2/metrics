@@ -9,8 +9,23 @@ Chiplet is a project instance, not the application boundary. The first slice pro
 a local `project_catalog` CLI and authenticated desktop project/stage forms with English
 and Simplified Chinese labels. The synthetic capture-to-HTML/data-Git workflow,
 restart and unchanged-summary reuse passed actual full-stack qualification.
-The textarea editor is transitional: a separate Agent owns the required WYSIWYG
-integration; editor/clipboard/Outlook acceptance remains pending.
+WYSIWYG-only editing is implemented with locally bundled Milkdown 7.23.0.
+Hash-ID completion is implemented behind default-disabled provider qualification.
+The visual template library supports versioned blocks/slots, pinned report
+creation, manual filling and explicit finalization. Its scoped synthetic
+desktop workflow is qualified. Explicit AI filling follows the
+[Authoring V2 design](openspec/changes/add-provider-neutral-project-reporting/report-authoring-v2.md),
+now being implemented on `main`. Editor save/reopen and lifecycle scenarios
+passed scoped desktop Chrome tests; the joined authoring workflow remains pending.
+A single coordinator owns this lane; joined clipboard/Outlook acceptance remains pending.
+The proposed [continuity design](openspec/changes/add-provider-neutral-project-reporting/report-continuity.md)
+adds per-ticket stable rows, source-status date prefixes, preserved human rich-text
+edits, cumulative daily notes and weekly carry-forward. Daily preparation is manual
+by default; optional scheduling remains disabled and never finalizes reports.
+The continuity backend has scoped three-day/next-week data-Git qualification,
+and the matrix editor, explicit series/weekly views and linked corrections have
+scoped desktop qualification. Daily preparation remains in progress. Scheduling is
+still deferred and disabled. This is not full authoring-workflow qualification.
 Jira/HSD-ES source
 definitions are previewed and frozen. Live reporting and the full delta pipeline are
 not yet qualified.

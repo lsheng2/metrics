@@ -12,12 +12,11 @@ TEMPLATE_CHOICES = (
     ('daily-standup', _('Daily standup')),
     ('weekly-timeline', _('Weekly timeline')),
 )
-TEMPLATE_VERSIONS = (('1', '1'),)
+TEMPLATE_VERSIONS = (('1', '1'), ('2', '2'))
 PURPOSE_CHOICES = (
     ('standup', _('Standup')),
     ('historical_export', _('Historical export')),
 )
-
 
 @dataclass(frozen=True, slots=True)
 class ReportTargetChoices:
@@ -30,27 +29,66 @@ def new_command_id():
     return str(uuid4())
 
 
+def hash_text(value):
+    if any(character not in '0123456789abcdef' for character in value):
+        raise forms.ValidationError(_('Template request is invalid.'))
+    return value
+
+
+def uuid_text(value):
+    field = forms.UUIDField()
+    try:
+        return str(field.clean(value))
+    except forms.ValidationError:
+        raise forms.ValidationError(_('Template request is invalid.')) from None
+
+
 class ReportCreateForm(forms.Form):
+    payload_version = forms.ChoiceField(required=False, choices=(('2', '2'),), widget=forms.HiddenInput)
     command_id = forms.UUIDField(widget=forms.HiddenInput)
     capture_after = forms.CharField(required=False, max_length=1368, widget=forms.HiddenInput)
     capture_id = forms.ChoiceField(label=_('Source capture'))
-    template_id = forms.ChoiceField(label=_('Template'), choices=TEMPLATE_CHOICES)
-    template_version = forms.ChoiceField(widget=forms.HiddenInput, choices=TEMPLATE_VERSIONS)
+    template_choice = forms.ChoiceField(label=_('Template'), required=False)
+    template_origin = forms.ChoiceField(required=False, choices=(('builtin', 'builtin'), ('user', 'user')))
+    template_id = forms.ChoiceField(label=_('Template'), choices=TEMPLATE_CHOICES, required=False)
+    template_version = forms.ChoiceField(required=False, widget=forms.HiddenInput, choices=TEMPLATE_VERSIONS)
+    template_revision = forms.IntegerField(required=False, min_value=1, max_value=1_000_000)
+    template_revision_hash = forms.CharField(required=False, min_length=64, max_length=64)
     timezone = forms.CharField(label=_('Timezone'), max_length=64)
     baseline_publication_id = forms.ChoiceField(label=_('Baseline publication'), required=False)
     parent_publication_id = forms.ChoiceField(label=_('Parent publication'), required=False)
     purpose = forms.ChoiceField(label=_('Purpose'), choices=PURPOSE_CHOICES)
 
-    def __init__(self, *args, capture_choices=(), publication_choices=(), require_capture_selection=False, **kwargs):
+    def __init__(self, *args, capture_choices=(), publication_choices=(), require_capture_selection=False,
+                 user_template_choices=(), **kwargs):
         super().__init__(*args, **kwargs)
         capture_values = tuple((item.capture_id, item.label) for item in capture_choices)
         if require_capture_selection:
             capture_values = (('', _('Select capture')), *capture_values)
         publication_values = (('', _('No baseline')), *((item.publication_id, item.label) for item in publication_choices))
         parent_values = (('', _('No parent publication')), *((item.publication_id, item.label) for item in publication_choices))
+        builtin_choices = tuple((f'builtin|{value}|2|', label) for value, label in TEMPLATE_CHOICES)
         self.fields['capture_id'].choices = capture_values
+        self.fields['template_choice'].choices = (*builtin_choices, *tuple(user_template_choices))
+        self.fields['template_id'].choices = (*TEMPLATE_CHOICES, *((choice[0].split('|')[1], choice[1]) for choice in user_template_choices))
         self.fields['baseline_publication_id'].choices = publication_values
         self.fields['parent_publication_id'].choices = parent_values
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.errors:
+            return cleaned
+        self._apply_template_choice(cleaned)
+        if not cleaned.get('template_origin'):
+            cleaned['template_origin'] = 'builtin'
+        if cleaned['template_origin'] == 'user':
+            if not cleaned.get('template_id') or not cleaned.get('template_revision') or not cleaned.get('template_revision_hash'):
+                raise forms.ValidationError(_('Template request is invalid.'))
+            cleaned['template_id'] = uuid_text(cleaned['template_id'])
+            cleaned['template_revision_hash'] = hash_text(cleaned['template_revision_hash'])
+        elif not cleaned.get('template_id') or not cleaned.get('template_version'):
+            raise forms.ValidationError(_('Template request is invalid.'))
+        return cleaned
 
     def clean_timezone(self):
         value = self.cleaned_data['timezone']
@@ -75,6 +113,41 @@ class ReportCreateForm(forms.Form):
             self.cleaned_data['template_version'],
             {},
         )
+
+    def authored_template(self):
+        if self.cleaned_data.get('template_origin') == 'user':
+            return report_api.UserTemplateSelection(
+                self.cleaned_data['template_id'],
+                self.cleaned_data['template_revision'],
+                self.cleaned_data['template_revision_hash'],
+            )
+        return report_api.AuthoringTemplateSelection(
+            'builtin',
+            self.cleaned_data['template_id'],
+            self.cleaned_data['template_version'],
+            {},
+        )
+
+    def is_authored(self):
+        return self.cleaned_data.get('payload_version') == '2'
+
+    def _apply_template_choice(self, cleaned):
+        choice = cleaned.get('template_choice')
+        if not choice:
+            return
+        parts = choice.split('|')
+        if len(parts) != 4 or parts[0] not in {'builtin', 'user'}:
+            raise forms.ValidationError(_('Template request is invalid.'))
+        cleaned['template_origin'] = parts[0]
+        cleaned['template_id'] = parts[1]
+        if parts[0] == 'builtin':
+            cleaned['template_version'] = parts[2]
+            return
+        try:
+            cleaned['template_revision'] = int(parts[2])
+        except ValueError:
+            raise forms.ValidationError(_('Template request is invalid.')) from None
+        cleaned['template_revision_hash'] = parts[3]
 
 
 class ReportSaveForm(forms.Form):
@@ -248,6 +321,10 @@ class ReportRevisionCreateForm(forms.Form):
             self.cleaned_data['template_version'],
             {},
         )
+
+
+class ReportLinkedRevisionCreateForm(forms.Form):
+    command_id = forms.UUIDField(widget=forms.HiddenInput)
 
 
 class ReportRenderQueryForm(forms.Form):

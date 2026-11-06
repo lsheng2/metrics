@@ -10,7 +10,8 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 各个已经通过的独立评审、实际候选、桌面验证和后续实施状态见
 [唯一任务清单](../../changes/add-provider-neutral-project-reporting/tasks.md)。
 采集到HTML下载、显式Git定稿、重启与无变化复用已通过本机合成全栈验证。
-完整provider覆盖、累计delta、富文本集成和正式运行仍待后续交付。
+富文本日常编辑与有界累计delta已通过本机合成资格；完整provider覆盖、AI Assist、
+完整工作周验收和正式运行仍待后续交付。
 内部合成能力不等于真实来源或真实模型已经上线。
 
 ### 已验证的演示
@@ -130,17 +131,17 @@ English/简体中文来自Django gettext静态资源。语言选择、页面`lan
 
 ### HTML报告工作台
 
-2026-11-03用户明确要求直接编辑富文本。当前页面的文本框加预览只是过渡实现，
-不满足所见即所得要求；独立编辑器Agent负责接入开源组件。本轮先收尾采集、
-分析、已保存HTML下载和显式Git定稿，不继续扩展旧编辑器测试。
-富文本、复制交互和Outlook的联合验收等组件交付后再做，
+2026-11-04作者层已用Milkdown替代过渡textarea编辑，报告叙述与备注在正文就地修改，
+工单事实保持只读；不要求用户另找编辑器Agent。
+富文本专项和保存恢复已通过，复制交互、Outlook及完整作者工作流在JOIN联合验收，
 接口及交接清单见[编辑器handoff](../../changes/add-provider-neutral-project-reporting/rich-text-editor-handoff.md)。
 
 报告以可复制到邮件正文的HTML为主，提供每日站会和按日横向对比模板。
 已有的阶段工作台列出真实归档采集、草稿和定稿记录，可从已保存来源创建草稿，
 编辑会议注释和叙述字段，保存后预览、复制或下载。最后由用户明确选择是否定稿
 并提交独立数据Git。实际Ego桌面已完成运行、下载和显式定稿；
-编辑、复制与Outlook验收等待富文本组件。旧的项目/阶段配置Demo不会自动升级到这些源码。
+新作者层有独立编辑/保存测试；复制与Outlook全流程验收仍待JOIN。
+旧的项目/阶段配置Demo不会自动升级到这些源码。
 
 列表每页20条并保留采集游标；过多记录明确拒绝，不把截断结果或Git故障显示为空列表。
 保存支持多条注释，未显式删除的旧注释会保留。Copy与Finalize仅作用于精确已保存修订，
@@ -163,7 +164,130 @@ WebView2 `156.0.4314.50 (Stable)`。版本信息已明确，但实际粘贴验�
 详细API、存储/恢复和实施边界见
 [HTML报告设计](../../changes/add-provider-neutral-project-reporting/html-report-authoring.md)，
 测试场景见[HTML报告验收](../../changes/add-provider-neutral-project-reporting/html-report-validation.md)。
-Markdown/Excel原有需求保留；离线HTML修改回导和通用模板编辑器不在首个Demo范围。
+Markdown/Excel原有需求保留；离线HTML修改回导仍不在首个Demo范围。
+
+#### 最新作者层设计与当前差距
+
+2026-11-03用户进一步确认：只需要所见即所得，不需要Markdown源码模式；
+仅输入`#ID`自动补全，无裸ID/URL/快捷键/按钮触发；并要求用户能自由创建报告模板，
+由人工或显式AI填写。完整提案见
+[Report Authoring V2](../../changes/add-provider-neutral-project-reporting/report-authoring-v2.md)，
+[接口与版本](../../changes/add-provider-neutral-project-reporting/report-authoring-contracts.md)、
+[错误矩阵](../../changes/add-provider-neutral-project-reporting/report-completion.md)。
+
+当前支持内置daily/weekly模板，以及项目内可视化用户模板库。
+业务层管理不可变模板版本、可填槽和受保护数据区；用户不编写Django/Jinja或Markdown源码。
+旧`ReportEdit.text`继续按纯文本解释，新作者草稿使用中立富文本fragment。
+取消源码UI不取消Markdown导出，HTML仍是邮件主产物。2026-11-03用户已授权在main实施作者层。
+schema2 standalone后端已通过专项测试、独立评审及真实临时Git闭环；
+模板库人工填写、固定富文本预览和连续性矩阵页面已通过专项HTTP/桌面Chrome及独立评审。
+每日准备已接入页面、CLI和原运行器，正在完成组合验证与独立评审；
+显式AI填写和完整工作周验收尚未完成。
+编辑器现已接入固定Milkdown7.23.0，正文中的叙述/备注可就地编辑，来源事实保持只读。
+颜色、高亮、格式链接、任务/表格/代码块、原生撤销和保存重开已通过专项桌面Chrome测试。
+网络结果不确定时重试原保存命令，较新的本地输入继续保留；离页/语言切换须明确处理
+未保存内容。作者层、`#ID`补全、模板与连续性编辑流程已独立复查，整周JOIN仍未执行。
+补全只接受正文中明确输入的`#ID`，按Stage的provider和已固定完整成员范围查询；
+三种候选为链接ID、加title、再加`@owner`。方向键/Enter、Esc、IME和原生撤销有专项测试。
+默认真实读取关闭；必须单独配置已验证资格，HSDES live尚未合格。范围外不发上游请求，
+权限/身份/时间/额度/旧响应失败不改正文。补全是单票只读，不调用AI或改变来源快照。
+
+Projects -> Report templates提供空白、daily/weekly起始模板、复制、版本保存和归档。
+模板设计器可添加固定富文本、填写槽和受控来源块；不能提交任意HTML/CSS或执行代码。
+缺少必需来源块的模板可保存为未就绪版本，但不能用于创建报告。
+报告固定完整模板快照，后续模板改版/归档不会改动旧报告；归档后禁止新选择。
+必填槽可暂时清空保存，但未填完不能Finalize。模板保存失败或版本冲突保留本地内容；
+响应丢失重试原请求，保存期间新增的本地内容仍保持未保存状态。
+
+公共`create_authored`可明确选择内置daily/weekly version2或精确用户模板revision/hash，
+`save_authored`保存中立富文本、服务端作者时间和revision/hash-CAS。
+历史version1模板字节/hash不变，旧草稿首次显式作者保存才升级为version2；
+旧保存接口不能把新草稿降回纯文本。空正文和仅颜色修改均保留为修订。
+schema2仍使用原六文件定稿和Git writer；恢复前校验完整packet及选中修订hash，
+读取历史原文件不重新渲染。后端现在也支持经服务器prepared seed创建的连续日报；
+普通浏览器不能上传历史context。补全收据按当前scope proof/身份和唯一引用link验证，
+AI收据仍由后续ASSIST资格控制。
+
+#### 连续性编辑
+
+用户随后确认的具体报告形态见
+[报告连续性架构](../../changes/add-provider-neutral-project-reporting/report-continuity.md)。
+连续性后端已通过三日/跨周临时Git链、重复保存、基线冲突、纠错和周视图专项验证及
+独立复查。矩阵页面支持当前日note/AR/常驻备注编辑、手动分组与移行、显式系列/周报选择、
+只读历史和关联纠错，并通过合成桌面验证。DAILY按钮已有人工和刷新浏览器链证据，
+两天实际生成/编辑/补全继承/颜色/归档/同日重放链及限定评审已通过，完整工作周仍待验收；
+这些合成资格不是正式provider/model或无人值守运行资格。
+
+- 一票一行，AR/AR?独立，日期后的`ww45.1(Fixed):`状态只来自当次Jira/HSDES快照。
+  人工/AI叙述不改状态，历史无状态快照时不倒填。
+- 模板管理组序/初始顺序，同系列已有票位置稳定、新票追加；状态变化不自动挪行。
+- 同周累积notes；继承用户已定稿的有效正文、删除结果、文字颜色、高亮与链接，
+  不重放原AI文本。fragment v2保存与服务层继承已有证据，浏览器整周保真仍待验证。
+- 换周默认带每票最近一次确认更新、全部未结束AR/未确认建议和常驻备注。
+  原日期/状态/格式保留，新周另加新note；完整旧周可读，不把精简展示当成删除。
+- Source capture、accepted summary、正式作者报告是三种基线，不能由同一last-run代替。
+  只有用户明确Finalize且数据Git确认后，才推进下一日报的editorial baseline。
+- 默认通过“生成今日草稿”按钮选择日期、模板和基线。Save只保存，切周/GET只读取。
+  前日未定稿先提示处理；明确选择旧正式基线继续时记录gap，不丢原稿。
+- 定时准备是W7的延后资格，默认关闭；启用后调用同一准备服务和同日去重，
+  不自动定稿、发送或回写工单。停机错过不补造日报。
+
+#### 手动准备入口
+
+Stage Reports顶部选择报告系列、会议日期和兼容模板版本，先Preview baseline，再选择
+Saved capture或Refresh source。采集选项显示UTC截止时间和短ID，来源表保留完整ID与时间。
+这些信息通过只读`list_capture_metadata`查询原manifest，旧`list_captures`回执与归档字节不变。
+默认Manual only；具备运行和分析能力时可以显式选Changed items。界面禁用不可用的新选择，
+服务端在识别已有请求之后检查新工作能力，不因短暂离线阻断既有请求的安全重放。
+
+首次预览不会初始化stage归档。首次明确生成并通过权限、系列、基线和能力校验后，
+应用才初始化已配置的数据归档并保留准备意图，再交由原worker采集；没有新的后台队列。
+同一会议再次生成返回原工作和实际选择，不创建第二次采集/推理；不同选择明确列为未应用。
+未定稿的前序草稿有可打开的链接，必须先定稿或逐项确认跳过，原稿不会被删除。
+
+准备详情显示当前运行/草稿修订、原始及替换关系。对非finalizing且已结束的准备，可以显式
+重建为另一个候选；旧人工文字、空值、颜色和链接按已核验规则继承，不匹配内容会提示核对，
+不能默认为无损成功。重建仍受该准备绑定的系列策略及兼容模板限制，不自动改绑策略。
+已定稿报告只允许关联纠错，不能把历史纠错说成新来源刷新；从已发布页面进入该操作。
+
+CLI使用同一准备服务。`project_run preview`返回系列策略hash和正式baseline引用，
+`prepare`要求显式`--expected-series-policy-hash`，非初始基线还要提供其publication ID、
+manifest hash和commit。`--source-mode saved_capture --analysis-mode manual_only`不依赖
+Base运行；`--source-mode refresh --execute-local`使用已配置的同一worker同步执行。
+`reprepare`要求原准备ID及精确operation/draft修订。`start/status/cancel/resume`保持原格式；
+CLI身份仍为可信`local_operator`，不允许通过参数伪造浏览器用户。
+
+```powershell
+.\.venv\Scripts\python.exe manage.py project_run preview $ProjectId $StageId --series-id $SeriesId --meeting-date 2026-10-26 --template-id $TemplateId --template-revision 1 --template-revision-hash $TemplateHash
+```
+
+上例是显式会议日期，不会改变系统时钟、工单时间或执行deadline；来源截止时间独立记录，
+不能把当前采集冒充该历史日期的真实来源。本轮验证只使用隔离合成数据，没有执行生产数据库
+迁移、正式调度、真实来源/付费模型调用或发送。
+
+用户编辑和`#ID`补全属于草稿富文本界面。HTML预览尚可回草稿修改；
+最终HTML是静态只读归档，纠错创建关联新草稿，不原地覆盖。
+Markdown/plain不承担颜色恢复，Excel按受验证能力导出；JSON/HTML保留完整格式。
+格式/历史/保存不完整时明确失败，不能用静默降纯文本制造成功。
+
+拟实施的端到端验收为：AI候选->人工增删/着色/补全->保存重开->定稿->
+次日/第三日/新周，检查完整内容、格式、来源状态与行序；
+RA41的单草稿格式及连续性服务层已有专项证据，完整RA67浏览器工作周尚未执行。
+用户进一步要求最终以完整合成工作周验证：每天source内容固定，只变化人工note/颜色，
+经过每日准备、保存重开和定稿，再检查新周seed，并保留每日截图/原报告/hash与调用计数。
+该整周资格尚未执行，细节在作者层validation第7节，不代表连续性已经上线。
+合成开发验证不启用正式调度、读取新真实工单或调用付费模型。
+
+“不在scope”的默认含义是“不在该报告pinned capture的完整成员快照中”；
+缺少完整性证明时提示未确认而不是范围外，不查询全站来区分错ID和别的项目工单。
+已知成员上游404统一提示不存在或当前账号无权访问，owner未指派只禁用第三种格式。
+新查询不修改来源快照；最新字段附独立观察时间。Jira由Stage scope/profile路由，
+HSDES直接由Stage的saved-query profile路由，不伪造Jira scope。
+
+AI填写是单独的候选操作，不是模板渲染或生成报告的默认副作用。
+手工编辑不依赖Base；候选先审阅再保存，继续沿原显式定稿/Git/权限边界。
+当前summary@review-1与synthetic-only资格不能被当作authoring profile已就绪。
+原模板设计器backlog只提升为受控block/slot模板库；任意脚本/CSS/像素布局引擎仍非本次范围。
 
 ### 内部报告数据读取
 
@@ -284,7 +408,7 @@ Ego桌面验证保留在本地`.tmp/project-reporting-w2/browser/`，不将合�
 统一 `provider_access` 的诊断入口和内部采集API已经实现；
 默认生产配置中的capture/operation仍未启用，专属演示runtime只运行合成白名单。
 当前边界见[Provider采集](provider-capture.md)和[Git归档](capture-archives.md)。
-首次完整输入与无变化复用已贯通，累计delta和正式资格仍未完成。
+首次完整输入、无变化复用及有界累计delta已贯通，完整大输入/来源能力与正式资格仍未完成。
 连接解析与本机`provider_credentials`采用代码已实现，完整门禁状态见任务清单；
 操作与限制见[Provider连接与凭据](provider-credentials.md)，尚未采用用户真实凭据。
 详细设计现在已补入同一OpenSpec：
@@ -336,9 +460,14 @@ BASE-B及Dashboard后续波次仍须各owner按包达到就绪标准，具体等
 不会在丢回包后自动换key或重新POST。输入、派发声明、观察及accepted summary共用原有
 Git归档、锁和空间占用配额，不另建一份attempt数据库。
 
-当前切片只支持首次完整单capture输入与完整无变化复用。原始source hash不包含coverage，
+当前切片支持首次完整输入、100版本/64证据/65536字节以内的累计delta与无变化复用。
+累计输入从最后已接受摘要到目标采集保留中间版本，新增后删除或变更后恢复也不丢失；
+接受版本递增，报告读取重新核验同一输入与前序接受记录。原始source hash不包含coverage，
 所以每个保留版本都须另查完整性；partial/access-lost或中间A→B→A不能算无变化。
-超长/多版本/未支持附件与依赖不会静默裁剪，完整累计delta仍属后续W4/W5工作。
+超长/超限多版本/未支持附件与依赖不会静默裁剪；完整索引、导入及大输入仍属后续W4/W5工作。
+旧已接受尝试不阻断新输入；未决提交保留原key/deadline/预算，已验证终态才允许不同输入。
+有界增量的SDK0.2真实本地HTTP与报告读取证据见
+[delta-core](../../changes/add-provider-neutral-project-reporting/delta-core.md)。
 已验证的联合场景使用真实应用目录/归档/API、安装a2 SDK和专属Base HTTP服务：
 1次合成执行产生1份accepted summary，重建应用服务后无变化复用不增加执行。
 这不是收费模型解读质量资格；测试executor只返回明确登记的合成结果。

@@ -61,3 +61,15 @@ class TestProviderRequestSession(unittest.TestCase):
                        {'actor': ProjectActor(' ')}, {'deadline_at': datetime(2026, 11, 2)}]:
             with self.subTest(change=change), self.assertRaises(AccessError):
                 ProviderReadSession(self.context(**change), ScriptedReader(), timeout_seconds=30)
+
+    def test_shouldCarryProviderStatusAndRetryAfterForSingleItemReads(self):
+        reader = ScriptedReader(RawResponse(429, 'application/json', b'{}', False, None, retry_after='7'))
+        session = ProviderReadSession(self.context(), reader, timeout_seconds=30)
+        self.addCleanup(session.close)
+
+        with self.assertRaises(AccessError) as caught:
+            session.get_json('/rest/api/2/issue/ALPHA-1', {}, page_key='rate-limited')
+
+        self.assertEqual('PROVIDER_RATE_LIMITED', caught.exception.code)
+        self.assertEqual(429, caught.exception.provider_status)
+        self.assertEqual(7, caught.exception.retry_after_seconds)

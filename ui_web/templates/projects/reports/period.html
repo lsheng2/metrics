@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Weekly period" %}{% endblock %}
+{% block page_title %}{% trans "Weekly period" %}{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
+            <li class="is-active"><a href="#" aria-current="page">{{ period.period_key }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-4">{% trans "Weekly period" %}</h2>
+                <p class="subtitle is-6"><code>{{ period.period_key }}</code></p>
+            </div>
+        </div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+
+    <div class="notification is-light">{% trans "This period view is read only and uses the explicitly selected publications." %}</div>
+
+    <div class="table-container responsive-admin-table-box" data-period-matrix>
+        <table class="table is-fullwidth is-narrow dashboard-dense-table">
+            <thead>
+                <tr>
+                    <th>{% trans "Issue" %}</th>
+                    {% for column in matrix_view.columns %}
+                        <th>{{ column.label }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in matrix_view.rows %}
+                    <tr>
+                        <th>
+                            <strong>{{ row.current_key }}</strong><p class="help">{{ row.title }}</p>
+                            {% for persistent in row.persistent_notes %}
+                                <div class="report-readonly-data" data-period-persistent-note>{{ persistent.html|safe }}</div>
+                            {% endfor %}
+                        </th>
+                        {% for cell in row.cells %}
+                            <td>
+                                {% for readonly in cell.readonly_notes %}
+                                    <div class="report-readonly-data" data-period-readonly-note>
+                                        <strong data-period-source-prefix>{{ readonly.prefix }}</strong>
+                                        {{ readonly.html|safe }}
+                                    </div>
+                                {% endfor %}
+                                {% for action in cell.actions %}
+                                    <p data-period-action-label>{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</p>
+                                    <div class="report-readonly-data" data-period-action-body>{{ action.body_html|safe }}</div>
+                                {% endfor %}
+                                {% if not cell.readonly_notes and not cell.actions %}
+                                    <span class="tag is-light">{{ cell.state }}</span>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <section class="block mt-4">
+        <h3 class="title is-5">{% trans "Selected publications" %}</h3>
+        <ul>
+            {% for publication in publications %}
+                <li><code>{{ publication.manifest.publication_id }}</code> · <code>{{ publication.commit_id|slice:":12" }}</code></li>
+            {% endfor %}
+        </ul>
+    </section>
+</article>
+{% endblock %}

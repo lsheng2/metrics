@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "Preparation details" %}{% endblock %}
+{% block page_title %}{% trans "Preparation details" %}{% endblock %}
+{% block content %}
+<article class="block" data-report-preparation-detail>
+    <nav class="breadcrumb" aria-label="breadcrumbs"><ul>
+        <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+        <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
+        <li class="is-active"><a aria-current="page">{% trans "Preparation details" %}</a></li>
+    </ul></nav>
+    <h2 class="title is-5">{{ daily_result.effective_selection.meeting_date }} · {{ daily_result.state }}</h2>
+    {% if daily_error %}<div class="notification is-danger is-light" role="alert" data-daily-error="{{ daily_error_code }}">{{ daily_error }}</div>{% endif %}
+    <dl class="block">
+        <dt>{% trans "Preparation" %}</dt><dd><code>{{ daily_result.preparation_id }}</code></dd>
+        <dt>{% trans "Effective selection" %}</dt><dd>{{ daily_result.effective_selection.source_mode }} · {{ daily_result.effective_selection.analysis_mode }} · {{ daily_result.effective_selection.timezone }}</dd>
+        <dt>{% trans "Template" %}</dt><dd><code>{{ daily_result.effective_selection.template_selection.template_id }}</code> r{{ daily_result.effective_selection.template_selection.revision }}</dd>
+        <dt>{% trans "Capture" %}</dt><dd><code>{{ daily_result.effective_selection.capture_id }}</code></dd>
+        {% if daily_result.draft_revision %}<dt>{% trans "Draft revision" %}</dt><dd>{{ daily_result.draft_revision }} <code>{{ preparation_details.draft_revision_hash|slice:":12" }}</code></dd>{% endif %}
+    </dl>
+    <div class="buttons">
+        {% if daily_result.links.draft %}<a class="button is-primary" href="{{ daily_result.links.draft }}">{% trans "Open draft" %}</a>{% endif %}
+        {% if daily_result.links.publication %}<a class="button" href="{{ daily_result.links.publication }}">{% trans "Published edition" %}</a>{% endif %}
+        {% if daily_result.operation_id %}<a class="button" href="{% url 'ui_web:project_run_status' detail.project.id stage.id daily_result.operation_id %}">{% trans "Operation" %} {{ preparation_details.operation_revision }}</a>{% endif %}
+        {% if preparation_details.parent_preparation_id %}<a class="button" href="{% url 'ui_web:report_preparation_detail' detail.project.id stage.id preparation_details.parent_preparation_id %}">{% trans "Original preparation" %}</a>{% endif %}
+        {% if preparation_details.active_preparation_id and preparation_details.active_preparation_id != daily_result.preparation_id %}<a class="button" href="{% url 'ui_web:report_preparation_detail' detail.project.id stage.id preparation_details.active_preparation_id %}">{% trans "Replacement preparation" %}</a>{% endif %}
+    </div>
+    {% if daily_result.review_issues %}
+        <div class="notification is-warning is-light" role="alert">
+            <strong>{% trans "Review required" %}</strong>
+            <ul>{% for issue in daily_result.review_issues %}<li>{{ issue.code }}: {{ issue.reason }}</li>{% endfor %}</ul>
+        </div>
+    {% endif %}
+    {% if daily_can_reprepare %}
+    <section class="block">
+        <h3 class="title is-5">{% trans "Reprepare draft" %}</h3>
+        <form method="post" action="{% url 'ui_web:report_preparation_reprepare' detail.project.id stage.id daily_result.preparation_id %}" class="dashboard-edit-form" data-report-reprepare-form data-runtime-ready="{{ daily_runtime_ready|yesno:'true,false' }}" data-analysis-ready="{{ daily_analysis_ready|yesno:'true,false' }}">
+            {% csrf_token %}
+            {% for field in daily_reprepare_form.hidden_fields %}{{ field }}{% endfor %}
+            {% if daily_reprepare_form.errors %}<div class="notification is-danger is-light">{{ daily_reprepare_form.errors }}</div>{% endif %}
+            <div class="dashboard-form-grid">
+                <div class="dashboard-form-field"><label class="label" for="{{ daily_reprepare_form.template_choice.id_for_label }}">{% trans "Matrix template revision" %}</label><div class="select is-fullwidth">{{ daily_reprepare_form.template_choice }}</div></div>
+                <div class="dashboard-form-field"><label class="label" for="{{ daily_reprepare_form.source_mode.id_for_label }}">{% trans "Source mode" %}</label><div class="select is-fullwidth">{{ daily_reprepare_form.source_mode }}</div></div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ daily_reprepare_form.capture_id.id_for_label }}">{% trans "Saved capture" %}</label>
+                    <div class="select is-fullwidth"><select id="{{ daily_reprepare_form.capture_id.id_for_label }}" name="capture_id">
+                        <option value="">{% trans "Select saved capture" %}</option>
+                        {% for capture in captures %}<option value="{{ capture.capture_id }}"{% if daily_reprepare_form.capture_id.value == capture.capture_id %} selected{% endif %}>{{ capture.label }}</option>{% endfor %}
+                    </select></div>
+                </div>
+                <div class="dashboard-form-field"><label class="label" for="{{ daily_reprepare_form.analysis_mode.id_for_label }}">{% trans "Analysis mode" %}</label><div class="select is-fullwidth">{{ daily_reprepare_form.analysis_mode }}</div></div>
+                <div class="dashboard-action-group"><button type="submit" class="button is-warning is-light" data-report-reprepare><span class="icon is-small"><i class="iconoir-refresh-double"></i></span><span>{% trans "Reprepare draft" %}</span></button></div>
+            </div>
+        </form>
+    </section>
+    {% endif %}
+</article>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/report_daily.js' %}"></script>
+{% endblock %}

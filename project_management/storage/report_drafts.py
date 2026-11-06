@@ -3,29 +3,28 @@ import uuid
 
 from project_management.app.domain.capture_values import canonical_bytes
 from project_management.app.domain.captures import ArchiveError, ArchiveLimits
+from project_management.app.domain.report_authoring_revision import validate_authored_revision_payload
 from project_management.app.domain.report_draft_values import (
-    ReportDraft,
-    ReportDraftLimits,
-    bytes_hash,
-    read_json,
-    revision_from_mapping,
-    selection_from_mapping,
-    snapshot_from_mapping,
-    template_selection_from_mapping,
-    validate_hash_text,
-    validate_time_text,
-    validate_uuid_text,
+    ReportDraft, ReportDraftLimits, bytes_hash, read_json, revision_from_mapping, selection_from_mapping,
+    snapshot_from_mapping, template_selection_from_mapping, validate_hash_text, validate_time_text, validate_uuid_text,
 )
 from project_management.app.domain.report_edits import validate_edit_targets
+from project_management.app.domain.report_templates import validate_template_document_snapshot
 from project_management.storage.admission import GrowthEstimate, admit
 from project_management.storage.paths import read_bytes, validate_uuid, write_bytes
+from project_management.storage.report_draft_preparation_bindings import (
+    binding_fields,
+    preparation_binding,
+    ReportDraftCreateMixin,
+)
+from project_management.storage.report_draft_projection import draft_from_revision
 from project_management.storage.report_publication_packets import ReportFinalizationPacketStore
 
 
 SNAPSHOT_READ_LIMIT = 8_388_608
 
 
-class ReportDraftStore:
+class ReportDraftStore(ReportDraftCreateMixin):
     def __init__(self, repository, archive_root: Path, archive_limits: ArchiveLimits, limits: ReportDraftLimits):
         self.repository = repository
         self.archive_root = archive_root
@@ -83,18 +82,10 @@ class ReportDraftStore:
         if canonical_bytes(snapshot) != snapshot_bytes:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         self._validate_binding(draft_id, intent, selected[0], snapshot)
-        return self._draft_from_revision(selected[0], selected[1], snapshot, self._state(root))
-
-    def write_create(self, draft_id: str, command_id: str, *, request_hash: str, intent, snapshot_bytes: bytes,
-                     revision_payload, revision_hash: str, command_payload) -> None:
-        root = self.root(draft_id)
-        self._admit(root, len(snapshot_bytes) + len(canonical_bytes(intent)) + len(canonical_bytes(revision_payload))
-                    + len(canonical_bytes(command_payload)) + 4096, 5)
-        write_bytes(root, 'snapshot.json', snapshot_bytes, immutable=True, conflict_code='ARCHIVE_CAPTURE_CONFLICT')
-        write_bytes(root, 'intent.json', canonical_bytes(intent), immutable=True, conflict_code='ARCHIVE_CAPTURE_CONFLICT')
-        self.write_revision(draft_id, revision_payload, revision_hash)
-        self.write_command(draft_id, command_id, command_payload)
-        self.publish_current(draft_id, revision_payload['revision'], revision_hash, expected_revision=None)
+        return draft_from_revision(
+            selected[0], selected[1], snapshot, self._state(root),
+            self._preservation_review_issues(root, intent),
+        )
 
     def write_save_command(self, draft_id: str, command_id: str, *, revision_payload, revision_hash: str,
                            command_payload) -> None:
@@ -161,29 +152,39 @@ class ReportDraftStore:
             total += len(canonical_bytes(extra_payload))
         return total
 
-    def revision_history(self, draft_id: str, through_revision: int):
+    def revision_history(self, draft_id: str, through_revision: int, *, full_payload: bool = False):
         root = self.root(draft_id)
         intent = self._intent(root, draft_id)
         history = []
         for revision in range(1, through_revision + 1):
             expected_hash = self._verified_revision_hash(root, draft_id, revision, intent)
             payload, revision_hash = self._read_revision(root, revision, expected_hash=expected_hash)
-            history.append({
-                'revision': revision,
-                'revision_hash': revision_hash,
-                'updated_at': payload['updated_at'],
-                'edits': payload['edits'],
-            })
+            if full_payload:
+                history.append({'revision': revision, 'revision_hash': revision_hash, 'payload': payload})
+            else:
+                history.append({
+                    'revision': revision,
+                    'revision_hash': revision_hash,
+                    'updated_at': payload['updated_at'],
+                    'edits': payload['edits'],
+                })
         return tuple(history)
 
     def _intent(self, root: Path, draft_id: str):
         value = read_json(read_bytes(root, 'intent.json'))
-        expected = {
+        expected_v1 = {
             'schema_version', 'command_id', 'request_hash', 'project_id', 'stage_id',
             'owner_subject', 'draft_id', 'snapshot_hash', 'created_at', 'selection',
             'template', 'revision_payload', 'revision_hash',
         }
-        if set(value.keys()) != expected or value['schema_version'] != 1:
+        expected_v2 = expected_v1 | {'preparation_binding_kind', 'preparation_binding_hash'}
+        if not isinstance(value, dict) or (set(value.keys()) != expected_v1 and set(value.keys()) != expected_v2):
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        if value['schema_version'] == 1 and set(value.keys()) != expected_v1:
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        if value['schema_version'] == 2 and set(value.keys()) != expected_v2:
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        if value['schema_version'] not in {1, 2}:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         command_id = validate_uuid(value['command_id'])
         request_hash = validate_hash_text(value['request_hash'])
@@ -203,8 +204,8 @@ class ReportDraftStore:
         template = template_selection_from_mapping(value['template'])
         if selection != revision_payload['selection'] or template != revision_payload['template']:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        return {
-            'schema_version': 1,
+        intent = {
+            'schema_version': value['schema_version'],
             'command_id': command_id,
             'request_hash': request_hash,
             'project_id': value['project_id'],
@@ -218,6 +219,10 @@ class ReportDraftStore:
             'revision_payload': revision_payload,
             'revision_hash': revision_hash,
         }
+        if value['schema_version'] == 2:
+            intent.update(binding_fields(value))
+            preparation_binding(root, intent)
+        return intent
 
     def _command_payload(self, value):
         expected = {
@@ -228,7 +233,7 @@ class ReportDraftStore:
         if set(value.keys()) != expected or value['schema_version'] != 1:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         kind = value['kind']
-        if kind not in {'create', 'save'}:
+        if kind not in {'create', 'create_authored', 'save', 'save_authored'}:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         command_id = validate_uuid(value['command_id'])
         draft_id = validate_uuid(value['draft_id'])
@@ -242,7 +247,7 @@ class ReportDraftStore:
         prior_revision = value['prior_revision']
         expected_revision = value['expected_revision']
         prior_revision_hash = value['prior_revision_hash']
-        if kind == 'create':
+        if kind in {'create', 'create_authored'}:
             if revision != 1 or prior_revision is not None or expected_revision is not None or prior_revision_hash is not None:
                 raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         else:
@@ -269,7 +274,7 @@ class ReportDraftStore:
         if revision == 1:
             command = self.command(draft_id, intent['command_id'])
             if command is not None and (
-                command['kind'] != 'create'
+                command['kind'] not in {'create', 'create_authored'}
                 or command['request_hash'] != intent['request_hash']
                 or command['revision_hash'] != intent['revision_hash']
             ):
@@ -286,7 +291,9 @@ class ReportDraftStore:
         if len(matches) != 1:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         command = matches[0]
-        if command['kind'] != 'save' or command['prior_revision'] != revision - 1 or command['prior_revision_hash'] != prior_hash:
+        if (command['kind'] not in {'save', 'save_authored'}
+                or command['prior_revision'] != revision - 1
+                or command['prior_revision_hash'] != prior_hash):
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         return command['revision_hash']
 
@@ -314,7 +321,23 @@ class ReportDraftStore:
                 or payload['selection'] != intent['selection']
                 or payload['created_at'] != intent['created_at']):
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        validate_edit_targets(snapshot, payload['edits'])
+        if payload['schema_version'] == 2:
+            self._validate_pinned_template_binding(payload)
+            validate_authored_revision_payload(snapshot, payload)
+        else:
+            validate_edit_targets(snapshot, payload['edits'])
+
+    def _validate_pinned_template_binding(self, payload) -> None:
+        if payload['template_snapshot'].get('renderer_version') != 'template-document/1':
+            return
+        snapshot = validate_template_document_snapshot(payload['template_snapshot'])
+        selection = snapshot['selection']
+        if (payload['template'].template_id != selection['template_id']
+                or payload['template'].version != str(selection['revision'])
+                or payload['template'].options != {}
+                or payload['template_definition'].template_hash != snapshot['presentation_hash']
+                or payload['template_definition'].renderer_version != snapshot['renderer_version']):
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
 
     def _read_revision(self, root: Path, revision: int, expected_hash: str | None = None):
         data = read_bytes(root, f'revisions/{revision:08d}.json', limit=self.limits.max_edit_history_bytes + SNAPSHOT_READ_LIMIT)
@@ -334,15 +357,14 @@ class ReportDraftStore:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         return {'revision': self._positive_revision(value['revision']), 'revision_hash': validate_hash_text(value['revision_hash'])}
 
-    def _draft_from_revision(self, payload, revision_hash, snapshot, state):
-        return ReportDraft(
-            payload['draft_id'], payload['revision'], revision_hash, payload['selection'], payload['snapshot_hash'],
-            snapshot, payload['template'], payload['template_definition'], payload['edits'],
-            payload['created_at'], payload['updated_at'], payload['parent_publication_id'], state,
-        )
+    def _preservation_review_issues(self, root: Path, intent):
+        if intent['schema_version'] == 1:
+            return ()
+        binding = preparation_binding(root, intent)
+        return tuple(binding.get('preservation_review_issues', ()))
 
     def _json_revision(self, payload):
-        return {
+        value = {
             'schema_version': payload['schema_version'],
             'draft_id': payload['draft_id'],
             'revision': payload['revision'],
@@ -355,6 +377,13 @@ class ReportDraftStore:
             'updated_at': payload['updated_at'],
             'parent_publication_id': payload['parent_publication_id'],
         }
+        if payload['schema_version'] == 2:
+            value.update({
+                'authoring_schema': payload['authoring_schema'],
+                'template_snapshot': payload['template_snapshot'],
+                'authoring_context': payload['authoring_context'],
+            })
+        return value
 
     def _state(self, root: Path) -> str:
         return self.publications.state(root.name)

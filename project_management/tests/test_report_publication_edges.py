@@ -36,11 +36,18 @@ class RacingSourceReader(StaticSourceReader):
         super().__init__(source_commit=environment.repository.head(), rule_hash=environment.stage.definition_hash)
         self.environment = environment
         self.armed = False
+        self.semantic_drift = False
 
     def read(self, actor, project_id, stage_id, selection):
         snapshot = super().read(actor, project_id, stage_id, selection)
         if self.armed:
             self.environment.repository._head = 'd' * 40
+        return snapshot
+
+    def read_from_repository(self, actor, project, stage, repository, selection, head):
+        snapshot = super().read_from_repository(actor, project, stage, repository, selection, head)
+        if self.semantic_drift:
+            return replace(snapshot, project_name='Changed source project')
         return snapshot
 
 
@@ -153,6 +160,7 @@ def test_source_change_between_check_and_final_lock_refuses_before_append(tmp_pa
         command_id=draft_command(320), selection=draft_selection(), template=daily_template(),
     )
     source.armed = True
+    source.semantic_drift = True
 
     with pytest.raises(report_api.ReportError) as error:
         svc.finalize_and_commit(
@@ -162,6 +170,24 @@ def test_source_change_between_check_and_final_lock_refuses_before_append(tmp_pa
 
     assert error.value.code == 'REPORT_SOURCE_CHANGED'
     assert environment.repository.list_files('report_publications') == ()
+
+
+def test_unrelated_head_change_between_check_and_final_lock_is_allowed_when_source_semantics_match(tmp_path):
+    environment = DraftArchive(tmp_path / 'archive-root')
+    source = RacingSourceReader(environment)
+    svc = service(environment, source=source)
+    draft = svc.create(
+        environment.actor, environment.project.id, environment.stage.id,
+        command_id=draft_command(322), selection=draft_selection(), template=daily_template(),
+    )
+    source.armed = True
+
+    publication = svc.finalize_and_commit(
+        environment.actor, environment.project.id, environment.stage.id, draft.draft_id,
+        command_id=draft_command(323), expected_revision=1,
+    )
+
+    assert environment.repository.list_files(f'report_publications/{publication.manifest.publication_id}')
 
 
 def test_edit_history_keeps_removed_revision_edits_but_final_view_uses_current(tmp_path):

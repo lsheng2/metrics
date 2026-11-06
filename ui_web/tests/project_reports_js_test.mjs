@@ -41,10 +41,11 @@ class FakeElement {
         this.listeners[name].push(callback);
     }
 
-    async dispatch(name) {
+    async dispatch(name, extra = {}) {
         const event = {
             type: name,
             target: this,
+            detail: extra.detail || null,
             defaultPrevented: false,
             preventDefault() {
                 this.defaultPrevented = true;
@@ -73,20 +74,31 @@ class FakeElement {
     }
 }
 
-const payload = {
-    schema_version: 1,
-    draft_id: 'draft-1',
-    revision: 2,
-    revision_hash: 'a'.repeat(64),
-    snapshot_hash: 'b'.repeat(64),
-    template_hash: 'c'.repeat(64),
-    html_fragment: '<table><tr><td>ok</td></tr></table>',
-    plain_text: 'ok',
-    clipboard_available: true,
-};
-payload.html_sha256 = createHash('sha256').update(payload.html_fragment).digest('hex');
-payload.plain_sha256 = createHash('sha256').update(payload.plain_text).digest('hex');
+function clipboardPayload(revision, revisionHash, html, plain) {
+    const value = {
+        schema_version: 1,
+        draft_id: 'draft-1',
+        revision,
+        revision_hash: revisionHash,
+        snapshot_hash: 'b'.repeat(64),
+        template_hash: 'c'.repeat(64),
+        html_fragment: html,
+        plain_text: plain,
+        clipboard_available: true,
+    };
+    value.html_sha256 = createHash('sha256').update(value.html_fragment).digest('hex');
+    value.plain_sha256 = createHash('sha256').update(value.plain_text).digest('hex');
+    return value;
+}
+
+const payload = clipboardPayload(2, 'a'.repeat(64), '<table><tr><td>ok</td></tr></table>', 'ok');
+const savedPayload = clipboardPayload(3, 'd'.repeat(64), '<p>saved</p>', 'saved');
 const badPayload = { ...payload, html_sha256: '0'.repeat(64) };
+const payloads = {
+    '/clipboard': payload,
+    '/clipboard?revision=3': savedPayload,
+};
+const fetchUrls = [];
 
 const root = new FakeElement({
     dataset: {
@@ -178,8 +190,9 @@ const context = {
     window: {
         crypto: webcrypto,
         async fetch(url) {
-            if (url === '/clipboard') {
-                return { ok: true, async json() { return payload; } };
+            fetchUrls.push(url);
+            if (payloads[url]) {
+                return { ok: true, async json() { return payloads[url]; } };
             }
             if (url === '/bad-clipboard') {
                 return { ok: true, async json() { return badPayload; } };
@@ -216,6 +229,19 @@ assert.equal(copyButton.attributes.get('aria-disabled'), 'false');
 assert.equal(status.textContent, 'ready');
 assert.equal(badCopyButton.disabled, true);
 assert.equal(badStatus.textContent, 'payload failed');
+
+await root.dispatch('report-authoring-saved', {
+    detail: {
+        revision: 3,
+        revision_hash: savedPayload.revision_hash,
+        clipboard_url: '/clipboard?revision=3',
+    },
+});
+await waitFor(() => status.textContent === 'ready' && fetchUrls.includes('/clipboard?revision=3') && copyButton.disabled === false);
+assert.equal(root.dataset.revision, '3');
+assert.equal(root.dataset.revisionHash, savedPayload.revision_hash);
+assert.equal(root.dataset.clipboardUrl, '/clipboard?revision=3');
+assert.equal(copyButton.disabled, false);
 
 await copyButton.dispatch('click');
 assert.equal(writes.length, 1);

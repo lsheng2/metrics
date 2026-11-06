@@ -1,4 +1,6 @@
 from project_management.app.domain.run_contracts import (
+    DailyRunRequest,
+    DailyRunTarget,
     ItemRunResult,
     RunError,
     RunOperation,
@@ -18,8 +20,15 @@ from project_management.runtime import (
 )
 
 
+def get_report_preparation_service():
+    runtime = get_project_runtime()
+    return None if runtime is None else getattr(runtime.worker, 'daily_preparation_service', None)
+
+
 __all__ = [
     'ItemRunResult',
+    'DailyRunRequest',
+    'DailyRunTarget',
     'ProjectRunService',
     'ProjectRunRuntime',
     'ProjectRunWorker',
@@ -32,5 +41,6 @@ __all__ = [
     'build_run_read_service',
     'clear_project_runtime',
     'get_project_runtime',
+    'get_report_preparation_service',
     'install_project_runtime',
 ]

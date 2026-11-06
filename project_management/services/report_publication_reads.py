@@ -3,15 +3,15 @@ from dataclasses import replace
 from project_management.app.domain.capture_values import canonical_bytes, decode_snapshot
 from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.report_contracts import ReportError
-from project_management.app.domain.report_draft_values import bytes_hash, read_json, snapshot_from_mapping
-from project_management.app.domain.report_draft_values import template_definition_from_mapping
+from project_management.app.domain.report_draft_values import read_json, snapshot_from_mapping
 from project_management.app.domain.report_publication_contracts import (
-    MANIFEST_HASHED_FILES,
     PUBLICATION_FILES,
     ReportPublication,
-    manifest_from_mapping,
-    publication_id_for,
     publication_path,
+)
+from project_management.app.domain.report_publication_validation import (
+    PublicationValidationContext,
+    validate_publication_files,
 )
 from project_management.app.domain.summary_input import complete_source
 
@@ -28,28 +28,20 @@ class ReportPublicationReader:
         commit_id = self.repository.commit_for_path(manifest_path)
         files = {name: self.repository.read_file(publication_path(publication_id, name), commit_id)
                  for name in PUBLICATION_FILES}
-        manifest_bytes = files['manifest.json']
-        manifest_hash = bytes_hash(manifest_bytes)
-        manifest = manifest_from_mapping(read_json(manifest_bytes))
-        if manifest.publication_id != publication_id or canonical_bytes(manifest) != manifest_bytes:
-            raise ReportError('REPORT_ARTIFACT_INVALID')
-        if actor_subject is not None and manifest.finalized_by != actor_subject:
-            raise ReportError('REPORT_ARTIFACT_INVALID')
-        if publication_id_for(manifest.draft_id, manifest.draft_revision, manifest.purpose) != publication_id:
-            raise ReportError('REPORT_ARTIFACT_INVALID')
-        for name, data in files.items():
-            if name in MANIFEST_HASHED_FILES and bytes_hash(data) != manifest.file_hashes[name]:
-                raise ReportError('REPORT_ARTIFACT_INVALID')
-        self._verify_snapshot(manifest, files['snapshot.json'])
-        self._verify_template(manifest, files['template.json'])
-        self._verify_edits(manifest, files['edits.json'])
+        manifest, manifest_hash = validate_publication_files(publication_id, files, self._context(), actor_subject)
         return ReportPublication(manifest, manifest_hash, commit_id, self.repository.checkout_state(commit_id))
 
     def read_public_artifact(self, publication_id: str, format: str, actor_subject: str | None = None) -> bytes:
-        if format not in PUBLIC_ARTIFACTS:
+        if format in PUBLIC_ARTIFACTS:
+            name = PUBLIC_ARTIFACTS[format]
+            publication = self.get(publication_id, actor_subject)
+            return self.repository.read_file(publication_path(publication_id, name), publication.commit_id)
+        if format not in PUBLICATION_FILES:
             raise ReportError('REPORT_INVALID')
         publication = self.get(publication_id, actor_subject)
-        name = PUBLIC_ARTIFACTS[format]
+        if publication.manifest.schema_version != 2:
+            raise ReportError('REPORT_INVALID')
+        name = format
         return self.repository.read_file(publication_path(publication_id, name), publication.commit_id)
 
     def snapshot(self, publication_id: str):
@@ -68,31 +60,13 @@ class ReportPublicationReader:
                 publications.append(self.get(publication_id))
         return tuple(sorted(publications, key=lambda item: (item.manifest.finalized_at, item.manifest.publication_id)))
 
-    def _verify_snapshot(self, manifest, data):
-        snapshot = snapshot_from_mapping(read_json(data))
-        if (canonical_bytes(snapshot) != data or bytes_hash(data) != manifest.snapshot_hash
-                or snapshot.project_id != self.repository.project.id or snapshot.stage_id != self.repository.stage.id
-                or snapshot.owner_subject != self.repository.owner_subject
-                or snapshot.rule_hash != self.repository.stage.definition_hash
-                or snapshot.source_as_of != manifest.source_as_of
-                or snapshot.baseline_publication_id != manifest.baseline_publication_id):
-            raise ReportError('REPORT_ARTIFACT_INVALID')
-
-    def _verify_template(self, manifest, data):
-        value = read_json(data)
-        if set(value.keys()) != {'selection', 'definition'}:
-            raise ReportError('REPORT_ARTIFACT_INVALID')
-        definition = template_definition_from_mapping(value['definition'])
-        if definition.template_hash != manifest.template_hash:
-            raise ReportError('REPORT_ARTIFACT_INVALID')
-
-    def _verify_edits(self, manifest, data):
-        value = read_json(data)
-        if (not isinstance(value, dict) or value.get('schema_version') != 1
-                or value.get('draft_id') != manifest.draft_id
-                or value.get('selected_revision') != manifest.draft_revision
-                or value.get('selected_revision_hash') != manifest.draft_revision_hash):
-            raise ReportError('REPORT_ARTIFACT_INVALID')
+    def _context(self):
+        return PublicationValidationContext(
+            self.repository.project.id,
+            self.repository.stage.id,
+            self.repository.owner_subject,
+            self.repository.stage.definition_hash,
+        )
 
 
 class ReportPublicationResolver:

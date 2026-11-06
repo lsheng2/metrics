@@ -1,11 +1,11 @@
 from dataclasses import replace
 from datetime import UTC, datetime
 
-from project_management.app.domain.capture_values import canonical_bytes
-from project_management.app.domain.capture_values import decode_json
+from project_management.app.domain.capture_values import canonical_bytes, decode_json
 from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.contracts import ProjectError
 from project_management.app.domain.report_contracts import ReportError
+from project_management.app.domain.report_authoring import AUTHORING_SCHEMA
 from project_management.app.domain.report_draft_values import (
     ReportFinalizationStatus,
     ReportArchiveTarget,
@@ -19,17 +19,27 @@ from project_management.app.domain.report_draft_values import (
 from project_management.app.domain.report_edits import validate_edit_targets
 from project_management.app.domain.report_presentation import ReportEdit, TemplateSelection
 from project_management.services.report_draft_listing import ReportDraftListingMixin
+from project_management.services.report_authoring_drafts import ReportAuthoringDraftMixin
 from project_management.storage.report_drafts import ReportDraftStore
 from project_management.services.report_publication import ReportPublicationMixin
+from project_management.services.report_prepared_context_reader import PreparedContextReader
+from project_management.services.report_templates import ReportTemplateService
+from project_management.services.report_draft_rendering import is_pinned_document, render_edits
+from project_management.services.report_linked_revision_drafts import ReportLinkedRevisionDraftMixin
+from project_management.services.report_period_view_drafts import ReportPeriodViewDraftMixin
 
 
-class ReportDraftService(ReportPublicationMixin, ReportDraftListingMixin):
-    def __init__(self, archive, source_reader, renderer, *, limits=None, clock=None):
+class ReportDraftService(ReportLinkedRevisionDraftMixin, ReportPeriodViewDraftMixin, ReportAuthoringDraftMixin, ReportPublicationMixin, ReportDraftListingMixin):
+    def __init__(self, archive, source_reader, renderer, *, limits=None, clock=None,
+                 reference_verifier=None, template_service=None, prepared_context_reader=None):
         self.archive = archive
         self.source_reader = source_reader
         self.renderer = renderer
         self.limits = self._limits(limits)
         self.clock = clock or (lambda: datetime.now(UTC))
+        self.reference_verifier = reference_verifier
+        self.template_service = template_service or ReportTemplateService()
+        self.prepared_context_reader = prepared_context_reader or PreparedContextReader(archive, self.template_service)
 
     def create(self, actor, project_id, stage_id, *, command_id, selection, template):
         command_id = self._uuid(command_id)
@@ -127,6 +137,8 @@ class ReportDraftService(ReportPublicationMixin, ReportDraftListingMixin):
                 current = store.read_draft(draft_id)
                 if current.state != 'draft':
                     raise ReportError('REPORT_FINALIZING' if current.state == 'finalizing' else 'REPORT_FINALIZED')
+                if current.authoring_schema == AUTHORING_SCHEMA:
+                    raise ReportError('REPORT_TEMPLATE_UNSUPPORTED')
                 if current.revision != expected_revision:
                     raise ReportError('REPORT_REVISION_CONFLICT')
                 if store.revision_count(draft_id) >= self.limits.max_revisions:
@@ -163,9 +175,15 @@ class ReportDraftService(ReportPublicationMixin, ReportDraftListingMixin):
                 store = self._store(repository)
                 draft = store.read_draft(draft_id, revision=revision)
                 state = self._render_state(store, draft_id, draft)
+            if is_pinned_document(draft):
+                return self.renderer.render_pinned(
+                    draft.snapshot, draft.template_snapshot, render_edits(draft),
+                    authoring_context=draft.authoring_context, draft_id=draft.draft_id,
+                    revision=draft.revision, revision_hash=draft.revision_hash, edition_state=state,
+                )
             if self.renderer.template_definition(draft.template) != draft.template_definition:
                 raise ReportError('REPORT_TEMPLATE_UNSUPPORTED')
-            return self.renderer.render(draft.snapshot, draft.template, draft.edits,
+            return self.renderer.render(draft.snapshot, draft.template, render_edits(draft),
                                         draft_id=draft.draft_id, revision=draft.revision,
                                         revision_hash=draft.revision_hash, edition_state=state)
         except (ArchiveError, ProjectError) as error:

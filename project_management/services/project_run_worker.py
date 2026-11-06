@@ -10,13 +10,19 @@ from project_management.app.domain.run_contracts import ItemRunResult, RunError
 from project_management.app.domain.run_values import draft_command_id, parse_instant
 from project_management.app.domain.summary_contracts import AnalysisError
 from project_management.app.domain.summary_input import complete_source
+from project_management.services.project_run_daily_worker import (
+    draft_daily,
+    is_daily_manual_request,
+    record_manual_items,
+)
 from project_management.services.project_runs import replace_item
 
 
 class ProjectRunWorker:
-    def __init__(self, run_service, *, monotonic=None):
+    def __init__(self, run_service, *, monotonic=None, daily_preparation_service=None):
         self.run_service = run_service
         self.monotonic = monotonic or time.monotonic
+        self.daily_preparation_service = daily_preparation_service
 
     def execute(self, actor, project_id, stage_id, operation_id):
         try:
@@ -26,15 +32,34 @@ class ProjectRunWorker:
                     return operation
                 if operation.cancel_requested:
                     return self._finish_canceled(actor, project_id, stage_id, operation, self._cancel_phase())
+                request = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)[0]
+                if getattr(request, 'target', None) is not None:
+                    if self.daily_preparation_service is None:
+                        raise ReportError('REPORT_INVALID')
+                    self.daily_preparation_service.validate_active_preparation(
+                        actor, project_id, stage_id, request.target,
+                    )
                 operation = self._claim_capture(actor, project_id, stage_id, operation)
                 receipt = self._capture(actor, project_id, stage_id, operation)
                 if not receipt.complete:
                     return self._partial(actor, project_id, stage_id, operation.operation_id,
                                          'RUN_CAPTURE_UNCERTAIN', operation.item_results)
                 manifest = self.run_service.archive.read_capture(actor, project_id, stage_id, operation.capture_id)
-                operation = self._transition(actor, project_id, stage_id, operation.operation_id,
-                                             lambda current: replace(current, state='analyzing',
-                                                                     revision=current.revision + 1))
+                if is_daily_manual_request(request):
+                    operation = self._claim_analysis_or_cancel(actor, project_id, stage_id, operation.operation_id)
+                    if operation.state in {'canceled', 'partial'}:
+                        return operation
+                    if operation.cancel_requested:
+                        return self._finish_canceled(actor, project_id, stage_id, operation, self._cancel_phase())
+                    operation = record_manual_items(self, actor, project_id, stage_id, operation, manifest)
+                    if operation.cancel_requested:
+                        return self._finish_canceled(actor, project_id, stage_id, operation, self._cancel_phase())
+                    return self._draft(actor, project_id, stage_id, operation)
+                operation = self._claim_analysis_or_cancel(actor, project_id, stage_id, operation.operation_id)
+                if operation.state in {'canceled', 'partial'}:
+                    return operation
+                if operation.cancel_requested:
+                    return self._finish_canceled(actor, project_id, stage_id, operation, self._cancel_phase())
                 operation = self._analyze(actor, project_id, stage_id, operation, manifest)
                 if operation.state in {'draft_ready', 'partial', 'canceled', 'failed'}:
                     return operation
@@ -52,6 +77,16 @@ class ProjectRunWorker:
         return self._transition(actor, project_id, stage_id, operation.operation_id,
                                 lambda current: replace(current, state='capturing',
                                                         revision=current.revision + 1))
+
+    def _claim_analysis_or_cancel(self, actor, project_id, stage_id, operation_id):
+        def update(current):
+            if current.state == 'cancel_requested':
+                return replace(current, state='canceled', revision=current.revision + 1, cancel_requested=True)
+            if current.cancel_requested:
+                return replace(current, state='cancel_requested', revision=current.revision + 1, cancel_requested=True)
+            return replace(current, state='analyzing', revision=current.revision + 1)
+
+        return self._transition(actor, project_id, stage_id, operation_id, update)
 
     def _capture(self, actor, project_id, stage_id, operation):
         try:
@@ -189,6 +224,8 @@ class ProjectRunWorker:
 
     def _draft(self, actor, project_id, stage_id, operation):
         request, _, _, _, _ = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)
+        if getattr(request, 'target', None) is not None:
+            return draft_daily(self, actor, project_id, stage_id, operation, request)
         selection = ReportSelection(operation.capture_id, None, None, 'standup', request.timezone)
         draft_command = draft_command_id(operation.operation_id)
         template = request.template

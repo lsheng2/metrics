@@ -45,6 +45,25 @@ class RunRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class DailyRunTarget:
+    preparation_id: str
+    preparation_intent_hash: str
+    draft_id: str
+    effective_selection_hash: str
+    source_mode: Literal['refresh']
+    analysis_mode: Literal['manual_only', 'changed_items']
+
+
+@dataclass(frozen=True, slots=True)
+class DailyRunRequest:
+    command_id: str
+    expected_stage_hash: str
+    template: TemplateSelection
+    timezone: str
+    target: DailyRunTarget
+
+
+@dataclass(frozen=True, slots=True)
 class ItemRunResult:
     source_key_hash: str
     state: str

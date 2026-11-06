@@ -15,10 +15,11 @@ ALLOWED_GROUP_BY = {'none', 'status', 'assignee'}
 ALLOWED_SORT_BY = {'key'}
 ALLOWED_OPTIONAL_COLUMNS = {'source_hash', 'summary_time'}
 REGISTERED_TEMPLATES = {
-    ('daily-standup', '1'): 'daily_standup.html',
-    ('weekly-timeline', '1'): 'weekly_timeline.html',
+    ('daily-standup', '1'): ('daily_standup.html', ('body.html',)),
+    ('weekly-timeline', '1'): ('weekly_timeline.html', ('body.html',)),
+    ('daily-standup', '2'): ('daily_standup_authored.html', ('body_authored.html',)),
+    ('weekly-timeline', '2'): ('weekly_timeline_authored.html', ('body_authored.html',)),
 }
-PARTIAL_TEMPLATES = ('body.html',)
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,10 +33,9 @@ class RegisteredTemplate:
 
 
 def load_default_registry() -> dict[tuple[str, str], RegisteredTemplate]:
-    dependencies = {filename: _read_template(filename) for filename in PARTIAL_TEMPLATES}
     return {
-        key: _load_registered_template(key[0], key[1], filename, dependencies)
-        for key, filename in REGISTERED_TEMPLATES.items()
+        key: _load_registered_template(key[0], key[1], filename, dependency_names)
+        for key, (filename, dependency_names) in REGISTERED_TEMPLATES.items()
     }
 
 
@@ -116,9 +116,10 @@ def _load_registered_template(
     template_id: str,
     version: str,
     filename: str,
-    dependencies: Mapping[str, str],
+    dependency_names,
 ) -> RegisteredTemplate:
     content = _read_template(filename)
+    dependencies = {name: _read_template(name) for name in dependency_names}
     return RegisteredTemplate(
         template_id=template_id,
         version=version,

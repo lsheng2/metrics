@@ -17,7 +17,7 @@ def validate_candidate(prepared, candidate):
     references = {}
     for row in source['evidence']:
         if (row['ref_id'] in references or row['source_hash'] != content_hash(row['value'])
-                or row['capture_id'] != prepared.target_capture_id):
+                or not _valid_evidence_identity(row, prepared.target_capture_id)):
             raise AnalysisError('ANALYSIS_EVIDENCE_INVALID')
         references[row['ref_id']] = row
     selected = _selected(candidate['evidence'], references)
@@ -36,6 +36,21 @@ def validate_candidate(prepared, candidate):
     local = decode_json(canonical_bytes(candidate))
     local['input_hash'] = prepared.input_hash
     return local
+
+
+def _valid_evidence_identity(row, target_capture_id):
+    if row['kind'] == 'field':
+        key, pointer = 'fields', '/fields'
+        if row['source_id'] != 'fields':
+            return False
+    else:
+        collection = {'comment': 'comments', 'history': 'history'}.get(row['kind'])
+        if collection is None:
+            return False
+        key = f"{row['kind']}:{row['source_id']}"
+        pointer = '/' + collection + '/' + row['source_id'].replace('~', '~0').replace('/', '~1')
+    expected = key if row['capture_id'] == target_capture_id else f"archived:{row['capture_id']}:{key}"
+    return row['ref_id'] == expected and row['json_pointer'] == pointer
 
 
 def _selected(ids, references):

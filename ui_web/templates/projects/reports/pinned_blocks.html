@@ -1,0 +1,145 @@
+{% load i18n %}
+{% for block in report_body.blocks %}
+    {% if block.kind == "content" %}
+        <div class="report-section-band" data-template-fixed-content>
+            <h3 class="title is-5">{% trans "Template content" %}</h3>
+            <div class="report-editor-surface" aria-readonly="true">
+                <div>{{ block.html|safe }}</div>
+                <p class="help">{% trans "Fixed template text is read only in this report." %}</p>
+            </div>
+        </div>
+    {% elif block.kind == "slot" %}
+        <div class="report-section-band" data-template-slot-id="{{ block.slot_id }}">
+            <h3 class="title is-5">
+                {{ block.label }}
+                {% if block.required %}<span class="tag is-warning is-light">{% trans "Required" %}</span>{% endif %}
+            </h3>
+            {% with region=block.region label=block.label %}
+                <div data-template-slot-id="{{ block.slot_id }}">
+                    {% include "projects/reports/editor_region.html" %}
+                </div>
+            {% endwith %}
+        </div>
+    {% elif block.kind == "data" %}
+        <div class="report-section-band" data-template-data-source="{{ block.source }}">
+            <h3 class="title is-5">{{ block.label }}</h3>
+            {% if block.matrix %}
+                <div class="buttons are-small">
+                    <button class="button is-small" type="button" data-continuity-add-persistent data-persistent-target="report">
+                        {% trans "Add report persistent" %}
+                    </button>
+                </div>
+                <div data-continuity-report-persistent-list></div>
+                <div class="table-container responsive-admin-table-box" data-continuity-matrix style="background:#ffffff; color:#1f2933;">
+                    <table class="table is-fullwidth is-narrow dashboard-dense-table" style="background:#ffffff; color:#1f2933;">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Issue" %}</th>
+                                {% for column in block.matrix.columns %}
+                                    <th>{{ column.label }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in block.matrix.rows %}
+                                <tr>
+                                    <th style="background:#f8fafc; color:#111827;">
+                                        <strong data-matrix-ticket-key style="color:#111827;">{{ row.current_key }}</strong>
+                                        <p class="help" style="color:#334155;">{{ row.title }}</p>
+                                        <div class="buttons are-small mt-2">
+                                            <button class="button is-small" type="button" data-continuity-add-persistent data-issue-ref-json="{{ row.issue_ref_json|escape }}">
+                                                {% trans "Add persistent" %}
+                                            </button>
+                                            {% if row.group_choices %}
+                                                <div class="select is-small">
+                                                    <select data-continuity-row-group data-original-group-id="{{ row.group_id }}" data-continuity-change="{{ row.group_move_base|escape }}">
+                                                        {% for group in row.group_choices %}
+                                                            <option value="{{ group.group_id }}" {% if row.group_id == group.group_id %}selected{% endif %}>{{ group.label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            {% endif %}
+                                            <button class="button is-small" type="button" data-continuity-command data-continuity-change="{{ row.move_up_json|escape }}">
+                                                {% trans "Move up" %}
+                                            </button>
+                                            {% if row.move_down_json %}
+                                                <button class="button is-small" type="button" data-continuity-command data-continuity-change="{{ row.move_down_json|escape }}">
+                                                    {% trans "Move down" %}
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                        <div data-continuity-persistent-list></div>
+                                        {% for persistent in row.persistent_notes %}
+                                            <div class="notification is-light mt-2" data-continuity-persistent-note-id="{{ persistent.note_id }}">
+                                                {% with region=persistent.region label="Persistent note" %}
+                                                    {% include "projects/reports/editor_region.html" %}
+                                                {% endwith %}
+                                                <label class="checkbox mt-2">
+                                                    <input type="checkbox" data-continuity-change data-continuity-value-field="carry_forward" data-continuity-payload="{{ persistent.carry_json|escape }}" {% if persistent.carry_forward %}checked{% endif %}>
+                                                    {% trans "Carry forward" %}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </th>
+                                    {% for cell in row.cells %}
+                                        <td style="background:#ffffff; color:#1f2933;">
+                                            {% for readonly in cell.readonly_notes %}
+                                                <div class="report-readonly-data notification is-light" data-matrix-readonly-note style="background:#f8fafc; color:#1f2933;">
+                                                    <p style="margin:0 0 6px 0; color:#111827;"><strong data-matrix-readonly-prefix style="color:#111827;">{{ readonly.prefix }}</strong></p>
+                                                    {{ readonly.html|safe }}
+                                                </div>
+                                            {% endfor %}
+                                            {% if cell.prefix %}<p style="margin:0 0 6px 0; color:#111827;"><strong data-matrix-source-prefix style="color:#111827;">{{ cell.prefix }}</strong></p>{% endif %}
+                                            {% for action in cell.actions %}
+                                                <div class="mt-2" data-matrix-action-body style="background:#f8fafc; color:#1f2933;">
+                                                    {% if action.region %}
+                                                        {% with region=action.region label="Action" %}
+                                                            {% include "projects/reports/editor_region.html" %}
+                                                        {% endwith %}
+                                                    {% else %}
+                                                        <div class="report-readonly-data">{{ action.body_html|safe }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                {% if action.region %}
+                                                    <details class="mt-2" data-continuity-action-control data-action-id="{{ action.action_id }}" data-expected-state="{{ action.state }}" data-evidence-refs="{{ action.evidence_json|escape }}">
+                                                        <summary data-matrix-action-label style="color:#111827;">{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</summary>
+                                                        <label class="checkbox"><input type="checkbox" data-continuity-action-done> {% trans "Mark done" %}</label>
+                                                        <div class="report-editor-surface mt-2" data-continuity-action-editor tabindex="0" aria-label="{% trans "Resolution" %}"></div>
+                                                        {% for evidence in action.evidence_refs %}
+                                                            <label class="checkbox mr-2"><input type="checkbox" data-continuity-evidence value="{{ evidence }}" checked> {{ evidence }}</label>
+                                                        {% endfor %}
+                                                    </details>
+                                                {% else %}
+                                                    <p data-matrix-action-label style="color:#111827;">{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</p>
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if cell.current_region %}
+                                                <div data-continuity-current-note-id="{{ cell.current_region.target.note_id }}">
+                                                    {% with region=cell.current_region label="Current day note" %}
+                                                        {% include "projects/reports/editor_region.html" %}
+                                                    {% endwith %}
+                                                </div>
+                                            {% elif not cell.readonly_notes and not cell.actions %}
+                                                <span class="tag is-light">{{ cell.display }}</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="help">{% trans "Only current-day note slots are editable." %}</p>
+            {% else %}
+            <div class="notification is-light">
+                {% if block.html %}
+                    <div class="report-readonly-data">{{ block.html|safe }}</div>
+                {% else %}
+                    {% for fact in block.facts %}<p>{{ fact }}</p>{% endfor %}
+                {% endif %}
+                <p class="help">{% trans "System data is read only." %}</p>
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endfor %}

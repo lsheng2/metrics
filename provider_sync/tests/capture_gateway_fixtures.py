@@ -72,12 +72,18 @@ class FixtureHttpAdapter(requests.adapters.HTTPAdapter):
         parsed = urlsplit(request.url)
         params = {key: values[0] for key, values in parse_qs(parsed.query).items()}
         self.requests.append((request.method, parsed.path, params))
-        status, value = self.responder(parsed.path, params)
+        response_value = self.responder(parsed.path, params)
+        if len(response_value) == 3:
+            status, value, headers = response_value
+        else:
+            status, value = response_value
+            headers = {}
         data = value if isinstance(value, bytes) else json.dumps(value, ensure_ascii=False).encode('utf-8')
         response = requests.Response()
         response.status_code = status
         response.headers['Content-Type'] = 'application/json'
         response.headers['Content-Length'] = str(len(data))
+        response.headers.update(headers)
         response.raw = HTTPResponse(body=io.BytesIO(data), preload_content=False)
         response.url = request.url
         response.request = request

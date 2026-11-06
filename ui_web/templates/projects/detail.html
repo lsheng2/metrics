@@ -30,6 +30,13 @@
     {% endif %}
 
     <section class="block">
+        <a class="button" href="{% url 'ui_web:report_templates' detail.project.id %}">
+            <span class="icon is-small"><i class="iconoir-list"></i></span>
+            <span>{% trans "Report templates" %}</span>
+        </a>
+    </section>
+
+    <section class="block">
         <h3 class="title is-5">{% trans "Stages" %}</h3>
         <div class="table-container responsive-admin-table-box">
             <table class="table is-fullwidth is-narrow dashboard-dense-table">

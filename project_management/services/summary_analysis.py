@@ -35,6 +35,7 @@ class SummaryAnalysisService:
         try:
             dispatch = await asyncio.to_thread(self.archive.claim_analysis_dispatch, *arguments,
                                                cancel_requested=cancel_requested)
+            operation = 'submit' if dispatch else 'observe'
             async with self.client_factory(backend) as client:
                 snapshot = await self._network(
                     attempt, lambda: client.submit(attempt.request) if dispatch else client.get_by_client_key(
@@ -45,6 +46,7 @@ class SummaryAnalysisService:
                 await asyncio.to_thread(self.archive.record_analysis_observation, *arguments, {'snapshot': snapshot})
                 if snapshot['state'] != 'succeeded':
                     return AnalysisStep(snapshot['state'], attempt_id)
+                operation = 'result'
                 result = await self._network(attempt, lambda: client.get_result(backend.scope_key, snapshot['runId']))
                 self.contract.validate_result(attempt, snapshot, result)
                 accepted = await asyncio.to_thread(self.archive.accept_analysis, *arguments,
@@ -63,8 +65,8 @@ class SummaryAnalysisService:
             if recovery not in {'correct_request', 'query_by_client_key', 'stop', 'poll', 'query_run'}:
                 recovery = 'query_by_client_key'
             status = error.status if isinstance(error, TaskRunClientError) else None
-            state = 'rejected' if recovery == 'correct_request' and status in {400, 413, 422} else 'unknown'
-            observation = {'state': state, 'code': code, 'recovery': recovery, 'status': status}
+            state = 'rejected' if operation == 'submit' and recovery == 'correct_request' and status in {400, 413, 422} else 'unknown'
+            observation = {'state': state, 'code': code, 'recovery': recovery, 'status': status, 'operation': operation}
             await asyncio.to_thread(self.archive.record_analysis_observation, *arguments, observation)
             return AnalysisStep(state, attempt_id, error_code=code)
 

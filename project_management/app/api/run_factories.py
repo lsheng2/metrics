@@ -3,11 +3,12 @@ from django.conf import settings
 import httpx
 
 from project_management.app.api.factories import build_capture_archive_service, build_project_api
-from project_management.app.api.report_factories import build_report_service
+from project_management.app.api.report_factories import build_report_preparation_for_run, build_report_service
 from project_management.app.domain.run_contracts import RunError, RunPolicy
 from project_management.app.domain.summary_contracts import AiBackendTarget
 from project_management.runtime import ProjectRunRuntime
 from project_management.services.project_runs import ProjectRunService
+from project_management.services.project_run_worker import ProjectRunWorker
 from provider_sync.app.api.access_factory import capture_limits_from_settings
 
 
@@ -34,6 +35,12 @@ def build_project_runtime():
         runtime = factory()
         if not isinstance(runtime, ProjectRunRuntime):
             raise RunError('RUN_INVALID')
+        if isinstance(runtime.worker, ProjectRunWorker):
+            preparation = runtime.worker.daily_preparation_service
+            if preparation is None:
+                runtime.worker.daily_preparation_service = build_report_preparation_for_run(runtime.run_service)
+            elif preparation.run_service is not runtime.run_service:
+                raise RunError('RUN_INVALID')
         return runtime
     raise RunError('RUN_UNAVAILABLE')
 

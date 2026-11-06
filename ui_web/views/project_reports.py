@@ -10,6 +10,8 @@ from project_management.app.api import ProjectError
 from project_management.app.api import reports as report_api
 from ui_web.facades.project_reports import default_report_facade
 from ui_web.project_access import ProjectAccessError, private_no_store
+from ui_web.report_authoring_forms import ReportAuthoredSaveForm
+from ui_web.report_authoring_responses import authored_json_error, report_status, wants_json
 from ui_web.report_forms import (
     ReportCreateForm,
     ReportDownloadQueryForm,
@@ -72,6 +74,11 @@ class ReportAccessMixin(ProjectAccessMixin):
             'stage_id': stage_id,
             'draft_id': draft_id,
         }) + f"?revision={context['draft'].revision}"
+        context['completion_url'] = reverse('ui_web:report_draft_completion', kwargs={
+            'project_id': project_id,
+            'stage_id': stage_id,
+            'draft_id': draft_id,
+        })
         return context
 
 
@@ -105,6 +112,7 @@ class ReportDraftCreateView(ReportAccessMixin, View):
             context = self.report_context(request, actor, project_id, stage_id, capture_after=capture_after)
             self._reject_unknown_post(request, ReportCreateForm.base_fields)
             form = facade.create_form(context['captures'], context['publication_choices'], request.POST,
+                                      user_template_choices=context.get('user_template_choices', ()),
                                       require_capture_selection=bool(context.get('capture_next_cursor')))
             if not form.is_valid():
                 context['create_form'] = form
@@ -130,28 +138,62 @@ class ReportDraftEditView(ReportAccessMixin, View):
 
 class ReportDraftSaveView(ReportAccessMixin, View):
     def post(self, request, project_id, stage_id, draft_id):
+        form = None
         try:
             actor = self.actor(request)
             facade = self.facade_factory()
             draft = facade.get_draft(actor, str(project_id), str(stage_id), str(draft_id))
             target_choices = target_choices_for_snapshot(draft.snapshot)
-            self._reject_unknown_post(request)
+            self._reject_unknown_post(request, authored=request.POST.get('payload_version') == '2')
             form = facade.save_form(draft, target_choices, request.POST)
             if not form.is_valid():
+                if wants_json(request):
+                    return authored_json_error(
+                        report_api.ReportError('REPORT_INVALID'),
+                        form=form,
+                        draft=draft,
+                    )
                 context = self.draft_context(request, actor, project_id, stage_id, draft_id, save_form=form)
                 return self.render_private(request, 'projects/reports/editor.html', context, status=400)
             saved = facade.save_draft(actor, str(project_id), str(stage_id), str(draft_id), form)
+            if isinstance(form, ReportAuthoredSaveForm) or wants_json(request):
+                return private_no_store(JsonResponse({
+                    'state': 'saved',
+                    'draft_id': saved.draft_id,
+                    'revision': saved.revision,
+                    'revision_hash': saved.revision_hash,
+                    'snapshot_hash': saved.snapshot_hash,
+                    'template_hash': saved.template_definition.template_hash,
+                    'clipboard_url': reverse('ui_web:report_draft_clipboard', kwargs={
+                        'project_id': project_id,
+                        'stage_id': stage_id,
+                        'draft_id': saved.draft_id,
+                    }) + f"?revision={saved.revision}",
+                    'redirect_url': reverse('ui_web:report_draft_edit', kwargs={
+                        'project_id': project_id,
+                        'stage_id': stage_id,
+                        'draft_id': saved.draft_id,
+                    }),
+                }))
             return redirect('ui_web:report_draft_edit', project_id=project_id, stage_id=stage_id, draft_id=saved.draft_id)
         except (ProjectAccessError, ProjectError, report_api.ReportError) as error:
+            if request.POST.get('payload_version') == '2' or wants_json(request):
+                return authored_json_error(error, form=form)
             return self.error_response(request, error)
 
-    def _reject_unknown_post(self, request):
-        reject_unexpected_keys(
-            request.POST,
-            set(ReportSaveForm.base_fields),
-            allow=STRICT_POST_EXEMPT,
-            multi_keys={'edit_id', 'edit_kind', 'edit_target', 'edit_text', 'edit_operation'},
-        )
+    def _reject_unknown_post(self, request, *, authored):
+        if authored:
+            reject_unexpected_keys(request.POST, {
+                'payload_version', 'command_id', 'expected_revision', 'expected_revision_hash',
+                'authored_edits', 'continuity_changes',
+            }, allow=STRICT_POST_EXEMPT)
+        else:
+            reject_unexpected_keys(
+                request.POST,
+                set(ReportSaveForm.base_fields),
+                allow=STRICT_POST_EXEMPT,
+                multi_keys={'edit_id', 'edit_kind', 'edit_target', 'edit_text', 'edit_operation'},
+            )
 
 
 class ReportDraftRenderView(ReportAccessMixin, View):
@@ -161,7 +203,9 @@ class ReportDraftRenderView(ReportAccessMixin, View):
             revision = clean_revision(request.GET)
             rendered = self.facade_factory().render(actor, str(project_id), str(stage_id), str(draft_id), revision)
             response = HttpResponse(rendered.html_document, content_type='text/html; charset=utf-8')
-            return artifact_headers(response, inline=False)
+            response = artifact_headers(response, inline=False)
+            response['X-Frame-Options'] = 'SAMEORIGIN'
+            return response
         except (ProjectAccessError, ProjectError, report_api.ReportError) as error:
             return self.error_response(request, error)
 
@@ -222,6 +266,10 @@ class ReportDraftFinalizeView(ReportAccessMixin, View):
             return redirect('ui_web:report_publication', project_id=project_id, stage_id=stage_id,
                             publication_id=publication.manifest.publication_id)
         except (ProjectAccessError, ProjectError, report_api.ReportError) as error:
+            if getattr(error, 'code', '') == 'REPORT_REQUIRED_SLOT_EMPTY':
+                context = self.draft_context(request, actor, project_id, stage_id, draft_id)
+                context['required_slot_error'] = report_error_ui_message(error)
+                return self.render_private(request, 'projects/reports/editor.html', context, status=422)
             return self.error_response(request, error)
 
 
@@ -329,17 +377,6 @@ def safe_report_filename(prefix, identifier, revision, format_name):
     return PurePath(name).name.replace('"', '')
 
 
-def report_status(error):
-    if error.code == 'REPORT_NOT_FOUND':
-        return 404
-    if error.code in {'REPORT_REVISION_CONFLICT', 'REPORT_SOURCE_CHANGED', 'REPORT_COMPARISON_UNAVAILABLE',
-                      'REPORT_FINALIZING', 'REPORT_FINALIZED'}:
-        return 409
-    if error.code == 'REPORT_LIMIT':
-        return 413
-    return 400
-
-
 def report_error_ui_message(error):
     return {
         'REPORT_INVALID': _('Report request is invalid.'),
@@ -352,4 +389,5 @@ def report_error_ui_message(error):
         'REPORT_FINALIZED': _('Report is already finalized.'),
         'REPORT_LIMIT': _('Report is over the configured limit.'),
         'REPORT_ARTIFACT_INVALID': _('Report artifact is invalid.'),
+        'REPORT_REQUIRED_SLOT_EMPTY': _('Fill all required template slots before finalizing.'),
     }.get(error.code, _('Report request failed.'))

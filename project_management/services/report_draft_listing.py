@@ -101,6 +101,7 @@ class ReportDraftListingMixin:
             draft.state,
             draft.template.template_id,
             draft.parent_publication_id,
+            draft.preservation_review_issues,
         )
 
     def _validate_page(self, limit, offset):

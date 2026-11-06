@@ -1,9 +1,12 @@
 import json
 from typing import Mapping
 
+from django.utils.safestring import mark_safe
+
 from project_management.app.domain.capture_values import json_value
 from project_management.app.domain.report_contracts import ReportSourceSnapshot
 from project_management.app.domain.report_edits import source_key_hash
+from project_management.reporting.fragment_renderers import rich_fragment_to_html, rich_fragment_to_plain_text
 from project_management.reporting.timeline import build_timeline, validate_days
 from project_management.reporting.validation import require_safe_https_url
 
@@ -137,13 +140,15 @@ def _value_with_override(original: str, edit, *, human_owner: bool = False):
     if edit is None:
         return {
             'text': original or 'Unavailable',
+            'html': original or 'Unavailable',
             'edited': False,
             'original': '',
             'provenance': '',
             'human_owner': False,
         }
     return {
-        'text': edit.text,
+        'text': _edit_text(edit),
+        'html': _edit_html(edit),
         'edited': True,
         'original': original,
         'provenance': _provenance(edit),
@@ -164,7 +169,7 @@ def _edit_state(edits):
 
 
 def _add_note(state, scope, target, edit):
-    note = {'text': edit.text, 'provenance': _provenance(edit)}
+    note = {'text': _edit_text(edit), 'html': _edit_html(edit), 'provenance': _provenance(edit)}
     if scope == 'report':
         state['report_notes'].append(note)
     if scope == 'issue':
@@ -255,7 +260,7 @@ def _coverage_summary(value):
 def _source_url(value):
     if value is None:
         return None
-    return require_safe_https_url(value)
+    return require_safe_https_url(value, allow_query_fragment=False)
 
 
 def _display(value, unknown='Unknown') -> str:
@@ -303,6 +308,18 @@ def _provenance(edit):
     if edit.author:
         return f'Edited by {edit.author}'
     return 'Edited'
+
+
+def _edit_text(edit):
+    if hasattr(edit, 'fragment'):
+        return rich_fragment_to_plain_text(edit.fragment)
+    return edit.text
+
+
+def _edit_html(edit):
+    if hasattr(edit, 'fragment'):
+        return mark_safe(rich_fragment_to_html(edit.fragment))
+    return edit.text
 
 
 def _owner_display(action: Mapping) -> str:

@@ -7,8 +7,11 @@ from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.summary_contracts import (
     AcceptedSummary, AnalysisAttempt, AnalysisError, AnalysisPreparation,
 )
-from project_management.app.domain.summary_input import build_initial_input, unchanged_since
+from project_management.app.domain.summary_attempts import attempt_blocks_new_input
+from project_management.app.domain.summary_delta import build_analysis_input
+from project_management.app.domain.summary_input import unchanged_since
 from project_management.services.summary_journal_reads import SummaryJournalReads, complete_source, validate_backend
+from project_management.services.summary_material import verified_accepted_material
 from project_management.storage.admission import admit, finalize_growth
 
 
@@ -31,19 +34,17 @@ class SummaryJournal(SummaryJournalReads):
         validate_backend(backend, project_id, stage_id)
         with self._analysis_repository(actor, project_id, stage_id) as repository:
             chain, snapshots = self._analysis_source(repository, source_key)
-            accepted, _ = self._analysis_accepted(repository, source_key)
+            material = verified_accepted_material(self, repository, source_key, contract, chain, snapshots)
+            accepted = material[-1].summary if material else None
             if accepted is not None:
                 if (accepted.profile_definition_hash == contract.definition_hash
                         and unchanged_since(accepted.target_capture_id, accepted.source_hash, chain)):
                     start = next(index for index, row in enumerate(chain) if row.capture_id == accepted.target_capture_id)
                     if all(complete_source(snapshot) for snapshot in snapshots[start:]):
                         return AnalysisPreparation('no_work', accepted=accepted)
-                raise AnalysisError('ANALYSIS_DELTA_REQUIRED')
-            if len(chain) != 1:
-                raise AnalysisError('ANALYSIS_DELTA_REQUIRED')
             profile = contract.profile_ref
-            prepared = build_initial_input(project_id, repository.stage, source_key, chain[0], snapshots[0],
-                                           f"{profile['key']}@{profile['revision']}")
+            prepared = build_analysis_input(project_id, repository.stage, source_key, chain, snapshots,
+                                            f"{profile['key']}@{profile['revision']}", accepted)
             contract.validate_input(decode_json(prepared.input_content.encode('utf-8')))
             attempt_id = str(uuid.uuid5(uuid.UUID(stage_id), prepared.input_hash))
             intent_path = f'analysis_attempts/{attempt_id}/intent.json'
@@ -53,7 +54,7 @@ class SummaryJournal(SummaryJournalReads):
                     raise AnalysisError('ANALYSIS_BACKEND_MISMATCH')
                 return AnalysisPreparation('ready', existing)
             self._cancel_if_requested(cancel_requested)
-            self._require_no_pending_analysis(repository, source_key)
+            self._require_no_pending_analysis(repository, source_key, contract, material, chain[-1].capture_id)
             self._analysis_deadline(deadline_at)
             request = {
                 'clientRunKey': attempt_id, 'scopeKey': backend.scope_key, 'profile': contract.profile_ref,
@@ -128,18 +129,19 @@ class SummaryJournal(SummaryJournalReads):
             if not attempt.dispatched:
                 raise AnalysisError('ANALYSIS_INVALID')
             candidate = contract.validate_result(attempt, snapshot, result)
-            existing, record = self._analysis_accepted(repository, attempt.source_key)
-            if existing is not None and record['attempt_id'] == attempt_id:
-                if existing.run_result != result:
-                    raise AnalysisError('ANALYSIS_RESULT_INVALID')
-                return existing
+            for accepted, record in self._analysis_accepted_history(repository, attempt.source_key):
+                if record['attempt_id'] == attempt_id:
+                    if accepted.run_result != result or canonical_bytes(accepted.candidate) != canonical_bytes(candidate):
+                        raise AnalysisError('ANALYSIS_RESULT_INVALID')
+                    chain = tuple(self._source_chain(repository, attempt.source_key, repository.head()))
+                    material = verified_accepted_material(
+                        self, repository, attempt.source_key, contract, chain, through_revision=accepted.revision,
+                    )
+                    return material[-1].summary
             if attempt.cancel_requested:
                 raise AnalysisError('ANALYSIS_CANCELED')
             self._cancel_if_requested(cancel_requested)
             self._analysis_deadline(datetime.fromisoformat(attempt.request['deadlineAt']))
-            if (attempt.prepared.expected_revision != (existing.revision if existing else 0)
-                    or attempt.prepared.base_summary_id != (existing.summary_id if existing else None)):
-                raise AnalysisError('ANALYSIS_ACCEPTANCE_CONFLICT')
             try:
                 chain, sources = self._analysis_source(repository, attempt.source_key)
             except AnalysisError:
@@ -148,12 +150,17 @@ class SummaryJournal(SummaryJournalReads):
             if (target.capture_id != attempt.prepared.target_capture_id
                     or target.source_hash != attempt.prepared.source_hash):
                 raise AnalysisError('ANALYSIS_ACCEPTANCE_CONFLICT')
-            profile = contract.profile_ref
-            rebuilt = build_initial_input(project_id, repository.stage, attempt.source_key, target, sources[-1],
-                                          f"{profile['key']}@{profile['revision']}")
-            if rebuilt.input_hash != attempt.prepared.input_hash:
+            material = verified_accepted_material(self, repository, attempt.source_key, contract, chain, sources)
+            existing = material[-1].summary if material else None
+            if (attempt.prepared.expected_revision != (existing.revision if existing else 0)
+                    or attempt.prepared.base_summary_id != (existing.summary_id if existing else None)):
                 raise AnalysisError('ANALYSIS_ACCEPTANCE_CONFLICT')
-            accepted = AcceptedSummary(str(uuid.uuid5(uuid.UUID(attempt_id), 'accepted')), 1,
+            profile = contract.profile_ref
+            rebuilt = build_analysis_input(project_id, repository.stage, attempt.source_key, chain, sources,
+                                           f"{profile['key']}@{profile['revision']}", existing)
+            if rebuilt != attempt.prepared:
+                raise AnalysisError('ANALYSIS_ACCEPTANCE_CONFLICT')
+            accepted = AcceptedSummary(str(uuid.uuid5(uuid.UUID(attempt_id), 'accepted')), rebuilt.expected_revision + 1,
                                        target.capture_id, target.source_hash, contract.definition_hash,
                                        attempt.prepared.input_hash, candidate, decode_json(canonical_bytes(result)))
             key_hash = content_hash(attempt.source_key)
@@ -164,13 +171,16 @@ class SummaryJournal(SummaryJournalReads):
             self._commit_analysis_event(repository, record_id, 'accepted_summaries', path, envelope)
             return self._analysis_accepted(repository, attempt.source_key)[0]
 
-    def _require_no_pending_analysis(self, repository, source_key):
+    def _require_no_pending_analysis(self, repository, source_key, contract, material, target_capture_id):
+        accepted_ids = {item.attempt.attempt_id for item in material}
         for path in repository.list_files('analysis_attempts'):
             if path.endswith('/intent.json'):
                 attempt = self._analysis_attempt(repository, path.split('/')[1])
                 if attempt.source_key == source_key:
-                    accepted, record = self._analysis_accepted(repository, source_key)
-                    if accepted is None or record['attempt_id'] != attempt.attempt_id:
+                    observations = self._analysis_observations(repository, attempt.attempt_id)
+                    if attempt_blocks_new_input(attempt, observations, contract,
+                                                accepted_attempt_ids=accepted_ids,
+                                                target_capture_id=target_capture_id):
                         raise AnalysisError('ANALYSIS_ATTEMPT_PENDING')
 
     def _analysis_deadline(self, value):

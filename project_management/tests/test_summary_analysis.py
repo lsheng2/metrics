@@ -158,3 +158,19 @@ class TestSummaryAnalysis(SummaryScenario, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(('rejected', 'correct_request', 422, 1),
                          (result.state, self.journal.observations[-1]['recovery'],
                           self.journal.observations[-1]['status'], len(self.requests)))
+        self.assertEqual('submit', self.journal.observations[-1]['operation'])
+
+    async def test_shouldDistinguishResultReadFailureFromSubmitRejection(self):
+        def handler(request):
+            if request.url.path.endswith('/result'):
+                return httpx.Response(422, json={
+                    'contractVersion': 'task-run/1',
+                    'error': {'code': 'invalid_request', 'recovery': 'correct_request'},
+                })
+            snapshot, _ = self.responses(self.value)
+            return httpx.Response(200, json=snapshot)
+
+        service = self.service(handler)
+        await self.advance(service)
+        self.assertEqual('result', self.journal.observations[-1]['operation'])
+        self.assertIsNone(self.journal.accepted)

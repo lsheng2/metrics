@@ -79,7 +79,8 @@ class SummaryJournalReads:
             data['backend'] = AiBackendTarget(**data['backend'])
             attempt = AnalysisAttempt(**data)
             validate_backend(attempt.backend, repository.project.id, repository.stage.id)
-            if (attempt.attempt_id != attempt_id or envelope['attempt_id'] != attempt_id
+            if (type(attempt.prepared.expected_revision) is not int or attempt.prepared.expected_revision < 0
+                    or attempt.attempt_id != attempt_id or envelope['attempt_id'] != attempt_id
                     or attempt.project_id != repository.project.id or attempt.stage_id != repository.stage.id
                     or attempt.source_key != attempt.prepared.source_key
                     or str(uuid.uuid5(uuid.UUID(attempt.stage_id), attempt.prepared.input_hash)) != attempt_id
@@ -118,18 +119,34 @@ class SummaryJournalReads:
             raise AnalysisError('ANALYSIS_INVALID') from None
 
     def _analysis_accepted(self, repository, source_key):
-        source_hash = content_hash(source_key)
-        paths = sorted(repository.list_files(f'accepted_summaries/{source_hash}'))
+        paths = self._analysis_accepted_paths(repository, source_key)
         if not paths:
             return None, None
+        return self._analysis_accepted_record(repository, source_key, paths[-1], len(paths))
+
+    def _analysis_accepted_history(self, repository, source_key):
+        paths = self._analysis_accepted_paths(repository, source_key)
+        return tuple(self._analysis_accepted_record(repository, source_key, path, index)
+                     for index, path in enumerate(paths, 1))
+
+    def _analysis_accepted_paths(self, repository, source_key):
+        source_hash = content_hash(source_key)
+        paths = sorted(repository.list_files(f'accepted_summaries/{source_hash}'))
+        if len(paths) > MAX_CHAIN:
+            raise AnalysisError('ANALYSIS_CHAIN_LIMIT')
         for index, path in enumerate(paths, 1):
             if path != f'accepted_summaries/{source_hash}/{index:08d}.json':
                 raise AnalysisError('ANALYSIS_INVALID')
-        value = self._analysis_envelope(repository, paths[-1], 'accepted')
+        return paths
+
+    def _analysis_accepted_record(self, repository, source_key, path, revision):
+        source_hash = content_hash(source_key)
+        value = self._analysis_envelope(repository, path, 'accepted')
         try:
             summary = AcceptedSummary(**value['payload']['summary'])
-            if (value.get('source_key_hash') != source_hash or value.get('revision') != len(paths)
-                    or summary.revision != len(paths)
+            if (value.get('source_key_hash') != source_hash or type(value.get('revision')) is not int
+                    or value['revision'] != revision or type(summary.revision) is not int
+                    or summary.revision != revision
                     or summary.candidate['binding']['project_id'] != repository.project.id
                     or summary.candidate['binding']['stage_id'] != repository.stage.id
                     or summary.candidate['input_hash'] != summary.input_hash):
@@ -152,6 +169,9 @@ class SummaryJournalReads:
     def read_analysis_observations(self, actor, project_id, stage_id, attempt_id):
         repository = self._read_repository(actor, project_id, stage_id)
         self._analysis_attempt(repository, attempt_id)
+        return self._analysis_observations(repository, attempt_id)
+
+    def _analysis_observations(self, repository, attempt_id):
         observations = []
         for path in self._analysis_observation_paths(repository, attempt_id):
             envelope = self._analysis_envelope(repository, path, 'observation')

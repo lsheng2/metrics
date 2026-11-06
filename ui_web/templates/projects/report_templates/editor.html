@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ editor.name }} - {% trans "Report template" %}{% endblock %}
+{% block page_title %}{% trans "Report template" %}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/report_editor.css' %}">
+<article class="block" data-report-editor data-template-builder data-archived="{{ template_archived|yesno:'true,false' }}" data-template-schema-version="{{ editor.document.schema_version }}"
+         data-message-mount-failed="{% trans "Template editor failed to mount. Reload before saving." %}"
+         data-message-not-ready-save="{% trans "Template editor is not ready to save." %}"
+         data-message-save-failed="{% trans "Template save failed." %}"
+         data-message-saved-dirty="{% trans "Saved. Unsaved local edits remain." %}"
+         data-message-unsaved-exit="{% trans "Unsaved template edits may be lost. Continue?" %}">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+            <li><a href="{% url 'ui_web:report_templates' detail.project.id %}">{% trans "Report templates" %}</a></li>
+            <li class="is-active"><a href="#" aria-current="page">{{ editor.name }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-4">{{ editor.name }}</h2>
+                <p class="subtitle is-6">
+                    {% trans "Revision" %} {{ template.revision }} <code>{{ template.revision_hash }}</code>
+                </p>
+            </div>
+        </div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+
+    {% if error_message %}
+        <div class="notification is-warning is-light" role="alert">{{ error_message }}</div>
+    {% endif %}
+    {% if save_form.non_field_errors %}
+        <div class="notification is-danger is-light" role="alert">{{ save_form.non_field_errors|join:", " }}</div>
+    {% endif %}
+    <div class="notification is-warning is-light is-hidden" data-template-dirty-banner role="status">{% trans "Unsaved template edits may be lost." %}</div>
+    <div class="notification is-light" data-template-status role="status">{% trans "Template editor is ready." %}</div>
+    <div class="notification is-light" role="status">
+        {% trans "Readiness" %}:
+        {% if template.readiness == "ready" %}<span class="tag is-success is-light">{% trans "Ready" %}</span>
+        {% else %}<span class="tag is-warning is-light">{% trans "Draft" %}</span>{% endif %}
+        {% for code in template.validation_codes %}<code>{{ code }}</code>{% endfor %}
+    </div>
+
+    <form method="post" action="{% url 'ui_web:report_template_save' detail.project.id template.template_id %}" class="dashboard-edit-form" data-template-save-form>
+        {% csrf_token %}
+        <fieldset {% if template_archived %}disabled aria-disabled="true"{% endif %}>
+        <input type="hidden" name="command_id" value="{{ save_form.command_id.value|default:'' }}">
+        <input type="hidden" name="expected_revision" value="{{ template.revision }}">
+        <input type="hidden" name="expected_revision_hash" value="{{ template.revision_hash }}">
+        <input type="hidden" name="document" value="{{ editor.document_json }}" data-template-document-field>
+        <input type="hidden" name="fill_policy" value="{{ editor.fill_policy_json }}" data-template-policy-field>
+
+        <div class="dashboard-form-grid">
+            <div class="dashboard-form-field">
+                <label class="label" for="template_name">{% trans "Name" %}</label>
+                <input class="input" id="template_name" name="name" value="{{ editor.name }}" maxlength="160" required data-template-name>
+            </div>
+            <div class="dashboard-form-field">
+                <label class="label" for="template_report_kind">{% trans "Report kind" %}</label>
+                <div class="select is-fullwidth">
+                    <select id="template_report_kind" data-template-report-kind>
+                        <option value="daily" {% if editor.document.report_kind == "daily" %}selected{% endif %}>{% trans "Independent daily" %}</option>
+                        <option value="weekly" {% if editor.document.report_kind == "weekly" %}selected{% endif %}>{% trans "Independent weekly" %}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-form-field">
+            <label class="label" for="template_daily_note_instructions">{% trans "Daily note instructions" %}</label>
+            <textarea class="textarea" id="template_daily_note_instructions" rows="2" data-template-daily-note-instructions>{{ editor.fill_policy.daily_note_instructions|default_if_none:'' }}</textarea>
+            <p class="help">{% trans "Applies to continuity meeting-matrix daily notes." %}</p>
+        </div>
+
+        {% include "projects/reports/editor_toolbar.html" %}
+
+        <div class="buttons are-small mt-3">
+            <button class="button" type="button" data-template-add="content">{% trans "Add content" %}</button>
+            <button class="button" type="button" data-template-add="slot">{% trans "Add slot" %}</button>
+            <button class="button" type="button" data-template-add="data">{% trans "Add data" %}</button>
+        </div>
+
+        <div class="block" data-template-rows>
+            {% for row in editor.rows %}
+                <article class="box" data-template-row data-block-id="{{ row.block_id }}" data-slot-id="{{ row.slot_id }}" data-kind="{{ row.kind }}">
+                    <div class="level is-mobile">
+                        <div class="level-left">
+                            <div class="select is-small">
+                                <select data-template-kind aria-label="{% trans "Block type" %}">
+                                    <option value="content" {% if row.kind == "content" %}selected{% endif %}>{% trans "Content" %}</option>
+                                    <option value="slot" {% if row.kind == "slot" %}selected{% endif %}>{% trans "Slot" %}</option>
+                                    <option value="data" {% if row.kind == "data" %}selected{% endif %}>{% trans "Data" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="level-right buttons are-small">
+                            <button class="button" type="button" data-template-row-command="up" aria-label="{% trans "Move up" %}">↑</button>
+                            <button class="button" type="button" data-template-row-command="down" aria-label="{% trans "Move down" %}">↓</button>
+                            <button class="button is-danger is-light" type="button" data-template-row-command="remove" aria-label="{% trans "Remove block" %}">{% trans "Remove" %}</button>
+                        </div>
+                    </div>
+                    <div data-template-rich-panel>
+                        <label class="label" data-template-rich-label data-content-text="{% trans "Content" %}" data-slot-text="{% trans "Initial slot content" %}">{% trans "Rich text" %}</label>
+                        <div class="report-editor-surface" data-template-editor-surface tabindex="0" aria-label="{% trans "Rich text" %}"></div>
+                    </div>
+                    <div data-template-panel="content">
+                        <p class="help">{% trans "This fixed content is read-only in reports." %}</p>
+                    </div>
+                    <div data-template-panel="slot">
+                        <div class="columns">
+                            <div class="column">
+                                <label class="label">{% trans "Slot label" %}</label>
+                                <input class="input" data-template-slot-label value="{{ row.label }}">
+                            </div>
+                            <div class="column is-narrow">
+                                <label class="checkbox mt-5"><input type="checkbox" data-template-slot-required {% if row.required %}checked{% endif %}> {% trans "Required" %}</label>
+                            </div>
+                            <div class="column">
+                                <label class="label">{% trans "Fill mode" %}</label>
+                                <div class="select is-fullwidth">
+                                    <select data-template-slot-fill-mode>
+                                        <option value="manual" {% if row.fill_mode == "manual" %}selected{% endif %}>{% trans "Manual" %}</option>
+                                        <option value="ai_optional" {% if row.fill_mode == "ai_optional" %}selected{% endif %}>{% trans "AI optional" %}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <label class="label mt-2">{% trans "Optional AI instructions" %}</label>
+                        <textarea class="textarea" data-template-slot-instruction rows="2">{{ row.instruction }}</textarea>
+                    </div>
+                    <div data-template-panel="data">
+                        <div class="columns">
+                            <div class="column">
+                                <label class="label">{% trans "Data source" %}</label>
+                                <div class="select is-fullwidth">
+                                    <select data-template-data-source>
+                                        {% for value, label in editor.data_sources %}
+                                            <option value="{{ value }}" {% if row.source == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="column">
+                                <label class="label">{% trans "Group by" %}</label>
+                                <div class="select is-fullwidth">
+                                    <select data-template-data-group>
+                                        {% for value, label in editor.group_choices %}
+                                            <option value="{{ value }}" {% if row.group_by == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="column is-narrow">
+                                <label class="checkbox mt-5"><input type="checkbox" value="summary_time" data-template-data-column {% if "summary_time" in row.optional_columns %}checked{% endif %}> {% trans "Summary time" %}</label>
+                                <label class="checkbox mt-5"><input type="checkbox" value="source_hash" data-template-data-column {% if "source_hash" in row.optional_columns %}checked{% endif %}> {% trans "Source hash" %}</label>
+                            </div>
+                        </div>
+                        <div data-template-matrix-panel>
+                            <label class="label">{% trans "Matrix groups" %}</label>
+                            <div class="select is-small">
+                                <select data-template-matrix-group-mode>
+                                    <option value="none" {% if row.matrix_group_mode == "none" %}selected{% endif %}>{% trans "No manual groups" %}</option>
+                                    <option value="manual" {% if row.matrix_group_mode == "manual" %}selected{% endif %}>{% trans "Manual groups" %}</option>
+                                </select>
+                            </div>
+                            <div data-template-matrix-groups>
+                                {% for group in row.matrix_groups %}
+                                    <div class="field has-addons mt-2" data-template-matrix-group data-group-id="{{ group.group_id }}">
+                                        <div class="control is-expanded"><input class="input is-small" data-template-matrix-group-label value="{{ group.label }}"></div>
+                                        <div class="control"><button class="button is-small" type="button" data-template-matrix-group-command="up">↑</button></div>
+                                        <div class="control"><button class="button is-small" type="button" data-template-matrix-group-command="down">↓</button></div>
+                                        <div class="control"><button class="button is-small is-danger is-light" type="button" data-template-matrix-group-command="remove">{% trans "Remove" %}</button></div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <button class="button is-small mt-2" type="button" data-template-matrix-group-add>{% trans "Add group" %}</button>
+                        </div>
+                    </div>
+                    {{ row.fragment|json_script:row.fragment_script_id }}
+                </article>
+            {% endfor %}
+        </div>
+
+        {% include "projects/report_templates/row_template.html" %}
+
+        <div class="buttons">
+            <button class="button is-primary" type="submit" data-template-save-button {% if template_archived %}disabled aria-disabled="true"{% endif %}>
+                <span class="icon is-small"><i class="iconoir-check"></i></span>
+                <span>{% trans "Save template version" %}</span>
+            </button>
+        </div>
+        </fieldset>
+    </form>
+
+    <div class="buttons mt-4">
+        <form method="post" action="{% url 'ui_web:report_template_archive' detail.project.id template.template_id %}">
+            {% csrf_token %}
+            {{ archive_form.command_id }}
+            {{ archive_form.expected_revision }}
+            {{ archive_form.expected_revision_hash }}
+            <label class="checkbox"><input type="checkbox" name="{{ archive_form.confirm.html_name }}" required> {% trans "Archive this template" %}</label>
+            <button class="button is-warning is-light" type="submit" {% if template_archived %}disabled aria-disabled="true"{% endif %}>{% trans "Archive" %}</button>
+        </form>
+        <form method="post" action="{% url 'ui_web:report_template_copy' detail.project.id template.template_id %}">
+            {% csrf_token %}
+            {{ copy_form.command_id }}
+            {{ copy_form.revision.as_hidden }}
+            {{ copy_form.name.as_hidden }}
+            <button class="button" type="submit">{% trans "Copy project structure" %}</button>
+        </form>
+    </div>
+</article>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/report_editor/vendor/milkdown.bundle.js' %}"></script>
+<script type="module" src="{% static 'js/report_editor/template_builder.js' %}"></script>
+{% endblock %}

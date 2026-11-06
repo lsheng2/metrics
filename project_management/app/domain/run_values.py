@@ -7,7 +7,13 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from project_management.app.domain.capture_values import canonical_bytes, content_hash, decode_json
 from project_management.app.domain.report_presentation import TemplateSelection
+from project_management.app.domain.run_daily_values import (
+    validate_daily_target,
+    validate_daily_template,
+)
+from project_management.app.domain.run_request_values import request_from_mapping, request_payload
 from project_management.app.domain.run_contracts import (
+    DailyRunRequest,
     ItemRunResult,
     RunError,
     RunOperation,
@@ -61,7 +67,14 @@ def validate_policy(policy: RunPolicy | None) -> RunPolicy:
     return policy
 
 
-def validate_request(request: RunRequest) -> RunRequest:
+def validate_request(request):
+    if isinstance(request, DailyRunRequest):
+        validate_uuid_text(request.command_id)
+        validate_hash_text(request.expected_stage_hash)
+        validate_daily_template(request.template)
+        validate_timezone(request.timezone)
+        validate_daily_target(request.target)
+        return request
     if not isinstance(request, RunRequest):
         raise RunError('RUN_INVALID')
     validate_uuid_text(request.command_id)
@@ -173,21 +186,6 @@ def item_result_from_mapping(value: Mapping) -> ItemRunResult:
     )
 
 
-def request_from_mapping(value: Mapping) -> RunRequest:
-    if set(value) != {'command_id', 'expected_stage_hash', 'template', 'timezone'}:
-        raise RunError('RUN_STORAGE_INVALID')
-    template = value['template']
-    if not isinstance(template, Mapping) or set(template) != {'template_id', 'version', 'options'}:
-        raise RunError('RUN_STORAGE_INVALID')
-    request = RunRequest(
-        validate_uuid_text(value['command_id']),
-        validate_hash_text(value['expected_stage_hash']),
-        TemplateSelection(text(template['template_id']), text(template['version']), mapping_value(template['options'])),
-        text(value['timezone'], 128),
-    )
-    return validate_request(request)
-
-
 def policy_from_mapping(value: Mapping) -> RunPolicy:
     if set(value) != {'timeout_seconds', 'max_analysis_items', 'max_observations_per_attempt', 'max_queued_operations'}:
         raise RunError('RUN_STORAGE_INVALID')
@@ -213,23 +211,6 @@ def backend_from_mapping(value: Mapping) -> AiBackendTarget:
         text(value['grant_revision'], 256),
         text(value['limit_policy_revision'], 256),
     )
-
-
-def request_payload(request: RunRequest):
-    return {
-        'command_id': request.command_id,
-        'expected_stage_hash': request.expected_stage_hash,
-        'template': template_payload(request.template),
-        'timezone': request.timezone,
-    }
-
-
-def template_payload(template: TemplateSelection):
-    return {
-        'template_id': template.template_id,
-        'version': template.version,
-        'options': template.options,
-    }
 
 
 def policy_payload(policy: RunPolicy):

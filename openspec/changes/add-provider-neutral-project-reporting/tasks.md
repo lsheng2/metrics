@@ -31,7 +31,16 @@ base and Dashboard keep separate canonical implementation ledgers.
 本阶段只发布文档/回执；产品与测试改动依赖既有未提交作者层，留待完整源码闭包提交。
 这不是clean-install、正式部署、完整工作周或整个topic完成。
 
-当前下一门禁为`W4.DELTA.PLAN.R`，未开始DELTA/ASSIST实现。DAILY.REPLAN对增量入口作amend：
+用户再次要求持续执行；2026-11-06 `W4.DELTA.CORE/R/REPLAN`完成限定资格。
+精确接口/证据/准入与分层验证见[delta-core.md](delta-core.md)，证据根
+`.tmp/dashboard-delta-20261105/`，基线`94a80de`。首次输入/接受兼容基线15 passed；
+共享合同32 tests、真实Git5 tests、最终真实SDK/loopback Base增量1 test通过。
+原生只执行1次合成分析，revision2可读取，无变化零新调用，服务正常退出。
+原结果重放/布尔版本/重复读取问题以直接反例修正，限定独立复审READY。
+既有作者层+增量源码闭包已完成候选校验与独立发布审查，按限定清单提交后进入ASSIST；
+不把完整W4/W5勾成完成。SOURCE依据见[authoring-source-closure.md](authoring-source-closure.md)：
+独立Git树1530收集、33实际tests、11 Node、Django及迁移一致性检查通过，13无关路径保留。
+DAILY.REPLAN对增量入口作amend：
 必须同时冻结输入、接受revision、报告读取及旧attempt准入；未知提交继续原key观察，
 不能因timeout重置key/deadline/预算。Git读取路径的实测延迟另行剖析，未声称性能已通过。
 `refreeze_actions=[{action:amend,reason:DELTA entry must classify prior accepted/terminal/unknown attempts}]`；
@@ -210,10 +219,11 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.AUTHOR.HISTORY Add effective rich-text daily history, source-status prefixes, stable row order and weekly carry-forward. Core/B1/B2 scoped synthetic qualification closed; daily trigger and whole-week JOIN remain separate.
 - [x] W6.AUTHOR.DAILY Add manual daily preparation, editorial baseline selection/CAS, pending-draft handling and same-day idempotency.
 - [x] W6.AUTHOR.DAILY.REPLAN Bind qualified manual DAILY evidence and the DELTA-first gate; preserve ASSIST profile/save boundaries and unaffected history.
-- [ ] W4.DELTA.PLAN.R Freeze the bounded cumulative-input/acceptance/reader contract and old-data compatibility before coding the changed-ticket slice.
-- [ ] W4.DELTA.CORE Implement and verify the same bounded analysis-input contract in prepare, acceptance and report reads; preserve failed-analysis cumulative changes and no-work reuse.
-- [ ] W4.DELTA.CORE.R Review the changed-source slice and applicable SDK/reader evidence; do not close full W4/W5 or live qualification.
-- [ ] W4.DELTA.CORE.REPLAN Refreeze ASSIST input/source and remaining full delta/import/capability work.
+- [x] W4.DELTA.PLAN.R Freeze the bounded cumulative-input/acceptance/reader contract and old-data compatibility before coding the changed-ticket slice.
+- [x] W4.DELTA.CORE Implement and verify the same bounded analysis-input contract in prepare, acceptance and report reads; preserve failed-analysis cumulative changes and no-work reuse.
+- [x] W4.DELTA.CORE.R Review the changed-source slice and applicable SDK/reader evidence; do not close full W4/W5 or live qualification.
+- [x] W4.DELTA.CORE.REPLAN Refreeze ASSIST input/source and remaining full delta/import/capability work.
+- [x] W6.AUTHOR.SOURCE Publish the complete verified authoring/DAILY/delta source closure, excluding unrelated Scope/config/style changes; verify a clean candidate can collect/import the required consumers.
 - [ ] W6.AUTHOR.ASSIST Add explicit AI candidates using a separately qualified authoring profile.
 - [ ] W6.AUTHOR.ASSIST.REPLAN Verify authoring-profile HTTP qualification and provenance consumers before the final week.
 - [ ] W6.AUTHOR.EXPORT.SAMPLE Qualify a representative rich-text/template/AR/history sample across declared export and clipboard boundaries before the week.
@@ -317,7 +327,8 @@ Validation Engineer只在VA有独立验证风险时派发，Debugger当前跳过
 | W4.DELTA.CORE | W4.DELTA.PLAN.R | accepted基线累积变化、失败不丢B/C、revision2可进入报告 |
 | W4.DELTA.CORE.R | W4.DELTA.CORE | 当前源码/fixture与变化源合成证据闭包复核 |
 | W4.DELTA.CORE.REPLAN | W4.DELTA.CORE.R | 固定ASSIST及原完整W4/W5的剩余能力，不宣称全部增量已完成 |
-| W6.AUTHOR.ASSIST | W4.DELTA.CORE.REPLAN + authoring profile前提 | task-run候选/审批/取消；无真实资格只做fake边界验证 |
+| W6.AUTHOR.SOURCE | W4.DELTA.CORE.REPLAN | 完整源码/依赖/测试资源闭包提交，不自动包含无关Scope/model/style改动 |
+| W6.AUTHOR.ASSIST | W6.AUTHOR.SOURCE + authoring profile前提 | task-run候选/审批/取消；无真实资格只做fake边界验证 |
 | W6.AUTHOR.ASSIST.REPLAN | W6.AUTHOR.ASSIST | profile合成HTTP及provenance链可达，整周输入/验收条件固定 |
 | W6.AUTHOR.EXPORT.SAMPLE | W6.AUTHOR.ASSIST.REPLAN | 一个代表性fragment/template/AR样本的导出和复制边界 |
 | W6.AUTHOR.JOIN | W6.AUTHOR.ASSIST.REPLAN + W6.AUTHOR.EXPORT.SAMPLE | 同候选app/editor/storage/已安装SDK联合验证 |

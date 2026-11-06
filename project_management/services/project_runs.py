@@ -50,8 +50,9 @@ class ProjectRunService:
     def submit(self, actor, project_id, stage_id, request):
         try:
             request = validate_request(request)
-            template = normalize_template(self.draft_service.renderer, request.template)
-            request = normalized_request(request, template)
+            if getattr(request, 'target', None) is None:
+                template = normalize_template(self.draft_service.renderer, request.template)
+                request = normalized_request(request, template)
             request_hash_value = request_hash(request)
             op_id = operation_id(stage_id, request.command_id)
             replay = self._submit_replay(actor, project_id, stage_id, op_id, request_hash_value)
@@ -76,7 +77,7 @@ class ProjectRunService:
                 if operation.state in NONTERMINAL_STATES:
                     self._notify(actor, project_id, stage_id, operation.operation_id)
                 return operation
-            backend = self.backend_resolver(actor, project_id, stage_id)
+            backend = self._backend_for_request(actor, project_id, stage_id, request)
             created_at = utc_instant_millis(self.clock())
             policy = self.policy
             op_id = operation_id(stage.id, request.command_id)
@@ -230,6 +231,12 @@ class ProjectRunService:
             operation.operation_id,
         )
         return CaptureLimits(**values)
+
+    def _backend_for_request(self, actor, project_id, stage_id, request):
+        target = getattr(request, 'target', None)
+        if target is not None and target.analysis_mode == 'manual_only':
+            return None
+        return self.backend_resolver(actor, project_id, stage_id)
 
     def _record_analysis_cancel_intents(self, actor, project_id, stage_id, operation):
         for result in operation.item_results:

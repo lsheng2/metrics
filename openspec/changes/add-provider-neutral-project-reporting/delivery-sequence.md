@@ -12,6 +12,7 @@ SDK020.JOIN.REPLAN [qualified]
  -> DELIVERY.PLAN.R -> DELIVERY.GOV
  -> W6.AUTHOR.DAILY -> W6.AUTHOR.DAILY.REPLAN
  -> W4.DELTA.PLAN.R -> W4.DELTA.CORE -> W4.DELTA.CORE.R -> W4.DELTA.CORE.REPLAN
+ -> W6.AUTHOR.SOURCE
  -> W6.AUTHOR.ASSIST -> W6.AUTHOR.ASSIST.REPLAN
  -> W6.AUTHOR.EXPORT.SAMPLE -> W6.AUTHOR.JOIN -> W6.AUTHOR.R -> W6.AUTHOR.REPLAN
  -> remaining provider/history/workbench/deployment qualification
@@ -160,7 +161,15 @@ remain explicit full W4/W5 work; do not silently truncate input or call the limi
 
 ## 6. ASSIST, Exports And Final Qualification
 
-ASSIST consumes the qualified source and DAILY context after DELTA.CORE.REPLAN.
+2026-11-06 source-closure amendment: `W6.AUTHOR.SOURCE` follows DELTA.CORE.REPLAN.
+It publishes the retained, reviewed authoring/DAILY/delta dependency closure as one scoped
+source packet, including its local editor assets, template resources, fixtures and migrations.
+It excludes unrelated Scope UI/spec/main.css and model-default changes. Verify the candidate
+tree's imports, explicit test collection, native asset manifest and isolated Django schema check;
+collection is a packaging check, never a replacement for the already executed business tests.
+Keep the root AI contract's authorization and disabled-runtime defaults intact.
+
+ASSIST consumes the qualified source and DAILY context after this source closure.
 Its exact service/profile/Apply/Save contracts remain in `sdk-020-post-integration.md` section 4
 and `report-authoring-contracts.md`. Start with one actual editable target end-to-end, then cover
 the other declared target consumers. Both standard and continuity save, provenance and JS receipt

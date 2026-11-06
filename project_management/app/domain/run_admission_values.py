@@ -69,21 +69,23 @@ def capture_limits_from_mapping(value: Mapping):
 
 def stored_request_payload(operation: RunOperation, request, policy, backend: AiBackendTarget,
                            request_hash_value: str, capture_limits=None):
+    request_body = request_payload(request)
+    schema_version = 2 if request_body.get('schema_version') == 2 else 1
     payload = {
-        'schema_version': 1,
+        'schema_version': schema_version,
         'operation_id': operation.operation_id,
         'project_id': operation.project_id,
         'stage_id': operation.stage_id,
         'actor_subject': operation.actor_subject,
         'command_id': operation.command_id,
         'request_hash': request_hash_value,
-        'request': request_payload(request),
+        'request': request_body,
         'policy': policy_payload(policy),
         'policy_hash': operation.policy_hash,
         'created_at': operation.created_at,
         'deadline_at': operation.deadline_at,
         'capture_id': operation.capture_id,
-        'backend': backend_payload(backend),
+        'backend': None if backend is None else backend_payload(backend),
         'capture_limits': capture_limits_payload(capture_limits) if capture_limits is not None else None,
         'execution_mode': operation.execution_mode,
         'stage_hash': operation.stage_hash,
@@ -113,11 +115,11 @@ def validate_stored_request(value: Mapping):
         'stage_hash',
         'admission_hash',
     }
-    if set(value) != expected or value['schema_version'] != 1:
+    if set(value) != expected or value['schema_version'] not in {1, 2}:
         raise RunError('RUN_STORAGE_INVALID')
     request = request_from_mapping(mapping_value(value['request']))
     policy = policy_from_mapping(mapping_value(value['policy']))
-    backend = backend_from_mapping(mapping_value(value['backend']))
+    backend = _backend_from_record(value['backend'], request)
     capture_limits = capture_limits_from_mapping(mapping_value(value['capture_limits']))
     request_hash_value = validate_hash_text(value['request_hash'])
     admission_hash_value = validate_hash_text(value['admission_hash'])
@@ -135,11 +137,24 @@ def validate_stored_request(value: Mapping):
         raise RunError('RUN_STORAGE_INVALID')
     if validate_hash_text(value['policy_hash']) != policy_hash(policy):
         raise RunError('RUN_STORAGE_INVALID')
-    if backend.scope_key != f"projects.{value['project_id']}.stages.{value['stage_id']}":
+    if value['schema_version'] == 1 and value['request'].get('schema_version') == 2:
+        raise RunError('RUN_STORAGE_INVALID')
+    if value['schema_version'] == 2 and value['request'].get('schema_version') != 2:
+        raise RunError('RUN_STORAGE_INVALID')
+    if backend is not None and backend.scope_key != f"projects.{value['project_id']}.stages.{value['stage_id']}":
         raise RunError('RUN_STORAGE_INVALID')
     if parse_instant(value['deadline_at']) <= parse_instant(value['created_at']):
         raise RunError('RUN_STORAGE_INVALID')
     return request, policy, backend, request_hash_value, capture_limits
+
+
+def _backend_from_record(value, request):
+    if value is not None:
+        return backend_from_mapping(mapping_value(value))
+    target = getattr(request, 'target', None)
+    if target is None or target.analysis_mode != 'manual_only':
+        raise RunError('RUN_STORAGE_INVALID')
+    return None
 
 
 def admission_hash(value: Mapping):

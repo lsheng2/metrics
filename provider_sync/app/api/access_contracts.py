@@ -58,9 +58,11 @@ ERROR_MESSAGES = {
 
 
 class AccessError(Exception):
-    def __init__(self, code):
+    def __init__(self, code, *, provider_status=None, retry_after_seconds=None):
         self.code = code if code in ERROR_MESSAGES else 'PROVIDER_NETWORK_ERROR'
         self.message = ERROR_MESSAGES[self.code]
+        self.provider_status = provider_status
+        self.retry_after_seconds = retry_after_seconds
         super().__init__(self.message)
 
 

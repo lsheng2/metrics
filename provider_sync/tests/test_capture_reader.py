@@ -50,3 +50,15 @@ class TestBoundCaptureReader(CaptureArchiveScenario, unittest.TestCase):
         self.assertEqual([('GET', '/jira/rest/api/2/issue/ALPHA-101', {'fields': 'id,key,updated'})],
                          fixture.transport.requests)
         self.assertTrue(fixture.transport.responses[0].raw.closed)
+
+    def test_shouldCopyOnlySafeRetryAfterMetadata(self):
+        fixture = JiraFixture(self, responder=lambda path, params: (
+            429,
+            b'{"error":"rate"}',
+            {'Retry-After': '12', 'Set-Cookie': 'secret=true'},
+        ))
+
+        result = self.reader(fixture).read('/rest/api/2/issue/ALPHA-101', {'fields': 'id'},
+                                          timeout=5, max_bytes=1024)
+
+        self.assertEqual('12', result.retry_after)

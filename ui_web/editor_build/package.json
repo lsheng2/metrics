@@ -1,0 +1,14 @@
+{
+  "name": "scrum-dashboard-report-editor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild report_milkdown.js --bundle --format=iife --minify-whitespace --outfile=../static/js/report_editor/vendor/milkdown.bundle.js --metafile=../static/js/report_editor/vendor/milkdown.bundle.meta.json"
+  },
+  "dependencies": {
+    "@milkdown/kit": "7.23.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

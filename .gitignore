@@ -68,6 +68,7 @@ state/
 .zvec-grep/
 tmp_ui_validation/
 tmp_*.png
+ui_web/editor_build/node_modules/
 
 # Flask stuff:
 instance/

@@ -22,6 +22,7 @@ class MemoryRepository:
     def __init__(self, project, stage, files, *, head='c' * 40):
         self.project = project
         self.stage = stage
+        self.owner_subject = None
         self.files = dict(files)
         self.commit = head
         self.commits = {path: head for path in self.files}
@@ -45,6 +46,7 @@ class MemoryRepository:
         if self.on_read is not None:
             self.on_read(self, git_path)
         try:
+            self._check_commit(git_path, commit)
             return self.files[git_path]
         except KeyError:
             from project_management.app.domain.captures import ArchiveError
@@ -57,13 +59,32 @@ class MemoryRepository:
         return tuple(sorted(path for path in self.files if path == prefix or path.startswith(prefix.rstrip('/') + '/')))
 
     def commit_for_path(self, git_path):
-        return self.commits[git_path]
+        commit = self.find_commit_for_path(git_path)
+        if commit is None:
+            from project_management.app.domain.captures import ArchiveError
+
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        return commit
+
+    def find_commit_for_path(self, git_path, commit='main'):
+        try:
+            self._check_commit(git_path, commit)
+            return self.commits[git_path]
+        except KeyError:
+            return None
 
     def parent_for_commit(self, commit_id):
         return None
 
     def checkout_state(self, commit_id):
         return 'current'
+
+    def _check_commit(self, git_path, commit):
+        requested = self.commit if commit == 'main' else commit
+        if self.commits[git_path] != requested:
+            from project_management.app.domain.captures import ArchiveError
+
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
 
 
 class MemoryRepositoryFactory:
@@ -73,6 +94,7 @@ class MemoryRepositoryFactory:
 
     def open(self, config, project, stage, owner_subject):
         self.opens += 1
+        self.repository.owner_subject = owner_subject
         return self.repository
 
 

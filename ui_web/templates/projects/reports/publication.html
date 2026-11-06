@@ -51,6 +51,16 @@
     </div>
 
     {% if publication.manifest.purpose == "standup" %}
+        {% if publication.manifest.schema_version == 2 and publication.manifest.report_role == "daily" %}
+        <form method="post" action="{% url 'ui_web:report_publication_linked_revision' detail.project.id stage.id publication.manifest.publication_id %}" class="dashboard-action-form mt-4">
+            {% csrf_token %}
+            {{ linked_revision_form.command_id }}
+            <button class="button is-primary" type="submit" data-report-linked-revision>
+                <span class="icon is-small"><i class="iconoir-edit-pencil"></i></span>
+                <span>{% trans "Create linked correction" %}</span>
+            </button>
+        </form>
+        {% endif %}
         <form method="post" action="{% url 'ui_web:report_publication_revision' detail.project.id stage.id publication.manifest.publication_id %}" class="dashboard-action-form mt-4">
             {% csrf_token %}
             {{ revision_form.command_id }}

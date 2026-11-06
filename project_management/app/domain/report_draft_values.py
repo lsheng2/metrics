@@ -15,6 +15,8 @@ from project_management.app.domain.report_contracts import (
     ReportSourceSnapshot,
     SummaryReference,
 )
+from project_management.app.domain.report_authoring import AUTHORING_SCHEMA, AuthoredEdit, authored_edit_from_mapping, validate_template_snapshot
+from project_management.app.domain.report_authoring_revision import validate_revision_authoring_context
 from project_management.app.domain.report_presentation import ReportEdit, TemplateDefinition, TemplateSelection
 
 
@@ -42,6 +44,11 @@ class ReportDraft:
     updated_at: str
     parent_publication_id: str | None
     state: Literal['draft', 'finalizing', 'finalized']
+    authoring_schema: str | None = None
+    template_snapshot: Mapping | None = None
+    authored_edits: tuple[AuthoredEdit, ...] = ()
+    authoring_context: Mapping | None = None
+    preservation_review_issues: tuple[Mapping, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +61,7 @@ class ReportDraftSummary:
     state: Literal['draft', 'finalizing', 'finalized']
     template_id: str
     parent_publication_id: str | None
+    preservation_review_issues: tuple[Mapping, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -297,6 +305,11 @@ def identity_from_mapping(value) -> WorkItemIdentity:
 
 
 def revision_from_mapping(value):
+    if not isinstance(value, Mapping):
+        raise ReportError('REPORT_ARTIFACT_INVALID')
+    schema_version = value.get('schema_version')
+    if schema_version == 2:
+        return _authored_revision_from_mapping(value)
     _keys(value, {
         'schema_version', 'draft_id', 'revision', 'selection', 'snapshot_hash', 'template',
         'template_definition', 'edits', 'created_at', 'updated_at', 'parent_publication_id',
@@ -316,52 +329,66 @@ def revision_from_mapping(value):
     }
 
 
+def _authored_revision_from_mapping(value):
+    _keys(value, {
+        'schema_version', 'draft_id', 'revision', 'selection', 'snapshot_hash', 'template',
+        'template_definition', 'edits', 'created_at', 'updated_at', 'parent_publication_id',
+        'authoring_schema', 'template_snapshot', 'authoring_context',
+    })
+    return {
+        'schema_version': _literal(value['schema_version'], {2}),
+        'draft_id': validate_uuid_text(value['draft_id']),
+        'revision': _positive_int(value['revision']),
+        'selection': selection_from_mapping(value['selection']),
+        'snapshot_hash': validate_hash_text(value['snapshot_hash']),
+        'template': template_selection_from_mapping(value['template']),
+        'template_definition': template_definition_from_mapping(value['template_definition']),
+        'edits': tuple(authored_edit_from_mapping(item) for item in _list(value['edits'])),
+        'created_at': validate_time_text(value['created_at']),
+        'updated_at': validate_time_text(value['updated_at']),
+        'parent_publication_id': _optional_uuid(value['parent_publication_id']),
+        'authoring_schema': _literal(value['authoring_schema'], {AUTHORING_SCHEMA}),
+        'template_snapshot': validate_template_snapshot(value['template_snapshot']),
+        'authoring_context': validate_revision_authoring_context(value['authoring_context'], value['template_snapshot']),
+    }
+
 def _keys(value, expected: set[str]) -> None:
     if not isinstance(value, Mapping) or set(value.keys()) != expected:
         raise ReportError('REPORT_ARTIFACT_INVALID')
-
 
 def _str(value) -> str:
     if type(value) is not str:
         raise ReportError('REPORT_ARTIFACT_INVALID')
     return value
 
-
 def _optional_str(value) -> str | None:
     return None if value is None else _str(value)
-
 
 def _optional_uuid(value) -> str | None:
     return None if value is None else validate_uuid_text(value)
 
-
 def _optional_hash(value) -> str | None:
     return None if value is None else validate_hash_text(value)
-
 
 def _positive_int(value) -> int:
     if type(value) is not int or value < 1:
         raise ReportError('REPORT_ARTIFACT_INVALID')
     return value
 
-
 def _literal(value, allowed):
-    if value not in allowed or all(type(value) is not type(item) for item in allowed):
+    if all(type(value) is not type(item) for item in allowed) or value not in allowed:
         raise ReportError('REPORT_ARTIFACT_INVALID')
     return value
-
 
 def _list(value) -> list:
     if not isinstance(value, list) or len(value) > MAX_COLLECTION:
         raise ReportError('REPORT_ARTIFACT_INVALID')
     return value
 
-
 def _json_mapping(value) -> Mapping:
     if not isinstance(value, Mapping) or len(value) > MAX_COLLECTION or any(type(key) is not str for key in value):
         raise ReportError('REPORT_ARTIFACT_INVALID')
     return {key: _json_value(item) for key, item in value.items()}
-
 
 def _json_value(value):
     if value is None or type(value) in {str, int, bool, float}:

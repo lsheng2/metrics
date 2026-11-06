@@ -174,6 +174,357 @@ msgstr "来源已变更"
 msgid "Unavailable"
 msgstr "不可用"
 
+msgid "AI analysis is unavailable. Manual preparation is still available."
+msgstr "AI 分析不可用，仍可人工准备草稿。"
+
+msgid "Analysis mode"
+msgstr "分析模式"
+
+msgid "Baseline"
+msgstr "基线"
+
+msgid "Baseline request is invalid."
+msgstr "基线请求无效。"
+
+msgid "Calendar"
+msgstr "日历"
+
+msgid "Changed items"
+msgstr "仅分析变化项"
+
+msgid "Confirm gap for draft %(draft)s"
+msgstr "确认跳过未定稿草稿 %(draft)s"
+
+msgid "Confirm pending-draft gap"
+msgstr "确认跳过未定稿草稿"
+
+msgid "Create report series"
+msgstr "创建报告系列"
+
+msgid "Earlier saved drafts need finalization or explicit gap confirmation."
+msgstr "前序已保存草稿尚未定稿；请先定稿，或明确确认跳过。"
+
+msgid "Effective selection"
+msgstr "实际采用的选项"
+
+msgid "Existing preparation"
+msgstr "已有准备记录"
+
+msgid "Generate today's draft"
+msgstr "生成当日草稿"
+
+msgid "Independent report run"
+msgstr "独立报告运行"
+
+msgid "Initial report"
+msgstr "首份报告"
+
+msgid "Manual only"
+msgstr "仅人工"
+
+msgid "Matrix template revision"
+msgstr "矩阵模板版本"
+
+msgid "Meeting date"
+msgstr "会议日期"
+
+msgid "New preparation"
+msgstr "新准备记录"
+
+msgid "No daily publications are available."
+msgstr "暂无可用的已定稿日报。"
+
+msgid "No report series yet."
+msgstr "尚无报告系列。"
+
+msgid "Open draft"
+msgstr "打开草稿"
+
+msgid "Open existing preparation"
+msgstr "打开已有准备记录"
+
+msgid "Original preparation"
+msgstr "原准备记录"
+
+msgid "Pending saved drafts"
+msgstr "已保存但未定稿的草稿"
+
+msgid "Preparation"
+msgstr "准备记录"
+
+msgid "Preparation details"
+msgstr "准备记录详情"
+
+msgid "Prepare today's draft"
+msgstr "准备当日草稿"
+
+msgid "Preview baseline"
+msgstr "预览基线"
+
+msgid "Previous final"
+msgstr "上一份已定稿报告"
+
+msgid "Refresh chooses its capture automatically."
+msgstr "刷新时会自动生成新的采集记录。"
+
+msgid "Refresh disabled"
+msgstr "刷新未启用"
+
+msgid "Refresh runtime is unavailable. Saved-capture manual preparation is still available."
+msgstr "刷新服务不可用，仍可基于已保存的采集人工准备草稿。"
+
+msgid "Refresh runtime ready"
+msgstr "刷新服务已就绪"
+
+msgid "Refresh source"
+msgstr "刷新来源"
+
+msgid "Replacement preparation"
+msgstr "替换后的准备记录"
+
+msgid "Report history requires review. The original draft is preserved."
+msgstr "报告历史需要核对，原草稿已保留。"
+
+msgid "Reprepare draft"
+msgstr "重建草稿"
+
+msgid "Review required"
+msgstr "需要核对"
+
+msgid "Runtime is required for refresh."
+msgstr "刷新需要已配置的运行服务。"
+
+msgid "Save policy"
+msgstr "保存策略"
+
+msgid "Saved capture"
+msgstr "已保存的采集"
+
+msgid "Saved capture preparation is manual only."
+msgstr "使用已保存的采集时不重新分析。"
+
+msgid "Select saved capture"
+msgstr "选择已保存的采集"
+
+msgid "Select series"
+msgstr "选择报告系列"
+
+msgid "Select template"
+msgstr "选择模板"
+
+msgid "Selected daily publications"
+msgstr "选定的日报版本"
+
+msgid "Source mode"
+msgstr "数据来源模式"
+
+msgid "The daily baseline changed. Preview it again before generating."
+msgstr "日报基线已变化，请重新预览后再生成。"
+
+msgid "The selected reporting calendar is unavailable."
+msgstr "所选报告日历不可用。"
+
+msgid "The selected revision changed. Preview the current version."
+msgstr "所选版本已变化，请预览当前版本。"
+
+msgid "This command was already used with different choices."
+msgstr "此命令已用于不同选项，请重新预览。"
+
+msgid "Unapplied choices"
+msgstr "未应用的选项"
+
+msgid "Add report persistent"
+msgstr "添加报告常驻备注"
+
+msgid "Series policy has changed. Your posted values are still shown."
+msgstr "系列策略已变更。您提交的值仍会显示。"
+
+msgid "Create weekly draft"
+msgstr "创建周视图草稿"
+
+msgid "Weekly view"
+msgstr "周视图"
+
+msgid "Report series"
+msgstr "报告系列"
+
+msgid "Report templates"
+msgstr "报告模板"
+
+msgid "Report template"
+msgstr "报告模板"
+
+msgid "Create template"
+msgstr "创建模板"
+
+msgid "Blank template"
+msgstr "空白模板"
+
+msgid "Copy daily starter"
+msgstr "复制每日起始模板"
+
+msgid "Copy weekly starter"
+msgstr "复制每周起始模板"
+
+msgid "Daily starter"
+msgstr "每日起始模板"
+
+msgid "Weekly starter"
+msgstr "每周起始模板"
+
+msgid "Library"
+msgstr "模板库"
+
+msgid "Readiness"
+msgstr "就绪状态"
+
+msgid "Ready"
+msgstr "就绪"
+
+msgid "Hash"
+msgstr "哈希"
+
+msgid "Copy project structure"
+msgstr "复制项目结构"
+
+msgid "Template pages"
+msgstr "模板分页"
+
+msgid "Report kind"
+msgstr "报告类型"
+
+msgid "Independent daily"
+msgstr "独立每日报告"
+
+msgid "Independent weekly"
+msgstr "独立每周报告"
+
+msgid "Template editor is ready."
+msgstr "模板编辑器已就绪。"
+
+msgid "Template editor failed to mount. Reload before saving."
+msgstr "模板编辑器挂载失败。保存前请重新加载。"
+
+msgid "Template editor is not ready to save."
+msgstr "模板编辑器尚未就绪，不能保存。"
+
+msgid "Template save failed."
+msgstr "模板保存失败。"
+
+msgid "Saved. Unsaved local edits remain."
+msgstr "已保存。仍有未保存的本地编辑。"
+
+msgid "Unsaved template edits may be lost."
+msgstr "未保存的模板编辑可能会丢失。"
+
+msgid "Unsaved template edits may be lost. Continue?"
+msgstr "未保存的模板编辑可能会丢失。是否继续？"
+
+msgid "Add content"
+msgstr "添加内容"
+
+msgid "Add slot"
+msgstr "添加填写槽"
+
+msgid "Add data"
+msgstr "添加数据区"
+
+msgid "Content"
+msgstr "内容"
+
+msgid "Slot"
+msgstr "填写槽"
+
+msgid "Data"
+msgstr "数据"
+
+msgid "Block type"
+msgstr "块类型"
+
+msgid "Move up"
+msgstr "上移"
+
+msgid "Move down"
+msgstr "下移"
+
+msgid "Remove block"
+msgstr "移除块"
+
+msgid "Rich text"
+msgstr "富文本"
+
+msgid "This fixed content is read only in reports."
+msgstr "此固定内容在报告中为只读。"
+
+msgid "Slot label"
+msgstr "填写槽标签"
+
+msgid "Required"
+msgstr "必填"
+
+msgid "Fill mode"
+msgstr "填写模式"
+
+msgid "Manual"
+msgstr "手动"
+
+msgid "AI optional"
+msgstr "可选 AI"
+
+msgid "Initial slot content"
+msgstr "填写槽初始内容"
+
+msgid "Manual slot"
+msgstr "手动填写槽"
+
+msgid "Optional AI instructions"
+msgstr "可选 AI 指令"
+
+msgid "Data source"
+msgstr "数据来源"
+
+msgid "Group by"
+msgstr "分组依据"
+
+msgid "No grouping"
+msgstr "不分组"
+
+msgid "Summary time"
+msgstr "摘要时间"
+
+msgid "Source hash"
+msgstr "来源哈希"
+
+msgid "Save template version"
+msgstr "保存模板版本"
+
+msgid "Archive this template"
+msgstr "归档此模板"
+
+msgid "Template request is invalid."
+msgstr "模板请求无效。"
+
+msgid "Template payload is invalid."
+msgstr "模板载荷无效。"
+
+msgid "Template structure is invalid."
+msgstr "模板结构无效。"
+
+msgid "Template is over the configured limit."
+msgstr "模板超过配置限制。"
+
+msgid "Template revision has changed. Your posted content is still shown below."
+msgstr "模板修订已变化。你提交的内容仍显示在下方。"
+
+msgid "Template content"
+msgstr "模板内容"
+
+msgid "System data is read only."
+msgstr "系统数据为只读。"
+
+msgid "Fixed template text is read only in this report."
+msgstr "固定模板文字在此报告中为只读。"
+
 msgid "Project request failed"
 msgstr "项目请求失败"
 
@@ -620,3 +971,156 @@ msgstr "运行存储不可用。"
 
 msgid "Run request failed."
 msgstr "运行请求失败。"
+
+msgid "Unsaved report edits may be lost. Continue?"
+msgstr "未保存的报告编辑可能会丢失。是否继续？"
+
+msgid "Paste kept supported formatting."
+msgstr "粘贴内容已保留支持的格式。"
+
+msgid "Removed script or style content."
+msgstr "已移除脚本或样式内容。"
+
+msgid "Removed unsafe link."
+msgstr "已移除不安全链接。"
+
+msgid "Removed unsupported media."
+msgstr "已移除不支持的媒体。"
+
+msgid "Key messages"
+msgstr "关键信息"
+
+msgid "Issue register"
+msgstr "问题登记表"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "Assignee"
+msgstr "负责人"
+
+msgid "Verification"
+msgstr "验证"
+
+msgid "Action"
+msgstr "行动项"
+
+msgid "Owner"
+msgstr "负责人"
+
+msgid "Formatting"
+msgstr "格式"
+
+msgid "Paragraph"
+msgstr "段落"
+
+msgid "Heading 1"
+msgstr "一级标题"
+
+msgid "Heading 2"
+msgstr "二级标题"
+
+msgid "Heading 3"
+msgstr "三级标题"
+
+msgid "Quote"
+msgstr "引用"
+
+msgid "Bold"
+msgstr "加粗"
+
+msgid "Italic"
+msgstr "斜体"
+
+msgid "Strike"
+msgstr "删除线"
+
+msgid "Inline code"
+msgstr "行内代码"
+
+msgid "Bullet list"
+msgstr "项目列表"
+
+msgid "Ordered list"
+msgstr "编号列表"
+
+msgid "Task list"
+msgstr "任务列表"
+
+msgid "Table"
+msgstr "表格"
+
+msgid "Link"
+msgstr "链接"
+
+msgid "Blue text"
+msgstr "蓝色文本"
+
+msgid "Green text"
+msgstr "绿色文本"
+
+msgid "Red text"
+msgstr "红色文本"
+
+msgid "Highlight"
+msgstr "高亮"
+
+msgid "Green highlight"
+msgstr "绿色高亮"
+
+msgid "Red highlight"
+msgstr "红色高亮"
+
+msgid "Clear color"
+msgstr "清除颜色"
+
+msgid "Undo"
+msgstr "撤销"
+
+msgid "Redo"
+msgstr "重做"
+
+msgid "Add table row"
+msgstr "添加表格行"
+
+msgid "Delete table row"
+msgstr "删除表格行"
+
+msgid "Add table column"
+msgstr "添加表格列"
+
+msgid "Delete table column"
+msgstr "删除表格列"
+
+msgid "Reference lookup failed; original text is unchanged."
+msgstr "引用查询失败；原文未改变。"
+
+msgid "Reference lookup returned an invalid response; original text is unchanged."
+msgstr "引用查询返回无效响应；原文未改变。"
+
+msgid "Reference lookup is rate limited; try again later."
+msgstr "引用查询过于频繁；请稍后再试。"
+
+msgid "Reference is outside this report scope; original text is unchanged."
+msgstr "引用不在本报告范围内；原文未改变。"
+
+msgid "Reference is unavailable; original text is unchanged."
+msgstr "引用不可用；原文未改变。"
+
+msgid "Verified completion is not enabled for this source."
+msgstr "此来源未启用已验证补全。"
+
+msgid "Reference lookup timed out; original text is unchanged."
+msgstr "引用查询超时；原文未改变。"
+
+msgid "Reference IDs can be at most 31 characters after #; no lookup was made."
+msgstr "# 后的引用编号最多支持 31 个字符；未发起查询。"
+
+msgid "Unassigned owner"
+msgstr "未指派负责人"
+
+msgid "Owner unavailable"
+msgstr "负责人不可用"
+
+msgid "Title unavailable"
+msgstr "标题不可用"

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ detail.project.name }} - {% trans "Report templates" %}{% endblock %}
+{% block page_title %}{% trans "Report templates" %}{% endblock %}
+
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
+            <li class="is-active"><a href="#" aria-current="page">{% trans "Report templates" %}</a></li>
+        </ul>
+    </nav>
+
+    <div class="level">
+        <div class="level-left">
+            <div>
+                <h2 class="title is-4">{% trans "Report templates" %}</h2>
+                <p class="subtitle is-6"><code>{{ detail.project.key }}</code></p>
+            </div>
+        </div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+
+    <section class="block">
+        <h3 class="title is-5">{% trans "Create template" %}</h3>
+        <div class="columns">
+            {% for entry in create_forms %}
+                <div class="column">
+                    {% with form=entry.form %}
+                    <form method="post" action="{% url 'ui_web:report_templates' detail.project.id %}" class="box">
+                        {% csrf_token %}
+                        {{ form.command_id }}
+                        <input type="hidden" name="{{ form.action.html_name }}" value="{{ form.action.value }}">
+                        <label class="label" for="{{ form.name.id_for_label }}_{{ forloop.counter }}">{{ form.name.label }}</label>
+                        <input class="input" id="{{ form.name.id_for_label }}_{{ forloop.counter }}" name="{{ form.name.html_name }}" value="{{ form.name.value|default_if_none:'' }}">
+                        <button class="button is-primary mt-3" type="submit">
+                            <span class="icon is-small"><i class="iconoir-plus-square"></i></span>
+                            <span>{{ entry.label }}</span>
+                        </button>
+                    </form>
+                    {% endwith %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="block">
+        <h3 class="title is-5">{% trans "Library" %}</h3>
+        <div class="table-container responsive-admin-table-box">
+            <table class="table is-fullwidth is-narrow dashboard-dense-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Readiness" %}</th>
+                        <th>{% trans "Revision" %}</th>
+                        <th>{% trans "Hash" %}</th>
+                        <th>{% trans "State" %}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in template_rows %}
+                        {% with item=row.item copy_form=row.copy_form %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>
+                                {% if item.readiness == "ready" %}
+                                    <span class="tag is-success is-light">{% trans "Ready" %}</span>
+                                {% else %}
+                                    <span class="tag is-warning is-light">{% trans "Draft" %}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.current_revision }}</td>
+                            <td><code>{{ item.revision_hash|slice:":12" }}</code></td>
+                            <td>{% if item.archived %}{% trans "Archived" %}{% else %}{% trans "Active" %}{% endif %}</td>
+                            <td class="buttons are-small">
+                                <a class="button" href="{% url 'ui_web:report_template_editor' detail.project.id item.template_id %}">
+                                    <span class="icon is-small"><i class="iconoir-list"></i></span>
+                                    <span>{% trans "Open" %}</span>
+                                </a>
+                                <form method="post" action="{% url 'ui_web:report_template_copy' detail.project.id item.template_id %}">
+                                    {% csrf_token %}
+                                    {{ copy_form.command_id }}
+                                    {{ copy_form.revision.as_hidden }}
+                                    {{ copy_form.name.as_hidden }}
+                                    <button class="button" type="submit">{% trans "Copy project structure" %}</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                    {% empty %}
+                        <tr><td colspan="6">{% trans "No report templates yet." %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if previous_offset != None or templates.next_offset != None %}
+            <nav class="pagination is-small" role="navigation" aria-label="{% trans "Template pages" %}">
+                {% if previous_offset != None %}<a class="pagination-previous" href="{% url 'ui_web:report_templates' detail.project.id %}?offset={{ previous_offset }}">{% trans "Previous" %}</a>{% endif %}
+                {% if templates.next_offset != None %}<a class="pagination-next" href="{% url 'ui_web:report_templates' detail.project.id %}?offset={{ templates.next_offset }}">{% trans "Next" %}</a>{% endif %}
+            </nav>
+        {% endif %}
+    </section>
+</article>
+{% endblock %}

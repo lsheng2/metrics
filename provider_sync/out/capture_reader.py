@@ -31,6 +31,7 @@ class BoundCaptureReader:
         status = 0
         content_type = 'application/octet-stream'
         partial, error = False, None
+        retry_after = None
         try:
             response = self.session.get(self.info.endpoint.base_url + relative_path, params=params,
                                         stream=True, timeout=timeout, allow_redirects=False)
@@ -38,6 +39,9 @@ class BoundCaptureReader:
             value = response.headers.get('Content-Type', content_type)
             if isinstance(value, str) and 0 < len(value) <= 256 and not any(ord(c) < 32 for c in value):
                 content_type = value
+            retry = response.headers.get('Retry-After')
+            if isinstance(retry, str) and 0 < len(retry) <= 128 and not any(ord(c) < 32 for c in retry):
+                retry_after = retry
             length = self._unencoded_length(response)
             while True:
                 if time.monotonic() >= deadline:
@@ -60,7 +64,7 @@ class BoundCaptureReader:
         finally:
             if response is not None:
                 response.close()
-        return RawResponse(status, content_type, bytes(body), partial, error)
+        return RawResponse(status, content_type, bytes(body), partial, error, retry_after)
 
     def close(self):
         self.session.close()

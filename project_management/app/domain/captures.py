@@ -207,6 +207,18 @@ class CapturePage:
 
 
 @dataclass(frozen=True, slots=True)
+class CaptureMetadata:
+    receipt: CaptureReceipt
+    source_as_of: str
+
+
+@dataclass(frozen=True, slots=True)
+class CaptureMetadataPage:
+    items: tuple[CaptureMetadata, ...]
+    next_cursor: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class SourceChainPage:
     items: tuple[StoredSnapshotRef, ...]
     next_cursor: str | None

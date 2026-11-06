@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 import hashlib
 import json
 import math
@@ -114,7 +115,11 @@ class ProviderReadSession:
         page = HeldRawPage(page_key, item, response.content_type, body, request_fingerprint, partial, error)
         self._retain_response(page)
         if error is not None:
-            raise AccessError(error)
+            raise AccessError(
+                error,
+                provider_status=response.status_code,
+                retry_after_seconds=_retry_after_seconds(response.retry_after, self.clock(), error),
+            )
         self.remaining_seconds()
         value = strict_object(body)
         return CapturedJson(value, self.page_id(page_key), page_key, request_fingerprint)
@@ -189,3 +194,21 @@ class CaptureSession(ProviderReadSession):
                             held.request_fingerprint, held.partial, held.error_code)
         ref = self._sink.append_page(page)
         self._page_ids[held.page_key] = ref.page_id
+
+
+def _retry_after_seconds(value, now, error):
+    if value is None:
+        return 60 if error == 'PROVIDER_RATE_LIMITED' else None
+    if type(value) is not str:
+        return 60
+    text = value.strip()
+    if text.isdecimal():
+        return min(86400, max(0, int(text)))
+    try:
+        parsed = parsedate_to_datetime(text)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return 60
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return 60
+    seconds = math.ceil((parsed.astimezone(UTC) - now.astimezone(UTC)).total_seconds())
+    return min(86400, max(0, seconds))

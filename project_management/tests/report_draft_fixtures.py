@@ -6,7 +6,9 @@ from types import SimpleNamespace
 import uuid
 
 from project_management.app.domain.capture_values import canonical_bytes
-from project_management.app.domain.captures import ArchiveError, ArchiveLimits, ArchiveStorageConfig
+from project_management.app.domain.captures import (
+    ArchiveError, ArchiveLimits, ArchiveStorageConfig, CaptureMetadata, CaptureMetadataPage,
+)
 from project_management.app.domain.contracts import (
     ProjectActor,
     ProjectError,
@@ -51,6 +53,24 @@ class StaticSourceReader:
         self.calls += 1
         self.selections.append(selection)
         return self._snapshot(actor.subject, project.id, stage.id, selection, head)
+
+    def membership(self, actor, project_id, stage_id, snapshot):
+        from project_management.services.report_sources import ScopeMember, ScopeMembershipSnapshot
+
+        return ScopeMembershipSnapshot(
+            1,
+            snapshot.capture_id,
+            snapshot.source_commit,
+            'a' * 64,
+            snapshot.source_as_of,
+            snapshot.rule_hash,
+            'principal:archive-owner',
+            'complete',
+            len(snapshot.rows),
+            len(snapshot.rows),
+            tuple(ScopeMember(row.identity, row.source_key) for row in snapshot.rows),
+            'b' * 64,
+        )
 
     def _snapshot(self, owner_subject, project_id, stage_id, selection, source_commit):
         return valid_source_snapshot(
@@ -191,6 +211,7 @@ class DraftArchive:
             limits or self.limits(),
         )
         self.repository = StageDraftRepository(root, self.project, self.stage, self.actor.subject)
+        self.repository.config = self.config
         self.repository.initialize()
         self.root_id = str(uuid.uuid4())
 
@@ -223,6 +244,12 @@ class DraftArchive:
     def stage_archive_status(self, actor, project_id, stage_id):
         self._stage_for_read(actor, project_id, stage_id)
         return 'ready' if self.repository.stage_root.exists() else 'absent'
+
+    def list_capture_metadata(self, actor, project_id, stage_id, *, limit=100, after=None):
+        page = self.list_captures(actor, project_id, stage_id, limit=limit, after=after)
+        return CaptureMetadataPage(
+            tuple(CaptureMetadata(item, safe_snapshot().source_as_of) for item in page.items), page.next_cursor,
+        )
 
     def _stage_for_read(self, actor, project_id, stage_id):
         if actor.subject != self.actor.subject or project_id != self.project.id or stage_id != self.stage.id:

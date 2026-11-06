@@ -298,7 +298,7 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
         self.assertEqual(capture_id, snapshot.capture_id)
         from project_management.services.report_sources import PinnedReadRepository
 
-        pinned = PinnedReadRepository(repository, repository.head())
+        pinned = PinnedReadRepository(archive, repository, repository.head())
         self.assertFalse(hasattr(pinned, 'stage_root'))
         self.assertFalse(hasattr(pinned, 'archive'))
         self.assertFalse(hasattr(pinned, 'objects'))
@@ -420,6 +420,11 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
         )
         manifest_path = f'captures/{capture_id}/manifest.json'
         files[manifest_path] = canonical_bytes(manifest)
+        files[f'captures/{capture_id}/admission.json'] = canonical_bytes({
+            'intent_hash': content_hash(intent),
+            'limits': {'max_object_bytes': self.limits().max_object_bytes},
+        })
+        files[f'captures/{capture_id}/page-intents.json'] = canonical_bytes(())
         return {
             'capture_id': capture_id,
             'files': files,

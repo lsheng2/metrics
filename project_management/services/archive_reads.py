@@ -4,7 +4,9 @@ import re
 from project_management.app.domain.capture_values import (
     canonical_bytes, content_hash, decode_json, decode_snapshot, manifest_from_bytes, sha256_bytes,
 )
-from project_management.app.domain.captures import ArchiveError, CapturePage, CaptureReceipt, SourceChainPage
+from project_management.app.domain.captures import (
+    ArchiveError, CaptureMetadata, CaptureMetadataPage, CapturePage, CaptureReceipt, SourceChainPage,
+)
 from project_management.storage.objects import ObjectStore
 from project_management.storage.paths import validate_uuid
 
@@ -52,12 +54,23 @@ class ArchiveReads:
         return snapshot
 
     def list_captures(self, actor, project_id, stage_id, *, limit=100, after=None):
+        repository, head, selected, cursor = self._capture_listing(actor, project_id, stage_id, limit, after)
+        return CapturePage(tuple(self._receipt_from_manifest(repository, row, head) for row in selected), cursor)
+
+    def list_capture_metadata(self, actor, project_id, stage_id, *, limit=100, after=None):
+        repository, head, selected, cursor = self._capture_listing(actor, project_id, stage_id, limit, after)
+        return CaptureMetadataPage(tuple(
+            CaptureMetadata(self._receipt_from_manifest(repository, row, head), row.finalized_at)
+            for row in selected
+        ), cursor)
+
+    def _capture_listing(self, actor, project_id, stage_id, limit, after):
         repository = self._read_repository(actor, project_id, stage_id)
         head, last = self._cursor(repository, after, None)
         tail = self._after(list(self._manifests(repository, head)), last, lambda row: row.intent.capture_id)
         selected = tail[:self._limit(limit)]
         cursor = self._next(head, selected[-1].intent.capture_id, None) if len(tail) > len(selected) else None
-        return CapturePage(tuple(self._receipt_from_manifest(repository, row, head) for row in selected), cursor)
+        return repository, head, selected, cursor
 
     def source_chain(self, actor, project_id, stage_id, source_key, *, after_capture_id=None, limit=100):
         repository = self._read_repository(actor, project_id, stage_id)

@@ -2,10 +2,12 @@ from django.template import Context, Engine
 from uuid import UUID
 
 from project_management.app.domain.capture_values import canonical_bytes, content_hash, sha256_bytes
+from project_management.app.domain.report_authoring import AuthoredEdit, validate_authored_edits
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_edits import validate_edit_targets
 from project_management.app.domain.report_presentation import RenderedReport
 from project_management.reporting.templates import load_default_registry, resolve_template
+from project_management.reporting.pinned import compile_pinned_data_block, compile_pinned_report
 from project_management.reporting.text import build_plain_text
 from project_management.reporting.validation import validate_rendered_html
 from project_management.reporting.view_model import build_report_model
@@ -31,7 +33,7 @@ class ReportRenderer:
         self._validate_render_request(draft_id, revision, edition_state, revision_hash)
         template_value, definition = resolve_template(self._registry, template)
         snapshot_hash = self._snapshot_hash(snapshot)
-        validated_edits = validate_edit_targets(snapshot, edits)
+        validated_edits = self._validated_edits(snapshot, edits)
         model = build_report_model(
             snapshot,
             definition,
@@ -69,9 +71,56 @@ class ReportRenderer:
             clipboard_available=len(fragment_bytes) <= self._max_clipboard_bytes,
         )
 
+    def render_pinned(self, snapshot, template_snapshot, authored_edits=(), *, authoring_context,
+                      draft_id, revision, revision_hash=None, edition_state='draft') -> RenderedReport:
+        self._validate_render_request(draft_id, revision, edition_state, revision_hash)
+        snapshot_hash = self._snapshot_hash(snapshot)
+        fragment, plain_text = compile_pinned_report(
+            self._engine, snapshot, template_snapshot, authored_edits,
+            authoring_context=authoring_context,
+            draft_id=draft_id, revision=revision, revision_hash=revision_hash, edition_state=edition_state,
+        )
+        template_hash = template_snapshot['presentation_hash']
+        document = self._document(fragment, 'Daily standup report')
+        validate_rendered_html(document)
+        document_bytes = document.encode('utf-8')
+        fragment_bytes = fragment.encode('utf-8')
+        plain_text_bytes = plain_text.encode('utf-8')
+        if len(document_bytes) > self._max_html_bytes:
+            raise ReportError('REPORT_LIMIT')
+        return RenderedReport(
+            draft_id=draft_id, revision=revision, revision_hash=revision_hash,
+            snapshot_hash=snapshot_hash, template_hash=template_hash,
+            html_document=document_bytes, html_fragment=fragment, plain_text=plain_text,
+            html_document_sha256=sha256_bytes(document_bytes), html_document_bytes=len(document_bytes),
+            html_fragment_sha256=sha256_bytes(fragment_bytes), html_fragment_bytes=len(fragment_bytes),
+            plain_text_sha256=sha256_bytes(plain_text_bytes), plain_text_bytes=len(plain_text_bytes),
+            content_language='en', clipboard_available=len(fragment_bytes) <= self._max_clipboard_bytes,
+        )
+
+    def render_pinned_data_block(self, snapshot, template_snapshot, authored_edits, block, *, draft_id,
+                                 revision, revision_hash=None, edition_state='draft'):
+        return compile_pinned_data_block(
+            self._engine,
+            snapshot,
+            template_snapshot,
+            authored_edits,
+            block,
+            draft_id=draft_id,
+            revision=revision,
+            revision_hash=revision_hash,
+            edition_state=edition_state,
+        )
+
     def template_definition(self, template):
         _, definition = resolve_template(self._registry, template)
         return definition
+
+    def _validated_edits(self, snapshot, edits):
+        edit_tuple = tuple(edits or ())
+        if any(isinstance(edit, AuthoredEdit) for edit in edit_tuple):
+            return validate_authored_edits(snapshot, edit_tuple)
+        return validate_edit_targets(snapshot, edit_tuple)
 
     def _snapshot_hash(self, snapshot) -> str:
         snapshot_bytes = canonical_bytes(snapshot)

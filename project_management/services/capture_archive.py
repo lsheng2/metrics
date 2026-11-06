@@ -1,6 +1,5 @@
 from datetime import UTC, datetime
 from dataclasses import replace
-
 from project_management.app.domain.capture_values import (
     canonical_bytes,
     content_hash,
@@ -37,14 +36,13 @@ from project_management.services.archive_reads import ArchiveReads
 from project_management.services.archive_material import ArchiveMaterial
 from project_management.services.report_archive import ReportArchiveRepositoryAccess
 from project_management.services.report_archive_reads import ReportArchiveReads
+from project_management.services.report_membership import read_report_membership
 from project_management.services.project_operation_archive import ProjectOperationArchive
 from project_management.services.source_resolution import SourceResolutionArchive
 from project_management.services.summary_journal import SummaryJournal
 from project_management.app.domain.capture_validation import (
     item_key, text, validate_limits, validate_membership, validate_page, validate_snapshot,
 )
-
-
 class CaptureArchiveService(ProjectOperationArchive, ArchiveReads, ReportArchiveRepositoryAccess, ReportArchiveReads, ArchiveMaterial, SourceResolutionArchive, SummaryJournal):
     def __init__(self, project_api, repository_factory, config):
         self.project_api = project_api
@@ -54,6 +52,8 @@ class CaptureArchiveService(ProjectOperationArchive, ArchiveReads, ReportArchive
         text(config.author_name, 160)
         text(config.author_email, 256)
 
+    def read_report_membership(self, actor, project_id, stage_id, snapshot):
+        return read_report_membership(self, actor, project_id, stage_id, snapshot)
     def initialize_stage(self, actor, project_id, stage_id) -> ArchiveIdentity:
         project, stage = self._stage_for_write(actor, project_id, stage_id)
         self._validate_root_before_lock()

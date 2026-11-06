@@ -1,5 +1,3 @@
-import uuid
-
 from project_management.app.domain.capture_values import canonical_bytes, content_hash, decode_json, decode_snapshot
 from project_management.app.domain.capture_validation import item_key
 from project_management.app.domain.captures import ArchiveError
@@ -15,7 +13,8 @@ from project_management.app.domain.report_contracts import (
 )
 from project_management.app.domain.report_values import report_hash
 from project_management.app.domain.summary_contracts import AnalysisError
-from project_management.app.domain.summary_input import build_initial_input, complete_source, unchanged_since
+from project_management.app.domain.summary_input import complete_source, unchanged_since
+from project_management.services.summary_material import verified_accepted_material
 from project_management.services.report_source_values import (
     checked_limits,
     json_copy,
@@ -25,6 +24,7 @@ from project_management.services.report_source_values import (
     validated_selection,
 )
 from project_management.services.report_publication_reads import ReportPublicationResolver
+from project_management.services.report_membership import ScopeMember, ScopeMembershipSnapshot
 
 
 COMPARISON_POLICY_HASH = report_hash({'policy': 'initial-baseline', 'version': 1})
@@ -111,6 +111,9 @@ class ReportSourceReader:
             raise ReportSourceError('REPORT_LIMIT')
         return snapshot
 
+    def membership(self, actor, project_id, stage_id, snapshot) -> ScopeMembershipSnapshot:
+        return self.archive.read_report_membership(actor, project_id, stage_id, snapshot)
+
     def _snapshot(self, actor, project, stage, repository, selection, timezone, head):
         manifest_paths = [path for path in repository.list_files('captures') if path.endswith('/manifest.json')]
         if len(manifest_paths) > self.limits.max_captures:
@@ -179,10 +182,10 @@ class ReportSourceReader:
         if not complete_source(source):
             return self._pending_row(stage, source_key, identity, source_ref.source_hash, source, 'source_incomplete')
         chain = tuple(self.archive._source_chain(repository, source_key, repository.head()))
-        accepted, envelope = self.archive._analysis_accepted(repository, source_key)
+        accepted, _ = self.archive._analysis_accepted(repository, source_key)
         if accepted is None:
             return self._pending_row(stage, source_key, identity, source_ref.source_hash, source, 'summary_pending')
-        usable = self._accepted_material(repository, project, stage, source_key, chain, accepted, envelope)
+        usable = self._accepted_material(repository, source_key, chain, accepted, source_ref, source)
         if not usable:
             return self._pending_row(stage, source_key, identity, source_ref.source_hash, source, 'summary_stale')
         attempt, summary_snapshot, candidate, original_input = usable
@@ -219,52 +222,20 @@ class ReportSourceReader:
             pending_reason=None,
         )
 
-    def _accepted_material(self, repository, project, stage, source_key, chain, accepted, envelope):
-        attempt = self.archive._analysis_attempt(repository, envelope['attempt_id'])
-        summary_snapshot = envelope['payload']['snapshot']
-        candidate = self.contract.validate_result(attempt, summary_snapshot, accepted.run_result)
-        expected_summary_id = str(uuid.uuid5(uuid.UUID(attempt.attempt_id), 'accepted'))
-        if json_copy(candidate) != json_copy(accepted.candidate):
-            raise AnalysisError('ANALYSIS_RESULT_INVALID')
-        if (not attempt.dispatched or attempt.source_key != source_key
-                or accepted.summary_id != expected_summary_id
-                or accepted.revision != envelope.get('revision')
-                or type(accepted.revision) is not int or accepted.revision <= 0
-                or accepted.profile_definition_hash != self.contract.definition_hash
-                or accepted.input_hash != attempt.prepared.input_hash
-                or accepted.target_capture_id != attempt.prepared.target_capture_id
-                or accepted.source_hash != attempt.prepared.source_hash
-                or attempt.prepared.expected_revision != 0
-                or attempt.prepared.base_summary_id is not None):
-            raise AnalysisError('ANALYSIS_RESULT_INVALID')
-        try:
-            target = next(row for row in chain if row.capture_id == accepted.target_capture_id)
-        except StopIteration:
-            raise AnalysisError('ANALYSIS_SOURCE_CHANGED') from None
-        target_source = decode_snapshot(repository.read_file(target.git_path))
-        if self.archive._source_hash(target_source) != target.source_hash or target_source.identity != target.identity:
-            raise AnalysisError('ANALYSIS_SOURCE_CHANGED')
-        rebuilt = build_initial_input(
-            project.id,
-            stage,
-            source_key,
-            target,
-            target_source,
-            f"{self.contract.profile_ref['key']}@{self.contract.profile_ref['revision']}",
-        )
-        if (rebuilt.input_hash != attempt.prepared.input_hash
-                or rebuilt.input_content != attempt.prepared.input_content):
+    def _accepted_material(self, repository, source_key, chain, accepted, current_reference, current_source):
+        sources = tuple(current_source if reference == current_reference
+                        else decode_snapshot(repository.read_file(reference.git_path)) for reference in chain)
+        material = verified_accepted_material(self.archive, repository, source_key, self.contract, chain, sources)
+        if not material or material[-1].summary != accepted:
             raise AnalysisError('ANALYSIS_RESULT_INVALID')
         if not unchanged_since(accepted.target_capture_id, accepted.source_hash, chain):
             return None
         start = next(index for index, row in enumerate(chain) if row.capture_id == accepted.target_capture_id)
-        for row in chain[start:]:
-            source = decode_snapshot(repository.read_file(row.git_path))
-            if self.archive._source_hash(source) != row.source_hash or source.identity != row.identity:
-                raise AnalysisError('ANALYSIS_SOURCE_CHANGED')
+        for source in sources[start:]:
             if not complete_source(source):
                 return None
-        return attempt, summary_snapshot, candidate, decode_json(rebuilt.input_content.encode('utf-8'))
+        latest = material[-1]
+        return latest.attempt, latest.snapshot, accepted.candidate, decode_json(latest.prepared.input_content.encode('utf-8'))
 
     def _pending_row(self, stage, source_key, identity, source_hash, source, reason):
         return ReportRow(

@@ -42,3 +42,17 @@ class ProjectAuditEvent(models.Model):
     kind = models.CharField(max_length=40)
     actor_subject = models.CharField(max_length=160)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+from project_management.models_report_templates import (
+    ReportTemplate,
+    ReportTemplateCommand,
+    ReportTemplateRevisionRecord,
+    ReportTemplateUsage,
+    ReportTemplateUse,
+)
+from project_management.models_report_series import (
+    ReportSeries,
+    ReportSeriesCommand,
+    ReportSeriesPolicyRevisionRecord,
+)

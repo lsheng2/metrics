@@ -12,6 +12,7 @@
         const finalizeButton = root.querySelector('[data-report-finalize-button]');
         const status = root.querySelector('[data-report-copy-status]');
         const languageForms = Array.from(root.querySelectorAll('form[action*="projects/language"]'));
+        const authoredMode = Boolean(root.querySelector('[data-report-authored-form]'));
         let payload = null;
         let dirty = false;
 
@@ -36,13 +37,20 @@
 
         const initialValues = currentValues();
 
+        function authoredBlocked() {
+            return root.dataset.reportAuthoringDirty === 'true'
+                || root.dataset.reportAuthoringSaving === 'true'
+                || root.dataset.reportAuthoringFailed === 'true'
+                || root.dataset.reportAuthoringUncertain === 'true';
+        }
+
         function syncButtons() {
-            dirty = currentValues() !== initialValues;
+            dirty = currentValues() !== initialValues || authoredBlocked();
             if (dirtyBanner) {
                 dirtyBanner.classList.toggle('is-hidden', !dirty);
             }
             if (copyButton) {
-                const canCopy = Boolean(payload) && !dirty && payload.clipboard_available;
+                const canCopy = Boolean(payload) && !dirty && payload.clipboard_available && !authoredBlocked();
                 copyButton.disabled = !canCopy;
                 copyButton.setAttribute('aria-disabled', String(!canCopy));
             }
@@ -112,6 +120,28 @@
             syncButtons();
         }
 
+        function applySavedRevision(event) {
+            const detail = event.detail || {};
+            payload = null;
+            if (detail.revision !== undefined) {
+                root.dataset.revision = String(detail.revision);
+            }
+            if (detail.revision_hash) {
+                root.dataset.revisionHash = detail.revision_hash;
+            }
+            if (detail.snapshot_hash) {
+                root.dataset.snapshotHash = detail.snapshot_hash;
+            }
+            if (detail.template_hash) {
+                root.dataset.templateHash = detail.template_hash;
+            }
+            if (detail.clipboard_url) {
+                root.dataset.clipboardUrl = detail.clipboard_url;
+            }
+            syncButtons();
+            loadClipboardPayload();
+        }
+
         async function copyReport() {
             if (!payload || dirty) {
                 setStatus(root.dataset.messageSaveBeforeCopy, 'error');
@@ -148,14 +178,18 @@
                 }
             });
         }
-        languageForms.forEach(languageForm => {
-            languageForm.addEventListener('submit', event => {
-                if (dirty) {
-                    event.preventDefault();
-                    setStatus(root.dataset.messageSaveBeforeCopy, 'error');
-                }
+        root.addEventListener('report-authoring-state', syncButtons);
+        root.addEventListener('report-authoring-saved', applySavedRevision);
+        if (!authoredMode) {
+            languageForms.forEach(languageForm => {
+                languageForm.addEventListener('submit', event => {
+                    if (dirty) {
+                        event.preventDefault();
+                        setStatus(root.dataset.messageSaveBeforeCopy, 'error');
+                    }
+                });
             });
-        });
+        }
         syncButtons();
         loadClipboardPayload();
     }

@@ -53,7 +53,7 @@ def test_unknown_template_or_option_is_rejected():
     renderer = report_api.ReportRenderer()
     bad_templates = (
         report_api.TemplateSelection('management-review', '1', {}),
-        report_api.TemplateSelection('daily-standup', '2', {}),
+        report_api.TemplateSelection('daily-standup', '3', {}),
         report_api.TemplateSelection('daily-standup', '1', {'raw_css': 'body{}'}),
         report_api.TemplateSelection('daily-standup', '1', {'prompt': 'rewrite'}),
         report_api.TemplateSelection('daily-standup', '1', {'path': '../x.html'}),

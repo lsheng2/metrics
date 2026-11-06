@@ -11,6 +11,7 @@ class RawResponse:
     body: bytes
     partial: bool
     error_code: str | None
+    retry_after: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
