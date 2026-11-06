@@ -17,6 +17,10 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
+最新入口：整周/跨周操作闭环及gap/清空分支已通过，见
+[week-delivery.md](week-delivery.md)。下一步先确认精简正文与独立审计输出的
+模板契约，并分析已观察到的请求延迟；不重跑已经验证的整周，不将整个topic标为完成。
+
 2026-11-05用户批准Dashboard交付复评，并要求同步文档、调整执行顺序、开始执行。
 本轮沿Dashboard main，基线`eb8de2e`；SDK020已通过，不重跑其全部资格。
 唯一执行状态仍在本文件，新统一开发契约为`AI_CONTRACT.md`。
@@ -69,8 +73,18 @@ ASSIST.REPLAN准入：先执行导出样本，再执行原整周/跨周；
 最终转换17 tests、真实Git三票/两日1 test、HTTP2 tests、实际浏览器下载/复制及中文手机2 tests、
 旧保存/生命周期等28 tests与Node状态3 tests通过。一个P2行数上限遗漏已通过反例修复和限定复审。
 Excel是明确声明的文本表格导出，颜色继续由HTML/JSON保真；Outlook/native-client未资格。
-下一步保持原`W6.AUTHOR.JOIN`：2026-10-26..30与11-02，三票、相同来源、逐日人工内容、
-Save/reopen/Finalize及正常重启；不再用手工预置summary替代首日真实SDK/Base合成接受链。
+2026-11-06 `W6.AUTHOR.JOIN`操作/连续性链路实际通过：
+`aa2fb399-4557-4342-b725-8de2dab91aba`保留六个日期及周报，共七份publication；
+最终公开API重读42个原始文件hash一致，三次合成Base派发后不再推理。
+重复准备、正常重启、#ID第三格式、颜色/粗体/高亮、stale保存409、跨周、
+真实非空内容清空及未定稿gap均有证据。两服务正常退出。
+准备内容hash与完整意图hash误比较的业务修复7项回归通过；
+验证脚本生成器、动态checkout及未触及空槽等错误分别保留原失败和直接反例。
+当前validator7 tests与Node13 tests通过；运行详情唯一见week交付回执。
+这仍不是最终产品验收：实际HTML仍强制带完整原始摘要/审计明细，不符合精简站会正文；
+部分请求等待53-77秒，尚未做关键路径profile。`AUTHOR.R/REPLAN`及完整W6保持未完成，
+先确认版本化的呈现/审计边界，再修订原W6.RENDER/PUBLISH；不静默删除审计/权限校验，
+不修改旧publication/hash，也不以功能绿色替代最终效果或真实环境资格。
 
 获准顺序：[delivery-sequence.md](delivery-sequence.md)。
 治理/环境 -> DAILY短链及提交 -> 增量输入/接受/报告读取闭环 -> ASSIST单目标 ->
@@ -216,7 +230,7 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.HTML.RENDER Implement versioned daily/weekly HTML projections, self-contained email fragment and safe plain fallback.
 - [x] W6.HTML.EDIT Persist revisioned local drafts and attributable human edits without model/source changes or Git publication.
 - [x] W6.HTML.FINALIZE Confirm exact draft revision into existing data Git with original-byte recovery/download.
-- [ ] W6.HTML.UI Summary: consume W6.AUTHOR.EDIT/JOIN for existing authoring acceptance; current textarea is transitional, no separate user-provided Agent prerequisite.
+- [x] W6.HTML.UI Summary: WYSIWYG authoring is covered by W6.AUTHOR.EDIT/JOIN; no source-mode or separate user-provided Agent prerequisite.
 - [ ] W6.HTML.R Review the bounded authoring slice and actual desktop/copy/Git evidence; email-client qualification reported separately if unavailable.
 - [x] SDK020.PLAN.R Freeze the selected SDK/pack contract, pre-IP work and post-IP APIs/fixtures; review and publish scoped specifications before implementation.
 - [x] SDK020.ARTIFACT Verify final owner receipt/wheel/pack; install SDK into an owned separate target without changing the main environment.
@@ -245,7 +259,7 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.AUTHOR.ASSIST Add explicit AI candidates using a separately qualified authoring profile.
 - [x] W6.AUTHOR.ASSIST.REPLAN Verify authoring-profile HTTP qualification and provenance consumers before the final week.
 - [x] W6.AUTHOR.EXPORT.SAMPLE Add versioned derived Markdown/Excel downloads without altering original six-file publications, then qualify one rich-text/template/AR/history and clipboard sample before the week.
-- [ ] W6.AUTHOR.JOIN Validate actual authoring/save/copy/finalization; separate live-provider and Outlook qualification.
+- [x] W6.AUTHOR.JOIN Validate authoring/save/copy/finalization and the week/cross-week/gap workflow; concise-body alignment, performance and external qualification remain open.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.
@@ -622,11 +636,12 @@ Produces：AssistStatus/Candidate、input/result provenance、Apply-to-dirty及S
 
 ### JOIN, R And REPLAN
 
-JOIN owner_paths为前述实现闭包、
-`ui_web/tests/test_report_authoring_browser.py`、
-`ui_web/tests/test_report_authoring_week_browser.py`、
-`scripts/validation/run_report_authoring_week.py`、
-`project_management/tests/test_report_authoring_exports.py`、当前guide/本change。
+JOIN owner_paths为前述实现闭包、当前guide/本change及
+[week-qualification.md](week-qualification.md)中的精确运行器、fixture和专项测试。
+实际入口为`project_full_stack.py prepare --scenario full-week`及
+`scripts/validation/project_week_browser.py --run-dir ...`，沿用同一launcher的
+start/status/restart-app/stop；不再执行早期规划但未实现的
+`run_report_authoring_week.py`等文件名。
 不启动旧保留演示或改另仓worker。Consumes：各叶固定hash/tests；
 Produces：RA35-40/67-69、原HT28-30相同候选结果与未决列表。
 

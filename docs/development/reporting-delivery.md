@@ -132,3 +132,51 @@ browser Clipboard API readback after Save, including paint in HTML. That proves
 the browser route, not Outlook/native-app paste. Current evidence and limitations
 are in [export delivery](../../openspec/changes/add-provider-neutral-project-reporting/export-delivery.md).
 The original full-week/cross-week scenario remains the next independent gate.
+
+## Full Week Qualification
+
+Use the existing owned launcher and the
+[week packet](../../openspec/changes/add-provider-neutral-project-reporting/week-qualification.md).
+The fixed `full-week` scenario uses three synthetic Jira records and the installed
+SDK/local Base, with actual source capture and accepted summaries on the first day.
+Later unchanged captures reuse those summaries. The browser driver performs the
+six meeting dates through the actual templates, editor, Save and Finalize routes.
+
+```powershell
+& $reportingPython -I scripts/validation/project_full_stack.py prepare --work-root .tmp/sdk-020-join-20261105 --scenario full-week
+```
+
+Use the exact owned `run_dir` returned by `prepare` for `start`, `status` and
+`project_week_browser.py --run-dir`. Do not select a run by directory age or use
+another application's port. The driver stops its owned services in its finalizer
+and retains all artifacts. Initial setup, per-operation deadlines and the service
+lifetime are independent bounds; never extend an existing operation to make it pass.
+
+After an interruption or PC restart, inspect the prior run's responses, canonical
+checkpoints and stop receipt before starting anything. A finalized day needs its
+verified publication, not only a screenshot or a successful Save. A failure and
+normal cleanup are separate conclusions. A changed runtime requires a new frozen
+candidate; do not combine its days with an earlier failed candidate or rewrite
+historical request/hash bytes.
+
+For a validator-only failure after publication, `--resume-after` can continue the
+same run before the weekly-view step. It permits only the explicitly named
+validator files to differ, verifies every retained day by reading actual original
+artifacts again, and writes a new evidence directory. Application/shared-fixture
+changes, incomplete checkpoints or a different source commit require a new run.
+Old failures remain part of the evidence even if corrected validation later passes.
+
+The refresh preparation binding uses the validated content hash; its active slot
+separately binds the full stored intent. Initial saved-capture and replacement
+formats retain their existing hash definitions. The shared producer/consumer rule
+is covered by `test_report_preparation_publication_guard.py`; stale, superseded,
+missing and downgraded bindings must continue to refuse publication.
+
+The [qualified week receipt](../../openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
+binds six daily publications, a weekly view, explicit empty-note/gap handling and
+42 original-file rechecks. It is an operation/continuity qualification, not an
+approval of the default report's verbosity or performance. The next presentation
+design must separate concise business output from retained audit information
+without changing old template/renderer hashes or removing source/coverage guards.
+Profile the recorded long prepare/view waits before choosing an optimization;
+do not use more week runs to locate a read-path problem.

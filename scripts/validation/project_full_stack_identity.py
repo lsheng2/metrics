@@ -142,6 +142,8 @@ def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, default_base
         raise ValueError('Selected SDK contract pack identity mismatch.')
     if digest_file(run_dir / 'fixture-vector.json') != manifest['catalog'].get('fixture_vector_sha256'):
         raise ValueError('Runtime manifest vector identity mismatch.')
+    from scripts.validation.project_week_scenarios import validate_scenario
+    validate_scenario(manifest, read_json(run_dir / 'fixture-vector.json'))
     validate_catalog_route(manifest)
 
 

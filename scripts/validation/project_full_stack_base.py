@@ -139,23 +139,42 @@ class ExactDynamicVectorExecutor:
         self.vector = vector
         self.observations = observations
         self.validator = Draft202012Validator(input_schema, registry=schema_registry(vector.get('schema_documents', {})))
+        self.cases = vector.get('cases')
+        if self.cases is not None:
+            if vector.get('schema_version') != 2 or not isinstance(self.cases, list) or len(self.cases) != 3:
+                raise ValueError('The week fixture requires three exact vectors.')
+            identities = [case['input_template']['binding']['stable_id'] for case in self.cases]
+            if identities != ['101', '102', '103']:
+                raise ValueError('The week fixture has unexpected identities.')
+            for case in self.cases:
+                binding = case['input_template']['binding']
+                if vector['scope_key'] != f"projects.{binding['project_id']}.stages.{binding['stage_id']}":
+                    raise ValueError('The week fixture has a foreign scope.')
 
     async def execute(self, compiled):
         content = compiled.messages[-1][1]
         value = json.loads(content)
         self.validator.validate(value)
+        vector = self.vector
+        if self.cases is not None:
+            matches = [case for case in self.cases
+                       if case['input_template']['binding'] == value['binding']]
+            if len(matches) != 1:
+                raise ValueError('The application binding is not a registered week vector.')
+            vector = matches[0]
         capture_id = dynamic_capture_id(value)
-        normalized = normalize_capture_id(value, capture_id, self.vector['capture_placeholder'])
-        if normalized != self.vector['input_template']:
+        normalized = normalize_capture_id(value, capture_id, vector['capture_placeholder'])
+        if normalized != vector['input_template']:
             raise ValueError('The application input differs from the registered qualification vector.')
         input_sha = hashlib.sha256(content.encode()).hexdigest()
-        output = adapt_output(self.vector['output_template'], value, capture_id)
+        output = adapt_output(vector['output_template'], value, capture_id)
         with self.observations.open('a', encoding='utf-8') as stream:
             stream.write(json.dumps({
                 'inputSha256': input_sha,
                 'effectiveInputSha256': compiled.effective_input_sha256,
                 'executionMode': 'synthetic',
                 'captureId': capture_id,
+                'stableId': value['binding']['stable_id'],
             }, sort_keys=True) + '\n')
         await asyncio.sleep(0.01)
         return json.dumps(output, ensure_ascii=False, sort_keys=True, separators=(',', ':'))

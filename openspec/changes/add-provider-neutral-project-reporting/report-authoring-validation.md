@@ -242,29 +242,27 @@ RA20还包括人工改title/paint、大段内插入、改link key/href、删link
 
 ## 4. Execution Commands And Fixtures
 
-从 Dashboard 根运行，使用 `.venv/Scripts/python.exe`。
-新case先编写RED，缺失模块的命令不在本次设计窗口执行。
+当前命令从Dashboard根运行，使用
+`.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe`和
+`scripts/validation/run_report_authoring_tests.py`，准确环境与作用域见
+[验证指南](../../../docs/development/reporting-delivery.md)。
+保留的主`.venv`仍为旧SDK，不得用于迁移后reporting验收。
+新case先编写RED；未实现文件名不能当作可执行命令。
 Node场景用 `node --test`，可读描述是case名，不是假的 pytest nodeid。
-实施中新增可复用隔离入口` .venv/Scripts/python.exe scripts/validation/run_report_authoring_tests.py `
-后接显式pytest路径：不加载.env、临时SQLite/state/archive、仅本机测试server连接。
-以下直接pytest示例只有在相同合成settings已装配时使用，不能加载真实默认配置。
+隔离入口后接显式pytest路径：不加载.env、临时SQLite/state/archive、仅本机测试server连接。
 已落地UI专项包括`test_report_authoring_views.py`、`test_report_authoring_browser.py`、
 `test_report_authoring_lifecycle_browser.py`；生命周期4场景不替代后续整周RA67。
 
 ```powershell
-& .\.venv\Scripts\python.exe -m pytest project_management/tests/test_report_authoring_content.py project_management/tests/test_report_authoring_migration.py -q
+$reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe'
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py project_management/tests/test_report_preparation_publication_guard.py -q
 node --test ui_web/tests/report_editor_test.mjs
-& .\.venv\Scripts\python.exe -m pytest project_management/tests/test_report_completion.py provider_sync/tests/test_reference_lookup.py -q
-& .\.venv\Scripts\python.exe -m pytest project_management/tests/test_report_template_library.py project_management/tests/test_report_template_compilation.py -q
-& .\.venv\Scripts\python.exe -m pytest project_management/tests/test_report_assists.py -q
-& .\.venv\Scripts\python.exe -m pytest ui_web/tests/test_report_authoring_views.py project_management/tests/test_report_authoring_exports.py -q
-& .\.venv\Scripts\python.exe -m pytest ui_web/tests/test_report_authoring_browser.py -q
-& .\.venv\Scripts\python.exe -m pytest project_management/tests/test_report_continuity.py project_management/tests/test_report_week_rollover.py project_management/tests/test_report_meeting_matrix.py project_management/tests/test_report_continuity_publication.py -q
-& .\.venv\Scripts\python.exe -m pytest project_management/tests/test_report_preparation.py ui_web/tests/test_report_preparation_views.py -q
 ```
 
-W7 单独环境资格命令为
-`.venv/Scripts/python.exe -m pytest project_management/tests/test_report_schedule.py -q`。
+这不是全量验收选择。专项完整路径在前节矩阵及各叶的delivery回执中，
+完整周入口与负向分支由[week-qualification.md](week-qualification.md)维护；
+不再沿用早期规划中的未实现测试文件名。
+W7调度仍后置，准确命令在其实现包就绪后冻结。
 合成时钟/adapter先验证同日去重、missed和禁止定稿，实际scheduler注册/运行另需明确授权；
 不得因文档存在就在用户机器创建计划任务。
 

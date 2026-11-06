@@ -15,17 +15,23 @@ The visual template library supports versioned blocks/slots, pinned report
 creation, manual filling and explicit finalization. Its scoped synthetic
 desktop workflow is qualified. Explicit AI filling follows the
 [Authoring V2 design](openspec/changes/add-provider-neutral-project-reporting/report-authoring-v2.md),
-now being implemented on `main`. Editor save/reopen and lifecycle scenarios
-passed scoped desktop Chrome tests; the joined authoring workflow remains pending.
-A single coordinator owns this lane; joined clipboard/Outlook acceptance remains pending.
+with scoped installed-SDK/local-Base qualification on `main`.
+Editor save/reopen and lifecycle scenarios passed scoped desktop Chrome tests;
+the full-week/cross-week authoring and pending-gap workflows are qualified with
+synthetic sources. [The evidence](openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
+also records the still-open concise-report presentation and request-latency issues.
+A single coordinator owns this lane; Outlook/native-client acceptance remains pending.
 The proposed [continuity design](openspec/changes/add-provider-neutral-project-reporting/report-continuity.md)
 adds per-ticket stable rows, source-status date prefixes, preserved human rich-text
 edits, cumulative daily notes and weekly carry-forward. Daily preparation is manual
 by default; optional scheduling remains disabled and never finalizes reports.
 The continuity backend has scoped three-day/next-week data-Git qualification,
 and the matrix editor, explicit series/weekly views and linked corrections have
-scoped desktop qualification. Daily preparation remains in progress. Scheduling is
-still deferred and disabled. This is not full authoring-workflow qualification.
+scoped desktop qualification. Manual daily preparation has a qualified two-day
+chain. Derived Markdown/Excel downloads and browser formatted-copy readback have
+a separate qualified sample. The full-week/cross-week gate is recorded in the
+[week packet](openspec/changes/add-provider-neutral-project-reporting/week-qualification.md).
+Scheduling is still deferred and disabled. This is not complete product qualification.
 Jira/HSD-ES source
 definitions are previewed and frozen. Live reporting and the full delta pipeline are
 not yet qualified.

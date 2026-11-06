@@ -11,37 +11,45 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 [唯一任务清单](../../changes/add-provider-neutral-project-reporting/tasks.md)。
 采集到HTML下载、显式Git定稿、重启与无变化复用已通过本机合成全栈验证。
 富文本日常编辑、有界累计delta和显式AI辅助已通过限定本机合成资格；
-已保存报告支持派生Markdown/Excel导出；完整provider覆盖、完整工作周验收和正式运行仍待后续交付。
+已保存报告支持派生Markdown/Excel导出；整周/跨周及未定稿gap操作闭环已通过合成验收。
+默认模板的精简正文效果、已观察到的交互延迟、完整provider覆盖和正式运行仍未完成。
 内部合成能力不等于真实来源或真实模型已经上线。
 
 ### 已验证的演示
 
-2026-11-03验收使用真实Django/worker、Git、安装SDK和Base HTTP，
-Jira响应与模型输出为明确登记的合成内容。1次Base派发产生1份已接受摘要；
-重启后再次采集相同内容返回`no_work`，没有新分析尝试或Base Run。
-浏览器状态自动刷新并在终态停止，旧报告的HTML/文本下载与原Git字节一致。
-三条完整评论、原始Base结果和六份旧数据指纹均保留。
-详见[交付回执](../../changes/add-provider-neutral-project-reporting/manual-workflow-delivery.json)。
+2026-11-06验收使用真实Django/worker、Git、安装SDK0.2.0a1和Base HTTP，
+Jira响应与模型输出均为明确的合成内容。首日三次派发产生三份已接受摘要，
+随后六个会议日期均复用；编辑、补全、保存和导出不产生新的模型调用。
+模板、逐日颜色/正文、保存冲突、正常重启、跨周seed和未定稿gap均有实际证据，
+最终重读七份发布的42个原文件hash一致。详见
+[整周交付回执](../../changes/add-provider-neutral-project-reporting/week-delivery.md)。
+原单票演示仍作为[历史证据](../../changes/add-provider-neutral-project-reporting/manual-workflow-delivery.json)保留，
+不再用旧`.venv`启动迁移后的报告代码。
 
-本轮两个服务均已正常停止，独立HTML示例保存在下方数据根的
-`evidence/report.html`。需要再次打开应用时，从本仓执行：
+资格测试服务已正常停止。HTML位于下方数据根的
+`evidence/canonical/20261030/report.html`和`evidence/canonical/20261102/report.html`。
+再次打开隔离合成应用时，从本仓执行：
 
 ```powershell
-$run = 'D:\AIGC\scrum_dashboard_validation\full-stack\7b1f3cc9-7fb4-4bf3-acdc-f4dbb5c4b510'
-& .\.venv\Scripts\python.exe -B scripts\validation\project_full_stack.py start --run-dir $run --lifetime-seconds 1800
+$run = 'D:\AIGC\scrum_dashboard_validation\full-stack\aa2fb399-4557-4342-b725-8de2dab91aba'
+$reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe'
+& $reportingPython -I scripts/validation/project_full_stack.py start --run-dir $run --lifetime-seconds 1800
 ```
 
 使用命令成功返回的URL。本次地址为
-`http://127.0.0.1:8127/projects/20184354-86f2-4156-9e52-6a3dc311ebef/stages/2bafe7f9-0441-461d-992d-2a6176696f95/reports/`。
+`http://127.0.0.1:8127/projects/3bc2224e-a6ce-4f85-be43-3c63223a9125/stages/2e4ffd3f-4fb7-46f0-84ea-2b194bfa34d9/reports/`。
 合成账号为`SYNTHETIC_ALICE`，密码为`SYNTHETIC_ALICE_PASSWORD`；
 它们不是公司凭据。演示应用会话限时1800秒。正常退出：
 
 ```powershell
-& .\.venv\Scripts\python.exe -B scripts\validation\project_full_stack.py stop --run-dir $run
+& $reportingPython -I scripts/validation/project_full_stack.py stop --run-dir $run
 ```
 
 这些命令复用已验证的本机输入、原store与数据根，不是正式安装器。
 旧项目配置Demo、真实数据库和正式定时任务没有在本轮迁移或启用。
+当前模板仍强制附带原始摘要与详细审计表，不能称为已满足精简站会报告要求；
+后续须在保留完整归档、权限和覆盖校验的前提下，版本化区分精简正文与审计输出。
+请求耗时也尚未完成优化，不能把功能通过等同于日常使用性能已经合格。
 
 ## 产品目标与分工
 
@@ -250,6 +258,9 @@ Saved capture或Refresh source。采集选项显示UTC截止时间和短ID，来
 重建为另一个候选；旧人工文字、空值、颜色和链接按已核验规则继承，不匹配内容会提示核对，
 不能默认为无损成功。重建仍受该准备绑定的系列策略及兼容模板限制，不自动改绑策略。
 已定稿报告只允许关联纠错，不能把历史纠错说成新来源刷新；从已发布页面进入该操作。
+定稿同时检查已保存的revision、准备内容绑定、当前有效准备和正式baseline；
+刷新准备的内容hash与完整存档hash分别核验，不要求这两个不同含义的值相等。
+已被替代的草稿仍保留可读，但不能冒充当前准备完成定稿。
 
 CLI使用同一准备服务。`project_run preview`返回系列策略hash和正式baseline引用，
 `prepare`要求显式`--expected-series-policy-hash`，非初始基线还要提供其publication ID、
@@ -259,9 +270,12 @@ Base运行；`--source-mode refresh --execute-local`使用已配置的同一work
 CLI身份仍为可信`local_operator`，不允许通过参数伪造浏览器用户。
 
 ```powershell
-.\.venv\Scripts\python.exe manage.py project_run preview $ProjectId $StageId --series-id $SeriesId --meeting-date 2026-10-26 --template-id $TemplateId --template-revision 1 --template-revision-hash $TemplateHash
+$reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe'
+& $reportingPython manage.py project_run preview $ProjectId $StageId --series-id $SeriesId --meeting-date 2026-10-26 --template-id $TemplateId --template-revision 1 --template-revision-hash $TemplateHash
 ```
 
+以上运行命令只用于已明确配置的环境，不是测试入口；开发验证必须使用
+[隔离、no-dotenv验证方式](../../../docs/development/reporting-delivery.md)。
 上例是显式会议日期，不会改变系统时钟、工单时间或执行deadline；来源截止时间独立记录，
 不能把当前采集冒充该历史日期的真实来源。本轮验证只使用隔离合成数据，没有执行生产数据库
 迁移、正式调度、真实来源/付费模型调用或发送。

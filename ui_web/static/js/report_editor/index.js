@@ -181,9 +181,10 @@ function initializeReportAuthoring(root) {
     });
 
     async function runCommand(control) {
+        const contextual = continuity.activeEditor();
         const state = activeState || regions.find(item => item.handle);
-        if (!state) return;
-        const handle = await ensureMounted(state);
+        if (!state && !contextual) return;
+        const handle = contextual ? contextual.handle : await ensureMounted(state);
         if (!handle) return;
         const command = control.dataset.reportCommand;
         const value = control.dataset.color || control.value || '';
@@ -196,7 +197,7 @@ function initializeReportAuthoring(root) {
         handle.command(command, value);
         if (control.tagName === 'SELECT') {
             control.blur();
-            state.region.querySelector('.ProseMirror')?.focus();
+            (contextual?.surface || state.region).querySelector('.ProseMirror')?.focus();
         }
         refreshDirty();
     }

@@ -9,7 +9,7 @@ from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.report_contracts import ReportError, ReportSelection
 from project_management.app.domain.report_continuity import PublicationRef
 from project_management.app.domain.report_preparation import PreparationResult
-from project_management.app.domain.report_preparation_validation import request_payload_from_intent
+from project_management.app.domain.report_preparation_validation import preparation_binding_hash, request_payload_from_intent
 from project_management.app.domain.run_contracts import DailyRunRequest, DailyRunTarget, RunError
 from project_management.app.domain.run_values import capture_id as run_capture_id
 from project_management.app.domain.run_values import draft_command_id as run_draft_command_id
@@ -190,7 +190,7 @@ def _authority_from_intent(service, intent):
         'schema_version': 1,
         'kind': 'daily_preparation_active_slot',
         'preparation_id': intent['preparation_id'],
-        'preparation_intent_hash': intent.get('preparation_intent_hash') or intent.get('reprepare_intent_hash') or service._hash(intent),
+        'preparation_intent_hash': preparation_binding_hash(intent),
         'slot_id': intent['slot_id'],
         'slot_key': intent['slot_key'],
         'draft_id': intent['draft_id'],

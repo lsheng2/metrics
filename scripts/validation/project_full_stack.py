@@ -50,6 +50,7 @@ from scripts.validation.project_full_stack_identity import (
 from scripts.validation.project_summary_support import (
     probe_base_imports, sdk_selection, sdk_selection_digest, verify_base_source, verify_installed_sdk,
 )
+from scripts.validation.project_week_scenarios import fixture_for, settings_for
 
 
 PROJECT_NAME = 'dashboard-full-stack'
@@ -71,6 +72,8 @@ def qualify_work_root(value: Path) -> Path:
 
 
 def prepare(args) -> dict:
+    scenario = getattr(args, 'scenario', 'single')
+    settings_module = settings_for(scenario)
     work = qualify_work_root(args.work_root)
     base_source = (work / 'base-source').resolve(strict=True)
     pack_root = (work / 'artifacts' / 'contract-pack').resolve(strict=True)
@@ -85,7 +88,7 @@ def prepare(args) -> dict:
     initialize_run_dir(run_dir, data_root)
     args.run_dir = run_dir
     sys.pycache_prefix = str(run_dir / 'environment' / 'pycache-prepare')
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'scripts.validation.project_full_stack_settings'
+    os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
     os.environ['METRICS_PROJECT_FULL_STACK_RUN_DIR'] = str(run_dir)
     os.environ['METRICS_PROJECT_FULL_STACK_BOOTSTRAP'] = '1'
     import django
@@ -93,18 +96,16 @@ def prepare(args) -> dict:
     from django.conf import settings
     from django.core.management import call_command
     from django.urls import reverse
-    from scripts.validation.project_full_stack_fixture import prepare_catalog
 
     call_command('migrate', interactive=False, verbosity=0)
-    fixture = prepare_catalog(run_dir)
+    fixture = importlib.import_module(fixture_for(scenario)).prepare_catalog(run_dir)
     routes = {'project_stage_reports': reverse('ui_web:project_stage_reports', kwargs={
         'project_id': fixture['project_id'],
         'stage_id': fixture['stage_id'],
     })}
     probe_base_imports(base_python, base_source, run_dir / 'environment', run_dir / 'evidence')
     manifest = {
-        'schema_version': 1,
-        'execution_mode': 'synthetic',
+        'schema_version': 1, 'execution_mode': 'synthetic', 'scenario': scenario,
         'run_dir': str(run_dir),
         'repository': str(REPO_ROOT.resolve()),
         'base_source': str(base_source),
@@ -178,7 +179,7 @@ def base_spec(run_dir: Path, lifetime_seconds: int, launch) -> ServiceSpec:
 def app_spec(run_dir: Path, lifetime_seconds: int, launch, app_port: int | None = None) -> ServiceSpec:
     manifest = trusted_manifest(run_dir)
     app_env = {
-        'DJANGO_SETTINGS_MODULE': 'scripts.validation.project_full_stack_settings',
+        'DJANGO_SETTINGS_MODULE': settings_for(manifest.get('scenario', 'single')),
         'METRICS_PROJECT_FULL_STACK_RUN_DIR': str(run_dir),
         'PYTHONPYCACHEPREFIX': str(run_dir / 'environment' / 'pycache-app'),
     }
@@ -361,6 +362,7 @@ def build_parser():
     prepare_cmd.add_argument('--data-root', type=Path, default=DEFAULT_DATA_ROOT)
     prepare_cmd.add_argument('--base-python', type=Path, default=default_base_python())
     prepare_cmd.add_argument('--work-root', type=Path, default=ROOT / '.tmp' / 'task-run-w5')
+    prepare_cmd.add_argument('--scenario', choices=('single', 'full-week'), default='single')
     prepare_cmd.set_defaults(func=prepare)
     start_cmd = sub.add_parser('start')
     start_cmd.add_argument('--run-dir', type=Path, required=True)

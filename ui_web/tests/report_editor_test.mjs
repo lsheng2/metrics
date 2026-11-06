@@ -311,8 +311,9 @@ class MemoryRuntime {
     }
 }
 
-class FakeRoot {
+class FakeRoot extends EventTarget {
     constructor(controls) {
+        super();
         this.controls = controls;
         this.events = [];
     }
@@ -323,6 +324,7 @@ class FakeRoot {
 
     dispatchEvent(event) {
         this.events.push(event.type);
+        return super.dispatchEvent(event);
     }
 }
 

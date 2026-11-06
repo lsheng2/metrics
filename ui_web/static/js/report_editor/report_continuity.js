@@ -114,6 +114,7 @@ export function createContinuityController(root, form) {
             mountGeneration: 0,
         };
         fragments.push(item);
+        activeFragment = item;
         mountFragment(item);
         item.carry.addEventListener('change', announceChange, { signal });
         announceChange();
@@ -144,19 +145,6 @@ export function createContinuityController(root, form) {
         });
     }
 
-    async function runToolbarCommand(control) {
-        if (!activeFragment?.handle) return;
-        const command = control.dataset.reportCommand;
-        const value = control.dataset.color || control.value || '';
-        if (command === 'link') {
-            const href = window.prompt('https://');
-            if (href) activeFragment.handle.command(command, href);
-        } else {
-            activeFragment.handle.command(command, value);
-        }
-        announceChange();
-    }
-
     function registerAction(details) {
         const surface = details.querySelector('[data-continuity-action-editor]');
         const done = details.querySelector('[data-continuity-action-done]');
@@ -173,6 +161,7 @@ export function createContinuityController(root, form) {
         };
         fragments.push(item);
         surface.addEventListener('focusin', () => {
+            activeFragment = item;
             if (!item.handle) mountFragment(item);
         }, { once: true, signal });
         done.addEventListener('change', announceChange, { signal });
@@ -195,21 +184,16 @@ export function createContinuityController(root, form) {
         button.addEventListener('click', () => addPersistent(button), { signal });
     });
     root.querySelectorAll('[data-continuity-action-control]').forEach(registerAction);
-    root.querySelectorAll('[data-report-command]').forEach(control => {
-        if (control.tagName === 'BUTTON') {
-            control.addEventListener('mousedown', event => {
-                if (activeFragment) event.preventDefault();
-            }, { signal });
-            control.addEventListener('click', () => runToolbarCommand(control), { signal });
-            return;
-        }
-        control.addEventListener('change', () => runToolbarCommand(control), { signal });
-    });
+    root.addEventListener('focusin', event => {
+        if (event.target.closest?.('[data-report-shared-toolbar]')) return;
+        activeFragment = fragments.find(item => item.surface.contains(event.target)) || null;
+    }, { signal });
 
     if (field && !field.value) field.value = '[]';
 
     return {
         serialize,
+        activeEditor: () => activeFragment,
         signature: serialize,
         write,
         reset() {

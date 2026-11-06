@@ -2,11 +2,18 @@ from typing import Mapping
 
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_draft_values import (
+    canonical_hash,
     validate_date_text,
     validate_git_commit_text,
     validate_hash_text,
     validate_uuid_text,
 )
+
+
+def preparation_binding_hash(intent: Mapping) -> str:
+    # Validated intents distinguish draft content authority from the full slot hash.
+    return (intent.get('preparation_intent_hash') or intent.get('reprepare_intent_hash')
+            or canonical_hash(intent))
 
 
 def validate_template_selection_payload(value):

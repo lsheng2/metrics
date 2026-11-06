@@ -47,7 +47,7 @@ CAPTURE_PLACEHOLDER = '00000000-0000-0000-0000-000000000000'
 PROFILE_REVISION = 'project-reporting.summary@review-1'
 
 
-def synthetic_profile_records() -> list[dict]:
+def synthetic_profile_records(query=FROZEN_JQL) -> list[dict]:
     return [{
         'profile_id': PROFILE_ID,
         'provider_id': 'jira',
@@ -59,12 +59,12 @@ def synthetic_profile_records() -> list[dict]:
             'credentials': {'token': 'synthetic-only-token'},
             'verify_ssl': True,
         },
-        'source_population': {'native_query_text': FROZEN_JQL},
+        'source_population': {'native_query_text': query},
     }]
 
 
-def install_profile_registry_override() -> None:
-    records = synthetic_profile_records()
+def install_profile_registry_override(query=FROZEN_JQL) -> None:
+    records = synthetic_profile_records(query)
 
     def load_synthetic_default(cls):
         return cls.from_records(records)
@@ -76,18 +76,18 @@ def archive_limits() -> ArchiveLimits:
     return ArchiveLimits(128 * 1024**2, 20000, 64 * 1024**2, 10000, 16 * 1024**2, 2000, 1024**2, 2 * 1024**2)
 
 
-def prepare_catalog(run_dir: Path) -> dict:
-    install_profile_registry_override()
-    registry = ProjectProviderProfileRegistry.from_records(synthetic_profile_records())
+def prepare_catalog(run_dir: Path, *, query=FROZEN_JQL, vector_builder=None) -> dict:
+    install_profile_registry_override(query)
+    registry = ProjectProviderProfileRegistry.from_records(synthetic_profile_records(query))
     project_api = ApiForProjectManagement(DashboardScopeCatalog(ApiForBugTrend(), lambda: registry))
     actor = ProjectActor(ACTOR_SUBJECT)
-    scope = ApiForBugTrend().save_scope_config(_scope_config())
+    scope = ApiForBugTrend().save_scope_config(_scope_config(query))
     ApiForBugTrend().set_scope_provider_binding(scope.id, PROFILE_ID, actor='qualification')
     project = project_api.create_project(actor, key='qual-alpha', name='Qualification Alpha')
     stage = project_api.add_stage(actor, project.id, key='release-1', name='Release 1', selection=ScopeSelection(PROFILE_ID, scope.id))
     other = project_api.create_project(actor, key='qual-other', name='Qualification Other')
     other_stage = project_api.add_stage(actor, other.id, key='release-2', name='Release 2', selection=ScopeSelection(PROFILE_ID, scope.id))
-    vector = build_vector(project.id, stage)
+    vector = (vector_builder or build_vector)(project.id, stage)
     (run_dir / 'fixture-vector.json').write_text(json.dumps(vector, ensure_ascii=False, sort_keys=True, indent=2) + '\n', encoding='utf-8')
     return {
         'actor': actor.subject,
@@ -100,12 +100,12 @@ def prepare_catalog(run_dir: Path) -> dict:
         'isolation_stage_id': other_stage.id,
         'profile_id': PROFILE_ID,
         'endpoint': ENDPOINT,
-        'jql': FROZEN_JQL,
+        'jql': query,
         'fixture_vector_sha256': hashlib.sha256((run_dir / 'fixture-vector.json').read_bytes()).hexdigest(),
     }
 
 
-def build_runtime_environment(connection: dict):
+def build_runtime_environment(connection: dict, *, records=None, provider_factory=None):
     from ai_base_application_sdk import TaskRunClient
     import httpx
     from project_management.app.api.report_factories import build_report_service
@@ -116,10 +116,10 @@ def build_runtime_environment(connection: dict):
     from provider_sync.app.api.access_factory import capture_limits_from_settings
     from django.conf import settings
 
-    registry = ProjectProviderProfileRegistry.from_records(synthetic_profile_records())
+    registry = ProjectProviderProfileRegistry.from_records(records or synthetic_profile_records())
     project_api = ApiForProjectManagement(DashboardScopeCatalog(ApiForBugTrend(), lambda: registry))
     archive = CaptureArchiveService(project_api, LocalArchiveRepositoryFactory(), archive_config(Path(settings.METRICS_PROJECT_ARCHIVE_ROOT)))
-    provider = create_provider_fixture(project_api, archive)
+    provider = (provider_factory or create_provider_fixture)(project_api, archive)
     capture = __import__('project_management.services.capture', fromlist=['ProjectCaptureService']).ProjectCaptureService(
         project_api, provider.service, archive, required_parts=('facts', 'comments', 'history')
     )
@@ -235,8 +235,8 @@ def expected_output(value: dict) -> dict:
     }
 
 
-def _scope_config() -> SavedScopeConfig:
-    return SavedScopeConfig(None, 'QUALIFY Synthetic Jira Scope', 'QUAL', 'ALPHA', FROZEN_JQL, ['Bug'], ['Open'],
+def _scope_config(query=FROZEN_JQL) -> SavedScopeConfig:
+    return SavedScopeConfig(None, 'QUALIFY Synthetic Jira Scope', 'QUAL', 'ALPHA', query, ['Bug'], ['Open'],
                             ['Fixed'], ['Closed'], [], ['Fixed'], ['Done'], ['Reopened'], 'priority', ['P1'],
                             ['P3'], 'component', 'assignee', 'team', 'fixVersion', 'fixVersion', '',
                             ['summary', 'status'], 'UTC', 'weekly', True)

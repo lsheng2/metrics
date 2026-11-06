@@ -1,4 +1,5 @@
 from project_management.app.domain.report_contracts import ReportError
+from project_management.app.domain.report_preparation_validation import preparation_binding_hash
 from project_management.storage.report_preparations import ReportPreparationStore
 
 
@@ -12,7 +13,7 @@ def verify_active_preparation_binding(service, repository, draft, draft_store):
     store = ReportPreparationStore(repository, service.archive.config.root, service.archive.config.limits)
     intent = store.intent(binding['preparation_id'])
     slot = store.slot(intent['slot_id'])
-    if (binding['preparation_intent_hash'] != store._hash(intent)
+    if (binding['preparation_intent_hash'] != preparation_binding_hash(intent)
             or slot is None
             or slot['preparation_id'] != intent['preparation_id']
             or slot['intent_hash'] != store._hash(intent)):
