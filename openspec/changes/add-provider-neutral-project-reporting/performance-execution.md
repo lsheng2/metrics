@@ -9,11 +9,17 @@
 profile_source: repo-local。agent_routing_mode: multiagent-configured，主agent为唯一实现写入者，
 Architect Planner Reviewer承担独立设计/最终审查，验证设计并入同次审查；不额外复制ledger。
 
+2026-11-07当前结果：READ/REPLAN/COMMAND已通过；用户授权新建专用Ego空间后，
+最后十次语言切换全部200且五表完整，实际点击到内容就绪p95为3.101s（门槛3.5s）。
+运行源码与冻结S0数据前后hash一致，浏览器和隔离服务均正常退出。旧失败/预检保留，
+不重建整周或S1；独立证据复核READY，`W6.PERF.ACCEPT.R`通过。
+限定证据及发布范围见[交付回执](performance-delivery.md)和tasks。
+
 ## 1. Scope And Invariants
 
 源码基线`d21250a2d4eee0de6f4234029591b4340e607557`；13项既有Scope/config/main.css改动
 以`.tmp/dashboard-presentation-20261106/protected-before-commit.json`核对并排除。
-无真实来源/模型、正式DB迁移、发送、定时或服务切换授权。此轮创建规格不是产品性能通过。
+无真实来源/模型、正式DB迁移、发送、定时或服务切换授权。初始规格批准与最终验收分开记录。
 沿用`source / accepted summary / editorial`三基线、原六文件、原命令幂等、scope/actor、
 pinning、stale-save、skip、取消/未知结果和Git确认边界。禁止为性能删除任何负例。
 

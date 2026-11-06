@@ -178,7 +178,8 @@ binds six daily publications, a weekly view, explicit empty-note/gap handling an
 performance qualification. Concise business output and separate audit downloads
 are covered by the later presentation receipt below, without rewriting that week.
 Profile the recorded long prepare/view waits before choosing an optimization;
-do not use more week runs to locate a read-path problem.
+do not use more week runs to locate a read-path problem. The later Report Read
+Performance section records that profiling and the qualified optimization.
 
 ## Concise Presentation
 
@@ -261,3 +262,11 @@ Git对象、checkout物化、六文件校验都恢复正常实现。不要用临
 小规模原生fixture检验无误后才运行持久S1；`test_s1_scale_fixture_materializes_100_native_publications`
 是显式慢门槛，不属于每次快速回归。手工Ego任务页消失时停止该surface并请求重建授权，
 不接管用户页或把两次预检冒充十次最终样本。本次不授权8017、真实来源或正式模型切换。
+
+2026-11-07用户授权新建专用验证空间后的十次实际语言切换全部通过；
+从Apply点击到目标语言及五张完整表格绘制后的p95为3.101s，门槛仍为3.5s。
+该次只补浏览器门槛，运行代码和S0数据前后hash一致，未重跑整周或重建S1；
+旧测试与性能回执先核对文件hash和适用边界再复用，不冒充本次重新执行。
+具体原始样本、截图、代码/数据/环境指纹与正常清理记录见
+[性能交付回执](../../openspec/changes/add-provider-neutral-project-reporting/performance-delivery.md)。
+此结果仅关闭本机限定性能门槛，不授权真实来源/模型、定时任务或生产服务切换。

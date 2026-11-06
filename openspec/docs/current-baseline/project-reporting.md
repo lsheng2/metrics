@@ -13,7 +13,7 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 富文本日常编辑、有界累计delta和显式AI辅助已通过限定本机合成资格；
 已保存报告支持派生Markdown/Excel导出；整周/跨周及未定稿gap操作闭环已通过合成验收。
 新精简模板与独立审计附件已实现并完成限定验证；
-已观察到的交互延迟、完整provider覆盖和正式运行仍未完成。
+报告读取与按钮延迟已通过本机限定性能门槛，完整provider覆盖和正式运行仍未完成。
 内部合成能力不等于真实来源或真实模型已经上线。
 
 ### 报告读取性能
@@ -35,8 +35,11 @@ Save依然不是Finalize，旧页面的缓存不能绕过锁内revision/hash检�
 基线预览p95 2.573s；100份报告、每稿5修订和3票的S1页20为p95 4.105s。
 连续20次Save到修订43为p95 1.839s。这是本机限定证据，不是生产SLA。
 实际浏览器已验证人工note/颜色/加粗/高亮保存重开、复制、HTML下载和手机布局；
-最终10次Ego语言往返因原任务页已消失仍待重新授权，不能据此宣布完整性能包关闭。
-当前状态与剩余门槛见[执行计划](../../changes/add-provider-neutral-project-reporting/performance-execution.md)
+用户授权新建验证空间后，10次真实Ego切换均完整显示目标语言与五个列表，
+点击到内容就绪p95为3.101s，达到3.5s门槛；所有样本保留，冻结数据未改变。
+本机性能与正式部署资格不同。证据及收口状态见
+[交付回执](../../changes/add-provider-neutral-project-reporting/performance-delivery.md)、
+[执行计划](../../changes/add-provider-neutral-project-reporting/performance-execution.md)
 和[任务](../../changes/add-provider-neutral-project-reporting/tasks.md)。
 
 ### 已验证的演示
@@ -73,7 +76,7 @@ $reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv
 旧项目配置Demo、真实数据库和正式定时任务没有在本轮迁移或启用。
 旧模板继续保留原始摘要与详细审计表。新建模板时优先选择“精简每日站会”或
 “精简每周站会”，正文使用有效notes与AR，完整审计通过独立附件获取。
-请求耗时也尚未完成优化，不能把功能通过等同于日常使用性能已经合格。
+报告读取和日常按钮已完成上述限定优化；正式环境仍需部署后验证，不能把本机结果当生产SLA。
 
 ## 产品目标与分工
 

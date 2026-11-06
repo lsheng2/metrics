@@ -17,28 +17,35 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
-2026-11-06最新前沿：停会与两周恢复已以`d21250a`提交，回执见
+2026-11-07最新前沿：性能实现已以`60d791b`推送并核对远端。READ/REPLAN/COMMAND完成；
+用户授权新建Ego验证空间后，10次实际语言切换全部通过，点击至目标语言与全部列表
+p95为3.101s，门槛仍为3.5s。S0/S1、preview/detail与Save的正式20样本结果见
+[performance-delivery.md](performance-delivery.md)。浏览器与隔离服务正常退出、零外部连接，
+运行代码与冻结S0数据hash未变。独立最终证据复核READY，`W6.PERF.ACCEPT.R`通过；
+不重跑整周/S1，不改真实服务，不把本次性能合格当完整Dashboard/live/deployment资格。
+
+2026-11-06诊断与实施历史：停会与两周恢复已以`d21250a`提交，回执见
 [meeting-skips-delivery.md](meeting-skips-delivery.md)。
 用户随后报告语言切换近一分钟；实际语言POST为0.005s，后续工作台GET为39.602s，
 独立profile为34.664s/169次Git调用，约27.937s花在Git调用。
 本轮按要求建立[读取性能架构](report-read-performance.md)与[执行/验收计划](performance-execution.md)。
-用户已批准实施，当前执行`W6.PERF.READ`；不重跑原周、不切换原服务、不宣称性能已达标。
+用户当时批准从`W6.PERF.READ`开始实施；不重跑原周、不切换原服务。
 克隆原路径31.602s/169 Git；批量读取后8 Git，仍有本地文件读取和重复解析成本。
 33项定向服务tests和4个subtests通过；有界本地并发实验及新增消费者见执行计划的READ amendment。
-证据根`.tmp/dashboard-read-performance-20261106/`，READ/COMMAND/最终SLO保持未关闭。
+证据根`.tmp/dashboard-read-performance-20261106/`，当时READ/COMMAND/最终SLO尚未关闭。
 READ核心两轮限定复审未留阻断项并准入COMMAND实施，不代表最终SLO关闭。
 JSON/成功动作不再预构建工作台；HTML失败保留绑定输入，4项组合HTTP与13项受影响
-HTTP/form检查通过。baseline/period/skip等共享读取消费者仍在验证。
+HTTP/form检查通过。baseline/period/skip等共享读取消费者当时仍在验证。
 本次实现的scope/refreeze更新见`performance-execution.md`的READ amendment；
 未把少量约3秒的样本或只完成的小规模夹具当成100份S1/20样本资格。
-`W6.PERF.*`是当前实施前沿；
+上述为实施过程而非当前任务状态；
 历史段落中的“尚未profile”以这条已测证据为准，不改写历史回执。
 
-最新入口：用户同意的精简正文与独立完整审计附件已完成限定实现/验证/复审，
+此前入口：用户同意的精简正文与独立完整审计附件已完成限定实现/验证/复审，
 基线`9dff849`，见[呈现交付](presentation-delivery.md)与[版本化契约](standup-presentation.md)。
 整周/跨周操作闭环证据保留于[week-delivery.md](week-delivery.md)，不重跑；
 最终47项限定回归、真实Git新旧两日/原字节验证及实际浏览器样本通过。
-下一步是请求延迟的限定关键路径分析；整个产品的其他未完成资格继续保留。
+后续请求延迟分析与优化结果见本节最新前沿；整个产品的其他未完成资格继续保留。
 
 2026-11-05用户批准Dashboard交付复评，并要求同步文档、调整执行顺序、开始执行。
 本轮沿Dashboard main，基线`eb8de2e`；SDK020已通过，不重跑其全部资格。
@@ -292,7 +299,7 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.PERF.READ 工作台纵向切片已实现并通过独立复核：批量Git、固定H、完整packet验证复用和专用列表投影；最终S0首请求3.860s、20样本p95 2.876s，S1 p95 4.105s。
 - [x] W6.PERF.READ.REPLAN 根据S1分段计时剔除未被工作台消费的checkout诊断，保留采集状态和旧API；不增加持久索引、并行Git或延长期限。投影反例9项及独立复审通过。
 - [x] W6.PERF.COMMAND 窄preview/prepare/reprepare/detail与错误页已通过HTTP/真实浏览器回归；Save保留锁内CAS且20次p95 1.839s，详情1.448s；无预读历史或隐藏控件。
-- [ ] W6.PERF.ACCEPT.R 后台S0/S1/语言POST/Save/详情门槛与原HTML浏览器链已通过；最后10次Ego语言往返因任务页消失待新建授权，见performance-delivery.md。不得用2次预检或后台p95冒充本门槛。
+- [x] W6.PERF.ACCEPT.R 全部后台门槛与原HTML浏览器链已通过；最后10次授权Ego切换p95 3.101s、五表完整且数据不变。独立证据复核READY、文档/严格规格/限定门禁通过，见performance-delivery.md。
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.

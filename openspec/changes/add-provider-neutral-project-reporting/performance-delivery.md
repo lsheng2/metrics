@@ -1,19 +1,21 @@
 # Report Performance Delivery
 
-Date: 2026-11-07. Status: implementation and backend qualification complete;
-final `W6.PERF.ACCEPT.R` remains open for the authorized Ego browser rerun.
+Date: 2026-11-07. Status: scoped performance qualification complete;
+`W6.PERF.ACCEPT.R` passed with independent final evidence review READY.
 Machine-readable evidence: [performance-delivery.json](performance-delivery.json).
 One execution ledger: [tasks.md](tasks.md).
 
 ## Results
 
-All steady-state values below use 20 serial requests and nearest-rank p95.
+Backend steady-state values below use 20 serial requests and nearest-rank p95.
+The actual Ego language roundtrip uses ten serial switches and the same quantile.
 Failed earlier samples remain in the evidence directories; they were not excluded
 from their original receipts or combined with passing candidates.
 
 | Scenario | Observed | Gate |
 | --- | --- | --- |
 | Language POST | 0.010s p95; zero archive Git calls | <=0.150s |
+| Actual Ego Apply through target language and all lists | 3.101s p95; 10/10 complete | <=3.5s |
 | S0 workbench first process request | 3.860s | <=5s |
 | S0 workbench steady state | 2.876s p95 | <=3s |
 | S0 baseline preview | 2.573s p95 | <=3s |
@@ -72,23 +74,42 @@ No Base SDK, real credentials/provider/model, production database, scheduler or
 original week data was modified. The 13 pre-existing unrelated dirty files retain
 their original SHA256 values.
 
-## Remaining Gate
+## Final Browser Acceptance
 
-The last Ego browser task space disappeared before the ten final language
-roundtrips. Inventory then contained only user-owned spaces. The agent stopped
-that surface and asked permission to create a new validation task space instead
-of claiming or modifying the user's tabs.
+The user authorized one new Ego validation space after the previous space
+disappeared. On unchanged implementation commit
+`60d791bac13078583de847740247768a35bd366d`, ten actual alternating en/zh-hans
+switches passed. The timer starts at the real Apply click and finishes after
+navigation, the target language and two animation frames with all five tables
+rendered. Every response was HTTP 200 and every table-body count was
+`[8, 8, 2, 9, 7]` for operations, captures, series, drafts and publications.
 
-Only two earlier language preflight roundtrips exist, approximately 3.52s and
-3.30s. They are not a ten-sample pass and are not substituted for the required
-click-to-target-language-and-all-lists gate of p95 <=3.5s.
-`W6.PERF.ACCEPT.R` must stay unchecked until that gate and the final evidence
-review are complete.
+Ordered seconds: `3.1011, 2.7626, 2.8158, 2.7122, 2.6077, 2.6939, 2.6308,
+2.6339, 2.7092, 2.7947`. Nearest-rank p95 for ten samples is the maximum,
+`3.1011s`, below the unchanged `3.5s` gate. No final sample was discarded.
+The two older preflight samples, including the approximately 3.52s sample,
+remain historical diagnostics and are not included in this final ten-sample set.
 
-After authorization, resume with the existing frozen S0 data and the same final
-code; do not rebuild a week or S1. Record ten real language changes, screenshots,
-row counts and all timings. If a runtime change is needed, rerun only the
-affected performance/consumer checks before closing this gate.
+The receipt binds all ten screenshots, the full page snapshot, collection
+scripts, runtime/environment identity and unchanged frozen fixture fingerprints.
+Screenshots confirm English/Chinese rendering and the lower draft/publication
+lists. The observed final desktop viewport was 2560x1351 at DPR 1.5; this is the
+actual Ego desktop, not a claimed 1280x900 emulation. The prior mobile check
+remains separate and is not replaced by this desktop timing run.
+
+An unsupported Ego `Browser.getVersion` query failed before navigation or
+sampling; that setup diagnostic is retained, and page user-agent metadata was
+used in the same authorized space. It was not an application request failure.
+The owned task space and loopback-only test server exited normally; the server
+recorded zero outbound connection attempts. No new week or S1 fixture was built.
+The bounded independent review confirmed the timer/quantile, all 29 bound
+artifacts, source/fixture stability and cleanup with no blocking finding.
+It also rechecked all six earlier performance receipts, 16 XML receipts,
+46 runtime-file hashes and 13 protected unrelated files. These earlier tests
+were reused after identity checks, not represented as rerun in this closure.
+OpenSpec strict validation, 106 relative documentation links, the applicable
+file-size rule and whitespace checks passed. This closes only `W6.PERF.*`;
+broader authoring, live provider/model and deployment gates remain separate.
 
 ## Reuse And Rollback
 

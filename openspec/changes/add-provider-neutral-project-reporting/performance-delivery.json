@@ -1,7 +1,7 @@
 {
   "created_at": "2026-11-06T19:09:11.469527+00:00",
   "baseline": "a26e2e7e89c781132ebe0ec2d7f6ec92042fa329",
-  "status": "implementation-qualified; final Ego language gate pending authorization",
+  "status": "scoped-performance-qualified; W6.PERF.ACCEPT.R passed",
   "performance": {
     "workbench": {
       "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-s0-workbench-final\\report-read-workbench-20261106T182728614454Z.json",
@@ -247,6 +247,188 @@
       },
       "first_git_calls": null,
       "runtime_digest": null
+    },
+    "language_browser": {
+      "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\language-final.json",
+      "sha256": "d11370295c140115d6d10e15ac041bd78c062d966299228bb2dd1aba37c3555e",
+      "summary": {
+        "sample_count": 10,
+        "p95_seconds": 3.101099853515625,
+        "min_seconds": 2.607699951171875,
+        "max_seconds": 3.101099853515625,
+        "elapsed_ms_in_order": [
+          3101.099853515625,
+          2762.60009765625,
+          2815.7998046875,
+          2712.199951171875,
+          2607.699951171875,
+          2693.89990234375,
+          2630.7998046875,
+          2633.89990234375,
+          2709.199951171875,
+          2794.7001953125
+        ],
+        "quantile": "nearest-rank",
+        "all_http_200": true,
+        "all_actual_switches": true,
+        "expected_table_rows": [
+          8,
+          8,
+          2,
+          9,
+          7
+        ],
+        "all_complete_lists": true,
+        "threshold_seconds": 3.5,
+        "passed": true
+      },
+      "implementation_commit": "60d791bac13078583de847740247768a35bd366d",
+      "runtime_digest": "9bfb8aa364bbc747fac1359cddce8fb8dab94ec07aae8fdd1b83dbee379d9faf",
+      "fixture_digest": "f145054d2b1f139b6d1546e9327188afae80453bd77f6eeeb9929b674b704952",
+      "stable_runtime": true,
+      "stable_fixture": true,
+      "browser": {
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "platform": "Win32",
+        "hardware_concurrency": 36
+      },
+      "observed_final_viewport": {
+        "width": 2560,
+        "height": 1351,
+        "device_pixel_ratio": 1.5
+      },
+      "server": {
+        "sdk_version": "0.2.0a1",
+        "django_version": "6.0.7"
+      },
+      "cleanup": {
+        "browser_normal_finish": true,
+        "server_normal_exit": true,
+        "outbound_attempts": 0
+      },
+      "preflight_diagnostic": {
+        "operation": "task.cdp Browser.getVersion",
+        "message": "'Browser.getVersion' wasn't found",
+        "effect": "No navigation or language samples had occurred; reused the same space and page"
+      },
+      "artifacts": [
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\browser-cleanup.json",
+          "sha256": "a64387dceeb2773622325da8c751c2a44403942b290caec53d220e861bae8217"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\browser-state.json",
+          "sha256": "32fc21b656942a0ebeb361011a7c9e34d970bb49e0a1cc5b24059d5f66e9a129"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\final-full-page-snapshot.txt",
+          "sha256": "73e042292a5dcecfd59928f913a37d271da8211492ad9370b1b55ea9840ed12f"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\final-page-state.json",
+          "sha256": "b4d67b813d85466a65d1af4c59888c239d251e5efbf807afb2152396947ec3a0"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\final-publications.png",
+          "sha256": "9eda03859ed7b8d4cbaafe0780d8da968b23bf8628abd2d4546dcf7fd0d25cdf"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\identity-after.json",
+          "sha256": "ca1c17334894997252fd8524491b0247aa86297824cdc4dbff26b632fe69cef6"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\identity-before.json",
+          "sha256": "50143ef1d1729d1f20574fe63c5b3ddf3a7e386ca65915fd0613cf74db141a8a"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\language-final.json",
+          "sha256": "d11370295c140115d6d10e15ac041bd78c062d966299228bb2dd1aba37c3555e"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\round-1-5.json",
+          "sha256": "5e52ce7d3c461f1b8ea557f279b13b3da304c0b7d99ce3060b56a3a3b4b3e2eb"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\round-6-10.json",
+          "sha256": "c065f7e774a2847c76aa382f28729850f9ca820bd2d68b7bc3cf6cde0e3ed92f"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-01-zh-hans.png",
+          "sha256": "bb3935808068677eea60dc3241f4d43add7032d4794f857e752b11b196009214"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-02-en.png",
+          "sha256": "dfca8bec6a68d96895a7e55ef6a53faac7b7a350f2c81535a636ea16e4846eb2"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-03-zh-hans.png",
+          "sha256": "e3884587eff5e7906e1a44967b2ca87fb2581bf4b47e95ab23c4c88b5f6c874c"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-04-en.png",
+          "sha256": "b162cc28fc47bbb6c0aa40dc96068840022694194d49e940c77029a29f725600"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-05-zh-hans.png",
+          "sha256": "9d3f70361e95a55e8e4834f2f3a0a3f7fb849ba913cc17d44998935a9a4b9631"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-06-en.png",
+          "sha256": "995837ed01bd31003f96de7c7efda5a78114aade4dfda35c3d39490e8867475e"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-07-zh-hans.png",
+          "sha256": "7529180fed6e65d48ec063cfc6790fdbefcd0779b7fa136dd739cb8f4514f9de"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-08-en.png",
+          "sha256": "d8cd3bd9850c382fc8c1434aee37b4bb5780122bd826d2522880ec8423188b9d"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-09-zh-hans.png",
+          "sha256": "308f005d97647fca763913456015415736fcd490cb5f5f45e8f97310286096b7"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\performance-browser\\language-20261107-authorized\\switch-10-en.png",
+          "sha256": "f2455e0cfd42991769d6175974c12314c60d325e3ece7dc57f5cb268020d3779"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard_validation\\full-stack\\2be188e9-7cce-4889-8297-f8ed268ec28a\\evidence\\read-server-60000000-0000-4000-8000-202611070005\\exit.json",
+          "sha256": "2d10c027cbadadd30271e43e53d71bd5fb4c4cf97c70c499d605525e9fb0c22a"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-closure-20261107.py",
+          "sha256": "e71359a7759b0249d22b7b0652d067b0d095cdca029a08549f7c8e3f352115bb"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-identity-20261107.py",
+          "sha256": "11badb242b51e4fc79291c0b3520787612a26739cb078d48c73bf6090f511bd9"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-round-01-20261107.mjs",
+          "sha256": "402e327af00aaf37773c659b78a695e11387cea6ddbf2dca0fed89df2a460d50"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-round-01b-20261107.mjs",
+          "sha256": "4653bc47e47b0900257e3fe09fea825aa9ceca40c35765aacde969a69bfb7054"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-round-02-20261107.mjs",
+          "sha256": "df7d1e21338dd1c48c6c225e8bba422e660c71196ec4279d858e9462f0fc7d5e"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-round-03-20261107.mjs",
+          "sha256": "9c48fe7804beb20e51080ea87e1e185acc66d2e94a818afea503c39c90944618"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-round-04-20261107.mjs",
+          "sha256": "0549b1bde48558c5fdd743b4d83830e2ac762d68e72edb1a6277275c08303382"
+        },
+        {
+          "path": "D:\\AIGC\\scrum_dashboard\\.tmp\\dashboard-read-performance-20261106\\language-final-tools-20261107.mjs",
+          "sha256": "f6e97884cceba51d607d0e1b928c8e095ed64847ede0cb1d3426953ef592ef40"
+        }
+      ]
     }
   },
   "tests": [
@@ -530,16 +712,38 @@
     "sdk_change": false,
     "original_data_modified": false
   },
-  "open_gate": {
+  "open_gate": null,
+  "closed_gate": {
     "id": "W6.PERF.ACCEPT.R",
-    "reason": "Ego TaskSpace 11 disappeared; only user-owned spaces remained. New-space authorization requested.",
-    "completed_ego_language_preflight_samples": 2,
+    "reason": "All scoped performance gates passed; independent final evidence review READY without blocking findings.",
+    "completed_ego_language_samples": 10,
     "required_final_ego_language_samples": 10,
-    "do_not_claim": "Complete performance topic closure or production SLA"
+    "do_not_claim": "Production SLA, broader Dashboard completion, live provider/model qualification or deployment",
+    "review": {
+      "agent_id": "01a1b340-3d49-7760-a61e-7cbe9121db64",
+      "reviewer": "Halley",
+      "model": "gpt-5.5",
+      "reasoning_effort": "xhigh",
+      "result": "READY",
+      "blocking_findings": 0,
+      "record": ".tmp/dashboard-read-performance-20261106/language-final-review-20261107.json"
+    },
+    "closure_checks": {
+      "openspec_strict": "PASS",
+      "relative_document_links": 106,
+      "missing_document_links": 0,
+      "configured_file_size_rules_checked": 1,
+      "diff_whitespace": "PASS",
+      "product_code_changed_in_closure": false,
+      "prior_tests_rerun_in_closure": false
+    }
   },
   "evidence_reuse": [
     "Baseline timing precedes changes restricted to Save POST, absent-archive hash guard and unrendered publication-list projection; its qualified route and selected baseline are unchanged.",
     "S1 timing precedes changes restricted to Save POST and preparation-detail controls; workspace projection and storage code are unchanged.",
-    "Real Git period/skip/publication consumers reuse matched storage tests; later UI projection does not change original publication API or writer bytes."
-  ]
+    "Real Git period/skip/publication consumers reuse matched storage tests; later UI projection does not change original publication API or writer bytes.",
+    "Final authorized browser sampling uses unchanged runtime commit 60d791bac13078583de847740247768a35bd366d. All 16 prior XML receipts, six performance receipts, 46 scoped runtime hashes and 13 protected files were rechecked; no product/test change requires repeating their already qualified scenarios."
+  ],
+  "updated_at": "2026-11-06T23:44:24.441721+00:00",
+  "implementation_commit": "60d791bac13078583de847740247768a35bd366d"
 }

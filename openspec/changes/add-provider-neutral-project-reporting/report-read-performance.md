@@ -1,6 +1,6 @@
 # Report Read Architecture
 
-日期：2026-11-06。状态：实施和验证中，尚未通过最终性能验收。
+日期：2026-11-06；复核：2026-11-07。状态：实现、全部限定性能验收及独立证据复核通过。
 独立设计审查：[performance-plan-review.md](performance-plan-review.md)，结论READY。
 源码基线：`d21250a2d4eee0de6f4234029591b4340e607557`。
 规格：[report-query-performance](specs/report-query-performance/spec.md)。
@@ -20,7 +20,8 @@
 
 实施已固定独立克隆，原路径31.602s/169 Git。读取核心经两轮限定独立审查，
 工作台已改用固定H/批量对象/请求级校验；初步样本首请求4.17s、随后3.08/2.96s，
-不把这些少量样本当作p95。最终S0/S1、按钮和浏览器验收仍开放。
+不把这些少量样本当作p95。后续正式S0/S1、按钮和十次Ego语言验收均达标，
+准确样本数、候选hash与收口状态见[交付回执](performance-delivery.md)。
 
 | 边界 | 已观察结果 |
 | --- | --- |
