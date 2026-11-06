@@ -1,5 +1,5 @@
 from project_management.app.domain.report_contracts import ReportError
-from project_management.services.report_publication_reads import ReportPublicationReader
+from project_management.services.report_publication_reads import ReportPublicationReader, prefetch_publications
 
 
 def assert_daily_baseline_current(repository, draft_or_context):
@@ -7,6 +7,11 @@ def assert_daily_baseline_current(repository, draft_or_context):
     authoring_context = draft_or_context.authoring_context if draft is not None else draft_or_context
     if authoring_context is None or authoring_context.get('report_role') != 'daily':
         return
+    with repository.open_read_view() as view:
+        _assert_daily_baseline_current(view, draft, authoring_context)
+
+
+def _assert_daily_baseline_current(repository, draft, authoring_context):
     head = verified_daily_head(repository, authoring_context['series_id'])
     expected = authoring_context['base_daily_publication']
     if draft is not None and draft.selection.parent_publication_id is not None:
@@ -37,9 +42,16 @@ def _assert_linked_parent_current(repository, draft, context, head, expected):
 
 
 def verified_daily_head(repository, series_id):
+    with repository.open_read_view() as view:
+        return _verified_daily_head(view, series_id)
+
+
+def _verified_daily_head(repository, series_id):
     reader = ReportPublicationReader(repository)
     publications = []
-    for publication_id in repository.list_report_publication_ids(limit=500):
+    ids = repository.list_report_publication_ids(limit=500)
+    prefetch_publications(repository, ids)
+    for publication_id in ids:
         publication = reader.get(publication_id, repository.owner_subject)
         manifest = publication.manifest
         if (manifest.schema_version == 2 and manifest.report_role == 'daily'

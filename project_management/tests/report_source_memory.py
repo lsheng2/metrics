@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,6 +20,23 @@ class MemoryGit:
 
 
 class MemoryRepository:
+    def map_reads(self, function, items):
+        return tuple(map(function, items))
+
+    def open_read_view(self):
+        return nullcontext(self)
+
+    def read_files(self, requests):
+        from project_management.app.domain.captures import ArchiveError
+
+        result = tuple(self.read_file(item.path, item.commit_id) for item in requests)
+        if any(len(data) > item.max_bytes for data, item in zip(result, requests)):
+            raise ArchiveError('ARCHIVE_QUOTA_EXCEEDED')
+        return result
+
+    def validated(self, key, load):
+        return load()
+
     def __init__(self, project, stage, files, *, head='c' * 40):
         self.project = project
         self.stage = stage

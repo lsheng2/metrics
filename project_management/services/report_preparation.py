@@ -45,11 +45,11 @@ class ReportPreparationService:
         self.run_service = run_service
         self.archive = continuity_service.archive
 
-    def get(self, actor, project_id, stage_id, preparation_id):
-        return get_preparation(self, actor, project_id, stage_id, preparation_id)
+    def get(self, actor, project_id, stage_id, preparation_id, *, _read_view=None):
+        return get_preparation(self, actor, project_id, stage_id, preparation_id, _read_view=_read_view)
 
-    def for_meeting(self, actor, project_id, stage_id, *, series_id, meeting_date):
-        return preparation_for_meeting(self, actor, project_id, stage_id, series_id, meeting_date)
+    def for_meeting(self, actor, project_id, stage_id, *, series_id, meeting_date, _read_view=None):
+        return preparation_for_meeting(self, actor, project_id, stage_id, series_id, meeting_date, _read_view=_read_view)
 
     def runtime_options(self):
         return preparation_runtime_options(self)
@@ -344,11 +344,11 @@ class ReportPreparationService:
             conflicts.append('calendar')
         return tuple(conflicts)
 
-    def _links(self, actor, project_id, stage_id, draft):
+    def _links(self, actor, project_id, stage_id, draft, *, _read_view=None):
         publication_ref = None
-        status = self.draft_service.finalization_status(actor, project_id, stage_id, draft.draft_id)
+        status = self.draft_service.finalization_status(actor, project_id, stage_id, draft.draft_id, _read_view=_read_view)
         if status is not None and status.state == 'finalized':
-            publication = self.draft_service.get_publication(actor, project_id, stage_id, status.publication_id)
+            publication = self.draft_service.get_publication(actor, project_id, stage_id, status.publication_id, _read_view=_read_view)
             publication_ref = PublicationRef(publication.manifest.publication_id, publication.manifest_sha256, publication.commit_id)
         links = self.link_builder.links(
             project_id, stage_id, draft.draft_id,

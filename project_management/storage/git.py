@@ -27,6 +27,7 @@ OPTIONS = {
 class GitResult:
     returncode: int
     stdout: bytes
+    stderr: bytes = b''
 
 
 def git_environment(extra: dict[str, str] | None = None) -> dict[str, str]:
@@ -62,6 +63,7 @@ class GitRunner:
         extra_env: dict[str, str] | None = None,
         output_limit: int | None = None,
         output_limit_code: str = 'ARCHIVE_STORAGE_UNAVAILABLE',
+        timeout: float | None = None,
     ) -> GitResult:
         effective_output_limit = self.output_limit if output_limit is None else output_limit
         command = [self.executable, '-C', str(self.root)]
@@ -89,7 +91,7 @@ class GitRunner:
             threads.append(threading.Thread(target=self._send, args=(process.stdin, input_data, failed), daemon=True))
         for thread in threads:
             thread.start()
-        timed_out = self._wait(process, exceeded)
+        timed_out = self._wait(process, exceeded, timeout)
         for thread in threads:
             thread.join(timeout=5)
         if exceeded.is_set():
@@ -98,7 +100,7 @@ class GitRunner:
             raise ArchiveError('ARCHIVE_STORAGE_UNAVAILABLE')
         if check and process.returncode:
             raise ArchiveError('ARCHIVE_STORAGE_UNAVAILABLE')
-        return GitResult(process.returncode, bytes(outputs[0]))
+        return GitResult(process.returncode, bytes(outputs[0]), bytes(outputs[1]))
 
     def _send(self, stream, data, failed):
         try:
@@ -121,8 +123,8 @@ class GitRunner:
         finally:
             stream.close()
 
-    def _wait(self, process, exceeded: threading.Event) -> bool:
-        deadline = time.monotonic() + self.timeout
+    def _wait(self, process, exceeded: threading.Event, timeout=None) -> bool:
+        deadline = time.monotonic() + (self.timeout if timeout is None else min(self.timeout, timeout))
         timed_out = False
         try:
             while process.poll() is None:
@@ -130,7 +132,10 @@ class GitRunner:
                     timed_out = not exceeded.is_set()
                     process.kill()
                     break
-                time.sleep(0.01)
+                try:
+                    process.wait(timeout=min(0.01, max(0, deadline - time.monotonic())))
+                except subprocess.TimeoutExpired:
+                    pass
             process.wait(timeout=5)
         finally:
             if process.poll() is None:

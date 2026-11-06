@@ -16,6 +16,12 @@
 - **THEN** 同一作用域 SHALL 读取每个对象一次并复用已验证packet
 - **AND** 校验 SHALL 包含原始正文和修订，不得只凭manifest存在判定完整
 
+#### Scenario: A workbench publication row does not display checkout diagnostics
+- **WHEN** 工作台只显示定稿manifest、修订、提交和选择控件
+- **THEN** query SHALL 返回不含checkout字段的专用列表投影，并仍执行完整六文件校验
+- **AND** query SHALL NOT 为未使用的字段扫描整个工作树或伪造current/stale
+- **AND** 旧公开publication API与可见的capture checkout状态 SHALL 保持原校验与含义
+
 #### Scenario: New source appears while a page is read
 - **WHEN** view固定H后其他操作发布H2
 - **THEN** 当前Git读取 SHALL 保持H的一致快照

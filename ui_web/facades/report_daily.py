@@ -6,6 +6,7 @@ from django.utils.translation import gettext as _
 from project_management.app.api.project_runs import get_report_preparation_service
 from project_management.app.api.report_factories import build_report_preparation_service
 from project_management.app.api import reports as report_api
+from project_management.app.api.report_queries import ReportQueryService
 from ui_web.report_daily_forms import ReportDailyPreparationForm, ReportDailyPreviewForm, ReportDailyReprepareForm
 
 
@@ -26,6 +27,14 @@ def report_preparation_runtime(project_api, archive, template_service, draft_ser
 
 
 class ProjectReportDailyFacadeMixin:
+    def preview_daily_query(self, actor, project_id, stage_id, form, *, include_captures=False):
+        return ReportQueryService(self.archive, self._service(), self._preparation_service()).daily_preview(
+            actor, project_id, stage_id,
+            series_id=form.cleaned_data['series_id'], meeting_date=form.meeting_date_value(),
+            template_selection=form.template_selection(),
+            capture_after=form.cleaned_data.get('capture_after') or None, include_captures=include_captures,
+        )
+
     def daily_context(self, captures, series_page, template_choices, *, data=None, preview=None,
                       prepare_form=None, preview_form=None, result=None, error=None, selection_preview=False):
         series_choices = tuple((item.series_id, item.name) for item in series_page.items)
@@ -140,15 +149,23 @@ class ProjectReportDailyFacadeMixin:
         return ReportDailyReprepareForm(data, template_choices=template_choices, initial=initial,
                                        auto_id='daily_reprepare_%s')
 
+    def preparation_details(self, actor, project_id, stage_id, preparation_id):
+        return self._preparation_service().get(actor, project_id, stage_id, preparation_id)
+
     def preparation_context(self, actor, project_id, stage_id, preparation_id, template_choices, data=None):
-        details = self._preparation_service().get(actor, project_id, stage_id, preparation_id)
+        details = self.preparation_details(actor, project_id, stage_id, preparation_id)
+        return self.preparation_controls(details, preparation_id, template_choices, data)
+
+    def can_reprepare(self, details, preparation_id):
         terminal = {'draft', 'draft_ready', 'partial', 'failed', 'canceled'}
+        return details.result.state in terminal and details.active_preparation_id == preparation_id
+
+    def preparation_controls(self, details, preparation_id, template_choices, data=None):
         return {
             'preparation_details': details,
             'daily_result': self._result_row(details.result),
             'daily_reprepare_form': self.daily_reprepare_form(template_choices, data, details),
-            'daily_can_reprepare': details.result.state in terminal
-            and details.active_preparation_id == preparation_id,
+            'daily_can_reprepare': self.can_reprepare(details, preparation_id),
             'daily_runtime_ready': self.preparation_runtime_ready,
             'daily_analysis_ready': self.analysis_ready(),
         }

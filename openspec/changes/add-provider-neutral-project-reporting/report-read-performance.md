@@ -1,6 +1,6 @@
 # Report Read Architecture
 
-日期：2026-11-06。状态：优化设计，尚未实现；用户已要求建立 OpenSpec。
+日期：2026-11-06。状态：实施和验证中，尚未通过最终性能验收。
 独立设计审查：[performance-plan-review.md](performance-plan-review.md)，结论READY。
 源码基线：`d21250a2d4eee0de6f4234029591b4340e607557`。
 规格：[report-query-performance](specs/report-query-performance/spec.md)。
@@ -17,6 +17,10 @@
 可提交的去敏摘要与原证据hash见[performance-baseline.json](performance-baseline.json)。
 原probe没有完整数据指纹；正式前后对照须在实施时冻结同一克隆重新测量，不能只对比
 两份输入不明的计时。最多三次旧慢路径复测，保留历史记录而不补造旧指纹。
+
+实施已固定独立克隆，原路径31.602s/169 Git。读取核心经两轮限定独立审查，
+工作台已改用固定H/批量对象/请求级校验；初步样本首请求4.17s、随后3.08/2.96s，
+不把这些少量样本当作p95。最终S0/S1、按钮和浏览器验收仍开放。
 
 | 边界 | 已观察结果 |
 | --- | --- |
@@ -109,6 +113,7 @@ class ReportWorkspaceQuery:
     draft_offset: int = 0
     publication_offset: int = 0
     page_size: int = 20
+    include_operations: bool = False
 
 @dataclass(frozen=True, slots=True)
 class ReportWorkspaceRead:
@@ -117,7 +122,8 @@ class ReportWorkspaceRead:
     observed_at: str
     captures: CaptureMetadataPage
     drafts: ReportDraftPage
-    publications: ReportPublicationPage
+    publications: ReportPublicationListPage
+    operations: ReportOperationsRead | None = None
 
 class ReportQueryService:
     def workspace(self, actor, project_id, stage_id, *, query: ReportWorkspaceQuery) -> ReportWorkspaceRead: ...
@@ -130,9 +136,20 @@ class ReportQueryService:
 参数，省略时创建独立scope。明确实现port的测试adapter，不通过`hasattr`静默回退
 到无限逐文件查询。`_report_repository(write=True)`仍是原写入边界。
 
-页面项目、系列、模板等轻量ORM选择由facade一次组装；`workspace()`只承担归档
-三列表。现有runtime运行列表仍经`ProjectRunFacade`，不得为页面查询调用远端Base。
+页面项目、系列、模板等轻量ORM选择由facade一次组装；`workspace()`承担归档
+三列表，并可选读取本地运行记录。`ReportOperationsRead`携带project/stage/actor/stage-hash、
+items和error_code。只有归档root、作者身份一致时，`ProjectRunFacade`才消费它；
+该facade仍重新检查project/stage/actor/hash，不匹配或不同归档沿原独立读取入口。
+本地运行读取使用同一view的期限和至多4个本地worker；不得调用远端Base。
 定稿列表ID字典序、采集排序、offset/原capture cursor和20条分页均保持不变。
+
+2026-11-07规模复核：工作台定稿行只消费manifest、manifest hash和commit，不显示checkout。
+采用`ReportPublicationListItem(manifest, manifest_sha256, commit_id)`和
+`ReportPublicationListPage(items,next_offset)`，没有`checkout_state`字段，不伪造current或stale。
+列表仍经过相同六文件及修订完整校验；只是没有计算未渲染的工作树诊断。
+旧`list_publications/get_publication/read_artifacts`继续返回原DTO并保留全部checkout语义。
+工作台可见的capture checkout仍按原规则核验，不删字段或改成缓存猜测。
+这属于已选查询/命令分离的具体投影，不新增持久索引、Windows专用文件系统模块或全局缓存。
 
 ## 4. Read View Consistency
 
@@ -159,6 +176,10 @@ class ReportQueryService:
 通过单次`verified_publications()`共享已校验packet，供草稿已定稿状态和定稿列表消费。
 `read_public_artifact`、`snapshot`复用同一packet中的bytes，不再`get`后另查同文件。
 metadata目录可以批量读取，但已选publication和基线读取不能降为manifest-only。
+
+实现中的`open_read_view()`：在原repository上创建新的短期view，在现有view上仅借用
+同一作用域，不关闭外层或刷新期限。基线、period/list消费者借此在写锁内建立新观察，
+批量预取后保留完整验证；append以后禁止沿用之前的view。
 
 ## 5. Bounded Native Git Reads
 
@@ -196,6 +217,8 @@ missing、歧义、非整数/负size、长度不符、截断、额外记录和�
 
 逐路径`git log -1`/逐commit`rev-list`改成一次有界历史扫描：
 从H起读取commit、parent、tree及变化路径，映射每个已请求path的最近影响提交。
+实现使用`log --raw --no-abbrev`同时取得文件mode/OID；从单父链重建H的head tree，
+与原`ls-tree`逐项对照。历史cursor仍能明确读取H可达的旧tree，不依赖可修改checkout。
 固定格式/NUL记录、禁rename启发式；请求路径分批避免Windows命令行长度上限。
 候选实现须以真实Git对照原逐项算法验证，不能用自己生成的映射作为golden。
 托管数据历史为单父append链；遇到多父、不可达/缺对象或扫描截断不得猜测，

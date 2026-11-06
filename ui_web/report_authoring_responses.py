@@ -32,6 +32,8 @@ def authored_json_error(error, *, form=None, draft=None):
 
 
 def report_status(error):
+    if error.code == 'REPORT_STORAGE_UNAVAILABLE':
+        return 503
     if error.code == 'REPORT_NOT_FOUND':
         return 404
     if error.code in {

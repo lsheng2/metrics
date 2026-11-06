@@ -12,10 +12,12 @@ from project_management.app.api.report_factories import (
     build_report_template_service,
 )
 from project_management.app.api import reports as report_api
+from project_management.app.api.report_queries import ReportQueryService, ReportWorkspaceQuery
 from ui_web.facades.report_history import ProjectReportHistoryFacadeMixin
 from ui_web.facades.report_exports import ProjectReportExportFacadeMixin
 from ui_web.facades.report_daily import ProjectReportDailyFacadeMixin, report_preparation_runtime
 from ui_web.facades.report_meetings import ProjectReportMeetingsFacadeMixin
+from ui_web.facades.report_controls import ProjectReportControlsMixin
 from ui_web.facades.report_templates import ready_continuity_template_choices, ready_user_template_choices, ready_weekly_template_choices
 from ui_web.report_authoring_forms import ReportAuthoredSaveForm
 from ui_web.report_authoring_view_model import authored_edit_rows, authored_edits_json, report_body, target_payloads
@@ -71,7 +73,7 @@ def default_report_facade():
         raise
 
 
-class ProjectReportFacade(ProjectReportMeetingsFacadeMixin, ProjectReportExportFacadeMixin, ProjectReportHistoryFacadeMixin, ProjectReportDailyFacadeMixin):
+class ProjectReportFacade(ProjectReportControlsMixin, ProjectReportMeetingsFacadeMixin, ProjectReportExportFacadeMixin, ProjectReportHistoryFacadeMixin, ProjectReportDailyFacadeMixin):
     def __init__(self, project_api, service, archive, template_service=None, continuity_service=None,
                  preparation_service=None, preparation_runtime_ready=False):
         self.project_api = project_api
@@ -83,26 +85,20 @@ class ProjectReportFacade(ProjectReportMeetingsFacadeMixin, ProjectReportExportF
         self.preparation_runtime_ready = preparation_runtime_ready
 
     def stage_context(self, actor, project_id, stage_id, *, create_form=None, capture_after=None,
-                      draft_offset=0, publication_offset=0):
+                      draft_offset=0, publication_offset=0, include_operations=False):
         detail, stage = self._project_stage(actor, project_id, stage_id)
         unavailable = self.service is None or self.archive is None
-        try:
-            archive_stage_status = 'unavailable' if unavailable else self.archive.stage_archive_status(
-                actor,
-                project_id,
-                stage_id,
-            )
-        except ArchiveError:
-            raise report_api.ReportError('REPORT_ARTIFACT_INVALID') from None
+        read = None if unavailable else ReportQueryService(self.archive, self.service).workspace(
+            actor, project_id, stage_id, query=ReportWorkspaceQuery(
+                capture_after, draft_offset, publication_offset, include_operations=include_operations,
+            ),
+        )
+        archive_stage_status = 'unavailable' if read is None else read.archive_state
         archive_absent = archive_stage_status == 'absent'
-        capture_page = None if unavailable or archive_absent else self._capture_page(actor, project_id, stage_id, capture_after)
+        capture_page = None if read is None or archive_absent else self._capture_choices(read.captures)
         captures = () if capture_page is None else capture_page['captures']
-        drafts = report_api.ReportDraftPage((), None) if unavailable or archive_absent else self.service.list_drafts(
-            actor, project_id, stage_id, limit=20, offset=draft_offset,
-        )
-        publications = report_api.ReportPublicationPage((), None) if unavailable or archive_absent else self.service.list_publications(
-            actor, project_id, stage_id, limit=20, offset=publication_offset,
-        )
+        drafts = report_api.ReportDraftPage((), None) if read is None else read.drafts
+        publications = report_api.ReportPublicationPage((), None) if read is None else read.publications
         publication_choices = self._publication_choices(publications.items)
         user_templates = ready_user_template_choices(self.template_service, actor, project_id)
         continuity_templates = ready_continuity_template_choices(self.template_service, actor, project_id)
@@ -120,6 +116,7 @@ class ProjectReportFacade(ProjectReportMeetingsFacadeMixin, ProjectReportExportF
             'captures': captures,
             'drafts': drafts,
             'publications': publications,
+            'report_operations': None if read is None else read.operations,
             'publication_choices': publication_choices,
             'user_template_choices': user_templates,
             'series_template_choices': continuity_templates,
@@ -312,6 +309,9 @@ class ProjectReportFacade(ProjectReportMeetingsFacadeMixin, ProjectReportExportF
             page = self.archive.list_capture_metadata(actor, project_id, stage_id, limit=20, after=capture_after or None)
         except ArchiveError:
             raise report_api.ReportError('REPORT_INVALID') from None
+        return self._capture_choices(page)
+
+    def _capture_choices(self, page):
         captures = tuple(
             CaptureChoice(
                 item.receipt.capture_id,

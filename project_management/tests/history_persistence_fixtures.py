@@ -18,7 +18,7 @@ from project_management.tests.report_render_fixtures import safe_snapshot
 from project_management.tests.test_report_template_compilation import data_block, matrix_block, slot_block
 
 
-def history_fixture(tmp_path, *, document=None, reference_verifier=None, actor_subject='archive-owner'):
+def history_fixture(tmp_path, *, document=None, reference_verifier=None, actor_subject='archive-owner', archive_config=None):
     actor = ProjectActor(actor_subject)
     project = ProjectSummary(str(uuid4()), 'alpha', 'Alpha', False, datetime.now(UTC))
     descriptor = ScopeDescriptor(
@@ -31,13 +31,19 @@ def history_fixture(tmp_path, *, document=None, reference_verifier=None, actor_s
         'query-version-1',
     )
     stage = StageSummary(str(uuid4()), 'release-1', 'Release 1', ScopeSelection('alpha-jira', 1), descriptor, descriptor.definition_hash(), datetime.now(UTC), 'current')
-    archive_root = tmp_path / 'history-archive'
-    archive_root.mkdir()
+    if archive_config is None:
+        archive_root = tmp_path / 'history-archive'
+        archive_root.mkdir()
+        archive_config = ArchiveStorageConfig(archive_root, 'Archive Test', 'archive@example.test', archive_limits())
+    else:
+        archive_root = archive_config.root
+        if not archive_root.resolve().is_relative_to(tmp_path.resolve()) or any(archive_root.iterdir()):
+            raise ValueError('Custom fixture archive must be an empty owned child directory.')
     repository_factory = FailingRepositoryFactory()
     archive = CaptureArchiveService(
         ProjectApiStub(project, stage, actor.subject),
         repository_factory,
-        ArchiveStorageConfig(archive_root, 'Archive Test', 'archive@example.test', archive_limits()),
+        archive_config,
     )
     archive.initialize_stage(actor, project.id, stage.id)
     Project.objects.create(id=project.id, owner_subject=actor.subject, key=project.key, name=project.name)

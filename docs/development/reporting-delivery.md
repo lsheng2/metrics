@@ -240,9 +240,24 @@ selection, original-byte downloads and missing-versus-skipped coverage separatel
 
 [架构](../../openspec/changes/add-provider-neutral-project-reporting/report-read-performance.md)
 与[执行计划](../../openspec/changes/add-provider-neutral-project-reporting/performance-execution.md)
-目前为设计，未改变运行代码。实施顺序为工作台纵向读取切片、实测复核、窄操作入口、最终验收。
+已落实读取与窄操作入口，任务状态仍以唯一ledger为准，完整验收不等于源码复审通过。
 原始数据Git、权限、最新写锁校验和六文件bytes不变；不引入默认跨请求缓存或持久索引。
 
-性能runner与新增test目标在计划中明确为待实现。先验证批量协议/对象限额和真实GET，
-再做20样本及一个浏览器流程；首次仍慢则停止扩大测试、重新profile，不重跑整周。
-本指南不会把READ/COMMAND/SLO未实施描述为已完成，也不授权旧8017或真实来源切换。
+`scripts/validation/profile_report_reads.py`对已有owned synthetic实例运行真实Django HTTP；
+`--scenario workbench|baseline|preparation|editor --samples 20`保留首请求与所有稳态样本，
+`--dataset s1`选择页20/5秒规模门槛。输出目录只能在该run的evidence下，出站网络被禁止。
+结果包含代码、运行数据、SDK/Django路径和前后指纹；`passed`只代表对应场景，不能替代
+实际点击到最终列表可用的浏览器证据。首次超过10秒时停止扩样定位，不能提高期限。
+
+S1使用`prepare_report_scale.py --manifest-from <owned-synthetic-run>`构建一次持久数据，
+再运行reader采样。构建时的buffered Git/identity/quota替身只缩短测试准备，实际来源读取、
+Git对象、checkout物化、六文件校验都恢复正常实现。不要用临时pytest目录保留大型验收数据，
+不要把未物化index的fixture误判为健康checkout性能，也不要反复构建100份数据定位读取问题。
+`profile_report_saves.py`接受同run的实际浏览器种子，可用`--resume-receipt`继续已确认修订；
+每次用新命令和最新CAS，不修改或重放旧请求bytes。
+
+验证先跑`test_git_read_batch.py`、`test_archive_read_limits.py`，随后query/consumer及
+`ui_web/tests/test_report_query_views.py`与`test_report_query_browser.py`。
+小规模原生fixture检验无误后才运行持久S1；`test_s1_scale_fixture_materializes_100_native_publications`
+是显式慢门槛，不属于每次快速回归。手工Ego任务页消失时停止该surface并请求重建授权，
+不接管用户页或把两次预检冒充十次最终样本。本次不授权8017、真实来源或正式模型切换。

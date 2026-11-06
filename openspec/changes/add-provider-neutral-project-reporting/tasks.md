@@ -22,7 +22,16 @@ base and Dashboard keep separate canonical implementation ledgers.
 用户随后报告语言切换近一分钟；实际语言POST为0.005s，后续工作台GET为39.602s，
 独立profile为34.664s/169次Git调用，约27.937s花在Git调用。
 本轮按要求建立[读取性能架构](report-read-performance.md)与[执行/验收计划](performance-execution.md)。
-当前为规格阶段，不重跑原周、不切换服务、不宣称性能已修复。`W6.PERF.*`是下一实施前沿；
+用户已批准实施，当前执行`W6.PERF.READ`；不重跑原周、不切换原服务、不宣称性能已达标。
+克隆原路径31.602s/169 Git；批量读取后8 Git，仍有本地文件读取和重复解析成本。
+33项定向服务tests和4个subtests通过；有界本地并发实验及新增消费者见执行计划的READ amendment。
+证据根`.tmp/dashboard-read-performance-20261106/`，READ/COMMAND/最终SLO保持未关闭。
+READ核心两轮限定复审未留阻断项并准入COMMAND实施，不代表最终SLO关闭。
+JSON/成功动作不再预构建工作台；HTML失败保留绑定输入，4项组合HTTP与13项受影响
+HTTP/form检查通过。baseline/period/skip等共享读取消费者仍在验证。
+本次实现的scope/refreeze更新见`performance-execution.md`的READ amendment；
+未把少量约3秒的样本或只完成的小规模夹具当成100份S1/20样本资格。
+`W6.PERF.*`是当前实施前沿；
 历史段落中的“尚未profile”以这条已测证据为准，不改写历史回执。
 
 最新入口：用户同意的精简正文与独立完整审计附件已完成限定实现/验证/复审，
@@ -280,10 +289,10 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.SKIP.UI Add authenticated bilingual meeting-calendar and recovery controls using existing forms and report APIs. Three HTTP cases and separate desktop/390px Chinese navigation passed; two-week mounted story passed.
 - [x] W6.SKIP.JOIN.R Verify two-week resumption, negative consumers and docs; independent source/evidence review closed. See meeting-skips-delivery.md; the broader authoring/live/deployment gates remain open.
 - [x] W6.PERF.PLAN.R 统一查询、固定快照/批处理、写锁隔离、负例与性能SLO设计通过独立复核；见performance-plan-review.md，规格通过不等于优化完成。
-- [ ] W6.PERF.READ 实现首个工作台纵向切片：批量Git读取、请求级校验复用、三列表统一query及真实GET对照。
-- [ ] W6.PERF.READ.REPLAN 根据首请求与规模profile复核余项；需要持久索引时单独冻结，禁止盲加缓存/延长期限。
-- [ ] W6.PERF.COMMAND 精简preview/prepare/reprepare/detail与错误页，复核Save/Finalize的最新锁内权威，不预读无关列表。
-- [ ] W6.PERF.ACCEPT.R 验证语言/页面/操作端到端、20样本和规模/并发，独立评审、文档同步及scoped发布。
+- [x] W6.PERF.READ 工作台纵向切片已实现并通过独立复核：批量Git、固定H、完整packet验证复用和专用列表投影；最终S0首请求3.860s、20样本p95 2.876s，S1 p95 4.105s。
+- [x] W6.PERF.READ.REPLAN 根据S1分段计时剔除未被工作台消费的checkout诊断，保留采集状态和旧API；不增加持久索引、并行Git或延长期限。投影反例9项及独立复审通过。
+- [x] W6.PERF.COMMAND 窄preview/prepare/reprepare/detail与错误页已通过HTTP/真实浏览器回归；Save保留锁内CAS且20次p95 1.839s，详情1.448s；无预读历史或隐藏控件。
+- [ ] W6.PERF.ACCEPT.R 后台S0/S1/语言POST/Save/详情门槛与原HTML浏览器链已通过；最后10次Ego语言往返因任务页消失待新建授权，见performance-delivery.md。不得用2次预检或后台p95冒充本门槛。
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.

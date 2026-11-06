@@ -29,7 +29,7 @@ class ReportDailyPreviewForm(forms.Form):
     series_id = forms.ChoiceField(label=_('Report series'))
     meeting_date = forms.DateField(label=_('Meeting date'), widget=forms.DateInput(attrs={'type': 'date'}))
     template_choice = forms.ChoiceField(label=_('Matrix template revision'))
-    capture_after = forms.CharField(required=False, widget=forms.HiddenInput)
+    capture_after = forms.CharField(required=False, max_length=1368, widget=forms.HiddenInput)
 
     def __init__(self, *args, series_choices=(), template_choices=(), **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,6 +44,19 @@ class ReportDailyPreviewForm(forms.Form):
 
     def template_selection(self):
         return template_selection_from_choice(self.cleaned_data['template_choice'])
+
+
+class ReportDailyPreviewRequestForm(ReportDailyPreviewForm):
+    series_id = forms.CharField(max_length=36)
+    template_choice = forms.CharField(max_length=200)
+
+    def clean_series_id(self):
+        return uuid_text(self.cleaned_data['series_id'])
+
+    def clean_template_choice(self):
+        value = self.cleaned_data['template_choice']
+        template_selection_from_choice(value)
+        return value
 
 
 class ReportDailyPreparationForm(ReportDailyPreviewForm):

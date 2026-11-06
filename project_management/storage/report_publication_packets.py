@@ -17,6 +17,8 @@ from project_management.app.domain.report_publication_validation import (
 )
 from project_management.storage.admission import GrowthEstimate, admit, finalize_growth
 from project_management.storage.paths import read_bytes, validate_uuid, write_bytes
+from project_management.app.spi.archive_reads import ArchiveBlobRequest
+from project_management.storage.publication_validation import verified_packet
 
 
 SNAPSHOT_READ_LIMIT = 8_388_608
@@ -101,7 +103,7 @@ class ReportFinalizationPacketStore:
         if any(manifest.file_hashes[name] != payload['file_hashes'][name] for name in MANIFEST_HASHED_FILES):
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         try:
-            validate_publication_files(payload['publication_id'], files, self._context(), payload['finalized_by'])
+            verified_packet(self.repository, payload['publication_id'], files, self._context(), payload['finalized_by'])
         except ReportError as error:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID') from error
         return payload, files
@@ -132,11 +134,17 @@ class ReportFinalizationPacketStore:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID') from error
         if commit is None:
             return False
-        for name in PUBLICATION_FILES:
-            try:
-                data = self.repository.read_file(publication_path(payload['publication_id'], name), commit)
-            except (ArchiveError, ReportError):
-                raise ArchiveError('ARCHIVE_MANIFEST_INVALID') from None
+        try:
+            contents = self.repository.read_files(tuple(
+                ArchiveBlobRequest(commit, publication_path(payload['publication_id'], name))
+                for name in PUBLICATION_FILES
+            ))
+        except (ArchiveError, ReportError) as error:
+            if isinstance(error, ArchiveError) and error.code in {
+                    'ARCHIVE_STORAGE_UNAVAILABLE', 'ARCHIVE_READ_UNSUPPORTED', 'ARCHIVE_QUOTA_EXCEEDED'}:
+                raise
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID') from None
+        for name, data in zip(PUBLICATION_FILES, contents):
             if data != files[name]:
                 raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         return True

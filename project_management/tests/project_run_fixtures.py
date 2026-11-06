@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -327,6 +328,21 @@ class MemoryStageState:
 
 
 class WritableStageMemoryRepository:
+    def map_reads(self, function, items):
+        return tuple(map(function, items))
+
+    def open_read_view(self):
+        return nullcontext(self)
+
+    def read_files(self, requests):
+        result = tuple(self.read_file(item.path, item.commit_id) for item in requests)
+        if any(len(data) > item.max_bytes for data, item in zip(result, requests)):
+            raise ArchiveError('ARCHIVE_QUOTA_EXCEEDED')
+        return result
+
+    def validated(self, key, load):
+        return load()
+
     def __init__(self, root, project, stage, owner_subject, state):
         self.root = root
         self.project = project

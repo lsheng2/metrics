@@ -35,7 +35,7 @@ from project_management.services.report_publication_reads import ReportPublicati
 from project_management.services.report_preparation_seed import validate_prepared_context_seed
 from project_management.services.report_templates import ReportTemplateService
 from project_management.services.report_period_views import read_period_view
-from project_management.services.report_continuity_preview import build_baseline_preview
+from project_management.services.report_continuity_preview import build_baseline_preview, build_baseline_preview_from_repository
 from project_management.services.report_preservation import preserve_parent_content, preserve_publication_content
 from project_management.services.report_meetings import ReportMeetingService, require_meeting_available
 from project_management.services.report_meeting_snapshot import freeze_meeting_snapshot
@@ -116,7 +116,7 @@ class ReportContinuityService:
             stage = self._stage(project, stage_id)
             return self._policy(self._series(project, stage, series_id), revision)
 
-    def preview(self, actor, project_id, stage_id, *, series_id, meeting_date, template_selection):
+    def preview(self, actor, project_id, stage_id, *, series_id, meeting_date, template_selection, _read_view=None):
         with storage_errors():
             project = self._owned(actor, project_id)
             stage = self._stage(project, stage_id)
@@ -126,7 +126,11 @@ class ReportContinuityService:
             if asdict(template_selection) != asdict(policy.default_template_selection):
                 raise ReportError('REPORT_TEMPLATE_UNSUPPORTED')
         try:
-            preview = build_baseline_preview(self.archive, actor, project_id, stage_id, policy, meeting_date)
+            if _read_view is None:
+                preview = build_baseline_preview(self.archive, actor, project_id, stage_id, policy, meeting_date)
+            else:
+                with self.archive._report_repository(actor, project_id, stage_id, _read_view=_read_view) as view:
+                    preview = build_baseline_preview_from_repository(self.archive, view, policy, meeting_date)
             return replace(preview, meeting_skipped=ReportMeetingService(self).is_skipped(
                 actor, project_id, stage_id, series_id, meeting_date,
             ))

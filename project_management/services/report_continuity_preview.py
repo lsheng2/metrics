@@ -14,15 +14,23 @@ from project_management.storage.report_drafts import ReportDraftStore
 
 
 def build_baseline_preview(archive, actor, project_id, stage_id, policy, meeting_date):
-    if archive is None or archive.stage_archive_status(actor, project_id, stage_id) == 'absent':
+    if archive is None:
         meeting = meeting_identity(policy.calendar, meeting_date)
         period = period_identity(meeting)
         return _preview(policy, meeting, period, None, ())
-    with archive._report_repository(actor, project_id, stage_id, write=False) as repository:
+    with archive._report_read_view(actor, project_id, stage_id, allow_absent=True) as repository:
+        if repository is None:
+            meeting = meeting_identity(policy.calendar, meeting_date)
+            return _preview(policy, meeting, period_identity(meeting), None, ())
         return build_baseline_preview_from_repository(archive, repository, policy, meeting_date)
 
 
 def build_baseline_preview_from_repository(archive, repository, policy, meeting_date):
+    with repository.open_read_view() as view:
+        return _preview_from_view(archive, view, policy, meeting_date)
+
+
+def _preview_from_view(archive, repository, policy, meeting_date):
     meeting = meeting_identity(policy.calendar, meeting_date)
     period = period_identity(meeting)
     head = verified_daily_head(repository, policy.series_id)
@@ -53,10 +61,9 @@ def _pending_gap_drafts(archive, repository, series_id, local_date):
         return ()
     store = ReportDraftStore(repository, archive.config.root, archive.config.limits, ReportDraftLimits())
     pending = []
-    for path in sorted(root.iterdir()):
-        if path.is_dir():
-            draft = store.read_draft(path.name)
-            _append_pending(pending, draft, series_id, local_date)
+    ids = tuple(path.name for path in sorted(root.iterdir()) if path.is_dir())
+    for draft in repository.map_reads(store.read_draft, ids):
+        _append_pending(pending, draft, series_id, local_date)
     return tuple(item[1] for item in sorted(pending))
 
 

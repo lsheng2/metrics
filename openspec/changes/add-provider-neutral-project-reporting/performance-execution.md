@@ -30,6 +30,12 @@ Windows Defender/磁盘/代理/SDK；这些原因没有被本次证据证明。
 | PERF-COMMAND / high | daily/forms/facade的窄入口 | preview、prepare、reprepare、detail、CLI/worker沿原service | 非法/foreign、CSRF、错误输入丢失、模板归档导致旧command不能重放 |
 | PERF-WRITE / high | 原writer锁和最新revision/基线 | publication/resume、preparation reservation、skip占位 | 旧GET缓存绕过CAS、两窗口覆盖、提交后旧view复用 |
 | PERF-EVIDENCE / normal | 有界本机性能runner | 回执、current guide、CI定向tests | 只计302/首屏、不计最终表格、p95样本不足、失败/重试排除 |
+| PERF-LOCAL / high | `storage/read_workers.py`、`archive_read_view.py` | 工作树核验、只读草稿列表 | 最多4个本地读取任务、错误/期限后回收、顺序及原缺失/拒绝语义；不并行Git写入 |
+| PERF-DECODE / high | `storage/report_decoding.py`、`app/domain/report_publication_validation.py` | draft intent/command/revision、publication revision | 精确完整输入hash、每view作用域、可变返回隔离，坏正文不得命中另一输入的成功校验 |
+| PERF-RUNTIME / high | `storage/project_operations.py`、`report_drafts.py` | 原运行观察/恢复、修订链与发布 | 只在一次观察复用不可变request和命令扫描；损坏/重复/缺失的命令仍拒绝 |
+| PERF-PATH / high | `storage/paths.py` | capture/report/runtime读写 | 单次不跟随链接的逐级检查；重解析点、硬链接、非目录、打开后身份变化仍拒绝 |
+| PERF-RUN-READ / high | `services/project_operation_archive.py`、`storage/project_operation_reads.py`、query DTO | `ui_web/facades/project_runs.py`、`views/report_access.py` | 仅同归档复用；project/stage/actor/hash不匹配必须独立读取；运行结果不进入Git/AI新任务 |
+| PERF-PROJECTION / high | `app/domain/report_queries.py`、`services/report_publication_reads.py` | 工作台、publication选择、weekly表单 | 原六文件完整validator每packet一次；只省略未被UI消费的checkout诊断，旧API仍校验并返回原状态 |
 
 具体旧消费者：
 `services/{archive_reads,report_draft_listing,report_publication_reads,report_daily_baseline,
@@ -38,6 +44,56 @@ report_preparation,report_publication,report_historical_references}.py`，
 `storage/{report_drafts,report_publication_packets,report_draft_preparation_bindings}.py`。
 所有路径以`project_management/`为根；UI只消费`app/api/`。
 对高风险消费者必须有下表用例或明确保持原实现的理由，不能仅写“用了公共helper”。
+补齐`services/report_sources.py::PinnedReadRepository`的明确批量适配，保留原固定commit与
+不可暴露writer约束。`app/domain/capture_values.py`仅给精确JSON标量增加转换快路径，
+不改变canonical bytes、浮点/非字符串key/bytes的拒绝规则。
+
+### READ Implementation Amendment
+
+2026-11-06固定克隆`2be188e9-7cce-4889-8297-f8ed268ec28a`的原路径31.602s/169 Git。
+批量读取已降为8 Git，但未达SLO；无profile开销的边界计时显示本地工作树约0.8s、
+草稿约1.5s。隔离四线程实验完整返回同页，稳态约3.72s，**不是正式验收**。
+因此增加请求级、有界的本地文件读取重叠；不并行原逐文件Git，不增加全局缓存、持久索引。
+只读任务保持输入顺序，最多4个in-flight；共享Git/cache访问串行，所有worker在view关闭前
+回收。错误、取消或共同deadline到期时停止排队并等待已拥有任务退出；失败不能返回部分成功。
+补测线程上限/顺序/错误回收、同packet解码复用、修订变化和worker来源读取。
+本节新owner路径及`test_archive_read_limits.py`、`test_read_workers.py`、`test_report_read_reuse.py`
+纳入READ，不扩展实际SDK/provider/数据格式权限。READ/REPLAN仍未完成，性能门槛不变。
+
+同一次核心复审允许推进COMMAND实现；API/errors、其他消费者及正式SLO仍须验证。
+`refreeze_actions=[{action:amend,reason:overlap bounded local reads and share the authorized operation read; retain final gates}]`。
+`updated_artifacts`为本执行计划、`report-read-performance.md`和本change的`tasks.md`；
+`rerun_gates=[W6.PERF.READ,W6.PERF.COMMAND,W6.PERF.ACCEPT.R]`；
+`post_refreeze_preflight_result={method:source/consumer matrix and independent READ review cross-check,result:PASS}`。
+新增控件与访问组合文件`ui_web/facades/report_controls.py`、`ui_web/views/report_access.py`
+属于COMMAND；后者维持旧`project_reports`访问mixin及helper导入兼容。
+预览/错误页使用`preparation_error.html`，不提供虚构的空历史。
+HTML控件可单独读取有界capture选项；JSON和成功POST不需要这些选项。
+`ReportDailyPreviewRequestForm`做有界语法校验；业务服务继续验证所有ID、模板和原命令重放。
+
+2026-11-07：S0正式工作台20样本p95 2.896s，baseline 2.573s；S1持久夹具为100/100/100、
+5修订、3票。旧临时S1遗失且checkout未物化的验证器问题已独立反例修复。
+持久S1首次真实HTTP还揭示历史fixture的`selection_json.revision`不符合`ScopeSelection.scope_id`，
+只修该合成目录记录，不改归档文件；修复后的20请求全200但p95 9.250s，未通过5s门槛。
+分段计时为工作树5.280s，Git1.075s；16线程实验仅降到7.650s，**不进入产品**。
+重新核对消费者后采用定稿列表专用投影，省去未显示的checkout计算；采集状态和旧API保持。
+新增反例同时毒化未使用诊断并观测完整validator，防止把省诊断变成省完整性检查。
+`refreeze_actions=[{action:amend,reason:the workbench must not compute an unconsumed global checkout diagnostic}]`；
+`updated_artifacts=[report-read-performance.md,performance-execution.md,specs/report-query-performance/spec.md,tasks.md]`；
+`rerun_gates=[READ projection/source/HTTP consumers,S0/S1 timing,W6.PERF.ACCEPT.R]`。
+范围仍限本change的READ/COMMAND所有者，新增API只在工作台query返回值中使用；
+不改变旧publication API、输出文件schema、writer权限、恢复边界或性能门槛。
+实施结果：专用投影9项通过、独立复审READY，持久S1的20请求p95降至4.105s；
+最终S0首请求3.860s、20请求p95 2.876s。READ及其REPLAN已完成。
+
+Save正式20样本曾为2.236s，证据保留；形状表单并未消费snapshot却预读草稿。
+`ui_web/report_authoring_forms.py`的snapshot参数改为可选，Save v2先按owner/project/stage
+校验和有界语法解析，直接进入原锁内业务服务。v1、target/reference/assist/CAS校验不变。
+7项HTTP拒绝/保存用例通过；在同一稿第24到43修订继续20次实际Save，p95 1.839s、
+全200、重新打开成功。新测量脚本`profile_report_saves.py`与`profile_report_language.py`
+及`test_report_save_validation.py`归ACCEPT；正式采样只在同候选且无并行测试时执行。
+Preparation详情只在`can_reprepare`为真时读取capture选项；定稿详情没有此UI，禁止为
+未显示控件重读归档。原拒绝/可重新准备的控件与绑定输入不变。
 
 | Consumer category | 裁定 |
 | --- | --- |

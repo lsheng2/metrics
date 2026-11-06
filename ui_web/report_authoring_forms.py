@@ -17,7 +17,7 @@ class ReportAuthoredSaveForm(forms.Form):
     authored_edits = forms.CharField(widget=forms.HiddenInput)
     continuity_changes = forms.CharField(required=False, widget=forms.HiddenInput)
 
-    def __init__(self, *args, snapshot, **kwargs):
+    def __init__(self, *args, snapshot=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['continuity_changes'] = forms.CharField(required=False, widget=forms.HiddenInput)
         self.snapshot = snapshot

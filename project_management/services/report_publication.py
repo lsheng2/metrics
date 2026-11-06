@@ -77,10 +77,10 @@ class ReportPublicationMixin:
         except (ArchiveError, ProjectError) as error:
             raise self._report_error(error, missing_as_not_found=True) from None
 
-    def get_publication(self, actor, project_id, stage_id, publication_id):
+    def get_publication(self, actor, project_id, stage_id, publication_id, *, _read_view=None):
         publication_id = self._uuid(publication_id)
         try:
-            with self.archive._report_repository(actor, project_id, stage_id, write=False) as repository:
+            with self.archive._report_repository(actor, project_id, stage_id, write=False, _read_view=_read_view) as repository:
                 return ReportPublicationReader(repository).get(publication_id, actor.subject)
         except (ArchiveError, ProjectError) as error:
             raise self._report_error(error, missing_as_not_found=True) from None

@@ -1,9 +1,9 @@
+from collections.abc import Mapping
 from dataclasses import fields, is_dataclass
 from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
-from typing import Mapping
 from .capture_validation import validate_snapshot, validate_intent
 
 from .captures import (
@@ -23,6 +23,8 @@ from .captures import (
 
 
 def json_value(value):
+    if value is None or type(value) in (str, bool, int, float):
+        return value
     if is_dataclass(value) and not isinstance(value, type):
         return {field.name: json_value(getattr(value, field.name)) for field in fields(value)}
     if isinstance(value, Mapping):

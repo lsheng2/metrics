@@ -19,6 +19,7 @@ ARCHIVE_ERROR_MESSAGES = {
     'ARCHIVE_MANIFEST_INVALID': 'The archive manifest is invalid.',
     'ARCHIVE_GIT_DIRTY': 'Archive checkout contains unexpected local edits.',
     'ARCHIVE_STORAGE_UNAVAILABLE': 'Archive storage is unavailable.',
+    'ARCHIVE_READ_UNSUPPORTED': 'The installed Git does not support bounded archive reads.',
     'UNSAFE_PATH': 'Archive storage path is unsafe.',
 }
 

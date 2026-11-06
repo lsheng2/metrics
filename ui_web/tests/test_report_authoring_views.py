@@ -192,6 +192,20 @@ class TestReportAuthoringViews(CaptureArchiveScenario, ProjectRouteTestSupport, 
         self.assertIn(b'color:#0055aa', render.content)
         self.assertIn('Edited rich override', saved.edits[1].text)
 
+    def test_authored_save_does_not_preload_draft_before_locked_service(self):
+        from unittest.mock import patch
+
+        draft_id, _ = self.create_authored_draft(18300)
+        draft = self.service.get(self.actor, self.project.id, self.stage.id, draft_id)
+        with patch.object(self.report_facade(), 'get_draft', side_effect=AssertionError('Duplicate form read')):
+            response = self.client.post(
+                self.save_url(draft_id), self.authored_post(draft, (), command=18301),
+                HTTP_ACCEPT='application/json', **self.auth('alice'),
+            )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, response.json()['revision'])
+        self.assertEqual(2, self.service.get(self.actor, self.project.id, self.stage.id, draft_id).revision)
+
     def test_shouldRejectStaleMalformedOversizedAndForgedSchema2PayloadsWithoutDroppingPostedText(self):
         draft_id, _ = self.create_authored_draft(602)
         draft = self.service.get(self.actor, self.project.id, self.stage.id, draft_id)

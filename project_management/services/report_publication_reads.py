@@ -4,6 +4,7 @@ from project_management.app.domain.capture_values import canonical_bytes, decode
 from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.contracts import ProjectError
 from project_management.app.domain.report_contracts import ReportError
+from project_management.app.domain.report_queries import ReportPublicationListItem
 from project_management.app.domain.report_draft_values import read_json, snapshot_from_mapping
 from project_management.app.domain.report_publication_contracts import (
     PUBLICATION_FILES,
@@ -16,9 +17,20 @@ from project_management.app.domain.report_publication_validation import (
     validate_publication_files,
 )
 from project_management.app.domain.summary_input import complete_source
+from project_management.app.spi.archive_reads import ArchiveBlobRequest
+from project_management.storage.publication_validation import verified_packet
 
 
 PUBLIC_ARTIFACTS = {'html': 'report.html', 'plain_text': 'report.txt'}
+
+
+def prefetch_publications(repository, publication_ids, *, extra_requests=()):
+    requests = list(extra_requests)
+    for publication_id in dict.fromkeys(publication_ids):
+        commit = repository.find_commit_for_path(publication_path(publication_id, 'manifest.json'))
+        if commit is not None:
+            requests.extend(ArchiveBlobRequest(commit, publication_path(publication_id, name)) for name in PUBLICATION_FILES)
+    repository.read_files(tuple(requests))
 
 
 def read_publication_artifacts(service, actor, project_id, stage_id, publication_id):
@@ -38,41 +50,51 @@ class ReportPublicationReader:
         return self.read_artifacts(publication_id, actor_subject).publication
 
     def read_artifacts(self, publication_id: str, actor_subject: str | None = None) -> ReportPublicationArtifacts:
-        manifest_path = publication_path(publication_id, 'manifest.json')
-        commit_id = self.repository.commit_for_path(manifest_path)
-        files = {name: self.repository.read_file(publication_path(publication_id, name), commit_id)
-                 for name in PUBLICATION_FILES}
-        manifest, manifest_hash = validate_publication_files(publication_id, files, self._context(), actor_subject)
+        manifest, manifest_hash, commit_id, files = self._verified_files(publication_id, actor_subject)
         publication = ReportPublication(manifest, manifest_hash, commit_id, self.repository.checkout_state(commit_id))
         return ReportPublicationArtifacts(publication, files)
+
+    def list_item(self, publication_id: str, actor_subject: str) -> ReportPublicationListItem:
+        manifest, manifest_hash, commit_id, _ = self._verified_files(publication_id, actor_subject)
+        return ReportPublicationListItem(manifest, manifest_hash, commit_id)
+
+    def _verified_files(self, publication_id, actor_subject):
+        manifest_path = publication_path(publication_id, 'manifest.json')
+        commit_id = self.repository.commit_for_path(manifest_path)
+        contents = self.repository.read_files(tuple(
+            ArchiveBlobRequest(commit_id, publication_path(publication_id, name)) for name in PUBLICATION_FILES
+        ))
+        files = dict(zip(PUBLICATION_FILES, contents))
+        manifest, manifest_hash = verified_packet(self.repository, publication_id, files, self._context(), actor_subject)
+        return manifest, manifest_hash, commit_id, files
 
     def read_public_artifact(self, publication_id: str, format: str, actor_subject: str | None = None) -> bytes:
         if format in PUBLIC_ARTIFACTS:
             name = PUBLIC_ARTIFACTS[format]
-            publication = self.get(publication_id, actor_subject)
-            return self.repository.read_file(publication_path(publication_id, name), publication.commit_id)
+            return self.read_artifacts(publication_id, actor_subject).files[name]
         if format not in PUBLICATION_FILES:
             raise ReportError('REPORT_INVALID')
-        publication = self.get(publication_id, actor_subject)
-        if publication.manifest.schema_version != 2:
+        packet = self.read_artifacts(publication_id, actor_subject)
+        if packet.publication.manifest.schema_version != 2:
             raise ReportError('REPORT_INVALID')
         name = format
-        return self.repository.read_file(publication_path(publication_id, name), publication.commit_id)
+        return packet.files[name]
 
     def snapshot(self, publication_id: str):
-        publication = self.get(publication_id)
-        data = self.repository.read_file(publication_path(publication_id, 'snapshot.json'), publication.commit_id)
+        packet = self.read_artifacts(publication_id)
+        publication, data = packet.publication, packet.files['snapshot.json']
         snapshot = snapshot_from_mapping(read_json(data))
         if canonical_bytes(snapshot) != data:
             raise ReportError('REPORT_ARTIFACT_INVALID')
         return publication, snapshot
 
     def list(self):
-        publications = []
-        for path in self.repository.list_files('report_publications'):
-            if path.endswith('/manifest.json'):
-                publication_id = path.split('/')[1]
-                publications.append(self.get(publication_id))
+        with self.repository.open_read_view() as view:
+            ids = tuple(path.split('/')[1] for path in view.list_files('report_publications')
+                        if path.endswith('/manifest.json'))
+            prefetch_publications(view, ids)
+            reader = ReportPublicationReader(view)
+            publications = [reader.get(publication_id) for publication_id in ids]
         return tuple(sorted(publications, key=lambda item: (item.manifest.finalized_at, item.manifest.publication_id)))
 
     def _context(self):

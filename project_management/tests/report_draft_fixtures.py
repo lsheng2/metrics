@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -95,6 +95,21 @@ class StaticSourceReader:
 
 
 class StageDraftRepository:
+    def open_read_view(self):
+        return nullcontext(self)
+
+    def map_reads(self, function, items):
+        return tuple(map(function, items))
+
+    def read_files(self, requests):
+        result = tuple(self.read_file(item.path, item.commit_id) for item in requests)
+        if any(len(data) > item.max_bytes for data, item in zip(result, requests)):
+            raise ArchiveError('ARCHIVE_QUOTA_EXCEEDED')
+        return result
+
+    def validated(self, key, load):
+        return load()
+
     def __init__(self, root: Path, project, stage, owner_subject: str):
         self.root = root
         self.project = project
@@ -180,6 +195,14 @@ class StageDraftRepository:
 
 
 class DraftArchive:
+    def _capture_read_requests(self, view, after):
+        return ()
+
+    @contextmanager
+    def _report_read_view(self, actor, project_id, stage_id, *, allow_absent=False):
+        with self._report_repository(actor, project_id, stage_id) as repository:
+            yield repository
+
     def __init__(self, root: Path, *, limits=None, archived=False, source_status='current'):
         self.actor = ProjectActor('archive-owner')
         self.project = ProjectSummary(str(uuid.uuid4()), 'alpha', 'Alpha', archived, datetime.now(UTC))
@@ -230,8 +253,13 @@ class DraftArchive:
         return ArchiveLimits(**values)
 
     @contextmanager
-    def _report_repository(self, actor, project_id, stage_id, *, write=False):
+    def _report_repository(self, actor, project_id, stage_id, *, write=False, _read_view=None):
         project, stage = self._stage_for_write(actor, project_id, stage_id) if write else self._stage_for_read(actor, project_id, stage_id)
+        if _read_view is not None:
+            if write or _read_view.root != self.root or _read_view.owner_subject != actor.subject:
+                raise ArchiveError('ARCHIVE_IDENTITY_MISMATCH')
+            yield _read_view
+            return
         if write:
             with self._locks(project, stage):
                 self._stage_for_write(actor, project_id, stage_id)
@@ -245,7 +273,7 @@ class DraftArchive:
         self._stage_for_read(actor, project_id, stage_id)
         return 'ready' if self.repository.stage_root.exists() else 'absent'
 
-    def list_capture_metadata(self, actor, project_id, stage_id, *, limit=100, after=None):
+    def list_capture_metadata(self, actor, project_id, stage_id, *, limit=100, after=None, _read_view=None, allow_absent=False):
         page = self.list_captures(actor, project_id, stage_id, limit=limit, after=after)
         return CaptureMetadataPage(
             tuple(CaptureMetadata(item, safe_snapshot().source_as_of) for item in page.items), page.next_cursor,

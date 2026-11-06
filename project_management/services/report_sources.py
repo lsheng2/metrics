@@ -25,6 +25,7 @@ from project_management.services.report_source_values import (
 )
 from project_management.services.report_publication_reads import ReportPublicationResolver
 from project_management.services.report_membership import ScopeMember, ScopeMembershipSnapshot
+from project_management.app.spi.archive_reads import ArchiveBlobRequest
 
 
 COMPARISON_POLICY_HASH = report_hash({'policy': 'initial-baseline', 'version': 1})
@@ -44,6 +45,15 @@ class PinnedReadRepository:
 
     def read_file(self, git_path: str, commit: str = 'main') -> bytes:
         return self._repository.read_file(git_path, self._commit if commit == 'main' else commit)
+
+    def read_files(self, requests):
+        return self._repository.read_files(tuple(
+            ArchiveBlobRequest(self._commit if item.commit_id == 'main' else item.commit_id, item.path, item.max_bytes)
+            for item in requests
+        ))
+
+    def validated(self, key, load):
+        return self._repository.validated((self._commit, key), load)
 
     def list_files(self, prefix: str, commit: str = 'main') -> tuple[str, ...]:
         return self._repository.list_files(prefix, self._commit if commit == 'main' else commit)

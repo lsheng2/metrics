@@ -17,6 +17,9 @@ class ProjectOperationArchive:
             if not repository.stage_root.exists():
                 raise ArchiveError('ARCHIVE_RAW_PAGE_MISSING')
             repository.verify_identity()
+        return self._project_operation_store(repository)
+
+    def _project_operation_store(self, repository):
         return ProjectOperationRepository(
             self.config.root,
             repository.stage_root,

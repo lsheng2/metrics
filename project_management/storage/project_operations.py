@@ -1,4 +1,3 @@
-from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 import re
@@ -13,7 +12,6 @@ from project_management.app.domain.run_admission_values import (
 )
 from project_management.app.domain.run_values import (
     NONTERMINAL_STATES,
-    TERMINAL_STATES,
     decode_mapping,
     operation_from_mapping,
     validate_transition,
@@ -22,6 +20,7 @@ from project_management.app.domain.run_values import (
 from project_management.storage.admission import GrowthEstimate, admit
 from project_management.storage.locks import CombinedLocks, exclusive_lock
 from project_management.storage.paths import controlled_path, inspect_components, read_bytes, safe_relative_path, write_bytes
+from project_management.storage.project_operation_reads import list_operations
 
 
 REQUEST_LIMIT = 1024 * 1024
@@ -70,7 +69,7 @@ class ProjectOperationRepository:
         validate_uuid_text(operation_id)
         record = self._required_request(operation_id)
         _, _, _, request_hash, _ = validate_stored_request(record)
-        events = self._events(operation_id, request_hash)
+        events = self._events(operation_id, request_hash, record)
         if not events:
             raise RunError('RUN_STORAGE_INVALID')
         return events[-1][0]
@@ -80,18 +79,8 @@ class ProjectOperationRepository:
         request, policy, backend, request_hash, capture_limits = validate_stored_request(record)
         return request, policy, backend, request_hash, capture_limits
 
-    def list(self, *, limit):
-        if type(limit) is not int or not 1 <= limit <= 100:
-            raise RunError('RUN_INVALID')
-        operations = []
-        for path in self._operation_dirs():
-            try:
-                operations.append(self.current(path.name))
-            except RunError as error:
-                if error.code == 'RUN_STORAGE_INVALID':
-                    raise
-        operations.sort(key=lambda row: (row.created_at, row.operation_id), reverse=True)
-        return tuple(operations[:limit])
+    def list(self, *, limit, _read_map=None):
+        return list_operations(self, limit=limit, read_map=_read_map)
 
     def transition(self, candidate: RunOperation, *, expected_revision: int):
         if type(expected_revision) is not int:
@@ -200,7 +189,7 @@ class ProjectOperationRepository:
             files += 2
         self._admit_write(operation.operation_id, size, files)
 
-    def _events(self, operation_id, request_hash):
+    def _events(self, operation_id, request_hash, request_record):
         previous_hash = None
         events = []
         paths = self._event_paths(operation_id)
@@ -214,7 +203,7 @@ class ProjectOperationRepository:
                 event.get('schema_version') != 1
                 or event.get('operation_id') != operation_id
                 or event.get('request_hash') != request_hash
-                or event.get('admission_hash') != self._required_request(operation_id)['admission_hash']
+                or event.get('admission_hash') != request_record['admission_hash']
                 or event.get('sequence') != expected
                 or event.get('previous_event_hash') != previous_hash
             ):
@@ -223,7 +212,7 @@ class ProjectOperationRepository:
             if operation.revision != expected:
                 raise RunError('RUN_STORAGE_INVALID')
             if expected == 1:
-                if operation != original_operation_from_record(self._required_request(operation_id)):
+                if operation != original_operation_from_record(request_record):
                     raise RunError('RUN_STORAGE_INVALID')
             else:
                 try:

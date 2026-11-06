@@ -23,7 +23,8 @@ class PublicationValidationContext:
     rule_hash: str
 
 
-def validate_publication_files(publication_id: str, files, context: PublicationValidationContext, actor_subject: str | None = None):
+def validate_publication_files(publication_id: str, files, context: PublicationValidationContext,
+                               actor_subject: str | None = None, *, decode_revision=None):
     if set(files.keys()) != set(PUBLICATION_FILES):
         raise ReportError('REPORT_ARTIFACT_INVALID')
     manifest_bytes = files['manifest.json']
@@ -40,7 +41,7 @@ def validate_publication_files(publication_id: str, files, context: PublicationV
             raise ReportError('REPORT_ARTIFACT_INVALID')
     _verify_snapshot(manifest, files['snapshot.json'], context)
     template = _verify_template(manifest, files['template.json'])
-    _verify_edits(manifest, files['edits.json'], template)
+    _verify_edits(manifest, files['edits.json'], template, decode_revision or revision_from_mapping)
     return manifest, manifest_hash
 
 
@@ -72,10 +73,10 @@ def _verify_template(manifest, data):
     return value
 
 
-def _verify_edits(manifest, data, template):
+def _verify_edits(manifest, data, template, decode_revision):
     value = read_json(data)
     if manifest.schema_version == 2:
-        _verify_schema2_edits(manifest, data, value, template)
+        _verify_schema2_edits(manifest, data, value, template, decode_revision)
         return
     if (not isinstance(value, dict) or value.get('schema_version') != 1
             or value.get('draft_id') != manifest.draft_id
@@ -84,7 +85,7 @@ def _verify_edits(manifest, data, template):
         raise ReportError('REPORT_ARTIFACT_INVALID')
 
 
-def _verify_schema2_edits(manifest, data, value, template):
+def _verify_schema2_edits(manifest, data, value, template, decode_revision):
     expected = {'schema_version', 'draft_id', 'selected_revision', 'selected_revision_hash', 'revisions', 'authoring_context'}
     if (not isinstance(value, dict) or set(value.keys()) != expected or value['schema_version'] != 2
             or value['draft_id'] != manifest.draft_id
@@ -99,7 +100,7 @@ def _verify_schema2_edits(manifest, data, value, template):
     selected = None
     selected_hash = None
     for index, item in enumerate(revisions, 1):
-        payload = _history_payload(item, index, manifest)
+        payload = _history_payload(item, index, manifest, decode_revision)
         if index == manifest.draft_revision:
             selected = payload
             selected_hash = item['revision_hash']
@@ -140,10 +141,10 @@ def _verify_authoring_context(manifest, context):
     raise ReportError('REPORT_ARTIFACT_INVALID')
 
 
-def _history_payload(item, index, manifest):
+def _history_payload(item, index, manifest, decode_revision):
     if not isinstance(item, dict) or set(item.keys()) != {'revision', 'revision_hash', 'payload'}:
         raise ReportError('REPORT_ARTIFACT_INVALID')
-    payload = revision_from_mapping(item['payload'])
+    payload = decode_revision(item['payload'])
     if (item['revision'] != index or payload['revision'] != index
             or item['revision_hash'] != bytes_hash(canonical_bytes(payload))
             or payload['draft_id'] != manifest.draft_id

@@ -19,6 +19,7 @@ from project_management.services.report_templates import ReportTemplateService
 from project_management.services.project_runs import ProjectRunService
 from project_management.storage.report_reference_admission import CompletionAdmissionStore
 from provider_sync.app.api.references import create_provider_reference_reader
+from project_management.services.report_queries import ReportQueryService
 
 
 PACK_ROOT = (
@@ -27,6 +28,11 @@ PACK_ROOT = (
     / 'strict-summary'
     / 'task-run-contract-0.1.0a2'
 )
+
+
+def build_report_query_service(*, archive=None, draft_service=None):
+    archive = archive or build_capture_archive_service()
+    return ReportQueryService(archive, draft_service or build_report_service(archive=archive))
 
 
 def build_report_service(*, project_api=None, archive=None, contract=None, renderer=None, template_service=None) -> ReportDraftService:

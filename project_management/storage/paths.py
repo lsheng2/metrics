@@ -39,20 +39,25 @@ def safe_relative_path(relative: str) -> tuple[str, ...]:
 
 def controlled_path(root: Path, relative: str) -> Path:
     root = Path(root).absolute()
-    inspect_components(root)
-    target = root.joinpath(*safe_relative_path(relative))
-    try:
-        resolved_parent = target.parent.resolve()
-    except OSError:
-        raise ArchiveError('ARCHIVE_STORAGE_UNAVAILABLE') from None
-    if not resolved_parent.is_relative_to(root):
+    if root.drive.startswith('\\\\') or '..' in root.parts:
         raise ArchiveError('UNSAFE_PATH')
-    _check_existing_ancestors(root, target.parent)
+    target = root.joinpath(*safe_relative_path(relative))
+    # Literal child components plus non-following ancestor checks establish containment.
+    for ancestor in reversed(target.parents):
+        try:
+            info = ancestor.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            raise ArchiveError('ARCHIVE_STORAGE_UNAVAILABLE') from None
+        if (not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode)
+                or getattr(info, 'st_file_attributes', 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT):
+            raise ArchiveError('UNSAFE_PATH')
     try:
         info = target.lstat()
     except FileNotFoundError:
         return target
-    if (not stat.S_ISREG(info.st_mode) or target.is_symlink() or info.st_nlink > 1
+    if (not stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode) or info.st_nlink > 1
             or getattr(info, 'st_file_attributes', 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT):
         raise ArchiveError('UNSAFE_PATH')
     return target

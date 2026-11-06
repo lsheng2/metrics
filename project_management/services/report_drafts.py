@@ -106,10 +106,10 @@ class ReportDraftService(ReportLinkedRevisionDraftMixin, ReportPeriodViewDraftMi
         except (ArchiveError, ProjectError) as error:
             raise self._report_error(error) from None
 
-    def get(self, actor, project_id, stage_id, draft_id):
+    def get(self, actor, project_id, stage_id, draft_id, *, _read_view=None):
         draft_id = self._uuid(draft_id)
         try:
-            with self.archive._report_repository(actor, project_id, stage_id, write=False) as repository:
+            with self.archive._report_repository(actor, project_id, stage_id, write=False, _read_view=_read_view) as repository:
                 return self._store(repository).read_draft(draft_id)
         except (ArchiveError, ProjectError) as error:
             raise self._report_error(error, missing_as_not_found=True) from None
@@ -190,10 +190,10 @@ class ReportDraftService(ReportLinkedRevisionDraftMixin, ReportPeriodViewDraftMi
         except (ArchiveError, ProjectError) as error:
             raise self._report_error(error, missing_as_not_found=True) from None
 
-    def finalization_status(self, actor, project_id, stage_id, draft_id):
+    def finalization_status(self, actor, project_id, stage_id, draft_id, *, _read_view=None):
         draft_id = self._uuid(draft_id)
         try:
-            with self.archive._report_repository(actor, project_id, stage_id, write=False) as repository:
+            with self.archive._report_repository(actor, project_id, stage_id, write=False, _read_view=_read_view) as repository:
                 store = self._store(repository)
                 if not store.finalization_intent_exists(draft_id):
                     return None
@@ -211,9 +211,9 @@ class ReportDraftService(ReportLinkedRevisionDraftMixin, ReportPeriodViewDraftMi
         except (ArchiveError, ProjectError) as error:
             raise self._report_error(error, missing_as_not_found=True) from None
 
-    def publication_target(self, actor, project_id, stage_id):
+    def publication_target(self, actor, project_id, stage_id, *, _read_view=None):
         try:
-            with self.archive._report_repository(actor, project_id, stage_id, write=False) as repository:
+            with self.archive._report_repository(actor, project_id, stage_id, write=False, _read_view=_read_view) as repository:
                 archive_id = self._archive_id()
                 return ReportArchiveTarget(archive_id, repository.project.id, repository.stage.id)
         except (ArchiveError, ProjectError) as error:
@@ -388,7 +388,9 @@ class ReportDraftService(ReportLinkedRevisionDraftMixin, ReportPeriodViewDraftMi
             return ReportError('REPORT_NOT_FOUND')
         if code == 'ARCHIVE_CHAIN_CONFLICT':
             return ReportError('REPORT_REVISION_CONFLICT')
-        if code in {'ARCHIVE_BUSY', 'ARCHIVE_STORAGE_UNAVAILABLE', 'ARCHIVE_MANIFEST_INVALID',
-                    'ARCHIVE_CAPTURE_CONFLICT', 'UNSAFE_PATH'}:
+        if code in {'ARCHIVE_STORAGE_UNAVAILABLE', 'ARCHIVE_READ_UNSUPPORTED'}:
+            return ReportError('REPORT_STORAGE_UNAVAILABLE')
+        if code in {'ARCHIVE_BUSY', 'ARCHIVE_MANIFEST_INVALID',
+                    'ARCHIVE_CAPTURE_CONFLICT', 'ARCHIVE_RAW_PAGE_INTEGRITY_FAILED', 'UNSAFE_PATH'}:
             return ReportError('REPORT_ARTIFACT_INVALID')
         return ReportError('REPORT_INVALID')

@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from project_management.app.api import ProjectError
 from project_management.app.api.project_runs import RunError
+from project_management.app.api.report_queries import ReportOperationsRead
 from project_management.runtime import get_project_runtime, build_run_read_service
 from ui_web.project_run_forms import ProjectRunRevisionForm, run_submit_form
 
@@ -31,7 +32,15 @@ class ProjectRunFacade:
         self.run_service = run_service
         self.runtime_ready = runtime_ready
 
-    def stage_context(self, actor, project_id, stage_id):
+    def shares_archive(self, archive):
+        if self.run_service is None or archive is None:
+            return False
+        left, right = self.run_service.archive.config, archive.config
+        return (left.root.absolute(), left.author_name, left.author_email) == (
+            right.root.absolute(), right.author_name, right.author_email,
+        )
+
+    def stage_context(self, actor, project_id, stage_id, *, operations_read=None):
         if self.project_api is None or self.run_service is None:
             return {
                 'runtime_ready': False,
@@ -41,7 +50,14 @@ class ProjectRunFacade:
             }
         detail, stage = self._project_stage(actor, project_id, stage_id)
         try:
-            operations = self.run_service.list(actor, project_id, stage_id, limit=10)
+            if isinstance(operations_read, ReportOperationsRead) and (
+                    operations_read.project_id, operations_read.stage_id, operations_read.actor_subject,
+                    operations_read.stage_hash) == (project_id, stage_id, actor.subject, stage.definition_hash):
+                if operations_read.error_code:
+                    raise RunError(operations_read.error_code)
+                operations = operations_read.items
+            else:
+                operations = self.run_service.list(actor, project_id, stage_id, limit=10)
         except RunError:
             operations = ()
         return {

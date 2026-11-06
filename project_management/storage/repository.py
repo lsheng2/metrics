@@ -29,6 +29,17 @@ REPORT_PUBLICATION_FILES = {'snapshot.json', 'template.json', 'edits.json', 'rep
 
 
 class CaptureArchiveRepository(StageRepository):
+    def open_read_view(self):
+        from project_management.storage.archive_read_view import GitArchiveReadView
+        return GitArchiveReadView(self)
+
+    def read_files(self, requests):
+        with self.open_read_view() as view:
+            return view.read_files(requests)
+
+    def validated(self, key, load):
+        return load()
+
     def __init__(self, config: ArchiveStorageConfig, project: ProjectSummary, stage: StageSummary, owner_subject: str):
         self.config = config
         self.project = project

@@ -3,12 +3,10 @@ from pathlib import PurePath
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.translation import gettext as _
 from django.views import View
 
 from project_management.app.api import ProjectError
 from project_management.app.api import reports as report_api
-from ui_web.facades.project_reports import default_report_facade
 from ui_web.project_access import ProjectAccessError, private_no_store
 from ui_web.report_authoring_forms import ReportAuthoredSaveForm
 from ui_web.report_authoring_responses import authored_json_error, report_status, wants_json
@@ -23,63 +21,12 @@ from ui_web.report_forms import (
     ReportSaveForm,
     target_choices_for_snapshot,
 )
-from ui_web.views.project_management_views import ProjectAccessMixin, project_error_ui_message
+from ui_web.views.report_access import ReportAccessMixin, report_error_ui_message
 from ui_web.views.project_run_views import ProjectRunSubmitView
 
 
 SAFE_CSP = "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; sandbox"
 STRICT_POST_EXEMPT = {'csrfmiddlewaretoken'}
-
-
-class ReportAccessMixin(ProjectAccessMixin):
-    facade_factory = staticmethod(default_report_facade)
-
-    def error_response(self, request, error):
-        if isinstance(error, report_api.ReportError):
-            return self.ui_error_response(request, report_error_ui_message(error), report_status(error))
-        return super().error_response(request, error)
-
-    def report_context(self, request, actor, project_id, stage_id, **kwargs):
-        context = self.facade_factory().stage_context(actor, str(project_id), str(stage_id), **kwargs)
-        context['run'] = ProjectRunSubmitView.facade_factory().stage_context(
-            actor,
-            str(project_id),
-            str(stage_id),
-        )
-        context['project_language_return_url'] = reverse('ui_web:project_stage_reports', kwargs={
-            'project_id': project_id,
-            'stage_id': stage_id,
-        })
-        return context
-
-    def draft_context(self, request, actor, project_id, stage_id, draft_id, **kwargs):
-        context = self.facade_factory().draft_context(actor, str(project_id), str(stage_id), str(draft_id), **kwargs)
-        context['project_language_return_url'] = reverse('ui_web:report_draft_edit', kwargs={
-            'project_id': project_id,
-            'stage_id': stage_id,
-            'draft_id': draft_id,
-        })
-        context['render_url'] = reverse('ui_web:report_draft_render', kwargs={
-            'project_id': project_id,
-            'stage_id': stage_id,
-            'draft_id': draft_id,
-        }) + f"?revision={context['draft'].revision}"
-        context['download_url'] = reverse('ui_web:report_draft_download', kwargs={
-            'project_id': project_id,
-            'stage_id': stage_id,
-            'draft_id': draft_id,
-        }) + f"?revision={context['draft'].revision}&format=html"
-        context['clipboard_url'] = reverse('ui_web:report_draft_clipboard', kwargs={
-            'project_id': project_id,
-            'stage_id': stage_id,
-            'draft_id': draft_id,
-        }) + f"?revision={context['draft'].revision}"
-        context['completion_url'] = reverse('ui_web:report_draft_completion', kwargs={
-            'project_id': project_id,
-            'stage_id': stage_id,
-            'draft_id': draft_id,
-        })
-        return context
 
 
 class ProjectStageReportView(ReportAccessMixin, View):
@@ -142,10 +89,15 @@ class ReportDraftSaveView(ReportAccessMixin, View):
         try:
             actor = self.actor(request)
             facade = self.facade_factory()
-            draft = facade.get_draft(actor, str(project_id), str(stage_id), str(draft_id))
-            target_choices = target_choices_for_snapshot(draft.snapshot)
-            self._reject_unknown_post(request, authored=request.POST.get('payload_version') == '2')
-            form = facade.save_form(draft, target_choices, request.POST)
+            authored = request.POST.get('payload_version') == '2'
+            self._reject_unknown_post(request, authored=authored)
+            draft = None
+            if authored:
+                form = facade.authored_command_form(actor, str(project_id), str(stage_id), request.POST)
+            else:
+                draft = facade.get_draft(actor, str(project_id), str(stage_id), str(draft_id))
+                target_choices = target_choices_for_snapshot(draft.snapshot)
+                form = facade.save_form(draft, target_choices, request.POST)
             if not form.is_valid():
                 if wants_json(request):
                     return authored_json_error(
@@ -381,19 +333,3 @@ def safe_report_filename(prefix, identifier, revision, format_name):
         parts.append(f'r{revision}')
     name = '-'.join(parts) + f'.{suffix}'
     return PurePath(name).name.replace('"', '')
-
-
-def report_error_ui_message(error):
-    return {
-        'REPORT_INVALID': _('Report request is invalid.'),
-        'REPORT_NOT_FOUND': _('Report is not available.'),
-        'REPORT_REVISION_CONFLICT': _('Report revision has changed. Save or reload before continuing.'),
-        'REPORT_SOURCE_CHANGED': _('Report source material has changed. Create a new draft.'),
-        'REPORT_TEMPLATE_UNSUPPORTED': _('Report template is not supported.'),
-        'REPORT_EDIT_TARGET_INVALID': _('Report edit target is not valid.'),
-        'REPORT_FINALIZING': _('Report finalization is still pending.'),
-        'REPORT_FINALIZED': _('Report is already finalized.'),
-        'REPORT_LIMIT': _('Report is over the configured limit.'),
-        'REPORT_ARTIFACT_INVALID': _('Report artifact is invalid.'),
-        'REPORT_REQUIRED_SLOT_EMPTY': _('Fill all required template slots before finalizing.'),
-    }.get(error.code, _('Report request failed.'))

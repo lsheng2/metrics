@@ -19,6 +19,8 @@ from project_management.storage.report_draft_preparation_bindings import (
 )
 from project_management.storage.report_draft_projection import draft_from_revision
 from project_management.storage.report_publication_packets import ReportFinalizationPacketStore
+from project_management.storage.report_draft_reads import read_draft
+from project_management.storage.report_decoding import verified_revision
 
 
 SNAPSHOT_READ_LIMIT = 8_388_608
@@ -66,26 +68,7 @@ class ReportDraftStore(ReportDraftCreateMixin):
                     immutable=True, conflict_code='ARCHIVE_CAPTURE_CONFLICT')
 
     def read_draft(self, draft_id: str, revision: int | None = None) -> ReportDraft:
-        root = self.root(draft_id)
-        intent = self._intent(root, draft_id)
-        head = self._current(root)
-        selected_revision = head['revision'] if revision is None else self._positive_revision(revision)
-        expected_hash = self._verified_revision_hash(root, draft_id, selected_revision, intent)
-        selected = self._read_revision(root, selected_revision, expected_hash=expected_hash)
-        if revision is None and selected[1] != head['revision_hash']:
-            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        snapshot_bytes = read_bytes(root, 'snapshot.json', limit=SNAPSHOT_READ_LIMIT)
-        snapshot_hash = bytes_hash(snapshot_bytes)
-        if snapshot_hash != selected[0]['snapshot_hash'] or snapshot_hash != intent['snapshot_hash']:
-            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        snapshot = snapshot_from_mapping(read_json(snapshot_bytes))
-        if canonical_bytes(snapshot) != snapshot_bytes:
-            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        self._validate_binding(draft_id, intent, selected[0], snapshot)
-        return draft_from_revision(
-            selected[0], selected[1], snapshot, self._state(root),
-            self._preservation_review_issues(root, intent),
-        )
+        return read_draft(self, draft_id, revision)
 
     def write_save_command(self, draft_id: str, command_id: str, *, revision_payload, revision_hash: str,
                            command_payload) -> None:
@@ -156,8 +139,8 @@ class ReportDraftStore(ReportDraftCreateMixin):
         root = self.root(draft_id)
         intent = self._intent(root, draft_id)
         history = []
-        for revision in range(1, through_revision + 1):
-            expected_hash = self._verified_revision_hash(root, draft_id, revision, intent)
+        hashes = self._verified_revision_hashes(root, draft_id, through_revision, intent)
+        for revision, expected_hash in enumerate(hashes, 1):
             payload, revision_hash = self._read_revision(root, revision, expected_hash=expected_hash)
             if full_payload:
                 history.append({'revision': revision, 'revision_hash': revision_hash, 'payload': payload})
@@ -194,7 +177,7 @@ class ReportDraftStore(ReportDraftCreateMixin):
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         if value['draft_id'] != draft_id or self.draft_id_for_command(self.repository.stage.id, command_id) != draft_id:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        revision_payload = revision_from_mapping(value['revision_payload'])
+        revision_payload = verified_revision(self.repository, value['revision_payload'])
         revision_hash = validate_hash_text(value['revision_hash'])
         if revision_payload['draft_id'] != draft_id or revision_payload['revision'] != 1:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
@@ -237,7 +220,7 @@ class ReportDraftStore(ReportDraftCreateMixin):
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         command_id = validate_uuid(value['command_id'])
         draft_id = validate_uuid(value['draft_id'])
-        revision_payload = revision_from_mapping(value['revision_payload'])
+        revision_payload = verified_revision(self.repository, value['revision_payload'])
         revision = self._positive_revision(value['revision'])
         revision_hash = validate_hash_text(value['revision_hash'])
         if revision_payload['draft_id'] != draft_id or revision_payload['revision'] != revision:
@@ -271,31 +254,40 @@ class ReportDraftStore(ReportDraftCreateMixin):
         }
 
     def _verified_revision_hash(self, root: Path, draft_id: str, revision: int, intent) -> str:
-        if revision == 1:
+        return self._verified_revision_hashes(root, draft_id, revision, intent)[-1]
+
+    def _verified_revision_hashes(self, root: Path, draft_id: str, through_revision: int, intent):
+        self._positive_revision(through_revision)
+        matches = {}
+        if through_revision == 1:
             command = self.command(draft_id, intent['command_id'])
-            if command is not None and (
+        else:
+            command = None
+            commands_root = root / 'commands'
+            if commands_root.exists():
+                for path in sorted(commands_root.glob('*.json')):
+                    candidate = self._command_payload(read_json(read_bytes(root, path.relative_to(root).as_posix())))
+                    if path.name == f"{intent['command_id']}.json":
+                        command = candidate
+                    if candidate['draft_id'] == draft_id:
+                        matches.setdefault(candidate['revision'], []).append(candidate)
+        if command is not None and (
                 command['kind'] not in {'create', 'create_authored'}
                 or command['request_hash'] != intent['request_hash']
-                or command['revision_hash'] != intent['revision_hash']
-            ):
+                or command['revision_hash'] != intent['revision_hash']):
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        hashes = [intent['revision_hash']]
+        for revision in range(2, through_revision + 1):
+            candidates = matches.get(revision, ())
+            if len(candidates) != 1:
                 raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-            return intent['revision_hash']
-        prior_hash = self._verified_revision_hash(root, draft_id, revision - 1, intent)
-        matches = []
-        commands_root = root / 'commands'
-        if commands_root.exists():
-            for path in sorted(commands_root.glob('*.json')):
-                command = self._command_payload(read_json(read_bytes(root, path.relative_to(root).as_posix())))
-                if command['draft_id'] == draft_id and command['revision'] == revision:
-                    matches.append(command)
-        if len(matches) != 1:
-            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        command = matches[0]
-        if (command['kind'] not in {'save', 'save_authored'}
-                or command['prior_revision'] != revision - 1
-                or command['prior_revision_hash'] != prior_hash):
-            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        return command['revision_hash']
+            candidate = candidates[0]
+            if (candidate['kind'] not in {'save', 'save_authored'}
+                    or candidate['prior_revision'] != revision - 1
+                    or candidate['prior_revision_hash'] != hashes[-1]):
+                raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+            hashes.append(candidate['revision_hash'])
+        return tuple(hashes)
 
     def _validate_binding(self, draft_id: str, intent, payload, snapshot) -> None:
         if payload['draft_id'] != draft_id:
@@ -344,7 +336,7 @@ class ReportDraftStore(ReportDraftCreateMixin):
         actual_hash = bytes_hash(data)
         if expected_hash is not None and actual_hash != expected_hash:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
-        payload = revision_from_mapping(read_json(data))
+        payload = verified_revision(self.repository, read_json(data))
         if canonical_bytes(self._json_revision(payload)) != data:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
         if payload['revision'] != revision:

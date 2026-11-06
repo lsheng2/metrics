@@ -16,17 +16,28 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 已观察到的交互延迟、完整provider覆盖和正式运行仍未完成。
 内部合成能力不等于真实来源或真实模型已经上线。
 
-### 已知读取延迟
+### 报告读取性能
 
 2026-11-06本机诊断发现：语言切换POST只用0.005秒，返回工作台的GET用39.602秒。
 另一轮profile显示169次串行Git进程累计约27.9秒，草稿、定稿与采集列表重复读取并验证
 归档。它不是AI翻译耗时，也不能据此推定是代理、安全软件或磁盘故障。
 
-已建立[读取性能优化规格](../../changes/add-provider-neutral-project-reporting/report-read-performance.md)，
-设计采用模块内查询/命令分离、请求级固定快照和批量原生Git读取；原数据Git仍为权威，
-不会用全局TTL缓存绕过权限或完整性。当前尚未实现，页面延迟仍作为已知问题保留。
-新的p95/进程数目标和规模/并发验收见
-[执行计划](../../changes/add-provider-neutral-project-reporting/performance-execution.md)，不是已达到的成绩。
+当前实现采用模块内查询/命令分离、请求级固定Git快照、原生批量对象读取和同packet
+完整校验复用。草稿与操作记录的本地独立读取最多四个并发任务，Git调用保持串行。
+没有跨请求TTL权限缓存、持久索引或AI Base接口修改，原数据Git仍为发布权威。
+
+工作台定稿行只提供实际显示的manifest和commit，不计算隐藏的checkout诊断；
+可见采集状态和旧公开publication接口仍按原语义核验工作树。准备、预览、重新准备和
+Save成功路径不预加载无关历史；失败页保留原命令、日期、基线和未应用输入。
+Save依然不是Finalize，旧页面的缓存不能绕过锁内revision/hash检查。
+
+2026-11-07隔离合成数据的正式20样本：S0工作台p95 2.876s、首请求3.860s，
+基线预览p95 2.573s；100份报告、每稿5修订和3票的S1页20为p95 4.105s。
+连续20次Save到修订43为p95 1.839s。这是本机限定证据，不是生产SLA。
+实际浏览器已验证人工note/颜色/加粗/高亮保存重开、复制、HTML下载和手机布局；
+最终10次Ego语言往返因原任务页已消失仍待重新授权，不能据此宣布完整性能包关闭。
+当前状态与剩余门槛见[执行计划](../../changes/add-provider-neutral-project-reporting/performance-execution.md)
+和[任务](../../changes/add-provider-neutral-project-reporting/tasks.md)。
 
 ### 已验证的演示
 

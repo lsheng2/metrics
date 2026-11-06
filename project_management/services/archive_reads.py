@@ -9,9 +9,15 @@ from project_management.app.domain.captures import (
 )
 from project_management.storage.objects import ObjectStore
 from project_management.storage.paths import validate_uuid
+from project_management.app.spi.archive_reads import ArchiveBlobRequest
 
 
 class ArchiveReads:
+    def _capture_read_requests(self, view, after):
+        head, _ = self._cursor(view, after, None)
+        return tuple(ArchiveBlobRequest(head, path) for path in view.list_files('captures', head)
+                     if path.endswith('/manifest.json'))
+
     def _limit(self, value):
         if type(value) is not int or not 1 <= value <= 100:
             raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
@@ -57,15 +63,25 @@ class ArchiveReads:
         repository, head, selected, cursor = self._capture_listing(actor, project_id, stage_id, limit, after)
         return CapturePage(tuple(self._receipt_from_manifest(repository, row, head) for row in selected), cursor)
 
-    def list_capture_metadata(self, actor, project_id, stage_id, *, limit=100, after=None):
-        repository, head, selected, cursor = self._capture_listing(actor, project_id, stage_id, limit, after)
+    def list_capture_metadata(self, actor, project_id, stage_id, *, limit=100, after=None, _read_view=None, allow_absent=False):
+        if type(allow_absent) is not bool:
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+        if _read_view is None:
+            with self._report_read_view(actor, project_id, stage_id, allow_absent=allow_absent) as view:
+                if view is None:
+                    self._limit(limit)
+                    if after is not None:
+                        raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+                    return CaptureMetadataPage((), None)
+                return self.list_capture_metadata(actor, project_id, stage_id, limit=limit, after=after, _read_view=view)
+        repository, head, selected, cursor = self._capture_listing(actor, project_id, stage_id, limit, after, _read_view)
         return CaptureMetadataPage(tuple(
             CaptureMetadata(self._receipt_from_manifest(repository, row, head), row.finalized_at)
             for row in selected
         ), cursor)
 
-    def _capture_listing(self, actor, project_id, stage_id, limit, after):
-        repository = self._read_repository(actor, project_id, stage_id)
+    def _capture_listing(self, actor, project_id, stage_id, limit, after, read_view=None):
+        repository = read_view or self._read_repository(actor, project_id, stage_id)
         head, last = self._cursor(repository, after, None)
         tail = self._after(list(self._manifests(repository, head)), last, lambda row: row.intent.capture_id)
         selected = tail[:self._limit(limit)]
@@ -106,8 +122,15 @@ class ArchiveReads:
     def _manifests(self, repository, head=None):
         head = head or repository.head()
         paths = repository.list_files('captures', head)
-        values = [self._read_manifest(repository, path.split('/')[1], head)
-                  for path in paths if path.endswith('/manifest.json')]
+        selected = tuple(path for path in paths if path.endswith('/manifest.json'))
+        data = repository.read_files(tuple(ArchiveBlobRequest(head, path) for path in selected))
+        values = []
+        for path, content in zip(selected, data):
+            value = manifest_from_bytes(content)
+            if (value.intent.capture_id != path.split('/')[1] or value.intent.project_id != repository.project.id
+                    or value.intent.stage_id != repository.stage.id):
+                raise ArchiveError('ARCHIVE_IDENTITY_MISMATCH')
+            values.append(value)
         return tuple(sorted(values, key=lambda row: (row.finalized_at, row.intent.capture_id)))
 
     def _receipt_from_manifest(self, repository, manifest, head=None):
