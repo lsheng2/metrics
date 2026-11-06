@@ -4,6 +4,7 @@
         <select data-report-export-format aria-label="{% trans "Export format" %}">
             <option value="markdown">{% trans "Markdown" %}</option>
             <option value="xlsx">{% trans "Excel (text)" %}</option>
+            {% if audit_available %}<option value="audit_zip">{% trans "Audit bundle (ZIP)" %}</option>{% endif %}
         </select>
     </div>
     <a class="button is-small" data-report-export-link href="{{ export_url }}?format=markdown{% if export_revision %}&amp;revision={{ export_revision }}{% endif %}"

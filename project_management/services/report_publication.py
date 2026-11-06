@@ -19,7 +19,7 @@ from project_management.services.report_daily_baseline import assert_daily_basel
 from project_management.services.report_draft_rendering import is_pinned_document, render_edits
 from project_management.services.report_publication_preparation_guard import verify_active_preparation_binding
 from project_management.services.report_publication_preservation_guard import verify_no_preservation_review_issues
-from project_management.services.report_publication_reads import ReportPublicationReader
+from project_management.services.report_publication_reads import ReportPublicationReader, read_publication_artifacts as _read_publication_artifacts
 
 
 class ReportPublicationMixin:
@@ -92,6 +92,8 @@ class ReportPublicationMixin:
                 return ReportPublicationReader(repository).read_public_artifact(publication_id, format, actor.subject)
         except (ArchiveError, ProjectError) as error:
             raise self._report_error(error, missing_as_not_found=True) from None
+
+    read_publication_artifacts = _read_publication_artifacts
 
     def publication_revision_selection(self, actor, project_id, stage_id, publication_id):
         publication_id = self._uuid(publication_id)

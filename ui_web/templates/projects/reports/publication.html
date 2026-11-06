@@ -51,7 +51,7 @@
         </a>
     </div>
     {% url 'ui_web:report_publication_export' detail.project.id stage.id publication.manifest.publication_id as export_url %}
-    {% include "projects/reports/export_controls.html" with export_url=export_url %}
+    {% include "projects/reports/export_controls.html" with export_url=export_url audit_available=True %}
 
     {% if publication.manifest.purpose == "standup" %}
         {% if publication.manifest.schema_version == 2 and publication.manifest.report_role == "daily" %}

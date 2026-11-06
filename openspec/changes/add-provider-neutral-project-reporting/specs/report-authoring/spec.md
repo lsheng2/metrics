@@ -93,9 +93,23 @@ Jira SHALL 使用显式 scope/profile，HSDES SHALL 使用自己的 saved-query 
 - **AND** 创建模板、选择、保存与渲染 SHALL 不调用模型或Provider
 
 #### Scenario: Template omits mandatory report data
-- **WHEN** 模板缺少standup必要的coverage、register或其他强制来源区
+- **WHEN** 旧版详细模板缺少其coverage、register或其他强制来源区
 - **THEN** 库 SHALL 允许保留明确未就绪草稿但拒绝用于生成貌似完整报告
 - **AND** SHALL 指明缺少的结构，不静默补造或隐藏pending/action
+
+#### Scenario: User selects concise standup presentation
+- **WHEN** 用户创建采用显式`standup/1`呈现版本的新连续性模板
+- **THEN** 正文 SHALL 只含用户模板内容、每票累计有效notes、来源状态、未结束AR及简短覆盖信息
+- **AND** 原始摘要、完整证据和编辑审计 SHALL 继续保留但不强制附在正文
+- **AND** 必需meeting_matrix缺失或重复 SHALL 阻止模板就绪，不能隐藏未处理工单
+- **AND** 旧模板和已定稿报告的hash、正文及下载字节 SHALL 不变
+
+#### Scenario: Audit attachment is exported independently
+- **WHEN** 已授权用户下载一个已定稿报告的完整审计附件
+- **THEN** 附件 SHALL 包含该publication的六个原始文件、可读审计视图和版本化文件hash清单
+- **AND** 文件 SHALL 来自同一已核验commit，不能混入当前草稿或最新工单内容
+- **AND** 下载 SHALL NOT 重新调用来源、模型、正文renderer、Save或Finalize
+- **AND** 无权限、缺失或损坏文件及超限 SHALL 明确失败，不静默提供部分附件
 
 #### Scenario: A continuity template omits its meeting matrix
 - **WHEN** 新v2 daily/weekly模板缺少或重复meeting_matrix

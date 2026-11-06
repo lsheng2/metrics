@@ -49,6 +49,12 @@ class ReportPublication:
     checkout_state: str
 
 
+@dataclass(frozen=True, slots=True)
+class ReportPublicationArtifacts:
+    publication: ReportPublication
+    files: Mapping[str, bytes]
+
+
 def publication_id_for(draft_id: str, revision: int, purpose: str) -> str:
     return str(uuid5(UUID(validate_uuid_text(draft_id)), f'{_positive_int(revision)}:{_purpose(purpose)}'))
 

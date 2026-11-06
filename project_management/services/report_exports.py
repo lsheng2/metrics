@@ -14,6 +14,10 @@ class ReportExportService:
         )
 
     def publication(self, actor, project_id, stage_id, publication_id, *, format_name):
+        if format_name == 'audit_zip':
+            from project_management.reporting.report_audit import compile_audit_bundle
+            artifacts = self.drafts.read_publication_artifacts(actor, project_id, stage_id, publication_id)
+            return compile_audit_bundle(artifacts)
         html = self.drafts.read_artifact(actor, project_id, stage_id, publication_id, 'html')
         return compile_export(html, source_sha256=sha256_bytes(html), format_name=format_name,
                               filename_stem=f'publication-{publication_id}')

@@ -19,7 +19,10 @@ with scoped installed-SDK/local-Base qualification on `main`.
 Editor save/reopen and lifecycle scenarios passed scoped desktop Chrome tests;
 the full-week/cross-week authoring and pending-gap workflows are qualified with
 synthetic sources. [The evidence](openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
-also records the still-open concise-report presentation and request-latency issues.
+records the original presentation and request-latency gaps. New **Concise daily/weekly
+standup** templates now keep effective notes, source status and ARs in the body;
+a separate **Audit bundle (ZIP)** retains the original publication files.
+Legacy templates and report downloads are unchanged. Request latency remains open.
 A single coordinator owns this lane; Outlook/native-client acceptance remains pending.
 The proposed [continuity design](openspec/changes/add-provider-neutral-project-reporting/report-continuity.md)
 adds per-ticket stable rows, source-status date prefixes, preserved human rich-text

@@ -26,3 +26,9 @@ test('publication export has no draft revision and foreign URLs cannot become li
         'http://127.0.0.1:8088/publications/p/export/?format=xlsx');
     assert.equal(exportState('https://foreign.example.test/export/', 'markdown', null, base).disabled, true);
 });
+
+test('audit attachment is a publication-only export', () => {
+    assert.equal(exportState('/publications/p/export/', 'audit_zip', null, base).href,
+        'http://127.0.0.1:8088/publications/p/export/?format=audit_zip');
+    assert.equal(exportState(url, 'audit_zip', { revision: '2' }, base).disabled, true);
+});

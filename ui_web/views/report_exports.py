@@ -50,6 +50,7 @@ def export_query(query, *, publication):
     if set(query) != expected or any(len(query.getlist(key)) != 1 for key in expected):
         raise ReportError('REPORT_INVALID')
     format_name = query['format']
-    if format_name not in {'markdown', 'xlsx'}:
+    formats = {'markdown', 'xlsx', 'audit_zip'} if publication else {'markdown', 'xlsx'}
+    if format_name not in formats:
         raise ReportError('REPORT_INVALID')
     return format_name, None if publication else clean_revision(query, allow={'format'})

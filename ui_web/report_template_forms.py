@@ -6,7 +6,9 @@ from django.utils.translation import gettext_lazy as _
 
 from project_management.app.api import reports as report_api
 from ui_web.report_forms import new_command_id
-from ui_web.report_template_documents import blank_document, continuity_starter_document, default_fill_policy, starter_document
+from ui_web.report_template_documents import (
+    blank_document, continuity_starter_document, default_fill_policy, starter_document, standup_starter_document,
+)
 
 
 MAX_TEMPLATE_POST_BYTES = 262_144
@@ -14,6 +16,8 @@ MAX_TEMPLATE_POST_BYTES = 262_144
 
 class TemplateLibraryActionForm(forms.Form):
     action = forms.ChoiceField(choices=(
+        ('standup_daily', _('Concise daily standup')),
+        ('standup_weekly', _('Concise weekly standup')),
         ('blank', _('Blank template')),
         ('builtin_daily', _('Copy daily starter')),
         ('builtin_weekly', _('Copy weekly starter')),
@@ -27,6 +31,8 @@ class TemplateLibraryActionForm(forms.Form):
         action = self.cleaned_data['action']
         if action == 'blank':
             document = blank_document()
+        elif action in {'standup_daily', 'standup_weekly'}:
+            document = standup_starter_document(action.removeprefix('standup_'))
         elif action == 'builtin_weekly':
             document = starter_document('weekly')
         elif action == 'continuity_daily':

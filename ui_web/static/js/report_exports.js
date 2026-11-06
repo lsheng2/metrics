@@ -1,6 +1,6 @@
 export function exportState(url, format, editor, base) {
     const disabled = { href: null, disabled: true };
-    if (!['markdown', 'xlsx'].includes(format)) return disabled;
+    if (!['markdown', 'xlsx', 'audit_zip'].includes(format) || (editor && format === 'audit_zip')) return disabled;
     if (editor && ['reportAuthoringDirty', 'reportAuthoringSaving', 'reportAuthoringFailed', 'reportAuthoringUncertain']
         .some(key => editor[key] === 'true')) return disabled;
     if (editor && (!/^[1-9][0-9]*$/.test(editor.revision) || !Number.isSafeInteger(Number(editor.revision)))) return disabled;

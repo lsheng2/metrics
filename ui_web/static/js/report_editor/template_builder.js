@@ -215,6 +215,9 @@ export function initializeTemplateBuilder(root) {
             report_kind: root.querySelector('[data-template-report-kind]').value,
             blocks,
         };
+        if (root.dataset.templatePresentationProfile) {
+            document.presentation_profile = root.dataset.templatePresentationProfile;
+        }
         collectSlotInstructions(blocks, policy);
         return { document, policy };
     }

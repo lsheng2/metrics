@@ -7,6 +7,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/report_editor.css' %}">
 <article class="block" data-report-editor data-template-builder data-archived="{{ template_archived|yesno:'true,false' }}" data-template-schema-version="{{ editor.document.schema_version }}"
+         data-template-presentation-profile="{{ editor.document.presentation_profile|default:'' }}"
          data-message-mount-failed="{% trans "Template editor failed to mount. Reload before saving." %}"
          data-message-not-ready-save="{% trans "Template editor is not ready to save." %}"
          data-message-save-failed="{% trans "Template save failed." %}"

@@ -6,13 +6,15 @@ from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.report_authoring_fragments import validate_rich_text_fragment
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_presentation import TemplateDefinition
-RENDERER_VERSION = 'template-document/1'
+from project_management.app.domain.report_template_presentation import (
+    MANDATORY_DATA, RENDERER_VERSION, STANDUP_RENDERER_VERSION, is_pinned_renderer,
+    template_renderer_version, template_readiness as _readiness,
+)
 MAX_DOCUMENT_POLICY_BYTES = 262_144
 MAX_BLOCKS = 128
 MAX_SLOTS = 64
 MAX_INSTRUCTION_BYTES = 4096
 MAX_INSTRUCTIONS_BYTES = 32768
-MANDATORY_DATA = ('key_messages', 'changes', 'register', 'coverage')
 @dataclass(frozen=True, slots=True)
 class ReportTemplateLimits:
     max_templates: int = 100
@@ -70,7 +72,7 @@ def validate_report_template_revision(name, document, fill_policy) -> ReportTemp
         fill_policy, template_fill_policy_hash(fill_policy), readiness, codes,
     )
 def template_document_presentation_hash(document) -> str:
-    return _hash({'renderer_version': RENDERER_VERSION, 'document': document})
+    return _hash({'renderer_version': template_renderer_version(document), 'document': document})
 def template_fill_policy_hash(fill_policy) -> str:
     return _hash(fill_policy)
 def revision_from_payload(payload) -> ReportTemplateRevision:
@@ -127,13 +129,13 @@ def template_snapshot(selection: UserTemplateSelection, revision: ReportTemplate
         'presentation_hash': revision.presentation_hash,
         'fill_policy': revision.fill_policy,
         'fill_policy_hash': revision.fill_policy_hash,
-        'renderer_version': RENDERER_VERSION,
+        'renderer_version': template_renderer_version(revision.document),
     }
 def validate_template_document_snapshot(value):
     expected = {'selection', 'resolved_document', 'presentation_hash', 'fill_policy', 'fill_policy_hash', 'renderer_version'}
     if not isinstance(value, Mapping) or set(value) != expected:
         raise ReportError('REPORT_ARTIFACT_INVALID')
-    if value['renderer_version'] != RENDERER_VERSION:
+    if not is_pinned_renderer(value['renderer_version']):
         raise ReportError('REPORT_DOCUMENT_UNSUPPORTED')
     selection = _mapping(value['selection'])
     if set(selection) != {'origin', 'template_id', 'revision', 'revision_hash'}:
@@ -145,6 +147,8 @@ def validate_template_document_snapshot(value):
         'revision_hash': _hash_text(selection['revision_hash']),
     }
     document = _document(value['resolved_document'])
+    if value['renderer_version'] != template_renderer_version(document):
+        raise ReportError('REPORT_DOCUMENT_UNSUPPORTED')
     if document['schema_version'] not in {1, 2}:
         raise ReportError('REPORT_CONTEXT_REQUIRED')
     fill_policy = _fill_policy(value['fill_policy'], document)
@@ -159,11 +163,12 @@ def validate_template_document_snapshot(value):
         'presentation_hash': presentation_hash,
         'fill_policy': fill_policy,
         'fill_policy_hash': fill_policy_hash,
-        'renderer_version': RENDERER_VERSION,
+        'renderer_version': value['renderer_version'],
     }
 def template_definition(revision: ReportTemplateRevision):
     return TemplateDefinition(
-        revision.template_id, str(revision.revision), {}, revision.presentation_hash, RENDERER_VERSION,
+        revision.template_id, str(revision.revision), {}, revision.presentation_hash,
+        template_renderer_version(revision.document),
     )
 def copy_document_and_policy(document, fill_policy):
     slot_map = {}
@@ -185,16 +190,26 @@ def copy_document_and_policy(document, fill_policy):
     return {**document, 'blocks': copied}, policy
 def _document(value):
     value = _mapping(value)
-    if set(value) != {'schema_version', 'report_kind', 'blocks'}:
+    expected = {'schema_version', 'report_kind', 'blocks'}
+    if 'presentation_profile' in value:
+        expected.add('presentation_profile')
+    if set(value) != expected:
         raise ReportError('REPORT_TEMPLATE_UNSUPPORTED')
     version = _literal(value['schema_version'], {1, 2})
     report_kind = _literal(value['report_kind'], {'daily', 'weekly'})
     blocks = tuple(_block(block, version) for block in _list(value['blocks']))
+    renderer = template_renderer_version(value)
+    if renderer == STANDUP_RENDERER_VERSION and any(
+            block['kind'] == 'data' and block['source'] != 'meeting_matrix' for block in blocks):
+        raise ReportError('REPORT_TEMPLATE_UNSUPPORTED')
     if len(blocks) > MAX_BLOCKS or sum(1 for block in blocks if block['kind'] == 'slot') > MAX_SLOTS:
         raise ReportError('REPORT_LIMIT')
     _unique(tuple(block['block_id'] for block in blocks))
     _unique(tuple(block['slot_id'] for block in blocks if block['kind'] == 'slot'))
-    return _plain_json({'schema_version': version, 'report_kind': report_kind, 'blocks': blocks})
+    result = {'schema_version': version, 'report_kind': report_kind, 'blocks': blocks}
+    if renderer == STANDUP_RENDERER_VERSION:
+        result['presentation_profile'] = value['presentation_profile']
+    return _plain_json(result)
 def _block(value, version):
     value = _mapping(value)
     kind = _literal(value.get('kind'), {'content', 'slot', 'data'})
@@ -290,21 +305,6 @@ def _fill_policy(value, document):
                 raise ReportError('REPORT_TEMPLATE_UNSUPPORTED')
         result['daily_note_instructions'] = note
     return _plain_json(result)
-def _readiness(document):
-    sources = [block['source'] for block in document['blocks'] if block['kind'] == 'data']
-    required = list(MANDATORY_DATA)
-    if document['report_kind'] == 'weekly':
-        required.append('weekly_timeline')
-    if document['schema_version'] == 2:
-        required.append('meeting_matrix')
-    codes = []
-    for source in required:
-        count = sources.count(source)
-        if count == 0:
-            codes.append('TEMPLATE_MISSING_DATA_' + source.upper())
-        elif count > 1:
-            codes.append('TEMPLATE_DUPLICATE_DATA_' + source.upper())
-    return ('draft' if codes else 'ready'), tuple(codes)
 def _copy_matrix_options(options):
     copied = dict(options)
     copied['groups'] = [{**group, 'group_id': str(uuid4())} for group in options['groups']]

@@ -62,6 +62,13 @@ def continuity_starter_document(kind):
     }
 
 
+def standup_starter_document(kind):
+    return {
+        'schema_version': 2, 'report_kind': kind, 'presentation_profile': 'standup/1',
+        'blocks': [data_block('meeting_matrix')],
+    }
+
+
 def default_fill_policy(document):
     policy = {'schema_version': document['schema_version'], 'instructions': {}}
     if document['schema_version'] == 2:

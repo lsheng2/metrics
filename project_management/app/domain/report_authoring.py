@@ -115,7 +115,12 @@ def validate_template_snapshot(value):
         raise ReportError('REPORT_ARTIFACT_INVALID')
     if value['fill_policy_hash'] != _hash(value['fill_policy']):
         raise ReportError('REPORT_ARTIFACT_INVALID')
-    if value['renderer_version'] == 'template-document/1':
+    selection = value.get('selection')
+    document = value.get('resolved_document')
+    if ((isinstance(selection, Mapping) and selection.get('origin') == 'user')
+            or (isinstance(document, Mapping) and 'presentation_profile' in document)
+            or (isinstance(value['renderer_version'], str)
+                and value['renderer_version'].startswith('template-document/'))):
         return validate_template_document_snapshot(value)
     return {
         'selection': _json_mapping(value['selection']),

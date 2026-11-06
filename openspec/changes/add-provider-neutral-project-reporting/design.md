@@ -2,6 +2,11 @@
 
 Status: accepted direction; implementation is staged by tasks.md.
 
+2026-11-06用户确认“精简站会正文＋独立完整审计附件”。
+[呈现契约](standup-presentation.md)在既有schema2模板上固定`standup/1`与新版renderer，
+保留旧模板/发布六文件和原hash；完整证据不再强制附在新正文。
+这是报告层行为修订，不改SDK、来源采集、AI接受或editorial baseline。
+
 2026-11-05用户已释放SDK集成点，SDK020真实本地HTTP合成资格已通过。
 随后批准Dashboard交付复评及开始执行，当前顺序由
 [delivery sequence](delivery-sequence.md)补充本设计：

@@ -328,7 +328,7 @@ class ReportDraftStore(ReportDraftCreateMixin):
             validate_edit_targets(snapshot, payload['edits'])
 
     def _validate_pinned_template_binding(self, payload) -> None:
-        if payload['template_snapshot'].get('renderer_version') != 'template-document/1':
+        if payload['template_snapshot'].get('selection', {}).get('origin') != 'user':
             return
         snapshot = validate_template_document_snapshot(payload['template_snapshot'])
         selection = snapshot['selection']

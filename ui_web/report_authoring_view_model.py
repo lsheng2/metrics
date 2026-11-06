@@ -54,7 +54,7 @@ def report_body(draft, renderer=None):
 
 def is_pinned_template(draft):
     snapshot = getattr(draft, 'template_snapshot', None)
-    return isinstance(snapshot, dict) and snapshot.get('renderer_version') == 'template-document/1'
+    return isinstance(snapshot, dict) and report_api.is_pinned_renderer(snapshot.get('renderer_version'))
 
 
 def pinned_report_body(draft, renderer=None):

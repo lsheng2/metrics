@@ -51,6 +51,7 @@ from project_management.app.domain.report_templates import (
     TemplatePage,
     TemplateSummary,
     UserTemplateSelection,
+    is_pinned_renderer,
     template_document_presentation_hash,
     template_fill_policy_hash,
     validate_report_template_revision,
@@ -72,7 +73,9 @@ from project_management.app.domain.report_meeting_matrix import (
     MeetingMatrixRow,
     build_meeting_matrix,
 )
-from project_management.app.domain.report_publication_contracts import PublicationManifest, ReportPublication
+from project_management.app.domain.report_publication_contracts import (
+    PublicationManifest, ReportPublication, ReportPublicationArtifacts,
+)
 from project_management.app.domain.report_edits import original_target_text, source_key_hash, text_hash
 from project_management.reporting.html import ReportRenderer
 from project_management.services.report_continuity import ReportContinuityService
@@ -131,6 +134,7 @@ __all__ = [
     'ReportLimits',
     'ReportMessage',
     'ReportPublication',
+    'ReportPublicationArtifacts',
     'ReportPublicationPage',
     'ReportRenderer',
     'ReportRow',
@@ -155,6 +159,7 @@ __all__ = [
     'TemplateSelection',
     'TemplateSummary',
     'UserTemplateSelection',
+    'is_pinned_renderer',
     'build_daily_authoring_context',
     'build_meeting_matrix',
     'build_row_order',

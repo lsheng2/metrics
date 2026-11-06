@@ -2,11 +2,13 @@ from dataclasses import replace
 
 from project_management.app.domain.capture_values import canonical_bytes, decode_snapshot
 from project_management.app.domain.captures import ArchiveError
+from project_management.app.domain.contracts import ProjectError
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_draft_values import read_json, snapshot_from_mapping
 from project_management.app.domain.report_publication_contracts import (
     PUBLICATION_FILES,
     ReportPublication,
+    ReportPublicationArtifacts,
     publication_path,
 )
 from project_management.app.domain.report_publication_validation import (
@@ -19,17 +21,30 @@ from project_management.app.domain.summary_input import complete_source
 PUBLIC_ARTIFACTS = {'html': 'report.html', 'plain_text': 'report.txt'}
 
 
+def read_publication_artifacts(service, actor, project_id, stage_id, publication_id):
+    publication_id = service._uuid(publication_id)
+    try:
+        with service.archive._report_repository(actor, project_id, stage_id, write=False) as repository:
+            return ReportPublicationReader(repository).read_artifacts(publication_id, actor.subject)
+    except (ArchiveError, ProjectError) as error:
+        raise service._report_error(error, missing_as_not_found=True) from None
+
+
 class ReportPublicationReader:
     def __init__(self, repository):
         self.repository = repository
 
     def get(self, publication_id: str, actor_subject: str | None = None) -> ReportPublication:
+        return self.read_artifacts(publication_id, actor_subject).publication
+
+    def read_artifacts(self, publication_id: str, actor_subject: str | None = None) -> ReportPublicationArtifacts:
         manifest_path = publication_path(publication_id, 'manifest.json')
         commit_id = self.repository.commit_for_path(manifest_path)
         files = {name: self.repository.read_file(publication_path(publication_id, name), commit_id)
                  for name in PUBLICATION_FILES}
         manifest, manifest_hash = validate_publication_files(publication_id, files, self._context(), actor_subject)
-        return ReportPublication(manifest, manifest_hash, commit_id, self.repository.checkout_state(commit_id))
+        publication = ReportPublication(manifest, manifest_hash, commit_id, self.repository.checkout_state(commit_id))
+        return ReportPublicationArtifacts(publication, files)
 
     def read_public_artifact(self, publication_id: str, format: str, actor_subject: str | None = None) -> bytes:
         if format in PUBLIC_ARTIFACTS:

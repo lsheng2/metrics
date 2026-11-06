@@ -74,7 +74,7 @@ def editor_payload(revision, *, form=None):
         'document_json': submitted_json(form, 'document', document),
         'fill_policy_json': submitted_json(form, 'fill_policy', policy),
         'rows': template_rows(document, policy),
-        'data_sources': DATA_SOURCES,
+        'data_sources': DATA_SOURCES[:1] if document.get('presentation_profile') == 'standup/1' else DATA_SOURCES,
         'group_choices': GROUP_CHOICES,
     }
 

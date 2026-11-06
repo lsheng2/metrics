@@ -92,6 +92,10 @@ class ProjectReportTemplateFacade:
             'previous_offset': max(offset - 20, 0) if offset else None,
             'forms': TemplateLibraryForms(blank, daily, weekly, continuity_daily, continuity_weekly),
             'create_forms': (
+                {'form': initial_library_form('standup_daily', _('Concise daily standup')),
+                 'label': _('Concise daily standup')},
+                {'form': initial_library_form('standup_weekly', _('Concise weekly standup')),
+                 'label': _('Concise weekly standup')},
                 {'form': blank, 'label': _('Blank template')},
                 {'form': daily, 'label': _('Copy daily starter')},
                 {'form': weekly, 'label': _('Copy weekly starter')},

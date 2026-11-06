@@ -12,7 +12,8 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 采集到HTML下载、显式Git定稿、重启与无变化复用已通过本机合成全栈验证。
 富文本日常编辑、有界累计delta和显式AI辅助已通过限定本机合成资格；
 已保存报告支持派生Markdown/Excel导出；整周/跨周及未定稿gap操作闭环已通过合成验收。
-默认模板的精简正文效果、已观察到的交互延迟、完整provider覆盖和正式运行仍未完成。
+新精简模板与独立审计附件已实现并完成限定验证；
+已观察到的交互延迟、完整provider覆盖和正式运行仍未完成。
 内部合成能力不等于真实来源或真实模型已经上线。
 
 ### 已验证的演示
@@ -47,8 +48,8 @@ $reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv
 
 这些命令复用已验证的本机输入、原store与数据根，不是正式安装器。
 旧项目配置Demo、真实数据库和正式定时任务没有在本轮迁移或启用。
-当前模板仍强制附带原始摘要与详细审计表，不能称为已满足精简站会报告要求；
-后续须在保留完整归档、权限和覆盖校验的前提下，版本化区分精简正文与审计输出。
+旧模板继续保留原始摘要与详细审计表。新建模板时优先选择“精简每日站会”或
+“精简每周站会”，正文使用有效notes与AR，完整审计通过独立附件获取。
 请求耗时也尚未完成优化，不能把功能通过等同于日常使用性能已经合格。
 
 ## 产品目标与分工
@@ -286,6 +287,28 @@ Markdown/plain不承担颜色恢复，Excel按受验证能力导出；JSON/HTML�
 格式/历史/保存不完整时明确失败，不能用静默降纯文本制造成功。
 
 #### 下载和导出
+
+**精简正文与完整审计。** 模板库的“精简每日站会 / Concise daily standup”和
+“精简每周站会 / Concise weekly standup”是新建报告的首选。
+每张票一行，正文列为Ticket、Updates、AR；Updates按原日期累计有效人工/已接受内容，
+状态前缀来自provider，未结束AR与常驻备注保留，显式空白不恢复原AI句子。
+简短coverage仍显示partial/pending和已知限制，不因精简隐藏未处理票。
+用户可添加固定内容或填写槽；编辑器Save会保留精简呈现版本。
+
+旧模板不自动升级，旧HTML不重新渲染。新模板使用schema2的
+`presentation_profile="standup/1"`和`template-document/2`；
+未设置profile的旧版本继续使用`template-document/1`及原hash规则。
+切换报告系列默认模板须显式保存新系列策略版本，不能只改本地模板选择。
+
+定稿页面的导出菜单增加“完整审计附件（ZIP）”。它包含该次定稿的六个原始文件、
+可读`audit.html`和`audit-manifest.json`校验清单。附件独立于精简正文，不调用模型、
+来源、Save或Finalize，不修改Git历史；同一原稿重复下载的字节稳定。
+正文HTML/plain/Markdown/Excel和复制仍基于保存/定稿版本。草稿不提供审计ZIP，
+因为尚未形成不可变publication；有未保存修改时仍禁止复制/定稿与草稿导出。
+附件缺失、损坏、无权限或超过32 MiB上限会明确失败，不返回截断包。
+
+实现接口和版本边界见[呈现设计](../../changes/add-provider-neutral-project-reporting/standup-presentation.md)，
+实际资格与限制见[呈现交付](../../changes/add-provider-neutral-project-reporting/presentation-delivery.md)。
 
 HTML和纯文本下载读取已保存修订；已发布报告读取原六文件中的原始字节。
 新的“导出”控件提供Markdown和Excel文本表格。它们是有明确来源hash及

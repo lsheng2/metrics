@@ -21,6 +21,9 @@ def compile_pinned_report(engine, source_snapshot, template_snapshot, edits, *, 
     snapshot = validate_template_document_snapshot(template_snapshot)
     _require_ready_data(snapshot['resolved_document'])
     context, validated_edits = _validated_edits(source_snapshot, snapshot, edits, authoring_context)
+    if snapshot['resolved_document'].get('presentation_profile') == 'standup/1':
+        from project_management.reporting.standup import compile_standup_report
+        return compile_standup_report(source_snapshot, snapshot, validated_edits, context)
     data_edits = tuple(edit for edit in validated_edits if edit.kind != 'slot_fill' and context is None)
     slots = {edit.target['slot_id']: edit for edit in validated_edits if edit.kind == 'slot_fill'}
     model = _model(source_snapshot, snapshot, data_edits, draft_id, revision, revision_hash, edition_state)
@@ -332,8 +335,9 @@ def _issue_key(issue_ref):
 
 def _require_ready_data(document):
     sources = [block['source'] for block in document['blocks'] if block['kind'] == 'data']
-    required = ['key_messages', 'changes', 'register', 'coverage']
-    if document['report_kind'] == 'weekly':
+    concise = document.get('presentation_profile') == 'standup/1'
+    required = [] if concise else ['key_messages', 'changes', 'register', 'coverage']
+    if document['report_kind'] == 'weekly' and not concise:
         required.append('weekly_timeline')
     if document['schema_version'] == 2:
         required.append('meeting_matrix')

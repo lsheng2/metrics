@@ -180,3 +180,27 @@ design must separate concise business output from retained audit information
 without changing old template/renderer hashes or removing source/coverage guards.
 Profile the recorded long prepare/view waits before choosing an optimization;
 do not use more week runs to locate a read-path problem.
+
+## Concise Presentation
+
+`standup/1` is a template presentation profile, not a new AI or source protocol.
+It selects `template-document/2`; missing profile preserves legacy hashes/bytes.
+Read/Save/render/Finalize route all user or pinned-renderer claims through the
+strict validator. The builder must preserve the profile on Save.
+
+Run the pure `test_report_standup.py` / `test_report_audit.py`, then the focused
+`test_report_standup_publication.py` real-Git successor and original-byte test.
+`test_report_presentation_guards.py` attacks an internally rehashed unknown
+renderer through actual draft consumers. HTTP tests are
+`ui_web/tests/test_report_standup_views.py`; the mounted sample is
+`test_report_standup_browser.py`. Use the same selected SDK/no-dotenv entry.
+No extra full week or Base dispatch is needed for this presentation boundary.
+
+Audit export reads all six original files in one owner-checked, verified
+publication pass. The deterministic ZIP has a separate generator revision and
+does not alter publication format or re-render its body. The 32 MiB limit applies
+before and after packaging. Runtime source/accepted/editorial authorities are
+unchanged; original-week public readback remains separate from preview generation.
+
+Evidence: `.tmp/dashboard-presentation-20261106/` and
+[presentation delivery](../../openspec/changes/add-provider-neutral-project-reporting/presentation-delivery.md).

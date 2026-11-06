@@ -1199,3 +1199,12 @@ msgstr "此导出暂不可用，可下载 HTML。"
 
 msgid "This content cannot be exported in the selected format. Download HTML instead."
 msgstr "所选格式无法完整表示这些内容，可下载 HTML。"
+
+msgid "Concise daily standup"
+msgstr "精简每日站会"
+
+msgid "Concise weekly standup"
+msgstr "精简每周站会"
+
+msgid "Audit bundle (ZIP)"
+msgstr "完整审计附件（ZIP）"

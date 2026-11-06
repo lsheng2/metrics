@@ -17,9 +17,11 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
-最新入口：整周/跨周操作闭环及gap/清空分支已通过，见
-[week-delivery.md](week-delivery.md)。下一步先确认精简正文与独立审计输出的
-模板契约，并分析已观察到的请求延迟；不重跑已经验证的整周，不将整个topic标为完成。
+最新入口：用户同意的精简正文与独立完整审计附件已完成限定实现/验证/复审，
+基线`9dff849`，见[呈现交付](presentation-delivery.md)与[版本化契约](standup-presentation.md)。
+整周/跨周操作闭环证据保留于[week-delivery.md](week-delivery.md)，不重跑；
+最终47项限定回归、真实Git新旧两日/原字节验证及实际浏览器样本通过。
+下一步是请求延迟的限定关键路径分析；整个产品的其他未完成资格继续保留。
 
 2026-11-05用户批准Dashboard交付复评，并要求同步文档、调整执行顺序、开始执行。
 本轮沿Dashboard main，基线`eb8de2e`；SDK020已通过，不重跑其全部资格。
@@ -260,6 +262,11 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.AUTHOR.ASSIST.REPLAN Verify authoring-profile HTTP qualification and provenance consumers before the final week.
 - [x] W6.AUTHOR.EXPORT.SAMPLE Add versioned derived Markdown/Excel downloads without altering original six-file publications, then qualify one rich-text/template/AR/history and clipboard sample before the week.
 - [x] W6.AUTHOR.JOIN Validate authoring/save/copy/finalization and the week/cross-week/gap workflow; concise-body alignment, performance and external qualification remain open.
+- [x] W6.PRESENT.PLAN.R Freeze/review the approved concise template, renderer, immutable artifact read and audit-export contracts. Strict pinned-family and builder-profile counterexamples are required by the bounded review.
+- [x] W6.PRESENT.CORE Implement the opt-in versioned standup body and exact old-format compatibility. Scoped pure/legacy selection 39 passed; strict consumer corruption test passed.
+- [x] W6.PRESENT.AUDIT Add owner-checked read-only audit bundles from original publication bytes. Real Git successor/old-byte test and authenticated HTTP download/denial cases passed.
+- [x] W6.PRESENT.UI Qualify template creation/edit/save/publication and body/audit downloads on the actual mounted UI. One desktop/390px story passed; builder preserves profile, dirty guards and actual ZIP/original HTML verified.
+- [x] W6.PRESENT.R Review scoped source/evidence and truth-sync; final scoped selection 47 passed, no review blockers. Latency profiling and broader product qualification remain separate.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.
