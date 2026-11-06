@@ -225,8 +225,9 @@ def _request(value) -> AuthoredEditRequest:
     if not isinstance(value, AuthoredEditRequest):
         raise ReportError('REPORT_INVALID')
     reference_receipts = tuple(value.reference_receipts or ())
-    if any(type(receipt) is not str for receipt in reference_receipts) or value.assist_receipt_id is not None:
+    if any(type(receipt) is not str for receipt in reference_receipts):
         raise ReportError('REPORT_EDIT_TARGET_INVALID')
+    assist_id = None if value.assist_receipt_id is None else _uuid(value.assist_receipt_id, 'REPORT_EDIT_TARGET_INVALID')
     return AuthoredEditRequest(
         _uuid(value.edit_id, 'REPORT_EDIT_TARGET_INVALID'),
         _literal(value.kind, {'note', 'narrative_override', 'slot_fill'}, 'REPORT_EDIT_TARGET_INVALID'),
@@ -234,7 +235,7 @@ def _request(value) -> AuthoredEditRequest:
         validate_rich_text_fragment(value.fragment),
         _optional_hash(value.expected_original_hash, 'REPORT_EDIT_TARGET_INVALID'),
         reference_receipts,
-        None,
+        assist_id,
     )
 
 

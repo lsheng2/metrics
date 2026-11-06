@@ -473,13 +473,15 @@ ReportAssistService.candidate(actor, project_id, stage_id, draft_id, assist_id)
 ```
 
 observe 可以查询既有 Base run，不得在 GET 上隐式新建/重派模型任务。首次 dispatch 只来自 submit。
-新状态：`prepared, submitted, observing, candidate_ready, insufficient_evidence,
+新状态：`prepared, observing, candidate_ready, insufficient_evidence,
 failed, cancel_requested, canceled, unknown`。
 无 runId 的未知 submit 用原 clientRunKey 查询，不换 key 重试；返回不确定费用保留原状态。
 原 profile/request/输入哈希先持久化，候选必须核验 task-run/1 身份、scope、grant、原结果 hash。
 服务复用已安装 SDK/transport，不复用写死 summary profile 的 `AiTaskContract.load`。
 新增 authoring contract loader，在 `project_management/ai_bundle/report-authoring/` 固定 prompt/schema；
 未安装/注册/授权该 profile 时返回 `REPORT_AI_UNAVAILABLE`，人工编辑不受影响。
+2026-11-06实际接口、存储文件、终态/未知结果分类与对应验证入口已细化在
+[ASSIST执行合同](assist-execution.md)。该文档补充本节，不建立第二份任务状态。
 
 assist 记录放同一 stage runtime 的 `report-assists/<assist_id>/`，
 复用 `storage.paths`、归属/配额/锁，不建立新进程控制器或修改采集/摘要 journal。
@@ -496,6 +498,8 @@ AI 输入可包含上一条用户确认的有效叙述和必要源增量作为�
 
 Apply 只把核验过的候选放到本地 dirty fragment，保留 assist ID；
 Save 再核验目标/base revision/hash 与候选来源，写 human acceptance author/time。
+即使候选文本与原文相同，未接受的receipt也使编辑器dirty。Save确认后清理客户端临时receipt，
+并返回当前日报note的`current_note_hashes`，保留保存期间新增的本地文字及下一次CAS依据。
 接受后的文本可继续人工修改并记录差异；从不等同于 SummaryAnalysisService.accept。
 一 draft 同时一个活跃 assist。初始 input128KiB/output64KiB/总期限180秒/观察最多16次，
 服从更严格的 Base accepted limits；不能扩大既有全局预算或清零失败费用。
@@ -509,8 +513,9 @@ Save 再核验目标/base revision/hash 与候选来源，写 human acceptance a
 不修改原回执、capture文件或schema。界面显示UTC截止时间及ID，ID始终按完整值提交。
 
 所有 POST 用原 project_actor、owner、CSRF；GET private/no-store。
-页面 form 响应保持现有 redirects；新异步端点使用
-`{schema_version:1,request_id,result:null|object,error:null|{code,message,retryable,details}}`。
+页面 form 响应保持现有 redirects；ASSIST使用
+`{schema_version:1,result:null|object,error:null|{code,message}}`，
+以command/assist身份关联原请求；completion与已有Save保留各自已版本化响应。
 不返回异常栈/凭据/路径，details 只含已授权 resource ID、字段/目标 ID、retry_after_ms。
 未知 request key 拒绝；actor/profile/endpoint/原始 scope 不能由浏览器覆盖。
 
@@ -523,6 +528,7 @@ Save 再核验目标/base revision/hash 与候选来源，写 human acceptance a
 | POST `stages/<sid>/reports/drafts/<did>/save/` | payload_version2 内容保存；原 URL 不另建竞争存储 |
 | POST `stages/<sid>/reports/drafts/<did>/completions/` | 仅 `#ID` token 对应的一次 suggestion query |
 | POST `stages/<sid>/reports/drafts/<did>/assists/` | 显式 AI 请求，202或幂等原状态 |
+| GET `stages/<sid>/reports/drafts/<did>/assists/` | 当前目标与原assist状态；不派发、取消或刷新工单 |
 | GET `.../assists/<aid>/`、`candidate/` | 观察原 run/读取候选，不派发新 run |
 | POST `.../assists/<aid>/cancel/` | 原运行取消，不意味立即终止 |
 | GET/POST `stages/<sid>/reports/series/` | 查询/显式创建系列，服务端UUID、日历/模板校验；不采集 |

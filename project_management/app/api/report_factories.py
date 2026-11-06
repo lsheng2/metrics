@@ -5,6 +5,7 @@ from django.conf import settings
 
 from project_management.app.api.factories import build_capture_archive_service, build_project_api
 from project_management.out.ai_task_contract import AiTaskContract
+from project_management.out.report_ai_task import AuthoringTaskContract
 from project_management.out.preparation_links import DjangoPreparationLinkBuilder
 from project_management.reporting.html import ReportRenderer
 from project_management.services.report_completion import ReportCompletionService
@@ -12,6 +13,7 @@ from project_management.services.report_continuity import ReportContinuityServic
 from project_management.services.report_drafts import ReportDraftService
 from project_management.services.report_preparation import ReportPreparationService
 from project_management.services.report_reference_receipts import ReferenceReceiptVerifier
+from project_management.services.report_assist_receipts import ReportAssistReceiptVerifier
 from project_management.services.report_sources import ReportSourceReader
 from project_management.services.report_templates import ReportTemplateService
 from project_management.services.project_runs import ProjectRunService
@@ -37,6 +39,7 @@ def build_report_service(*, project_api=None, archive=None, contract=None, rende
         ReportSourceReader(archive, contract),
         renderer,
         reference_verifier=ReferenceReceiptVerifier(settings.SECRET_KEY),
+        assist_verifier=ReportAssistReceiptVerifier(contract_loader=_authoring_contract),
         template_service=template_service,
     )
 
@@ -124,3 +127,31 @@ def build_report_completion_service(*, project_api=None, archive=None, contract=
 @lru_cache(maxsize=1)
 def _default_contract():
     return AiTaskContract.load(PACK_ROOT)
+
+
+@lru_cache(maxsize=1)
+def _authoring_contract():
+    return AuthoringTaskContract.load(PACK_ROOT)
+
+
+def build_report_assist_service(*, draft_service=None):
+    from django.utils.module_loading import import_string
+    from project_management.services.report_assists import ReportAssistService
+    from project_management.app.domain.report_contracts import ReportError
+    from project_management.app.domain.summary_contracts import AnalysisError
+
+    draft_service = draft_service or build_report_service()
+    try:
+        contract = _authoring_contract()
+    except AnalysisError:
+        raise ReportError('REPORT_AI_UNAVAILABLE') from None
+    factory = getattr(settings, 'METRICS_REPORT_ASSIST_FACTORY', None)
+    if factory is None:
+        return ReportAssistService(draft_service, contract)
+    if isinstance(factory, str):
+        factory = import_string(factory)
+    service = factory(draft_service=draft_service, contract=contract)
+    if (not isinstance(service, ReportAssistService) or service.drafts is not draft_service
+            or service.contract.definition_hash != contract.definition_hash):
+        raise ReportError('REPORT_AI_UNAVAILABLE')
+    return service

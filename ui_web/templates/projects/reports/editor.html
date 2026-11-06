@@ -6,7 +6,9 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/report_editor.css' %}">
+<link rel="stylesheet" href="{% static 'css/report_assist.css' %}">
 <article class="block" data-report-editor data-draft-id="{{ draft.draft_id }}" data-revision="{{ draft.revision }}" data-revision-hash="{{ draft.revision_hash }}" data-snapshot-hash="{{ draft.snapshot_hash }}" data-template-hash="{{ draft.template_definition.template_hash }}" data-clipboard-url="{{ clipboard_url }}" data-completion-url="{{ completion_url }}"
+         data-assist-url="{% url 'ui_web:report_assists' detail.project.id stage.id draft.draft_id %}"
          data-message-payload-missing="{% trans "Clipboard payload is not available." %}"
          data-message-download-fallback="{% trans "Copy payload could not be loaded. Download HTML is still available." %}"
          data-message-ready="{% trans "Saved revision is ready to copy." %}"
@@ -90,6 +92,10 @@
                 <span class="icon is-small"><i class="iconoir-download"></i></span>
                 <span>{% trans "Download HTML" %}</span>
             </a>
+            <button class="button" type="button" data-report-assist-open title="{% trans "AI assist" %}">
+                <span class="icon is-small" aria-hidden="true"><i class="iconoir-refresh-double"></i></span>
+                <span>{% trans "AI assist" %}</span>
+            </button>
         </div>
 
         {% include "projects/reports/editor_toolbar.html" %}
@@ -197,6 +203,7 @@
             {% endif %}
         </section>
     </form>
+    {% include "projects/reports/assist.html" %}
     {% endif %}
 
     {% if draft.state == "draft" %}

@@ -1,3 +1,4 @@
 provider_sync/out/_jql/* -text -filter
 provider_sync/out/_jql/parser.cjs -diff
 project_management/ai_bundle/strict-summary/task-run-contract-0.1.0a2/** -text -filter
+project_management/ai_bundle/report-authoring/** -text -filter

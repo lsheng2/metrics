@@ -2,6 +2,7 @@ import { fragmentText, fragmentToPreview, normalizeFragment, plainTextFragment }
 import { mount } from './adapter.js';
 import { createCompletionController, currentReferenceReceipts, stripReferenceMetadata } from './completion.js';
 import { createContinuityController } from './report_continuity.js';
+import { createAssistController } from './assist.js';
 
 const EMPTY = { schema_version: 2, blocks: [] };
 
@@ -22,6 +23,7 @@ function initializeReportAuthoring(root) {
     const saveButton = root.querySelector('[data-report-save-button]');
     const copyButton = root.querySelector('[data-report-copy-button]');
     const finalizeButton = root.querySelector('[data-report-finalize-button]');
+    const assistButton = root.querySelector('[data-report-assist-open]');
     const dirtyBanner = root.querySelector('[data-report-dirty-banner]');
     const status = root.querySelector('[data-report-copy-status]');
     let dirty = false;
@@ -34,6 +36,12 @@ function initializeReportAuthoring(root) {
     let destroyed = false;
     const completions = createCompletionController(root);
     const continuity = createContinuityController(root, form);
+    const assists = createAssistController(root, {
+        activeRegion: () => activeState,
+        resolveTarget,
+        blocked: () => dirty || saving || failedMount || Boolean(uncertainSave),
+        changed: () => refreshDirty(),
+    });
     const listeners = new AbortController();
     const { signal } = listeners;
 
@@ -46,7 +54,9 @@ function initializeReportAuthoring(root) {
     }
 
     function setDirty(value) {
-        dirty = value === undefined ? currentSignature() !== baselineSignature : value;
+        dirty = value === undefined
+            ? currentSignature() !== baselineSignature || regions.some(state => Boolean(state.assistReceiptId))
+            : value;
         root.dataset.reportAuthoringDirty = String(dirty);
         if (dirtyBanner) dirtyBanner.classList.toggle('is-hidden', !dirty);
         syncDisabled();
@@ -65,6 +75,7 @@ function initializeReportAuthoring(root) {
             saveButton.disabled = saving || failedMount;
             saveButton.setAttribute('aria-disabled', String(saveButton.disabled));
         }
+        if (assistButton) assistButton.disabled = !activeState?.handle || saving || failedMount || Boolean(uncertainSave);
         root.dispatchEvent(new CustomEvent('report-authoring-state'));
     }
 
@@ -89,9 +100,13 @@ function initializeReportAuthoring(root) {
                 }
                 state.fragment = fragment;
                 state.dirty = isDirty;
+                state.assistReceiptId = null;
                 refreshDirty();
             },
-            onCompletionToken: (capture, metadata) => completions.handleCapture(state, capture, metadata),
+            onCompletionToken: (capture, metadata) => {
+                completions.handleCapture(state, capture, metadata);
+                assists.changed();
+            },
             readOnly: false,
         }).then(handle => {
             state.mounting = null;
@@ -100,6 +115,7 @@ function initializeReportAuthoring(root) {
                 return null;
             }
             state.handle = handle;
+            syncDisabled();
             return handle;
         }).catch(error => {
             state.mounting = null;
@@ -145,6 +161,7 @@ function initializeReportAuthoring(root) {
         if (target) {
             target.addEventListener('change', () => {
                 state.dirty = true;
+                state.assistReceiptId = null;
                 refreshDirty();
             }, { signal });
         }
@@ -213,7 +230,7 @@ function initializeReportAuthoring(root) {
                 fragment: submittedFragment,
                 expected_original_hash: expectedOriginalHash(state, targetData),
                 reference_receipts: currentReferenceReceipts(state),
-                assist_receipt_id: null,
+                assist_receipt_id: state.assistReceiptId || null,
             });
         }
         return edits;
@@ -369,6 +386,13 @@ function initializeReportAuthoring(root) {
         if (payload.snapshot_hash) root.dataset.snapshotHash = payload.snapshot_hash;
         if (payload.template_hash) root.dataset.templateHash = payload.template_hash;
         if (payload.clipboard_url) root.dataset.clipboardUrl = payload.clipboard_url;
+        regions.forEach(state => {
+            state.assistReceiptId = null;
+            const target = resolveTarget(state)?.target;
+            if (target?.scope === 'daily_note' && Object.hasOwn(payload.current_note_hashes || {}, target.note_id)) {
+                state.region.dataset.expectedOriginalHash = payload.current_note_hashes[target.note_id];
+            }
+        });
         const finalizeForm = root.querySelector('[data-report-finalize-form]');
         const finalizeExpected = finalizeForm?.querySelector('[name="expected_revision"]');
         if (finalizeExpected) finalizeExpected.value = revision;
@@ -425,6 +449,7 @@ function initializeReportAuthoring(root) {
             root.__reportAuthoringExitCleanup?.();
             completions.destroy();
             continuity.destroy();
+            assists.destroy();
             root.dataset.reportAuthoringInitialized = 'false';
         },
     };

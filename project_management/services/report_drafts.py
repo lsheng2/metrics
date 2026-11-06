@@ -31,13 +31,14 @@ from project_management.services.report_period_view_drafts import ReportPeriodVi
 
 class ReportDraftService(ReportLinkedRevisionDraftMixin, ReportPeriodViewDraftMixin, ReportAuthoringDraftMixin, ReportPublicationMixin, ReportDraftListingMixin):
     def __init__(self, archive, source_reader, renderer, *, limits=None, clock=None,
-                 reference_verifier=None, template_service=None, prepared_context_reader=None):
+                 reference_verifier=None, template_service=None, prepared_context_reader=None, assist_verifier=None):
         self.archive = archive
         self.source_reader = source_reader
         self.renderer = renderer
         self.limits = self._limits(limits)
         self.clock = clock or (lambda: datetime.now(UTC))
         self.reference_verifier = reference_verifier
+        self.assist_verifier = assist_verifier
         self.template_service = template_service or ReportTemplateService()
         self.prepared_context_reader = prepared_context_reader or PreparedContextReader(archive, self.template_service)
 

@@ -1,0 +1,58 @@
+.report-assist-dialog {
+    box-sizing: border-box;
+    position: fixed;
+    z-index: 45;
+    width: min(28rem, calc(100vw - 1rem));
+    max-height: calc(100vh - 1rem);
+    overflow: auto;
+    padding: 0.75rem;
+    border: 1px solid #9ca3af;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #111827;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.report-assist-dialog[hidden],
+.report-assist-dialog [hidden] {
+    display: none;
+}
+
+.report-assist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.report-assist-header .title {
+    margin: 0;
+    color: inherit;
+}
+
+.report-assist-dialog .label {
+    color: inherit;
+}
+
+.report-assist-dialog [role="status"] {
+    margin: 0.75rem 0;
+    overflow-wrap: anywhere;
+}
+
+.report-assist-preview {
+    border-top: 1px solid #d9dee8;
+    padding-top: 0.5rem;
+    max-height: 15rem;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    color: #111827;
+}
+
+.report-assist-dialog .report-assist-preview :is(p, li, blockquote, h1, h2, h3, td, th) {
+    color: inherit;
+}
+
+.report-assist-dialog .dashboard-action-group {
+    flex-wrap: wrap;
+}

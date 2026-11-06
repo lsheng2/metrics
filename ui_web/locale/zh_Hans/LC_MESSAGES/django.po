@@ -1124,3 +1124,57 @@ msgstr "负责人不可用"
 
 msgid "Title unavailable"
 msgstr "标题不可用"
+
+msgid "AI assist"
+msgstr "AI 辅助"
+
+msgid "Request"
+msgstr "填写要求"
+
+msgid "Generate"
+msgstr "生成"
+
+msgid "Check status"
+msgstr "查询状态"
+
+msgid "Reject / cancel"
+msgstr "拒绝或取消"
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "Preparing AI candidate..."
+msgstr "正在准备 AI 候选内容..."
+
+msgid "Candidate ready"
+msgstr "候选内容已就绪"
+
+msgid "Save your edits before requesting an AI candidate."
+msgstr "请先保存当前编辑，再请求 AI 候选内容。"
+
+msgid "The editing target changed. This candidate cannot replace it."
+msgstr "编辑目标已改变，此候选内容不能覆盖新改动。"
+
+msgid "AI assistance is not available for this target."
+msgstr "此编辑目标不支持 AI 辅助。"
+
+msgid "AI assistance is unavailable. You can continue editing manually."
+msgstr "AI 辅助暂不可用，仍可继续手工编辑。"
+
+msgid "The existing AI request is unresolved. Check its status or cancel it."
+msgstr "已有 AI 请求尚未确认结果，请查询状态或取消。"
+
+msgid "The source does not contain enough evidence. Original text is unchanged."
+msgstr "来源证据不足，原文未改变。"
+
+msgid "AI request canceled. Original text is unchanged."
+msgstr "AI 请求已取消，原文未改变。"
+
+msgid "AI request failed. Original text is unchanged."
+msgstr "AI 请求失败，原文未改变。"
+
+msgid "AI observation limit reached. The request is unresolved; manual editing remains available."
+msgstr "AI 状态查询已达上限，请求结果尚未确认，仍可手工编辑。"
+
+msgid "AI deadline reached. The result is still unconfirmed."
+msgstr "AI 请求已到原定期限，结果仍未确认。"

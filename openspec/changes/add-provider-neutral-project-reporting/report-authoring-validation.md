@@ -173,6 +173,18 @@ CONTENT已落地的具体入口如下；对应执行结果/候选/评审只在ta
 | RA41 paint persistence | `test_report_authoring_content.py::test_should_keep_colored_link_and_bold_note_when_saved_reopened_rendered_and_published` and `test_should_treat_paint_only_change_as_new_revision` |
 | Empty human edit / no downgrade | `test_report_authoring_content.py::test_should_persist_explicit_empty_narrative_override_without_resurrecting_original_text` and `test_report_authoring_migration.py::test_should_refuse_legacy_save_on_schema2_current_without_losing_original_replay` |
 
+ASSIST实际入口如下；按[交付回执](assist-delivery.md)绑定源码与结果，不执行早期表格中的占位节点：
+
+| 合同 | 实际入口 |
+| --- | --- |
+| RA29/30 独立profile和目标/证据边界 | `project_management/tests/test_report_ai_task.py`、`test_report_assist_contract.py` |
+| RA31 原key/取消/失败/次数上限 | `project_management/tests/test_report_assist_service.py`、`test_report_assist_recovery.py` |
+| RA32 Apply与Save、相同文字接受、连续保存 | `ui_web/tests/test_report_assist_browser.py` |
+| RA33 权限/CSRF及AI不可用时手工操作 | `ui_web/tests/test_report_assist_views.py`及上述browser文件 |
+| RA45 文字/颜色改变后不覆盖 | `TestReportAssistBrowser.test_shouldRejectCandidateAfterNewHumanText`及`test_shouldRejectCandidateAfterPaintOnlyChange` |
+| 其他可填目标保存分支 | `project_management/tests/test_report_assist_targets.py` |
+| SDK/Base/Git/翌日来源引用 | `project_management/tests/test_report_assist_http.py`；不代替完整RA67工作周 |
+
 EDIT/REFERENCES已落地的入口如下；沿tasks中的独立评审和对应候选读取结果，
 此表只是可执行入口映射，不是重复的通过状态或live资格声明。
 

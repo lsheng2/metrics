@@ -270,7 +270,7 @@ def _note_from_observation(observation, existing, fragment, body_hash, actor_sub
         'action_ids': () if existing is None else existing['action_ids'],
         'provenance': {
             'origin': 'human',
-            'ai_result_ref': None,
+            'ai_result_ref': None if existing is None else existing['provenance'].get('ai_result_ref'),
             'original_fragment_hash': None if existing is None else existing['body_hash'],
             'edited_by': actor_subject,
             'edited_at': timestamp,
@@ -301,8 +301,9 @@ def _request(value):
     if not isinstance(value, AuthoredEditRequest):
         raise ReportError('REPORT_INVALID')
     reference_receipts = tuple(value.reference_receipts or ())
-    if any(type(receipt) is not str for receipt in reference_receipts) or value.assist_receipt_id is not None:
+    if any(type(receipt) is not str for receipt in reference_receipts):
         raise ReportError('REPORT_EDIT_TARGET_INVALID')
+    assist_id = None if value.assist_receipt_id is None else validate_uuid_text(value.assist_receipt_id)
     return AuthoredEditRequest(
         validate_uuid_text(value.edit_id),
         value.kind,
@@ -310,7 +311,7 @@ def _request(value):
         validate_rich_text_fragment(value.fragment),
         None if value.expected_original_hash is None else validate_hash_text(value.expected_original_hash),
         reference_receipts,
-        None,
+        assist_id,
     )
 
 

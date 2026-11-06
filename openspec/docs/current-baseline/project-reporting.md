@@ -10,8 +10,8 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 各个已经通过的独立评审、实际候选、桌面验证和后续实施状态见
 [唯一任务清单](../../changes/add-provider-neutral-project-reporting/tasks.md)。
 采集到HTML下载、显式Git定稿、重启与无变化复用已通过本机合成全栈验证。
-富文本日常编辑与有界累计delta已通过本机合成资格；完整provider覆盖、AI Assist、
-完整工作周验收和正式运行仍待后续交付。
+富文本日常编辑、有界累计delta和显式AI辅助已通过限定本机合成资格；
+完整provider覆盖、导出、完整工作周验收和正式运行仍待后续交付。
 内部合成能力不等于真实来源或真实模型已经上线。
 
 ### 已验证的演示
@@ -181,8 +181,9 @@ Markdown/Excel原有需求保留；离线HTML修改回导仍不在首个Demo范�
 取消源码UI不取消Markdown导出，HTML仍是邮件主产物。2026-11-03用户已授权在main实施作者层。
 schema2 standalone后端已通过专项测试、独立评审及真实临时Git闭环；
 模板库人工填写、固定富文本预览和连续性矩阵页面已通过专项HTTP/桌面Chrome及独立评审。
-每日准备已接入页面、CLI和原运行器，正在完成组合验证与独立评审；
-显式AI填写和完整工作周验收尚未完成。
+每日准备已接入页面、CLI和原运行器，并完成两天组合验证与限定独立评审；
+显式AI填写已通过限定合成资格，详见
+[交付回执](../../changes/add-provider-neutral-project-reporting/assist-delivery.md)；完整工作周仍是独立关口。
 编辑器现已接入固定Milkdown7.23.0，正文中的叙述/备注可就地编辑，来源事实保持只读。
 颜色、高亮、格式链接、任务/表格/代码块、原生撤销和保存重开已通过专项桌面Chrome测试。
 网络结果不确定时重试原保存命令，较新的本地输入继续保留；离页/语言切换须明确处理
@@ -206,7 +207,7 @@ Projects -> Report templates提供空白、daily/weekly起始模板、复制、�
 schema2仍使用原六文件定稿和Git writer；恢复前校验完整packet及选中修订hash，
 读取历史原文件不重新渲染。后端现在也支持经服务器prepared seed创建的连续日报；
 普通浏览器不能上传历史context。补全收据按当前scope proof/身份和唯一引用link验证，
-AI收据仍由后续ASSIST资格控制。
+AI收据在Save时核验独立authoring候选，不复用summary结果冒充作者填写。
 
 #### 连续性编辑
 
@@ -286,8 +287,34 @@ HSDES直接由Stage的saved-query profile路由，不伪造Jira scope。
 
 AI填写是单独的候选操作，不是模板渲染或生成报告的默认副作用。
 手工编辑不依赖Base；候选先审阅再保存，继续沿原显式定稿/Git/权限边界。
-当前summary@review-1与synthetic-only资格不能被当作authoring profile已就绪。
+独立`project-reporting.authoring@1`使用SDK0.2.0a1和原a2的`task-run/1` wire；
+不改变summary@review-1或把合成资格当成正式模型资格。实际接口和限定证据见
+[ASSIST合同](../../changes/add-provider-neutral-project-reporting/assist-execution.md)。
 原模板设计器backlog只提升为受控block/slot模板库；任意脚本/CSS/像素布局引擎仍非本次范围。
+
+#### 显式AI辅助
+
+先保存草稿并选择当前可编辑正文，再打开AI assist，填写要求并显式Generate。
+浮窗显示候选，Apply只做一次可撤销的本地替换；Save才接受来源，Finalize才推进正式日报基线。
+此按钮与`#ID`只读补全是不同操作；编辑、模板、补全、保存和渲染不请求模型。
+模板`ai_optional`槽、当前日note及允许的叙述/备注目标可申请候选；
+历史note、固定来源数据、源状态、行序和AR跟踪状态不可由AI改写。
+
+- 生成期间改文字、颜色或选择位置会使旧候选不可覆盖当前目标。原文不会因失败而丢失。
+- 未保存的修改必须先保存；AI不可用或profile缺失时，手工编辑和保存仍可使用。
+- 关闭浮窗/刷新页面不取消运行。重开可以读取原候选或按原key查询未确认请求，不自动重新生成。
+- Reject / cancel先记录本地拒绝；晚到结果不能应用。未确认远端结束时仍显示原请求状态。
+- 到原期限或观察次数上限，停止自动观察，不重置key、deadline或费用。
+  未确认执行结束前不建立竞争请求；仍可继续手工编辑。
+- Apply后尚未保存就手改时，临时AI凭证被清除，按人工内容保存。已保存的AI内容再被人工修改，
+  则保留其AI来源引用并标注人工修改；归档和翌日继承使用最终有效富文本，不重放原候选。
+
+默认没有运行资格，不会创建Base客户端。运维须在Django settings中显式设置
+`METRICS_REPORT_ASSIST_FACTORY`为服务端callable或导入路径，接口为
+`factory(*, draft_service, contract) -> ReportAssistService`。该factory提供经过资格验证的
+backend/grant与SDK client factory；浏览器不能提交endpoint、token或profile。
+普通`.env`键不会自动注册此factory，也不会因已有summary grant而自动授权authoring。
+缺失/损坏的authoring bundle只阻断AI，不阻断人工草稿。
 
 ### 内部报告数据读取
 

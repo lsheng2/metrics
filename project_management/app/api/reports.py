@@ -15,6 +15,7 @@ from project_management.app.domain.report_authoring import (
     AuthoredEditRequest,
     AuthoringTemplateSelection,
 )
+from project_management.app.domain.report_assists import AssistStatus, AssistTarget
 from project_management.app.domain.report_authoring_hashes import (
     authored_create_request_hash,
     authored_create_template_use_request_hash,
@@ -75,6 +76,7 @@ from project_management.app.domain.report_edits import original_target_text, sou
 from project_management.reporting.html import ReportRenderer
 from project_management.services.report_continuity import ReportContinuityService
 from project_management.services.report_drafts import ReportDraftService
+from project_management.services.report_assists import ReportAssistService
 from project_management.services.report_preparation import ReportPreparationService
 from project_management.services.report_templates import ReportTemplateService
 from project_management.services.report_sources import ReportSourceReader
@@ -82,6 +84,9 @@ from project_management.services.report_membership import ScopeMember, ScopeMemb
 
 
 __all__ = [
+    'AssistStatus',
+    'AssistTarget',
+    'ReportAssistService',
     'RenderedReport',
     'ReportArchiveTarget',
     'BaselinePreview',

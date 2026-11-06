@@ -8,6 +8,7 @@ from django.core import signing
 from project_management.app.domain.report_authoring_fragments import rich_text_fragment_plain_text
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_draft_values import canonical_hash
+from project_management.services.report_historical_references import HistoricalReferenceResolver
 
 
 SALT = 'project-reporting.reference/1'
@@ -18,6 +19,37 @@ ENVELOPE_KEYS = {
     'snapshot_hash', 'rule_hash', 'principal_id', 'membership_proof_hash',
     'observation', 'issued_at', 'expires_at',
 }
+
+
+def verify_reference_requests(service, actor, project_id, stage_id, current, requested, active):
+    if not any(tuple(edit.reference_receipts or ()) or _has_reference_id(edit.fragment) for edit in requested) and not any(
+            tuple(edit.reference_observations or ()) for edit in active):
+        return {}
+    verifier = getattr(service, 'reference_verifier', None)
+    if verifier is None:
+        raise ReportError('REFERENCE_INVALID')
+    try:
+        membership = service.source_reader.membership(actor, project_id, stage_id, current.snapshot)
+    except ReportError:
+        raise
+    except Exception:
+        raise ReportError('REFERENCE_INVALID') from None
+    if membership.state != 'complete':
+        raise ReportError('REFERENCE_INVALID')
+    return verifier.verify_requests(
+        actor.subject, project_id, stage_id, current, requested, active, membership,
+        historical_resolver=HistoricalReferenceResolver(service, actor, project_id, stage_id),
+    )
+
+
+def _has_reference_id(value):
+    if isinstance(value, dict):
+        if value.get('type') == 'link' and 'reference_id' in value:
+            return True
+        return any(_has_reference_id(item) for item in value.values())
+    if isinstance(value, (tuple, list)):
+        return any(_has_reference_id(item) for item in value)
+    return False
 
 
 @dataclass(frozen=True, slots=True)

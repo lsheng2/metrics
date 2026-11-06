@@ -67,6 +67,7 @@ from .views.report_daily import (
     ReportPreparationReprepareView,
 )
 from .views.report_completion import ReportDraftCompletionView
+from .views.report_assists import ReportAssistView
 from .views.report_templates import (
     ReportTemplateArchiveView,
     ReportTemplateCopyView,
@@ -155,6 +156,14 @@ urlpatterns = [
           ReportDraftSaveView.as_view(), name='report_draft_save'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/completions/',
           ReportDraftCompletionView.as_view(), name='report_draft_completion'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/assists/',
+          ReportAssistView.as_view(), name='report_assists'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/assists/<uuid:assist_id>/',
+          ReportAssistView.as_view(action='observe'), name='report_assist_observe'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/assists/<uuid:assist_id>/candidate/',
+          ReportAssistView.as_view(action='candidate'), name='report_assist_candidate'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/assists/<uuid:assist_id>/cancel/',
+          ReportAssistView.as_view(action='cancel'), name='report_assist_cancel'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/render/',
           ReportDraftRenderView.as_view(), name='report_draft_render'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/download/',

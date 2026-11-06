@@ -117,6 +117,10 @@ class AiTaskContract:
             raise AnalysisError('ANALYSIS_RESULT_INVALID') from None
 
     def validate_result(self, attempt, snapshot, value):
+        output = self.validate_result_envelope(attempt, snapshot, value)
+        return validate_candidate(attempt.prepared, output)
+
+    def validate_result_envelope(self, attempt, snapshot, value):
         self.validate_snapshot(attempt, snapshot)
         self._validate(self._schemas['RunResult'], value)
         expected = {
@@ -140,7 +144,7 @@ class AiTaskContract:
         except (ValueError, KeyError, TypeError, UnicodeError, ArchiveError):
             raise AnalysisError('ANALYSIS_RESULT_INVALID') from None
         self._validate(self._profile['outputSchema'], output)
-        return validate_candidate(attempt.prepared, output)
+        return output
 
     def validate_cancel(self, attempt, value, *, expected_run_id):
         self._validate(self._schemas['RunCancelResponse'], value)

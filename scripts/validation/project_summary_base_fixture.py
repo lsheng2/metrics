@@ -12,9 +12,6 @@ import socket
 import sys
 import uuid
 
-import uvicorn
-
-
 MANIFEST_SHA = 'e7386f82d2bf3963feccc28cfbfda732b9eddb829831d5ba660b50554e5f81c4'
 
 
@@ -33,6 +30,18 @@ def load_profile(root):
             raise ValueError('Contract pack content mismatch.')
     profile = manifest['profiles']['project-reporting.summary@review-1']['profile']
     return json.loads((root / profile).read_text(encoding='utf-8'))
+
+
+def load_selected_profile(root, profile_file=None, expected_sha256=None):
+    profile = load_profile(root)
+    if profile_file is None and expected_sha256 is None:
+        return profile
+    if profile_file is None or expected_sha256 is None:
+        raise ValueError('An explicit synthetic profile requires its hash.')
+    raw = Path(profile_file).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError('Synthetic profile content mismatch.')
+    return json.loads(raw)
 
 
 class ExactVectorExecutor:
@@ -57,6 +66,8 @@ class ExactVectorExecutor:
 
 
 async def serve(args):
+    import uvicorn
+
     directory = args.data_dir.resolve()
     directory.mkdir()
     source = args.source_root.resolve() / 'services' / 'app-service'
@@ -70,7 +81,7 @@ async def serve(args):
     if not Path(candidate.__file__).resolve().is_relative_to(source):
         raise ValueError('The Base factory was not loaded from the fixed source copy.')
     vector = json.loads(args.fixture.read_text(encoding='utf-8'))
-    profile = load_profile(args.pack_root.resolve())
+    profile = load_selected_profile(args.pack_root.resolve(), args.profile_file, args.profile_sha256)
     app_id, credential_ref = 'metrics-dashboard', 'synthetic-integration'
     secret = secrets.token_hex(32)
     app = candidate.create_task_run_candidate(
@@ -132,6 +143,8 @@ def main():
     parser.add_argument('--source-root', type=Path, required=True)
     parser.add_argument('--pack-root', type=Path, required=True)
     parser.add_argument('--fixture', type=Path, required=True)
+    parser.add_argument('--profile-file', type=Path)
+    parser.add_argument('--profile-sha256')
     asyncio.run(serve(parser.parse_args()))
 
 

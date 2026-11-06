@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "profile": "profile.json",
+  "profile_file_sha256": "566dc997bb2b6842b32e2bcfae54818f89dc2c6af31eaae89d072b69f4eb630b",
+  "definition_sha256": "31ef07605350544cf5c67ad7624921c0cfa2dacd3fdefb096d7b57d585cca2b2",
+  "output_schema_sha256": "829067bdb9e1045e97f7cb7b38c6ef3596abf2f0b6b5bf87d5e622d7419c7e54",
+  "wire_version": "task-run/1",
+  "sdk_version": "0.2.0a1",
+  "qualification": "synthetic_only"
+}

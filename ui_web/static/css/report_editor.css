@@ -3,6 +3,11 @@
     gap: 1rem;
 }
 
+[data-report-editor] > .level code {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
 .report-editor-toolbar {
     position: sticky;
     top: 3.25rem;

@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from django.test import Client, TestCase, override_settings
+from django.test.html import parse_html
 from django.urls import reverse
 
 from project_management.app.api import reports as report_api
@@ -152,7 +153,8 @@ class TestReportAuthoringViews(CaptureArchiveScenario, ProjectRouteTestSupport, 
         self.assertIn('data-report-wysiwyg-region', content)
         self.assertIn('name="expected_revision_hash"', content)
         self.assertIn('name="authored_edits"', content)
-        self.assertNotIn('<textarea', content)
+        textareas = [node for node in html_elements(parse_html(content)) if node.name == 'textarea']
+        self.assertTrue(all('data-report-assist-instruction' in dict(node.attributes) for node in textareas))
         self.assertIn('Saved report preview', content)
 
     def test_shouldSaveRichAuthoredPayloadWithHashCasAndRenderPersistedPaint(self):
@@ -384,3 +386,10 @@ def fragment(text, *, marks=(), foreground=None, background=None):
             }],
         }],
     }
+
+
+def html_elements(node):
+    yield node
+    for child in node.children:
+        if not isinstance(child, str):
+            yield from html_elements(child)

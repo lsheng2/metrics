@@ -84,6 +84,31 @@ changed-source AI, clipboard/Outlook or clean-release qualification.
 The 2026-11-05 manual two-day chain and three direct template cases are qualified in the
 current worktree. The existing publication is reachable from a same-day conflict result;
 history is displayed before the current source-status prefix within each cell.
-Product/test files still depend on the retained authoring WIP, so the checkpoint publishes
-its docs/receipt separately from a complete source release. Request latency and the recorded
-native diagnostic incident remain explicit limitations, not implied fixes.
+That original docs-only checkpoint is superseded for source packaging by the verified
+authoring/DAILY/delta closure `4cb995b` on main. Its unrelated Scope/config/style changes
+were excluded. Request latency and the recorded native diagnostic incident remain explicit
+limitations, not implied fixes.
+
+## ASSIST Validation
+
+The [ASSIST packet](../../openspec/changes/add-provider-neutral-project-reporting/assist-execution.md)
+specifies the current profile, API, local receipt and editor contracts. Its task/qualification
+state remains in the single ledger. Use the selected SDK interpreter, not the legacy venv.
+
+Run pure profile/target tests and `test_report_assist_service.py` /
+`test_report_assist_recovery.py` before `ui_web/tests/test_report_assist_browser.py`.
+The browser cases mount the actual editor and save via real local HTTP; only the upstream
+SDK transport is synthetic at this layer. They cover receipt retirement and same-text
+acceptance as well as text/paint/cancel/unavailable states and mobile contrast/hit targets.
+
+`project_management/tests/test_report_assist_http.py` separately uses the installed SDK,
+the fixed Base source, a distinct registered authoring profile, and real data Git.
+It verifies Save, subsequent human paint/provenance, publication and next-day inheritance.
+Its source record is synthetic and it does not call a real provider or model.
+The existing Base fixture accepts an explicit hash-matched profile; its default summary
+profile/pack remains unchanged. Base-only dependencies are loaded in the Base process.
+
+Evidence is retained under `.tmp/dashboard-assist-20261106/`, with unique XML and native
+run directories. Do not count initial RED or an earlier happy-path source as final closure.
+The next gate is one export/clipboard sample, then the original five-day/cross-week chain;
+neither a passing browser subset nor this single-target Base proof replaces that chain.

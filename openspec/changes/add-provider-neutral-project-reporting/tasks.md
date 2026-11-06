@@ -52,7 +52,16 @@ DAILY.REPLAN对增量入口作amend：
 `docs/development/reporting-delivery.md`；
 `rerun_gates=[DAILY full browser chain,template regressions,isolated Django check,OpenSpec strict,scoped size/whitespace]`。
 `post_refreeze_preflight_result={method:source/consumer/review/evidence and next-gate dependency cross-check,result:PASS}`。
-ASSIST、导出样本、原整周/跨周及完整provider/import/deployment任务继续保留。
+2026-11-06 `W6.AUTHOR.ASSIST/ASSIST.REPLAN`完成限定合成资格，源码基线`4cb995b`。
+执行合同见[assist-execution.md](assist-execution.md)，回执见[assist-delivery.md](assist-delivery.md)。
+独立authoring profile接入现有SDK；52 tests +8 subtests、10 Node、最终HTTP/Git等4 tests、
+其他目标族保存矩阵1 test通过。AI候选、人工改动、Save、真实数据Git与翌日provenance已贯通，
+只派发1次合成Base任务，正常退出。后端、UI和最终文档/证据复审均READY。
+两项P1和随后发现的保存/限额/损坏状态反例已修正，失败证据保留；
+手工编辑不依赖authoring profile，unknown不换key/deadline，Save仍不是Finalize。
+源码依明确清单提交，13个无关Scope/config/main.css文件保持原hash。
+ASSIST.REPLAN准入：先执行导出样本，再执行原整周/跨周；
+完整provider/import/deployment与真实来源/模型资格继续保留，不由本节点关闭。
 
 获准顺序：[delivery-sequence.md](delivery-sequence.md)。
 治理/环境 -> DAILY短链及提交 -> 增量输入/接受/报告读取闭环 -> ASSIST单目标 ->
@@ -224,8 +233,8 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W4.DELTA.CORE.R Review the changed-source slice and applicable SDK/reader evidence; do not close full W4/W5 or live qualification.
 - [x] W4.DELTA.CORE.REPLAN Refreeze ASSIST input/source and remaining full delta/import/capability work.
 - [x] W6.AUTHOR.SOURCE Publish the complete verified authoring/DAILY/delta source closure, excluding unrelated Scope/config/style changes; verify a clean candidate can collect/import the required consumers.
-- [ ] W6.AUTHOR.ASSIST Add explicit AI candidates using a separately qualified authoring profile.
-- [ ] W6.AUTHOR.ASSIST.REPLAN Verify authoring-profile HTTP qualification and provenance consumers before the final week.
+- [x] W6.AUTHOR.ASSIST Add explicit AI candidates using a separately qualified authoring profile.
+- [x] W6.AUTHOR.ASSIST.REPLAN Verify authoring-profile HTTP qualification and provenance consumers before the final week.
 - [ ] W6.AUTHOR.EXPORT.SAMPLE Qualify a representative rich-text/template/AR/history sample across declared export and clipboard boundaries before the week.
 - [ ] W6.AUTHOR.JOIN Validate actual authoring/save/copy/finalization; separate live-provider and Outlook qualification.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.

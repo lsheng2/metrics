@@ -146,3 +146,8 @@ def _narrative(text, passages, names):
     if (not any(char.isalpha() for char in narrative)
             or any(char.isalpha() and not char.isascii() for char in narrative)):
         raise AnalysisError('ANALYSIS_LANGUAGE_INVALID')
+
+
+def validate_generated_narrative(text, evidence_values):
+    known = _people(evidence_values)
+    _narrative(text, tuple(_strings(evidence_values)), tuple(name for name in known.values() if name))

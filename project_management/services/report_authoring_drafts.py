@@ -2,8 +2,7 @@ from project_management.app.domain.capture_values import canonical_bytes
 from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.contracts import ProjectError
 from project_management.app.domain.report_authoring import (
-    AUTHORING_SCHEMA,
-    authored_successor_selection,
+    AUTHORING_SCHEMA, authored_successor_selection,
     attributed_authored_edits,
     authored_edit_request_payload,
     legacy_edit_to_authored,
@@ -12,11 +11,12 @@ from project_management.app.domain.report_authoring import (
     user_template_selection,
 )
 from project_management.app.domain.report_authoring_hashes import authored_create_request_hash
+from project_management.app.domain.report_assist_attribution import apply_assist_attribution, apply_assist_context
 from project_management.app.domain.report_continuity_edits import apply_continuity_changes, apply_continuity_edit_requests
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_draft_values import bytes_hash, canonical_hash, read_json, snapshot_from_mapping
 from project_management.app.domain.report_presentation import TemplateSelection
-from project_management.services.report_historical_references import HistoricalReferenceResolver
+from project_management.services.report_reference_receipts import verify_reference_requests
 
 
 class ReportAuthoringDraftMixin:
@@ -137,6 +137,8 @@ class ReportAuthoringDraftMixin:
                 if replay is not None:
                     return replay
                 current = store.read_draft(draft_id)
+                if current.authoring_context is None and continuity_changes:
+                    raise ReportError('REPORT_EDIT_TARGET_INVALID')
                 if current.authoring_context is not None and current.authoring_context['report_role'] == 'weekly_view':
                     raise ReportError('REPORT_EDIT_TARGET_INVALID')
                 self._verify_authored_current(current, expected_revision, expected_revision_hash)
@@ -144,6 +146,12 @@ class ReportAuthoringDraftMixin:
                     raise ReportError('REPORT_LIMIT')
                 timestamp = self._now()
                 active = self._existing_authored_edits(current)
+                assist_refs = {}
+                if any(edit.assist_receipt_id is not None for edit in requested):
+                    verifier = getattr(self, 'assist_verifier', None)
+                    if verifier is None:
+                        raise ReportError('REPORT_AI_UNAVAILABLE')
+                    assist_refs = verifier.verify_requests(repository, current, requested)
                 if current.authoring_context is None:
                     references = self._verify_reference_receipts(actor, project_id, stage_id, current, requested, active, timestamp)
                     context = current.authoring_context
@@ -170,6 +178,8 @@ class ReportAuthoringDraftMixin:
                         references, current.template_snapshot,
                     )
                     authored_edits = continuity_edits + standard_edits
+                authored_edits = apply_assist_attribution(authored_edits, active, assist_refs)
+                context = apply_assist_context(context, authored_edits)
                 template_data, normalized_template, definition = self._template_for_authored_save(current)
                 revision_payload = self._authored_revision_payload(
                     draft_id, current.revision + 1, current.selection, current.snapshot_hash,
@@ -363,30 +373,4 @@ class ReportAuthoringDraftMixin:
         return tuple(continuity), tuple(standard)
 
     def _verify_reference_receipts(self, actor, project_id, stage_id, current, requested, active, timestamp):
-        if not any(tuple(edit.reference_receipts or ()) or self._has_reference_id(edit.fragment) for edit in requested) and not any(
-                tuple(edit.reference_observations or ()) for edit in active):
-            return {}
-        verifier = getattr(self, 'reference_verifier', None)
-        if verifier is None:
-            raise ReportError('REFERENCE_INVALID')
-        try:
-            membership = self.source_reader.membership(actor, project_id, stage_id, current.snapshot)
-        except ReportError:
-            raise
-        except Exception:
-            raise ReportError('REFERENCE_INVALID') from None
-        if membership.state != 'complete':
-            raise ReportError('REFERENCE_INVALID')
-        return verifier.verify_requests(
-            actor.subject, project_id, stage_id, current, requested, active, membership,
-            historical_resolver=HistoricalReferenceResolver(self, actor, project_id, stage_id),
-        )
-
-    def _has_reference_id(self, value):
-        if isinstance(value, dict):
-            if value.get('type') == 'link' and 'reference_id' in value:
-                return True
-            return any(self._has_reference_id(item) for item in value.values())
-        if isinstance(value, (tuple, list)):
-            return any(self._has_reference_id(item) for item in value)
-        return False
+        return verify_reference_requests(self, actor, project_id, stage_id, current, requested, active)

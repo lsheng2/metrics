@@ -157,6 +157,8 @@ class ReportDraftSaveView(ReportAccessMixin, View):
                 return self.render_private(request, 'projects/reports/editor.html', context, status=400)
             saved = facade.save_draft(actor, str(project_id), str(stage_id), str(draft_id), form)
             if isinstance(form, ReportAuthoredSaveForm) or wants_json(request):
+                context = saved.authoring_context or {}
+                current_ids = {item['note_id'] for item in context.get('current_observations', ())}
                 return private_no_store(JsonResponse({
                     'state': 'saved',
                     'draft_id': saved.draft_id,
@@ -164,6 +166,10 @@ class ReportDraftSaveView(ReportAccessMixin, View):
                     'revision_hash': saved.revision_hash,
                     'snapshot_hash': saved.snapshot_hash,
                     'template_hash': saved.template_definition.template_hash,
+                    'current_note_hashes': {
+                        note['note_id']: note['body_hash']
+                        for note in context.get('notes', ()) if note['note_id'] in current_ids
+                    },
                     'clipboard_url': reverse('ui_web:report_draft_clipboard', kwargs={
                         'project_id': project_id,
                         'stage_id': stage_id,
