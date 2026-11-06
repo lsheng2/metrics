@@ -2,6 +2,11 @@
 
 Status: accepted direction; implementation is staged by tasks.md.
 
+2026-11-06用户要求根据实际延迟建立架构优化规格。
+[读取架构](report-read-performance.md)与[执行/验收](performance-execution.md)
+定义模块内读写分离、一次请求固定head的批量Git读取、packet复用及窄操作入口。
+此项尚未实现，不改AI Base或归档writer，也不以全局TTL缓存替代权限与完整性。
+
 2026-11-06用户确认“精简站会正文＋独立完整审计附件”。
 [呈现契约](standup-presentation.md)在既有schema2模板上固定`standup/1`与新版renderer，
 保留旧模板/发布六文件和原hash；完整证据不再强制附在新正文。

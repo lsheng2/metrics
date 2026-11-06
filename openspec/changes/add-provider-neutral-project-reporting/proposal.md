@@ -8,6 +8,10 @@ Chiplet只是一个项目实例，不能作为生产模块名、默认范围、p
 
 ## What Changes
 
+- 2026-11-06根据语言跳转后的工作台39.6秒、169次Git调用的诊断，
+  新增[读取性能架构](report-read-performance.md)及[实施/验收](performance-execution.md)：
+  模块内读写分离、固定head的批量读取、请求级校验复用与窄操作入口。
+  当前只建立优化规格，不新增持久索引、不改AI Base、不降低原字节和权限校验。
 - 2026-11-05补齐[SDK 0.2分工与迁移](sdk-020-integration.md)及[集成后执行](sdk-020-post-integration.md)：
   固定0.2.0a1 SDK与原a2 pack，保留业务守卫，先发布spec，再只执行到`IP-SDK020-READY`等待。
 - 增加独立 `project_management` 模块，Project是用户业务容器，不是provider profile的别名。

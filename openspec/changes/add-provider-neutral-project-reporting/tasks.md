@@ -17,6 +17,14 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
+2026-11-06最新前沿：停会与两周恢复已以`d21250a`提交，回执见
+[meeting-skips-delivery.md](meeting-skips-delivery.md)。
+用户随后报告语言切换近一分钟；实际语言POST为0.005s，后续工作台GET为39.602s，
+独立profile为34.664s/169次Git调用，约27.937s花在Git调用。
+本轮按要求建立[读取性能架构](report-read-performance.md)与[执行/验收计划](performance-execution.md)。
+当前为规格阶段，不重跑原周、不切换服务、不宣称性能已修复。`W6.PERF.*`是下一实施前沿；
+历史段落中的“尚未profile”以这条已测证据为准，不改写历史回执。
+
 最新入口：用户同意的精简正文与独立完整审计附件已完成限定实现/验证/复审，
 基线`9dff849`，见[呈现交付](presentation-delivery.md)与[版本化契约](standup-presentation.md)。
 整周/跨周操作闭环证据保留于[week-delivery.md](week-delivery.md)，不重跑；
@@ -271,6 +279,11 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.SKIP.CORE Implement audited skip/restore, prepare/seed admission and frozen report metadata without advancing baselines or changing old bytes. Final core/affected selection: 46 passed; delayed pinned-policy and old seed replay included.
 - [x] W6.SKIP.UI Add authenticated bilingual meeting-calendar and recovery controls using existing forms and report APIs. Three HTTP cases and separate desktop/390px Chinese navigation passed; two-week mounted story passed.
 - [x] W6.SKIP.JOIN.R Verify two-week resumption, negative consumers and docs; independent source/evidence review closed. See meeting-skips-delivery.md; the broader authoring/live/deployment gates remain open.
+- [x] W6.PERF.PLAN.R 统一查询、固定快照/批处理、写锁隔离、负例与性能SLO设计通过独立复核；见performance-plan-review.md，规格通过不等于优化完成。
+- [ ] W6.PERF.READ 实现首个工作台纵向切片：批量Git读取、请求级校验复用、三列表统一query及真实GET对照。
+- [ ] W6.PERF.READ.REPLAN 根据首请求与规模profile复核余项；需要持久索引时单独冻结，禁止盲加缓存/延长期限。
+- [ ] W6.PERF.COMMAND 精简preview/prepare/reprepare/detail与错误页，复核Save/Finalize的最新锁内权威，不预读无关列表。
+- [ ] W6.PERF.ACCEPT.R 验证语言/页面/操作端到端、20样本和规模/并发，独立评审、文档同步及scoped发布。
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.

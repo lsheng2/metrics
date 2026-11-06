@@ -230,3 +230,19 @@ The seed snapshot uses its originally pinned calendar, even if the series policy
 advances while preparation is delayed. Never read a live calendar to render an
 already saved or published report. Validate old/new context readers, weekly
 selection, original-byte downloads and missing-versus-skipped coverage separately.
+
+## Report Read Performance
+
+2026-11-06的症状与profile已固定为
+[性能基线](../../openspec/changes/add-provider-neutral-project-reporting/performance-baseline.json)：
+语言POST为毫秒级，工作台GET的主要成本是169次串行Git读取及重复packet校验。
+这是历史单样本诊断，不是p95；原probe缺完整数据指纹，实施时需固定同一合成克隆做对照。
+
+[架构](../../openspec/changes/add-provider-neutral-project-reporting/report-read-performance.md)
+与[执行计划](../../openspec/changes/add-provider-neutral-project-reporting/performance-execution.md)
+目前为设计，未改变运行代码。实施顺序为工作台纵向读取切片、实测复核、窄操作入口、最终验收。
+原始数据Git、权限、最新写锁校验和六文件bytes不变；不引入默认跨请求缓存或持久索引。
+
+性能runner与新增test目标在计划中明确为待实现。先验证批量协议/对象限额和真实GET，
+再做20样本及一个浏览器流程；首次仍慢则停止扩大测试、重新profile，不重跑整周。
+本指南不会把READ/COMMAND/SLO未实施描述为已完成，也不授权旧8017或真实来源切换。

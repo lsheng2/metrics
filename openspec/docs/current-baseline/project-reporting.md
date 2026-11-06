@@ -16,6 +16,18 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 已观察到的交互延迟、完整provider覆盖和正式运行仍未完成。
 内部合成能力不等于真实来源或真实模型已经上线。
 
+### 已知读取延迟
+
+2026-11-06本机诊断发现：语言切换POST只用0.005秒，返回工作台的GET用39.602秒。
+另一轮profile显示169次串行Git进程累计约27.9秒，草稿、定稿与采集列表重复读取并验证
+归档。它不是AI翻译耗时，也不能据此推定是代理、安全软件或磁盘故障。
+
+已建立[读取性能优化规格](../../changes/add-provider-neutral-project-reporting/report-read-performance.md)，
+设计采用模块内查询/命令分离、请求级固定快照和批量原生Git读取；原数据Git仍为权威，
+不会用全局TTL缓存绕过权限或完整性。当前尚未实现，页面延迟仍作为已知问题保留。
+新的p95/进程数目标和规模/并发验收见
+[执行计划](../../changes/add-provider-neutral-project-reporting/performance-execution.md)，不是已达到的成绩。
+
 ### 已验证的演示
 
 2026-11-06验收使用真实Django/worker、Git、安装SDK0.2.0a1和Base HTTP，

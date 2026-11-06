@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-06",
+  "status": "diagnosis_only_not_optimized",
+  "source_base": "d21250a2d4eee0de6f4234029591b4340e607557",
+  "fixture_kind": "retained_synthetic_week",
+  "complete_input_fingerprint_recorded_in_original_probe": false,
+  "http_samples": 1,
+  "profile_samples": 1,
+  "http": {
+    "calendar_get_seconds": 0.039,
+    "language_post_seconds": 0.005,
+    "language_post_status": 302,
+    "redirected_stage_get_seconds": 39.602,
+    "redirected_stage_get_status": 200,
+    "redirected_stage_get_bytes": 59880
+  },
+  "profile": {
+    "request_seconds": 34.66415789999883,
+    "git_process_count": 169,
+    "git_seconds": 27.93709659999513,
+    "sql_count": 57,
+    "reported_sql_seconds": 0.0,
+    "sql_timing_is_rounded": true,
+    "profiled_capture_records": 8,
+    "profiled_draft_records": 9,
+    "profiled_publication_records": 7
+  },
+  "artifacts": [
+    {
+      "path": ".tmp/dashboard-latency-20261106/http-before.json",
+      "sha256": "4f4d6fe06df6551049f9ae9cc7193ac6e2b634181bb2886738016909ba79ced0"
+    },
+    {
+      "path": ".tmp/dashboard-latency-20261106/before-profile.json",
+      "sha256": "28ed4c1099555b66e43fe25c8cbded36083f96e88a3905188359711f9f6ac2a0"
+    },
+    {
+      "path": ".tmp/dashboard-latency-20261106/before-profile.txt",
+      "sha256": "fa7bd701fb215edce1147aad5eb4c70ff0d775183091aa4ac47c56caede09190"
+    }
+  ],
+  "limits_of_claim": [
+    "历史单样本诊断，不构成p95或优化后性能资格。",
+    "HTTP与profile为两次独立执行，不能合并成一条耗时分解。",
+    "实施前须冻结源码、合成数据和环境指纹，使用匹配克隆作优化前后对照。",
+    "没有证明磁盘、安全软件、代理或AI SDK导致该延迟。"
+  ]
+}
