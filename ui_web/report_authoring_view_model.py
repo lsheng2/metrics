@@ -5,6 +5,7 @@ from django.utils.translation import gettext as _
 from project_management.app.domain.report_authoring_fragments import rich_text_fragment_plain_text
 from project_management.app.api import reports as report_api
 from project_management.reporting.fragment_renderers import rich_fragment_to_html
+from project_management.app.domain.report_meeting_snapshot import meeting_skip_text
 from ui_web.report_continuity_view_model import pinned_matrix
 from ui_web.report_forms import new_command_id
 
@@ -85,6 +86,7 @@ def pinned_report_body(draft, renderer=None):
                            'matrix': pinned_matrix(draft, continuity_edits) if block['source'] == 'meeting_matrix' else None})
     return {
         'pinned': True,
+        'meeting_skip_notice': meeting_skip_text(draft.authoring_context),
         'blocks': tuple(blocks),
         'messages': (),
         'rows': (),

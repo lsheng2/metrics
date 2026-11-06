@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Meeting calendar" %}{% endblock %}
+{% block page_title %}{% trans "Meeting calendar" %}{% endblock %}
+{% block content %}
+<article class="block">
+    <nav class="breadcrumb" aria-label="breadcrumbs"><ul>
+        <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
+        <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
+        <li class="is-active"><a href="#" aria-current="page">{% trans "Meeting calendar" %}</a></li>
+    </ul></nav>
+    <div class="level">
+        <div class="level-left"><h2 class="title is-4">{% trans "Meeting calendar" %}</h2></div>
+        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+    </div>
+    {% if meeting_error %}<div class="notification is-danger is-light" role="alert" data-meeting-error="{{ meeting_error_code }}">{{ meeting_error }}</div>{% endif %}
+    <form method="get" class="dashboard-tool-form" data-meeting-query-form>
+        {% if meeting_query_form.errors %}<div class="notification is-danger is-light">{{ meeting_query_form.errors }}</div>{% endif %}
+        <div class="dashboard-form-grid">
+            {% for field in meeting_query_form %}<div class="dashboard-form-field">
+                <label class="label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.name == "series_id" %}<div class="select is-fullwidth">{{ field }}</div>{% else %}{{ field }}{% endif %}
+            </div>{% endfor %}
+            <div class="dashboard-action-group">
+                <button class="button is-link is-light" type="submit"><span class="icon is-small"><i class="iconoir-calendar"></i></span><span>{% trans "View calendar" %}</span></button>
+            </div>
+        </div>
+    </form>
+    {% if meeting_change_form and not meeting_calendar %}
+    <div class="dashboard-form-field mt-3">
+        <label class="label" for="{{ meeting_change_form.reason.id_for_label }}">{{ meeting_change_form.reason.label }}</label>
+        {{ meeting_change_form.reason }}
+        {% if meeting_change_form.errors %}<div class="notification is-danger is-light">{{ meeting_change_form.errors }}</div>{% endif %}
+    </div>
+    {% endif %}
+    {% if meeting_calendar %}
+    <section class="block mt-4" data-meeting-calendar data-revision="{{ meeting_calendar.revision }}">
+        <p class="mb-3">{{ meeting_calendar.calendar.calendar_id }} r{{ meeting_calendar.calendar.revision }} &middot; {{ meeting_calendar.calendar.timezone }} &middot; {% trans "Revision" %} {{ meeting_calendar.revision }}</p>
+        <form method="post" class="dashboard-action-form" data-meeting-change-form>
+            {% csrf_token %}
+            {{ meeting_change_form.command_id }}{{ meeting_change_form.series_id }}
+            {{ meeting_change_form.expected_revision }}{{ meeting_change_form.expected_revision_hash }}{{ meeting_change_form.expected_series_policy_hash }}
+            <input type="hidden" name="from_date" value="{{ meeting_calendar.from_date }}">
+            <input type="hidden" name="through_date" value="{{ meeting_calendar.through_date }}">
+            {% if meeting_change_form.errors %}<div class="notification is-danger is-light">{{ meeting_change_form.errors }}</div>{% endif %}
+            <div class="dashboard-form-grid">
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ meeting_change_form.reason.id_for_label }}">{{ meeting_change_form.reason.label }}</label>
+                    {{ meeting_change_form.reason }}
+                </div>
+                <div class="dashboard-action-group">
+                    <button class="button is-primary" type="submit" name="action" value="skip"><span class="icon is-small"><i class="iconoir-calendar"></i></span><span>{% trans "Skip meetings" %}</span></button>
+                    <button class="button is-light" type="submit" name="action" value="restore"><span class="icon is-small"><i class="iconoir-undo"></i></span><span>{% trans "Restore meetings" %}</span></button>
+                    <a class="button is-light" href="{{ meeting_refresh_url }}"><span class="icon is-small"><i class="iconoir-refresh"></i></span><span>{% trans "Refresh calendar" %}</span></a>
+                </div>
+            </div>
+        </form>
+        <div class="responsive-admin-table-box mt-4">
+            <table class="table is-fullwidth responsive-admin-table dashboard-dense-table">
+                <thead><tr><th>{% trans "Meeting date" %}</th><th>{% trans "Status" %}</th><th>{% trans "Reason" %}</th><th>{% trans "Recorded by" %}</th></tr></thead>
+                <tbody>{% for row in meeting_rows %}<tr data-meeting-date="{{ row.local_date }}" data-meeting-state="{{ row.state }}">
+                    <td data-label="{% trans 'Meeting date' %}">{{ row.local_date }}</td>
+                    <td data-label="{% trans 'Status' %}">{{ row.label }}</td>
+                    <td data-label="{% trans 'Reason' %}">{{ row.reason|default:"-" }}</td>
+                    <td data-label="{% trans 'Recorded by' %}">{{ row.recorded_by|default:"-" }}</td>
+                </tr>{% endfor %}</tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</article>
+{% endblock %}

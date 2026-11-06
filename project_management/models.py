@@ -52,6 +52,7 @@ from project_management.models_report_templates import (
     ReportTemplateUse,
 )
 from project_management.models_report_series import (
+    ReportMeetingChange,
     ReportSeries,
     ReportSeriesCommand,
     ReportSeriesPolicyRevisionRecord,

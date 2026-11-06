@@ -17,6 +17,7 @@ class BaselinePreview:
     template_choices: tuple[Mapping, ...]
     source_choices: tuple[str, ...]
     analysis_choices: tuple[str, ...]
+    meeting_skipped: bool = False
 
 
 @dataclass(frozen=True, slots=True)

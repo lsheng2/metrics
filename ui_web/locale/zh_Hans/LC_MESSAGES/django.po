@@ -1208,3 +1208,51 @@ msgstr "精简每周站会"
 
 msgid "Audit bundle (ZIP)"
 msgstr "完整审计附件（ZIP）"
+
+msgid "Meeting calendar"
+msgstr "会议日历"
+
+msgid "From date"
+msgstr "开始日期"
+
+msgid "Through date"
+msgstr "结束日期"
+
+msgid "Skip meetings"
+msgstr "标记停会"
+
+msgid "Restore meetings"
+msgstr "撤销停会"
+
+msgid "View calendar"
+msgstr "查看日历"
+
+msgid "Refresh calendar"
+msgstr "刷新日历"
+
+msgid "Unrecorded"
+msgstr "未记录"
+
+msgid "Skipped"
+msgstr "已停会"
+
+msgid "Existing report work"
+msgstr "已有报告任务"
+
+msgid "Recorded by"
+msgstr "记录人"
+
+msgid "Reason"
+msgstr "原因"
+
+msgid "This meeting is marked skipped."
+msgstr "该日期已标记为停会。"
+
+msgid "This meeting is marked skipped. Restore it in Meeting calendar before generating."
+msgstr "该日期已标记为停会，请先在会议日历中撤销停会，再生成报告。"
+
+msgid "A selected date already has report work. No dates were changed."
+msgstr "所选日期内已有报告任务，所有日期均未更改。"
+
+msgid "The meeting calendar changed. Refresh it before submitting again."
+msgstr "会议日历已更改，请刷新后重新提交。"

@@ -1,4 +1,5 @@
 {% load i18n %}
+{% if report_body.meeting_skip_notice %}<p class="notification is-info is-light" data-meeting-skips>{{ report_body.meeting_skip_notice }}</p>{% endif %}
 {% for block in report_body.blocks %}
     {% if block.kind == "content" %}
         <div class="report-section-band" data-template-fixed-content>

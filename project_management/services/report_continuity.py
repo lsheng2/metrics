@@ -1,4 +1,4 @@
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
 from uuid import UUID, uuid5
 
@@ -30,13 +30,16 @@ from project_management.models import Project, ProjectAuditEvent, ProjectStage
 from project_management.models_report_series import ReportSeries, ReportSeriesCommand, ReportSeriesPolicyRevisionRecord
 from project_management.models_report_templates import ReportTemplate, ReportTemplateRevisionRecord
 from project_management.out.orm_repository import storage_errors
-from project_management.services.report_continuity_seed_binding import binding_from_seed, seed_binding
+from project_management.services.report_continuity_seed_binding import binding_from_seed, build_context_seed, seed_binding
 from project_management.services.report_publication_reads import ReportPublicationReader
 from project_management.services.report_preparation_seed import validate_prepared_context_seed
 from project_management.services.report_templates import ReportTemplateService
 from project_management.services.report_period_views import read_period_view
 from project_management.services.report_continuity_preview import build_baseline_preview
 from project_management.services.report_preservation import preserve_parent_content, preserve_publication_content
+from project_management.services.report_meetings import ReportMeetingService, require_meeting_available
+from project_management.services.report_meeting_snapshot import freeze_meeting_snapshot
+from project_management.services.report_continuity_replay import replay_prepared_context
 from project_management.storage.admission import GrowthEstimate, admit
 from project_management.storage.paths import read_bytes, write_bytes
 
@@ -123,7 +126,10 @@ class ReportContinuityService:
             if asdict(template_selection) != asdict(policy.default_template_selection):
                 raise ReportError('REPORT_TEMPLATE_UNSUPPORTED')
         try:
-            return build_baseline_preview(self.archive, actor, project_id, stage_id, policy, meeting_date)
+            preview = build_baseline_preview(self.archive, actor, project_id, stage_id, policy, meeting_date)
+            return replace(preview, meeting_skipped=ReportMeetingService(self).is_skipped(
+                actor, project_id, stage_id, series_id, meeting_date,
+            ))
         except ArchiveError as error:
             raise self._report_error(error) from None
 
@@ -140,6 +146,17 @@ class ReportContinuityService:
         project, stage, policy = self._read_policy_for_prepare(actor, project_id, stage_id, series_id, series_policy_hash)
         meeting = meeting_identity(policy.calendar, meeting_date)
         period = period_identity(meeting)
+        replay = replay_prepared_context(
+            self, self._existing_seed(actor, project_id, stage_id, preparation_id), actor, project_id, stage_id,
+            preparation_id=preparation_id, create_command_id=create_command_id, draft_id=draft_id,
+            series_id=series_id, series_policy_hash=series_policy_hash, expected_baseline_ref=expected_baseline_ref,
+            selection=selection, template_use_hash=template_use_hash, meeting=meeting, period=period,
+            authority=authority, acknowledge_gap_draft_ids=acknowledge_gap_draft_ids,
+            preservation_parent_draft=preservation_parent_draft,
+        )
+        if replay is not None:
+            return replay
+        require_meeting_available(self, actor, project_id, stage_id, series_id, meeting_date)
         pinned = self.template_service.read_use(actor, project_id, draft_id=draft_id, template_use_hash=template_use_hash)
         if pinned.template_snapshot['selection'] != asdict(policy.default_template_selection):
             raise ReportError('REPORT_CONTEXT_REQUIRED')
@@ -154,6 +171,7 @@ class ReportContinuityService:
             base_daily_publication=baseline_ref,
             acknowledged_gap_draft_ids=acknowledge_gap_draft_ids,
         )
+        context = freeze_meeting_snapshot(self, actor, project_id, stage_id, context, baseline_context)
         if preservation_parent_draft is not None:
             preserved = preserve_parent_content(
                 preservation_parent_draft, context, pinned.template_snapshot, historical_reference_resolver,
@@ -278,6 +296,7 @@ class ReportContinuityService:
             if existing is not None:
                 self._verify_existing_seed(existing, self._binding_from_seed(seed))
                 return PreparedContextRef(existing['preparation_id'], existing['context_hash'], existing['draft_id'])
+            require_meeting_available(self, actor, project_id, stage_id, seed['series_id'], seed['context']['meeting']['local_date'])
             root = repository.runtime / 'report-preparations' / seed['preparation_id']
             admit(self.archive.config.root, repository.stage_root, root, self.archive.config.limits, GrowthEstimate(len(data) + 8192, 4))
             try:
@@ -295,24 +314,7 @@ class ReportContinuityService:
             raise
 
     def _seed(self, binding, project, stage, policy, meeting, pinned, snapshot, context):
-        context_hash = sha256_bytes(canonical_bytes(context))
-        authority = binding.pop('authority')
-        preservation = binding.pop('preservation', None)
-        return {
-            **binding,
-            'schema_version': 3 if preservation is not None else (1 if authority is None else 2),
-            'stage_hash': stage.definition_hash,
-            'meeting_key': meeting_key(meeting),
-            'period_key': period_key(period_identity(meeting)),
-            'snapshot_hash': sha256_bytes(canonical_bytes(snapshot)),
-            'context': context,
-            'context_hash': context_hash,
-            'created_at': self._now(),
-            'template_request_hash': pinned.request_hash,
-            'series_policy_revision': policy.revision,
-            **({} if authority is None else {'authority': authority}),
-            **({} if preservation is None else {'preservation': preservation}),
-        }
+        return build_context_seed(self, binding, stage, policy, meeting, pinned, snapshot, context)
 
     def _verify_existing_seed(self, seed, binding):
         validate_prepared_context_seed(seed)

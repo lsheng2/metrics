@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Literal, Mapping
 
 from project_management.app.domain.report_continuity_context import validate_daily_authoring_context
+from project_management.app.domain.report_meeting_snapshot import skipped_dates
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,8 +74,11 @@ def build_meeting_matrix(snapshot, context) -> MeetingMatrixProjection:
 def _columns(snapshot, context):
     states = {}
     cutoff = _column_cutoff(context)
+    skipped = skipped_dates(context)
     for day in tuple(getattr(snapshot, 'days', ()) or ()):
         if cutoff is not None and day.report_date > cutoff:
+            continue
+        if day.state != 'published' and day.report_date in skipped:
             continue
         states[day.report_date] = 'captured' if day.state == 'published' else 'missing'
     for note in context['notes']:

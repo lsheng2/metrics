@@ -32,6 +32,7 @@ from project_management.services.report_preservation import reprepare_parent_dra
 from project_management.services.report_preparation_results import draft_preparation_result, operation_preparation_result
 from project_management.services.report_preparation_reads import get_preparation, preparation_for_meeting
 from project_management.services.report_historical_references import HistoricalReferenceResolver
+from project_management.services.report_meetings import require_meeting_available
 from project_management.storage.report_preparations import ReportPreparationStore
 
 
@@ -65,6 +66,7 @@ class ReportPreparationService:
         if existing is not None:
             stored, disposition = existing
             return self._compose_or_result(actor, project_id, stage_id, stored, disposition, request)
+        require_meeting_available(self.continuity, actor, project_id, stage_id, request['series_id'], request['meeting_date'])
         require_preparation_runtime(self, request)
         _, stage, policy = self.continuity._read_policy_for_prepare(
             actor, project_id, stage_id, request['series_id'], request['expected_series_policy_hash'],
@@ -165,6 +167,7 @@ class ReportPreparationService:
     def _reserve_new(self, actor, project_id, stage_id, request, intent, policy):
         try:
             with self.archive._report_repository(actor, project_id, stage_id, write=True) as repository:
+                require_meeting_available(self.continuity, actor, project_id, stage_id, request['series_id'], request['meeting_date'])
                 locked = build_baseline_preview_from_repository(self.archive, repository, policy, request['meeting_date'])
                 self._validate_preview(locked, request)
                 store = ReportPreparationStore(repository, self.archive.config.root, self.archive.config.limits)

@@ -21,7 +21,12 @@
                 <p class="subtitle is-6"><code>{{ stage.key }}</code> · {{ source_state.label }}</p>
             </div>
         </div>
-        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+        <div class="level-right">
+            <a class="button is-light mr-3" href="{% url 'ui_web:report_meetings' detail.project.id stage.id %}">
+                <span class="icon is-small"><i class="iconoir-calendar"></i></span><span>{% trans "Meeting calendar" %}</span>
+            </a>
+            {% include "projects/language_switcher.html" %}
+        </div>
     </div>
 
     {% if report_unavailable %}

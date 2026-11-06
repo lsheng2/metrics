@@ -110,8 +110,8 @@ profile/pack remains unchanged. Base-only dependencies are loaded in the Base pr
 
 Evidence is retained under `.tmp/dashboard-assist-20261106/`, with unique XML and native
 run directories. Do not count initial RED or an earlier happy-path source as final closure.
-The next gate is one export/clipboard sample, then the original five-day/cross-week chain;
-neither a passing browser subset nor this single-target Base proof replaces that chain.
+The export/clipboard sample and original five-day/cross-week chain now have separate
+delivery receipts. This single-target Base proof retains its own bounded scope.
 
 ## Derived Export Validation
 
@@ -131,7 +131,7 @@ reject content rather than rely on openpyxl's truncating string assignment.
 browser Clipboard API readback after Save, including paint in HTML. That proves
 the browser route, not Outlook/native-app paste. Current evidence and limitations
 are in [export delivery](../../openspec/changes/add-provider-neutral-project-reporting/export-delivery.md).
-The original full-week/cross-week scenario remains the next independent gate.
+The original full-week/cross-week scenario has its own retained qualification receipt.
 
 ## Full Week Qualification
 
@@ -174,10 +174,9 @@ missing and downgraded bindings must continue to refuse publication.
 
 The [qualified week receipt](../../openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
 binds six daily publications, a weekly view, explicit empty-note/gap handling and
-42 original-file rechecks. It is an operation/continuity qualification, not an
-approval of the default report's verbosity or performance. The next presentation
-design must separate concise business output from retained audit information
-without changing old template/renderer hashes or removing source/coverage guards.
+42 original-file rechecks. It is an operation/continuity qualification, not a
+performance qualification. Concise business output and separate audit downloads
+are covered by the later presentation receipt below, without rewriting that week.
 Profile the recorded long prepare/view waits before choosing an optimization;
 do not use more week runs to locate a read-path problem.
 
@@ -204,3 +203,30 @@ unchanged; original-week public readback remains separate from preview generatio
 
 Evidence: `.tmp/dashboard-presentation-20261106/` and
 [presentation delivery](../../openspec/changes/add-provider-neutral-project-reporting/presentation-delivery.md).
+
+## Skipped Meetings
+
+The [skip packet](../../openspec/changes/add-provider-neutral-project-reporting/meeting-skips.md)
+adds a local append-only Django calendar chain. It does not change the SDK/profile
+or start providers, scheduling or model work. Apply migration `0004` only in an
+authorized deployment; tests use the isolated runner database.
+
+Pure cases: `project_management/tests/test_report_meeting_contracts.py`.
+State/admission: `test_report_meetings.py`, including an intent-only interruption
+and original-command repair. Joined real-Git consumers:
+`test_report_meeting_resumption.py`; retained legacy seed replay:
+`test_report_history_core.py::test_should_prepare_immutable_context_seed_from_source_publication_and_template_use`.
+The comparison normalizes absent legacy authority to `None` without changing bytes.
+
+HTTP: `ui_web/tests/test_report_meeting_views.py`.
+Mounted editor: `ui_web/tests/test_report_meeting_browser.py`, using real HTTP,
+ORM, archive and Git. Finalize Friday, record two skipped weeks, resume Monday,
+Save/reopen/Finalize, export and restore. The external source is synthetic and the
+AI client is forbidden. A separate Chinese/390px case checks language navigation.
+This is a direct two-date jump, not fourteen artificial daily runs.
+
+Keep evidence under `.tmp/dashboard-skips-20261106/` with unique XML/run directories.
+The seed snapshot uses its originally pinned calendar, even if the series policy
+advances while preparation is delayed. Never read a live calendar to render an
+already saved or published report. Validate old/new context readers, weekly
+selection, original-byte downloads and missing-versus-skipped coverage separately.

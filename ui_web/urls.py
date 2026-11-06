@@ -67,6 +67,7 @@ from .views.report_daily import (
     ReportPreparationReprepareView,
 )
 from .views.report_completion import ReportDraftCompletionView
+from .views.report_meetings import ReportMeetingsView
 from .views.report_assists import ReportAssistView
 from .views.report_exports import ReportDraftExportView, ReportPublicationExportView
 from .views.report_templates import (
@@ -91,6 +92,8 @@ app_name = 'ui_web'
 _base_prefix = django_normalized_base_url(settings.METRICS_BASE_URL)
 
 urlpatterns = [
+    path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/meetings/',
+         ReportMeetingsView.as_view(), name='report_meetings'),
     # Homepage
     path(_base_prefix, HomepageView.as_view(), name='homepage'),
     path(_base_prefix + 'workbench/', WorkbenchView.as_view(), name='workbench'),

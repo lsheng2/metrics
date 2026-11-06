@@ -313,6 +313,14 @@ API安全英文与zh-CN静态文案同case验证，不将上游异常直接显�
 
 ## 7. Full Week User Qualification
 
+Skipped-meeting extension: the later [skip packet](meeting-skips.md) adds
+single-date/range skip/restore and a direct two-week resumption scenario. Its
+concrete pure, admission, HTTP and mounted entry points are
+`test_report_meeting_contracts.py`, `test_report_meetings.py`,
+`test_report_meeting_resumption.py`, `ui_web/tests/test_report_meeting_views.py`
+and `ui_web/tests/test_report_meeting_browser.py`. This supplements RA56 and
+RA67; it does not replace the original week or claim live qualifications.
+
 2026-11-03用户追加要求：所有实现与分层测试完成后，执行一次完整工作周的full-stack
 端到端验证，每天工单信息相同、每天人工note/格式/颜色不同，检查整周最终状态并保留证据。
 这是RA67在W6.AUTHOR.JOIN中的必需具体场景，不增加第二套任务状态，也不授权真实模型或采集。

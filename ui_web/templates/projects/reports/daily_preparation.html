@@ -54,6 +54,9 @@
         <div class="notification is-info is-light mt-3" data-report-daily-baseline>
             <p><strong>{% trans "Baseline" %}:</strong> {{ daily_preview.state }} · <code>{{ daily_preview.meeting_key }}</code> · <code>{{ daily_preview.period_key }}</code></p>
             {% if daily_calendar %}<p>{{ daily_calendar.calendar_id }} r{{ daily_calendar.revision }} · {{ daily_calendar.timezone }}</p>{% endif %}
+            {% if daily_preview.meeting_skipped %}
+                <p>{% trans "This meeting is marked skipped." %} <a href="{% url 'ui_web:report_meetings' detail.project.id stage.id %}?series_id={{ daily_preview.series_id }}&amp;from_date={{ daily_prepare_form.meeting_date.value }}&amp;through_date={{ daily_prepare_form.meeting_date.value }}">{% trans "Meeting calendar" %}</a></p>
+            {% endif %}
             {% if daily_preview.baseline_ref %}
                 <p>{% trans "Previous final" %}: <a href="{% url 'ui_web:report_publication' detail.project.id stage.id daily_preview.baseline_ref.publication_id %}">{{ daily_preview.baseline_ref.publication_id }}</a></p>
             {% else %}
@@ -106,7 +109,7 @@
                 </select></div>
             </div>
             <div class="dashboard-action-group">
-                <button class="button is-primary" type="submit" data-report-daily-generate{% if not daily_prepare_form.expected_series_policy_hash.value %} disabled aria-disabled="true"{% endif %}>
+                <button class="button is-primary" type="submit" data-report-daily-generate{% if not daily_prepare_form.expected_series_policy_hash.value or daily_preview.meeting_skipped %} disabled aria-disabled="true"{% endif %}>
                     <span class="icon is-small"><i class="iconoir-plus"></i></span>
                     <span>{% trans "Generate today's draft" %}</span>
                 </button>

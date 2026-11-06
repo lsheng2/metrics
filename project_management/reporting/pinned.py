@@ -8,6 +8,7 @@ from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_continuity_context import validate_daily_authoring_context
 from project_management.app.domain.report_continuity_edits import validate_continuity_authored_edits
 from project_management.app.domain.report_meeting_matrix import build_meeting_matrix
+from project_management.app.domain.report_meeting_snapshot import meeting_skip_text
 from project_management.app.domain.report_presentation import TemplateDefinition
 from project_management.app.domain.report_templates import validate_template_document_snapshot
 from project_management.reporting.fragment_renderers import rich_fragment_to_html
@@ -29,6 +30,10 @@ def compile_pinned_report(engine, source_snapshot, template_snapshot, edits, *, 
     model = _model(source_snapshot, snapshot, data_edits, draft_id, revision, revision_hash, edition_state)
     html_parts = [_header(model, snapshot)]
     text_parts = [_plain_header(model)]
+    notice = meeting_skip_text(context)
+    if notice:
+        html_parts.append(f'<p>{escape(notice)}</p>')
+        text_parts.append(notice)
     for block in snapshot['resolved_document']['blocks']:
         if block['kind'] == 'content':
             html_parts.append(_content_html(block['fragment']))

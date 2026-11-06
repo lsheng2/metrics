@@ -86,9 +86,11 @@ from project_management.services.report_preparation import ReportPreparationServ
 from project_management.services.report_templates import ReportTemplateService
 from project_management.services.report_sources import ReportSourceReader
 from project_management.services.report_membership import ScopeMember, ScopeMembershipSnapshot
+from project_management.app.api.report_meetings import ReportMeetingService
 
 
 __all__ = [
+    'ReportMeetingService',
     'AssistStatus',
     'AssistTarget',
     'ReportAssistService',

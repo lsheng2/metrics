@@ -249,6 +249,11 @@ context 单独最多8MiB，全部物化字节计入原 archive 准入，而不�
 
 ## 7. Weekly Rollover
 
+2026-11-06: the approved [skipped-meeting packet](meeting-skips.md) adds explicit
+single-date/range skip and restore records, distinct from unfinalized draft gaps.
+It preserves the actual-publication inheritance rules below. Implementation and
+qualification state remain in `tasks.md`.
+
 默认 `cross_week_carry="last_confirmed_and_unresolved"`：
 
 1. 选定同系列、早于新周第一会议日的最新已确认 daily publication。

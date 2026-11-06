@@ -3,6 +3,7 @@ from html import escape
 from project_management.app.domain.report_authoring_fragments import rich_text_fragment_plain_text
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_meeting_matrix import build_meeting_matrix
+from project_management.app.domain.report_meeting_snapshot import meeting_skip_text, skipped_dates
 from project_management.app.domain.url_validation import require_safe_https_url
 from project_management.reporting.fragment_renderers import rich_fragment_to_html
 
@@ -21,6 +22,10 @@ def compile_standup_report(source, template, edits, context):
     html = [f'<header><h1 style="font-size:22px;margin:0 0 4px;">{escape(title)}</h1>'
             f'<p style="margin:0 0 12px;">{name} | {escape(when)}</p></header>']
     plain = [title, f'{name} | {when}']
+    notice = meeting_skip_text(context)
+    if notice:
+        html.append(f'<p>{escape(notice)}</p>')
+        plain.append(notice)
     slots = {edit.target['slot_id']: edit for edit in edits if edit.kind == 'slot_fill'}
     for block in document['blocks']:
         if block['kind'] == 'data':
@@ -116,7 +121,9 @@ def coverage_text(source, context):
             complete = False
     accepted = coverage.get('accepted_count', sum(row.summary_ref is not None for row in source.rows))
     pending = coverage.get('pending_count', len(source.rows) - accepted)
-    missing = sorted(day.report_date for day in source.days if day.state != 'published')
+    skipped_meetings = skipped_dates(context)
+    missing = sorted(day.report_date for day in source.days
+                     if day.state != 'published' and day.report_date not in skipped_meetings)
     skipped = len(context['acknowledged_gap_draft_ids'])
     if missing or skipped:
         complete = False

@@ -46,3 +46,19 @@ class ReportSeriesCommand(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['project', 'command'], name='pm_report_series_command_unique'),
         ]
+
+
+class ReportMeetingChange(models.Model):
+    series = models.ForeignKey(ReportSeries, on_delete=models.PROTECT, related_name='meeting_changes')
+    revision = models.PositiveIntegerField()
+    command = models.UUIDField()
+    request_hash = models.CharField(max_length=64)
+    payload_json = models.JSONField()
+    payload_hash = models.CharField(max_length=64)
+
+    class Meta:
+        ordering = ['revision']
+        constraints = [
+            models.UniqueConstraint(fields=['series', 'revision'], name='pm_meeting_revision_unique'),
+            models.UniqueConstraint(fields=['series', 'command'], name='pm_meeting_command_unique'),
+        ]

@@ -267,6 +267,10 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.PRESENT.AUDIT Add owner-checked read-only audit bundles from original publication bytes. Real Git successor/old-byte test and authenticated HTTP download/denial cases passed.
 - [x] W6.PRESENT.UI Qualify template creation/edit/save/publication and body/audit downloads on the actual mounted UI. One desktop/390px story passed; builder preserves profile, dirty guards and actual ZIP/original HTML verified.
 - [x] W6.PRESENT.R Review scoped source/evidence and truth-sync; final scoped selection 47 passed, no review blockers. Latency profiling and broader product qualification remain separate.
+- [x] W6.SKIP.PLAN.R Freeze and independently review skipped-meeting API, immutable calendar evidence, shared admission and bounded validation in meeting-skips.md. Five bounded design findings amended; root-only lock, replay read exception, full context consumer list and partial reservations explicit.
+- [x] W6.SKIP.CORE Implement audited skip/restore, prepare/seed admission and frozen report metadata without advancing baselines or changing old bytes. Final core/affected selection: 46 passed; delayed pinned-policy and old seed replay included.
+- [x] W6.SKIP.UI Add authenticated bilingual meeting-calendar and recovery controls using existing forms and report APIs. Three HTTP cases and separate desktop/390px Chinese navigation passed; two-week mounted story passed.
+- [x] W6.SKIP.JOIN.R Verify two-week resumption, negative consumers and docs; independent source/evidence review closed. See meeting-skips-delivery.md; the broader authoring/live/deployment gates remain open.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.

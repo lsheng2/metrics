@@ -57,7 +57,7 @@ def project_get_return_url(next_url):
             'publication_id': match.kwargs['publication_id'],
         })
     if match.url_name in {'projects', 'project_detail', 'project_stage_reports',
-                          'project_run_status',
+                          'project_run_status', 'report_meetings',
                           'report_draft_edit', 'report_publication'}:
         return next_url
     return reverse('ui_web:projects')

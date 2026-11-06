@@ -1,7 +1,8 @@
 from dataclasses import asdict
 
+from project_management.app.domain.capture_values import canonical_bytes, sha256_bytes
 from project_management.app.domain.report_draft_values import validate_hash_text, validate_uuid_text
-from project_management.app.domain.report_continuity import meeting_key, period_key
+from project_management.app.domain.report_continuity import meeting_key, period_identity, period_key
 
 
 def seed_binding(service, actor, project_id, stage_id, preparation_id, create_command_id,
@@ -37,4 +38,25 @@ def binding_from_seed(seed):
         keys = keys | {'authority'}
     if seed.get('schema_version') == 3:
         keys = keys | {'preservation'}
-    return {key: seed[key] for key in keys}
+    return {**{key: seed[key] for key in keys}, 'authority': seed.get('authority')}
+
+
+def build_context_seed(service, binding, stage, policy, meeting, pinned, snapshot, context):
+    context_hash = sha256_bytes(canonical_bytes(context))
+    authority = binding.pop('authority')
+    preservation = binding.pop('preservation', None)
+    return {
+        **binding,
+        'schema_version': 3 if preservation is not None else (1 if authority is None else 2),
+        'stage_hash': stage.definition_hash,
+        'meeting_key': meeting_key(meeting),
+        'period_key': period_key(period_identity(meeting)),
+        'snapshot_hash': sha256_bytes(canonical_bytes(snapshot)),
+        'context': context,
+        'context_hash': context_hash,
+        'created_at': service._now(),
+        'template_request_hash': pinned.request_hash,
+        'series_policy_revision': policy.revision,
+        **({} if authority is None else {'authority': authority}),
+        **({} if preservation is None else {'preservation': preservation}),
+    }

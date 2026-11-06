@@ -1,5 +1,30 @@
 ## ADDED Requirements
 
+### Requirement: Skipped meetings preserve actual editorial continuity
+The application SHALL support explicit single-date or inclusive date-range standup
+skip and restore records, distinct from missing reports and unfinalized drafts.
+Meeting metadata SHALL NOT create source captures, AI runs, drafts or publications,
+advance any report baseline, or resolve ticket actions.
+
+#### Scenario: Resume after two empty weeks
+- **WHEN** the last confirmed report precedes one or two weeks without meetings
+- **THEN** the resumed daily report SHALL inherit the latest actual confirmed
+  effective notes, unresolved actions and carry-forward notes with their original
+  dates, provider statuses, colors and links
+- **AND** it SHALL NOT manufacture intermediate daily updates or a Friday baseline
+- **AND** explicit skipped dates SHALL be frozen as separate meeting metadata
+
+#### Scenario: A skipped date conflicts with retained work
+- **WHEN** any date in a skip range already has preparation, draft or publication
+  work, or concurrent preparation wins the shared admission lock
+- **THEN** the complete skip request SHALL be rejected without partial changes
+- **AND** unfinalized draft handling SHALL still require explicit gap consent
+
+#### Scenario: Undo and immutable reports
+- **WHEN** an operator explicitly restores a skipped date
+- **THEN** the calendar SHALL retain the audit record and restore only eligibility
+- **AND** existing report snapshots, original downloads and baselines SHALL remain unchanged
+
 ### Requirement: WYSIWYG is the only report editing mode
 应用 SHALL 通过现成富文本组件在报告的可编辑叙述区和填写槽中就地编辑。
 用户 SHALL NOT 被要求打开 Markdown 源码模式；取消源码编辑 SHALL NOT 取消原 Markdown/Excel 导出义务。

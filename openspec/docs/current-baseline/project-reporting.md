@@ -142,14 +142,14 @@ English/简体中文来自Django gettext静态资源。语言选择、页面`lan
 
 2026-11-04作者层已用Milkdown替代过渡textarea编辑，报告叙述与备注在正文就地修改，
 工单事实保持只读；不要求用户另找编辑器Agent。
-富文本专项和保存恢复已通过，复制交互、Outlook及完整作者工作流在JOIN联合验收，
+富文本、保存恢复、浏览器复制与整周作者工作流已有合成验收；Outlook接收端仍未验证，
 接口及交接清单见[编辑器handoff](../../changes/add-provider-neutral-project-reporting/rich-text-editor-handoff.md)。
 
 报告以可复制到邮件正文的HTML为主，提供每日站会和按日横向对比模板。
 已有的阶段工作台列出真实归档采集、草稿和定稿记录，可从已保存来源创建草稿，
 编辑会议注释和叙述字段，保存后预览、复制或下载。最后由用户明确选择是否定稿
 并提交独立数据Git。实际Ego桌面已完成运行、下载和显式定稿；
-新作者层有独立编辑/保存测试；复制与Outlook全流程验收仍待JOIN。
+新作者层和浏览器复制有独立验证；Outlook粘贴不由浏览器证据代替。
 旧的项目/阶段配置Demo不会自动升级到这些源码。
 
 列表每页20条并保留采集游标；过多记录明确拒绝，不把截断结果或Git故障显示为空列表。
@@ -173,7 +173,8 @@ WebView2 `156.0.4314.50 (Stable)`。版本信息已明确，但实际粘贴验�
 详细API、存储/恢复和实施边界见
 [HTML报告设计](../../changes/add-provider-neutral-project-reporting/html-report-authoring.md)，
 测试场景见[HTML报告验收](../../changes/add-provider-neutral-project-reporting/html-report-validation.md)。
-Markdown/Excel原有需求保留；离线HTML修改回导仍不在首个Demo范围。
+已保存报告支持Markdown/Excel派生导出；Excel是文本表格，颜色以HTML/JSON为准。
+离线HTML修改回导仍不在当前范围。
 
 #### 最新作者层设计与当前差距
 
@@ -192,14 +193,15 @@ schema2 standalone后端已通过专项测试、独立评审及真实临时Git�
 模板库人工填写、固定富文本预览和连续性矩阵页面已通过专项HTTP/桌面Chrome及独立评审。
 每日准备已接入页面、CLI和原运行器，并完成两天组合验证与限定独立评审；
 显式AI填写已通过限定合成资格，详见
-[交付回执](../../changes/add-provider-neutral-project-reporting/assist-delivery.md)；完整工作周仍是独立关口。
+[交付回执](../../changes/add-provider-neutral-project-reporting/assist-delivery.md)；完整工作周也已完成独立合成验收。
 编辑器现已接入固定Milkdown7.23.0，正文中的叙述/备注可就地编辑，来源事实保持只读。
 颜色、高亮、格式链接、任务/表格/代码块、原生撤销和保存重开已通过专项桌面Chrome测试。
 网络结果不确定时重试原保存命令，较新的本地输入继续保留；离页/语言切换须明确处理
-未保存内容。作者层、`#ID`补全、模板与连续性编辑流程已独立复查，整周JOIN仍未执行。
+未保存内容。作者层、`#ID`补全、模板与连续性编辑流程已独立复查，整周JOIN结果见本文开头。
 补全只接受正文中明确输入的`#ID`，按Stage的provider和已固定完整成员范围查询；
 三种候选为链接ID、加title、再加`@owner`。方向键/Enter、Esc、IME和原生撤销有专项测试。
-默认真实读取关闭；必须单独配置已验证资格，HSDES live尚未合格。范围外不发上游请求，
+默认真实读取关闭；生产补全工厂目前接入Jira reader，HSDES正式reader与现场资格仍待补齐。
+Jira也必须单独配置经验证的资格。范围外不发上游请求，
 权限/身份/时间/额度/旧响应失败不改正文。补全是单票只读，不调用AI或改变来源快照。
 
 Projects -> Report templates提供空白、daily/weekly起始模板、复制、版本保存和归档。
@@ -225,14 +227,14 @@ AI收据在Save时核验独立authoring候选，不复用summary结果冒充作�
 连续性后端已通过三日/跨周临时Git链、重复保存、基线冲突、纠错和周视图专项验证及
 独立复查。矩阵页面支持当前日note/AR/常驻备注编辑、手动分组与移行、显式系列/周报选择、
 只读历史和关联纠错，并通过合成桌面验证。DAILY按钮已有人工和刷新浏览器链证据，
-两天实际生成/编辑/补全继承/颜色/归档/同日重放链及限定评审已通过，完整工作周仍待验收；
+两天实际生成/编辑/补全继承/颜色/归档/同日重放链、整周及跨周合成验收已通过；
 这些合成资格不是正式provider/model或无人值守运行资格。
 
 - 一票一行，AR/AR?独立，日期后的`ww45.1(Fixed):`状态只来自当次Jira/HSDES快照。
   人工/AI叙述不改状态，历史无状态快照时不倒填。
 - 模板管理组序/初始顺序，同系列已有票位置稳定、新票追加；状态变化不自动挪行。
 - 同周累积notes；继承用户已定稿的有效正文、删除结果、文字颜色、高亮与链接，
-  不重放原AI文本。fragment v2保存与服务层继承已有证据，浏览器整周保真仍待验证。
+  不重放原AI文本。fragment v2保存、服务层继承及浏览器整周保真已有对应证据。
 - 换周默认带每票最近一次确认更新、全部未结束AR/未确认建议和常驻备注。
   原日期/状态/格式保留，新周另加新note；完整旧周可读，不把精简展示当成删除。
 - Source capture、accepted summary、正式作者报告是三种基线，不能由同一last-run代替。
@@ -241,6 +243,31 @@ AI收据在Save时核验独立authoring候选，不复用summary结果冒充作�
   前日未定稿先提示处理；明确选择旧正式基线继续时记录gap，不丢原稿。
 - 定时准备是W7的延后资格，默认关闭；启用后调用同一准备服务和同日去重，
   不自动定稿、发送或回写工单。停机错过不补造日报。
+
+#### 停会与恢复
+
+阶段报告工作台的“会议日历”支持选择一个日期或连续日期范围，标记停会或撤销停会。
+日历区分“未记录”“已停会”和“已有报告任务”；没有日报不等于会议已经取消。
+日期按系列时区解释，范围包含明确选中的全部日期，不推测哪些日期是工作日。
+
+停会仅记录人工确认的会议安排，不采集工单、不调用AI、不创建空日报或提交数据Git，
+也不推进source、accepted summary或editorial基线。撤销停会只恢复生成资格，不补造会议。
+已有准备意图、草稿或定稿的日期不能直接覆盖成停会；整个日期范围拒绝，其他日期不变。
+未定稿草稿继续通过原来的gap确认处理，不能借停会丢弃人工内容。
+
+恢复时选择真实会议日期及来源，沿用最近一次实际定稿，不要求它是昨天或上周五。
+同周保持累计notes；跨一周或多周仍携带最近有效note、未结束AR和启用跨周保留的常驻备注，
+原日期、来源状态、删除结果、颜色和链接不变。中间没有会议的日期不产生虚构更新。
+最新ticket状态只来自本次明确选择的source capture；长空档不能用旧值冒充新采集。
+
+恢复后的草稿会冻结“Standups skipped”说明，HTML、纯文本、Markdown/Excel和审计文件
+都使用同一份快照。后来撤销停会不会反写既有草稿或定稿。整个空周可从会议日历查看，
+但生成weekly view仍需选择真实daily publications，不创建虚构的空周报告。
+
+停会记录按命令幂等及日历/系列版本CAS保存；冲突保留输入，需刷新后再提交。
+单次最多62天，查询和冻结窗口最多366天，原因最多240字符，每系列最多1,000条变更。
+数据库migration `0004_report_meeting_changes`与报告源码一起部署；开发测试仅使用隔离数据库。
+接口、并发准入和验收范围见[停会实施包](../../changes/add-provider-neutral-project-reporting/meeting-skips.md)。
 
 #### 手动准备入口
 
@@ -330,12 +357,10 @@ Markdown嵌套表及不支持结构明确失败；原HTML仍可下载。
 及[交付回执](../../changes/add-provider-neutral-project-reporting/export-delivery.md)。
 浏览器Clipboard API的HTML/纯文本读回已验证，不等于Outlook接收端已通过。
 
-拟实施的端到端验收为：AI候选->人工增删/着色/补全->保存重开->定稿->
-次日/第三日/新周，检查完整内容、格式、来源状态与行序；
-RA41的单草稿格式及连续性服务层已有专项证据，完整RA67浏览器工作周尚未执行。
-用户进一步要求最终以完整合成工作周验证：每天source内容固定，只变化人工note/颜色，
-经过每日准备、保存重开和定稿，再检查新周seed，并保留每日截图/原报告/hash与调用计数。
-该整周资格尚未执行，细节在作者层validation第7节，不代表连续性已经上线。
+已完成的端到端验收覆盖人工增删/着色/补全、保存重开、定稿和新周继承；
+独立ASSIST样例覆盖AI候选采纳、人工改动和翌日来源保留。
+完整RA67合成工作周每天source内容固定、人工note/颜色不同，已保留每日截图、
+原报告/hash与调用计数。确切范围见本文开头和整周交付回执，不代表真实来源已经上线。
 合成开发验证不启用正式调度、读取新真实工单或调用付费模型。
 
 “不在scope”的默认含义是“不在该报告pinned capture的完整成员快照中”；
@@ -514,8 +539,9 @@ Ego桌面验证保留在本地`.tmp/project-reporting-w2/browser/`，不将合�
 Dashboard端正式模型profile仍未注册或部署；冻结回执不等于生产资格。
 
 基座已交付a2 contract pack和Python wheel；Dashboard的可选开发依赖为
-`requirements-ai-task.txt`，当前安装SDK为0.1.0a2。其21文件pack按固定hash保留，
-不静默升级旧C0/a1环境。这不是provider、远程abort、unknown或原生恢复资格。
+`requirements-ai-task.txt`，当前报告验证选择SDK0.2.0a1及原a2的21文件pack。
+保留主`.venv`仍是旧SDK0.1.0a2，不用于迁移后的报告验证。选择的环境和SDK接入资格
+见[验证指南](../../../docs/development/reporting-delivery.md)，不等于真实provider/model已启用。
 双方可按[并行交付与汇合点](../../changes/add-provider-neutral-project-reporting/integration-execution.md)
 分别推进BASE-B与应用业务，无需互相等待整阶段完成；后续业务波次仍按本地评审和依赖推进。
 当前跨仓执行入口为[execution-handoff](../../changes/add-provider-neutral-project-reporting/execution-handoff.md)，

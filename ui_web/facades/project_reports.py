@@ -15,6 +15,7 @@ from project_management.app.api import reports as report_api
 from ui_web.facades.report_history import ProjectReportHistoryFacadeMixin
 from ui_web.facades.report_exports import ProjectReportExportFacadeMixin
 from ui_web.facades.report_daily import ProjectReportDailyFacadeMixin, report_preparation_runtime
+from ui_web.facades.report_meetings import ProjectReportMeetingsFacadeMixin
 from ui_web.facades.report_templates import ready_continuity_template_choices, ready_user_template_choices, ready_weekly_template_choices
 from ui_web.report_authoring_forms import ReportAuthoredSaveForm
 from ui_web.report_authoring_view_model import authored_edit_rows, authored_edits_json, report_body, target_payloads
@@ -70,7 +71,7 @@ def default_report_facade():
         raise
 
 
-class ProjectReportFacade(ProjectReportExportFacadeMixin, ProjectReportHistoryFacadeMixin, ProjectReportDailyFacadeMixin):
+class ProjectReportFacade(ProjectReportMeetingsFacadeMixin, ProjectReportExportFacadeMixin, ProjectReportHistoryFacadeMixin, ProjectReportDailyFacadeMixin):
     def __init__(self, project_api, service, archive, template_service=None, continuity_service=None,
                  preparation_service=None, preparation_runtime_ready=False):
         self.project_api = project_api

@@ -5,6 +5,7 @@ from project_management.app.domain.capture_values import canonical_bytes, sha256
 from project_management.app.domain.report_authoring_fragments import validate_rich_text_fragment
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_draft_values import validate_hash_text, validate_uuid_text
+from project_management.app.domain.report_meeting_snapshot import validate_meeting_snapshot
 
 
 CONTEXT_KEYS = {
@@ -22,10 +23,14 @@ OBSERVATION_KEYS = {'issue_ref', 'meeting', 'note_id', 'source_state', 'source_s
 
 
 def validate_daily_authoring_context(value, *, series_id=None, meeting=None):
-    if not isinstance(value, Mapping) or set(value) != CONTEXT_KEYS:
+    if not isinstance(value, Mapping):
         raise ReportError('REPORT_ARTIFACT_INVALID')
-    if value['schema_version'] != 1:
+    version = value.get('schema_version')
+    expected = CONTEXT_KEYS | {'meeting_skips'} if version == 2 else CONTEXT_KEYS
+    if type(version) is not int or version not in {1, 2} or set(value) != expected:
         raise ReportError('REPORT_ARTIFACT_INVALID')
+    if version == 2:
+        validate_meeting_snapshot(value['meeting_skips'], value)
     context_series = validate_uuid_text(value['series_id'])
     if series_id is not None and context_series != validate_uuid_text(series_id):
         raise ReportError('REPORT_ARTIFACT_INVALID')

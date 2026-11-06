@@ -2,10 +2,25 @@ from contextlib import contextmanager
 
 from project_management.app.domain.captures import ArchiveError
 from project_management.storage.paths import inspect_components, read_bytes, validate_uuid
+from project_management.storage.locks import exclusive_lock
 from project_management.storage.staging import active_capture_path
 
 
 class ReportArchiveRepositoryAccess:
+    @contextmanager
+    def _meeting_calendar_repository(self, actor, project_id, stage_id):
+        self._stage_for_read(actor, project_id, stage_id)
+        self._validate_root_before_lock()
+        # All stage writers take this root lock first; an absent stage stays absent.
+        with exclusive_lock(self.config.root / 'budget.lock'):
+            project, stage = self._stage_for_write(actor, project_id, stage_id)
+            if self.stage_archive_status(actor, project_id, stage_id) == 'absent':
+                yield None
+            else:
+                repository = self.repository_factory.open(self.config, project, stage, actor.subject)
+                repository.verify_identity()
+                yield repository
+
     def stage_archive_status(self, actor, project_id, stage_id):
         project, stage = self._stage_for_read(actor, project_id, stage_id)
         self._validate_root_before_lock()
