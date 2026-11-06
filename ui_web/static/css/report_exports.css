@@ -1,0 +1,27 @@
+.report-export-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 100%;
+}
+
+.report-export-controls .select,
+.report-export-controls select {
+    max-width: 100%;
+}
+
+.report-export-controls [aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.report-export-controls .iconoir-download {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: currentColor;
+    mask: url("../js/report_editor/vendor/iconoir/download.svg") center / contain no-repeat;
+    -webkit-mask: url("../js/report_editor/vendor/iconoir/download.svg") center / contain no-repeat;
+}

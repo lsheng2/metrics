@@ -10,6 +10,8 @@ environs==15.0.1
 pywin32==312; sys_platform == "win32"
 portalocker==4.4.1
 openpyxl==3.1.5
+beautifulsoup4==4.15.0
+markdownify==1.2.3
 et-xmlfile==2.0.0
 
 pytest==9.1.1

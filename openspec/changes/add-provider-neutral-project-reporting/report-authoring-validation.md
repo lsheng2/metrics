@@ -185,6 +185,19 @@ ASSIST实际入口如下；按[交付回执](assist-delivery.md)绑定源码与�
 | 其他可填目标保存分支 | `project_management/tests/test_report_assist_targets.py` |
 | SDK/Base/Git/翌日来源引用 | `project_management/tests/test_report_assist_http.py`；不代替完整RA67工作周 |
 
+EXPORT.SAMPLE实际入口：
+
+| 合同 | 实际入口 |
+| --- | --- |
+| RA35/66 文字、链接、格式限制、公式与截断 | `project_management/tests/test_report_exports.py` |
+| 原publication不重建、不改字节/Git head | `project_management/tests/test_report_export_service.py` |
+| 下载权限、字段/方法、headers | `ui_web/tests/test_report_export_views.py` |
+| 实际控件下载、浏览器复制、双语手机布局 | `ui_web/tests/test_report_export_browser.py` |
+| 保存生命周期与修订URL | `ui_web/tests/report_exports_test.mjs`及既有authoring lifecycle测试 |
+
+以上Excel是明确声明的文本表格能力；HTML/JSON颜色仍为权威。浏览器Clipboard API
+读回不代替Outlook接收端或原完整工作周。确切候选/结果在[导出回执](export-delivery.md)。
+
 EDIT/REFERENCES已落地的入口如下；沿tasks中的独立评审和对应候选读取结果，
 此表只是可执行入口映射，不是重复的通过状态或live资格声明。
 

@@ -63,6 +63,15 @@ DAILY.REPLAN对增量入口作amend：
 ASSIST.REPLAN准入：先执行导出样本，再执行原整周/跨周；
 完整provider/import/deployment与真实来源/模型资格继续保留，不由本节点关闭。
 
+2026-11-06 `W6.AUTHOR.EXPORT.SAMPLE`限定资格完成，源码基线`2759d46`。
+派生Markdown/Excel下载不改原六文件，也不重新渲染已发布HTML；实现合同见
+[export-execution.md](export-execution.md)，回执见[export-delivery.md](export-delivery.md)。
+最终转换17 tests、真实Git三票/两日1 test、HTTP2 tests、实际浏览器下载/复制及中文手机2 tests、
+旧保存/生命周期等28 tests与Node状态3 tests通过。一个P2行数上限遗漏已通过反例修复和限定复审。
+Excel是明确声明的文本表格导出，颜色继续由HTML/JSON保真；Outlook/native-client未资格。
+下一步保持原`W6.AUTHOR.JOIN`：2026-10-26..30与11-02，三票、相同来源、逐日人工内容、
+Save/reopen/Finalize及正常重启；不再用手工预置summary替代首日真实SDK/Base合成接受链。
+
 获准顺序：[delivery-sequence.md](delivery-sequence.md)。
 治理/环境 -> DAILY短链及提交 -> 增量输入/接受/报告读取闭环 -> ASSIST单目标 ->
 导出代表样本 -> 原整周/跨周 -> 后续完整功能和正式资格。
@@ -235,7 +244,7 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.AUTHOR.SOURCE Publish the complete verified authoring/DAILY/delta source closure, excluding unrelated Scope/config/style changes; verify a clean candidate can collect/import the required consumers.
 - [x] W6.AUTHOR.ASSIST Add explicit AI candidates using a separately qualified authoring profile.
 - [x] W6.AUTHOR.ASSIST.REPLAN Verify authoring-profile HTTP qualification and provenance consumers before the final week.
-- [ ] W6.AUTHOR.EXPORT.SAMPLE Qualify a representative rich-text/template/AR/history sample across declared export and clipboard boundaries before the week.
+- [x] W6.AUTHOR.EXPORT.SAMPLE Add versioned derived Markdown/Excel downloads without altering original six-file publications, then qualify one rich-text/template/AR/history and clipboard sample before the week.
 - [ ] W6.AUTHOR.JOIN Validate actual authoring/save/copy/finalization; separate live-provider and Outlook qualification.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.

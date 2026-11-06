@@ -1,0 +1,14 @@
+{% load i18n %}
+<div class="report-export-controls" data-report-exports data-export-url="{{ export_url }}">
+    <div class="select is-small">
+        <select data-report-export-format aria-label="{% trans "Export format" %}">
+            <option value="markdown">{% trans "Markdown" %}</option>
+            <option value="xlsx">{% trans "Excel (text)" %}</option>
+        </select>
+    </div>
+    <a class="button is-small" data-report-export-link href="{{ export_url }}?format=markdown{% if export_revision %}&amp;revision={{ export_revision }}{% endif %}"
+       title="{% trans "Export saved revision" %}">
+        <span class="icon is-small" aria-hidden="true"><i class="iconoir-download"></i></span>
+        <span>{% trans "Export" %}</span>
+    </a>
+</div>

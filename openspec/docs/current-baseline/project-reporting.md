@@ -11,7 +11,7 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 [唯一任务清单](../../changes/add-provider-neutral-project-reporting/tasks.md)。
 采集到HTML下载、显式Git定稿、重启与无变化复用已通过本机合成全栈验证。
 富文本日常编辑、有界累计delta和显式AI辅助已通过限定本机合成资格；
-完整provider覆盖、导出、完整工作周验收和正式运行仍待后续交付。
+已保存报告支持派生Markdown/Excel导出；完整provider覆盖、完整工作周验收和正式运行仍待后续交付。
 内部合成能力不等于真实来源或真实模型已经上线。
 
 ### 已验证的演示
@@ -270,6 +270,28 @@ CLI身份仍为可信`local_operator`，不允许通过参数伪造浏览器用�
 最终HTML是静态只读归档，纠错创建关联新草稿，不原地覆盖。
 Markdown/plain不承担颜色恢复，Excel按受验证能力导出；JSON/HTML保留完整格式。
 格式/历史/保存不完整时明确失败，不能用静默降纯文本制造成功。
+
+#### 下载和导出
+
+HTML和纯文本下载读取已保存修订；已发布报告读取原六文件中的原始字节。
+新的“导出”控件提供Markdown和Excel文本表格。它们是有明确来源hash及
+`report-derived/1`版本的派生文件，不添加或改写旧publication，也不调用模型或刷新工单。
+已发布导出只转换已验证的原HTML，不调用新模板renderer重建历史。
+
+Markdown保留工单行、链接、文字格式及单元格内逐日换行，不承诺颜色/高亮。
+Excel保留表格行列、单元格换行、完整报告文字和Links清单；单元格单一链接可点击。
+Excel首版不保留富文本颜色/高亮/混合字形，Information页和导出描述明确标注，
+不能用它恢复原编辑器内容。公式形状的文字保持字符串，数字型ticket ID不变成数值。
+
+源HTML最多16MiB，派生文件最多32MiB，最多64表、100000单元格/文本行。
+Excel单元格超过32767个UTF-16单元或包含XML非法控制字符时拒绝，绝不截断。
+Markdown嵌套表及不支持结构明确失败；原HTML仍可下载。
+未保存、保存中或保存结果未确认时新导出控件不可用，成功保存后使用确认的修订。
+这不改变原HTML下载的回退用途。库缺失只影响新导出，手工编辑和原下载继续可用。
+
+实际接口和资格见[导出合同](../../changes/add-provider-neutral-project-reporting/export-execution.md)
+及[交付回执](../../changes/add-provider-neutral-project-reporting/export-delivery.md)。
+浏览器Clipboard API的HTML/纯文本读回已验证，不等于Outlook接收端已通过。
 
 拟实施的端到端验收为：AI候选->人工增删/着色/补全->保存重开->定稿->
 次日/第三日/新周，检查完整内容、格式、来源状态与行序；

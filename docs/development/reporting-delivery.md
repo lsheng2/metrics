@@ -112,3 +112,23 @@ Evidence is retained under `.tmp/dashboard-assist-20261106/`, with unique XML an
 run directories. Do not count initial RED or an earlier happy-path source as final closure.
 The next gate is one export/clipboard sample, then the original five-day/cross-week chain;
 neither a passing browser subset nor this single-target Base proof replaces that chain.
+
+## Derived Export Validation
+
+[The export packet](../../openspec/changes/add-provider-neutral-project-reporting/export-execution.md)
+uses saved HTML as its source, with separate Markdown/Excel adapters and no new
+publication files. Pure compiler checks precede one real-Git sample and mounted
+browser downloads. The published path must pass with the renderer/source/finalize
+methods poisoned, and preserve both publications' original bytes and Git head.
+
+Run `project_management/tests/test_report_exports.py` without Git/browser fixtures.
+Large parameterized values need explicit short pytest IDs on Windows; otherwise
+`PYTEST_CURRENT_TEST` itself can exceed the OS environment-variable bound.
+Repeatability tests change controlled clocks, not the system time. Bounds must
+reject content rather than rely on openpyxl's truncating string assignment.
+
+`ui_web/tests/test_report_export_browser.py` verifies actual downloaded files and
+browser Clipboard API readback after Save, including paint in HTML. That proves
+the browser route, not Outlook/native-app paste. Current evidence and limitations
+are in [export delivery](../../openspec/changes/add-provider-neutral-project-reporting/export-delivery.md).
+The original full-week/cross-week scenario remains the next independent gate.

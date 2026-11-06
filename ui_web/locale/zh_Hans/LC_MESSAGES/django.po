@@ -1178,3 +1178,24 @@ msgstr "AI 状态查询已达上限，请求结果尚未确认，仍可手工编
 
 msgid "AI deadline reached. The result is still unconfirmed."
 msgstr "AI 请求已到原定期限，结果仍未确认。"
+
+msgid "Export format"
+msgstr "导出格式"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid "Excel (text)"
+msgstr "Excel（文本）"
+
+msgid "Export saved revision"
+msgstr "导出已保存修订"
+
+msgid "Export"
+msgstr "导出"
+
+msgid "This export is unavailable. Download HTML instead."
+msgstr "此导出暂不可用，可下载 HTML。"
+
+msgid "This content cannot be exported in the selected format. Download HTML instead."
+msgstr "所选格式无法完整表示这些内容，可下载 HTML。"

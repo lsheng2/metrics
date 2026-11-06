@@ -7,6 +7,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/report_editor.css' %}">
 <link rel="stylesheet" href="{% static 'css/report_assist.css' %}">
+<link rel="stylesheet" href="{% static 'css/report_exports.css' %}">
 <article class="block" data-report-editor data-draft-id="{{ draft.draft_id }}" data-revision="{{ draft.revision }}" data-revision-hash="{{ draft.revision_hash }}" data-snapshot-hash="{{ draft.snapshot_hash }}" data-template-hash="{{ draft.template_definition.template_hash }}" data-clipboard-url="{{ clipboard_url }}" data-completion-url="{{ completion_url }}"
          data-assist-url="{% url 'ui_web:report_assists' detail.project.id stage.id draft.draft_id %}"
          data-message-payload-missing="{% trans "Clipboard payload is not available." %}"
@@ -99,6 +100,8 @@
         </div>
 
         {% include "projects/reports/editor_toolbar.html" %}
+        {% url 'ui_web:report_draft_export' detail.project.id stage.id draft.draft_id as export_url %}
+        {% include "projects/reports/export_controls.html" with export_url=export_url export_revision=draft.revision %}
 
         <section class="block report-body-editor">
             {% if report_body.pinned %}
@@ -261,6 +264,7 @@
 
 {% block extra_js %}
 <script src="{% static 'js/project_reports.js' %}"></script>
+<script type="module" src="{% static 'js/report_exports.js' %}"></script>
 <script src="{% static 'js/report_editor/vendor/milkdown.bundle.js' %}"></script>
 <script type="module" src="{% static 'js/report_editor/index.js' %}"></script>
 {% endblock %}

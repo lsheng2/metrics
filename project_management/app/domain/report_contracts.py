@@ -31,6 +31,8 @@ REPORT_ERROR_MESSAGES = {
     'REPORT_AI_CANCELED': 'The AI authoring request was canceled.',
     'REPORT_AI_EXPIRED': 'The original AI authoring deadline expired.',
     'REPORT_AI_LIMIT': 'The original AI authoring observation limit was reached.',
+    'REPORT_EXPORT_UNAVAILABLE': 'The selected report export is unavailable.',
+    'REPORT_EXPORT_UNSUPPORTED': 'The selected format cannot represent this report content.',
     'REPORT_STORAGE_UNAVAILABLE': 'Report storage is unavailable.',
     'REFERENCE_RECEIPT_EXPIRED': 'Reference receipt has expired.',
     'REFERENCE_CONTENT_CHANGED': 'Reference link content changed.',

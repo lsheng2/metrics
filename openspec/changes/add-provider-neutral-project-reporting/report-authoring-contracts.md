@@ -529,6 +529,8 @@ Save 再核验目标/base revision/hash 与候选来源，写 human acceptance a
 | POST `stages/<sid>/reports/drafts/<did>/completions/` | 仅 `#ID` token 对应的一次 suggestion query |
 | POST `stages/<sid>/reports/drafts/<did>/assists/` | 显式 AI 请求，202或幂等原状态 |
 | GET `stages/<sid>/reports/drafts/<did>/assists/` | 当前目标与原assist状态；不派发、取消或刷新工单 |
+| GET `stages/<sid>/reports/drafts/<did>/export/?revision=N&format=markdown` | 已保存修订的派生下载，也支持format=xlsx；非新的保存/定稿 |
+| GET `stages/<sid>/reports/publications/<pid>/export/?format=markdown` | 也支持format=xlsx；验证原六文件并转换原HTML，不重渲染、不改写publication |
 | GET `.../assists/<aid>/`、`candidate/` | 观察原 run/读取候选，不派发新 run |
 | POST `.../assists/<aid>/cancel/` | 原运行取消，不意味立即终止 |
 | GET/POST `stages/<sid>/reports/series/` | 查询/显式创建系列，服务端UUID、日历/模板校验；不采集 |
@@ -546,3 +548,7 @@ render/clipboard/finalize/resume/publication/download 沿原 URL，版本化处�
 429限流、502非法上游、503不可用、504查询超时。
 调用者重试 save/finalize 使用原 command；触发补全的新 token 请求用新 request_id，
 不能将 query 重试机制套到有副作用操作上。
+
+派生导出的DTO、版本/来源hash、格式限制及独立错误映射以
+[export-execution.md](export-execution.md)为具体合同。原HTML/plain下载入口和六文件
+不变；新的派生字节不能冒充旧publication的原文件，不能回写格式权威。

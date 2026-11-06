@@ -68,6 +68,7 @@ from .views.report_daily import (
 )
 from .views.report_completion import ReportDraftCompletionView
 from .views.report_assists import ReportAssistView
+from .views.report_exports import ReportDraftExportView, ReportPublicationExportView
 from .views.report_templates import (
     ReportTemplateArchiveView,
     ReportTemplateCopyView,
@@ -158,6 +159,10 @@ urlpatterns = [
           ReportDraftCompletionView.as_view(), name='report_draft_completion'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/assists/',
           ReportAssistView.as_view(), name='report_assists'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/export/',
+          ReportDraftExportView.as_view(), name='report_draft_export'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/publications/<uuid:publication_id>/export/',
+          ReportPublicationExportView.as_view(), name='report_publication_export'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/assists/<uuid:assist_id>/',
           ReportAssistView.as_view(action='observe'), name='report_assist_observe'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/assists/<uuid:assist_id>/candidate/',
