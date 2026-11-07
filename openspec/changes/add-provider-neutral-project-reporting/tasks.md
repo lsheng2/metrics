@@ -17,6 +17,26 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
+2026-11-07发布边界：用户确认以本方`origin/main`（`lsheng2/metrics`）为主线，
+授权限定提交上游评估、维护指南、实景手册索引及相应任务/当前说明。
+不向`upstream`（`clutcher/metrics`）推送；真实截图/报告和无关代码改动不纳入。
+本次仅发布已完成工作的非敏感文档，不rebase、不切换产品服务、不扩大业务资格。
+
+2026-11-07上游同步评估完成：实际GitHub/API/fetch确认`clutcher/metrics`最新Release为
+1.22（07-14），main为`dce92c9`（07-17 UTC），均已包含在本地`1158307`。
+本地/上游独有提交数为152/0；9项近期功能/修复已在历史中，74项定向回归通过。
+按用户“存在有价值新提交才rebase”的条件，本轮裁定no-op，不重放/强推现有主线。
+收益、证据与未来执行规则见[上游评估](upstream-sync-review.md)和
+[维护指南](../../../docs/development/upstream-sync.md)。不改变既有业务任务门槛。
+
+2026-11-07文档交付：用户授权真实Jira只读演示，并缩小为三天（开会/停会/恢复）。
+原生capture API完成两次16票采集，实际UI完成模板/系列、32份两日人工note、
+中间停会及两次本地Git定稿；12个原文件与16份继承note校验通过。
+仅文档/本地演示脚本，无产品源码改动、真实模型、Jira写入或数据远端推送。
+真实截图/报告位于Git忽略的本地目录，入口见
+[实景手册](../../../docs/onboarding/daily-standup-real-demo.zh.md)。
+此记录不勾选更广泛的live/AI/部署门槛，也不把演示日期当历史来源时间。
+
 2026-11-07最新前沿：性能实现已以`60d791b`推送并核对远端。READ/REPLAN/COMMAND完成；
 用户授权新建Ego验证空间后，10次实际语言切换全部通过，点击至目标语言与全部列表
 p95为3.101s，门槛仍为3.5s。S0/S1、preview/detail与Save的正式20样本结果见
