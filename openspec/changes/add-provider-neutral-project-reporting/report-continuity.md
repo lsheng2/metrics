@@ -1,6 +1,7 @@
 # Report Continuity And Daily Preparation
 
-日期：2026-11-03。状态：proposed，前几轮已确认要求的架构细化，未实施。
+日期：2026-11-03；2026-11-07补充源观察与摘要就绪分离。
+原始架构和后续实施边界以唯一任务表及当前指南为准；本次补充已获批准，实施状态见`W6.OBS.*`。
 父设计：[Report Authoring V2](report-authoring-v2.md)。
 契约：[authoring contracts](report-authoring-contracts.md)；
 场景：[report-authoring delta](specs/report-authoring/spec.md)；
@@ -166,26 +167,31 @@ status 与该 note 的 Capture/source hash、observed_at 一起冻结，非客�
 每票准备时构造非用户可写的`CurrentObservation={issue_ref,meeting,note_id,
 source_state,source_status,capture_id,source_hash,accepted_summary_ref,editorial_base_note_ref}`。
 source_state为`initial|changed|unchanged|pending|incomplete|unavailable`。
-比较对象是editorial baseline对应票的最近source语义与accepted summary引用，
-不是capture ID或整个报告hash；当天capture时间不同但相同工单内容仍为unchanged。
-完整source且accepted summary覆盖当前链是复用前提；等hash但partial不能证明无变化。
+比较对象是editorial baseline对应票的最近完整source hash，不是accepted summary、
+capture ID或整个报告hash；当天capture时间不同但相同工单内容仍为unchanged。
+当前与基线完整性均须有证据；等hash但partial不能证明无变化。
+源变化与摘要是否可用是独立决策；没有AI摘要的manual-only路径也可判定unchanged。
 首个系列没有editorial baseline为initial，不因摘要已存在而误判“今天无需初稿”。
+接口、旧v1/v2兼容和执行反例见[source-observation.md](source-observation.md)。
 
 - initial：完整来源和已验证accepted summary可确定性填入首日note；
-  尚无摘要则留待填写并显示pending，不由渲染器调用AI。
-- unchanged：不创建有正文的今日DailyNote，不复制原AI候选或将旧note改成今日前缀。
+  尚无摘要则留待填写并显示`Initial source; note pending`，source_state仍为initial。
+- unchanged：不因复用已有摘要创建今日DailyNote，不复制原AI候选或将旧note改成今日前缀。
   旧日final正文/删除/paint保持原hash；当天只显示非note的“来源未变化”观察提示
   和一个可编辑空槽。只有用户输入/显式提交空编辑时才物化当前note。
 - changed：当前source已有新的有效accepted result时可生成当前日初稿；
-  只有新source、没有合格新摘要则pending，不能回退旧摘要冒充本日变化。
-- incomplete/unavailable/pending：保留旧editorial历史，明确当前来源/分析缺口；
+  只有新source、没有合格新摘要则显示`Source changed; note pending`，source_state仍为changed。
+  不能回退旧摘要冒充本日变化。相同source后来首次接受或修订摘要时，可独立生成新note，
+  但source_state仍为unchanged，不能把新分析冒充工单变化。
+- incomplete/unavailable/pending：保留旧editorial历史，分别显示来源不完整、来源不可用、
+  无法比较；pending不再代表摘要等待。即使当天已有人工note，仍保留来源不确定提示。
   人工note仍允许，但source_status只能来自当前实际取得的字段，缺失时明确unavailable，
   不把整体partial误说为所有字段必然缺失，也不借旧状态填新前缀。
 
 空槽的note_id由series+issue稳定身份+meeting确定性派生，存入当前observation，
 `save_authored`只允许该服务器声明的daily_note目标；首次编辑创建note revision1，
 后续编辑递增本日note revision。历史note不因当前空槽存在被改写。
-CurrentObservation[]进入DailyAuthoringContext，供next-day比较和目标授权；
+CurrentObservation[]沿用原v1/v2格式进入DailyAuthoringContext，供next-day比较和目标授权；
 它不是用户正文，不算已确认daily note，也不触发AI/推进任何基线。
 RA43/62/67增加反例：首日删句/着色定稿后次日完整同源，旧正文不复活、
 新日空槽可添加人工note；相同hash但partial明确缺口，不能伪造no-change。

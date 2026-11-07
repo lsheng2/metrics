@@ -17,6 +17,16 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
+2026-11-07源观察补充已完成限定实现、验证与复审：用户批准补齐
+“连续两次工单内容无变化”的自动显示。
+按[source-observation.md](source-observation.md)将source比较与AI摘要就绪分开，
+manual-only也显示`No source change`；不完整/不可用/无法比较分别提示，保留人工正文与格式。
+沿本方main，起点`ec9368b`，13项无关dirty文件保留；不改SDK、旧publication格式或真实数据。
+`W6.OBS.PLAN.R -> W6.OBS.CORE -> W6.OBS.ACCEPT.R`全部通过；
+112项业务测试和1项隔离Django/SDK检查、原生Git两日与中英文实际编辑器通过，
+最终独立复审无P0-P3项。截图、失败与指纹保留于实施包Delivery Receipt所列证据；
+不重跑整周/S1或真实Jira/模型，不把本节点当作所有父任务或生产部署已完成。
+
 2026-11-07发布边界：用户确认以本方`origin/main`（`lsheng2/metrics`）为主线，
 授权限定提交上游评估、维护指南、实景手册索引及相应任务/当前说明。
 不向`upstream`（`clutcher/metrics`）推送；真实截图/报告和无关代码改动不纳入。
@@ -320,6 +330,9 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.PERF.READ.REPLAN 根据S1分段计时剔除未被工作台消费的checkout诊断，保留采集状态和旧API；不增加持久索引、并行Git或延长期限。投影反例9项及独立复审通过。
 - [x] W6.PERF.COMMAND 窄preview/prepare/reprepare/detail与错误页已通过HTTP/真实浏览器回归；Save保留锁内CAS且20次p95 1.839s，详情1.448s；无预读历史或隐藏控件。
 - [x] W6.PERF.ACCEPT.R 全部后台门槛与原HTML浏览器链已通过；最后10次授权Ego切换p95 3.101s、五表完整且数据不变。独立证据复核READY、文档/严格规格/限定门禁通过，见performance-delivery.md。
+- [x] W6.OBS.PLAN.R Independent review READY: producer completeness-before-summary supports legacy v1/v2 inference; source/summary split, saved-empty/uncertainty and bounded consumer validation accepted.
+- [x] W6.OBS.CORE Source/summary decisions and editor/concise/matrix notices implemented without schema changes. Final core/UI 97 passed; source producer 4, period/HTTP 10 and native Git two-date/export 1 passed. Contrast failure fixed with a measured browser regression.
+- [x] W6.OBS.ACCEPT.R Native-Git two-date/export and old six-file checks passed; EN/zh-Hans 1440/390px editor save/reopen and 10.35:1 notice contrast passed; current docs synced, independent review READY. Scoped gates passed; two pre-existing unrelated Scope-test size violations are recorded without modifying them.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.

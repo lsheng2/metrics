@@ -159,7 +159,8 @@ def build_daily_authoring_context(*, series_id, series_policy_revision, series_p
     observations = []
     for row in source_snapshot.rows:
         issue_ref = _issue_ref_from_row(row)
-        state = _source_state(row, base_observations.get(_issue_key(issue_ref)))
+        previous = base_observations.get(_issue_key(issue_ref))
+        state = _source_state(row, previous)
         action_ids = []
         for action in tuple(row.next_actions or ()):
             saved = _report_action(series_id, issue_ref, meeting, action)
@@ -170,7 +171,7 @@ def build_daily_authoring_context(*, series_id, series_policy_revision, series_p
                 actions.append(saved)
                 actions_by_id[saved['action_id']] = saved
             action_ids.append(saved['action_id'])
-        if state in {'initial', 'changed'} and row.summary_ref is not None:
+        if _should_create_summary_note(row, previous, state):
             note = _daily_note(series_id, issue_ref, meeting, row, action_ids, source_snapshot.source_as_of, source_snapshot.capture_id)
             notes.append(note)
         observations.append(_current_observation(series_id, issue_ref, meeting, row, state, source_snapshot.source_as_of, source_snapshot.capture_id))
@@ -260,19 +261,25 @@ def _current_observation(series_id, issue_ref, meeting, row, state, source_as_of
 
 
 def _source_state(row, previous):
-    if row.source_hash is None:
-        return 'unavailable' if row.pending_reason == 'source_missing' else 'pending'
+    if row.source_hash is None or row.pending_reason == 'source_missing':
+        return 'unavailable'
     if row.pending_reason == 'source_incomplete':
         return 'incomplete'
-    if row.pending_reason in {'summary_pending', 'summary_stale'} or row.summary_ref is None:
-        return 'pending'
     if previous is None:
         return 'initial'
-    if previous.get('source_hash') != row.source_hash:
-        return 'changed'
-    if summary_identity(previous.get('accepted_summary_ref')) == summary_identity(asdict(row.summary_ref)):
-        return 'unchanged'
-    return 'changed'
+    # The source reader checks completeness before summary lookup, including legacy pending rows.
+    if (previous.get('source_hash') is None
+            or previous.get('source_state') not in {'initial', 'changed', 'unchanged', 'pending'}):
+        return 'pending'
+    return 'unchanged' if previous['source_hash'] == row.source_hash else 'changed'
+
+
+def _should_create_summary_note(row, previous, state):
+    if (row.summary_ref is None or state in {'incomplete', 'unavailable'}
+            or row.pending_reason in {'source_missing', 'source_incomplete', 'summary_pending', 'summary_stale'}):
+        return False
+    previous_ref = None if previous is None else previous.get('accepted_summary_ref')
+    return state in {'initial', 'changed'} or summary_identity(previous_ref) != summary_identity(asdict(row.summary_ref))
 
 
 def _source_status(row, source_as_of, capture_id):

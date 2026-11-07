@@ -260,8 +260,25 @@ schema升级 SHALL 使用版本化reader与同一stage归档writer。
 
 #### Scenario: A day has no confirmed update
 - **WHEN** 某日未运行、采集失败或没有记录新note
-- **THEN** 应用 SHALL 明确缺失/未更新，不虚构该日进展或“无变化”
+- **THEN** 应用 SHALL 明确缺失/未更新；仅完整来源比较相等时才可显示“无源变化”
 - **AND** 已有notes和未结束AR SHALL 不被清空
+
+#### Scenario: Complete unchanged source without an AI summary
+- **WHEN** 同系列最近定稿和本次采集均有完整观察，工单source hash相同，且本次无可用AI摘要
+- **THEN** source_state SHALL 为unchanged，报告 SHALL 显示`ww45.2(In Analysis): No source change`形式的系统观察
+- **AND** 既有人工文字、删除、颜色、链接、原日期及未结束AR SHALL 保留；今日编辑槽 SHALL 为空
+- **AND** 该观察 SHALL NOT 物化为人工note或触发模型，用户仍可填写并保存今日note
+
+#### Scenario: Source change is independent of summary readiness
+- **WHEN** 完整工单source hash变化，但摘要仍待生成或旧摘要已过期
+- **THEN** source_state SHALL 为changed并显示`Source changed; note pending`，而不是用摘要等待覆盖源变化
+- **AND** 相同source后来首次接受或修订摘要时 SHALL 可生成新初稿，但 SHALL NOT 把source_state改为changed
+
+#### Scenario: Incomplete observations cannot claim no source change
+- **WHEN** 当前采集不完整、来源不可用，或前次观察没有足够的比较依据
+- **THEN** 应用 SHALL 分别显示`Source incomplete`、`Source unavailable`或`Source comparison unavailable`
+- **AND** 即使hash相同或用户已填写今日note，也 SHALL NOT 隐去不确定性或冒充unchanged
+- **AND** 旧v1/v2上下文和已定稿原始文件 SHALL 按原字节读取，不迁移或反写历史
 
 #### Scenario: A finalized note needs correction
 - **WHEN** 用户修改已定稿的历史说明

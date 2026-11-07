@@ -276,6 +276,35 @@ AI收据在Save时核验独立authoring候选，不复用summary结果冒充作�
 - 定时准备是W7的延后资格，默认关闭；启用后调用同一准备服务和同日去重，
   不自动定稿、发送或回写工单。停机错过不补造日报。
 
+#### 工单没有变化的一天
+
+源内容是否变化与AI摘要是否可用分别判断。最近正式日报和本次所选采集都有完整观察，
+且同一工单的source hash相同时，即使采用`manual_only`、从未生成摘要或旧摘要不可用，
+也会显示`No source change`。比较的是两次所选来源，不是实时查询或对未采集时段的承诺。
+原始source hash及采集完整性规则不变；摘要跨版本复用仍须通过原来的完整链检查。
+
+例如第二天没有源变化、也没有新人工note时，精简正文为：
+
+```text
+ww45.1(In Analysis): Previous human note. AR: @owner follow up.
+ww45.2(In Analysis): No source change
+```
+
+第二行是系统观察，不是AI或人工note。编辑器显示只读提示和空的今日编辑槽；
+中文界面提示为“来源未变化”，正式报告继续输出英文。用户填写并保存后，今日note
+替代该观察行；显式保存为空的note也不会恢复已删除的AI内容。旧note、颜色、链接、
+原日期和未结束AR保持不变。后来有新接受的摘要可以独立生成初稿，但不冒充工单变化。
+
+首次完整采集尚未填写显示`Initial source; note pending`；源确实变化而尚无新note时
+显示`Source changed; note pending`。采集不完整、来源缺失和没有可比基线分别显示
+`Source incomplete`、`Source unavailable`、`Source comparison unavailable`。
+这三种不确定性即使已有人工note也保留，不得把无法验证写成“没有变化”。
+
+v1/v2作者上下文、旧定稿文件和下载字节不迁移或反写。旧`pending`但有source hash的
+观察来自当时“先完整性检查、后摘要读取”的路径，可用于新日报比较；不完整或无hash
+的旧观察不可用作相等证明。完整当前观察定稿后，可成为下一次的比较基线。
+接口和验证边界见[源观察实施包](../../changes/add-provider-neutral-project-reporting/source-observation.md)。
+
 #### 停会与恢复
 
 阶段报告工作台的“会议日历”支持选择一个日期或连续日期范围，标记停会或撤销停会。

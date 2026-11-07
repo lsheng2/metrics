@@ -232,6 +232,39 @@ advances while preparation is delayed. Never read a live calendar to render an
 already saved or published report. Validate old/new context readers, weekly
 selection, original-byte downloads and missing-versus-skipped coverage separately.
 
+## Source Observations
+
+[The source-observation packet](../../openspec/changes/add-provider-neutral-project-reporting/source-observation.md)
+separates source comparison from accepted-summary note eligibility. It keeps the
+v1/v2 context shape and original source hashes. The source reader must continue
+to check completeness before emitting `summary_pending` or `summary_stale`;
+otherwise legacy `pending` plus a hash would no longer prove a complete capture.
+Do not replace this invariant with a new interpretation of partial coverage.
+
+Run `project_management/tests/test_report_source_observations.py` for manual
+same/different hashes, uncertain sources and baselines, late/revised summaries,
+old canonical bytes, human deletion/paint/link/AR, saved-empty notes and both
+renderers. `ui_web/tests/test_report_source_observation_ui.py` covers actual
+view-model/template output and gettext. Source producer tests separately protect
+complete-source gating and unchanged accepted-summary reuse.
+
+`test_report_source_observation_publication.py` uses the native capture service,
+source reader, preparation worker and local Git with a synthetic provider and
+`manual_only`. It captures twice, finalizes two days, verifies no duplicated note,
+checks all six old files and inspects the derived Markdown/Excel.
+`ui_web/tests/test_report_source_observation_browser.py` mounts Milkdown, verifies
+the observation is not editable, then saves and reopens a colored human note.
+The browser fixture is distinct from the native-Git proof; do not call it live
+provider or model qualification. It checks EN/zh-Hans, 1440px/390px, text fit,
+page overflow and observation contrast.
+
+Evidence stays under `.tmp/dashboard-source-observation-20261107/`.
+Keep failed runs separately; a test-fixture error is not a product regression.
+No full-week, S1, Base dispatch or real enterprise-source run is needed for this
+boundary. The installed SDK environment and no-dotenv entry above still apply.
+Changing UI labels requires regenerating the checked-in zh-Hans `.mo` from its
+`.po` with the existing `polib` compiler before bilingual validation.
+
 ## Report Read Performance
 
 2026-11-06的症状与profile已固定为

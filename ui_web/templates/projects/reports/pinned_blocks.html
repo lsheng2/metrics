@@ -91,6 +91,7 @@
                                                 </div>
                                             {% endfor %}
                                             {% if cell.prefix %}<p style="margin:0 0 6px 0; color:#111827;"><strong data-matrix-source-prefix style="color:#111827;">{{ cell.prefix }}</strong></p>{% endif %}
+                                            {% if cell.observation_label %}<p data-matrix-source-observation style="margin:0 0 6px 0; color:#334155;">{% trans cell.observation_label %}</p>{% endif %}
                                             {% for action in cell.actions %}
                                                 <div class="mt-2" data-matrix-action-body style="background:#f8fafc; color:#1f2933;">
                                                     {% if action.region %}
@@ -120,7 +121,7 @@
                                                         {% include "projects/reports/editor_region.html" %}
                                                     {% endwith %}
                                                 </div>
-                                            {% elif not cell.readonly_notes and not cell.actions %}
+                                            {% elif not cell.readonly_notes and not cell.actions and not cell.observation_label %}
                                                 <span class="tag is-light">{{ cell.display }}</span>
                                             {% endif %}
                                         </td>

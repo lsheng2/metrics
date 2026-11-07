@@ -6,6 +6,7 @@ from project_management.app.domain.report_meeting_matrix import build_meeting_ma
 from project_management.app.domain.report_meeting_snapshot import meeting_skip_text, skipped_dates
 from project_management.app.domain.url_validation import require_safe_https_url
 from project_management.reporting.fragment_renderers import rich_fragment_to_html
+from project_management.reporting.observations import source_observation_text
 
 
 CELL = 'border:1px solid #cbd5e1; padding:8px; vertical-align:top; text-align:left; overflow-wrap:anywhere;'
@@ -75,10 +76,10 @@ def _table(source, context):
                            if _issue_key(item['issue_ref']) == _issue_key(row.issue_ref)),
                           key=lambda item: item['meeting']['local_date'], default=None)
         has_current = observation and any(note['note_id'] == observation['note_id'] for note in selected_notes)
-        if observation and not has_current:
-            status = _observation_text(observation)
-            body += f'<p style="margin:0;">{escape(status)}</p>'
-            body_text += ('\n' if body_text else '') + status
+        notice = source_observation_text(observation, has_note=bool(has_current))
+        if notice:
+            body += f'<p style="margin:0;">{escape(notice)}</p>'
+            body_text += ('\n' if body_text else '') + notice
         if not body:
             body = '<p style="margin:0;">No note recorded</p>'
             body_text = 'No note recorded'
@@ -101,13 +102,6 @@ def _table(source, context):
                                    for label, width in (('Ticket', 24), ('Updates', 52), ('AR', 24)))
             + '</tr></thead><tbody>' + ''.join(rows) + '</tbody></table>'), (
                 header_text + '\n\n'.join(text_rows))
-
-
-def _observation_text(observation):
-    meeting, status = observation['meeting'], observation['source_status']
-    label = 'No source change' if observation['source_state'] == 'unchanged' else 'Pending update'
-    value = status['value'] if status['availability'] == 'known' else 'Unavailable'
-    return f"ww{meeting['workweek']}.{meeting['weekday']}({value}): {label}"
 
 
 def coverage_text(source, context):

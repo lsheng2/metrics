@@ -2,6 +2,7 @@ import json
 
 from project_management.app.api import reports as report_api
 from project_management.reporting.fragment_renderers import rich_fragment_to_html
+from project_management.reporting.observations import source_observation_label
 from ui_web.report_forms import new_command_id
 
 
@@ -72,12 +73,18 @@ def matrix_cell(cell, notes, observations, actions, continuity_edits, read_only)
     if cell.current_observation_note_id and not read_only:
         current = daily_note_region(cell.current_observation_note_id, notes, continuity_edits)
     current_prefix = current_observation_prefix(notes, observations, cell.current_observation_note_id)
+    has_note = cell.current_observation_note_id in notes
+    if read_only and has_note:
+        current_prefix = ''
     return {
         'local_date': cell.local_date,
         'state': cell.state,
         'source_state': cell.source_state,
         'display': cell.state,
         'prefix': current_prefix,
+        'observation_label': source_observation_label(
+            observations.get(cell.current_observation_note_id), has_note=has_note,
+        ),
         'readonly_notes': tuple(readonly_note(notes[note_id]) for note_id in readonly_note_ids),
         'actions': tuple(action_view(actions[action_id], editable=bool(current) and not read_only)
                          for action_id in cell.action_ids if action_id in actions),

@@ -1256,3 +1256,21 @@ msgstr "所选日期内已有报告任务，所有日期均未更改。"
 
 msgid "The meeting calendar changed. Refresh it before submitting again."
 msgstr "会议日历已更改，请刷新后重新提交。"
+
+msgid "Initial source; note pending"
+msgstr "首次来源快照；待填写记录"
+
+msgid "Source changed; note pending"
+msgstr "来源已变化；待填写记录"
+
+msgid "No source change"
+msgstr "来源未变化"
+
+msgid "Source comparison unavailable"
+msgstr "无法比较来源变化"
+
+msgid "Source incomplete"
+msgstr "来源采集不完整"
+
+msgid "Source unavailable"
+msgstr "来源不可用"

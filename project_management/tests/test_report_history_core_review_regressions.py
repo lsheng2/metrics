@@ -107,7 +107,7 @@ def test_should_reject_bad_or_ambiguous_calendar_maps():
     assert dup.value.code == 'REPORT_CALENDAR_UNAVAILABLE'
 
 
-def test_should_treat_same_hash_pending_to_accepted_summary_as_changed():
+def test_should_materialize_late_summary_without_treating_same_source_as_changed():
     snapshot = valid_snapshot()
     pending_row = replace(snapshot.rows[0], summary_ref=None, pending_reason='summary_pending')
     day1 = build_context(replace(snapshot, rows=(pending_row, snapshot.rows[1])), '2026-11-02')
@@ -115,7 +115,7 @@ def test_should_treat_same_hash_pending_to_accepted_summary_as_changed():
 
     observation = next(item for item in day2['current_observations'] if item['issue_ref']['stable_id'] == '10001')
 
-    assert observation['source_state'] == 'changed'
+    assert observation['source_state'] == 'unchanged'
     assert any(note['meeting']['local_date'] == '2026-11-03' for note in row_by_key(day2, '10001'))
 
 
