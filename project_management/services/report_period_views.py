@@ -6,6 +6,7 @@ from project_management.app.domain.report_meeting_matrix import build_meeting_ma
 from project_management.services.report_daily_baseline import select_daily_head
 from project_management.services.report_publication_reads import ReportPublicationReader
 from project_management.app.domain.report_publication_contracts import publication_path
+from project_management.app.domain.report_observation_history import all_observations, known_meetings, upgrade_context
 
 
 def read_period_view(archive, actor, project_id, stage_id, *, series_id, period_key, selected_publication_refs):
@@ -45,6 +46,18 @@ def _weekly_context(repository, publications):
     notes = _merge_notes(tuple((publication, item['selected']) for publication, item in pairs))
     actions = _merge_revised_records(tuple(item for _, item in pairs), 'actions', 'action_id')
     persistent_notes = _merge_revised_records(tuple(item for _, item in pairs), 'persistent_notes', 'note_id')
+    if any(item['schema_version'] == 3 for item in contexts):
+        context = upgrade_context(context)
+    history = {}
+    if context['schema_version'] == 3:
+        meetings = {item['meeting']['local_date']: item for value in contexts for item in known_meetings(value)}
+        reviews = {}
+        for value in contexts:
+            for item in value.get('meeting_reviews', ()):
+                key = tuple(item['issue_ref'][field] for field in ('provider_id', 'endpoint_fingerprint', 'stable_id'))
+                reviews[(key, item['meeting']['local_date'])] = item
+        history = {'past_observations': (), 'meeting_history': tuple(meetings[key] for key in sorted(meetings)),
+                   'meeting_reviews': tuple(reviews.values())}
     return validate_daily_authoring_context({
         **context,
         'report_role': 'weekly_view',
@@ -55,6 +68,7 @@ def _weekly_context(repository, publications):
         'persistent_notes': persistent_notes,
         'current_observations': _merge_observations(contexts),
         'selected_daily_publications': tuple(_publication_ref(publication) for publication, _ in pairs),
+        **history,
     })
 
 
@@ -178,8 +192,12 @@ def _merge_actions(pairs):
 
 def _merge_observations(contexts):
     values = {}
+    selected_dates = {context['meeting']['local_date'] for context in contexts if context['meeting']}
     for context in contexts:
-        for item in context['current_observations']:
+        for item in all_observations(context):
+            if (item['meeting']['local_date'] in selected_dates
+                    and item['meeting']['local_date'] != context['meeting']['local_date']):
+                continue
             key = (
                 item['issue_ref']['provider_id'],
                 item['issue_ref']['endpoint_fingerprint'],

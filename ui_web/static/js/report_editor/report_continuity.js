@@ -1,4 +1,6 @@
 import { mount } from './adapter.js';
+import { createWorkflowControls } from './workflow_controls.js';
+import { recoveryTargetKey } from './recovery_state.js';
 
 const EMPTY_FRAGMENT = { schema_version: 2, blocks: [] };
 
@@ -10,6 +12,7 @@ export function createContinuityController(root, form) {
     const commands = [];
     let activeFragment = null;
     let destroyed = false;
+    const workflow = createWorkflowControls(root, announceChange);
 
     function controls() {
         return Array.from(root.querySelectorAll('[data-continuity-change]'));
@@ -21,6 +24,7 @@ export function createContinuityController(root, form) {
             ...rowGroupChanges(),
             ...controls().map(changeFromControl).filter(change => change !== null),
             ...fragments.map(fragmentChange).filter(change => change !== null),
+            ...workflow.changes(),
         ];
     }
 
@@ -59,12 +63,13 @@ export function createContinuityController(root, form) {
                 carry_forward: item.carry.checked,
             };
         }
-        if (item.kind === 'action' && item.done.checked) {
+        const actionState = item.state?.value || item.expectedState;
+        if (item.kind === 'action' && (item.done.checked || actionState !== item.expectedState)) {
             return {
                 kind: 'set_action_tracking',
                 action_id: item.actionId,
                 expected_state: item.expectedState,
-                state: 'done',
+                state: item.done.checked ? 'done' : actionState,
                 resolution: fragment,
                 evidence_refs: item.evidenceRefs(),
             };
@@ -86,13 +91,13 @@ export function createContinuityController(root, form) {
         root.dispatchEvent(new CustomEvent('report-continuity-change', { bubbles: true }));
     }
 
-    function addPersistent(button) {
-        const target = button.dataset.persistentTarget || 'issue';
+    function addPersistent(button, restored = null) {
+        const target = restored?.target || button.dataset.persistentTarget || 'issue';
         const host = target === 'report'
             ? root.querySelector('[data-continuity-report-persistent-list]')
             : button.closest('th')?.querySelector('[data-continuity-persistent-list]');
         if (!host || !crypto?.randomUUID) return;
-        const noteId = crypto.randomUUID();
+        const noteId = restored?.note_id || crypto.randomUUID();
         const article = document.createElement('article');
         article.className = 'notification is-light mt-2';
         article.dataset.continuityPersistentDraft = noteId;
@@ -109,11 +114,12 @@ export function createContinuityController(root, form) {
             issueRef: target === 'report' ? null : JSON.parse(button.dataset.issueRefJson || '{}'),
             carry: article.querySelector('[data-continuity-carry]'),
             surface: article.querySelector('[data-continuity-fragment-surface]'),
-            fragment: EMPTY_FRAGMENT,
+            fragment: restored?.fragment || EMPTY_FRAGMENT,
             handle: null,
             mountGeneration: 0,
         };
         fragments.push(item);
+        if (restored) item.carry.checked = restored.carry_forward;
         activeFragment = item;
         mountFragment(item);
         item.carry.addEventListener('change', announceChange, { signal });
@@ -152,6 +158,7 @@ export function createContinuityController(root, form) {
             kind: 'action',
             actionId: details.dataset.actionId,
             expectedState: details.dataset.expectedState,
+            state: details.querySelector('[data-report-action-state]'),
             done,
             surface,
             fragment: EMPTY_FRAGMENT,
@@ -165,6 +172,7 @@ export function createContinuityController(root, form) {
             if (!item.handle) mountFragment(item);
         }, { once: true, signal });
         done.addEventListener('change', announceChange, { signal });
+        item.state?.addEventListener('change', () => { done.checked = false; announceChange(); }, { signal });
         details.querySelectorAll('[data-continuity-evidence]').forEach(input => {
             input.addEventListener('change', announceChange, { signal });
         });
@@ -193,6 +201,37 @@ export function createContinuityController(root, form) {
 
     return {
         serialize,
+        restore(values) {
+            workflow.restore(values);
+            for (const value of values) {
+                if (value.kind === 'add_persistent_note') {
+                    const buttons = Array.from(root.querySelectorAll('[data-continuity-add-persistent]'));
+                    const button = buttons.find(node => value.target === 'report'
+                        ? node.dataset.persistentTarget === 'report'
+                        : node.dataset.issueRefJson && recoveryTargetKey(JSON.parse(node.dataset.issueRefJson)) === recoveryTargetKey(value.issue_ref));
+                    if (!button) throw new Error('Recovery target unavailable');
+                    addPersistent(button, value);
+                } else if (value.kind === 'set_action_tracking') {
+                    const item = fragments.find(item => item.actionId === value.action_id);
+                    if (!item) throw new Error('Recovery action unavailable');
+                    item.done.checked = false;
+                    if (item.state) item.state.value = value.state;
+                    item.fragment = value.resolution;
+                    if (item.handle) item.handle.replaceFragment(item.handle.local_version, value.resolution);
+                    else mountFragment(item);
+                } else if (value.kind === 'move_row') {
+                    commands.push(value);
+                } else if (value.kind === 'set_persistent_carry') {
+                    const node = controls().find(node => {
+                        const raw = node.dataset.continuityPayload;
+                        return raw && JSON.parse(raw).note_id === value.note_id;
+                    });
+                    if (!node) throw new Error('Recovery note unavailable');
+                    node.checked = value.carry_forward;
+                }
+            }
+            announceChange();
+        },
         activeEditor: () => activeFragment,
         signature: serialize,
         write,
@@ -202,6 +241,7 @@ export function createContinuityController(root, form) {
         destroy() {
             destroyed = true;
             listeners.abort();
+            workflow.destroy();
             fragments.forEach(item => {
                 item.mountGeneration += 1;
             });

@@ -25,6 +25,59 @@ advance any report baseline, or resolve ticket actions.
 - **THEN** the calendar SHALL retain the audit record and restore only eligibility
 - **AND** existing report snapshots, original downloads and baselines SHALL remain unchanged
 
+Successor details for history, human AR, per-ticket review and recovery are in
+`standup-user-workflow.md`; implementation status is tracked by `W6.USER.*`.
+
+### Requirement: Meeting history is independent of authored notes and source membership
+Every actual daily meeting SHALL remain represented even with zero current tickets
+or no new authored notes. The current week SHALL retain system observations as
+observations and carry prior unfinished actions independently of note selection.
+
+#### Scenario: No tickets remain in the new week
+- **WHEN** an empty complete scope is used after a prior finalized report with unfinished AR
+- **THEN** the new meeting SHALL have a date column and retain historical rows and unfinished AR
+- **AND** missing current provider data SHALL NOT be replaced with old status values
+
+#### Scenario: An unchanged ticket returns to scope
+- **WHEN** a previously reported stable issue returns after a meeting outside scope
+- **THEN** the report SHALL retain its row and last observation and identify reentry
+- **AND** previously used summary text SHALL NOT be regenerated solely because the ticket returned
+
+#### Scenario: Reused source is not a fresh verification
+- **WHEN** a report reuses its previous capture or the capture date differs from the meeting date
+- **THEN** the report SHALL explicitly disclose reuse or date mismatch and source cutoff
+- **AND** a human note SHALL NOT hide source uncertainty or staleness
+
+### Requirement: Human action tracking and meeting review are explicit
+The application SHALL allow explicit creation, owner changes, closure and reopening
+of report AR, and explicit per-ticket discussion records through the existing
+authenticated authored-save contract. Source/AI/note/review coverage SHALL be separate.
+
+#### Scenario: Human AR survives newer prose
+- **WHEN** the host adds AR and later adds a different note before rollover
+- **THEN** unresolved AR SHALL carry independently with its owner and original issued date
+- **AND** plain `AR:` or `@name` text SHALL NOT silently become a task or notification
+
+#### Scenario: Generation does not mark tickets discussed
+- **WHEN** notes are generated, manually saved or finalized
+- **THEN** per-ticket meeting review SHALL remain unreviewed until explicitly selected
+- **AND** lack of AI summaries SHALL NOT imply that human notes are missing
+
+### Requirement: Recovery checkpoints are not saved reports
+The editor SHALL support bounded owner-bound recovery checkpoints and explicit
+restoration. Checkpoints SHALL NOT advance saved revisions, editorial baselines,
+model work or publication.
+
+#### Scenario: Reopen after an acknowledged checkpoint
+- **WHEN** the browser closes and the host reopens the same draft
+- **THEN** the checkpoint SHALL be offered for explicit restore as dirty content
+- **AND** an advanced/finalized server revision SHALL prohibit automatic overwrite
+
+#### Scenario: Save outcome or storage is uncertain
+- **WHEN** a Save response is missing or checkpoint persistence fails
+- **THEN** original Save identity and newer local content SHALL be preserved
+- **AND** the UI SHALL NOT claim unacknowledged edits are recoverable
+
 ### Requirement: WYSIWYG is the only report editing mode
 应用 SHALL 通过现成富文本组件在报告的可编辑叙述区和填写槽中就地编辑。
 用户 SHALL NOT 被要求打开 Markdown 源码模式；取消源码编辑 SHALL NOT 取消原 Markdown/Excel 导出义务。

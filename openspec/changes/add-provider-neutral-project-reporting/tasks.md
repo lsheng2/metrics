@@ -17,6 +17,16 @@ base and Dashboard keep separate canonical implementation ledgers.
 
 ## Current Execution
 
+2026-11-08当前前沿已收口：用户批准修复真实使用审查发现的六项缺口，并补齐逐票会议确认
+和未保存编辑恢复。架构/接口/消费者/执行顺序见
+[standup-user-workflow.md](standup-user-workflow.md)，基线`bb0e841`。
+新上下文v3维护有界历史观察，会议日期独立于票数；AR走显式结构化命令；
+恢复草稿与Save/Finalize隔离。旧数据字节、13项无关改动、SDK和真实服务保持不变。
+本轮不是重做整周或扩展provider范围；依唯一`W6.USER.*`节点推进。
+`W6.USER.*`已全部完成限定验收：179项去重Python检查（含1项系统/环境）和18项Node，
+原生四日期Git链、真实采集合成传输/补录时间、浏览器重开恢复/AR闭环/丢回包等通过。
+独立最终复核无遗留P0-P3，54项限定清单交付；细节和未扩大资格见实施包Final Delivery Receipt。
+
 2026-11-07源观察补充已完成限定实现、验证与复审：用户批准补齐
 “连续两次工单内容无变化”的自动显示。
 按[source-observation.md](source-observation.md)将source比较与AI摘要就绪分开，
@@ -333,6 +343,12 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [x] W6.OBS.PLAN.R Independent review READY: producer completeness-before-summary supports legacy v1/v2 inference; source/summary split, saved-empty/uncertainty and bounded consumer validation accepted.
 - [x] W6.OBS.CORE Source/summary decisions and editor/concise/matrix notices implemented without schema changes. Final core/UI 97 passed; source producer 4, period/HTTP 10 and native Git two-date/export 1 passed. Contrast failure fixed with a measured browser regression.
 - [x] W6.OBS.ACCEPT.R Native-Git two-date/export and old six-file checks passed; EN/zh-Hans 1440/390px editor save/reopen and 10.35:1 notice contrast passed; current docs synced, independent review READY. Scoped gates passed; two pre-existing unrelated Scope-test size violations are recorded without modifying them.
+- [x] W6.USER.PLAN.R Core admitted by independent review; retention clarified to include preceding empty meeting and current-only edit authority. Recovery details refreeze at CORE.REPLAN.
+- [x] W6.USER.CORE Implemented v3 dates/history/reentry/readiness and human AR/review; 22 core cases, affected source/UI cases and native four-date Git chain passed.
+- [x] W6.USER.CORE.REPLAN Independent core/recovery refreeze READY; current-only edit authority, previous empty meeting and exact checkpoint payload frozen in standup-user-workflow.md.
+- [x] W6.USER.EDIT Bilingual AR/review controls and shared editor/report/period observations implemented; mounted restore/Save and AR owner/closure/reopen checks passed, final expanded regression pending ACCEPT.R.
+- [x] W6.USER.RECOVERY Owner-bound atomic checkpoints, sequence/expiry/size/CSRF, explicit restore/download/discard and uncertain original Save implemented; service/HTTP and mounted restart proof passed.
+- [x] W6.USER.ACCEPT.R 179 distinct Python checks and 18 Node tests passed; native Git/capture, bilingual mounted restart/AR/uncertain-Save evidence and current docs complete. Independent source/delta review READY; 54-file allowlist excludes 13 protected paths. See standup-user-workflow.md Final Delivery Receipt.
 - [ ] W6.AUTHOR.R Review exact candidate, changed consumers and docs; no unresolved correctness/security issue.
 - [ ] W6.AUTHOR.REPLAN Refreeze remaining W6/W7 work; document completion does not resume implementation.
 - [ ] W6.R Verify stable bytes, source links, language independence and failure atomicity.

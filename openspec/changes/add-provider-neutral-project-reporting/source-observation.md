@@ -1,6 +1,8 @@
 # Source Observation And Summary Readiness
 
 Date: 2026-11-07. Status: implemented and validated within this packet.
+Successor: [standup-user-workflow.md](standup-user-workflow.md) extends history,
+freshness and user operations; this packet's current-only limits are historical.
 Docs impact: architecture, user, reference.
 Current docs: `openspec/docs/current-baseline/project-reporting.md`,
 `docs/development/reporting-delivery.md`.

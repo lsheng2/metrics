@@ -10,6 +10,9 @@
 <link rel="stylesheet" href="{% static 'css/report_exports.css' %}">
 <article class="block" data-report-editor data-draft-id="{{ draft.draft_id }}" data-revision="{{ draft.revision }}" data-revision-hash="{{ draft.revision_hash }}" data-snapshot-hash="{{ draft.snapshot_hash }}" data-template-hash="{{ draft.template_definition.template_hash }}" data-clipboard-url="{{ clipboard_url }}" data-completion-url="{{ completion_url }}"
          data-assist-url="{% url 'ui_web:report_assists' detail.project.id stage.id draft.draft_id %}"
+         data-recovery-url="{% url 'ui_web:report_recovery' detail.project.id stage.id draft.draft_id %}"
+         data-message-ar-owner="{% trans "AR owner" %}" data-message-ar-body="{% trans "AR" %}"
+         data-message-remove-ar="{% trans "Remove unsaved AR" %}"
          data-message-payload-missing="{% trans "Clipboard payload is not available." %}"
          data-message-download-fallback="{% trans "Copy payload could not be loaded. Download HTML is still available." %}"
          data-message-ready="{% trans "Saved revision is ready to copy." %}"
@@ -69,6 +72,17 @@
     {% endif %}
     <div class="notification is-warning is-light is-hidden" data-report-dirty-banner role="status">{% trans "Unsaved edits disable copy and finalization." %}</div>
     <div class="notification is-light" data-report-copy-status role="status">{% trans "Copy waits for the saved revision payload." %}</div>
+    {% include "projects/reports/recovery.html" %}
+    {% if report_body.readiness %}
+    <div class="mb-3" data-report-readiness>
+        {% trans "Source" %}: {{ report_body.readiness.source_complete }} {% trans "complete" %},
+        {{ report_body.readiness.source_incomplete }} {% trans "incomplete" %},
+        {{ report_body.readiness.source_unavailable }} {% trans "unavailable" %} ·
+        {% trans "AI summaries" %}: {{ report_body.readiness.summaries_available }}/{{ report_body.readiness.tickets }} ·
+        {% trans "Notes" %}: {{ report_body.readiness.notes_present }}/{{ report_body.readiness.tickets }} ·
+        {% trans "Meeting review" %}: {{ report_body.readiness.reviewed }}/{{ report_body.readiness.tickets }}
+    </div>
+    {% endif %}
 
     {% if draft.state == "draft" %}
     <form method="post" action="{% url 'ui_web:report_draft_save' detail.project.id stage.id draft.draft_id %}" class="dashboard-edit-form report-authoring-form" data-report-save-form data-report-authored-form>
@@ -240,9 +254,16 @@
     <section class="block mt-5">
         <h3 class="title is-5">{% trans "Source state" %}</h3>
         <p>
+            {% if report_body.readiness %}
+            {% trans "Source" %}: {{ report_body.readiness.source_complete }} {% trans "complete" %},
+            {{ report_body.readiness.source_incomplete }} {% trans "incomplete" %},
+            {{ report_body.readiness.source_unavailable }} {% trans "unavailable" %} ·
+            {% trans "AI summaries" %}: {{ report_body.readiness.summaries_available }}/{{ report_body.readiness.tickets }}
+            {% else %}
             {% trans "Coverage" %}: {% if draft.snapshot.coverage.complete %}{% trans "complete" %}{% else %}{% trans "partial" %}{% endif %} ·
             {% trans "Accepted" %}: {{ draft.snapshot.coverage.accepted_count }} ·
             {% trans "Pending" %}: {{ draft.snapshot.coverage.pending_count }}
+            {% endif %}
         </p>
     </section>
 

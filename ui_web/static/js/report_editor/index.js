@@ -3,6 +3,8 @@ import { mount } from './adapter.js';
 import { createCompletionController, currentReferenceReceipts, stripReferenceMetadata } from './completion.js';
 import { createContinuityController } from './report_continuity.js';
 import { createAssistController } from './assist.js';
+import { createRecoveryController } from './recovery.js';
+import { recoveryTargetKey } from './recovery_state.js';
 
 const EMPTY = { schema_version: 2, blocks: [] };
 
@@ -13,6 +15,12 @@ function initializeReportAuthoring(root) {
     root.dataset.reportAuthoringInitialized = 'true';
     const form = root.querySelector('[data-report-authored-form]');
     if (!form) {
+        const recovery = createRecoveryController(root, {
+            capture: async () => null,
+            restore: async () => { throw new Error('Read-only report'); },
+            blocked: () => true,
+        });
+        root.__reportAuthoring = { destroy: () => recovery.destroy() };
         return;
     }
     const regions = Array.from(root.querySelectorAll('[data-report-wysiwyg-region]')).map(regionState);
@@ -36,6 +44,15 @@ function initializeReportAuthoring(root) {
     let destroyed = false;
     const completions = createCompletionController(root);
     const continuity = createContinuityController(root, form);
+    const recovery = createRecoveryController(root, {
+        capture: async () => {
+            if (!dirty && !uncertainSave) return null;
+            return { edits: await collectEdits(), continuity_changes: JSON.parse(continuity.serialize()),
+                save_request: recoverySaveRequest(uncertainSave) };
+        },
+        restore: restoreRecovery,
+        blocked: () => dirty || saving || failedMount || Boolean(uncertainSave),
+    });
     const assists = createAssistController(root, {
         activeRegion: () => activeState,
         resolveTarget,
@@ -81,6 +98,7 @@ function initializeReportAuthoring(root) {
 
     function refreshDirty() {
         setDirty();
+        recovery.changed();
     }
 
     async function ensureMounted(state) {
@@ -230,7 +248,7 @@ function initializeReportAuthoring(root) {
                 target: targetData.target,
                 fragment: submittedFragment,
                 expected_original_hash: expectedOriginalHash(state, targetData),
-                reference_receipts: currentReferenceReceipts(state),
+                reference_receipts: [...new Set([...currentReferenceReceipts(state), ...(state.recoveredReceipts || [])])],
                 assist_receipt_id: state.assistReceiptId || null,
             });
         }
@@ -328,6 +346,7 @@ function initializeReportAuthoring(root) {
             const body = new FormData(form);
             submittedSave = { entries: Array.from(body.entries()), signature: currentSignature() };
             uncertainSave = submittedSave;
+            recovery.changed();
         }
         const body = formDataFromEntries(submittedSave.entries);
         try {
@@ -348,9 +367,13 @@ function initializeReportAuthoring(root) {
             applySavedMetadata(payload);
             baselineSignature = acceptedSignature;
             if (currentSignature() === acceptedSignature) {
-                setDirty(false);
-                window.location.assign(payload.redirect_url);
-                return;
+                await recovery.saved();
+                if (currentSignature() === acceptedSignature) {
+                    setDirty(false);
+                    window.location.assign(payload.redirect_url);
+                    return;
+                }
+                recovery.resume();
             }
             rotateCommandId();
             refreshDirty();
@@ -369,6 +392,7 @@ function initializeReportAuthoring(root) {
                 showHumanLinkConversion();
             }
             setDirty(true);
+            recovery.changed();
         } finally {
             if (!destroyed) {
                 saving = false;
@@ -403,6 +427,53 @@ function initializeReportAuthoring(root) {
         if (finalizeHash) finalizeHash.textContent = revisionHash.slice(0, 12);
     }
 
+    function recoverySaveRequest(value) {
+        if (!value) return null;
+        const fields = Object.fromEntries(value.entries);
+        return {
+            command_id: fields.command_id, expected_revision: Number(fields.expected_revision),
+            expected_revision_hash: fields.expected_revision_hash,
+            edits: JSON.parse(fields.authored_edits), continuity_changes: JSON.parse(fields.continuity_changes || '[]'),
+        };
+    }
+
+    async function restoreRecovery(content) {
+        const used = new Set();
+        const assignments = content.edits.map(edit => {
+            const state = regions.find(item => !used.has(item) && item.editId === edit.edit_id)
+                || regions.find(item => !used.has(item) && recoveryTargetKey(resolveTarget(item)?.target) === recoveryTargetKey(edit.target));
+            if (!state || recoveryTargetKey(resolveTarget(state)?.target) !== recoveryTargetKey(edit.target)) {
+                throw new Error('Recovery target unavailable');
+            }
+            used.add(state);
+            return { state, edit, fragment: normalizeFragment(edit.fragment) };
+        });
+        for (const { state, edit, fragment } of assignments) {
+            state.editId = edit.edit_id;
+            state.fragment = fragment;
+            state.recoveredReceipts = edit.reference_receipts || [];
+            state.dirty = true;
+            state.region.dataset.expectedOriginalHash = edit.expected_original_hash || '';
+            if (state.handle) state.handle.replaceFragment(state.handle.local_version, state.fragment);
+            else state.surface.replaceChildren(fragmentToPreview(state.fragment));
+            state.assistReceiptId = edit.assist_receipt_id;
+        }
+        continuity.restore(content.continuity_changes);
+        if (content.save_request) {
+            const pending = content.save_request;
+            const fields = new FormData(form);
+            fields.set('command_id', pending.command_id);
+            fields.set('expected_revision', String(pending.expected_revision));
+            fields.set('expected_revision_hash', pending.expected_revision_hash);
+            fields.set('authored_edits', JSON.stringify(pending.edits));
+            fields.set('continuity_changes', JSON.stringify(pending.continuity_changes));
+            const same = JSON.stringify(content.edits) === JSON.stringify(pending.edits)
+                && JSON.stringify(content.continuity_changes) === JSON.stringify(pending.continuity_changes);
+            uncertainSave = { entries: Array.from(fields.entries()), signature: same ? currentSignature() : null };
+        }
+        setDirty(true);
+    }
+
     function isReferenceError(code) {
         return ['REFERENCE_RECEIPT_EXPIRED', 'REFERENCE_CONTENT_CHANGED', 'REFERENCE_INVALID'].includes(code);
     }
@@ -422,6 +493,7 @@ function initializeReportAuthoring(root) {
     function convertReferencesToHumanLinks() {
         regions.forEach(state => {
             state.referenceReceipts = [];
+            state.recoveredReceipts = [];
             state.humanizeReferences = true;
             state.dirty = true;
         });
@@ -451,6 +523,7 @@ function initializeReportAuthoring(root) {
             completions.destroy();
             continuity.destroy();
             assists.destroy();
+            recovery.destroy();
             root.dataset.reportAuthoringInitialized = 'false';
         },
     };

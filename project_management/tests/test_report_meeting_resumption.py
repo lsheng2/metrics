@@ -77,7 +77,7 @@ def test_two_empty_weeks_preserve_notes_actions_and_frozen_notice_through_public
 
     monday = prepare(fixture, '2026-11-23', 15106)
     context = monday.authoring_context
-    assert context['schema_version'] == 2
+    assert context['schema_version'] == 3
     assert context['base_daily_publication'] == {
         'publication_id': first.manifest.publication_id,
         'manifest_hash': first.manifest_sha256,

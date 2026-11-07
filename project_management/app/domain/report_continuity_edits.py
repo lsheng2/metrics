@@ -1,4 +1,3 @@
-from dataclasses import replace
 from typing import Mapping
 
 from project_management.app.domain.capture_values import canonical_bytes, sha256_bytes
@@ -8,6 +7,9 @@ from project_management.app.domain.report_authoring_fragments import rich_text_f
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_continuity_context import validate_daily_authoring_context
 from project_management.app.domain.report_draft_values import validate_hash_text, validate_uuid_text
+from project_management.app.domain.report_workflow_changes import (
+    COMMAND_FIELDS, apply_workflow_change, is_human_action, touch_action,
+)
 
 
 def apply_continuity_edit_requests(context, active_edits, requested_edits, actor_subject, timestamp, reference_observations=None):
@@ -58,6 +60,8 @@ def validate_continuity_authored_edits(context, edits):
 
 def _apply_change(context, change, actor_subject, timestamp):
     kind = change['kind']
+    if kind in COMMAND_FIELDS:
+        return apply_workflow_change(context, change, actor_subject, timestamp)
     if kind == 'add_persistent_note':
         return _add_persistent_note(context, change, actor_subject, timestamp)
     if kind == 'set_persistent_carry':
@@ -124,19 +128,25 @@ def _set_action_tracking(context, change, actor_subject, timestamp):
         if action['tracking_state'] != expected:
             raise ReportError('REPORT_REVISION_CONFLICT')
         evidence_refs = tuple(_str(item) for item in tuple(change['evidence_refs']))
-        if state in {'done', 'canceled'} and (not evidence_refs or not rich_text_fragment_plain_text(change['resolution']).strip()):
+        if state in {'done', 'canceled'} and (
+                not rich_text_fragment_plain_text(change['resolution']).strip()
+                or not is_human_action(action) and not evidence_refs):
             raise ReportError('REPORT_EDIT_TARGET_INVALID')
         if any(item not in action['evidence_refs'] for item in evidence_refs):
             raise ReportError('REPORT_EDIT_TARGET_INVALID')
-        actions.append({**action, 'tracking_state': state, 'resolution': {
+        actions.append(touch_action({**action, 'tracking_state': state, 'resolution': {
             'fragment': validate_rich_text_fragment(change['resolution']),
             'evidence_refs': evidence_refs,
             'resolved_by': actor_subject,
             'resolved_at': timestamp,
-        }})
+        }}, actor_subject, timestamp))
     if not found:
         raise ReportError('REPORT_EDIT_TARGET_INVALID')
-    return {**context, 'actions': tuple(actions)}
+    return {**context, 'actions': tuple(actions), 'weekly_seed': {
+        **context['weekly_seed'], 'unresolved_action_ids': tuple(
+            item['action_id'] for item in actions if item['tracking_state'] not in {'done', 'canceled'}
+        ),
+    }}
 
 
 def _move_row(context, change):
@@ -178,6 +188,7 @@ def _change(value):
     if not isinstance(value, Mapping) or type(value.get('kind')) is not str:
         raise ReportError('REPORT_EDIT_TARGET_INVALID')
     fields = {
+        **COMMAND_FIELDS,
         'move_row': {'kind', 'issue_ref', 'group_id', 'after_issue_ref'},
         'set_action_tracking': {'kind', 'action_id', 'expected_state', 'state', 'resolution', 'evidence_refs'},
         'add_persistent_note': {'kind', 'note_id', 'target', 'issue_ref', 'fragment', 'carry_forward'},
@@ -219,7 +230,7 @@ def _apply_continuity_edit(context, request, actor_subject, timestamp):
     if scope == 'persistent_note':
         return _apply_persistent_note_edit(context, request, actor_subject, timestamp)
     if scope == 'report_action':
-        return _apply_report_action_edit(context, request)
+        return _apply_report_action_edit(context, request, actor_subject, timestamp)
     raise ReportError('REPORT_EDIT_TARGET_INVALID')
 
 
@@ -243,7 +254,7 @@ def _apply_persistent_note_edit(context, request, actor_subject, timestamp):
     return {**context, 'persistent_notes': tuple(notes)}
 
 
-def _apply_report_action_edit(context, request):
+def _apply_report_action_edit(context, request, actor_subject, timestamp):
     action_id = validate_uuid_text(request.target.get('action_id'))
     actions = []
     found = False
@@ -252,7 +263,8 @@ def _apply_report_action_edit(context, request):
             actions.append(action)
             continue
         found = True
-        actions.append({**action, 'body_fragment': validate_rich_text_fragment(request.fragment)})
+        actions.append(touch_action({**action, 'body_fragment': validate_rich_text_fragment(request.fragment)},
+                                    actor_subject, timestamp))
     if not found:
         raise ReportError('REPORT_EDIT_TARGET_INVALID')
     return {**context, 'actions': tuple(actions)}

@@ -1274,3 +1274,99 @@ msgstr "来源采集不完整"
 
 msgid "Source unavailable"
 msgstr "来源不可用"
+
+msgid "Outside current scope"
+msgstr "已不在当前范围内"
+
+msgid "Source not refreshed; using saved capture"
+msgstr "未刷新来源；正在使用已保存的采集"
+
+msgid "Source date differs from meeting date"
+msgstr "来源日期与会议日期不同"
+
+msgid "Source observation time unavailable"
+msgstr "来源观察时间不可用"
+
+msgid "Returned to scope; compared with last observed source"
+msgstr "重新进入范围；与上次观察的来源比较"
+
+msgid "Add AR"
+msgstr "添加行动项"
+
+msgid "AR"
+msgstr "行动项"
+
+msgid "AR owner"
+msgstr "行动项负责人"
+
+msgid "AR state"
+msgstr "行动项状态"
+
+msgid "Remove unsaved AR"
+msgstr "移除未保存的行动项"
+
+msgid "Meeting review"
+msgstr "会议讨论"
+
+msgid "Unreviewed"
+msgstr "未确认"
+
+msgid "Discussed"
+msgstr "已讨论"
+
+msgid "Not discussed"
+msgstr "未讨论"
+
+msgid "No additional update confirmed"
+msgstr "已确认无新增"
+
+msgid "Done"
+msgstr "已完成"
+
+msgid "Canceled"
+msgstr "已取消"
+
+msgid "Unknown"
+msgstr "未知"
+
+msgid "AI summaries"
+msgstr "AI 摘要"
+
+msgid "Notes"
+msgstr "会议记录"
+
+msgid "incomplete"
+msgstr "不完整"
+
+msgid "unavailable"
+msgstr "不可用"
+
+msgid "Recovery checkpoint available."
+msgstr "存在可恢复的编辑记录。"
+
+msgid "Recovery unavailable; newer edits are not protected."
+msgstr "恢复功能不可用；最近的改动尚未受保护。"
+
+msgid "Recovery checkpoint"
+msgstr "编辑恢复记录"
+
+msgid "Recovered edits are unsaved."
+msgstr "已恢复编辑内容，尚未保存。"
+
+msgid "Recovery conflicts with this revision. Download the checkpoint to reconcile."
+msgstr "恢复记录与当前修订冲突，请下载记录后核对。"
+
+msgid "Recovery checkpoint discarded."
+msgstr "已丢弃恢复记录。"
+
+msgid "No recovery checkpoint acknowledged."
+msgstr "尚无已确认的编辑恢复记录。"
+
+msgid "Restore"
+msgstr "恢复"
+
+msgid "Discard checkpoint"
+msgstr "丢弃恢复记录"
+
+msgid "Download checkpoint"
+msgstr "下载恢复记录"

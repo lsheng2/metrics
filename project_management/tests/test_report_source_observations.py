@@ -21,6 +21,11 @@ def manual_source(reason='summary_pending'):
     return replace(source, rows=(row,), events=())
 
 
+def tuesday_capture(source):
+    return replace(source, capture_id='80000000-0000-4000-8000-000000000002',
+                   source_as_of='2026-11-03T01:00:00Z', report_date='2026-11-03')
+
+
 @pytest.mark.parametrize('reason', ['summary_pending', 'summary_stale'])
 def test_manual_same_source_is_unchanged_without_materializing_a_note(reason):
     source = manual_source(reason)
@@ -44,7 +49,7 @@ def test_manual_changed_source_keeps_change_and_current_provider_status(reason):
     source = manual_source()
     monday = context(source, '2026-11-02')
     changed = replace(
-        source, rows=(replace(source.rows[0], source_hash='f' * 64, status='Fixed', pending_reason=reason),),
+        tuesday_capture(source), rows=(replace(source.rows[0], source_hash='f' * 64, status='Fixed', pending_reason=reason),),
     )
     tuesday = context(changed, '2026-11-03', monday)
 
@@ -81,6 +86,9 @@ def test_legacy_pending_hash_is_comparable_without_rewriting_old_context(version
     source = manual_source()
     monday = context(source, '2026-11-02')
     monday['current_observations'][0]['source_state'] = 'pending'
+    for key in ('past_observations', 'meeting_history', 'meeting_reviews', 'meeting_skips'):
+        monday.pop(key, None)
+    monday['schema_version'] = 1
     if version == 2:
         monday['schema_version'] = 2
         monday['meeting_skips'] = {
@@ -90,7 +98,7 @@ def test_legacy_pending_hash_is_comparable_without_rewriting_old_context(version
             'from_date': '2026-11-02', 'through_date': '2026-11-02', 'days': [],
         }
     original = canonical_bytes(monday)
-    tuesday = context(source, '2026-11-03', monday)
+    tuesday = context(tuesday_capture(source), '2026-11-03', monday)
 
     assert tuesday['current_observations'][0]['source_state'] == 'unchanged'
     assert canonical_bytes(validate_daily_authoring_context(monday)) == original
@@ -112,7 +120,7 @@ def test_uncomparable_baseline_requires_a_new_complete_observation(previous_stat
             'availability': 'unavailable', 'value': None, 'field_path': None,
             'observed_at': None, 'source_ref': None, 'source_hash': None,
         }
-    tuesday = context(source, '2026-11-03', monday)
+    tuesday = context(tuesday_capture(source), '2026-11-03', monday)
     following_week = context(source, '2026-11-09', tuesday)
 
     assert tuesday['current_observations'][0]['source_state'] == 'pending'
@@ -150,7 +158,7 @@ def test_same_summary_preserves_human_deletion_paint_links_and_unresolved_action
     }]
     monday['notes'][0].update(body_fragment=fragment, body_hash=sha256_bytes(canonical_bytes(fragment)))
     original = canonical_bytes(monday)
-    tuesday = context(source, '2026-11-03', monday)
+    tuesday = context(tuesday_capture(source), '2026-11-03', monday)
 
     assert tuesday['current_observations'][0]['source_state'] == 'unchanged'
     assert canonical_bytes(tuesday['notes']) == canonical_bytes(monday['notes'])
@@ -174,7 +182,7 @@ def test_same_summary_preserves_human_deletion_paint_links_and_unresolved_action
     ('unavailable', 'Source unavailable'),
 ])
 def test_renderers_show_the_current_observation_without_an_authored_note(concise, state, label):
-    source = manual_source()
+    source = tuesday_capture(manual_source())
     ctx = context(source, '2026-11-03')
     ctx['current_observations'][0]['source_state'] = state
     template = pinned() if concise else pinned(schema2_matrix_document())
@@ -191,7 +199,7 @@ def test_renderers_show_the_current_observation_without_an_authored_note(concise
 ])
 @pytest.mark.parametrize('text', ['', 'Today is a human observation.'], ids=['saved-empty', 'human'])
 def test_saved_note_replaces_no_change_but_not_source_uncertainty(state, show_warning, text, concise):
-    source = snapshot()
+    source = tuesday_capture(snapshot())
     source = replace(source, rows=(replace(source.rows[0], pending_reason=None),))
     ctx = context(source, '2026-11-03')
     ctx = deepcopy(ctx)
@@ -202,7 +210,7 @@ def test_saved_note_replaces_no_change_but_not_source_uncertainty(state, show_wa
     matrix_text = output.plain_text if concise else output.plain_text.split('Meeting matrix\n', 1)[1]
 
     assert 'No source change' not in matrix_text
-    assert ('Source ' in matrix_text) == show_warning
+    assert any(label in matrix_text for label in ('Source incomplete', 'Source unavailable', 'Source comparison unavailable')) == show_warning
     if text:
         assert text in matrix_text
     assert source.rows[0].current_position not in matrix_text

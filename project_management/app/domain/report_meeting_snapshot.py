@@ -59,13 +59,13 @@ def validate_meeting_snapshot(snapshot, context):
 def skipped_dates(context):
     if not context:
         return set()
-    return {day['local_date'] for day in context.get('meeting_skips', {}).get('days', ())}
+    return {day['local_date'] for day in (context.get('meeting_skips') or {}).get('days', ())}
 
 
 def meeting_skip_text(context):
     if not context:
         return ''
-    days = context.get('meeting_skips', {}).get('days', ())
+    days = (context.get('meeting_skips') or {}).get('days', ())
     groups = []
     for day in days:
         local, reason = day['local_date'], day['reason']

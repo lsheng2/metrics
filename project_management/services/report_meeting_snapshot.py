@@ -42,6 +42,6 @@ def freeze_meeting_snapshot(continuity, actor, project_id, stage_id, context, ba
             for day in days if day.state == 'skipped'
         ],
     }
-    result = {**context, 'schema_version': 2, 'meeting_skips': snapshot}
+    result = {**context, 'schema_version': max(2, context['schema_version']), 'meeting_skips': snapshot}
     validate_meeting_snapshot(snapshot, result)
     return result

@@ -6,7 +6,8 @@ from project_management.app.domain.report_meeting_matrix import build_meeting_ma
 from project_management.app.domain.report_meeting_snapshot import meeting_skip_text, skipped_dates
 from project_management.app.domain.url_validation import require_safe_https_url
 from project_management.reporting.fragment_renderers import rich_fragment_to_html
-from project_management.reporting.observations import source_observation_text
+from project_management.reporting.observations import history_entries
+from project_management.app.domain.report_readiness import readiness_text
 
 
 CELL = 'border:1px solid #cbd5e1; padding:8px; vertical-align:top; text-align:left; overflow-wrap:anywhere;'
@@ -23,6 +24,10 @@ def compile_standup_report(source, template, edits, context):
     html = [f'<header><h1 style="font-size:22px;margin:0 0 4px;">{escape(title)}</h1>'
             f'<p style="margin:0 0 12px;">{name} | {escape(when)}</p></header>']
     plain = [title, f'{name} | {when}']
+    if context.get('schema_version') == 3:
+        cutoff = f'Source cutoff: {source.source_as_of} ({source.timezone})'
+        html.append(f'<p>{escape(cutoff)}</p>')
+        plain.append(cutoff)
     notice = meeting_skip_text(context)
     if notice:
         html.append(f'<p>{escape(notice)}</p>')
@@ -69,17 +74,18 @@ def _table(source, context):
         current = row.cells[-1] if row.cells else None
         selected_notes = [notes[note_id] for note_id in current.note_ids] if current else []
         selected_actions = [actions[action_id] for action_id in current.action_ids] if current else []
-        body = ''.join(f'<div style="margin:0 0 8px;"><strong>{escape(_prefix(note))}</strong>'
-                       f'{rich_fragment_to_html(note["body_fragment"])}</div>' for note in selected_notes)
-        body_text = '\n'.join(_note_text(note) for note in selected_notes)
-        observation = max((item for item in context['current_observations']
-                           if _issue_key(item['issue_ref']) == _issue_key(row.issue_ref)),
-                          key=lambda item: item['meeting']['local_date'], default=None)
-        has_current = observation and any(note['note_id'] == observation['note_id'] for note in selected_notes)
-        notice = source_observation_text(observation, has_note=bool(has_current))
-        if notice:
-            body += f'<p style="margin:0;">{escape(notice)}</p>'
-            body_text += ('\n' if body_text else '') + notice
+        entries = history_entries(context, row.issue_ref, current.local_date, selected_notes) if current else ()
+        body_parts, texts = [], []
+        for entry in entries:
+            if entry['kind'] == 'note':
+                note = entry['note']
+                body_parts.append(f'<div style="margin:0 0 8px;"><strong>{escape(_prefix(note))}</strong>'
+                                  f'{rich_fragment_to_html(note["body_fragment"])}</div>')
+                texts.append(_note_text(note))
+            else:
+                body_parts.append(f'<p style="margin:0;">{escape(entry["text"])}</p>')
+                texts.append(entry['text'])
+        body, body_text = ''.join(body_parts), '\n'.join(texts)
         if not body:
             body = '<p style="margin:0;">No note recorded</p>'
             body_text = 'No note recorded'
@@ -92,7 +98,8 @@ def _table(source, context):
         body_text += ''.join('\n' + rich_text_fragment_plain_text(note['fragment']) for note in persistent)
         rows.append(f'<tr><th style="{CELL}">{label}</th><td style="{CELL}">{body}</td>'
                     f'<td style="{CELL}">{action_html}</td></tr>')
-        text_rows.append(f'{row.current_key} {row.title or ""}\n{body_text}\n'
+        membership = '\nOutside current scope' if row.visibility != 'visible' else ''
+        text_rows.append(f'{row.current_key} {row.title or ""}{membership}\n{body_text}\n'
                          + '\n'.join(_action_text(action) for action in selected_actions))
     persistent = [item for item in context['persistent_notes'] if item['target'] == 'report']
     header = ''.join(rich_fragment_to_html(item['fragment']) for item in persistent)
@@ -105,6 +112,17 @@ def _table(source, context):
 
 
 def coverage_text(source, context):
+    if context.get('schema_version') == 3:
+        value = readiness_text(source, context)
+        missing = sorted(day.report_date for day in source.days
+                         if day.state != 'published' and day.report_date not in skipped_dates(context))
+        if missing:
+            value += ' Missing reports: ' + ', '.join(missing) + '.'
+        gaps = len(context['acknowledged_gap_draft_ids'])
+        if gaps:
+            value += f' {gaps} unfinalized draft skipped.' if gaps == 1 else f' {gaps} unfinalized drafts skipped.'
+        limitations = source.coverage.get('limitations', ())
+        return value + (' ' + '; '.join(map(str, limitations)) if limitations else '')
     coverage = source.coverage
     membership = coverage.get('membership', {})
     complete = coverage.get('complete')

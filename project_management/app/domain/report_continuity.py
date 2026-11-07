@@ -18,6 +18,7 @@ from project_management.app.domain.report_continuity_rollover import (
 )
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_draft_values import validate_hash_text, validate_uuid_text
+from project_management.app.domain.report_observation_history import all_observations, retained_history
 
 MAX_CONTEXT_BYTES = 8_388_608
 @dataclass(frozen=True, slots=True)
@@ -148,7 +149,7 @@ def build_daily_authoring_context(*, series_id, series_policy_revision, series_p
     period = period_identity(meeting)
     base = None if baseline_context is None else validate_daily_authoring_context(baseline_context, series_id=series_id, meeting=meeting)
     same_period = base is not None and base['period'] == asdict(period)
-    base_observations = {_issue_key(item['issue_ref']): item for item in (() if base is None else base.get('current_observations', ()))}
+    base_observations = {_issue_key(item['issue_ref']): item for item in all_observations(base)}
     row_order = build_row_order(None if base is None else base.get('row_order'), source_snapshot.rows, matrix_options)
     options = _matrix_options(matrix_options)
     seed_notes = tuple(select_seed_notes(base, same_period, options['cross_week_carry']))
@@ -176,7 +177,7 @@ def build_daily_authoring_context(*, series_id, series_policy_revision, series_p
             notes.append(note)
         observations.append(_current_observation(series_id, issue_ref, meeting, row, state, source_snapshot.source_as_of, source_snapshot.capture_id))
     context = {
-        'schema_version': 1,
+        'schema_version': 3,
         'series_id': validate_uuid_text(series_id),
         'series_policy_revision': _positive_int(series_policy_revision, 'REPORT_ARTIFACT_INVALID'),
         'series_policy_hash': validate_hash_text(series_policy_hash),
@@ -193,6 +194,7 @@ def build_daily_authoring_context(*, series_id, series_policy_revision, series_p
         'actions': tuple(actions),
         'persistent_notes': persistent_notes,
         'selected_daily_publications': (),
+        **retained_history(base, asdict(meeting), asdict(period), source_snapshot.capture_id, source_snapshot.source_as_of),
     }
     _context_size(context)
     return _plain_json(context)

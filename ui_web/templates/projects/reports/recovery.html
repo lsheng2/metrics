@@ -1,0 +1,17 @@
+{% load i18n %}
+<div class="mb-3" data-report-recovery
+     data-message-available="{% trans "Recovery checkpoint available." %}"
+     data-message-failed="{% trans "Recovery unavailable; newer edits are not protected." %}"
+     data-message-checkpoint="{% trans "Recovery checkpoint" %}"
+     data-message-restored="{% trans "Recovered edits are unsaved." %}"
+     data-message-conflict="{% trans "Recovery conflicts with this revision. Download the checkpoint to reconcile." %}"
+     data-message-discarded="{% trans "Recovery checkpoint discarded." %}">
+    {% csrf_token %}
+    <p data-recovery-status role="status">{% trans "No recovery checkpoint acknowledged." %}</p>
+    <div class="buttons are-small mt-2">
+        <div class="select is-small"><select data-recovery-choices aria-label="{% trans "Recovery checkpoint" %}" hidden></select></div>
+        <button type="button" class="button is-small" data-recovery-restore disabled><span class="icon is-small" aria-hidden="true"><i class="iconoir-undo"></i></span><span>{% trans "Restore" %}</span></button>
+        <button type="button" class="button is-small" data-recovery-discard disabled><span class="icon is-small" aria-hidden="true"><i class="iconoir-trash"></i></span><span>{% trans "Discard checkpoint" %}</span></button>
+        <button type="button" class="button is-small" data-recovery-download disabled><span class="icon is-small" aria-hidden="true"><i class="iconoir-download"></i></span><span>{% trans "Download checkpoint" %}</span></button>
+    </div>
+</div>

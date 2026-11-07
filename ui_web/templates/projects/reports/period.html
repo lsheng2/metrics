@@ -42,23 +42,34 @@
                     <tr>
                         <th>
                             <strong>{{ row.current_key }}</strong><p class="help">{{ row.title }}</p>
+                                {% if row.visibility == "removed" %}<p>{% trans "Outside current scope" %}</p>{% endif %}
                             {% for persistent in row.persistent_notes %}
                                 <div class="report-readonly-data" data-period-persistent-note>{{ persistent.html|safe }}</div>
                             {% endfor %}
                         </th>
                         {% for cell in row.cells %}
                             <td>
+                                {% if cell.readonly_entries != None %}
+                                {% for readonly in cell.readonly_entries %}
+                                    {% if readonly.kind == "note" %}
+                                    <div class="report-readonly-data" data-period-readonly-note>
+                                        <strong data-period-source-prefix>{{ readonly.prefix }}</strong>{{ readonly.html|safe }}
+                                    </div>
+                                    {% else %}<p data-period-source-observation>{{ readonly.text }}</p>{% endif %}
+                                {% endfor %}
+                                {% else %}
                                 {% for readonly in cell.readonly_notes %}
                                     <div class="report-readonly-data" data-period-readonly-note>
                                         <strong data-period-source-prefix>{{ readonly.prefix }}</strong>
                                         {{ readonly.html|safe }}
                                     </div>
                                 {% endfor %}
+                                {% endif %}
                                 {% for action in cell.actions %}
                                     <p data-period-action-label>{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</p>
                                     <div class="report-readonly-data" data-period-action-body>{{ action.body_html|safe }}</div>
                                 {% endfor %}
-                                {% if not cell.readonly_notes and not cell.actions %}
+                                {% if not cell.readonly_entries and not cell.readonly_notes and not cell.actions %}
                                     <span class="tag is-light">{{ cell.state }}</span>
                                 {% endif %}
                             </td>

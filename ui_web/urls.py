@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.urls import path
+from ui_web.views.report_recovery import ReportRecoveryView
 
 from .utils.url_utils import django_normalized_base_url
 from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView, CurrentTasksStageView, \
@@ -182,6 +183,10 @@ urlpatterns = [
           ReportDraftFinalizeView.as_view(), name='report_draft_finalize'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/resume/',
           ReportDraftResumeView.as_view(), name='report_draft_resume'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/recovery/',
+          ReportRecoveryView.as_view(), name='report_recovery'),
+     path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/drafts/<uuid:draft_id>/recovery/<uuid:client_id>/',
+          ReportRecoveryView.as_view(), name='report_recovery_item'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/publications/<uuid:publication_id>/',
           ReportPublicationView.as_view(), name='report_publication'),
      path(_base_prefix + 'projects/<uuid:project_id>/stages/<uuid:stage_id>/reports/periods/<path:period_key>/',

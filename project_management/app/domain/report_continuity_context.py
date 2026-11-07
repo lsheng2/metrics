@@ -6,6 +6,7 @@ from project_management.app.domain.report_authoring_fragments import validate_ri
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_draft_values import validate_hash_text, validate_uuid_text
 from project_management.app.domain.report_meeting_snapshot import validate_meeting_snapshot
+from project_management.app.domain.report_observation_history import HISTORY_KEYS, validate_history
 
 
 CONTEXT_KEYS = {
@@ -26,10 +27,10 @@ def validate_daily_authoring_context(value, *, series_id=None, meeting=None):
     if not isinstance(value, Mapping):
         raise ReportError('REPORT_ARTIFACT_INVALID')
     version = value.get('schema_version')
-    expected = CONTEXT_KEYS | {'meeting_skips'} if version == 2 else CONTEXT_KEYS
-    if type(version) is not int or version not in {1, 2} or set(value) != expected:
+    expected = CONTEXT_KEYS | (HISTORY_KEYS if version == 3 else {'meeting_skips'} if version == 2 else set())
+    if type(version) is not int or version not in {1, 2, 3} or set(value) != expected:
         raise ReportError('REPORT_ARTIFACT_INVALID')
-    if version == 2:
+    if version == 2 or version == 3 and value['meeting_skips'] is not None:
         validate_meeting_snapshot(value['meeting_skips'], value)
     context_series = validate_uuid_text(value['series_id'])
     if series_id is not None and context_series != validate_uuid_text(series_id):
@@ -54,14 +55,15 @@ def validate_daily_authoring_context(value, *, series_id=None, meeting=None):
         })
         if context_meeting['calendar_id'] != expected['calendar_id'] or context_meeting['calendar_revision'] != expected['calendar_revision']:
             raise ReportError('REPORT_ARTIFACT_INVALID')
-    current_date = None if meeting is None else date.fromisoformat(meeting.local_date)
+    current_date = (date.fromisoformat(context_meeting['local_date']) if version == 3
+                    else None if meeting is None else date.fromisoformat(meeting.local_date))
     publication = _publication_ref(value['base_daily_publication'])
     if value['baseline_choice'] not in {'initial', 'previous_final', 'confirmed_gap'}:
         raise ReportError('REPORT_ARTIFACT_INVALID')
     row_order = _row_order(value['row_order'])
     notes = tuple(_note(item, context_meeting, current_date) for item in _items(value['notes']))
     _unique(((_issue_key(note['issue_ref']), note['meeting']['local_date']) for note in notes))
-    actions = tuple(_action(item, context_meeting, current_date) for item in _items(value['actions']))
+    actions = tuple(_action(item, context_meeting, current_date, version) for item in _items(value['actions']))
     action_ids = {action['action_id'] for action in actions}
     note_ids = {note['note_id'] for note in notes}
     for note in notes:
@@ -75,9 +77,10 @@ def validate_daily_authoring_context(value, *, series_id=None, meeting=None):
     selected = tuple(_publication_ref(item) for item in _items(value['selected_daily_publications']))
     if selected:
         raise ReportError('REPORT_ARTIFACT_INVALID')
-    return {**value, 'base_daily_publication': publication, 'row_order': row_order, 'weekly_seed': weekly_seed,
+    result = {**value, 'base_daily_publication': publication, 'row_order': row_order, 'weekly_seed': weekly_seed,
             'notes': notes, 'actions': actions, 'current_observations': observations,
             'persistent_notes': persistent, 'selected_daily_publications': selected}
+    return validate_history(result) if version == 3 else result
 
 
 def _weekly_view_context(value):
@@ -89,7 +92,7 @@ def _weekly_view_context(value):
         raise ReportError('REPORT_ARTIFACT_INVALID')
     expected = {'calendar_id': period['calendar_id'], 'calendar_revision': period['calendar_revision']}
     notes = tuple(_note(item, expected, None) for item in _items(value['notes']))
-    actions = tuple(_action(item, expected, None) for item in _items(value['actions']))
+    actions = tuple(_action(item, expected, None, value['schema_version']) for item in _items(value['actions']))
     observations = tuple(_observation(item, expected, None) for item in _items(value['current_observations']))
     action_ids = {action['action_id'] for action in actions}
     note_ids = {note['note_id'] for note in notes}
@@ -100,10 +103,11 @@ def _weekly_view_context(value):
     persistent_ids = {note['note_id'] for note in persistent}
     row_order = _row_order(value['row_order'])
     weekly_seed = _weekly_seed(value['weekly_seed'], note_ids, action_ids, persistent_ids)
-    return {**value, 'period': period, 'base_daily_publication': _publication_ref(value['base_daily_publication']),
+    result = {**value, 'period': period, 'base_daily_publication': _publication_ref(value['base_daily_publication']),
             'row_order': row_order, 'weekly_seed': weekly_seed, 'notes': notes, 'actions': actions,
             'current_observations': observations, 'persistent_notes': persistent,
             'selected_daily_publications': selected}
+    return validate_history(result) if value['schema_version'] == 3 else result
 
 
 def _note(value, expected_meeting, current_date):
@@ -117,9 +121,13 @@ def _note(value, expected_meeting, current_date):
             'meeting': meeting, 'body_fragment': fragment, 'source_status': _source_status(value['source_status'])}
 
 
-def _action(value, expected_meeting, current_date):
-    if not isinstance(value, Mapping) or set(value) != ACTION_KEYS:
+def _action(value, expected_meeting, current_date, version=1):
+    if not isinstance(value, Mapping) or set(value) not in (
+            ACTION_KEYS, ACTION_KEYS | {'provenance'} if version == 3 else ACTION_KEYS):
         raise ReportError('REPORT_ARTIFACT_INVALID')
+    if 'provenance' in value:
+        from project_management.app.domain.report_workflow_changes import validate_human_action
+        validate_human_action(value)
     if value['basis'] not in {'recorded', 'proposed'} or value['tracking_state'] not in {'open', 'done', 'canceled', 'unknown'}:
         raise ReportError('REPORT_ARTIFACT_INVALID')
     return {**value, 'action_id': validate_uuid_text(value['action_id']), 'issue_ref': _issue(value['issue_ref']),

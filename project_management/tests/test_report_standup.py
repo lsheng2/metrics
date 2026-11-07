@@ -83,9 +83,10 @@ def test_shouldKeepCompactCoverageAndPendingTicketsWithoutRestoringSourceNarrati
     source, ctx = authored_context()
     coverage = {**source.coverage, 'complete': False, 'members_count': 2, 'accepted_count': 1,
                 'pending_count': 1, 'limitations': ['Some comments are unavailable.']}
-    output = render(replace(source, coverage=coverage), ctx)
-    assert 'Partial' in output.plain_text
-    assert '1 pending' in output.plain_text
+    rows = (source.rows[0], replace(source.rows[1], pending_reason='source_incomplete', summary_ref=None))
+    output = render(replace(source, coverage=coverage, rows=rows), ctx)
+    assert 'Source: 1 complete, 1 incomplete, 0 unavailable' in output.plain_text
+    assert 'AI summaries: 1/2 available' in output.plain_text
     assert 'Some comments are unavailable.' in output.plain_text
     assert 'DEMO-101' in output.plain_text and 'DEMO-102' in output.plain_text
 
@@ -97,7 +98,7 @@ def test_shouldKeepMissingMeetingAndAcknowledgedGapVisibleInCompactCoverage():
     output = render(replace(source, coverage={'complete': True}, days=(missing,)), ctx)
     assert 'Missing reports: 2026-11-01' in output.plain_text
     assert '1 unfinalized draft skipped' in output.plain_text
-    assert 'Coverage: Partial' in output.plain_text
+    assert 'Meeting review: 0/2' in output.plain_text
 
 
 def test_shouldVersionNewProfileAndKeepLegacyPresentationHashAlgorithm():

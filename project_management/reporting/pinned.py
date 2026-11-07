@@ -12,7 +12,8 @@ from project_management.app.domain.report_meeting_snapshot import meeting_skip_t
 from project_management.app.domain.report_presentation import TemplateDefinition
 from project_management.app.domain.report_templates import validate_template_document_snapshot
 from project_management.reporting.fragment_renderers import rich_fragment_to_html
-from project_management.reporting.observations import source_observation_text
+from project_management.reporting.observations import history_entries
+from project_management.app.domain.report_readiness import readiness_text
 from project_management.reporting.text import build_plain_text
 from project_management.reporting.timeline import build_timeline
 from project_management.reporting.view_model import build_report_model
@@ -46,6 +47,9 @@ def compile_pinned_report(engine, source_snapshot, template_snapshot, edits, *, 
         else:
             if block['source'] == 'meeting_matrix':
                 html, text = _meeting_matrix(source_snapshot, context)
+            elif block['source'] == 'coverage' and context and context.get('schema_version') == 3:
+                text = readiness_text(source_snapshot, context)
+                html = f'<section><h2>Report readiness</h2><p>{escape(text)}</p></section>'
             else:
                 html, text = _data(engine, source_snapshot, snapshot, data_edits, block, draft_id,
                                    revision, revision_hash, edition_state)
@@ -187,7 +191,6 @@ def _meeting_matrix(source_snapshot, context):
     projection = build_meeting_matrix(source_snapshot, context)
     notes_by_id = {note['note_id']: note for note in context['notes']}
     actions_by_id = {action['action_id']: action for action in context['actions']}
-    observations = {item['note_id']: item for item in context['current_observations']}
     persistent_by_issue = {}
     report_persistent = []
     for note in context['persistent_notes']:
@@ -199,7 +202,7 @@ def _meeting_matrix(source_snapshot, context):
     rows = []
     text_rows = []
     for row in projection.rows:
-        cells = ''.join(_cell_html(cell, notes_by_id, actions_by_id, observations) for cell in row.cells)
+        cells = ''.join(_cell_html(cell, notes_by_id, actions_by_id, context, row.issue_ref) for cell in row.cells)
         label = row.current_key
         row_persistent = tuple(persistent_by_issue.get(_issue_key(row.issue_ref), ()))
         rows.append(
@@ -209,7 +212,7 @@ def _meeting_matrix(source_snapshot, context):
             '</tr>'
         )
         row_text = label + _persistent_notes_text(row_persistent)
-        text_rows.append(row_text + '\n' + '\n'.join(_cell_text(cell, notes_by_id, actions_by_id, observations) for cell in row.cells))
+        text_rows.append(row_text + '\n' + '\n'.join(_cell_text(cell, notes_by_id, actions_by_id, context, row.issue_ref) for cell in row.cells))
     html = (
         '<section style="margin:0 0 18px 0;">'
         '<h2 style="margin:0 0 8px 0; color:#0f766e; font-size:18px;">Meeting matrix</h2>'
@@ -224,29 +227,21 @@ def _meeting_matrix(source_snapshot, context):
     return html, 'Meeting matrix\n' + report_text + '\n\n'.join(text_rows)
 
 
-def _cell_html(cell, notes_by_id, actions_by_id, observations):
-    notes = ''.join(_note_html(notes_by_id[note_id]) for note_id in cell.note_ids)
+def _cell_html(cell, notes_by_id, actions_by_id, context, issue_ref):
+    entries = history_entries(context, issue_ref, cell.local_date, [notes_by_id[key] for key in cell.note_ids])
+    notes = ''.join(_note_html(item['note']) if item['kind'] == 'note'
+                    else f'<p>{escape(item["text"])}</p>' for item in entries)
     actions = ''.join(_action_html(actions_by_id[action_id]) for action_id in cell.action_ids)
-    notice = source_observation_text(
-        observations.get(cell.current_observation_note_id),
-        has_note=cell.current_observation_note_id in cell.note_ids,
-    )
-    body = (notes + f'<p style="margin:0 0 8px 0;">{escape(notice)}</p>' + actions
-            if notice else _status_html(cell.state) + notes + actions)
+    body = _status_html(cell.state) + notes + actions
     if not body:
         body = f'<p style="margin:0; color:#64748b;">{escape(_empty_label(cell.state))}</p>'
     return f'<td style="border:1px solid #cbd5e1; padding:6px; vertical-align:top;">{body}</td>'
 
 
-def _cell_text(cell, notes_by_id, actions_by_id, observations):
-    notice = source_observation_text(
-        observations.get(cell.current_observation_note_id),
-        has_note=cell.current_observation_note_id in cell.note_ids,
-    )
-    parts = [_empty_label(cell.state)] if not notice and cell.state in {'missing', 'not_captured', 'unavailable'} else []
-    parts.extend(_note_text(notes_by_id[note_id]) for note_id in cell.note_ids)
-    if notice:
-        parts.append(notice)
+def _cell_text(cell, notes_by_id, actions_by_id, context, issue_ref):
+    entries = history_entries(context, issue_ref, cell.local_date, [notes_by_id[key] for key in cell.note_ids])
+    parts = [_empty_label(cell.state)] if cell.state in {'missing', 'not_captured', 'unavailable'} else []
+    parts.extend(_note_text(item['note']) if item['kind'] == 'note' else item['text'] for item in entries)
     parts.extend(_action_text(actions_by_id[action_id]) for action_id in cell.action_ids)
     return '\n'.join(parts) if parts else _empty_label(cell.state)
 

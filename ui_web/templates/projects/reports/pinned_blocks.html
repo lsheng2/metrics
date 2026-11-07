@@ -47,6 +47,7 @@
                                     <th style="background:#f8fafc; color:#111827;">
                                         <strong data-matrix-ticket-key style="color:#111827;">{{ row.current_key }}</strong>
                                         <p class="help" style="color:#334155;">{{ row.title }}</p>
+                                        {% if row.visibility == "removed" %}<p>{% trans "Outside current scope" %}</p>{% endif %}
                                         <div class="buttons are-small mt-2">
                                             <button class="button is-small" type="button" data-continuity-add-persistent data-issue-ref-json="{{ row.issue_ref_json|escape }}">
                                                 {% trans "Add persistent" %}
@@ -70,6 +71,12 @@
                                             {% endif %}
                                         </div>
                                         <div data-continuity-persistent-list></div>
+                                        {% if row.workflow_editable %}
+                                            <button class="button is-small" type="button" data-continuity-add-action data-issue-ref-json="{{ row.issue_ref_json|escape }}">
+                                                <span class="icon is-small" aria-hidden="true"><i class="iconoir-plus"></i></span><span>{% trans "Add AR" %}</span>
+                                            </button>
+                                            <div data-continuity-new-actions></div>
+                                        {% endif %}
                                         {% for persistent in row.persistent_notes %}
                                             <div class="notification is-light mt-2" data-continuity-persistent-note-id="{{ persistent.note_id }}">
                                                 {% with region=persistent.region label="Persistent note" %}
@@ -84,14 +91,33 @@
                                     </th>
                                     {% for cell in row.cells %}
                                         <td style="background:#ffffff; color:#1f2933;">
+                                            {% if cell.readonly_entries != None %}
+                                            {% for readonly in cell.readonly_entries %}
+                                                {% if readonly.kind == "note" %}
+                                                <div class="report-readonly-data notification is-light" data-matrix-readonly-note style="background:#f8fafc; color:#1f2933;">
+                                                    <p><strong data-matrix-readonly-prefix>{{ readonly.prefix }}</strong></p>{{ readonly.html|safe }}
+                                                </div>
+                                                {% else %}<p data-matrix-history-observation style="color:#334155;">{{ readonly.text }}</p>{% endif %}
+                                            {% endfor %}
+                                            {% else %}
                                             {% for readonly in cell.readonly_notes %}
                                                 <div class="report-readonly-data notification is-light" data-matrix-readonly-note style="background:#f8fafc; color:#1f2933;">
                                                     <p style="margin:0 0 6px 0; color:#111827;"><strong data-matrix-readonly-prefix style="color:#111827;">{{ readonly.prefix }}</strong></p>
                                                     {{ readonly.html|safe }}
                                                 </div>
                                             {% endfor %}
+                                            {% endif %}
                                             {% if cell.prefix %}<p style="margin:0 0 6px 0; color:#111827;"><strong data-matrix-source-prefix style="color:#111827;">{{ cell.prefix }}</strong></p>{% endif %}
                                             {% if cell.observation_label %}<p data-matrix-source-observation style="margin:0 0 6px 0; color:#334155;">{% trans cell.observation_label %}</p>{% endif %}
+                                            {% if cell.review_editable %}
+                                            <label class="label is-small" style="color:#334155;">{% trans "Meeting review" %}</label>
+                                            <div class="select is-small"><select data-meeting-review data-original-review="{{ cell.review }}" data-review-payload="{{ cell.review_payload|escape }}" aria-label="{% trans "Meeting review" %}">
+                                                <option value="unreviewed" {% if cell.review == "unreviewed" %}selected{% endif %}>{% trans "Unreviewed" %}</option>
+                                                <option value="discussed" {% if cell.review == "discussed" %}selected{% endif %}>{% trans "Discussed" %}</option>
+                                                <option value="not_discussed" {% if cell.review == "not_discussed" %}selected{% endif %}>{% trans "Not discussed" %}</option>
+                                                <option value="no_additional_update" {% if cell.review == "no_additional_update" %}selected{% endif %}>{% trans "No additional update confirmed" %}</option>
+                                            </select></div>
+                                            {% endif %}
                                             {% for action in cell.actions %}
                                                 <div class="mt-2" data-matrix-action-body style="background:#f8fafc; color:#1f2933;">
                                                     {% if action.region %}
@@ -105,6 +131,17 @@
                                                 {% if action.region %}
                                                     <details class="mt-2" data-continuity-action-control data-action-id="{{ action.action_id }}" data-expected-state="{{ action.state }}" data-evidence-refs="{{ action.evidence_json|escape }}">
                                                         <summary data-matrix-action-label style="color:#111827;">{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</summary>
+                                                        {% if action.human %}
+                                                        <label class="label is-small" style="color:#334155;">{% trans "AR owner" %}</label>
+                                                        <input class="input is-small" type="text" maxlength="160" data-report-action-owner data-original-owner="{{ action.original_owner }}" data-owner-payload="{{ action.owner_payload|escape }}" value="{{ action.original_owner }}" aria-label="{% trans "AR owner" %}">
+                                                        {% endif %}
+                                                        <label class="label is-small" style="color:#334155;">{% trans "AR state" %}</label>
+                                                        <div class="select is-small"><select data-report-action-state aria-label="{% trans "AR state" %}">
+                                                            <option value="open" {% if action.state == "open" %}selected{% endif %}>{% trans "Open" %}</option>
+                                                            <option value="unknown" {% if action.state == "unknown" %}selected{% endif %}>{% trans "Unknown" %}</option>
+                                                            <option value="done" {% if action.state == "done" %}selected{% endif %}>{% trans "Done" %}</option>
+                                                            <option value="canceled" {% if action.state == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
+                                                        </select></div>
                                                         <label class="checkbox"><input type="checkbox" data-continuity-action-done> {% trans "Mark done" %}</label>
                                                         <div class="report-editor-surface mt-2" data-continuity-action-editor tabindex="0" aria-label="{% trans "Resolution" %}"></div>
                                                         {% for evidence in action.evidence_refs %}

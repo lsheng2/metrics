@@ -87,9 +87,13 @@ from project_management.services.report_templates import ReportTemplateService
 from project_management.services.report_sources import ReportSourceReader
 from project_management.services.report_membership import ScopeMember, ScopeMembershipSnapshot
 from project_management.app.api.report_meetings import ReportMeetingService
+from project_management.app.domain.report_readiness import ReportReadiness, report_readiness
+from project_management.services.report_recovery import ReportRecoveryService
 
 
 __all__ = [
+    'ReportRecoveryService',
+    'ReportReadiness', 'report_readiness',
     'ReportMeetingService',
     'AssistStatus',
     'AssistTarget',

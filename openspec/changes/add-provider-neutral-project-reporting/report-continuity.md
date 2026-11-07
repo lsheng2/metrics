@@ -2,6 +2,8 @@
 
 日期：2026-11-03；2026-11-07补充源观察与摘要就绪分离。
 原始架构和后续实施边界以唯一任务表及当前指南为准；本次补充已获批准，实施状态见`W6.OBS.*`。
+2026-11-08后续设计：[standup-user-workflow.md](standup-user-workflow.md)增加v3历史观察、
+显式人工AR/讨论和恢复草稿；本附录v1/current-only等历史边界由该版本化设计取代。
 父设计：[Report Authoring V2](report-authoring-v2.md)。
 契约：[authoring contracts](report-authoring-contracts.md)；
 场景：[report-authoring delta](specs/report-authoring/spec.md)；

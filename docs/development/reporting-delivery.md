@@ -267,6 +267,10 @@ Changing UI labels requires regenerating the checked-in zh-Hans `.mo` from its
 
 ## Report Read Performance
 
+The later user-workflow changes are qualified separately below. Existing performance
+receipts are historical measurements of their named candidates, not measured SLOs
+for recovery checkpoint writes or the new controls.
+
 2026-11-06的症状与profile已固定为
 [性能基线](../../openspec/changes/add-provider-neutral-project-reporting/performance-baseline.json)：
 语言POST为毫秒级，工作台GET的主要成本是169次串行Git读取及重复packet校验。
@@ -303,3 +307,38 @@ Git对象、checkout物化、六文件校验都恢复正常实现。不要用临
 具体原始样本、截图、代码/数据/环境指纹与正常清理记录见
 [性能交付回执](../../openspec/changes/add-provider-neutral-project-reporting/performance-delivery.md)。
 此结果仅关闭本机限定性能门槛，不授权真实来源/模型、定时任务或生产服务切换。
+
+## User Workflow Hardening
+
+[The workflow packet](../../openspec/changes/add-provider-neutral-project-reporting/standup-user-workflow.md)
+extends daily authoring to context v3. Legacy v1/v2 readers remain byte-preserving.
+The current editable observation set is not the cumulative read-only observation
+history. Period merge, skip snapshot freezing, reprepare preservation, both report
+renderers and both editor/period templates consume the new history.
+
+`test_report_user_workflow.py` and `test_report_workflow_changes.py` are the
+bounded pure checks for zero-member meetings, reentry, freshness, observation-only
+days, human AR and explicit discussion. Update older tests that reused an old
+capture as if it were fresh: retain their content-equality assertion and supply
+a new capture/time for the no-freshness-warning case. Do not weaken date disclosure
+to preserve the old test wording.
+
+`test_report_user_workflow_publication.py` uses real local Git and a synthetic
+source projection for four selected dates spanning empty scope/reentry, then
+checks all original publication files. `test_report_recovery.py` exercises
+atomic checkpoint persistence, sequence/idempotency, independent tabs, size,
+binding, corruption and expiry. `test_report_recovery_views.py` covers authenticated
+JSON, CSRF and no-store. `report_recovery_test.mjs` covers serialized checkpoint
+writes and exact restore binding.
+
+Mounted `test_report_user_workflow_browser.py` closes and recreates the browser,
+restores unsaved painted notes, AR, persistent content and review selection, then
+Saves and exercises owner changes/closure/reopen. A separate lost-Save-response
+case commits the real server request but drops its response, proving stale
+recovery remains download-only and does not overwrite the saved revision.
+Wait for the actual final checkpoint HTTP response, not a truthy async JavaScript
+predicate that can finish before the write. Preserve that failed probe separately.
+
+Evidence root remains `.tmp/dashboard-user-workflow-20261107/`; work continued
+on 2026-11-08 without changing historical filenames. No real provider/model,
+production migration, existing service switch or S1/full-week rerun is implied.

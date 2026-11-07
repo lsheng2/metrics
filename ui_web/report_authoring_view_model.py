@@ -86,6 +86,7 @@ def pinned_report_body(draft, renderer=None):
                            'matrix': pinned_matrix(draft, continuity_edits) if block['source'] == 'meeting_matrix' else None})
     return {
         'pinned': True,
+        'readiness': report_api.report_readiness(draft.snapshot, draft.authoring_context),
         'meeting_skip_notice': meeting_skip_text(draft.authoring_context),
         'blocks': tuple(blocks),
         'messages': (),

@@ -10,6 +10,7 @@ from project_management.app.domain.report_draft_values import canonical_hash
 from project_management.app.domain.report_publication_contracts import publication_path
 from project_management.services.report_publication_reads import ReportPublicationReader
 from project_management.storage.report_drafts import ReportDraftStore
+from project_management.app.domain.report_observation_history import preserved_reviews
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +120,8 @@ def _merge_context(parent, current):
         'actions': actions,
         'persistent_notes': persistent,
     }
+    if current['schema_version'] == 3:
+        merged['meeting_reviews'] = preserved_reviews(parent, current)
     merged = _recompute_weekly_seed(merged)
     return validate_daily_authoring_context(merged), tuple(issues)
 

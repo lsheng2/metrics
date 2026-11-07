@@ -3,6 +3,7 @@ from typing import Literal, Mapping
 
 from project_management.app.domain.report_continuity_context import validate_daily_authoring_context
 from project_management.app.domain.report_meeting_snapshot import skipped_dates
+from project_management.app.domain.report_observation_history import all_observations, in_period, known_meetings
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,7 +49,7 @@ def build_meeting_matrix(snapshot, context) -> MeetingMatrixProjection:
     actions = {}
     for note in context['notes']:
         notes.setdefault(_issue_key(note['issue_ref']), []).append(note)
-    for observation in context['current_observations']:
+    for observation in all_observations(context):
         observations[(_issue_key(observation['issue_ref']), observation['meeting']['local_date'])] = observation
     for action in context['actions']:
         if action['tracking_state'] in {'done', 'canceled'}:
@@ -75,6 +76,10 @@ def _columns(snapshot, context):
     states = {}
     cutoff = _column_cutoff(context)
     skipped = skipped_dates(context)
+    for item in known_meetings(context):
+        meeting = item['meeting']
+        if in_period(meeting, context['period']) and (cutoff is None or meeting['local_date'] <= cutoff):
+            states[meeting['local_date']] = 'captured'
     for day in tuple(getattr(snapshot, 'days', ()) or ()):
         if cutoff is not None and day.report_date > cutoff:
             continue
@@ -85,9 +90,9 @@ def _columns(snapshot, context):
         local_date = note['meeting']['local_date']
         if _note_in_context_period(note, context) and (cutoff is None or local_date <= cutoff):
             states.setdefault(local_date, 'captured')
-    for observation in context['current_observations']:
+    for observation in all_observations(context):
         local_date = observation['meeting']['local_date']
-        if cutoff is not None and local_date > cutoff:
+        if not in_period(observation['meeting'], context['period']) or cutoff is not None and local_date > cutoff:
             continue
         states.setdefault(local_date, 'captured')
     return tuple(MeetingMatrixColumn(
@@ -101,7 +106,7 @@ def _columns(snapshot, context):
 def _column_cutoff(context):
     if context['meeting'] is not None:
         return context['meeting']['local_date']
-    dates = tuple(observation['meeting']['local_date'] for observation in context['current_observations'])
+    dates = tuple(item['meeting']['local_date'] for item in known_meetings(context))
     return max(dates) if dates else None
 
 
@@ -138,7 +143,7 @@ def _meeting_key_for_date(context, local_date):
         if note['meeting']['local_date'] == local_date:
             meeting = note['meeting']
             return f"{meeting['calendar_id']}:{meeting['calendar_revision']}:{meeting['local_date']}"
-    for observation in context['current_observations']:
+    for observation in all_observations(context):
         if observation['meeting']['local_date'] == local_date:
             meeting = observation['meeting']
             return f"{meeting['calendar_id']}:{meeting['calendar_revision']}:{meeting['local_date']}"

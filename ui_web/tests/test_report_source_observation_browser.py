@@ -36,6 +36,10 @@ class TestSourceObservationBrowser(ReportHistoryUiBrowserSupport):
             *args, monday.draft_id, command_id=draft_command(15004), expected_revision=saved.revision,
         )
         self.source.source_commit = publication.commit_id
+        self.archive.capture_id = '99999999-9999-4999-8999-999999999998'
+        self.source.snapshot = replace(
+            self.source.snapshot, source_as_of='2026-11-03T01:00:00Z', report_date='2026-11-03',
+        )
         tuesday = self.prepared_continuity_draft(
             setup=setup, command_index=15005, meeting_date='2026-11-03', baseline=ref_for(publication),
         )
@@ -95,6 +99,7 @@ class TestSourceObservationBrowser(ReportHistoryUiBrowserSupport):
                     page.wait_for_function("""() =>
                         document.querySelector('[data-report-editor]')?.dataset.revision === '2'
                         && !document.querySelector('[data-matrix-source-observation]')""")
+                    page.locator(selector).filter(has_text='Tuesday human note.').wait_for()
                     self.assertIn('Tuesday human note.', page.locator(selector).inner_text())
                     page.screenshot(path=str(evidence / 'saved-human-note-zh-hans.png'), full_page=True)
 
