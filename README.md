@@ -40,6 +40,10 @@ definitions are previewed and frozen. Live reporting and the full delta pipeline
 not yet qualified.
 See the [current guide](openspec/docs/current-baseline/project-reporting.md) and
 [execution plan](openspec/changes/add-provider-neutral-project-reporting/tasks.md).
+Legacy standalone source, unpublished work and local history are preserved in a
+verified private archive outside the code repository. Use the [retirement and recovery guide](docs/migration/legacy-workspace-retirement.md)
+for the source locator and deletion prerequisites; retirement does not close
+the remaining product migration or deployment tasks.
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)

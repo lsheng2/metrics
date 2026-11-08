@@ -270,7 +270,8 @@ Dashboard维护者只记录依赖和consumer验收；基座OpenSpec维护自己�
 ## 9. 接口权威与证据入口
 
 基座采纳后，其OpenSpec和 `docs/common` 成为generic协议权威，本文仅作需求来源/讨论记录。
-旧项目中的详细[Run契约建议](../../../../chiplet_programmgr/docs/research/2026-11-01-ai-base-run-contract.md)
+旧项目中的详细[Run契约建议保管位置](../../../docs/migration/legacy-workspace-retirement.md#今后查阅旧资料)
+为私有归档`snapshot/docs/research/2026-11-01-ai-base-run-contract.md`，
 是可参考的严格任务设计输入，不是要求所有应用遵守的既成API，尤其不固定状态拼写/内部表结构。
 跨仓差异应回传contract版本、API change log与逐应用迁移包，再更新adapter，不用临时shim伪装新能力。
 

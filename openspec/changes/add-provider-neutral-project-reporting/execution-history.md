@@ -97,7 +97,8 @@ DAILY总节点保持未勾选，ASSIST与完整JOIN尚未实施/执行。
 （PID83404/50700）不属于本轮，未停止，不宣称全机无服务。
 
 复盘与下一阶段建议：
-[2026-11-05作者层执行复盘](../../../../chiplet_programmgr/docs/development/2026-11-05-report-authoring-postmortem.md)。
+[2026-11-05作者层执行复盘的保管位置](../../../docs/migration/legacy-workspace-retirement.md#今后查阅旧资料)：
+私有归档`snapshot/docs/development/2026-11-05-report-authoring-postmortem.md`，原字节保持不变。
 恢复后先复用已冻结证据核对DAILY尚缺的消费者，不重开已关闭的全包评审；
 后续仍欠ASSIST、导出/复制、2026-10-26..30及11-02整周JOIN、最终R/REPLAN。
 这些是暂停交接和建议，不是新执行授权或另一套任务清单。

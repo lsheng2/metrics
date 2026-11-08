@@ -22,6 +22,9 @@ The documentation snapshot is not a claim the deployed patch version changed.
 | Changelog | Expanded issue response; no independent issue/changelog path in checked schema | Unknown/partial expansion remains a coverage gap; do not invent endpoint |
 
 Donor read-only delta evidence is `D:/AIGC/chiplet_programmgr/docs/research/2026-10-22-jira-delta-feasibility.md`.
+That is the historical source identifier. After retirement, read the same relative
+path under the private archive's `snapshot`, using the
+[relocation guide](../../../docs/migration/legacy-workspace-retirement.md).
 Repeated comment additions have distinct IDs; all captured versions remain archived.
 No timestamp alone proves a successful accepted summary or permanent authorization.
 

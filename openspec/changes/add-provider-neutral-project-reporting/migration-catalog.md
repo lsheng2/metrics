@@ -5,6 +5,20 @@
 新执行根为Dashboard；下面的src/standup和tests路径除特别注明均相对旧库。
 这是能力族盘点和代表性依赖/测试，不是已迁移文件清单或旧T12全部验收证明。
 
+## 退役后的来源定位
+
+2026-11-08启动独立[旧工作区退役](../retire-legacy-standup-workspace/proposal.md)。
+原根/commit继续作为历史provenance，不修改本表或`*-source.json`中的冻结hash。
+今后查源码、资源、未提交研究及旧测试时使用
+[退役与恢复指南](../../../docs/migration/legacy-workspace-retirement.md)指定的私有归档：
+`snapshot`下面的相对路径与旧根相同，固定commit从`history.bundle`恢复读取。
+不能把dirty snapshot当作固定commit，也不能把归档加入运行时`PYTHONPATH`。
+
+本表所有MIG-01至MIG-19的源文件、测试、配置和旧OpenSpec都在完整归档范围；
+新产品仍按各叶任务验收。未移植能力有可取回的源码，不等于已经移入生产模块。
+MIG-11/W4.IMPORT指业务历史导入，MIG-16/17/W7.PROTECTION指产品保护能力；
+本次文件保管、Git恢复及目录退役不替代或勾选这些功能。
+
 ## 1. 如何判断能否直接搬
 
 - A：算法/数据结构可优先复用，仍须改import/schema资源、provider身份边界并在目标环境测试。
@@ -65,7 +79,9 @@
 
 源码/测试/无secret模板可以按固定版本port。
 token采用沿provider-access.md的预览/ACL/原子写流程；本轮没有执行真实采用。
-旧captures/报告/账本必须通过MIG-11的历史导入，不复制整个旧 `.local` 或运行进程的数据库。
+把旧captures/报告/账本作为Dashboard运行历史使用时，必须通过MIG-11的历史导入，
+不能把整个旧 `.local` 或运行进程的数据库直接当作新应用数据库。
+退役流程允许在代码仓库外完整冷归档原字节；这只是保管，不是业务导入或历史接受。
 Git remote、调度任务、机器重启、AI Base实模调用仍分别受既有授权边界约束。
 
 ## 5. 本次盘点限制
