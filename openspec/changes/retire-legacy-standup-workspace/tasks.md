@@ -68,7 +68,9 @@ Produces: original-preservation, independent-runtime and deletion-readiness evid
   13 protected paths and 4 frozen manifests unchanged; 61 local links and scoped size/parser checks pass.
 - [x] Obtain an independent bounded review and address actual findings; final receipt/data gate approved.
 - [x] Write delivery receipt/current guide with counts, evidence and deletion prerequisites.
-- [ ] Publish only allowlisted non-sensitive maintenance/docs/test changes if existing origin authorization applies.
+- [x] Publish only allowlisted non-sensitive maintenance/docs/test changes:
+  `19def9129f0f1585cd0ea1c72c1397b0981b9b5a` verified on `origin/main`; 14 paths,
+  no raw archive/data/credentials and no unrelated changes included.
 
 Stop after the directory is deletion-ready. Do not delete it or resume other work.
 

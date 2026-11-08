@@ -8,6 +8,13 @@
   "archiveRoot": "D:/AIGC/retired_workspaces/chiplet_programmgr-20261108",
   "sourceHead": "3d06b7a4a25434ee2fa133c9b4bef5f9c7c1366d",
   "dashboardValidationBase": "88aab98433280b4f352654bf34c3a8591b587b15",
+  "publication": {
+    "codeCommit": "19def9129f0f1585cd0ea1c72c1397b0981b9b5a",
+    "remote": "origin/main",
+    "remoteShaVerified": true,
+    "scopedFiles": 14,
+    "rawDataAndCredentialsIncluded": false
+  },
   "preservation": {
     "ordinaryFiles": 128752,
     "ordinaryBytes": 2059470928,
