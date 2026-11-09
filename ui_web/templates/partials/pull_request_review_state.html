@@ -1,11 +1,15 @@
 {% load pull_request_filters %}
 {% if pull_request %}
 <div hx-swap-oob="innerHTML:#pr-policy-{{ pull_request.id }}">
-    {% for policy in pull_request.policies %}
-        <span class="tag is-small mr-1 mb-1 {{ policy.css_class }}" title="{{ policy.name }} — {{ policy.status }}"><i class="{{ policy.icon }} mr-1"></i>{{ policy.name }}</span>
-    {% empty %}
-        <span class="has-text-grey-light">—</span>
-    {% endfor %}
+    {% if pull_request.policies %}
+    <span class="tags">
+        {% for policy in pull_request.policies %}
+            <span class="tag is-small {{ policy.css_class }}" title="{{ policy.name }}: {{ policy.status }}"><i class="{{ policy.icon }}" aria-hidden="true"></i>{{ policy.name }}</span>
+        {% endfor %}
+    </span>
+    {% else %}
+    <span class="has-text-grey-light">—</span>
+    {% endif %}
 </div>
 <div hx-swap-oob="innerHTML:#pr-main-{{ pull_request.id }}">
     {% include "partials/pull_request_approval_tags.html" with approvals=pull_request.approvals|main_approvals %}

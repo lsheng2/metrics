@@ -1,0 +1,242 @@
+/*
+ * Meridian foundation: tables, table containers and tags.
+ * Tokens only; the layer order lives in ui_web/static_assets.py.
+ */
+
+/* ----------------------------------------------------------------- data */
+
+.table {
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.table.is-fullwidth {
+    width: 100%;
+}
+
+.table :is(th, td):where(:not(.paper *)) {
+    padding: var(--space-1-5) var(--space-2-5);
+    border-bottom: 1px solid var(--color-border-subtle);
+    vertical-align: top;
+}
+
+.table :is(thead, tfoot) th:where(:not(.paper *)) {
+    background: var(--color-surface-muted);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
+    text-align: left;
+    vertical-align: bottom;
+    white-space: nowrap;
+}
+
+.table thead th:where(:not(.paper *)) {
+    border-bottom-color: var(--color-border);
+}
+
+.table tbody tr:last-child > :is(td, th):where(:not(.paper *)) {
+    border-bottom: 0;
+}
+
+.table.is-narrow :is(td, th):where(:not(.paper *)) {
+    padding: var(--space-1) var(--space-2);
+}
+
+.table.is-hoverable tbody tr:not(.is-selected):hover {
+    background: var(--color-surface-hover);
+}
+
+.table tr.is-selected {
+    background: var(--color-accent-subtle);
+}
+
+.table a:not(.button, .tag, .work-item-ref__title, .paper *) {
+    color: var(--color-accent-text);
+}
+
+.table :is(td, th).is-numeric {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.table :is(td, th).is-nowrap,
+.table td :is(time, .tag) {
+    white-space: nowrap;
+}
+
+.table td > .tag + .tag {
+    margin-left: var(--space-1);
+}
+
+.table td > code {
+    font-size: var(--text-xs);
+}
+
+.table td > .status-dot {
+    margin: 0 var(--space-1);
+    vertical-align: 0.0625rem;
+}
+
+/* Secondary line under a cell's primary value: parent item, status, owner. */
+.table .cell-meta {
+    display: block;
+    margin-top: var(--space-0-5);
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+    line-height: var(--leading-tight);
+}
+
+.table .cell-meta a:not(.button, .tag) {
+    color: inherit;
+}
+
+.table .cell-meta a:not(.button, .tag):hover {
+    color: var(--color-text-secondary);
+}
+
+/* `<tr class="is-empty-row"><td colspan="N">…</td></tr>` — the quiet placeholder for an empty table. */
+.table tr.is-empty-row > td {
+    padding: var(--space-6) var(--space-4);
+    background: var(--color-surface);
+    color: var(--color-text-tertiary);
+    text-align: center;
+}
+
+/* Scroll containers are positioned so absolutely positioned descendants (`.is-sr-only` text)
+   scroll with their content instead of widening the page. */
+.table-container {
+    position: relative;
+    overflow: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-container > .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+}
+
+/* Tables placed directly in page flow sit in a framed panel; tables inside cards stay flush. */
+.table-container.is-framed {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.table-container.is-framed:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.tags:not(:last-child) {
+    margin-bottom: var(--space-2);
+}
+
+.tags.has-addons {
+    flex-wrap: nowrap;
+    gap: 0;
+}
+
+.tags.has-addons .tag:not(:first-child) {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+}
+
+.tags.has-addons .tag:not(:last-child) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+.tag {
+    --tone-bg: var(--color-neutral-subtle);
+    --tone-border: var(--color-neutral-border);
+    --tone-text: var(--color-neutral-text);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    height: 1.25rem;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--tone-bg);
+    box-shadow: inset 0 0 0 1px var(--tone-border);
+    color: var(--tone-text);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-medium);
+    line-height: 1;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.tag.is-primary,
+.tag.is-link {
+    --tone-bg: var(--color-accent-subtle);
+    --tone-border: var(--color-accent-border);
+    --tone-text: var(--color-accent-text);
+}
+
+.tag.is-info {
+    --tone-bg: var(--color-info-subtle);
+    --tone-border: var(--color-info-border);
+    --tone-text: var(--color-info-text);
+}
+
+.tag.is-success {
+    --tone-bg: var(--color-success-subtle);
+    --tone-border: var(--color-success-border);
+    --tone-text: var(--color-success-text);
+}
+
+.tag.is-warning {
+    --tone-bg: var(--color-warning-subtle);
+    --tone-border: var(--color-warning-border);
+    --tone-text: var(--color-warning-text);
+}
+
+.tag.is-danger {
+    --tone-bg: var(--color-danger-subtle);
+    --tone-border: var(--color-danger-border);
+    --tone-text: var(--color-danger-text);
+}
+
+.tag.is-dark {
+    --tone-bg: var(--color-surface-inverse);
+    --tone-border: var(--color-surface-inverse);
+    --tone-text: var(--color-on-inverse);
+}
+
+.tag.is-white {
+    --tone-bg: var(--color-surface);
+    --tone-border: var(--color-border);
+    --tone-text: var(--color-text);
+}
+
+.tag.is-small {
+    height: 1.125rem;
+    padding: 0 var(--space-1-5);
+    font-size: var(--text-2xs);
+}
+
+.tag.is-medium {
+    height: 1.5rem;
+    padding: 0 var(--space-2-5);
+    font-size: var(--text-sm);
+}
+
+.tag .delete {
+    width: 0.875rem;
+    height: 0.875rem;
+    margin-right: calc(var(--space-1) * -1);
+}

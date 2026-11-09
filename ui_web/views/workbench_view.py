@@ -142,6 +142,7 @@ class WorkbenchView(GracefulTemplateView):
         context['begin'] = begin.isoformat()
         context['end'] = end.isoformat()
         context['chart_json'] = self.bug_trend_facade.get_chart_json(chart_data)
+        context['chart_has_data'] = bool(chart_data.labels)
         context['unavailable_reason'] = chart_data.unavailable_reason
         context['run_metadata'] = chart_data.run_metadata or {}
         context['evidence'] = None

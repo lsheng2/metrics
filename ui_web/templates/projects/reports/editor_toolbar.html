@@ -1,47 +1,59 @@
 {% load i18n %}
 <div class="report-editor-toolbar" data-report-shared-toolbar role="toolbar" aria-label="{% trans "Formatting" %}">
-    <div class="select is-small">
-        <select data-report-command="block" aria-label="{% trans "Block style" %}">
-            <option value="paragraph">{% trans "Paragraph" %}</option>
-            <option value="h1">{% trans "Heading 1" %}</option>
-            <option value="h2">{% trans "Heading 2" %}</option>
-            <option value="h3">{% trans "Heading 3" %}</option>
-            <option value="quote">{% trans "Quote" %}</option>
-        </select>
+    <div class="report-toolbar-group" role="group" aria-label="{% trans "Block style" %}">
+        <div class="select is-small">
+            <select data-report-command="block" aria-label="{% trans "Block style" %}">
+                <option value="paragraph">{% trans "Paragraph" %}</option>
+                <option value="h1">{% trans "Heading 1" %}</option>
+                <option value="h2">{% trans "Heading 2" %}</option>
+                <option value="h3">{% trans "Heading 3" %}</option>
+                <option value="quote">{% trans "Quote" %}</option>
+            </select>
+        </div>
+        <div class="select is-small">
+            <select data-report-command="code-block" aria-label="{% trans "Code block language" %}" title="{% trans "Code block language" %}">
+                <option value="">{% trans "Code block" %}</option>
+                <option value="text">{% trans "Text" %}</option>
+                <option value="python">Python</option>
+                <option value="json">JSON</option>
+                <option value="markdown">Markdown</option>
+                <option value="yaml">YAML</option>
+                <option value="sql">SQL</option>
+                <option value="bash">Bash</option>
+                <option value="powershell">PowerShell</option>
+            </select>
+        </div>
     </div>
-    <button class="button is-small" type="button" data-report-command="bold" aria-label="{% trans "Bold" %}" title="{% trans "Bold" %}"><strong>B</strong></button>
-    <button class="button is-small" type="button" data-report-command="italic" aria-label="{% trans "Italic" %}" title="{% trans "Italic" %}"><em>I</em></button>
-    <button class="button is-small" type="button" data-report-command="strike" aria-label="{% trans "Strike" %}" title="{% trans "Strike" %}"><s>S</s></button>
-    <button class="button is-small" type="button" data-report-command="code" aria-label="{% trans "Inline code" %}" title="{% trans "Inline code" %}"><code>{ }</code></button>
-    <div class="select is-small">
-        <select data-report-command="code-block" aria-label="{% trans "Code block language" %}" title="{% trans "Code block language" %}">
-            <option value="">{% trans "Code block" %}</option>
-            <option value="text">{% trans "Text" %}</option>
-            <option value="python">Python</option>
-            <option value="json">JSON</option>
-            <option value="markdown">Markdown</option>
-            <option value="yaml">YAML</option>
-            <option value="sql">SQL</option>
-            <option value="bash">Bash</option>
-            <option value="powershell">PowerShell</option>
-        </select>
+    <div class="report-toolbar-group" role="group" aria-label="{% trans "Text style" %}">
+        <button class="button is-small" type="button" data-report-command="bold" aria-label="{% trans "Bold" %}" title="{% trans "Bold" %}"><strong>B</strong></button>
+        <button class="button is-small" type="button" data-report-command="italic" aria-label="{% trans "Italic" %}" title="{% trans "Italic" %}"><em>I</em></button>
+        <button class="button is-small" type="button" data-report-command="strike" aria-label="{% trans "Strike" %}" title="{% trans "Strike" %}"><s>S</s></button>
+        <button class="button is-small" type="button" data-report-command="code" aria-label="{% trans "Inline code" %}" title="{% trans "Inline code" %}"><code>{ }</code></button>
+        <button class="button is-small" type="button" data-report-command="link" aria-label="{% trans "Link" %}" title="{% trans "Link" %}"><span class="icon is-small" aria-hidden="true"><i class="iconoir-link"></i></span></button>
     </div>
-    <button class="button is-small" type="button" data-report-command="bullet" aria-label="{% trans "Bullet list" %}" title="{% trans "Bullet list" %}"><span class="icon is-small"><i class="iconoir-list"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="ordered" aria-label="{% trans "Ordered list" %}" title="{% trans "Ordered list" %}"><span class="icon is-small"><i class="iconoir-numbered-list-left"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="task" aria-label="{% trans "Task list" %}" title="{% trans "Task list" %}"><span class="icon is-small"><i class="iconoir-check"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="table" aria-label="{% trans "Table" %}" title="{% trans "Table" %}"><span class="icon is-small"><i class="iconoir-table"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="table-row-add" aria-label="{% trans "Add table row" %}" title="{% trans "Add table row" %}"><span class="icon is-small report-icon-pair"><i class="iconoir-table-rows"></i><i class="iconoir-plus-square"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="table-row-delete" aria-label="{% trans "Delete table row" %}" title="{% trans "Delete table row" %}"><span class="icon is-small report-icon-pair"><i class="iconoir-table-rows"></i><i class="iconoir-trash"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="table-column-add" aria-label="{% trans "Add table column" %}" title="{% trans "Add table column" %}"><span class="icon is-small report-icon-pair"><i class="iconoir-table-2-columns"></i><i class="iconoir-plus-square"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="table-column-delete" aria-label="{% trans "Delete table column" %}" title="{% trans "Delete table column" %}"><span class="icon is-small report-icon-pair"><i class="iconoir-table-2-columns"></i><i class="iconoir-trash"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="link" aria-label="{% trans "Link" %}" title="{% trans "Link" %}"><span class="icon is-small"><i class="iconoir-link"></i></span></button>
-    <button class="button is-small report-color-swatch" style="background:#0055aa" type="button" data-report-command="foreground" data-color="#0055aa" aria-label="{% trans "Blue text" %}" title="{% trans "Blue text" %}"></button>
-    <button class="button is-small report-color-swatch" style="background:#008000" type="button" data-report-command="foreground" data-color="#008000" aria-label="{% trans "Green text" %}" title="{% trans "Green text" %}"></button>
-    <button class="button is-small report-color-swatch" style="background:#aa0000" type="button" data-report-command="foreground" data-color="#aa0000" aria-label="{% trans "Red text" %}" title="{% trans "Red text" %}"></button>
-    <button class="button is-small report-color-swatch report-color-swatch-warn" style="background:#fff4cc" type="button" data-report-command="background" data-color="#fff4cc" aria-label="{% trans "Highlight" %}" title="{% trans "Highlight" %}"></button>
-    <button class="button is-small report-color-swatch" style="background:#dff7e8" type="button" data-report-command="background" data-color="#dff7e8" aria-label="{% trans "Green highlight" %}" title="{% trans "Green highlight" %}"></button>
-    <button class="button is-small report-color-swatch" style="background:#fde2e2" type="button" data-report-command="background" data-color="#fde2e2" aria-label="{% trans "Red highlight" %}" title="{% trans "Red highlight" %}"></button>
-    <button class="button is-small" type="button" data-report-command="clear-paint" aria-label="{% trans "Clear color" %}" title="{% trans "Clear color" %}">Clear</button>
-    <button class="button is-small" type="button" data-report-command="undo" aria-label="{% trans "Undo" %}" title="{% trans "Undo" %}"><span class="icon is-small"><i class="iconoir-undo"></i></span></button>
-    <button class="button is-small" type="button" data-report-command="redo" aria-label="{% trans "Redo" %}" title="{% trans "Redo" %}"><span class="icon is-small"><i class="iconoir-redo"></i></span></button>
+    <div class="report-toolbar-group" role="group" aria-label="{% trans "Lists" %}">
+        <button class="button is-small" type="button" data-report-command="bullet" aria-label="{% trans "Bullet list" %}" title="{% trans "Bullet list" %}"><span class="icon is-small" aria-hidden="true"><i class="iconoir-list"></i></span></button>
+        <button class="button is-small" type="button" data-report-command="ordered" aria-label="{% trans "Ordered list" %}" title="{% trans "Ordered list" %}"><span class="icon is-small" aria-hidden="true"><i class="iconoir-numbered-list-left"></i></span></button>
+        <button class="button is-small" type="button" data-report-command="task" aria-label="{% trans "Task list" %}" title="{% trans "Task list" %}"><span class="icon is-small" aria-hidden="true"><i class="iconoir-check"></i></span></button>
+    </div>
+    <div class="report-toolbar-group" role="group" aria-label="{% trans "Table" %}">
+        <button class="button is-small" type="button" data-report-command="table" aria-label="{% trans "Table" %}" title="{% trans "Table" %}"><span class="icon is-small" aria-hidden="true"><i class="iconoir-table"></i></span></button>
+        <button class="button is-small" type="button" data-report-command="table-row-add" aria-label="{% trans "Add table row" %}" title="{% trans "Add table row" %}"><span class="icon is-small report-icon-pair" aria-hidden="true"><i class="iconoir-table-rows"></i><i class="iconoir-plus-square"></i></span></button>
+        <button class="button is-small" type="button" data-report-command="table-row-delete" aria-label="{% trans "Delete table row" %}" title="{% trans "Delete table row" %}"><span class="icon is-small report-icon-pair" aria-hidden="true"><i class="iconoir-table-rows"></i><i class="iconoir-trash"></i></span></button>
+        <button class="button is-small" type="button" data-report-command="table-column-add" aria-label="{% trans "Add table column" %}" title="{% trans "Add table column" %}"><span class="icon is-small report-icon-pair" aria-hidden="true"><i class="iconoir-table-2-columns"></i><i class="iconoir-plus-square"></i></span></button>
+        <button class="button is-small" type="button" data-report-command="table-column-delete" aria-label="{% trans "Delete table column" %}" title="{% trans "Delete table column" %}"><span class="icon is-small report-icon-pair" aria-hidden="true"><i class="iconoir-table-2-columns"></i><i class="iconoir-trash"></i></span></button>
+    </div>
+    <div class="report-toolbar-group" role="group" aria-label="{% trans "Color" %}">
+        <button class="button is-small report-color-swatch" style="background:#0055aa" type="button" data-report-command="foreground" data-color="#0055aa" aria-label="{% trans "Blue text" %}" title="{% trans "Blue text" %}"></button>
+        <button class="button is-small report-color-swatch" style="background:#008000" type="button" data-report-command="foreground" data-color="#008000" aria-label="{% trans "Green text" %}" title="{% trans "Green text" %}"></button>
+        <button class="button is-small report-color-swatch" style="background:#aa0000" type="button" data-report-command="foreground" data-color="#aa0000" aria-label="{% trans "Red text" %}" title="{% trans "Red text" %}"></button>
+        <button class="button is-small report-color-swatch" style="background:#fff4cc" type="button" data-report-command="background" data-color="#fff4cc" aria-label="{% trans "Highlight" %}" title="{% trans "Highlight" %}"></button>
+        <button class="button is-small report-color-swatch" style="background:#dff7e8" type="button" data-report-command="background" data-color="#dff7e8" aria-label="{% trans "Green highlight" %}" title="{% trans "Green highlight" %}"></button>
+        <button class="button is-small report-color-swatch" style="background:#fde2e2" type="button" data-report-command="background" data-color="#fde2e2" aria-label="{% trans "Red highlight" %}" title="{% trans "Red highlight" %}"></button>
+        <button class="button is-small" type="button" data-report-command="clear-paint" aria-label="{% trans "Clear color" %}" title="{% trans "Clear color" %}">{% trans "Clear" %}</button>
+    </div>
+    <div class="report-toolbar-group" role="group" aria-label="{% trans "History" %}">
+        <button class="button is-small" type="button" data-report-command="undo" aria-label="{% trans "Undo" %}" title="{% trans "Undo" %}"><span class="icon is-small" aria-hidden="true"><i class="iconoir-undo"></i></span></button>
+        <button class="button is-small" type="button" data-report-command="redo" aria-label="{% trans "Redo" %}" title="{% trans "Redo" %}"><span class="icon is-small" aria-hidden="true"><i class="iconoir-redo"></i></span></button>
+    </div>
 </div>

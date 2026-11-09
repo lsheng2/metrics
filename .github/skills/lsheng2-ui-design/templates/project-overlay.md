@@ -13,36 +13,37 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 
 ## Framework Adapter
 
-- Adapter: Django/Bulma/htmx.
+- Adapter: Django/htmx with the Meridian design system (resolver id `django-bulma-htmx`; Bulma itself is removed and the `css/foundation/` primitives keep its class vocabulary).
 - Rendering: server-rendered Django templates with partial templates.
-- Styling: Bulma plus `ui_web/static/css/main.css` design tokens and compatibility aliases.
-- Interaction model: htmx for partial swaps, server-rendered forms, and small local JavaScript in `ui_web/static/js/main.js`.
+- Styling: Meridian. DTCG tokens generate `theme.css`; `css/foundation/*.css` owns primitives split by concern, `css/shell/*.css` the app frame, `css/pages/<feature>.css` page styles split by feature (never add a catch-all page stylesheet). `ui_web/static_assets.py` is the single ordered asset manifest rendered by `base.html` and inlined by browser tests.
+- Interaction model: htmx for partial swaps, server-rendered forms, `ui_web/static/js/shell.js` (theme, sidebar, drawer), `command-palette.js` and the `FEATURE_SCRIPTS` modules registered in `ui_web/static_assets.py`; each module self-initialises on `DOMContentLoaded` and `htmx:afterSwap`, so manifest order is init order.
 - Component/story surface: Django templates, partials, CSS classes, JS behaviors, and Playwright-backed Django tests.
 
 ## Design System Source
 
 - Token files:
-  - `ui_web/static/css/main.css`
-  - `ui_web/static/css/vendor_fallbacks.css`
+  - `ui_web/frontend/tokens/*.json` (source of truth; `npm run build:tokens`)
+  - `ui_web/static/css/theme.css` (generated; never hand-edit)
 - Shared CSS/components:
-  - `ui_web/static/css/main.css`
-  - `ui_web/static/js/main.js`
-  - `ui_web/templates/base.html`
+  - `ui_web/static/css/foundation/*.css`, `ui_web/static/css/shell/*.css` and `ui_web/static/css/pages/*.css`
+  - `ui_web/static/js/shell.js`, `command-palette.js`, `charts.js` and the `FEATURE_SCRIPTS` modules `table-interactions.js`, `navigation-menus.js`, `searchable-pickers.js`, `scope-source-modes.js`, `editor-forms.js`, `form-validation.js`, `workbench-state.js`, `pane-layout.js`, `workbench-evidence.js` and `htmx-lifecycle.js`
+  - `ui_web/static_assets.py` (ordered asset manifest) and `ui_web/templatetags/dashboard_assets.py`
+  - `ui_web/templates/base.html` and `ui_web/navigation.py`
   - `ui_web/templates/partials/help_tip.html`
   - `ui_web/templates/partials/dashboard_editor_state_banners.html`
   - `ui_web/templates/partials/provider_profile_editor.html`
   - `ui_web/templates/bug_trend_scope_config.html`
-- `openspec/docs/current-baseline/ui-design-system.md`
-- Typography source: `--dashboard-font-*` variables in `ui_web/static/css/main.css` plus Bulma base typography.
-- Color source: `--dashboard-*` variables in `ui_web/static/css/main.css`; provider identity colors are Jira green, HSD-ES blue, GitHub purple.
-- Spacing/radius source: `--dashboard-radius-*`, form-grid gaps, action-bar gaps, and Bulma spacing utilities in `ui_web/static/css/main.css`.
-- Icon source: existing Iconoir/Bulma usage and project helper templates; prefer existing icon families before adding new icon systems.
+- `openspec/docs/current-baseline/frontend-design-requirements.md` (binding rules) and `openspec/docs/current-baseline/ui-design-system.md` (shared class contracts)
+- Typography source: `--font-sans` (Mona Sans Variable), `--font-mono` (Geist Mono Variable), `--text-*`, `--weight-*` and `--stretch-*` tokens in `theme.css`.
+- Color source: semantic `--color-*`, `--chart-*`, `--series-*`, `--health-*` and `--provider-*` tokens for light and dark; provider identity colors are Jira green, HSD-ES blue, GitHub purple.
+- Spacing/radius source: `--space-*`, `--radius-*`, `--control-height*` and `--z-*` tokens; page CSS never introduces raw spacing, radius or z-index values.
+- Icon source: the vendored Iconoir subset (`npm run build:vendor` regenerates it from template usage); do not add another icon family.
 
 ## Component Token Profile
 
 - Core token pack: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/data/component-tokens/dashboard-admin-v1.json`
 - Selected density profile: `compactDashboard` for operational dashboard forms, filters, tables, and setup editors.
-- Project overrides: `dashboard-tool-*` uses 2rem controls; setup editors use `dashboard-edit-form`, `dashboard-form-grid`, `dashboard-form-field`, `dashboard-action-bar`, and `dashboard-action-group`; cards/panels stay at 8px radius or below unless an existing Bulma component requires otherwise.
+- Project overrides: `dashboard-tool-*` uses 2rem controls; setup editors use `dashboard-edit-form`, `dashboard-form-grid`, `dashboard-form-field`, `dashboard-action-bar`, and `dashboard-action-group`; controls use `--radius-md`, cards/panels `--radius-lg`, and page CSS never restyles a primitive's display or size.
 - Golden/accepted UI surfaces: Provider Profile Config, Bug Trend Scope Config, Provider Setup inventory, Scope Library, Data Health, Workbench, AI Dashboard Workflow, Current Tasks, Pull Requests, Task Forecast.
 - Component catalog location: `.github/skills/lsheng2-ui-design/component-catalog/dashboard-admin-v1.html`
 - Visual regression manifest: `.github/skills/lsheng2-ui-design/visual-regression/manifest.json`
@@ -56,37 +57,37 @@ The reusable core lives at `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design`. 
 
 | route/page | source files | validation command | notes |
 | --- | --- | --- | --- |
-| `/provider-setup/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/provider_setup.html`, `ui_web/templates/provider_profile_config.html`, `ui_web/templates/partials/provider_profile_editor.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_dashboard_ui_design_system` | Provider profile inventory, create/edit/test/import/export/archive/delete, provider color tabs, connection/auth/probe fields. |
-| `/bug-trend/scope-config/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_config.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views ui_web.tests.test_dashboard_ui_design_system` | Scope editor, provider binding, metadata refresh, action-specific required validation, dirty/cancel state. |
-| `/bug-trend/scopes/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_library.html`, `ui_web/static/css/main.css`, `ui_web/templates/partials/help_tip.html` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views` | Scope inventory, binding controls, import/export/archive/delete, responsive table behavior. |
-| `/data-health/` | `ui_web/templates/data_health.html`, `ui_web/static/css/main.css`, data-health views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views` | Health/status tables, binding status, AI/provider sync readiness. |
-| `/workbench/` | `ui_web/templates/workbench.html`, `ui_web/static/js/main.js`, workbench views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions` | htmx workbench shell, evidence filters, AI host action state. |
-| `/ai-dashboard/workflow/` | `ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface` | AI/Grafana workflow forms and publication status surfaces. |
-| `/current-tasks/` | `ui_web/views/current_tasks_view.py`, `ui_web/templates/current_tasks.html`, `ui_web/templates/partials/current_tasks_content.html`, `ui_web/templates/partials/task_table.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Current task filters, lazy/eager task tables, available members, dense task rows. |
-| `/pull-requests/` | `ui_web/views/pull_requests_view.py`, `ui_web/templates/pull_requests.html`, `ui_web/templates/partials/pull_requests_table.html`, `ui_web/templates/partials/pull_request_summary_table.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Pull request summary, filters, review/gate dense tables. |
-| `/task-forecast/` | `ui_web/views/task_forecast_view.py`, `ui_web/templates/task_forecast.html`, `ui_web/templates/partials/task_forecast_content.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Forecast parameter form, task breakdown dense table, timeline chart shell. |
-| `/team-velocity/` | `ui_web/views/team_velocity_view.py`, `ui_web/templates/team_velocity.html`, `ui_web/templates/partials/team_velocity_content.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Team velocity chart controls and task drilldown placeholder. |
-| `/dev-velocity/` | `ui_web/views/dev_velocity_view.py`, `ui_web/templates/dev_velocity.html`, `ui_web/templates/partials/dev_velocity_content.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Developer velocity chart controls and task drilldown placeholder. |
-| `/bug-trend/scope-audit/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_audit.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Scope audit coverage and observed-values responsive table. |
-| `/partials/bug-trend/evidence/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/partials/bug_trend_evidence.html`, `ui_web/static/css/main.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Bug Trend evidence filters, dense evidence table, and ticket detail shell. |
+| `/provider-setup/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/provider_setup.html`, `ui_web/templates/provider_profile_config.html`, `ui_web/templates/partials/provider_profile_editor.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/pages/provider-setup.css`, `ui_web/static/css/pages/provider-editor.css`, `ui_web/static/css/pages/editor-forms.css`, `ui_web/static/js/editor-forms.js`, `ui_web/static/js/form-validation.js` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_dashboard_ui_design_system` | Provider profile inventory, create/edit/test/import/export/archive/delete, provider color tabs, connection/auth/probe fields. |
+| `/bug-trend/scope-config/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_config.html`, `ui_web/facades/bug_trend_facade.py`, `ui_web/facades/provider_scope_setup.py`, `ui_web/static/css/pages/scope-config.css`, `ui_web/static/css/pages/scope-query.css`, `ui_web/static/css/pages/editor-forms.css`, `ui_web/static/js/scope-source-modes.js`, `ui_web/static/js/searchable-pickers.js`, `ui_web/static/js/editor-forms.js`, `ui_web/static/js/form-validation.js` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views ui_web.tests.test_dashboard_ui_design_system` | Scope editor, provider binding, metadata refresh, action-specific required validation, dirty/cancel state. |
+| `/bug-trend/scopes/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_library.html`, `ui_web/static/css/pages/scope-library.css`, `ui_web/templates/partials/help_tip.html` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_bug_trend_scope_config_views` | Scope inventory, binding controls, import/export/archive/delete, responsive table behavior. |
+| `/data-health/` | `ui_web/templates/data_health.html`, `ui_web/static/css/pages/delivery-views.css`, data-health views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views` | Health/status tables, binding status, AI/provider sync readiness. |
+| `/workbench/` | `ui_web/templates/workbench.html`, `ui_web/static/css/pages/workbench-shell.css`, `ui_web/static/css/pages/workbench-panes.css`, `ui_web/static/css/pages/workbench-evidence.css`, `ui_web/static/js/workbench-state.js`, `ui_web/static/js/pane-layout.js`, `ui_web/static/js/workbench-evidence.js`, workbench views/facades | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_workbench_views ui_web.tests.test_workbench_ai_host_actions` | htmx workbench shell, evidence filters, AI host action state. |
+| `/ai-dashboard/workflow/` | `ui_web/templates/ai_dashboard_workflow.html`, `ui_web/views/ai_dashboard_view.py`, `ui_web/static/css/pages/delivery-views.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ai_dashboard_api_surface` | AI/Grafana workflow forms and publication status surfaces. |
+| `/current-tasks/` | `ui_web/views/current_tasks_view.py`, `ui_web/templates/current_tasks.html`, `ui_web/templates/partials/current_tasks_content.html`, `ui_web/templates/partials/task_table.html`, `ui_web/static/css/pages/delivery-views.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Current task filters, lazy/eager task tables, available members, dense task rows. |
+| `/pull-requests/` | `ui_web/views/pull_requests_view.py`, `ui_web/templates/pull_requests.html`, `ui_web/templates/partials/pull_requests_table.html`, `ui_web/templates/partials/pull_request_summary_table.html`, `ui_web/static/css/pages/delivery-views.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Pull request summary, filters, review/gate dense tables. |
+| `/task-forecast/` | `ui_web/views/task_forecast_view.py`, `ui_web/templates/task_forecast.html`, `ui_web/templates/partials/task_forecast_content.html`, `ui_web/static/css/pages/delivery-views.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Forecast parameter form, task breakdown dense table, timeline chart shell. |
+| `/team-velocity/` | `ui_web/views/team_velocity_view.py`, `ui_web/templates/team_velocity.html`, `ui_web/templates/partials/team_velocity_content.html`, `ui_web/static/css/foundation/page-patterns.css`, `ui_web/static/css/foundation/charts.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Team velocity chart controls and task drilldown placeholder. |
+| `/dev-velocity/` | `ui_web/views/dev_velocity_view.py`, `ui_web/templates/dev_velocity.html`, `ui_web/templates/partials/dev_velocity_content.html`, `ui_web/static/css/foundation/page-patterns.css`, `ui_web/static/css/foundation/charts.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Developer velocity chart controls and task drilldown placeholder. |
+| `/bug-trend/scope-audit/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/bug_trend_scope_audit.html`, `ui_web/static/css/pages/dense-tables.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Scope audit coverage and observed-values responsive table. |
+| `/partials/bug-trend/evidence/` | `ui_web/views/bug_trend_view.py`, `ui_web/templates/partials/bug_trend_evidence.html`, `ui_web/static/css/pages/workbench-evidence.css`, `ui_web/static/css/pages/dense-tables.css` | `.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate` | Bug Trend evidence filters, dense evidence table, and ticket detail shell. |
 
 ## Shared UI Contracts
 
 | contract | owner files | use for | avoid |
 | --- | --- | --- | --- |
-| `dashboard-edit-form` | `ui_web/static/css/main.css`, setup templates | Any persistent setup/editor form with save/cancel behavior. | Filter/search/action-only forms. |
-| `dashboard-form-grid` and `dashboard-form-field` | `ui_web/static/css/main.css`, setup templates | Aligned label/control grids for setup forms. | One-off nested cards or page-local grid variants. |
-| `dashboard-action-bar` and `dashboard-action-group` | `ui_web/static/css/main.css`, setup templates | Bottom action bars with grouped primary/secondary/cancel actions. | Per-page button height, spacing, or typography overrides. |
-| `dashboard-signature-grid`, `dashboard-signature-item`, and `dashboard-signature-value` | `ui_web/static/css/main.css`, setup templates | Editor bottom hashes, config fingerprints, and provider/source signatures that appear after action bars. | Raw one-line hash text below action bars or page-local signature spacing. |
-| `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | `ui_web/static/css/main.css`, dashboard query/filter templates | Lightweight non-editor forms for filters, forecast parameters, and workflow request controls. | Persistent setup/edit forms that need dirty or required-state handling. |
-| `dashboard-action-form` | `ui_web/static/css/main.css`, setup/library/workbench templates | Import, export, duplicate, bind, archive, delete, sync, and other non-editor action forms. | Applying dirty editor behavior to confirmation/action forms. |
-| `dashboard-required-tag` | `ui_web/static/css/main.css`, setup templates | Required, required-to-save, required-for-enable, and required-for-test markers. | Raw Bulma danger tags in setup forms without shared class. |
-| `dashboard-validation-banner`, `data-required-form` | `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | Action-specific required-field visual validation. | Browser-only authority without backend validation. |
-| `dashboard-unsaved-banner`, `data-dirty-form` | `ui_web/static/css/main.css`, `ui_web/static/js/main.js` | Dirty/unsaved field marking and cancel guard. | Treating dirty state as validation error. |
-| `provider-tab-shell`, `scope-provider-choice`, `provider-tab-check` | `ui_web/static/css/main.css`, provider/scope templates | Provider selection tabs/cards and provider color identity. | Replacing provider identity with unrelated color systems. |
-| `.help-tip` and `partials/help_tip.html` | `ui_web/templates/partials/help_tip.html`, `ui_web/static/css/main.css` | Text-hover help and selective icon help. | Adding visible question icons for every label. |
-| responsive admin tables | `ui_web/static/css/main.css`, library/data-health templates | Dense dashboard tables with responsive card fallback. | Wide tables that create horizontal page overflow on phone. |
-| `dashboard-dense-table` | `ui_web/static/css/main.css`, dashboard partial templates | Compact typography and control density for complex tables that should keep native table structure. | Raw Bulma tables without a shared density contract. |
+| `dashboard-edit-form` | setup templates (structural hook; spacing comes from `dashboard-form-grid`) | Any persistent setup/editor form with save/cancel behavior. | Filter/search/action-only forms. |
+| `dashboard-form-grid` and `dashboard-form-field` | `ui_web/static/css/pages/editor-forms.css`, setup templates | Aligned label/control grids for setup forms. | One-off nested cards or page-local grid variants. |
+| `dashboard-action-bar` and `dashboard-action-group` | `ui_web/static/css/pages/provider-editor.css`, `ui_web/static/css/pages/editor-responsive.css`, setup templates | Bottom action bars with grouped primary/secondary/cancel actions. | Per-page button height, spacing, or typography overrides. |
+| `dashboard-signature-grid`, `dashboard-signature-item`, and `dashboard-signature-value` | `ui_web/static/css/pages/editor-responsive.css`, setup templates | Editor bottom hashes, config fingerprints, and provider/source signatures that appear after action bars. | Raw one-line hash text below action bars or page-local signature spacing. |
+| `dashboard-tool-form`, `dashboard-tool-grid`, `dashboard-tool-field`, `dashboard-tool-actions` | `ui_web/static/css/pages/editor-forms.css`, dashboard query/filter templates | Lightweight non-editor forms for filters, forecast parameters, and workflow request controls. | Persistent setup/edit forms that need dirty or required-state handling. |
+| `dashboard-action-form` | `ui_web/static/css/pages/editor-forms.css`, setup/library/workbench templates | Import, export, duplicate, bind, archive, delete, sync, and other non-editor action forms. | Applying dirty editor behavior to confirmation/action forms. |
+| `dashboard-required-tag` | `ui_web/static/css/pages/editor-forms.css`, setup templates | Required, required-to-save, required-for-enable, and required-for-test markers. | Raw Bulma danger tags in setup forms without shared class. |
+| `dashboard-validation-banner`, `data-required-form` | `ui_web/static/css/pages/editor-forms.css`, `ui_web/static/js/form-validation.js` | Action-specific required-field visual validation. | Browser-only authority without backend validation. |
+| `dashboard-unsaved-banner`, `data-dirty-form` | `ui_web/static/css/pages/provider-editor.css`, `ui_web/static/js/editor-forms.js` | Dirty/unsaved field marking and cancel guard. | Treating dirty state as validation error. |
+| `provider-tab-shell`, `scope-provider-choice`, `provider-tab-check` | `ui_web/static/css/pages/provider-setup.css`, `ui_web/static/css/pages/scope-query.css`, provider/scope templates | Provider selection tabs/cards and provider color identity. | Replacing provider identity with unrelated color systems. |
+| `.help-tip` and `partials/help_tip.html` | `ui_web/templates/partials/help_tip.html`, `ui_web/static/css/foundation/page-patterns.css`, `ui_web/static/css/pages/common.css` | Text-hover help and selective icon help. | Adding visible question icons for every label. |
+| responsive admin tables | `ui_web/static/css/pages/dense-tables.css`, library/data-health templates | Dense dashboard tables with responsive card fallback. | Wide tables that create horizontal page overflow on phone. |
+| `dashboard-dense-table` | `ui_web/static/css/pages/dense-tables.css`, dashboard partial templates | Compact typography and control density for complex tables that should keep native table structure. | Raw Bulma tables without a shared density contract. |
 
 The expanded component-level contract is documented in `openspec/docs/current-baseline/ui-design-system.md`.
 
@@ -125,8 +126,8 @@ scripts\refresh_ui_gate_report.ps1 -BaseUrl http://127.0.0.1:8000 -IncludeHooked
 scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots
 scripts\validate_ui_visual_diff_gate.ps1
 scripts\validate_ui_visual_diff_gate.ps1 -UpdateBaseline
-.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate ui_web.tests.test_ui_design_monkey_journey
-.venv\Scripts\python.exe manage.py test ui_web.tests.test_dashboard_ui_design_system
+npm --prefix ui_web/frontend run check; npm --prefix ui_web/frontend run qa:browser
+.venv\Scripts\python.exe manage.py test ui_web.tests.test_ui_design_baseline_gate ui_web.tests.test_ui_design_monkey_journey ui_web.tests.test_dashboard_ui_design_system
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_provider_setup_views ui_web.tests.test_bug_trend_scope_config_views ui_web.tests.test_bug_trend_scope_provider_views ui_web.tests.test_bug_trend_scope_action_views ui_web.tests.test_bug_trend_scope_metadata_views
 .venv\Scripts\python.exe manage.py test ui_web.tests.test_data_health_views ui_web.tests.test_workbench_views ui_web.tests.test_workbench_chart_views ui_web.tests.test_workbench_ai_host_actions ui_web.tests.test_ai_dashboard_api_surface
 .venv\Scripts\python.exe manage.py check
@@ -187,7 +188,7 @@ Synthetic replacements:
 
 ## Accepted Design Decisions
 
-- Keep the existing Django + Bulma + htmx stack.
+- Keep the Django + htmx server-rendered stack; Bulma is replaced by the Meridian design system defined in `openspec/docs/current-baseline/frontend-design-requirements.md`.
 - Prefer shared dashboard-level classes over page-local CSS variants.
 - Provider color identity: Jira green, HSD-ES blue, GitHub purple.
 - Provider selection should be visually prominent and connected to provider-specific form content.
@@ -239,13 +240,13 @@ These route scenarios feed `.github/skills/lsheng2-ui-design/visual-regression/m
 
 ## React / Next / Tailwind Notes
 
-- Applies: not currently; this project uses Django/Bulma/htmx.
+- Applies: not currently; this project uses Django/htmx with the Meridian CSS design system.
 - Component/story surface: Django templates and Playwright-backed tests, not a React component tree.
-- Token source: `ui_web/static/css/main.css`.
+- Token source: `ui_web/frontend/tokens/*.json`, generated into `ui_web/static/css/theme.css`.
 - Storybook/harness: none.
-- Build/test commands: use Django validation commands in this overlay.
+- Build/test commands: the Django and `npm --prefix ui_web/frontend` validation commands in this overlay.
 - Adapter status: reserved for future React/Next/Tailwind/component-tree projects; do not apply React-specific rules to this repo unless the frontend stack changes.
-- Adapter resolver: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/scripts/resolve_framework_adapter.py --project-root .` should continue to select Django/Bulma/htmx for this repo.
+- Adapter resolver: `C:/Users/lsheng2/.agents/skills/lsheng2-ui-design/scripts/resolve_framework_adapter.py --project-root .` should continue to select the server-rendered `django-bulma-htmx` adapter id for this repo.
 
 ## OpenSpec Integration
 

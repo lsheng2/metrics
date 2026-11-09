@@ -1,4 +1,3 @@
-from pathlib import Path
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -8,6 +7,7 @@ from playwright.sync_api import sync_playwright
 from bug_metrics.app.api import bug_trend_api
 from ui_web.facades.bug_trend_facade import BugTrendFacade
 from ui_web.tests.bug_trend_scope_config_test_support import FakeSuccessfulScopeMetadataApi
+from ui_web.tests.dashboard_asset_support import inline_dashboard_assets
 
 
 class TestBugTrendScopeProjectPickerViews(TestCase):
@@ -69,14 +69,4 @@ class TestBugTrendScopeProjectPickerViews(TestCase):
             playwright.stop()
 
     def _browser_html(self, html):
-        static_dir = Path(__file__).resolve().parents[1] / 'static'
-        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
-        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
-        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
-        return html.replace(
-            '</head>',
-            f'<style>{vendor_css}\n{main_css}</style></head>',
-        ).replace(
-            '</body>',
-            f'<script>{main_js}</script></body>',
-        )
+        return inline_dashboard_assets(html)

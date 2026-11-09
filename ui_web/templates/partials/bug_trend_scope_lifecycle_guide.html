@@ -1,0 +1,60 @@
+<section class="scope-lifecycle-guide" aria-labelledby="scope-lifecycle-title">
+    <h3 class="scope-lifecycle-guide__title" id="scope-lifecycle-title">Scope lifecycle</h3>
+    <ol class="scope-lifecycle-steps">
+        <li><span class="scope-lifecycle-steps__index">1</span>Create draft</li>
+        <li><span class="scope-lifecycle-steps__index">2</span>Validate required fields</li>
+        <li><span class="scope-lifecycle-steps__index">3</span>Bind provider profile</li>
+        <li><span class="scope-lifecycle-steps__index">4</span>Enable scope</li>
+        <li><span class="scope-lifecycle-steps__index">5</span>Sync and calculate</li>
+        <li><span class="scope-lifecycle-steps__index">6</span>Use Dashboard, Workbench and AI charts</li>
+    </ol>
+    <details class="popover scope-readiness-help">
+        <summary class="button is-small is-light"><span class="icon is-small"><i class="iconoir-table-rows" aria-hidden="true"></i></span><span>Readiness matrix</span></summary>
+        <div class="popover__panel scope-readiness-panel">
+            <p class="popover__title">What each capability requires</p>
+            <div class="table-container responsive-admin-table-box">
+                <table class="table is-fullwidth is-narrow responsive-admin-table is-cardable scope-readiness-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Capability</th>
+                            <th scope="col">Requires</th>
+                            <th scope="col">If missing</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">Create draft</th>
+                            <td data-label="Requires">Name, provider query, bug type, bucket granularity, timezone format</td>
+                            <td data-label="If missing">Scope cannot be saved.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Deploy to Dashboard selector</th>
+                            <td data-label="Requires">Draft validation plus open status, fixed/closed status, severity field, critical/high and medium/low values</td>
+                            <td data-label="If missing">Scope stays archived and cannot participate in normal Dashboard selection.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Sync facts</th>
+                            <td data-label="Requires">Deployed scope, provider credentials, valid query permissions</td>
+                            <td data-label="If missing">Data Health reports sync/cache blocker.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Calculate buckets and evidence</th>
+                            <td data-label="Requires">Synced source facts and coverage window</td>
+                            <td data-label="If missing">Charts show no current calculation or stale coverage.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Workbench evidence</th>
+                            <td data-label="Requires">Fresh calculation run and chart evidence contract</td>
+                            <td data-label="If missing">Ticket list is unavailable or selection is summary-only.</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">AI Assistant Grafana charts</th>
+                            <td data-label="Requires">Provider binding, profile readiness, fresh facts/calculation and AI sidecar readiness</td>
+                            <td data-label="If missing">AI can explain blockers but should not publish a chart as ready.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </details>
+</section>

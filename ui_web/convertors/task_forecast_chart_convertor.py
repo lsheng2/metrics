@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from django.conf import settings
-
 from ..data.chart_data import ChartData, ChartDatasetData
 from ..data.task_data import TaskData
-from ..utils.color_utils import ColorUtils
 from ..utils.task_forecast_chart_utils import TaskForecastChartUtils
+
+_CHART_DATE_PADDING = timedelta(days=1)
 
 
 class TaskForecastChartConvertor:
@@ -26,14 +25,13 @@ class TaskForecastChartConvertor:
             ChartDatasetData(
                 label=dataset.get('label', ''),
                 data=dataset.get('data', []),
-                border_color=dataset.get('borderColor'),
-                background_color=dataset.get('backgroundColor'),
-                border_width=dataset.get('borderWidth'),
-                fill=dataset.get('fill'),
-                point_radius=dataset.get('pointRadius')
+                is_done=dataset.get('done', False)
             )
             for dataset in chart_data_dict.get('datasets', [])
         ]
+
+        if not datasets:
+            return None
 
         return ChartData(
             labels=chart_data_dict.get('labels', []),
@@ -85,23 +83,18 @@ class TaskForecastChartConvertor:
         max_task_date = max(task_dates)
 
         return {
-            'min_date': min_task_date - timedelta(days=7),
-            'max_date': max_task_date + timedelta(days=7)
+            'min_date': min_task_date - _CHART_DATE_PADDING,
+            'max_date': max_task_date + _CHART_DATE_PADDING
         }
 
     def _build_chart_datasets_from_task_data(self, task_data_list: List[TaskData]):
-        time_unit_abbrev = self._get_time_unit_abbreviation(settings.METRICS_DEFAULT_VELOCITY_TIME_UNIT)
-        chart_datasets = []
-
-        for task_index, task_data in enumerate(task_data_list):
-            if self._task_data_has_forecast_dates(task_data):
-                is_done = TaskForecastChartUtils.is_task_data_done(task_data)
-                dataset = self._create_task_data_chart_dataset(
-                    task_data, task_index, len(task_data_list), time_unit_abbrev, is_done
-                )
-                chart_datasets.append(dataset)
-
-        return chart_datasets
+        dated_tasks = [task_data for task_data in task_data_list if self._task_data_has_forecast_dates(task_data)]
+        return [
+            self._create_task_data_chart_dataset(
+                task_data, task_index, len(dated_tasks), TaskForecastChartUtils.is_task_data_done(task_data)
+            )
+            for task_index, task_data in enumerate(dated_tasks)
+        ]
 
     @staticmethod
     def _task_data_has_forecast_dates(task_data: TaskData) -> bool:
@@ -110,15 +103,10 @@ class TaskForecastChartConvertor:
                 task_data.forecast.end_date)
 
     @staticmethod
-    def _create_task_data_chart_dataset(task_data: TaskData, task_index: int, total_tasks: int,
-                                         time_unit_abbrev: str, is_done: bool = False):
-        estimation_hours = 0.0
-        if task_data.forecast and task_data.forecast.estimation_time_days:
-            estimation_hours = task_data.forecast.estimation_time_days * 8.0
-
-        task_label = f"{task_data.id}: {task_data.title} ({estimation_hours:.1f}{time_unit_abbrev})"
+    def _create_task_data_chart_dataset(task_data: TaskData, task_index: int, total_tasks: int, is_done: bool):
+        estimation_days = task_data.forecast.estimation_time_days or 0.0
+        task_label = f"{task_data.id}: {task_data.title} ({estimation_days:.1f}d)"
         task_y_position = total_tasks - task_index
-        task_color = ColorUtils.generate_color(task_data.id)
 
         return {
             'label': task_label,
@@ -132,20 +120,5 @@ class TaskForecastChartConvertor:
                     'y': task_y_position
                 }
             ],
-            'fill': False,
-            'borderColor': task_color,
-            'backgroundColor': task_color,
-            'borderWidth': 15 if not is_done else 8,
-            'pointRadius': 0
+            'done': is_done
         }
-
-    @staticmethod
-    def _get_time_unit_abbreviation(time_unit_name: str) -> str:
-        abbreviations = {
-            'SECOND': 's',
-            'HOUR': 'h',
-            'DAY': 'd',
-            'WEEK': 'w',
-            'MONTH': 'm'
-        }
-        return abbreviations.get(time_unit_name.upper(), 'h')

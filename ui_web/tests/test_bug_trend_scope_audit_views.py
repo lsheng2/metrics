@@ -67,7 +67,7 @@ class TestBugTrendScopeAuditViews(TestCase):
         # Then
         self.assertEqual(200, response.status_code)
         content = response.content.decode()
-        self.assertIn('Bug Trend Scope Audit', content)
+        self.assertIn('<title>Scope Audit · Metrics</title>', content)
         self.assertIn('responsive-admin-table', content)
         self.assertIn('is-cardable', content)
         self.assertIn('data-label="Category"', content)

@@ -1,155 +1,41 @@
 {% extends "base.html" %}
-
-{% block title %}Data Health{% endblock %}
+{% load dashboard_format %}
 
 {% block content %}
 <article class="block data-health-page">
-    <h2 class="title is-3">Data Health{% include "partials/help_tip.html" with label="Data Health" text="Read-only readiness checks for scope binding, provider sync cache, calculation freshness, and AI sidecar availability." %}</h2>
-    <section class="box">
-        <h3 class="title is-4">Summary</h3>
-        <div class="columns is-multiline">
-            <div class="column is-one-quarter"><strong>Scopes</strong><br>{{ data_health.scope_count }}</div>
-            <div class="column is-one-quarter"><strong>Stale scopes</strong><br>{{ data_health.stale_scope_count }}</div>
-            <div class="column is-one-quarter"><strong>Failed syncs</strong><br>{{ data_health.failed_sync_count }}</div>
-            <div class="column is-one-quarter"><strong>Failed calculations</strong><br>{{ data_health.failed_calculation_count }}</div>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Data Health{% include "partials/help_tip.html" with label="Data Health" text="Read-only readiness checks for scope binding, provider sync cache, calculation freshness, and AI sidecar availability." %}</h2>
+            <p class="page-header__meta">Scope bindings, provider sync caches, calculation runs and AI sidecar readiness.</p>
+        </div>
+    </header>
+    <section class="stat-grid" aria-label="Summary">
+        <div class="stat">
+            <span class="stat__label">Scopes</span>
+            <span class="stat__value">{{ data_health.scope_count }}</span>
+        </div>
+        <div class="stat{% if data_health.stale_scope_count %} is-warning{% endif %}">
+            <span class="stat__label">Stale scopes</span>
+            <span class="stat__value">{{ data_health.stale_scope_count }}</span>
+        </div>
+        <div class="stat{% if data_health.failed_sync_count %} is-danger{% endif %}">
+            <span class="stat__label">Failed syncs</span>
+            <span class="stat__value">{{ data_health.failed_sync_count }}</span>
+        </div>
+        <div class="stat{% if data_health.failed_calculation_count %} is-danger{% endif %}">
+            <span class="stat__label">Failed calculations</span>
+            <span class="stat__value">{{ data_health.failed_calculation_count }}</span>
         </div>
     </section>
 
-    <section class="box">
-        <h3 class="title is-4">Scope Binding Health{% include "partials/help_tip.html" with label="Scope Binding Health" text="Checks whether scopes are bound to provider profiles strongly enough for Dashboard, Workbench, and AI workflows." %}</h3>
-        <div class="scope-binding-readiness {% if data_health.scope_binding_health.explicit_only_ready %}is-ready{% else %}is-blocked{% endif %}">
-            <div>
-                <strong>Explicit-only readiness{% include "partials/help_tip.html" with label="Explicit-only readiness" text="Ready means all enabled scopes have explicit provider bindings. Blocked means at least one enabled scope still depends on compatibility or missing binding." %}</strong>
-                {% if data_health.scope_binding_health.explicit_only_ready %}
-                    <span class="tag is-success is-light">Ready</span>
-                {% else %}
-                    <span class="tag is-warning is-light">Blocked</span>
-                {% endif %}
-                <span class="tag is-light">Policy: {{ data_health.scope_binding_health.runtime_policy|default:"compatibility_allowed" }}{% include "partials/help_tip.html" with label="Binding policy" text="compatibility_allowed permits inferred legacy bindings. explicit_only requires operator-confirmed bindings before runtime use." %}</span>
-            </div>
-            <div>
-                <span>{{ data_health.scope_binding_health.explicit_only_blocked_count }} impacted scopes</span>
-                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Repair bindings</a>
-            </div>
-        </div>
-        <div class="columns is-multiline">
-            <div class="column is-one-fifth"><strong>Total</strong><br>{{ data_health.scope_binding_health.total }}</div>
-            <div class="column is-one-fifth"><strong>Explicit{% include "partials/help_tip.html" with label="Explicit" text="The provider profile binding was explicitly selected or confirmed by an operator." %}</strong><br>{{ data_health.scope_binding_health.counts.explicit }}</div>
-            <div class="column is-one-fifth"><strong>Inferred{% include "partials/help_tip.html" with label="Inferred binding" text="The provider profile binding was inferred from legacy behavior and should be confirmed before explicit-only operation." %}</strong><br>{{ data_health.scope_binding_health.counts.compatibility }}</div>
-            <div class="column is-one-fifth"><strong>Config required{% include "partials/help_tip.html" with label="Config required" text="The scope does not have enough provider binding information to participate in provider-backed workflows." %}</strong><br>{{ data_health.scope_binding_health.counts.configuration_required }}</div>
-            <div class="column is-one-fifth"><strong>Ambiguous{% include "partials/help_tip.html" with label="Ambiguous" text="More than one provider profile could match the scope, so an operator must choose the intended one." %}</strong><br>{{ data_health.scope_binding_health.counts.ambiguous }}</div>
-        </div>
-        <div class="table-container responsive-admin-table-box">
-        <table class="table is-fullwidth is-striped is-hoverable responsive-admin-table is-cardable">
-            <thead>
-                <tr>
-                    <th class="has-help-tip">Scope{% include "partials/help_tip.html" with label="Scope" text="A query definition used to sync source facts, calculate buckets, and drive chart evidence." %}</th>
-                    <th class="has-help-tip">Status{% include "partials/help_tip.html" with label="Binding status" text="explicit is confirmed, compatibility is inferred, configuration_required is incomplete, and ambiguous needs manual selection." %}</th>
-                    <th class="has-help-tip">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile bound to this scope." %}</th>
-                    <th class="has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the profile, such as Jira or HSD-ES." %}</th>
-                    <th class="has-help-tip">Provenance{% include "partials/help_tip.html" with label="Provenance" text="How Metrics determined this binding, for example registry match, legacy inference, or operator confirmation." %}</th>
-                    <th class="has-help-tip">Blockers{% include "partials/help_tip.html" with label="Blockers" text="Reasons this scope cannot satisfy the selected runtime policy or workflow readiness." %}</th>
-                    <th>Repair</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data_health.scope_binding_health.rows %}
-                    <tr>
-                        <td data-label="Scope">{{ item.scope_name }}</td>
-                        <td data-label="Status">
-                            {% if item.status == "explicit" %}
-                                <span class="tag is-success is-light">{{ item.status }}</span>
-                            {% elif item.status == "compatibility" %}
-                                <span class="tag is-info is-light">inferred</span>
-                            {% else %}
-                                <span class="tag is-warning is-light">{{ item.status }}</span>
-                            {% endif %}
-                        </td>
-                        <td data-label="Profile">{{ item.profile_id|default:"-" }}</td>
-                        <td data-label="Provider">{{ item.provider_id|default:"-" }}</td>
-                        <td data-label="Provenance">{{ item.provenance_summary|default:"-" }}</td>
-                        <td data-label="Blockers">
-                            {% for blocker in item.blockers %}
-                                {{ blocker.message }}
-                            {% empty %}
-                                -
-                            {% endfor %}
-                        </td>
-                        <td data-label="Repair"><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="7">No scope bindings found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-        {% if data_health.scope_binding_health.explicit_only_impacted_rows %}
-            <h4 class="title is-6 mt-4">Explicit-only impacted scopes</h4>
-            <div class="table-container responsive-admin-table-box">
-            <table class="table is-fullwidth is-striped is-hoverable is-narrow responsive-admin-table is-cardable">
-                <thead>
-                    <tr>
-                        <th>Scope</th>
-                        <th class="has-help-tip">Status{% include "partials/help_tip.html" with label="Explicit-only impact" text="These rows must be confirmed or repaired before the system can run safely in explicit-only mode." %}</th>
-                        <th class="has-help-tip">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile currently associated with the impacted scope." %}</th>
-                        <th class="has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the profile, such as Jira or HSD-ES." %}</th>
-                        <th class="has-help-tip">Provenance{% include "partials/help_tip.html" with label="Provenance" text="How this binding was derived." %}</th>
-                        <th>Repair</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in data_health.scope_binding_health.explicit_only_impacted_rows %}
-                        <tr>
-                            <td data-label="Scope">{{ item.scope_name }}</td>
-                            <td data-label="Status"><span class="tag is-warning is-light">{% if item.status == "compatibility" %}inferred{% else %}{{ item.status }}{% endif %}</span></td>
-                            <td data-label="Profile">{{ item.profile_id|default:"-" }}</td>
-                            <td data-label="Provider">{{ item.provider_id|default:"-" }}</td>
-                            <td data-label="Provenance">{{ item.provenance_summary|default:"-" }}</td>
-                            <td data-label="Repair"><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            </div>
-        {% endif %}
-    </section>
+    {% include "partials/data_health_scope_bindings.html" %}
 
-    <section class="box">
-        <h3 class="title is-4">Scope Binding Audit History{% include "partials/help_tip.html" with label="Scope Binding Audit History" text="Recent binding changes used to explain why a scope moved between compatibility, explicit, or blocked states." %}</h3>
+    <section class="card" aria-labelledby="data-health-ai-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="data-health-ai-title">AI Sidecar Health{% include "partials/help_tip.html" with label="AI Sidecar Health" text="Shows whether Dashboard can reach the AI Base companion service and what AI capabilities are available." %}</h3>
+        </header>
         <div class="table-container responsive-admin-table-box">
-        <table class="table is-fullwidth is-striped is-hoverable is-narrow responsive-admin-table is-cardable scope-binding-audit-table">
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Actor</th>
-                    <th>Operation</th>
-                    <th>Scope</th>
-                    <th>Before</th>
-                    <th>After</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for event in data_health.scope_binding_audit_events %}
-                    <tr>
-                        <td data-label="Time">{{ event.created_at }}</td>
-                        <td data-label="Actor">{{ event.actor }}</td>
-                        <td data-label="Operation">{{ event.event_type }}</td>
-                        <td data-label="Scope">{{ event.scope_name|default:"-" }}</td>
-                        <td data-label="Before">{{ event.before_summary }}</td>
-                        <td data-label="After">{{ event.after_summary }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="6">No scope binding audit events yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-    </section>
-
-    <section class="box">
-        <h3 class="title is-4">AI Sidecar Health{% include "partials/help_tip.html" with label="AI Sidecar Health" text="Shows whether Dashboard can reach the AI Base companion service and what AI capabilities are available." %}</h3>
-        <div class="table-container responsive-admin-table-box">
-        <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
+        <table class="table is-fullwidth responsive-admin-table is-cardable">
             <thead>
                 <tr>
                     <th class="has-help-tip">Status{% include "partials/help_tip.html" with label="AI status" text="ready means the sidecar is reachable; disabled means the Dashboard process was launched without embedded AI support." %}</th>
@@ -162,134 +48,24 @@
             </thead>
             <tbody>
                 <tr>
-                    <td data-label="Status">{{ data_health.ai_sidecar_status.status }}</td>
+                    <td data-label="Status">{{ data_health.ai_sidecar_status.status|status_tag }}</td>
                     <td data-label="Profile">{{ data_health.ai_sidecar_status.profile_id }}</td>
                     <td data-label="Service">{{ data_health.ai_sidecar_status.service_id }}</td>
-                    <td data-label="Base URL">{{ data_health.ai_sidecar_status.base_url }}</td>
+                    <td data-label="Base URL">{% if data_health.ai_sidecar_status.base_url %}<code>{{ data_health.ai_sidecar_status.base_url }}</code>{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
                     <td data-label="Capabilities">
                         {% for capability, enabled in data_health.ai_sidecar_status.capabilities.items %}
-                            {{ capability }}={{ enabled }}
+                            <span class="tag{% if enabled %} is-success{% endif %}" title="{{ capability }}={{ enabled }}">{{ capability }}</span>
                         {% empty %}
                             -
                         {% endfor %}
                     </td>
-                    <td data-label="Reason">{{ data_health.ai_sidecar_status.reason }}</td>
+                    <td data-label="Reason">{{ data_health.ai_sidecar_status.reason|or_dash }}</td>
                 </tr>
             </tbody>
         </table>
         </div>
     </section>
 
-    <section class="box">
-        <h3 class="title is-4">Provider Sync Cache Health{% include "partials/help_tip.html" with label="Provider Sync Cache Health" text="Checks whether provider profile facts and snapshots are fresh enough for charts and AI context." %}</h3>
-        <div class="table-container responsive-admin-table-box data-health-table-container">
-            <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
-                <thead>
-                    <tr>
-                        <th class="has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The upstream system, such as Jira or HSD-ES." %}</th>
-                        <th class="has-help-tip">Profile{% include "partials/help_tip.html" with label="Provider profile" text="The named provider/project configuration used to sync source facts and expose chart recipes." %}</th>
-                        <th class="has-help-tip">Status{% include "partials/help_tip.html" with label="Sync status" text="The most recent provider sync result for this profile." %}</th>
-                        <th class="has-help-tip">Freshness{% include "partials/help_tip.html" with label="Freshness" text="Whether the provider facts are current enough for downstream charts, evidence, and AI workflows." %}</th>
-                        <th>Last success</th>
-                        <th>Cache age</th>
-                        <th>Snapshot</th>
-                        <th>Source</th>
-                        <th class="has-help-tip">Mapping{% include "partials/help_tip.html" with label="Mapping" text="The field normalization version that translates provider-specific facts into Metrics chart inputs." %}</th>
-                        <th class="has-help-tip">Charts{% include "partials/help_tip.html" with label="Charts" text="Chart ids this provider profile can support now, plus deferred chart ids blocked by missing data or recipes." %}</th>
-                        <th>Error</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in data_health.provider_sync_health %}
-                        <tr>
-                            <td data-label="Provider">{{ item.provider_id }}</td>
-                            <td data-label="Profile">{{ item.profile_id }}</td>
-                            <td data-label="Status">{{ item.status }}</td>
-                            <td data-label="Freshness">{{ item.freshness_status }}</td>
-                            <td data-label="Last success">{{ item.latest_successful_sync_at }}</td>
-                            <td data-label="Cache age">{{ item.cache_age_seconds }}</td>
-                            <td data-label="Snapshot">{{ item.latest_snapshot_id }}</td>
-                            <td data-label="Source">{{ item.source_query_ownership }} {{ item.source_query_ref }} {{ item.source_query_name }}</td>
-                            <td data-label="Mapping">{{ item.mapping_version }} {{ item.mapping_version_hash }}</td>
-                            <td data-label="Charts">{{ item.supported_chart_ids }} {{ item.deferred_chart_ids }}</td>
-                            <td data-label="Error">{{ item.error_category }} {{ item.last_error }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="11">No provider profiles found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <section class="box">
-        <h3 class="title is-4">Jira Sync Health{% include "partials/help_tip.html" with label="Jira Sync Health" text="Readiness for saved-scope Jira history materialization, including cursor, changelog coverage, and config freshness." %}</h3>
-        <div class="table-container responsive-admin-table-box">
-        <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
-            <thead>
-                <tr>
-                    <th>Scope</th>
-                    <th>Status</th>
-                    <th>Last success</th>
-                    <th>Jira cutoff</th>
-                    <th class="has-help-tip">Reliable coverage{% include "partials/help_tip.html" with label="Reliable coverage" text="The source date range where sync data is considered complete enough for calculation." %}</th>
-                    <th class="has-help-tip">Changelog coverage{% include "partials/help_tip.html" with label="Changelog coverage" text="Whether issue transition/history data was available for the synced Jira window." %}</th>
-                    <th class="has-help-tip">Config hash{% include "partials/help_tip.html" with label="Config hash" text="Compares the config used by materialized data with the current scope config to identify stale outputs." %}</th>
-                    <th>Error</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data_health.sync_health %}
-                    <tr>
-                        <td data-label="Scope">{{ item.scope_name }}</td>
-                        <td data-label="Status">{{ item.status }}</td>
-                        <td data-label="Last success">{{ item.last_successful_sync_at }}</td>
-                        <td data-label="Jira cutoff">{{ item.last_jira_updated_cutoff }}</td>
-                        <td data-label="Reliable coverage">{{ item.earliest_reliable_bucket_start }} to {{ item.latest_reliable_bucket_end }}</td>
-                        <td data-label="Changelog coverage">{{ item.changelog_coverage_status }}</td>
-                        <td data-label="Config hash">{{ item.materialized_config_version_hash }} / {{ item.current_config_version_hash }}</td>
-                        <td data-label="Error">{{ item.last_error }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="8">No Jira sync cursors found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-    </section>
-
-    <section class="box">
-        <h3 class="title is-4">Calculation Health{% include "partials/help_tip.html" with label="Calculation Health" text="Checks whether each enabled scope has a completed bucket calculation matching the current config and source coverage." %}</h3>
-        <div class="table-container responsive-admin-table-box">
-        <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
-            <thead>
-                <tr>
-                    <th>Scope</th>
-                    <th>Status</th>
-                    <th class="has-help-tip">Freshness{% include "partials/help_tip.html" with label="Freshness" text="Whether the calculation output is still current for the latest scope config and source facts." %}</th>
-                    <th class="has-help-tip">Run{% include "partials/help_tip.html" with label="Run" text="The calculation run id that produced the currently inspected bucket output." %}</th>
-                    <th class="has-help-tip">Coverage{% include "partials/help_tip.html" with label="Coverage" text="The source data window covered by this calculation run." %}</th>
-                    <th class="has-help-tip">Config hash{% include "partials/help_tip.html" with label="Config hash" text="Compares the calculation run config fingerprint with the current scope fingerprint." %}</th>
-                    <th>Completed</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data_health.calculation_health %}
-                    <tr>
-                        <td data-label="Scope">{{ item.scope_name }}</td>
-                        <td data-label="Status">{{ item.status }}</td>
-                        <td data-label="Freshness">{{ item.freshness_status }}</td>
-                        <td data-label="Run">{{ item.calculation_run_id }}</td>
-                        <td data-label="Coverage">{{ item.source_coverage_start }} to {{ item.source_coverage_end }}</td>
-                        <td data-label="Config hash">{{ item.run_config_version_hash }} / {{ item.current_config_version_hash }}</td>
-                        <td data-label="Completed">{{ item.completed_at }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="7">No enabled scopes found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-    </section>
+    {% include "partials/data_health_pipeline.html" %}
 </article>
 {% endblock %}

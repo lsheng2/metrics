@@ -77,6 +77,20 @@ class TestTasksVelocityFacadeTaskRetrieval(unittest.IsolatedAsyncioTestCase):
         developer_ids = {entry.assignment.assignee.id for entry in result}
         self.assertEqual({"alice", "bob"}, developer_ids)
 
+    async def test_shouldBreakDownEveryLoggedDeveloperWhenNoDevelopersSelected(self):
+        # Given
+        task = _build_task("TASK-1", "Shared feature", story_points=8.0,
+                           time_by_assignee={"alice": 18000, "charlie": 9000})
+        self.task_search_api.mock.search.return_value = [task]
+        facade = _create_facade(self.task_search_api, self.velocity_calculation_api)
+
+        # When
+        result = await facade.get_tasks([], _START_DATE, _END_DATE)
+
+        # Then
+        developer_ids = {entry.assignment.assignee.id for entry in result}
+        self.assertEqual({"alice", "charlie"}, developer_ids)
+
     def test_shouldResolveAllMemberGroupMembersWhenDeveloperNamesEmpty(self):
         # Given
         facade = _create_facade(

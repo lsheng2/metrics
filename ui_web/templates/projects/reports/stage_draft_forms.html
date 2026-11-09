@@ -1,0 +1,129 @@
+{% load i18n %}
+<div class="project-reports-grid">
+    <section class="card" aria-labelledby="report-draft-create-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="report-draft-create-title">{% trans "Create saved draft" %}</h3>
+        </header>
+        <div class="card-content">
+            <form method="post" action="{% url 'ui_web:report_draft_create' detail.project.id stage.id %}" class="dashboard-edit-form">
+                {% csrf_token %}
+                {{ create_form.payload_version }}
+                {{ create_form.command_id }}
+                {{ create_form.capture_after }}
+                {% if create_form.non_field_errors %}
+                    <div class="message is-danger" role="alert"><div class="message-body">{{ create_form.non_field_errors|join:", " }}</div></div>
+                {% endif %}
+                <div class="dashboard-form-grid">
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ create_form.capture_id.id_for_label }}">{{ create_form.capture_id.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ create_form.capture_id.id_for_label }}" name="{{ create_form.capture_id.html_name }}">
+                            {% for value, label in create_form.fields.capture_id.choices %}
+                                <option value="{{ value }}" {% if create_form.capture_id.value == value or default_capture_id == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                        {% for error in create_form.capture_id.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ create_form.template_choice.id_for_label }}">{{ create_form.template_choice.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ create_form.template_choice.id_for_label }}" name="{{ create_form.template_choice.html_name }}">
+                            {% for value, label in create_form.fields.template_choice.choices %}
+                                <option value="{{ value }}" {% if create_form.template_choice.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                        {% for error in create_form.template_choice.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ create_form.timezone.id_for_label }}">{{ create_form.timezone.label }}</label>
+                        <input class="input" id="{{ create_form.timezone.id_for_label }}" name="{{ create_form.timezone.html_name }}" value="{{ create_form.timezone.value|default:'Asia/Shanghai' }}">
+                        {% for error in create_form.timezone.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ create_form.purpose.id_for_label }}">{{ create_form.purpose.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ create_form.purpose.id_for_label }}" name="{{ create_form.purpose.html_name }}">
+                            {% for value, label in create_form.fields.purpose.choices %}
+                                <option value="{{ value }}" {% if create_form.purpose.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                        {% for error in create_form.purpose.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ create_form.baseline_publication_id.id_for_label }}">{{ create_form.baseline_publication_id.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ create_form.baseline_publication_id.id_for_label }}" name="{{ create_form.baseline_publication_id.html_name }}">
+                            {% for value, label in create_form.fields.baseline_publication_id.choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                        {% for error in create_form.baseline_publication_id.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ create_form.parent_publication_id.id_for_label }}">{{ create_form.parent_publication_id.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ create_form.parent_publication_id.id_for_label }}" name="{{ create_form.parent_publication_id.html_name }}">
+                            {% for value, label in create_form.fields.parent_publication_id.choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                        {% for error in create_form.parent_publication_id.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+                <div class="dashboard-action-group is-right">
+                    <button class="button is-primary" type="submit"{% if not can_create_draft %} disabled aria-disabled="true"{% endif %}>
+                        <span class="icon is-small"><i class="iconoir-plus" aria-hidden="true"></i></span>
+                        <span>{% trans "Create draft" %}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="card" aria-labelledby="report-weekly-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="report-weekly-title">{% trans "Weekly view" %}</h3>
+        </header>
+        <div class="card-content">
+            <form method="post" action="{% url 'ui_web:report_weekly_draft_create' detail.project.id stage.id %}" class="dashboard-edit-form" data-report-weekly-form>
+                {% csrf_token %}
+                {{ weekly_create_form.command_id }}
+                <div class="dashboard-form-grid">
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ weekly_create_form.series_id.id_for_label }}">{{ weekly_create_form.series_id.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ weekly_create_form.series_id.id_for_label }}" name="{{ weekly_create_form.series_id.html_name }}">
+                            {% for value, label in weekly_create_form.fields.series_id.choices %}
+                                <option value="{{ value }}" {% if weekly_create_form.series_id.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ weekly_create_form.period_key.id_for_label }}">{{ weekly_create_form.period_key.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ weekly_create_form.period_key.id_for_label }}" name="{{ weekly_create_form.period_key.html_name }}">
+                            {% for value, label in weekly_create_form.fields.period_key.choices %}
+                                <option value="{{ value }}" {% if weekly_create_form.period_key.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ weekly_create_form.template_choice.id_for_label }}">{{ weekly_create_form.template_choice.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ weekly_create_form.template_choice.id_for_label }}" name="{{ weekly_create_form.template_choice.html_name }}">
+                            {% for value, label in weekly_create_form.fields.template_choice.choices %}
+                                <option value="{{ value }}" {% if weekly_create_form.template_choice.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                    </div>
+                </div>
+                <fieldset class="project-reports-checks">
+                    <legend class="label">{% trans "Selected daily publications" %}</legend>
+                    {% for value, label in weekly_create_form.fields.publication_id.choices %}
+                        <label class="checkbox"><input type="checkbox" name="{{ weekly_create_form.publication_id.html_name }}" value="{{ value }}"> {{ label }}</label>
+                    {% empty %}
+                        <p class="help">{% trans "No daily publications are available." %}</p>
+                    {% endfor %}
+                </fieldset>
+                <div class="dashboard-action-group is-right">
+                    <button class="button is-primary" type="submit" data-report-weekly-create{% if not weekly_create_form.fields.template_choice.choices or not weekly_create_form.fields.publication_id.choices %} disabled aria-disabled="true"{% endif %}>
+                        <span class="icon is-small"><i class="iconoir-plus" aria-hidden="true"></i></span>
+                        <span>{% trans "Create weekly draft" %}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>

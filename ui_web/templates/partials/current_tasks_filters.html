@@ -1,92 +1,30 @@
-{% if task_filter_panel.fields or lazy_loading_enabled %}
-<form class="task-filters dashboard-tool-form dashboard-top-toolbar box mb-4"
-      hx-get="{% url 'ui_web:partials_tasks' %}"
-      hx-trigger="submit"
-      hx-target="#current-tasks-board"
-      hx-push-url="true">
+{% if task_filter_panel.fields %}
+<form id="task-filters" class="task-filters box dashboard-tool-form dashboard-top-toolbar" aria-label="Task filters"
+      method="get" action="{% url 'ui_web:partials_tasks' %}"
+      hx-get="{% url 'ui_web:partials_tasks' %}" hx-target="#current-tasks-board" hx-push-url="true">
     <input type="hidden" name="member_group_id" value="{{ selected_member_group_id|default:'' }}">
     <input type="hidden" name="view" value="{{ view_mode|default:'list' }}">
-    <div class="dashboard-tool-grid">
+    <div class="dashboard-tool-grid is-toolbar">
         {% for field in task_filter_panel.fields %}
         <div class="dashboard-tool-field">
-            <div class="select is-small is-fullwidth">
-                <select name="{{ field.param }}">
-                    <option value="">All {{ field.label }}</option>
+            <label class="label" for="task-filter-{{ field.param }}">{{ field.label }}{% if field.param == "health" %}{% include "partials/help_tip.html" with label="Health filter" text="Health filtering requires forecast enrichment because the risk signal is calculated from task effort and estimate data." %}{% endif %}</label>
+            <div class="select is-fullwidth">
+                <select id="task-filter-{{ field.param }}" name="{{ field.param }}">
+                    <option value="">All</option>
                     {% for option in field.options %}
-                    <option value="{{ option.id }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
+                    <option value="{{ option.id }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
         {% endfor %}
-        {% for field in task_filter_panel.fields %}
-            {% if field.param == "health" %}
-                <div class="dashboard-tool-field task-filter-help">
-                    <span class="is-size-7 has-text-grey">Health{% include "partials/help_tip.html" with label="Health filter" text="Health filtering requires forecast enrichment because the risk signal is calculated from task effort and estimate data." %}</span>
-                </div>
+        <div class="dashboard-tool-actions">
+            <button type="submit" class="button is-primary">Apply</button>
+            {% if task_filter_panel.has_active_selection %}
+            <a class="button is-light" href="{% url 'ui_web:partials_tasks' %}?{{ view_queries.clear }}"
+               hx-get="{% url 'ui_web:partials_tasks' %}?{{ view_queries.clear }}" hx-target="#current-tasks-board" hx-push-url="true">Clear</a>
             {% endif %}
-        {% endfor %}
-        {% if task_filter_panel.fields %}
-        <div class="dashboard-tool-actions">
-            <button type="submit" class="button is-small is-primary">
-                <span class="icon is-small"><i class="iconoir-check"></i></span>
-                <span>Apply</span>
-            </button>
         </div>
-        {% endif %}
-        {% if task_filter_panel.has_active_selection %}
-        <div class="dashboard-tool-actions">
-            <a class="button is-small is-light"
-               hx-get="{% url 'ui_web:partials_tasks' %}?member_group_id={{ selected_member_group_id|urlencode }}&view={{ view_mode|default:'list' }}"
-               hx-target="#current-tasks-board"
-               hx-push-url="true">
-                <span class="icon is-small"><i class="iconoir-xmark"></i></span>
-                <span>Clear filters</span>
-            </a>
-        </div>
-        {% endif %}
-        <div class="dashboard-tool-actions is-right">
-            <div class="buttons has-addons are-small">
-                <a class="button {% if view_mode == 'list' %}is-primary{% endif %}"
-                   hx-get="{% url 'ui_web:partials_tasks' %}"
-                   hx-include="closest .task-filters"
-                   hx-vals='{"view": "list"}'
-                   hx-target="#current-tasks-board"
-                   hx-push-url="true">
-                    <span class="icon is-small"><i class="iconoir-list"></i></span>
-                    <span>List</span>
-                </a>
-                <a class="button {% if view_mode == 'board' %}is-primary{% endif %}"
-                   hx-get="{% url 'ui_web:partials_tasks' %}"
-                   hx-include="closest .task-filters"
-                   hx-vals='{"view": "board"}'
-                   hx-target="#current-tasks-board"
-                   hx-push-url="true">
-                    <span class="icon is-small"><i class="iconoir-view-columns-3"></i></span>
-                    <span>Board</span>
-                </a>
-            </div>
-        </div>
-        {% if lazy_loading_enabled and has_groups and view_mode == 'list' %}
-        <div class="dashboard-tool-actions">
-            <div class="buttons has-addons are-small">
-                <button type="button" class="button"
-                        hx-get="{% url 'ui_web:partials_tasks' %}?expand_all=true"
-                        hx-include="closest .task-filters"
-                        hx-target="#current-tasks-board">
-                    <span class="icon is-small"><i class="iconoir-expand"></i></span>
-                    <span>Expand all</span>
-                </button>
-                <button type="button" class="button"
-                        hx-get="{% url 'ui_web:partials_tasks' %}"
-                        hx-include="closest .task-filters"
-                        hx-target="#current-tasks-board">
-                    <span class="icon is-small"><i class="iconoir-collapse"></i></span>
-                    <span>Collapse all</span>
-                </button>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </form>
 {% endif %}

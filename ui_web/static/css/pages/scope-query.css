@@ -1,0 +1,137 @@
+/*
+ * Page layer: Scope query metadata, validation, generated JQL, provider binding grid and readiness
+ * strip.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+.scope-query-builder-metadata-result {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+/* The htmx target stays in the DOM; while empty it must not add a second grid gap. */
+.scope-query-builder-metadata-result:not(:has(*)) {
+    display: none;
+}
+
+.scope-query-builder-metadata-result > .message {
+    margin-bottom: 0;
+}
+
+.scope-query-builder-validation-toolbar {
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.scope-query-builder-validation-grid {
+    display: grid;
+    gap: var(--space-1-5);
+    margin-top: var(--space-2);
+}
+
+.scope-query-builder-validation-row {
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.scope-query-builder-validation-heading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1-5);
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--space-1);
+}
+
+.scope-query-builder-validation-heading span {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+}
+
+.scope-query-builder-custom-field,
+.scope-query-builder-custom-values {
+    align-content: start;
+}
+
+.scope-generated-query-field {
+    grid-column: 1 / -1;
+}
+
+.scope-generated-query-field .textarea {
+    min-height: 3.1rem;
+    background: color-mix(in srgb, var(--color-surface-muted) 72%, transparent);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+}
+
+/* Up to four columns of at least 12rem; narrower containers drop to 3+1, 2+2 or one column. */
+.scope-provider-grid,
+.scope-config-readiness-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, max(12rem, (100% - 3 * var(--space-3)) / 4)), 1fr));
+    gap: var(--space-3);
+}
+
+.scope-config-readiness-strip {
+    margin-top: var(--space-3);
+}
+
+.scope-provider-grid > div,
+.scope-config-readiness-strip > div,
+.scope-provider-detail-panel > div {
+    display: grid;
+    gap: var(--space-1);
+    align-content: start;
+    justify-items: start;
+    min-width: 0;
+}
+
+/* Field-style caption above a read-only value: sentence case, never uppercase. */
+.scope-config-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
+}
+
+.scope-provider-grid p,
+.scope-config-readiness-strip p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    line-height: var(--leading-snug);
+}
+
+.scope-provider-grid strong {
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+}
+
+.scope-config-binding-editor {
+    justify-self: stretch;
+    margin-bottom: 0;
+}
+
+.scope-provider-detail-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: var(--space-3);
+    padding: var(--space-2-5) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+}
+
+.scope-provider-detail-panel p {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--text-xs);
+    line-height: var(--leading-snug);
+    overflow-wrap: anywhere;
+}

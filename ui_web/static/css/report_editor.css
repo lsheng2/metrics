@@ -1,157 +1,80 @@
+/*
+ * Report authoring chrome: formatting toolbar, section bands, row editors and the completion menu.
+ * Authored content renders on the .paper primitive (css/foundation/typography.css) and keeps the export palette;
+ * everything defined here follows the active theme through Meridian tokens.
+ */
+
 .report-authoring-form {
     display: grid;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
 }
 
-[data-report-editor] > .level code {
-    overflow-wrap: anywhere;
-    white-space: normal;
+/* Article-level strips join the page block rhythm of foundation/layout.css. */
+.report-recovery:not(:last-child),
+.report-authoring-form:not(:last-child) {
+    margin-bottom: var(--space-4);
 }
 
+/* The toolbar sticks below the application topbar while long reports scroll. */
 .report-editor-toolbar {
     position: sticky;
-    top: 3.25rem;
-    z-index: 2;
+    top: calc(var(--layout-topbar-height) + var(--space-2));
+    z-index: var(--z-sticky);
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    padding: 0.35rem;
-    border: 1px solid #d9dee8;
-    border-radius: 8px 8px 0 0;
-    background: #f7f9fc;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Command groups share one row and are divided by a hairline, never by spacer elements. */
+.report-toolbar-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.report-toolbar-group + .report-toolbar-group {
+    padding-inline-start: var(--space-1);
+    border-inline-start: 1px solid var(--color-border-subtle);
 }
 
 .report-editor-toolbar .button {
-    min-width: 2rem;
-    border-radius: 6px;
-    color: #1f2937;
-    background-color: #ffffff;
+    min-width: var(--control-height-sm);
 }
 
-.report-editor-toolbar .icon,
-[data-report-editor] .button .icon {
-    width: 1rem;
-    height: 1rem;
+.report-editor-toolbar .icon.report-icon-pair {
+    gap: 1px;
+    width: auto;
 }
 
-[data-report-editor] [class*="iconoir-"] {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    flex: 0 0 auto;
-    background-color: currentColor;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
+.report-editor-toolbar .report-icon-pair [class*="iconoir-"] {
+    width: 0.75rem;
+    height: 0.75rem;
 }
 
-.report-icon-pair {
-    width: 1.6rem;
-    gap: 0.1rem;
-}
-
-.report-icon-pair [class*="iconoir-"] {
-    width: 0.78rem;
-    height: 0.78rem;
-}
-
-[data-report-editor] .iconoir-archive {
-    mask-image: url("../js/report_editor/vendor/iconoir/archive.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/archive.svg");
-}
-
-[data-report-editor] .iconoir-check {
-    mask-image: url("../js/report_editor/vendor/iconoir/check.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/check.svg");
-}
-
-[data-report-editor] .iconoir-download {
-    mask-image: url("../js/report_editor/vendor/iconoir/download.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/download.svg");
-}
-
-[data-report-editor] .iconoir-link {
-    mask-image: url("../js/report_editor/vendor/iconoir/link.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/link.svg");
-}
-
-[data-report-editor] .iconoir-list {
-    mask-image: url("../js/report_editor/vendor/iconoir/list.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/list.svg");
-}
-
-[data-report-editor] .iconoir-numbered-list-left {
-    mask-image: url("../js/report_editor/vendor/iconoir/numbered-list-left.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/numbered-list-left.svg");
-}
-
-[data-report-editor] .iconoir-plus-square {
-    mask-image: url("../js/report_editor/vendor/iconoir/plus-square.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/plus-square.svg");
-}
-
-[data-report-editor] .iconoir-redo {
-    mask-image: url("../js/report_editor/vendor/iconoir/redo.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/redo.svg");
-}
-
-[data-report-editor] .iconoir-refresh-double {
-    mask-image: url("../js/report_editor/vendor/iconoir/refresh-double.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/refresh-double.svg");
-}
-
-[data-report-editor] .iconoir-table {
-    mask-image: url("../js/report_editor/vendor/iconoir/table.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/table.svg");
-}
-
-[data-report-editor] .iconoir-table-2-columns {
-    mask-image: url("../js/report_editor/vendor/iconoir/table-2-columns.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/table-2-columns.svg");
-}
-
-[data-report-editor] .iconoir-table-rows {
-    mask-image: url("../js/report_editor/vendor/iconoir/table-rows.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/table-rows.svg");
-}
-
-[data-report-editor] .iconoir-trash {
-    mask-image: url("../js/report_editor/vendor/iconoir/trash.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/trash.svg");
-}
-
-[data-report-editor] .iconoir-undo {
-    mask-image: url("../js/report_editor/vendor/iconoir/undo.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/undo.svg");
-}
-
-[data-report-editor] .iconoir-xmark {
-    mask-image: url("../js/report_editor/vendor/iconoir/xmark.svg");
-    -webkit-mask-image: url("../js/report_editor/vendor/iconoir/xmark.svg");
-}
-
+/* Swatch fills stay inline in the template because each swatch shows the exact color it applies. */
 .report-color-swatch {
-    width: 2rem;
-    min-width: 2rem;
-    border: 1px solid #6b7280;
+    width: var(--control-height-sm);
+    min-width: var(--control-height-sm);
+    border-color: var(--color-border-input);
 }
 
 .report-editor-surface {
     min-height: 4.75rem;
-    border: 1px solid #d9dee8;
-    border-radius: 6px;
-    padding: 0.5rem 0.6rem;
-    background: #ffffff;
-    color: #1f2937;
+    padding: var(--space-2) var(--space-2-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
 }
 
-.report-editor-surface:focus-within,
-.report-editor-surface:focus {
-    outline: 2px solid #3273dc;
+.report-editor-surface:is(:focus, :focus-within) {
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
 }
 
@@ -161,75 +84,58 @@
     white-space: pre-wrap;
 }
 
-.report-editor-surface table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.report-editor-surface th,
-.report-editor-surface td {
-    border: 1px solid #d9dee8;
-    padding: 0.35rem;
-}
-
-.report-editor-surface blockquote {
-    border-left: 3px solid #3273dc;
-    margin-left: 0;
-    padding-left: 0.75rem;
-}
-
 .report-editor-surface li[data-item-type="task"] {
     position: relative;
+    padding-left: var(--space-5);
     list-style: none;
-    padding-left: 1.45rem;
 }
 
 .report-editor-surface li[data-item-type="task"]::before {
     content: "";
     position: absolute;
-    left: 0;
     top: 0.35rem;
+    left: 0;
     width: 0.9rem;
     height: 0.9rem;
-    border: 1px solid #6b7280;
-    border-radius: 3px;
-    background: #ffffff;
+    border: 1px solid var(--color-paper-control);
+    border-radius: var(--radius-xs);
+    background: var(--color-paper-bg);
 }
 
 .report-editor-surface li[data-item-type="task"][data-checked="true"]::before {
-    border-color: #3273dc;
-    background: #3273dc;
+    border-color: var(--color-paper-accent);
+    background: var(--color-paper-accent);
 }
 
 .report-editor-surface li[data-item-type="task"][data-checked="true"]::after {
     content: "";
     position: absolute;
-    left: 0.31rem;
     top: 0.47rem;
+    left: 0.31rem;
     width: 0.25rem;
     height: 0.5rem;
-    border: solid #ffffff;
+    border: solid var(--color-paper-bg);
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
 }
 
 .report-completion-menu {
     position: fixed;
-    z-index: 40;
-    max-width: min(36rem, calc(100vw - 3rem));
+    z-index: var(--z-dropdown);
     min-width: 18rem;
-    border: 1px solid #9ca3af;
-    border-radius: 6px;
-    background: #ffffff;
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
-    color: #111827;
+    max-width: min(36rem, calc(100vw - 3rem));
     overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-md);
+    color: var(--color-text);
 }
 
 .report-completion-message {
-    padding: 0.55rem 0.7rem;
-    color: #374151;
-    font-size: 0.82rem;
+    padding: var(--space-2) var(--space-2-5);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
 }
 
 .report-completion-list {
@@ -241,11 +147,12 @@
 .report-completion-option {
     display: block;
     width: 100%;
+    padding: var(--space-2) var(--space-2-5);
     border: 0;
-    border-bottom: 1px solid #e5e7eb;
-    background: #ffffff;
-    color: #111827;
-    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
     text-align: left;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -256,158 +163,214 @@
     border-bottom: 0;
 }
 
+.report-completion-option:hover {
+    background: var(--color-surface-hover);
+}
+
 .report-completion-option[aria-selected="true"] {
-    background: #e8f1ff;
-    color: #0f3d75;
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-text);
 }
 
 .report-completion-option:disabled {
+    background: transparent;
+    color: var(--color-text-disabled);
     cursor: default;
-    background: #f9fafb;
-    color: #6b7280;
 }
 
 .report-body-editor {
     display: grid;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+}
+
+/* Bands and row editors are opaque theme surfaces; the paper editors inside them carry the content.
+   Row editors sit inside a band, so a hairline divides them instead of a second frame. */
+.report-section-band,
+.report-row-editor {
+    display: grid;
+    gap: var(--space-3);
+    background: var(--color-surface);
+    color: var(--color-text);
 }
 
 .report-section-band {
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+/* An empty JS mount point must not open an extra grid gap; it shows once a script fills it. */
+.report-section-band > :empty {
+    display: none;
+}
+
+.report-row-editor {
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.report-band-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+}
+
+.report-field-title {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+}
+
+.report-matrix-commands {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+/* Persistent notes and unsaved ARs group their fields under a hairline, never a nested frame. */
+.report-persistent-note,
+.report-new-action {
     display: grid;
-    gap: 0.75rem;
-    border: 1px solid #d9dee8;
-    border-radius: 8px;
-    padding: 0.85rem;
-    background: #fbfcfe;
-    color: #111827;
+    gap: var(--space-1-5);
+    padding-top: var(--space-1-5);
+    border-top: 1px solid var(--color-border);
+}
+
+:is(.report-persistent-note, .report-new-action) + :is(.report-persistent-note, .report-new-action) {
+    margin-top: var(--space-2);
+}
+
+.report-action-control > summary {
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+}
+
+/* The grid sits on an inner wrapper: Chromium lays non-summary <details> children out inside ::details-content. */
+.report-action-fields {
+    display: grid;
+    gap: var(--space-1-5);
+    padding-top: var(--space-1-5);
+}
+
+.report-action-fields,
+.report-new-action {
+    justify-items: start;
+}
+
+:is(.report-action-fields, .report-new-action) > :is(.input, .report-editor-surface) {
+    justify-self: stretch;
 }
 
 .report-message-grid,
 .report-row-grid {
     display: grid;
-    gap: 0.75rem;
+    gap: var(--space-3);
 }
 
 .report-message-row,
 .report-action-row {
     display: grid;
     grid-template-columns: minmax(10rem, 16rem) 1fr;
-    gap: 0.75rem;
+    gap: var(--space-3);
     align-items: start;
-}
-
-.report-row-editor {
-    display: grid;
-    gap: 0.75rem;
-    border: 1px solid #d9dee8;
-    border-radius: 8px;
-    padding: 0.85rem;
-    background: #fbfcfe;
-    color: #111827;
-}
-
-.report-body-editor,
-.report-body-editor .title,
-.report-row-editor .title,
-.report-row-editor strong,
-.report-source-cell,
-.report-source-cell strong,
-.report-section-band .title {
-    color: #111827;
 }
 
 .report-row-header {
     display: grid;
     grid-template-columns: minmax(16rem, 1fr) auto;
-    gap: 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 0.5rem;
-}
-
-.report-row-header p,
-.report-source-cell p {
-    color: #1f2937;
+    gap: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .report-row-header dl {
     display: flex;
-    gap: 1rem;
-    margin: 0;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
 }
 
 .report-row-header dt,
 .report-source-cell .help {
-    color: #1f2937;
-    font-size: 0.78rem;
-    font-weight: 700;
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
 }
 
 .report-row-header dd {
-    margin: 0;
-    color: #111827;
+    color: var(--color-text);
 }
 
 .report-row-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+
+.report-row-grid > * {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    min-width: 0;
 }
 
 .report-inline-region {
     display: grid;
-    gap: 0.35rem;
+    gap: var(--space-1);
 }
 
 .report-region-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: var(--space-2);
+}
+
+.report-data-block {
+    display: grid;
+    gap: var(--space-2);
 }
 
 .report-note-strip {
     display: grid;
-    gap: 0.5rem;
-    padding-top: 0.35rem;
+    gap: var(--space-2);
+    padding-top: var(--space-1);
 }
 
-.report-export-preview {
-    border-top: 1px solid #d9dee8;
-    padding-top: 0.75rem;
+/* Recovery is a quiet strip: its status text and checkpoint commands share one wrapping row. */
+.report-recovery {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
 }
 
-.report-readonly-data {
-    overflow-x: auto;
+.report-export-preview > .disclosure__body {
+    padding: var(--space-3);
 }
 
-.report-readonly-data main {
-    padding: 0 !important;
+.report-export-frame {
+    display: block;
+    width: 100%;
+    min-height: 32.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-paper-bg);
 }
 
-.report-readonly-data table {
-    max-width: 100%;
-}
-
-.report-readonly-data th,
-.report-readonly-data td {
-    color: #111827 !important;
-}
-
-.report-readonly-data th {
-    background-color: #ecfeff !important;
-}
-
-.report-readonly-data td {
-    background-color: #ffffff !important;
-}
-
-.report-readonly-data a {
-    color: #0f766e !important;
-}
-
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     .report-message-row,
     .report-action-row,
-    .report-row-header,
-    .report-row-grid {
-        grid-template-columns: 1fr;
+    .report-row-header {
+        grid-template-columns: minmax(0, 1fr);
     }
 }

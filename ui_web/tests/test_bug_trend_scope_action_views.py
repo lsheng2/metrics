@@ -13,6 +13,7 @@ from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOpt
 from jira_history.models import JiraIssue
 
 
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport
 
 
@@ -190,8 +191,8 @@ class TestBugTrendScopeActionViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertTrue(result['dirty_banner_visible'])
         self.assertIn('Unsaved *', result['dirty_label_text'])
         self.assertTrue(result['cancel_button_visible'])
-        self.assertLessEqual(result['action_button_height_delta'], 1)
-        self.assertGreaterEqual(result['action_gap_px'], 8)
+        self.assertLessEqual(result['action_button_height_delta'], geometry.HEIGHT_DELTA_MAX)
+        self.assertGreaterEqual(result['action_gap_px'], geometry.EDITOR_ACTION_GAP_MIN)
         self.assertFalse(result['page_horizontal_overflow'])
 
     def test_shouldHighlightActionRequiredScopeFieldsInBrowser(self):

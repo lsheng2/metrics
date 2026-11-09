@@ -76,7 +76,7 @@ class TestGatewayDisplay(unittest.TestCase):
         policies = PullRequestConvertor().convert_review_details(pull_request).policies
 
         # then
-        self.assertEqual([("In review", "is-light has-text-grey")], [(policy.name, policy.css_class) for policy in policies])
+        self.assertEqual([("In review", "")], [(policy.name, policy.css_class) for policy in policies])
 
     def test_shouldShowNoPolicyChipsWhenGatewayIsUnknown(self):
         # given

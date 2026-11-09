@@ -9,6 +9,7 @@
 - Case studies and operator walkthroughs: `docs/case_study/`
 - New user onboarding walkthroughs: `docs/onboarding/`
 - UI design system contract: `openspec/docs/current-baseline/ui-design-system.md`
+- Frontend design requirements (binding for every UI change): `openspec/docs/current-baseline/frontend-design-requirements.md`
 - UI gate overlay/report: `.github/skills/lsheng2-ui-design/templates/project-overlay.md`, `.github/skills/lsheng2-ui-design/reports/ui-gate-report.md`
 - Provider/Profile/Scope monkey-user E2E checklist: `.github/skills/lsheng2-ui-design/reports/provider-profile-scope-monkey-e2e-checklist.md`
 - Full UI manifest gate: `scripts\validate_ui_full_manifest_gate.ps1 -BaseUrl http://127.0.0.1:8000 -NoScreenshots`

@@ -10,7 +10,7 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar", "Apr", "May"],
-            datasets=[ChartDatasetData(label="Alice", data=[3.0, 6.0, 9.0, 12.0, 15.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[3.0, 6.0, 9.0, 12.0, 15.0])]
         )
 
         # When
@@ -23,7 +23,7 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar", "Apr"],
-            datasets=[ChartDatasetData(label="Alice", data=[4.0, None, 8.0, 12.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[4.0, None, 8.0, 12.0])]
         )
 
         # When
@@ -36,7 +36,7 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
-            datasets=[ChartDatasetData(label="Alice", data=[4.0, None, 8.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[4.0, None, 8.0])]
         )
 
         # When
@@ -49,7 +49,7 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
-            datasets=[ChartDatasetData(label="Alice", data=[3.0, 6.0, 9.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[3.0, 6.0, 9.0])]
         )
 
         # When
@@ -63,8 +63,8 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
             datasets=[
-                ChartDatasetData(label="Alice", data=[2.0, 4.0, 6.0], color="red"),
-                ChartDatasetData(label="Bob", data=[10.0, 20.0, 30.0], color="blue")
+                ChartDatasetData(label="Alice", data=[2.0, 4.0, 6.0]),
+                ChartDatasetData(label="Bob", data=[10.0, 20.0, 30.0])
             ]
         )
 
@@ -79,7 +79,7 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
-            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0])]
         )
 
         # When
@@ -92,7 +92,7 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb"],
-            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0], color="hsl(120, 50%, 50%)")]
+            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0])]
         )
 
         # When
@@ -100,13 +100,12 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
 
         # Then
         self.assertEqual(result.datasets[0].label, "Alice")
-        self.assertEqual(result.datasets[0].color, "hsl(120, 50%, 50%)")
 
     def test_shouldRoundAveragesToTwoDecimalPlaces(self):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
-            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0])]
         )
 
         # When
@@ -119,7 +118,7 @@ class TestChartTransformUtilsRollingAverage(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar", "Apr"],
-            datasets=[ChartDatasetData(label="Alice", data=[10.0, 20.0, 30.0, 40.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[10.0, 20.0, 30.0, 40.0])]
         )
 
         # When
@@ -138,7 +137,7 @@ class TestChartTransformUtilsTrimToLastNPeriods(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar", "Apr", "May"],
-            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0, 4.0, 5.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0, 4.0, 5.0])]
         )
 
         # When
@@ -152,7 +151,7 @@ class TestChartTransformUtilsTrimToLastNPeriods(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb"],
-            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0])]
         )
 
         # When
@@ -166,7 +165,7 @@ class TestChartTransformUtilsTrimToLastNPeriods(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
-            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0])]
         )
 
         # When
@@ -181,8 +180,8 @@ class TestChartTransformUtilsTrimToLastNPeriods(unittest.TestCase):
         chart = ChartData(
             labels=["Jan", "Feb", "Mar", "Apr"],
             datasets=[
-                ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0, 4.0], color="red"),
-                ChartDatasetData(label="Bob", data=[10.0, 20.0, 30.0, 40.0], color="blue")
+                ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0, 4.0]),
+                ChartDatasetData(label="Bob", data=[10.0, 20.0, 30.0, 40.0])
             ]
         )
 
@@ -198,7 +197,7 @@ class TestChartTransformUtilsTrimToLastNPeriods(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Jan", "Feb", "Mar"],
-            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0], color="hsl(120, 50%, 50%)")]
+            datasets=[ChartDatasetData(label="Alice", data=[1.0, 2.0, 3.0])]
         )
 
         # When
@@ -206,4 +205,3 @@ class TestChartTransformUtilsTrimToLastNPeriods(unittest.TestCase):
 
         # Then
         self.assertEqual(result.datasets[0].label, "Alice")
-        self.assertEqual(result.datasets[0].color, "hsl(120, 50%, 50%)")

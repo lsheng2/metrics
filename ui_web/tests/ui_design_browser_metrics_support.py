@@ -1,6 +1,6 @@
 import json
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
-from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
@@ -12,6 +12,61 @@ from bug_metrics.models import (
     JiraScopeConfig,
     ProviderProfileConfig,
 )
+from ui_web.tests import ui_geometry_contract as geometry
+from ui_web.tests.dashboard_asset_support import inline_dashboard_assets, shell_fragment_html
+
+
+@dataclass(slots=True)
+class MetricCheck:
+    """Records failed checks for one measured page and viewport instead of stopping at the first."""
+
+    lines: list[str]
+    context: str
+    metrics: dict
+
+    def at_most(self, metric, rule, detail=''):
+        limit = geometry.browser_limits()[rule]
+        self._expect(self.metrics[metric] <= limit, metric, f'<= {limit}', (rule,), detail)
+
+    def above(self, metric, floor):
+        self._expect(self.metrics[metric] > floor, metric, f'> {floor}')
+
+    def equal(self, metric, expected):
+        self._expect(self.metrics[metric] == expected, metric, f'== {expected!r}')
+
+    def false(self, metric, *rules):
+        self._expect(not self.metrics[metric], metric, 'falsy', rules)
+
+    def true(self, metric, *rules):
+        self._expect(bool(self.metrics[metric]), metric, 'truthy', rules)
+
+    def empty(self, metric, *rules):
+        self._expect(self.metrics[metric] == [], metric, '[]', rules)
+
+    def _expect(self, held, metric, expectation, rules=(), detail=''):
+        # Rule keys resolve before the outcome so a misspelled key fails even on a passing run.
+        limits = ', '.join(f'{rule}={geometry.browser_limits()[rule]}' for rule in rules)
+        if not held:
+            prefix = f'{limits}: ' if limits else ''
+            self.lines.append(
+                f'{prefix}{metric}={self.metrics[metric]!r} (expected {expectation}) @ {self.context}{detail}'
+            )
+
+
+@dataclass(slots=True)
+class MetricViolations:
+    """Collects every failed browser-metric check so one run reports all geometry regressions."""
+
+    lines: list[str] = field(default_factory=list)
+
+    def each(self, results):
+        for label, viewport_results in results.items():
+            for viewport, metrics in viewport_results.items():
+                yield MetricCheck(self.lines, f'{label} {viewport}', metrics)
+
+    def assert_none(self, test_case):
+        if self.lines:
+            test_case.fail(f'{len(self.lines)} browser metric violation(s):\n' + '\n'.join(self.lines))
 
 
 class UiDesignBrowserMetricsSupport:
@@ -79,7 +134,7 @@ class UiDesignBrowserMetricsSupport:
         try:
             page.set_content(html, wait_until='domcontentloaded')
             return page.evaluate("""
-                () => {
+                limits => {
                     const visible = element => Boolean(
                         element
                         && (element.offsetWidth || element.offsetHeight || element.getClientRects().length)
@@ -93,19 +148,19 @@ class UiDesignBrowserMetricsSupport:
                     const buttons = Array.from(document.querySelectorAll('button, a.button')).filter(visible);
                     const clippedButtons = buttons
                         .filter(button => button.innerText.trim())
-                        .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
+                        .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + limits.OVERFLOW_TOLERANCE)
                         .map(button => button.innerText.trim());
                     const unnamedIconButtons = buttons
                         .filter(button => button.querySelector('i[class*="iconoir"], svg'))
                         .filter(button => !buttonName(button))
                         .map(button => button.outerHTML.slice(0, 120));
                     return {
-                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
                         clipped_buttons: clippedButtons,
                         unnamed_icon_buttons: unnamedIconButtons,
                     };
                 }
-            """)
+            """, geometry.browser_limits())
         finally:
             page.close()
 
@@ -114,7 +169,7 @@ class UiDesignBrowserMetricsSupport:
         try:
             page.set_content(html, wait_until='domcontentloaded')
             return page.evaluate("""
-                expectations => {
+                ({expectations, limits}) => {
                     const visible = element => Boolean(
                         element
                         && (element.offsetWidth || element.offsetHeight || element.getClientRects().length)
@@ -135,6 +190,10 @@ class UiDesignBrowserMetricsSupport:
                             .filter(value => value > 0);
                         return max(heights) - min(heights);
                     };
+                    // Page filters and nested card filters may use different foundation sizes; one form never mixes them.
+                    const perToolFormDelta = selector => max(
+                        Array.from(document.querySelectorAll('.dashboard-tool-form')).map(form => heightDeltaWithin(form, selector))
+                    );
                     const tableName = (table, index) => {
                         const id = table.id ? `#${table.id}` : '';
                         const className = table.className ? `.${String(table.className).trim().replace(/\\s+/g, '.')}` : '';
@@ -153,10 +212,10 @@ class UiDesignBrowserMetricsSupport:
                     };
                     const visibleButtons = Array.from(document.querySelectorAll('.button')).filter(visible);
                     const boldButtonLabels = visibleButtons
-                        .filter(button => buttonFontWeight(button) > 400)
+                        .filter(button => buttonFontWeight(button) > limits.BUTTON_FONT_WEIGHT_MAX)
                         .map(button => button.innerText.trim() || button.getAttribute('aria-label') || button.getAttribute('title') || button.outerHTML.slice(0, 80));
                     const clippedActionButtons = actionButtons
-                        .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
+                        .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + limits.OVERFLOW_TOLERANCE)
                         .map(button => button.innerText.trim());
                     const buttonMetricFailures = [];
                     Array.from(document.querySelectorAll('.dashboard-action-bar, .dashboard-action-group, .dashboard-tool-actions, .scope-primary-actions, .provider-row-primary-actions, .workbench-evidence-actions'))
@@ -167,9 +226,9 @@ class UiDesignBrowserMetricsSupport:
                             const delta = max(heights) - min(heights);
                             const clipped = buttons
                                 .filter(button => button.innerText.trim())
-                                .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
+                                .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + limits.OVERFLOW_TOLERANCE)
                                 .map(button => button.innerText.trim());
-                            if (delta > 1) {
+                            if (delta > limits.HEIGHT_DELTA_MAX) {
                                 buttonMetricFailures.push(`group ${index} height delta ${delta.toFixed(1)}px`);
                             }
                             if (clipped.length) {
@@ -182,10 +241,10 @@ class UiDesignBrowserMetricsSupport:
                         .forEach((form, index) => {
                             const controlDelta = heightDeltaWithin(form, '.dashboard-tool-field .input, .dashboard-tool-field select, .dashboard-form-field .input, .dashboard-form-field select');
                             const buttonDelta = heightDeltaWithin(form, '.dashboard-tool-actions .button, .dashboard-action-bar .button, .dashboard-action-group .button');
-                            if (controlDelta > 1) {
+                            if (controlDelta > limits.HEIGHT_DELTA_MAX) {
                                 formMetricFailures.push(`form ${index} control height delta ${controlDelta}px`);
                             }
-                            if (buttonDelta > 1) {
+                            if (buttonDelta > limits.HEIGHT_DELTA_MAX) {
                                 formMetricFailures.push(`form ${index} button height delta ${buttonDelta}px`);
                             }
                         });
@@ -195,6 +254,7 @@ class UiDesignBrowserMetricsSupport:
                     const denseTables = tables.filter(table => table.classList.contains('dashboard-dense-table'));
                     const tableContractFailures = [];
                     const tableDensityFailures = [];
+                    const tableEdgeFailures = [];
                     const tableButtonFailures = [];
                     const denseTableRowHeights = [];
                     const denseTableButtonHeightDeltas = [];
@@ -206,18 +266,35 @@ class UiDesignBrowserMetricsSupport:
                             tableContractFailures.push(name);
                             return;
                         }
-                        const cells = Array.from(table.querySelectorAll('th, td')).filter(visible);
+                        // Empty-table placeholder rows are intentionally roomy; density applies to header and data rows.
+                        const cells = Array.from(table.querySelectorAll('th, tr:not(.is-empty-row) > td')).filter(visible);
                         const maxPaddingBlock = max(cells.map(cell => {
                             const style = getComputedStyle(cell);
                             return parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
                         }));
-                        if (maxPaddingBlock > 12) {
+                        if (maxPaddingBlock > limits.TABLE_CELL_PADDING_BLOCK_MAX) {
                             tableDensityFailures.push(`${name} padding ${maxPaddingBlock.toFixed(1)}px`);
                         }
-                        const bodyRows = Array.from(table.querySelectorAll('tbody tr')).filter(visible);
+                        const bodyRows = Array.from(table.querySelectorAll('tbody tr:not(.is-empty-row)')).filter(visible);
                         const maxDenseRowHeight = max(bodyRows.map(row => row.getBoundingClientRect().height));
-                        if (table.classList.contains('dashboard-dense-table') && maxDenseRowHeight > 72) {
+                        if (table.classList.contains('dashboard-dense-table') && maxDenseRowHeight > limits.DENSE_ROW_HEIGHT_MAX) {
                             tableDensityFailures.push(`${name} row ${maxDenseRowHeight.toFixed(1)}px`);
+                        }
+                        // A flush card table starts its first column on the card title's edge until it collapses to cards.
+                        const box = table.parentElement;
+                        const card = box && box.parentElement;
+                        const flush = card && card.classList.contains('card')
+                            && box.classList.contains('table-container') && !box.classList.contains('is-framed');
+                        const title = flush ? card.querySelector(':scope > .card-header .card-header-title') : null;
+                        const head = table.tHead && getComputedStyle(table.tHead).display !== 'none'
+                            ? table.tHead.querySelector('tr > :first-child') : null;
+                        if (title && head && visible(head)) {
+                            const textEdge = element => element.getBoundingClientRect().left
+                                + parseFloat(getComputedStyle(element).paddingLeft);
+                            const edgeDelta = Math.abs(textEdge(head) - textEdge(title));
+                            if (edgeDelta > limits.ALIGNMENT_TOLERANCE) {
+                                tableEdgeFailures.push(`${name} first column ${edgeDelta.toFixed(1)}px off the card title`);
+                            }
                         }
                         const tableButtons = Array.from(table.querySelectorAll('button, a.button')).filter(visible);
                         const tableButtonHeights = tableButtons.map(button => button.getBoundingClientRect().height).filter(value => value > 0);
@@ -228,9 +305,9 @@ class UiDesignBrowserMetricsSupport:
                         }
                         const clippedTableButtons = tableButtons
                             .filter(button => button.innerText.trim())
-                            .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + 1)
+                            .filter(button => button.scrollWidth > Math.ceil(button.clientWidth) + limits.OVERFLOW_TOLERANCE)
                             .map(button => button.innerText.trim());
-                        if (tableButtonHeightDelta > 1) {
+                        if (tableButtonHeightDelta > limits.HEIGHT_DELTA_MAX) {
                             tableButtonFailures.push(`${name} height delta ${tableButtonHeightDelta.toFixed(1)}px`);
                         }
                         if (clippedTableButtons.length) {
@@ -243,7 +320,7 @@ class UiDesignBrowserMetricsSupport:
                         expects_table: Boolean(expectations.table),
                         expects_dense_table: Boolean(expectations.dense_table),
                         expects_tool_form: Boolean(expectations.tool_form),
-                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
                         visible_button_count: visibleButtons.length,
                         max_button_font_weight: max(visibleButtons.map(buttonFontWeight)),
                         bold_button_labels: boldButtonLabels,
@@ -254,16 +331,18 @@ class UiDesignBrowserMetricsSupport:
                         dense_table_button_height_delta: max(denseTableButtonHeightDeltas),
                         table_contract_failures: tableContractFailures,
                         table_density_failures: tableDensityFailures,
+                        table_edge_failures: tableEdgeFailures,
                         table_button_failures: tableButtonFailures,
                         button_metric_failures: buttonMetricFailures,
                         form_metric_failures: formMetricFailures,
                         tool_form_count: document.querySelectorAll('.dashboard-tool-form').length,
                         tool_grid_count: document.querySelectorAll('.dashboard-tool-grid').length,
                         tool_form_dirty_count: document.querySelectorAll('.dashboard-tool-form[data-dirty-form], .dashboard-tool-form[data-required-form]').length,
-                        tool_form_button_height_delta: heightDelta('.dashboard-tool-form .button'),
-                        tool_form_control_height_delta: heightDelta('.dashboard-tool-field .input, .dashboard-tool-field select'),
+                        tool_form_button_height_delta: perToolFormDelta('.button'),
+                        tool_form_control_height_delta: perToolFormDelta('.dashboard-tool-field .input, .dashboard-tool-field select'),
+                        tool_form_alignment_delta: perToolFormDelta('.button, .dashboard-tool-field .input, .dashboard-tool-field select'),
                         provider_tab_shell_count: document.querySelectorAll('.provider-tab-shell').length,
-                        selected_provider_check_visible: selectedChecks.some(check => check.getBoundingClientRect().width >= 14),
+                        selected_provider_check_visible: selectedChecks.some(check => check.getBoundingClientRect().width >= limits.PROVIDER_CHECK_MIN_WIDTH),
                         required_summary_count: document.querySelectorAll('[data-required-summary]').length,
                         dirty_banner_count: document.querySelectorAll('[data-dirty-banner]').length,
                         action_bar_count: document.querySelectorAll('.dashboard-action-bar').length,
@@ -271,24 +350,14 @@ class UiDesignBrowserMetricsSupport:
                         editor_control_height_delta: heightDelta('.dashboard-form-field .input, .dashboard-form-field select'),
                     };
                 }
-            """, expectations)
+            """, {'expectations': expectations, 'limits': geometry.browser_limits()})
         finally:
             page.close()
 
     def _browser_html(self, html):
-        static_dir = Path(__file__).resolve().parents[1] / 'static'
-        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
-        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
-        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
         if '</head>' not in html:
-            html = self._fragment_html(html)
-        return html.replace(
-            '</head>',
-            f'<style>{vendor_css}\n{main_css}</style></head>',
-        ).replace(
-            '</body>',
-            f'<script>{main_js}</script></body>',
-        )
+            html = shell_fragment_html(html)
+        return inline_dashboard_assets(html)
 
     def _jira_profile_payload(self, profile_id):
         return {

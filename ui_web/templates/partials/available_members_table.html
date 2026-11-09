@@ -1,49 +1,42 @@
 {% if error %}
-<article class="message is-danger">
-    <div class="message-header">
-        <p>Error</p>
-    </div>
-    <div class="message-body">
-        {{ error }}
-    </div>
+<article class="message is-danger" role="alert">
+    <div class="message-header"><p>Available members unavailable</p></div>
+    <div class="message-body">{{ error }}</div>
 </article>
 {% elif show_available_members %}
-<div class="box">
-    <div class="content">
-        <h3 class="title is-4">Available Team Members</h3>
-        <p class="subtitle is-6">Team members without current assigned tasks ({{ available_members|length }} available)</p>
+<details class="disclosure" id="available-members">
+    <summary class="disclosure__summary">
+        <i class="disclosure__chevron iconoir-nav-arrow-right" aria-hidden="true"></i>
+        <h3 class="disclosure__title">Available members</h3>
+        <span class="count-badge">{{ available_members|length }}</span>
+        <span class="disclosure__meta">No in-progress tasks · activity over the last 30 days</span>
+        <span class="disclosure__aside avatar-stack" aria-hidden="true">{% for member in available_members|slice:":8" %}{% include "partials/avatar.html" with person=member only %}{% endfor %}</span>
+    </summary>
+    <div class="disclosure__body">
+        <div class="table-container">
+            <table class="table is-hoverable is-fullwidth dashboard-dense-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Member</th>
+                        <th scope="col" class="is-numeric">Hours (30d)</th>
+                        <th scope="col" class="is-numeric">Tickets (30d)</th>
+                        <th scope="col" class="is-numeric">Hours / ticket</th>
+                        <th scope="col" class="is-numeric">Work days (30d)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in available_members %}
+                    <tr>
+                        <td><span class="person">{% include "partials/avatar.html" with person=member only %}{{ member.display_name }}</span></td>
+                        <td class="is-numeric">{% if member.total_hours_last_30 is not None %}{{ member.total_hours_last_30|floatformat:1 }}h{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                        <td class="is-numeric">{% if member.tickets_assigned_last_30 is not None %}{{ member.tickets_assigned_last_30 }}{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                        <td class="is-numeric">{% if member.hours_per_task is not None %}{{ member.hours_per_task|floatformat:1 }}h{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                        <td class="is-numeric">{% if member.total_work_days_last_30 is not None %}{{ member.total_work_days_last_30|floatformat:1 }}d{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <div class="table-container">
-        <table class="table is-striped is-hoverable is-fullwidth dashboard-dense-table">
-            <thead>
-                <tr>
-                    <th scope="col">Member</th>
-                    <th scope="col">Total Hours (30d)</th>
-                    <th scope="col">Tickets Assigned (30d)</th>
-                    <th scope="col">Hours per Task</th>
-                    <th scope="col">Total Work Days (30d)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for member in available_members %}
-                <tr>
-                    <td><strong>{{ member.display_name }}</strong></td>
-                    <td>{{ member.total_hours_last_30|floatformat:1 }}h</td>
-                    <td>{{ member.tickets_assigned_last_30 }}</td>
-                    <td>{{ member.hours_per_task|floatformat:1 }}h</td>
-                    <td>{{ member.total_work_days_last_30|floatformat:1 }}d</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">
-                        <em>All team members have assigned tasks</em>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+</details>
 {% endif %}
-

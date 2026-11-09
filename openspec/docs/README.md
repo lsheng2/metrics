@@ -12,6 +12,9 @@
 
 - `current-baseline/`: 反映当前已实现系统的背景、架构和 contract supporting docs。规范性要求以 `openspec/specs/` 为准。
   - `openspec/docs/current-baseline/ui-design-system.md`: 当前已实现的 Dashboard UI shared component contracts、使用边界和验证命令。
+  - `openspec/docs/current-baseline/frontend-design-requirements.md`: 具有约束力的前端设计要求（Meridian 视觉语言、tokens、light/dark 主题、导航动线、组件目录、工具链与 QA gates），所有 UI 改动必须遵循。
+  - `openspec/docs/current-baseline/frontend-design-recipes.md`: 具有约束力的前端 recipes（精确 token 值、选择器、标记模式，以及每条规则背后的 pitfall），是 frontend-design-requirements.md 的组成部分。
+  - `openspec/docs/current-baseline/frontend-delivery-playbook.md`: 具有约束力的前端交付手册（工具链、文件架构与体积门禁、测试契约、真实浏览器复查、调试 pitfalls 与工作规则），是 frontend-design-requirements.md 的组成部分。
 - `future-target/`: 尚未全部实现的产品目标、策略和 design input。进入实施前必须转成 active OpenSpec change。
   - `ai-base-gcx-metrics-contract.zh.md`: 记录 optional AI base 与 `gcx` 如何通过 Metrics-owned catalog、validator 和 publication precondition 协作。
 - `validation/`: 测试策略、运行手册、C0/C1 evidence 和 validation gate 材料。

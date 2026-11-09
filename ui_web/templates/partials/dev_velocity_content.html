@@ -1,35 +1,66 @@
-{% if error %}
-<article class="message is-danger">
-    <div class="message-header">
-        <p>⚠️ Error Loading Velocity Data</p>
-    </div>
-    <div class="message-body">
-        <p><strong>{{ error }}</strong></p>
-        {% if config_help %}
-            <p>{{ config_help }}</p>
-            <p>Please contact your system administrator to configure the required data source.</p>
-        {% else %}
-            <p>Please check your configuration or try refreshing the page.</p>
+<article id="dev-velocity-page" class="block">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Developer velocity</h2>
+            <p class="page-header__meta">Story points per logged day for each developer over the last 6 months; dashed lines mark seniority targets. Select a month to list its tasks.</p>
+        </div>
+        {% if not error %}
+            <form id="velocity-options" class="page-header__actions dashboard-action-form" aria-label="Velocity options"
+                  data-tasks-url="{% url 'ui_web:dev_velocity_tasks' %}"
+                  hx-get="{% url 'ui_web:dev_velocity' %}" hx-trigger="change" hx-target="#main-content"
+                  hx-push-url="true" hx-indicator="#loading-indicator">
+                {% if member_group_id %}<input type="hidden" name="member_group_id" value="{{ member_group_id }}">{% endif %}
+                <input type="hidden" name="period" value="{{ selected_period }}"{% if not selected_period %} disabled{% endif %}>
+                <input type="hidden" name="developers" value="{{ selected_developers }}"{% if not selected_developers %} disabled{% endif %}>
+                <label class="button is-small toggle-button">
+                    <input type="checkbox" id="velocity-rolling-avg" name="rolling_avg" value="{{ velocity_rolling_avg|default:3 }}"{% if velocity_rolling_avg %} checked{% endif %}>
+                    <span class="icon"><i class="iconoir-graph-up" aria-hidden="true"></i></span>
+                    <span>{{ velocity_rolling_avg|default:3 }}-month average</span>
+                </label>
+                <label class="button is-small toggle-button">
+                    <input type="checkbox" id="velocity-all-tasks" name="all_tasks" value="true"{% if include_all_statuses %} checked{% endif %}>
+                    <span class="icon"><i class="iconoir-hourglass" aria-hidden="true"></i></span>
+                    <span>Include unfinished</span>
+                </label>
+                {% if has_custom_filter %}
+                    <label class="button is-small toggle-button">
+                        <input type="checkbox" id="velocity-custom-filter" name="use_custom_filter" value="true"{% if use_custom_filter %} checked{% endif %}>
+                        <span class="icon"><i class="iconoir-filter" aria-hidden="true"></i></span>
+                        <span>Group custom filter</span>
+                    </label>
+                {% endif %}
+            </form>
         {% endif %}
-    </div>
-</article>
-{% else %}
-<div id="velocity-chart-container">
-    {% include 'partials/dev_velocity_chart.html' %}
-</div>
-
-<div id="sp-chart-container">
-    {% include 'partials/dev_story_points_chart.html' %}
-</div>
-
-<div id="task-details-container"
-     {% if selected_period %}
-     hx-get="{% url 'ui_web:dev_velocity_tasks' %}?period={{ selected_period|urlencode }}{% if selected_developers %}&developers={{ selected_developers|urlencode }}{% endif %}&member_group_id={{ member_group_id|urlencode }}{% if include_all_statuses %}&all_tasks=true{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}"
-     hx-trigger="load"
-     hx-swap="innerHTML"
-     {% endif %}>
-    {% if selected_period %}
-        {% include "partials/loading_indicator.html" %}
+    </header>
+    {% if error %}
+        {% include "partials/velocity_error.html" %}
+    {% else %}
+        {% include "partials/velocity_page_script.html" %}
+        {% if developer_series %}
+            <div class="series-toggles" id="velocity-developers" role="group" aria-label="Developers">
+                <span class="series-toggles__label">Developers</span>
+                {% for developer in developer_series %}
+                    <button type="button" class="series-toggle" data-developer="{{ developer.name }}" data-palette-slot="{{ developer.palette_slot }}" aria-pressed="{{ developer.shown|yesno:'true,false' }}">{{ developer.name }}</button>
+                {% endfor %}
+                <span class="series-toggles__actions buttons are-small has-addons">
+                    <button type="button" class="button" data-developers="all">Show all</button>
+                    <button type="button" class="button" data-developers="none">Hide all</button>
+                </span>
+            </div>
+        {% endif %}
+        <div class="chart-grid is-2">
+            <div id="velocity-chart-container">
+                {% include 'partials/dev_velocity_chart.html' %}
+            </div>
+            <div id="sp-chart-container">
+                {% include 'partials/dev_story_points_chart.html' %}
+            </div>
+        </div>
+        <div id="task-details-container" hx-indicator="#loading-indicator"
+             {% if selected_period %}hx-get="{% url 'ui_web:dev_velocity_tasks' %}" hx-include="#velocity-options" hx-trigger="load"{% endif %}>
+            {% if selected_period %}
+                {% include "partials/loading_indicator.html" %}
+            {% endif %}
+        </div>
     {% endif %}
-</div>
-{% endif %}
+</article>

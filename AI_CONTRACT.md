@@ -29,8 +29,14 @@ It does not grant permissions beyond the current user request or higher-level in
   `provider_sync` and provider adapters own external access. Chiplet is an instance, not a default.
 - Reuse existing libraries and module APIs. Keep provider-specific authentication, IDs, queries and
   pagination in adapters. Do not invent a parallel product module for each provider.
-- Use semantic HTML, Bulma and htmx. Chart.js supports charts; the approved locally bundled
-  Milkdown/ProseMirror adapter supports report editing. This editor is an explicit JS-library
+- Use semantic HTML, htmx and the Meridian design system (DTCG tokens -> generated `theme.css`,
+  `css/foundation/` primitives, `css/shell/` + `shell.js` frame, `css/pages/<feature>.css` page
+  layers, one asset manifest in `ui_web/static_assets.py`). Every UI change follows the binding
+  [frontend design requirements](openspec/docs/current-baseline/frontend-design-requirements.md)
+  and its equally binding [recipes](openspec/docs/current-baseline/frontend-design-recipes.md)
+  and [delivery playbook](openspec/docs/current-baseline/frontend-delivery-playbook.md); §7 lists
+  the non-negotiables. Chart.js charts take colors from `DashboardCharts`; the approved locally
+  bundled Milkdown/ProseMirror adapter supports report editing. This editor is an explicit JS-library
   exception, not permission to replace the application with a new frontend framework.
 - Keep source, accepted-analysis and editorial baselines separate. Save is not Finalize.
   Only verified data-Git finalization advances the editorial baseline; weekly views do not.
@@ -80,6 +86,8 @@ It does not grant permissions beyond the current user request or higher-level in
   screenshots and logs under unique names. A later pass does not explain an earlier failure.
 - Before review/commit, run the scoped size/whitespace gates and inspect staged bytes and paths.
   Django integration changes also require isolated `check` or its recorded equivalent.
+- UI changes also pass the frontend gates in §7 and the Definition of Done of the frontend design
+  requirements before any completion claim.
 
 ## 5. Control Execution Cost
 
@@ -119,3 +127,72 @@ It does not grant permissions beyond the current user request or higher-level in
   owned resources; normal exit and emergency cleanup are separate conclusions.
 - Keep one current guide and explicit supersession links. Historic documents and external donor
   instructions are evidence, not competing authority. No global skill/hook/config changes by default.
+
+## 7. Frontend Design Non-Negotiables
+
+These rules condense the binding frontend requirements, recipes and delivery playbook linked in §2.
+The documents hold the exact values and win on detail; when code and a document disagree, verify
+the code and fix the document in the same change.
+
+- **Look.** Meridian is calm, fresh and information-dense: Radix Slate neutrals with an Indigo
+  accent, Mona Sans for UI, Geist Mono for IDs, hashes and code, a 13px base, 32px controls, a 4px
+  grid, hairline borders and faint shadows. Data is the hero. Color carries meaning, never
+  decoration, and is never the only signal. Reject heavy or colored borders, bold uppercase labels,
+  red "Required" pills, nested boxes, gradients, saturated neutral fills and default framework blue.
+- **Tokens only.** Colors, fonts, spacing, radii, shadows, motion and z-indexes come from
+  `theme.css` variables. Edit `ui_web/frontend/tokens/*.tokens.json`, then `npm run build:tokens`;
+  never hand-edit `theme.css`. A new foreground/background pair joins `contrast-pairs.json` at level
+  `error`; tune the token, not the threshold.
+- **Themes.** Light, Dark and System are first-class. System follows the OS appearance
+  (`prefers-color-scheme`), never the clock. Page CSS never branches on `[data-theme]`; theme
+  differences are tokens, and both themes pass the contrast gate.
+- **User flow.** `ui_web/navigation.py` is the single registry for the sidebar (collapsible,
+  resizable, a drawer on phones), breadcrumbs and the Ctrl/Cmd+K command palette. Pages read
+  page header -> filter toolbar -> results bar -> KPIs -> charts -> detail table; filters live in
+  the URL, and a region renders each filter form and Clear action once (a shared partial takes its
+  host page's URL-state form). Fixed chrome reserves its own space; list pages put the list before
+  create forms. Pages outside the shell (404/500, iframe bridges) extend `standalone_base.html`,
+  which needs no context. Phones break at 768px; the only other viewport width is the Workbench
+  1024px IDE frame, which stacks into a scrolling page below it (stylelint allow-lists widths per file).
+- **Primitives first.** Compose `css/foundation/` primitives. Page CSS owns page layout only and
+  never overrides a primitive's display, size, padding or type, nor wins with `!important`. The
+  Bulma compatibility layer is retired: templates use none of its layout, spacing, size or weight
+  classes, and every `is-*`/`has-*` class matches a stylesheet rule (design-system tests enforce
+  both; grep scripts and presenters before retiring a class). Every table carries
+  `dashboard-dense-table` or `responsive-admin-table`; empty values render as a muted dash through
+  `dashboard_format`.
+  Menus and tips inside scroll boxes are fitted by script or placement, never by setting
+  `overflow: visible` on the scroll box; pinned table cells are opaque.
+- **Editors.** An editor is one card: the form carries the 2px `--provider-color` rail, provider
+  tabs sit on its top edge with a provider-colored underline, and every section lives in the tab
+  body divided by hairlines, never in nested boxes. Required hints are quiet right-aligned text
+  after the help tip; statuses use `status_tag`, messages `.message`, toggles `:has(> input:checked)`;
+  `is-light` is only the ghost `.button`; multi-value textareas join with `&#10;`, never `"\n"`.
+- **Charts and paper.** Chart colors come only from `DashboardCharts`; payloads carry semantic
+  slots and keys, never colors. Report `.paper` is a fixed-light surface isolated from primitives.
+- **Bilingual.** English and Simplified Chinese ship together: every user-visible string goes
+  through `{% trans %}`/`gettext` and gets its `zh_Hans` translation and recompiled `.mo` in the
+  same change (`ui_web/tests/test_i18n_catalog.py` gates it). Page names come from the navigation
+  registry; machine values stay in attributes; scripts read `data-message-*` without English
+  fallbacks; brand, product and key names, acronyms, commands and URLs stay verbatim, and
+  commands enter messages through placeholders. Times are 24-hour.
+- **Files and assets.** Primitives live in `css/foundation/`, the frame in `css/shell/`, page styles
+  in `css/pages/<feature>.css` and behavior in one-concern `js/<feature>.js` modules; there is no
+  catch-all page stylesheet or script. Register each file once in `ui_web/static_assets.py`: no
+  bundler, `@import` chain, second list or CDN. Feature modules self-initialise on DOMContentLoaded
+  and `htmx:afterSwap`, so `FEATURE_SCRIPTS` order is init order. Libraries, fonts and icons are
+  pinned and vendored by `npm run build:vendor`; icon classes are literal `iconoir-<name>`.
+- **Size gate.** Every tracked file is claimed by a rule in `.github/file-size-limits.json` or a
+  reasoned exemption (templates 300, CSS 400, browser JS 400 lines). Split by concern before a file
+  nears its cap; never raise a cap, add an exemption or minify to pass. A legacy allowance is a
+  temporary freeze, not a home: the file never grows, its owner splits it, then deletes the entry.
+- **Proof.** Read the constraining tests before rewriting a template. Pixel thresholds live once in
+  `ui_web/tests/ui_geometry_contract.py` (print them with `python ui_web/tests/ui_geometry_contract.py`):
+  tests compare against its constants or `limits.<KEY>`, never a literal, and a limit changes there
+  only with design approval. A UI change is done only after `npm run check`, focused tests, the size
+  and whitespace gates, `qa:browser` for touched routes on an isolated server, and a real-browser
+  review of every touched page in light, dark and at 390px.
+- **Learnings travel with the work.** Each completed UI round writes its new rules, values and
+  pitfalls into the requirements, recipes or playbook (and here when non-negotiable) and checks
+  off `tasks.md` in the same change. A rule kept only in chat, a session note or a handoff prompt
+  is lost at the next handoff; fix any stale statement found on the way against the code.

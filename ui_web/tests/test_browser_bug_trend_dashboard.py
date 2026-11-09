@@ -9,6 +9,7 @@ from playwright.sync_api import sync_playwright
 
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig, ProviderProfileConfig
 from jira_history.models import JiraIssue
+from ui_web.tests.dashboard_asset_support import strip_static_asset_tags
 
 class TestBugTrendDashboardBrowser(TestCase):
     @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
@@ -369,27 +370,11 @@ class TestBugTrendDashboardBrowser(TestCase):
         }
 
     def _browser_html(self, html):
-        html = html.replace(
-            '<script src="https://unpkg.com/chart.js@4.5.1/dist/chart.umd.js"></script>',
-            '<script>' + self._chart_stub() + '</script>',
-        ).replace(
-            '<script src="/static/js/vendor_fallbacks.js"></script>',
-            '<script>' + self._htmx_stub() + self._chart_stub() + '</script>',
-        ).replace(
-            '<script src="https://unpkg.com/htmx.org@2.0.10/dist/htmx.min.js"></script>',
-            '<script>' + self._htmx_stub() + '</script>',
+        return strip_static_asset_tags(html).replace(
+            '</head>',
+            '<script>' + self._htmx_stub() + self._chart_stub() + '</script></head>',
+            1,
         )
-        external_assets = [
-            '<link rel="stylesheet" href="https://unpkg.com/bulma@1.0.4/css/bulma.min.css">',
-            '<link rel="stylesheet" href="https://unpkg.com/iconoir@7.11.0/css/iconoir.css">',
-            '<script src="https://unpkg.com/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>',
-            '<script src="https://unpkg.com/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>',
-            '<script src="/static/js/main.js"></script>',
-            '<link rel="stylesheet" href="/static/css/main.css">',
-        ]
-        for asset in external_assets:
-            html = html.replace(asset, '')
-        return html
 
     def _chart_stub(self):
         return """

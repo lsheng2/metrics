@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from unittest.mock import patch
 
 from ui_web.data.task_data import TaskData, AssignmentData, TimeTrackingData, SystemMetadataData, ForecastData
@@ -138,16 +139,31 @@ class TestTaskForecastChartUtilsFlattenHierarchy(unittest.TestCase):
 
         # Then
         self.assertEqual(0.0, result[0].estimation_days)
+        self.assertIsNone(result[0].forecast_end_date)
+
+    @patch("ui_web.utils.task_forecast_chart_utils.settings")
+    def test_shouldCarryForecastWindowIntoBreakdownItem(self, mock_settings):
+        # Given
+        mock_settings.METRICS_DONE_STATUS_CODES = []
+        task = _build_task("TASK-1", "Scheduled task", original_status="To Do", estimation_days=2.0,
+                           start_date="2026-11-09T09:30:00", end_date="2026-11-11T09:30:00")
+
+        # When
+        result = TaskForecastChartUtils.flatten_task_data_hierarchy_for_table(task)
+
+        # Then
+        self.assertEqual(datetime(2026, 11, 9, 9, 30), result[0].forecast_start_date)
+        self.assertEqual(datetime(2026, 11, 11, 9, 30), result[0].forecast_end_date)
 
 
 def _build_task(task_id, title, original_status="To Do", estimation_days=None,
-                url=None, children=None, system_metadata=None):
+                url=None, children=None, system_metadata=None, start_date=None, end_date=None):
     if system_metadata is None and original_status is not None:
         system_metadata = SystemMetadataData(original_status=original_status, url=url)
 
     forecast = None
     if estimation_days is not None:
-        forecast = ForecastData(estimation_time_days=estimation_days)
+        forecast = ForecastData(estimation_time_days=estimation_days, start_date=start_date, end_date=end_date)
 
     return TaskData(
         id=task_id,

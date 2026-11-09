@@ -3,12 +3,12 @@
 - Target: Dashboard UI change
 - Project: `C:\Users\lsheng2\OneDrive - Intel Corporation\Documents\my_project\scrum_dashboard`
 - Overlay: `C:\Users\lsheng2\OneDrive - Intel Corporation\Documents\my_project\scrum_dashboard\.github\skills\lsheng2-ui-design\templates\project-overlay.md`
-- Framework adapter: Django/Bulma/htmx
+- Framework adapter: Django/htmx with the Meridian design system (resolver id `django-bulma-htmx`)
 - Focus: buttons, typography, forms, tables, tabs, states
 
 ## Before Editing
 
-- [ ] Read the project overlay and current UI design-system contract.
+- [ ] Read the project overlay, `openspec/docs/current-baseline/frontend-design-requirements.md` and the current UI design-system contract.
 - [ ] Confirm the target route, user goal, and monkey-user happy path.
 - [ ] Map each changed surface to an existing shared contract before adding CSS.
 - [ ] Check whether the change needs a local scratch diagram or OpenSpec UI section.

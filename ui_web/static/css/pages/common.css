@@ -1,0 +1,130 @@
+/*
+ * Page layer: Shared page surfaces (Workbench panes, toolbar, chart shell, ticket detail) and inline help tips.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+.workbench-pane,
+.workbench-toolbar,
+.bug-trend-chart-shell,
+.workbench-ticket-detail {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.help-tip {
+    position: relative;
+    z-index: calc(var(--z-sticky) + 5);
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin: 0;
+    color: var(--color-accent-text);
+    cursor: help;
+    line-height: 1;
+    vertical-align: baseline;
+}
+
+.help-tip.is-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.92rem;
+    height: 0.92rem;
+    margin-left: var(--space-1);
+    border: 1px solid var(--color-border-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface-muted));
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    vertical-align: middle;
+}
+
+.help-tip::after {
+    position: absolute;
+    top: calc(100% + var(--space-1-5));
+    left: 0;
+    width: max-content;
+    max-width: min(19rem, 68vw);
+    padding: var(--space-2) var(--space-2-5);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-lg);
+    color: var(--color-text);
+    content: attr(data-help);
+    display: none;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-snug);
+    opacity: 0;
+    pointer-events: none;
+    text-align: left;
+    transform: translate(0, calc(-1 * var(--space-1)));
+    transition:
+        opacity var(--duration-fast) var(--ease-standard),
+        transform var(--duration-fast) var(--ease-standard);
+    white-space: normal;
+}
+
+.scope-col-actions .help-tip::after,
+.results-bar__actions .help-tip::after,
+.workbench-pane-actions .help-tip::after,
+.workbench-evidence-actions .help-tip::after,
+.help-tip.is-icon::after {
+    right: 0;
+    left: auto;
+}
+
+.help-tip.is-icon:hover,
+.help-tip.is-icon:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px var(--color-focus-halo);
+    outline: none;
+}
+
+:is(h2, h3, h4):has(> .help-tip),
+.page-header__title:has(> .help-tip),
+.card-header-title:has(> .help-tip),
+dt:has(> .help-tip),
+.label:has(> .help-tip),
+th:has(> .help-tip),
+strong:has(> .help-tip),
+summary:has(> .help-tip),
+p:has(> .help-tip),
+span:has(> .help-tip) {
+    cursor: help;
+}
+
+:is(h2, h3, h4):hover > .help-tip::after,
+:is(h2, h3, h4):focus-within > .help-tip::after,
+.page-header__title:hover > .help-tip::after,
+.page-header__title:focus-within > .help-tip::after,
+.card-header-title:hover > .help-tip::after,
+.card-header-title:focus-within > .help-tip::after,
+dt:hover > .help-tip::after,
+dt:focus-within > .help-tip::after,
+.label:hover > .help-tip::after,
+.label:focus-within > .help-tip::after,
+th:hover > .help-tip::after,
+th:focus-within > .help-tip::after,
+strong:hover > .help-tip::after,
+strong:focus-within > .help-tip::after,
+summary:hover > .help-tip::after,
+summary:focus-within > .help-tip::after,
+p:hover > .help-tip::after,
+p:focus-within > .help-tip::after,
+span:hover > .help-tip::after,
+span:focus-within > .help-tip::after,
+.help-tip:hover::after,
+.help-tip:focus::after {
+    display: block;
+    opacity: 1;
+    transform: translate(0, 0);
+}
+
+.has-help-tip {
+    overflow: visible !important;
+}

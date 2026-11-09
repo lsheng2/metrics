@@ -1,0 +1,75 @@
+<section class="provider-section" aria-labelledby="scope-semantic-heading">
+    <div class="provider-section-heading">
+        <div>
+            <h3 class="provider-section-title" id="scope-semantic-heading">Semantic mapping{% include "partials/help_tip.html" with label="Semantic mapping" text="These fields interpret fetched Jira tickets for bug trend calculation, evidence and display. They do not independently query additional Jira tickets." %}</h3>
+            <p class="provider-section-help">These controls classify and bucket tickets after the selected source query fetches them.</p>
+        </div>
+    </div>
+    <div class="dashboard-form-grid scope-config-form-grid">
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-bug-types">Bug type values{% include "partials/help_tip.html" with label="Bug type values" text="Provider issue or ticket types that should be treated as bugs for trend calculations." %} <span class="dashboard-required-tag">Required to save</span></label>
+            <textarea class="textarea" id="scope-bug-types" name="bug_type_values" required data-required-label="Bug type values" data-required-message="At least one bug type value is required before saving this scope.">{{ config.bug_type_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-critical-high">Critical/high values{% include "partials/help_tip.html" with label="Critical/high values" text="Severity or priority values counted in the critical/high trend series." %} <span class="dashboard-required-tag">Required for enable</span></label>
+            <textarea class="textarea" id="scope-critical-high" name="critical_high_values" aria-required="true" data-required-actions="save_enable" data-required-label="Critical/high values" data-required-message="At least one critical/high value is required before enabling this scope.">{{ config.critical_high_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-medium-low">Medium/low values{% include "partials/help_tip.html" with label="Medium/low values" text="Severity or priority values counted in lower-severity trend series." %} <span class="dashboard-required-tag">Required for enable</span></label>
+            <textarea class="textarea" id="scope-medium-low" name="medium_low_values" aria-required="true" data-required-actions="save_enable" data-required-label="Medium/low values" data-required-message="At least one medium/low value is required before enabling this scope.">{{ config.medium_low_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-open-status">Open status values{% include "partials/help_tip.html" with label="Open status values" text="Workflow statuses counted as still open when calculating open bug trend buckets." %} <span class="dashboard-required-tag">Required for enable</span></label>
+            <textarea class="textarea" id="scope-open-status" name="open_status_values" aria-required="true" data-required-actions="save_enable" data-required-label="Open status values" data-required-message="At least one open status value is required before enabling this scope.">{{ config.open_status_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-fixed-status">Fixed status values{% include "partials/help_tip.html" with label="Fixed status values" text="Workflow statuses counted as fixed when calculating fixed and closed bug trends." %} <span class="dashboard-required-tag">Enable needs fixed or closed</span></label>
+            <textarea class="textarea" id="scope-fixed-status" name="fixed_status_values" aria-required="true" data-required-actions="save_enable" data-required-group="scope-fixed-or-closed" data-required-label="Fixed status values" data-required-message="Add at least one fixed or closed status value before enabling this scope.">{{ config.fixed_status_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-closed-status">Closed status values{% include "partials/help_tip.html" with label="Closed status values" text="Workflow statuses counted as closed or done for terminal bug trend buckets." %} <span class="dashboard-required-tag">Enable needs fixed or closed</span></label>
+            <textarea class="textarea" id="scope-closed-status" name="closed_status_values" aria-required="true" data-required-actions="save_enable" data-required-group="scope-fixed-or-closed" data-required-label="Closed status values" data-required-message="Add at least one fixed or closed status value before enabling this scope.">{{ config.closed_status_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-fixed-resolution">Fixed resolution values</label>
+            <textarea class="textarea" id="scope-fixed-resolution" name="fixed_resolution_values">{{ config.fixed_resolution_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-closed-resolution">Closed resolution values</label>
+            <textarea class="textarea" id="scope-closed-resolution" name="closed_resolution_values">{{ config.closed_resolution_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-reopen-status">Reopen status values</label>
+            <textarea class="textarea" id="scope-reopen-status" name="reopen_status_values">{{ config.reopen_status_values|join:"&#10;" }}</textarea>
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-severity-field">Severity field{% include "partials/help_tip.html" with label="Severity field" text="Provider field used to classify tickets into critical/high and medium/low trend series." %} <span class="dashboard-required-tag">Required for enable</span></label>
+            <input class="input" id="scope-severity-field" name="severity_field" value="{{ config.severity_field }}" aria-required="true" data-required-actions="save_enable" data-required-label="Severity field" data-required-message="Severity field is required before enabling this scope.">
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-component-field">Component field</label>
+            <input class="input" id="scope-component-field" name="component_field" value="{{ config.component_field }}">
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-owner-field">Owner field</label>
+            <input class="input" id="scope-owner-field" name="owner_field" value="{{ config.owner_field }}">
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-milestone-field">Milestone field</label>
+            <input class="input" id="scope-milestone-field" name="milestone_field" value="{{ config.milestone_field }}">
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-fix-version-field">Fix version field</label>
+            <input class="input" id="scope-fix-version-field" name="fix_version_field" value="{{ config.fix_version_field }}">
+        </div>
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-bucket-granularity">Bucket granularity{% include "partials/help_tip.html" with label="Bucket granularity" text="The time bucket size for trend calculations. Weekly uses work-week buckets; daily uses calendar-day buckets." %}</label>
+            <div class="select is-fullwidth">
+                <select id="scope-bucket-granularity" name="bucket_granularity">
+                    <option value="weekly" {% if config.bucket_granularity == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="daily" {% if config.bucket_granularity == 'daily' %}selected{% endif %}>Daily</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</section>

@@ -10,7 +10,6 @@ from ..data.chart_data import ChartData
 from ..data.velocity_report_data import VelocityReportData
 from ..data.velocity_threshold_data import VelocityThresholdsData, VelocityLevelThreshold
 from ..utils.chart_transform_utils import ChartTransformUtils
-from ..utils.color_utils import ColorUtils
 
 
 class DevVelocityFacade:
@@ -69,8 +68,7 @@ class DevVelocityFacade:
         thresholds = []
         for level_name, multiplier in self._member_velocity_config.seniority_levels.items():
             threshold = self._ideal_hours_per_day / (self._member_velocity_config.story_points_to_ideal_hours_ratio * multiplier)
-            color = ColorUtils.generate_color(level_name)
-            thresholds.append(VelocityLevelThreshold(level_name, threshold, color))
+            thresholds.append(VelocityLevelThreshold(level_name, threshold))
 
         thresholds.sort(key=lambda t: t.threshold)
         return VelocityThresholdsData(thresholds)

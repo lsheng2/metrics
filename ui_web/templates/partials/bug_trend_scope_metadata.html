@@ -6,10 +6,12 @@
     {% endif %}
     {% include "partials/bug_trend_scope_metadata_validation.html" %}
     {% if scope_metadata.warnings %}
-        <div class="notification is-warning is-light">
-            {% for warning in scope_metadata.warnings %}
-                <p>{{ warning }}</p>
-            {% endfor %}
+        <div class="message is-warning">
+            <div class="message-body">
+                {% for warning in scope_metadata.warnings %}
+                    <p>{{ warning }}</p>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
 {% endif %}

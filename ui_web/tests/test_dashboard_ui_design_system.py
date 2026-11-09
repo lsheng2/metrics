@@ -4,6 +4,32 @@ from pathlib import Path
 
 from django.test import SimpleTestCase
 
+from ui_web.tests.dashboard_asset_support import dashboard_css, feature_scripts_source
+
+
+TEMPLATE_ROOTS = (
+    Path(__file__).resolve().parents[1] / 'templates',
+    Path(__file__).resolve().parents[2] / 'project_management' / 'reporting' / 'templates',
+)
+TEMPLATE_TAG = re.compile(r'\{%.*?%\}|\{\{.*?\}\}|\{#.*?#\}', re.S)
+CLASS_ATTRIBUTE = re.compile(r'(?<![\w-])class\s*=\s*(["\'])(.*?)\1', re.S)
+RETIRED_CLASS = re.compile(
+    r'^(?:notification|title|subtitle|section|container|columns?|content|hero(?:-.+)?|(?:level|panel)(?:-.+)?'
+    r'|is-size-\d|is-flex(?:-.+)?|is-(?:align|justify)-.+|has-text-weight-.+|[mp][trblxy]?-(?:[0-6]|auto)'
+    r'|is-striped)$'
+)
+SEMANTIC_VARIANT = frozenset({'is-primary', 'is-link', 'is-info', 'is-success', 'is-warning', 'is-danger'})
+
+
+def template_class_attributes():
+    """Yield (path, line, class tokens) for every class attribute, with template tags blanked out."""
+    for root in TEMPLATE_ROOTS:
+        for path in sorted(root.rglob('*.html')):
+            raw = path.read_text(encoding='utf-8')
+            content = TEMPLATE_TAG.sub(lambda tag: re.sub(r'[^\n]', ' ', tag.group(0)), raw)
+            for match in CLASS_ATTRIBUTE.finditer(content):
+                yield path, content.count('\n', 0, match.start()) + 1, match.group(2).split()
+
 
 class TestDashboardUiDesignSystem(SimpleTestCase):
     def test_shouldKeepUiDesignSystemContractDocumentedAndReferenced(self):
@@ -36,8 +62,8 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
         report_refresh_script = report_refresh_script_path.read_text(encoding='utf-8')
         hook_script = hook_script_path.read_text(encoding='utf-8')
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
-        css = (Path(__file__).resolve().parents[1] / 'static' / 'css' / 'main.css').read_text(encoding='utf-8')
-        script = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
+        css = dashboard_css()
+        script = feature_scripts_source()
         templates = '\n'.join(path.read_text(encoding='utf-8') for path in template_dir.rglob('*.html'))
         implementation_surface = f'{css}\n{script}\n{templates}'
 
@@ -321,6 +347,20 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
                     f'{path}:{content.count(chr(10), 0, match.start()) + 1} {table_tag}',
                 )
 
+    def test_shouldRenderBoundFormErrorsThroughLabelledSummaryInsteadOfRawErrorDict(self):
+        # Given
+        template_dir = Path(__file__).resolve().parents[1] / 'templates'
+        summary = (template_dir / 'partials' / 'form_error_summary.html').read_text(encoding='utf-8')
+
+        # Then
+        self.assertIn('class="form-error-summary"', summary)
+        self.assertIn('{{ field.label }}', summary)
+        self.assertIn('.form-error-summary', dashboard_css())
+        for path in template_dir.rglob('*.html'):
+            content = path.read_text(encoding='utf-8')
+            for match in re.finditer(r'\{\{\s*[\w.]+\.errors\s*\}\}', content):
+                self.fail(f'{path}:{content.count(chr(10), 0, match.start()) + 1} {match.group(0)}')
+
     def test_shouldUseToolFormContractForLightweightDashboardForms(self):
         # Given
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
@@ -332,6 +372,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
             template_dir / 'partials' / 'bug_trend_evidence.html',
             template_dir / 'partials' / 'current_tasks_filters.html',
             template_dir / 'partials' / 'pull_request_filters.html',
+            template_dir / 'partials' / 'workbench_evidence_filter.html',
         ]
 
         # Then
@@ -397,8 +438,7 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
 
     def test_shouldDefineButtonTagAndEditorControlsThroughSharedCssContracts(self):
         # Given
-        css_path = Path(__file__).resolve().parents[1] / 'static' / 'css' / 'main.css'
-        css = css_path.read_text(encoding='utf-8')
+        css = dashboard_css()
         template_dir = Path(__file__).resolve().parents[1] / 'templates'
         editor_templates = [
             template_dir / 'bug_trend_scope_config.html',
@@ -433,11 +473,29 @@ class TestDashboardUiDesignSystem(SimpleTestCase):
 
     def test_shouldDefineRequiredValidationBehaviorThroughSharedScript(self):
         # Given
-        script_path = Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js'
-        script = script_path.read_text(encoding='utf-8')
+        script = feature_scripts_source()
 
         # Then
         self.assertIn('function initializeRequiredForms()', script)
         self.assertIn('[data-required-form]', script)
         self.assertIn('data-required-message-for', script)
         self.assertIn('aria-invalid', script)
+
+    def test_shouldNotRenderRetiredLegacyMarkup(self):
+        # Then
+        for path, line, tokens in template_class_attributes():
+            for token in tokens:
+                self.assertIsNone(RETIRED_CLASS.match(token), f'{path}:{line} retired class {token}')
+            if 'is-light' in tokens:
+                ghost_button = 'button' in tokens and not SEMANTIC_VARIANT.intersection(tokens)
+                self.assertTrue(ghost_button, f'{path}:{line} is-light is the ghost button only')
+
+    def test_shouldDefineEveryModifierClassUsedInMarkup(self):
+        # Given
+        defined = set(re.findall(r'\.((?:is|has)-[\w-]+)', dashboard_css()))
+
+        # Then
+        for path, line, tokens in template_class_attributes():
+            for token in tokens:
+                if token.startswith(('is-', 'has-')) and not token.endswith('-'):
+                    self.assertIn(token, defined, f'{path}:{line} {token} matches no stylesheet rule')

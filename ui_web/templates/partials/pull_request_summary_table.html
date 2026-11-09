@@ -1,33 +1,35 @@
-<div class="box">
-    <div class="content">
-        <h3 class="title is-4">PR Activity by Person</h3>
-        <p class="subtitle is-6">Created and reviewed across the listed pull requests ({{ activity_summary|length }} people)</p>
+{% if activity_summary %}
+<details class="disclosure" id="pr-review-activity">
+    <summary class="disclosure__summary">
+        <i class="disclosure__chevron iconoir-nav-arrow-right" aria-hidden="true"></i>
+        <h3 class="disclosure__title">Review activity</h3>
+        <span class="count-badge">{{ activity_summary|length }}</span>
+        <span class="disclosure__meta">Pull requests created, approved and sent back per person</span>
+        <span class="disclosure__aside avatar-stack" aria-hidden="true">{% for person in activity_summary|slice:":8" %}{% include "partials/avatar.html" with person=person only %}{% endfor %}</span>
+    </summary>
+    <div class="disclosure__body">
+        <div class="table-container">
+            <table class="table is-hoverable is-fullwidth dashboard-dense-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Person</th>
+                        <th scope="col" class="is-numeric">Created</th>
+                        <th scope="col" class="is-numeric">Approved</th>
+                        <th scope="col" class="is-numeric">Changes requested</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in activity_summary %}
+                    <tr>
+                        <td><span class="person">{% include "partials/avatar.html" with person=person only %}{{ person.display_name }}</span></td>
+                        <td class="is-numeric">{% if person.created_count %}{{ person.created_count }}{% else %}<span class="has-text-grey-light">0</span>{% endif %}</td>
+                        <td class="is-numeric">{% if person.approved_count %}{{ person.approved_count }}{% else %}<span class="has-text-grey-light">0</span>{% endif %}</td>
+                        <td class="is-numeric">{% if person.changes_requested_count %}{{ person.changes_requested_count }}{% else %}<span class="has-text-grey-light">0</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <div class="table-container">
-        <table class="table is-striped is-hoverable is-fullwidth dashboard-dense-table">
-            <thead>
-                <tr>
-                    <th scope="col">Person</th>
-                    <th scope="col">Created</th>
-                    <th scope="col">Approved</th>
-                    <th scope="col">Changes Requested</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for person in activity_summary %}
-                <tr>
-                    <td>{{ person.display_name }}</td>
-                    <td>{{ person.created_count }}</td>
-                    <td>{{ person.approved_count }}</td>
-                    <td>{{ person.changes_requested_count }}</td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="4">No activity yet.</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+</details>
+{% endif %}

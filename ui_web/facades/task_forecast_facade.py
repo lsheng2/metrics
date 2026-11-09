@@ -11,7 +11,7 @@ from ..convertors.task_forecast_chart_convertor import TaskForecastChartConverto
 from ..convertors.task_forecast_convertor import TaskForecastConvertor
 from ..data.chart_data import ChartData
 from ..data.task_data import TaskData
-from ..data.task_forecast_data import TaskForecastRequestData, TaskForecastParamsData, TaskForecastSummaryData
+from ..data.task_forecast_data import TaskForecastRequestData, TaskForecastSummaryData
 from ..utils.task_forecast_chart_utils import TaskForecastChartUtils
 
 
@@ -23,16 +23,6 @@ class TaskForecastFacade:
         self.task_forecast_convertor = task_forecast_convertor
         self.task_convertor = task_convertor
         self.task_forecast_chart_convertor = task_forecast_chart_convertor
-
-    @staticmethod
-    async def get_forecast_params_data(request_data: TaskForecastRequestData) -> TaskForecastParamsData:
-        return TaskForecastParamsData(
-            task_id=request_data.task_id,
-            start_date=request_data.start_date,
-            member_group=request_data.member_group,
-            time_unit='day',
-            task_scope=request_data.task_scope
-        )
 
     async def get_task_forecast_hierarchy_data(self, request_data: TaskForecastRequestData) -> List[TaskData]:
         root_task = await self._calculate_task_forecast(request_data)
@@ -76,7 +66,6 @@ class TaskForecastFacade:
         completed_days, remaining_days = TaskForecastFacade._calculate_work_breakdown(task_forecasts)
 
         return TaskForecastSummaryData(
-            task_title="SUMMARY",
             total_estimation_days=total_days,
             forecasted_start_date=forecasted_start,
             forecasted_end_date=forecasted_end,

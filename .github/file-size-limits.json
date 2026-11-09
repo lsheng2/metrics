@@ -1,64 +1,77 @@
 {
-  "version": 1,
-  "description": "Repository-specific file-size limits consumed by scripts/check_file_size_limits.py. Rules are ordered: first match wins.",
+  "version": 2,
+  "description": "File-size limits consumed by scripts/check_file_size_limits.py. Rules are ordered: first match wins. Every repository file must match a rule or an exemption.",
   "include_untracked": true,
   "rules": [
-    {
-      "name": "github-ai-markdown",
-      "patterns": [
-        ".github/**/*.md"
-      ],
-      "max_lines": 260,
-      "rationale": "AI customization and BKM files should stay compact enough to be loaded selectively without becoming parallel manuals."
-    },
-    {
-      "name": "github-ai-json",
-      "patterns": [
-        ".github/**/*.json"
-      ],
-      "max_lines": 220,
-      "rationale": "AI governance JSON should remain reviewable and should not hide large policy bodies."
-    },
-    {
-      "name": "docs-markdown",
-      "patterns": [
-        "docs/**/*.md"
-      ],
-      "max_lines": 1200,
-      "rationale": "Architecture and planning documents can be longer than AI guidance files, but should remain bounded enough for review gates to inspect them explicitly."
-    },
-    {
-      "name": "python-test",
-      "patterns": [
-        "**/tests/**/*.py",
-        "**/test_*.py"
-      ],
-      "max_lines": 600,
-      "rationale": "Test files may group business scenarios and fixtures, but should split above this point."
-    },
-    {
-      "name": "python-source",
-      "patterns": [
-        "**/*.py"
-      ],
-      "max_lines": 400,
-      "rationale": "Production Python modules should remain small enough to preserve module boundaries and readability."
-    }
+    {"name": "ai-guidance-markdown", "max_lines": 260,
+     "patterns": ["AI_CONTRACT.md", "AGENTS.md", "CLAUDE.md", ".github/**/*.md", ".agents/**/*.md"],
+     "rationale": "Always-loaded AI contracts and customization files stay compact; detail belongs in openspec/docs."},
+    {"name": "ai-guidance-json", "max_lines": 220, "patterns": [".github/**/*.json"],
+     "rationale": "AI governance JSON should remain reviewable and should not hide large policy bodies."},
+    {"name": "python-test", "max_lines": 600, "patterns": ["**/tests/**/*.py", "**/test_*.py"],
+     "rationale": "Test files may group business scenarios and fixtures, but should split above this point."},
+    {"name": "python-source", "max_lines": 400, "patterns": ["**/*.py"],
+     "rationale": "Production Python modules should remain small enough to preserve module boundaries and readability."},
+    {"name": "django-template", "max_lines": 300, "patterns": ["**/templates/**/*.html"],
+     "rationale": "A page template above this size mixes regions; extract partials per region or tab."},
+    {"name": "stylesheet", "max_lines": 400, "patterns": ["ui_web/static/css/**/*.css"],
+     "rationale": "Split CSS by component family or page (foundation/, shell/, pages/) and register files in ui_web/static_assets.py."},
+    {"name": "browser-javascript", "max_lines": 400, "patterns": ["ui_web/static/js/**/*.js", "ui_web/editor_build/*.js"],
+     "rationale": "Browser scripts split by feature module; one file must not accumulate unrelated page behavior."},
+    {"name": "frontend-tooling", "max_lines": 300, "patterns": ["ui_web/frontend/scripts/*.mjs"],
+     "rationale": "Build and QA scripts stay single-purpose; shared helpers live in shared.mjs."},
+    {"name": "javascript-test", "max_lines": 600, "patterns": ["ui_web/tests/**/*.mjs"],
+     "rationale": "JavaScript tests follow the Python test cap; split by behavior family above it."},
+    {"name": "frontend-config-json", "max_lines": 300,
+     "patterns": ["ui_web/frontend/*.json", "ui_web/frontend/tokens/*.json", "ui_web/editor_build/package.json"],
+     "rationale": "Design tokens and tool configuration stay reviewable; split token groups by tier before they sprawl."},
+    {"name": "powershell", "max_lines": 400, "patterns": ["**/*.ps1"],
+     "rationale": "Launcher and validation scripts split by lifecycle phase; dot-source shared helpers."},
+    {"name": "markdown", "max_lines": 1200, "patterns": ["**/*.md"],
+     "rationale": "Documentation may be longer than AI guidance but must stay bounded enough to review explicitly."},
+    {"name": "yaml", "max_lines": 400, "patterns": ["**/*.yaml", "**/*.yml"],
+     "rationale": "Profiles and workflow definitions should stay declarative and small."},
+    {"name": "json-data", "max_lines": 1200, "patterns": ["**/*.json"],
+     "rationale": "Checked-in configuration and planning data stay reviewable; generated exports are exempt by name."},
+    {"name": "repository-config", "max_lines": 300,
+     "patterns": ["**/.gitignore", ".gitattributes", ".dockerignore", ".env.example", "*.ini", "*.txt", "LICENSE",
+                  "**/Dockerfile", "**/*.sample", ".agents/skills/.openspec-target"],
+     "rationale": "Repository and tool configuration files stay small and declarative."},
+    {"name": "ai-guidance-assets", "max_lines": 260, "patterns": [".github/**", ".agents/**"],
+     "rationale": "Other AI customization assets (catalog pages, samples) follow the AI guidance cap."}
   ],
   "exemptions": [
-    {
-      "name": "generated-or-cache-output",
-      "patterns": [
-        "**/__pycache__/**",
-        "**/*.pyc",
-        "db.sqlite3"
-      ],
-      "reason": "Generated or local runtime artifacts are not source files for review gates."
-    }
+    {"name": "generated-or-cache-output",
+     "patterns": ["**/__pycache__/**", "**/*.pyc", "**/*.sqlite3", "**/node_modules/**", "**/package-lock.json"],
+     "reason": "Generated, cache, lockfile, or local runtime artifacts are not reviewed by size."},
+    {"name": "vendored-third-party",
+     "patterns": ["ui_web/static/vendor/**", "ui_web/static/js/report_editor/vendor/**", "provider_sync/out/_jql/**"],
+     "reason": "Pinned third-party bundles and notices produced by build scripts with hash manifests; never edited by hand."},
+    {"name": "openspec-cli-generated",
+     "patterns": [".github/skills/openspec-*/**", ".agents/skills/openspec-*/**", ".github/prompts/opsx-*.prompt.md"],
+     "reason": "Generated by the OpenSpec CLI (metadata.generatedBy); refresh with openspec update instead of editing."},
+    {"name": "grafana-dashboard-exports", "patterns": ["ops/grafana/*.json"],
+     "reason": "Grafana dashboard models validated by scripts/validate_grafana_artifacts.py; edit ops/grafana/render_configs and regenerate."},
+    {"name": "binary-and-image-assets", "patterns": ["**/*.png", "**/*.svg", "**/*.ico", "**/*.woff2", "**/*.mo"],
+     "reason": "Binary, font, compiled-catalog, and icon assets have no line-count contract."},
+    {"name": "translation-catalogs", "patterns": ["**/locale/**/*.po"],
+     "reason": "Gettext catalogs are produced by makemessages and grow with the UI string inventory."}
+  ],
+  "legacy_over_limit_allowances": [
+    {"name": "legacy-report-editor-scripts", "max_added_lines": 0,
+     "patterns": ["ui_web/static/js/report_editor/fragment_codec.js", "ui_web/static/js/report_editor/index.js",
+                  "ui_web/static/js/report_editor/template_builder.js", "ui_web/editor_build/report_milkdown.js"],
+     "reason": "Owner: project reporting UI. Split plan: separate codec node families, editor bootstrap from toolbar wiring, template builder steps, and Milkdown plugin registration."},
+    {"name": "legacy-ai-stack-launcher", "max_added_lines": 0, "patterns": ["scripts/e2e_dashboard_ai_stack.ps1"],
+     "reason": "Owner: local stack tooling. Split plan: move start, stop, and health phases into dot-sourced scripts under scripts/."},
+    {"name": "legacy-python-modules", "max_added_lines": 0,
+     "patterns": ["bug_metrics/app/api/ai_context.py", "ui_web/facades/bug_trend_scope_config_facade.py"],
+     "reason": "Owner: bug_metrics API and ui_web facades. Split plan: split AI context builders by section and the scope-config facade into read, preview, and save services."}
   ],
   "exemption_principles": [
-    "Prefer splitting source files over adding exemptions.",
-    "Only exempt generated, cache, runtime, or external artifact files.",
-    "Any source-code exemption must name an owner, a reason, and a follow-up split plan."
+    "Prefer splitting source files over adding exemptions or allowances.",
+    "Exempt only generated, vendored, cache, binary, or external artifact files, each with a reason.",
+    "Every repository file must match a rule or an exemption; unclaimed files fail the gate.",
+    "Legacy allowances cover only files already over their cap, name an owner and a split plan, use max_added_lines 0 unless review approves more, and are deleted once the file is back under its cap."
   ]
 }

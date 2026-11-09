@@ -1,0 +1,128 @@
+/* Iconoir 7.12.2 subset (MIT). GENERATED FILE - DO NOT EDIT.
+ * Icons are discovered from templates, JS and ui_web Python sources.
+ * Rebuild: cd ui_web/frontend && npm run build:vendor */
+
+.iconoir-activity,
+.iconoir-archive,
+.iconoir-arrow-down,
+.iconoir-arrow-up,
+.iconoir-bug,
+.iconoir-calendar,
+.iconoir-chat-bubble-check,
+.iconoir-check,
+.iconoir-clock,
+.iconoir-collapse,
+.iconoir-community,
+.iconoir-computer,
+.iconoir-copy,
+.iconoir-dashboard-dots,
+.iconoir-download,
+.iconoir-edit-pencil,
+.iconoir-expand,
+.iconoir-eye,
+.iconoir-filter,
+.iconoir-filter-list,
+.iconoir-folder,
+.iconoir-git-pull-request,
+.iconoir-graph-up,
+.iconoir-half-moon,
+.iconoir-home-simple,
+.iconoir-hourglass,
+.iconoir-link,
+.iconoir-list,
+.iconoir-menu,
+.iconoir-nav-arrow-down,
+.iconoir-nav-arrow-left,
+.iconoir-nav-arrow-right,
+.iconoir-numbered-list-left,
+.iconoir-page,
+.iconoir-play-solid,
+.iconoir-plug-type-a,
+.iconoir-plus,
+.iconoir-plus-square,
+.iconoir-redo,
+.iconoir-refresh,
+.iconoir-refresh-double,
+.iconoir-search,
+.iconoir-settings,
+.iconoir-shield-check,
+.iconoir-sidebar-collapse,
+.iconoir-sparks,
+.iconoir-stat-up,
+.iconoir-sun-light,
+.iconoir-table,
+.iconoir-table-2-columns,
+.iconoir-table-rows,
+.iconoir-task-list,
+.iconoir-trash,
+.iconoir-undo,
+.iconoir-view-columns-3,
+.iconoir-warning-triangle,
+.iconoir-xmark {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  background-color: currentcolor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+
+.iconoir-activity { --icon: url("activity.svg"); }
+.iconoir-archive { --icon: url("archive.svg"); }
+.iconoir-arrow-down { --icon: url("arrow-down.svg"); }
+.iconoir-arrow-up { --icon: url("arrow-up.svg"); }
+.iconoir-bug { --icon: url("bug.svg"); }
+.iconoir-calendar { --icon: url("calendar.svg"); }
+.iconoir-chat-bubble-check { --icon: url("chat-bubble-check.svg"); }
+.iconoir-check { --icon: url("check.svg"); }
+.iconoir-clock { --icon: url("clock.svg"); }
+.iconoir-collapse { --icon: url("collapse.svg"); }
+.iconoir-community { --icon: url("community.svg"); }
+.iconoir-computer { --icon: url("computer.svg"); }
+.iconoir-copy { --icon: url("copy.svg"); }
+.iconoir-dashboard-dots { --icon: url("dashboard-dots.svg"); }
+.iconoir-download { --icon: url("download.svg"); }
+.iconoir-edit-pencil { --icon: url("edit-pencil.svg"); }
+.iconoir-expand { --icon: url("expand.svg"); }
+.iconoir-eye { --icon: url("eye.svg"); }
+.iconoir-filter { --icon: url("filter.svg"); }
+.iconoir-filter-list { --icon: url("filter-list.svg"); }
+.iconoir-folder { --icon: url("folder.svg"); }
+.iconoir-git-pull-request { --icon: url("git-pull-request.svg"); }
+.iconoir-graph-up { --icon: url("graph-up.svg"); }
+.iconoir-half-moon { --icon: url("half-moon.svg"); }
+.iconoir-home-simple { --icon: url("home-simple.svg"); }
+.iconoir-hourglass { --icon: url("hourglass.svg"); }
+.iconoir-link { --icon: url("link.svg"); }
+.iconoir-list { --icon: url("list.svg"); }
+.iconoir-menu { --icon: url("menu.svg"); }
+.iconoir-nav-arrow-down { --icon: url("nav-arrow-down.svg"); }
+.iconoir-nav-arrow-left { --icon: url("nav-arrow-left.svg"); }
+.iconoir-nav-arrow-right { --icon: url("nav-arrow-right.svg"); }
+.iconoir-numbered-list-left { --icon: url("numbered-list-left.svg"); }
+.iconoir-page { --icon: url("page.svg"); }
+.iconoir-play-solid { --icon: url("play-solid.svg"); }
+.iconoir-plug-type-a { --icon: url("plug-type-a.svg"); }
+.iconoir-plus { --icon: url("plus.svg"); }
+.iconoir-plus-square { --icon: url("plus-square.svg"); }
+.iconoir-redo { --icon: url("redo.svg"); }
+.iconoir-refresh { --icon: url("refresh.svg"); }
+.iconoir-refresh-double { --icon: url("refresh-double.svg"); }
+.iconoir-search { --icon: url("search.svg"); }
+.iconoir-settings { --icon: url("settings.svg"); }
+.iconoir-shield-check { --icon: url("shield-check.svg"); }
+.iconoir-sidebar-collapse { --icon: url("sidebar-collapse.svg"); }
+.iconoir-sparks { --icon: url("sparks.svg"); }
+.iconoir-stat-up { --icon: url("stat-up.svg"); }
+.iconoir-sun-light { --icon: url("sun-light.svg"); }
+.iconoir-table { --icon: url("table.svg"); }
+.iconoir-table-2-columns { --icon: url("table-2-columns.svg"); }
+.iconoir-table-rows { --icon: url("table-rows.svg"); }
+.iconoir-task-list { --icon: url("task-list.svg"); }
+.iconoir-trash { --icon: url("trash.svg"); }
+.iconoir-undo { --icon: url("undo.svg"); }
+.iconoir-view-columns-3 { --icon: url("view-columns-3.svg"); }
+.iconoir-warning-triangle { --icon: url("warning-triangle.svg"); }
+.iconoir-xmark { --icon: url("xmark.svg"); }

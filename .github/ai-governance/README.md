@@ -17,3 +17,5 @@ Use these files as small, focused references rather than loading every policy fo
 Keep this layer compact. `AI_CONTRACT.md` is the development authority; the root agent files
 are thin entrypoints. Product architecture lives in README and `openspec/docs/`.
 Reporting environment and validation routing are in `docs/development/reporting-delivery.md`.
+UI, template, CSS, JavaScript and chart work follows the binding
+`openspec/docs/current-baseline/frontend-design-requirements.md`, including its QA gates.

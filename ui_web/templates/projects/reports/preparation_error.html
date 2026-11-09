@@ -2,19 +2,20 @@
 {% load i18n static %}
 {% block title %}{% trans "Prepare today's draft" %}{% endblock %}
 {% block page_title %}{% trans "Prepare today's draft" %}{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a>{% endblock %}
 {% block content %}
-<article class="block" data-report-preparation-page>
-    <nav class="breadcrumb" aria-label="breadcrumbs"><ul>
-        <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
-        <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
-        <li class="is-active"><a aria-current="page">{% trans "Prepare today's draft" %}</a></li>
-    </ul></nav>
-    <div class="level">
-        <div class="level-left"><a class="button is-light" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">
-            <span class="icon is-small"><i class="iconoir-nav-arrow-left"></i></span><span>{% trans "Report workbench" %}</span>
-        </a></div>
-        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
-    </div>
+<article class="block project-reports" data-report-preparation-page>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">{{ stage.name }}</h2>
+        </div>
+        <div class="page-header__actions">
+            {% include "projects/language_switcher.html" %}
+            <a class="button is-small" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">
+                <span class="icon is-small"><i class="iconoir-nav-arrow-left" aria-hidden="true"></i></span><span>{% trans "Report workbench" %}</span>
+            </a>
+        </div>
+    </header>
     {% include "projects/reports/daily_preparation.html" %}
 </article>
 {% endblock %}

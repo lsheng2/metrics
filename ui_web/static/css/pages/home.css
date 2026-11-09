@@ -1,0 +1,161 @@
+/*
+ * Page layer: Home: service cards, link groups and quick links.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+.home-services {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.home-service {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--space-2);
+    row-gap: var(--space-0-5);
+    min-width: 0;
+    padding: var(--space-2-5) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xs);
+    color: var(--color-text);
+}
+
+a.home-service:hover {
+    border-color: var(--color-border-strong);
+    text-decoration: none;
+}
+
+.home-service__name {
+    overflow: hidden;
+    font-weight: var(--weight-medium);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-service__state {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+}
+
+.home-service__reason {
+    grid-column: 2 / -1;
+    overflow: hidden;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16.5rem, 1fr));
+    align-items: start;
+    gap: var(--space-3);
+}
+
+.home-group {
+    min-width: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xs);
+}
+
+.home-group__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2-5) var(--space-3);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.home-group__title {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+}
+
+.home-group__list {
+    display: grid;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding: var(--space-1-5);
+    list-style: none;
+}
+
+.home-link {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2-5);
+    padding: var(--space-2) var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.home-link:hover {
+    background: var(--color-surface-hover);
+    text-decoration: none;
+}
+
+.home-link:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: -2px;
+}
+
+.home-link__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--color-accent-border);
+    border-radius: var(--radius-md);
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-text);
+    font-size: 1rem;
+}
+
+.home-link__body {
+    display: grid;
+    min-width: 0;
+}
+
+.home-link__title {
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-snug);
+}
+
+.home-link__description {
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    line-height: var(--leading-snug);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-link__arrow {
+    color: var(--color-text-tertiary);
+    opacity: 0;
+    transform: translateX(-0.25rem);
+    transition:
+        opacity var(--duration-fast) var(--ease-standard),
+        transform var(--duration-fast) var(--ease-standard);
+}
+
+.home-link:hover .home-link__arrow,
+.home-link:focus-visible .home-link__arrow {
+    opacity: 1;
+    transform: none;
+}

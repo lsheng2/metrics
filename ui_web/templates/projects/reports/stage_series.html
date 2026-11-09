@@ -1,0 +1,102 @@
+{% load i18n %}
+<section class="card" aria-labelledby="report-series-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="report-series-title">{% trans "Report series" %}</h3>
+        <div class="card-header-actions"><span class="count-badge">{{ series_rows|length }}</span></div>
+    </header>
+    <div class="card-content">
+        <form method="post" action="{% url 'ui_web:report_series_create' detail.project.id stage.id %}" class="dashboard-edit-form" data-report-series-form>
+            {% csrf_token %}
+            {{ series_create_form.command_id }}
+            <div class="dashboard-form-grid">
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ series_create_form.series_name.id_for_label }}">{{ series_create_form.series_name.label }}</label>
+                    <input class="input" id="{{ series_create_form.series_name.id_for_label }}" name="{{ series_create_form.series_name.html_name }}" value="{{ series_create_form.series_name.value|default_if_none:'' }}" maxlength="160">
+                    {% for error in series_create_form.series_name.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ series_create_form.calendar_choice.id_for_label }}">{{ series_create_form.calendar_choice.label }}</label>
+                    <div class="select is-fullwidth"><select id="{{ series_create_form.calendar_choice.id_for_label }}" name="{{ series_create_form.calendar_choice.html_name }}">
+                        {% for value, label in series_create_form.fields.calendar_choice.choices %}
+                            <option value="{{ value }}" {% if series_create_form.calendar_choice.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select></div>
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ series_create_form.timezone.id_for_label }}">{{ series_create_form.timezone.label }}</label>
+                    <input class="input" id="{{ series_create_form.timezone.id_for_label }}" name="{{ series_create_form.timezone.html_name }}" value="{{ series_create_form.timezone.value|default:'Asia/Shanghai' }}">
+                    {% for error in series_create_form.timezone.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="dashboard-form-field">
+                    <label class="label" for="{{ series_create_form.template_choice.id_for_label }}">{{ series_create_form.template_choice.label }}</label>
+                    <div class="select is-fullwidth"><select id="{{ series_create_form.template_choice.id_for_label }}" name="{{ series_create_form.template_choice.html_name }}">
+                        {% for value, label in series_create_form.fields.template_choice.choices %}
+                            <option value="{{ value }}" {% if series_create_form.template_choice.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select></div>
+                    {% for error in series_create_form.template_choice.errors %}<p class="help is-danger">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="dashboard-action-group">
+                    <button class="button is-primary" type="submit" data-report-series-create{% if not series_create_form.fields.template_choice.choices %} disabled aria-disabled="true"{% endif %}>
+                        <span class="icon is-small"><i class="iconoir-plus" aria-hidden="true"></i></span>
+                        <span>{% trans "Create report series" %}</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable project-reports-table series-table">
+            <thead>
+                <tr>
+                    <th scope="col">{% trans "Name" %}</th>
+                    <th scope="col" class="report-col-revision">{% trans "Revision" %}</th>
+                    <th scope="col" class="report-col-calendar">{% trans "Calendar" %}</th>
+                    <th scope="col" class="report-col-template">{% trans "Template" %}</th>
+                    <th scope="col" class="report-col-policy">{% trans "Policy" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in series_rows %}
+                    {% with series=row.item policy_form=row.form %}
+                    <tr data-report-series-row>
+                        <td data-label="{% trans "Name" %}">{{ series.name }}</td>
+                        <td data-label="{% trans "Revision" %}"><span>{{ series.revision }} <code title="{{ series.revision_hash }}">{{ series.revision_hash|slice:":12" }}</code></span></td>
+                        <td data-label="{% trans "Calendar" %}">{{ series.calendar.calendar_id }} r{{ series.calendar.revision }}</td>
+                        <td data-label="{% trans "Template" %}"><code title="{{ series.default_template_selection.template_id }}">{{ series.default_template_selection.template_id }}</code></td>
+                        <td data-label="{% trans "Policy" %}" class="report-col-policy">
+                            <form method="post" action="{% url 'ui_web:report_series_policy' detail.project.id stage.id series.series_id %}" class="dashboard-action-form project-series-policy" data-report-series-policy-form>
+                                {% csrf_token %}
+                                {{ policy_form.command_id }}
+                                {{ policy_form.expected_revision }}
+                                {{ policy_form.expected_revision_hash }}
+                                <input type="hidden" name="{{ policy_form.calendar_choice.html_name }}" value="{{ policy_form.calendar_choice.value|default:'iso8601' }}">
+                                <input type="hidden" name="{{ policy_form.calendar_id.html_name }}" value="{{ policy_form.calendar_id.value|default_if_none:'' }}">
+                                <input type="hidden" name="{{ policy_form.calendar_revision.html_name }}" value="{{ policy_form.calendar_revision.value|default_if_none:'' }}">
+                                <input type="hidden" name="{{ policy_form.calendar_week_rule.html_name }}" value="{{ policy_form.calendar_week_rule.value|default_if_none:'' }}">
+                                <input type="hidden" name="{{ policy_form.calendar_date_map.html_name }}" value="{{ policy_form.calendar_date_map.value|default_if_none:'' }}">
+                                <input type="hidden" name="{{ policy_form.timezone.html_name }}" value="{{ policy_form.timezone.value|default:'Asia/Shanghai' }}">
+                                <label class="is-sr-only" for="series-policy-name-{{ series.series_id }}">{% trans "Name" %}</label>
+                                <input class="input is-small" id="series-policy-name-{{ series.series_id }}" name="{{ policy_form.series_name.html_name }}" value="{{ policy_form.series_name.value|default_if_none:'' }}">
+                                <label class="is-sr-only" for="series-policy-template-{{ series.series_id }}">{% trans "Template" %}</label>
+                                <div class="select is-small"><select id="series-policy-template-{{ series.series_id }}" name="{{ policy_form.template_choice.html_name }}">
+                                    {% for value, label in policy_form.fields.template_choice.choices %}
+                                        <option value="{{ value }}" {% if policy_form.template_choice.value == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select></div>
+                                <button class="button is-small" type="submit">{% trans "Save policy" %}</button>
+                                {% if row.error %}<p class="help is-danger">{{ row.error }}</p>{% endif %}
+                                {% if series.calendar.week_rule == "date_map" %}
+                                    <p class="help" data-calendar-date-map-readonly>{{ policy_form.calendar_date_map.value }}</p>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                {% empty %}
+                    <tr class="is-empty-row"><td colspan="5">{% trans "No report series yet." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

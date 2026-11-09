@@ -1,5 +1,4 @@
 from datetime import date, datetime, timezone
-from pathlib import Path
 
 from django.test import TestCase
 from django.urls import reverse
@@ -8,6 +7,8 @@ from playwright.sync_api import sync_playwright
 from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.models import JiraSyncCursor
 from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
+from ui_web.tests import ui_geometry_contract as geometry
+from ui_web.tests.dashboard_asset_support import inline_dashboard_assets
 
 
 class TestDataHealthViews(TestCase):
@@ -228,10 +229,7 @@ class TestDataHealthViews(TestCase):
         }
 
     def _measure_data_health_responsive_tables(self, html):
-        static_dir = Path(__file__).resolve().parents[1] / 'static'
-        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
-        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
-        html = html.replace('</head>', f'<style>{vendor_css}\n{main_css}</style></head>')
+        html = inline_dashboard_assets(html, scripts=())
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         try:
@@ -248,18 +246,18 @@ class TestDataHealthViews(TestCase):
         try:
             page.set_content(html, wait_until='domcontentloaded')
             return page.evaluate("""
-                () => {
+                limits => {
                     const table = document.querySelector('.data-health-page .responsive-admin-table.is-cardable');
                     const thead = table.querySelector('thead');
                     const firstCell = table.querySelector('tbody td[data-label]');
                     return {
-                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-                        table_horizontal_overflow: table.closest('.responsive-admin-table-box').scrollWidth > table.closest('.responsive-admin-table-box').clientWidth + 1,
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
+                        table_horizontal_overflow: table.closest('.responsive-admin-table-box').scrollWidth > table.closest('.responsive-admin-table-box').clientWidth + limits.OVERFLOW_TOLERANCE,
                         thead_display: getComputedStyle(thead).display,
                         first_cell_display: getComputedStyle(firstCell).display,
                         first_cell_label: firstCell.dataset.label,
                     };
                 }
-            """)
+            """, geometry.browser_limits())
         finally:
             page.close()

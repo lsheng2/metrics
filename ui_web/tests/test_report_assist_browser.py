@@ -253,8 +253,9 @@ class TestReportAssistBrowser(ReportHistoryUiBrowserSupport):
                 .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
                 .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
             const foreground = preview ? luminance(getComputedStyle(preview).color) : null;
-            const background = luminance(getComputedStyle(element).backgroundColor);
-            const revision = document.querySelector('[data-report-editor] > .level code').getBoundingClientRect();
+            const background = luminance(getComputedStyle(
+                preview ? preview.closest('[data-report-assist-preview]') : element).backgroundColor);
+            const revision = document.querySelector('[data-report-editor] > .page-header code').getBoundingClientRect();
             return {left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
                     width: innerWidth, height: innerHeight, scroll: element.scrollWidth,
                     client: element.clientWidth, revisionRight: revision.right,

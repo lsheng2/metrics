@@ -1,8 +1,8 @@
-{% load i18n %}
+{% load i18n dashboard_format %}
 <div class="report-inline-region" data-report-wysiwyg-region data-region-id="{{ region.edit_id }}" data-fragment-script-id="{{ region.fragment_script_id }}" data-edit-id="{{ region.edit_id }}" data-edit-kind="{{ region.kind }}" data-target-json="{{ region.target_json|escape }}" data-expected-original-hash="{{ region.expected_original_hash|default_if_none:'' }}" data-existing="{{ region.existing|yesno:'true,false' }}">
     {% if region.existing %}
         <div class="report-region-actions">
-            <span class="help">{% trans "Edited by" %} {{ region.author }} {{ region.edited_at }}</span>
+            <span class="help">{% trans "Edited by" %} {{ region.author }} {{ region.edited_at|timestamp }}</span>
             <div class="select is-small">
                 <select data-report-edit-operation data-report-dirty-field aria-label="{% trans "Edit action" %}">
                     <option value="keep">{% trans "Keep" %}</option>
@@ -11,7 +11,7 @@
             </div>
         </div>
     {% endif %}
-    <div class="report-editor-surface" data-report-editor-surface tabindex="0" aria-label="{{ label }}"></div>
+    <div class="report-editor-surface paper" data-report-editor-surface tabindex="0" aria-label="{{ label }}"></div>
     <p class="help" data-report-paste-status aria-live="polite"></p>
     {{ region.fragment|json_script:region.fragment_script_id }}
 </div>

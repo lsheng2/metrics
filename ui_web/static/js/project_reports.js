@@ -23,7 +23,6 @@
             status.textContent = message;
             status.classList.toggle('is-danger', kind === 'error');
             status.classList.toggle('is-success', kind === 'success');
-            status.classList.toggle('is-light', !kind);
         }
 
         function currentValues() {

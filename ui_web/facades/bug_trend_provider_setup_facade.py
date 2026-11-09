@@ -6,8 +6,8 @@ from django.conf import settings
 from bug_metrics.app.api.provider_profile_config import PROFILE_JSON_FIELDS, provider_profile_config_from_post
 from bug_metrics.provider_profile_security import without_profile_secret_values
 
-from ..data.bug_trend_data import BugTrendProviderProfileChoice, BugTrendProviderProfileRow, BugTrendProviderSetupEditor
-from .provider_scope_setup import provider_detail_rows, provider_setup_options, provider_setup_template
+from ..data.bug_trend_data import BugTrendProviderProfileRow, BugTrendProviderSetupEditor
+from .provider_scope_setup import provider_setup_options, provider_setup_template
 
 
 class BugTrendProviderSetupFacadeMixin:
@@ -50,7 +50,6 @@ class BugTrendProviderSetupFacadeMixin:
             template.source_query_help,
             template.metadata_supported,
             template.metadata_summary,
-            provider_detail_rows(template, self._profile_choice_from_config(display_profile)),
             self._provider_profile_json_fields(display_profile),
             json.dumps(without_profile_secret_values(display_profile.connection_settings or {}), sort_keys=True),
             display_profile.connection_settings.get('connection_status_label', 'Configuration required'),
@@ -200,17 +199,6 @@ class BugTrendProviderSetupFacadeMixin:
             if field_name != 'connection_settings'
         ]
 
-    def _profile_choice_from_config(self, profile):
-        return BugTrendProviderProfileChoice(
-            profile.profile_id,
-            profile.provider_id,
-            profile.display_name,
-            dict(getattr(profile, 'connection_settings', {}) or {}),
-            dict(profile.scope_labels or {}),
-            dict(profile.source_population or {}),
-            profile.mapping_version_hash,
-        )
-
     def _provider_source_summary(self, profile) -> str:
         connection_settings = dict(getattr(profile, 'connection_settings', {}) or {})
         connection_summary = (
@@ -226,5 +214,5 @@ class BugTrendProviderSetupFacadeMixin:
             or source_population.get('source_query_ref')
             or source_population.get('native_query_text')
             or source_population.get('tenant_or_site')
-            or '-'
+            or ''
         )

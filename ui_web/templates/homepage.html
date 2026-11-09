@@ -1,41 +1,67 @@
 {% extends "base.html" %}
-
-{% block title %}Metrics Dashboard{% endblock %}
-
-{% block page_title %}Metrics Dashboard{% endblock %}
+{% load i18n dashboard_format %}
 
 {% block content %}
-<section class="dashboard-home-hero">
-    <h2 class="title is-2">Metrics Dashboard</h2>
-    <p class="subtitle is-4">Operational views for development health, work queues, delivery forecast, and quality trend evidence.</p>
-</section>
+<div class="home">
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">{% translate "Metrics workspace" %}</p>
+            <h2 class="page-header__title">{% translate "Delivery, velocity and quality at a glance" %}</h2>
+            <p class="page-header__meta">{% translate "Pick a workflow below, or press Ctrl K to jump to any page or action." %}</p>
+        </div>
+        <div class="page-header__actions">
+            <button type="button" class="button" data-shell-palette-open aria-haspopup="dialog">
+                <span class="icon"><i class="iconoir-search" aria-hidden="true"></i></span>
+                <span>{% translate "Search" %}</span>
+                <kbd class="app-kbd">Ctrl K</kbd>
+            </button>
+            <a class="button is-primary" href="{% url 'ui_web:workbench' %}">
+                <span class="icon"><i class="iconoir-dashboard-dots" aria-hidden="true"></i></span>
+                <span>{% translate "Open Workbench" %}</span>
+            </a>
+        </div>
+    </header>
 
-<section class="box">
-    <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
-        <h3 class="title is-3 mb-0">Core Workflows</h3>
-        <a class="button is-primary is-small" href="{% url 'ui_web:workbench' %}">Open Workbench</a>
+    {% if global_service_statuses %}
+        <section class="home-services" aria-label="{% translate 'Service status' %}">
+            {% for service in global_service_statuses %}
+                {% if service.target_url %}<a class="home-service" href="{{ service.target_url }}"{% else %}<div class="home-service"{% endif %} title="{{ service.reason }} {{ service.next_action }}">
+                    <span class="status-dot is-{{ service.tone }}" aria-hidden="true"></span>
+                    <span class="home-service__name">{{ service.label }}</span>
+                    <span class="home-service__state">{{ service.display_status|service_state_label }}</span>
+                    {% if service.reason %}
+                        <span class="home-service__reason">{{ service.reason }}</span>
+                    {% endif %}
+                {% if service.target_url %}</a>{% else %}</div>{% endif %}
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    <div class="home-groups">
+        {% for section in dashboard_navigation %}
+            {% if section.group.key != 'overview' %}
+                <section class="home-group" aria-labelledby="home-group-{{ section.group.key }}">
+                    <header class="home-group__header">
+                        <h3 class="home-group__title" id="home-group-{{ section.group.key }}">{{ section.group.label }}</h3>
+                        <span class="count-badge">{{ section.links|length }}</span>
+                    </header>
+                    <ul class="home-group__list">
+                        {% for link in section.links %}
+                            <li>
+                                <a class="home-link" href="{{ link.href }}">
+                                    <span class="home-link__icon"><i class="{{ link.item.icon }}" aria-hidden="true"></i></span>
+                                    <span class="home-link__body">
+                                        <span class="home-link__title">{{ link.item.label }}</span>
+                                        <span class="home-link__description">{{ link.item.description }}</span>
+                                    </span>
+                                    <i class="iconoir-nav-arrow-right home-link__arrow" aria-hidden="true"></i>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+        {% endfor %}
     </div>
-    <div class="dashboard-home-grid">
-        <div class="box dashboard-home-card">
-            <h4 class="title is-4">Current Tasks</h4>
-            <p class="is-size-7">Track active work items, owner coverage, stage health, and linked review gates.</p>
-            <a class="button is-small mt-3" href="{% url 'ui_web:current_tasks' %}">Open</a>
-        </div>
-        <div class="box dashboard-home-card">
-            <h4 class="title is-4">Bug Trend</h4>
-            <p class="is-size-7">Review quality trends with chart-to-ticket evidence and provider-backed scope controls.</p>
-            <a class="button is-small mt-3" href="{% url 'ui_web:bug_trend' %}">Open</a>
-        </div>
-        <div class="box dashboard-home-card">
-            <h4 class="title is-4">Team Velocity</h4>
-            <p class="is-size-7">Compare throughput, story points, and team execution patterns across configured groups.</p>
-            <a class="button is-small mt-3" href="{% url 'ui_web:team_velocity' %}">Open</a>
-        </div>
-        <div class="box dashboard-home-card">
-            <h4 class="title is-4">Task Forecast</h4>
-            <p class="is-size-7">Estimate delivery timelines from task hierarchy, team velocity, and remaining work.</p>
-            <a class="button is-small mt-3" href="{% url 'ui_web:task_forecast' %}">Open</a>
-        </div>
-    </div>
-</section>
+</div>
 {% endblock %}

@@ -1,0 +1,144 @@
+{% load dashboard_format %}
+<section class="card" aria-labelledby="data-health-provider-sync-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="data-health-provider-sync-title">Provider Sync Cache Health{% include "partials/help_tip.html" with label="Provider Sync Cache Health" text="Checks whether provider profile facts and snapshots are fresh enough for charts and AI context." %}</h3>
+    </header>
+    <div class="table-container responsive-admin-table-box data-health-table-container">
+        <table class="table is-fullwidth is-hoverable responsive-admin-table is-cardable">
+            <thead>
+                <tr>
+                    <th class="has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The upstream system, such as Jira or HSD-ES." %}</th>
+                    <th class="has-help-tip">Profile{% include "partials/help_tip.html" with label="Provider profile" text="The named provider/project configuration used to sync source facts and expose chart recipes." %}</th>
+                    <th class="has-help-tip">Status{% include "partials/help_tip.html" with label="Sync status" text="The most recent provider sync result for this profile." %}</th>
+                    <th class="has-help-tip">Freshness{% include "partials/help_tip.html" with label="Freshness" text="Whether the provider facts are current enough for downstream charts, evidence, and AI workflows." %}</th>
+                    <th>Last success</th>
+                    <th class="is-numeric">Cache age</th>
+                    <th>Snapshot</th>
+                    <th>Source</th>
+                    <th class="has-help-tip">Mapping{% include "partials/help_tip.html" with label="Mapping" text="The field normalization version that translates provider-specific facts into Metrics chart inputs." %}</th>
+                    <th class="has-help-tip">Charts{% include "partials/help_tip.html" with label="Charts" text="Chart ids this provider profile can support now, plus deferred chart ids blocked by missing data or recipes." %}</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data_health.provider_sync_health %}
+                    <tr>
+                        <td data-label="Provider">{{ item.provider_id }}</td>
+                        <td data-label="Profile" class="is-nowrap">{{ item.profile_id }}</td>
+                        <td data-label="Status">{{ item.status|status_tag }}</td>
+                        <td data-label="Freshness">{{ item.freshness_status|status_tag }}</td>
+                        <td data-label="Last success">{{ item.latest_successful_sync_at|timestamp }}</td>
+                        <td data-label="Cache age" class="is-numeric">{{ item.cache_age_seconds|age_seconds }}</td>
+                        <td data-label="Snapshot">{% if item.latest_snapshot_id %}<code title="{{ item.latest_snapshot_id }}">{{ item.latest_snapshot_id|truncatechars:13 }}</code>{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                        <td data-label="Source">
+                            {% if item.source_query_ownership %}<span class="tag">{{ item.source_query_ownership }}</span>{% endif %}
+                            <span title="{{ item.source_query_ref }}">{{ item.source_query_name|default:item.source_query_ref|or_dash }}</span>
+                        </td>
+                        <td data-label="Mapping">{{ item.mapping_version|or_dash }} {% if item.mapping_version_hash %}<code title="{{ item.mapping_version_hash }}">{{ item.mapping_version_hash|slice:":8" }}</code>{% endif %}</td>
+                        <td data-label="Charts">
+                            {% with supported=item.supported_chart_ids|split_csv deferred=item.deferred_chart_ids|split_csv %}
+                                {% if supported or deferred %}
+                                    <details class="chip-disclosure">
+                                        <summary><span class="tag is-success">{{ supported|length }} supported</span><span class="tag">{{ deferred|length }} deferred</span></summary>
+                                        <div class="chip-disclosure__list">
+                                            {% for chart_id in supported %}<span class="tag is-success" title="Supported">{{ chart_id }}</span>{% endfor %}
+                                            {% for chart_id in deferred %}<span class="tag" title="Deferred">{{ chart_id }}</span>{% endfor %}
+                                        </div>
+                                    </details>
+                                {% else %}<span class="has-text-grey-light">—</span>{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td data-label="Error">
+                            {% if item.error_category or item.last_error %}
+                                {% if item.error_category %}<span class="tag is-danger">{{ item.error_category }}</span>{% endif %}
+                                {{ item.last_error }}
+                            {% else %}<span class="has-text-grey-light">—</span>{% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-empty-row"><td colspan="11">No provider profiles found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card" aria-labelledby="data-health-jira-sync-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="data-health-jira-sync-title">Jira Sync Health{% include "partials/help_tip.html" with label="Jira Sync Health" text="Readiness for saved-scope Jira history materialization, including cursor, changelog coverage, and config freshness." %}</h3>
+    </header>
+    <div class="table-container responsive-admin-table-box">
+    <table class="table is-fullwidth is-hoverable responsive-admin-table is-cardable">
+        <thead>
+            <tr>
+                <th>Scope</th>
+                <th>Status</th>
+                <th>Last success</th>
+                <th>Jira cutoff</th>
+                <th class="has-help-tip">Reliable coverage{% include "partials/help_tip.html" with label="Reliable coverage" text="The source date range where sync data is considered complete enough for calculation." %}</th>
+                <th class="has-help-tip">Changelog coverage{% include "partials/help_tip.html" with label="Changelog coverage" text="Whether issue transition/history data was available for the synced Jira window." %}</th>
+                <th class="has-help-tip">Config hash{% include "partials/help_tip.html" with label="Config hash" text="Compares the config used by materialized data with the current scope config to identify stale outputs." %}</th>
+                <th>Error</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data_health.sync_health %}
+                <tr>
+                    <td data-label="Scope">{{ item.scope_name }}</td>
+                    <td data-label="Status">{{ item.status|status_tag }}</td>
+                    <td data-label="Last success">{{ item.last_successful_sync_at|timestamp }}</td>
+                    <td data-label="Jira cutoff">{{ item.last_jira_updated_cutoff|timestamp }}</td>
+                    <td data-label="Reliable coverage" class="is-nowrap">{% if item.earliest_reliable_bucket_start or item.latest_reliable_bucket_end %}{{ item.earliest_reliable_bucket_start|default:"?" }} &rarr; {{ item.latest_reliable_bucket_end|default:"?" }}{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                    <td data-label="Changelog coverage">{{ item.changelog_coverage_status|status_tag }}</td>
+                    <td data-label="Config hash">
+                        {% if item.materialized_config_version_hash %}<code title="{{ item.materialized_config_version_hash }}">{{ item.materialized_config_version_hash|slice:":8" }}</code>{% else %}<span class="has-text-grey-light">—</span>{% endif %}
+                        {% if item.materialized_config_version_hash == item.current_config_version_hash %}<span class="status-dot is-success" title="Matches the current scope config"></span>{% else %}<span class="status-dot is-warning" title="Differs from the current scope config"></span> {% if item.current_config_version_hash %}<code title="{{ item.current_config_version_hash }}">{{ item.current_config_version_hash|slice:":8" }}</code>{% else %}<span class="has-text-grey-light">—</span>{% endif %}{% endif %}
+                    </td>
+                    <td data-label="Error">{{ item.last_error|or_dash }}</td>
+                </tr>
+            {% empty %}
+                <tr class="is-empty-row"><td colspan="8">No Jira sync cursors found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+
+<section class="card" aria-labelledby="data-health-calculation-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="data-health-calculation-title">Calculation Health{% include "partials/help_tip.html" with label="Calculation Health" text="Checks whether each enabled scope has a completed bucket calculation matching the current config and source coverage." %}</h3>
+    </header>
+    <div class="table-container responsive-admin-table-box">
+    <table class="table is-fullwidth is-hoverable responsive-admin-table is-cardable">
+        <thead>
+            <tr>
+                <th>Scope</th>
+                <th>Status</th>
+                <th class="has-help-tip">Freshness{% include "partials/help_tip.html" with label="Freshness" text="Whether the calculation output is still current for the latest scope config and source facts." %}</th>
+                <th class="has-help-tip">Run{% include "partials/help_tip.html" with label="Run" text="The calculation run id that produced the currently inspected bucket output." %}</th>
+                <th class="has-help-tip">Coverage{% include "partials/help_tip.html" with label="Coverage" text="The source data window covered by this calculation run." %}</th>
+                <th class="has-help-tip">Config hash{% include "partials/help_tip.html" with label="Config hash" text="Compares the calculation run config fingerprint with the current scope fingerprint." %}</th>
+                <th>Completed</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data_health.calculation_health %}
+                <tr>
+                    <td data-label="Scope">{{ item.scope_name }}</td>
+                    <td data-label="Status">{{ item.status|status_tag }}</td>
+                    <td data-label="Freshness">{{ item.freshness_status|status_tag }}</td>
+                    <td data-label="Run">{% if item.calculation_run_id %}<code title="{{ item.calculation_run_id }}">{{ item.calculation_run_id|truncatechars:9 }}</code>{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                    <td data-label="Coverage" class="is-nowrap">{% if item.source_coverage_start or item.source_coverage_end %}{{ item.source_coverage_start|default:"?" }} &rarr; {{ item.source_coverage_end|default:"?" }}{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                    <td data-label="Config hash">
+                        {% if item.run_config_version_hash %}<code title="{{ item.run_config_version_hash }}">{{ item.run_config_version_hash|slice:":8" }}</code>{% else %}<span class="has-text-grey-light">—</span>{% endif %}
+                        {% if item.run_config_version_hash == item.current_config_version_hash %}<span class="status-dot is-success" title="Matches the current scope config"></span>{% else %}<span class="status-dot is-warning" title="Differs from the current scope config"></span> {% if item.current_config_version_hash %}<code title="{{ item.current_config_version_hash }}">{{ item.current_config_version_hash|slice:":8" }}</code>{% else %}<span class="has-text-grey-light">—</span>{% endif %}{% endif %}
+                    </td>
+                    <td data-label="Completed">{{ item.completed_at|timestamp }}</td>
+                </tr>
+            {% empty %}
+                <tr class="is-empty-row"><td colspan="7">No enabled scopes found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>

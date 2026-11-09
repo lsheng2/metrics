@@ -10,6 +10,7 @@ from playwright.sync_api import sync_playwright
 from bug_metrics.models import BugTrendScopeProviderBinding, JiraScopeConfig, ProviderProfileConfig
 
 
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.provider_setup_view_test_support import ProviderSetupViewTestSupport
 
 
@@ -45,7 +46,7 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertTrue(result['duplicate_action_in_dom'], result)
         self.assertEqual('visible', result['action_cell_overflow'], result)
         self.assertGreater(result['archive_button_bottom'], result['action_cell_bottom'], result)
-        self.assertGreaterEqual(result['menu_panel_height'], 100, result)
+        self.assertGreaterEqual(result['menu_panel_height'], geometry.PROVIDER_ROW_MENU_PANEL_MIN_HEIGHT, result)
         self.assertTrue(result['duplicate_button_hit_target'], result)
         self.assertTrue(result['archive_button_hit_target'], result)
 
@@ -77,7 +78,7 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertIn('Authentication method', content)
         self.assertIn('System status', content)
         self.assertNotIn('Credential ref', content)
-        self.assertIn('Authentication Details', content)
+        self.assertIn('Authentication details', content)
         self.assertIn('Clear saved credentials', content)
         self.assertNotIn('Onboarding status', content)
         self.assertIn('HSD-ES Connection Probe', content)
@@ -89,7 +90,7 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertIn('name="hsdes_subject"', content)
         self.assertIn('placeholder="15017652869"', content)
         self.assertIn('placeholder="https://hsdes-api.intel.com/rest"', content)
-        self.assertIn('Not set', content)
+        self.assertIn('Base URL required', content)
         self.assertIn('Windows Integrated Auth', content)
         self.assertIn('Your username', content)
         self.assertNotIn('provider-connection_settings', content)
@@ -158,16 +159,16 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertGreaterEqual(results['phone']['provider_choice_count'], 3)
         self.assertFalse(results['desktop']['advanced_json_open'])
         self.assertFalse(results['phone']['advanced_json_open'])
-        self.assertLessEqual(results['desktop']['primary_action_button_height_delta'], 1)
-        self.assertLessEqual(results['desktop']['provider_choice_max_height'], 82)
+        self.assertLessEqual(results['desktop']['primary_action_button_height_delta'], geometry.HEIGHT_DELTA_MAX)
+        self.assertLessEqual(results['desktop']['provider_choice_max_height'], geometry.PROVIDER_CHOICE_HEIGHT_MAX)
         self.assertTrue(results['desktop']['selected_check_visible'])
         self.assertTrue(results['desktop']['tab_shell_wraps_context'])
         self.assertTrue(results['desktop']['tab_body_visible'])
         self.assertTrue(results['desktop']['selected_tab_attached_to_body'])
         self.assertTrue(results['desktop']['tab_shell_wraps_editor_controls'])
-        self.assertLessEqual(results['desktop']['context_panel_left_border_width'], 1)
-        self.assertLessEqual(results['desktop']['provider_form_control_height_delta'], 1)
-        self.assertLessEqual(results['phone']['provider_form_control_height_delta'], 1)
+        self.assertLessEqual(results['desktop']['context_panel_left_border_width'], geometry.HAIRLINE_BORDER_WIDTH_MAX)
+        self.assertLessEqual(results['desktop']['provider_form_control_height_delta'], geometry.HEIGHT_DELTA_MAX)
+        self.assertLessEqual(results['phone']['provider_form_control_height_delta'], geometry.HEIGHT_DELTA_MAX)
 
     def test_shouldRenderProviderEditorSecondarySurfacesAsScannableControls(self):
         # When
@@ -178,13 +179,13 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
 
         # Then
         self.assertEqual(200, response.status_code)
-        self.assertGreaterEqual(result['advanced_summary_height'], 32, result)
+        self.assertGreaterEqual(result['advanced_summary_height'], geometry.ADVANCED_SUMMARY_MIN_HEIGHT, result)
         self.assertEqual('pointer', result['advanced_summary_cursor'], result)
         self.assertIn(result['advanced_summary_display'], {'flex', 'grid'}, result)
         self.assertEqual(2, result['signature_item_count'], result)
         self.assertFalse(result['signature_horizontal_overflow'], result)
         self.assertTrue(result['signature_values_fit'], result)
-        self.assertGreaterEqual(result['actions_to_signature_gap'], 12, result)
+        self.assertGreaterEqual(result['actions_to_signature_gap'], geometry.ACTIONS_TO_SIGNATURE_GAP_MIN, result)
 
     def test_shouldDisableNoopSaveActionsForUnchangedEnabledProviderProfileInBrowser(self):
         # When
@@ -220,8 +221,8 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertTrue(results['dirty_banner_visible'])
         self.assertIn('Unsaved *', results['dirty_label_text'])
         self.assertTrue(results['cancel_button_visible'])
-        self.assertLessEqual(results['action_button_height_delta'], 1)
-        self.assertGreaterEqual(results['action_gap_px'], 8)
+        self.assertLessEqual(results['action_button_height_delta'], geometry.HEIGHT_DELTA_MAX)
+        self.assertGreaterEqual(results['action_gap_px'], geometry.EDITOR_ACTION_GAP_MIN)
         self.assertEqual('', results['after_cancel_value'])
         self.assertEqual(0, results['after_cancel_dirty_fields'])
         self.assertFalse(results['after_cancel_banner_visible'])

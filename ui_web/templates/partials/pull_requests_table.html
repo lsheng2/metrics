@@ -1,80 +1,69 @@
 {% load pull_request_filters %}
-<article class="panel">
-    <details open>
-        <summary class="panel-heading">
-            <span class="mr-2"><i class="iconoir-nav-arrow-down"></i></span>
-            Pull Requests ({{ pull_requests|length }})
-        </summary>
-        <div class="panel-block is-block">
-    <div class="table-container">
-    <table class="table is-striped is-hoverable is-fullwidth dashboard-dense-table">
+<div class="table-container is-framed">
+    <table class="table is-hoverable is-fullwidth dashboard-dense-table pr-table">
         <thead>
             <tr>
-                <th scope="col">Pull Request</th>
+                <th scope="col" class="pr-table__title">Pull request</th>
                 <th scope="col">Ticket</th>
-                <th scope="col">Main</th>
-                <th scope="col">Additional</th>
+                <th scope="col">Main reviewers</th>
+                <th scope="col">Additional reviewers</th>
                 <th scope="col">Internal gate</th>
                 <th scope="col">Policy gateway</th>
             </tr>
         </thead>
         <tbody>
         {% for pull_request in pull_requests %}
-            <tr hx-get="{% url 'ui_web:partials_pr_review_state' pull_request.id %}?repository_id={{ pull_request.repository_id|urlencode }}&project_id={{ pull_request.project_id|urlencode }}&project={{ pull_request.project_name|urlencode }}"
-                hx-trigger="revealed"
-                hx-swap="none">
-                <td>
-                    {% if pull_request.is_draft %}<span class="tag is-warning is-light is-small mr-1">Draft</span>{% endif %}
-                    {% if pull_request.url %}
-                        <a href="{{ pull_request.url }}" target="_blank">{{ pull_request.title }}</a>
-                    {% else %}
-                        {{ pull_request.title }}
-                    {% endif %}
-                    <div class="is-size-7 has-text-grey-light">
-                        {% if pull_request.repository %}{{ pull_request.repository }} · {% endif %}{{ pull_request.author_name }}
+            <tr hx-get="{% url 'ui_web:partials_pr_review_state' pull_request.id %}?repository_id={{ pull_request.repository_id|urlencode }}&amp;project_id={{ pull_request.project_id|urlencode }}&amp;project={{ pull_request.project_name|urlencode }}"
+                hx-trigger="revealed" hx-swap="none">
+                <td class="pr-table__title">
+                    <div class="work-item-ref">
+                        <span class="work-item-ref__key">#{{ pull_request.id }}</span>
+                        <div class="work-item-ref__body">
+                            {% if pull_request.url %}
+                                <a class="work-item-ref__title" href="{{ pull_request.url }}" target="_blank" rel="noopener noreferrer" title="{{ pull_request.title }}">{{ pull_request.title }}</a>
+                            {% else %}
+                                <span class="work-item-ref__title" title="{{ pull_request.title }}">{{ pull_request.title }}</span>
+                            {% endif %}
+                            <span class="cell-meta">{% if pull_request.is_draft %}<span class="tag is-small is-warning">Draft</span> {% endif %}{% if pull_request.repository %}{{ pull_request.repository }} · {% endif %}{{ pull_request.author_name }}</span>
+                        </div>
                     </div>
                 </td>
-                <td>
+                <td class="is-nowrap">
                     {% if pull_request.linked_task %}
                         {% if pull_request.linked_task.url %}
-                            <a href="{{ pull_request.linked_task.url }}" target="_blank"><code>{{ pull_request.linked_task.id }}</code></a>
+                            <a class="item-key" href="{{ pull_request.linked_task.url }}" target="_blank" rel="noopener noreferrer">{{ pull_request.linked_task.id }}</a>
                         {% else %}
-                            <code>{{ pull_request.linked_task.id }}</code>
+                            <span class="item-key">{{ pull_request.linked_task.id }}</span>
                         {% endif %}
-                        {% if pull_request.linked_task.status %}
-                            <div class="mt-1"><span class="tag is-small">{{ pull_request.linked_task.status }}</span></div>
-                        {% endif %}
+                        {% if pull_request.linked_task.status %}<span class="cell-meta">{{ pull_request.linked_task.status }}</span>{% endif %}
                     {% else %}
-                        -
+                        <span class="has-text-grey-light">—</span>
                     {% endif %}
                 </td>
                 <td id="pr-main-{{ pull_request.id }}">
                     {% include "partials/pull_request_approval_tags.html" with approvals=pull_request.approvals|main_approvals %}
-                    <span class="review-loader icon is-small has-text-grey-light"><span class="loader"></span></span>
+                    <span class="review-loader"><span class="loader" aria-hidden="true"></span></span>
                 </td>
                 <td id="pr-additional-{{ pull_request.id }}">
                     {% include "partials/pull_request_approval_tags.html" with approvals=pull_request.approvals|additional_approvals %}
-                    <span class="review-loader icon is-small has-text-grey-light"><span class="loader"></span></span>
+                    <span class="review-loader"><span class="loader" aria-hidden="true"></span></span>
                 </td>
                 <td>
                     {% if pull_request.internal_gate %}
-                        <span class="tag is-success">✓ Yes</span>
+                        <span class="tag is-small is-success"><i class="iconoir-check" aria-hidden="true"></i>Yes</span>
                     {% else %}
-                        <span class="tag is-light has-text-grey">No</span>
+                        <span class="tag is-small">No</span>
                     {% endif %}
                 </td>
                 <td id="pr-policy-{{ pull_request.id }}">
-                    <span class="review-loader icon is-small has-text-grey-light"><span class="loader"></span></span>
+                    <span class="review-loader"><span class="loader" aria-hidden="true"></span></span>
                 </td>
             </tr>
         {% empty %}
-            <tr>
-                <td colspan="6">No open pull requests found.</td>
+            <tr class="is-empty-row">
+                <td colspan="6">No open pull requests.</td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
-    </div>
-        </div>
-    </details>
-</article>
+</div>

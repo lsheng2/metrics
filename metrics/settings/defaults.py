@@ -73,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'ui_web.context_processors.dashboard_navigation',
                 'ui_web.context_processors.member_groups',
                 'ui_web.context_processors.service_status_bar',
             ],

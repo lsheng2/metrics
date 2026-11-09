@@ -143,7 +143,7 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
             inline = page.evaluate("""
                 () => {
                     const root = document.querySelector('[data-report-editor]');
-                    const slotTitle = document.querySelector('[data-template-slot-id] .title');
+                    const slotTitle = document.querySelector('[data-template-slot-id] .report-band-title');
                     const header = document.querySelector('.report-readonly-data th');
                     const bodyCell = Array.from(document.querySelectorAll('.report-readonly-data td'))
                         .find(cell => cell.textContent.includes('DEMO-101'));
@@ -158,8 +158,8 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
                     };
                     return {
                         text: root.textContent,
-                        slotColor: getComputedStyle(slotTitle).color,
-                        slotBackground: getComputedStyle(slotTitle.closest('.report-section-band')).backgroundColor,
+                        slotContrast: contrast(rgb(getComputedStyle(slotTitle).color),
+                            rgb(getComputedStyle(slotTitle.closest('.report-section-band')).backgroundColor)),
                         headerColor: getComputedStyle(header).color,
                         headerBackground: getComputedStyle(header).backgroundColor,
                         headerContrast: contrast(rgb(getComputedStyle(header).color), rgb(getComputedStyle(header).backgroundColor)),
@@ -210,8 +210,7 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
         self.assertIn('In Progress', inline['text'])
         self.assertIn('Retest fixed patch', inline['text'])
         self.assertIn('Evidence and coverage', inline['text'])
-        self.assertEqual('rgb(17, 24, 39)', inline['slotColor'])
-        self.assertEqual('rgb(251, 252, 254)', inline['slotBackground'])
+        self.assertGreaterEqual(inline['slotContrast'], 4.5, inline)
         self.assertGreaterEqual(inline['headerContrast'], 4.5, inline)
         self.assertIn('DEMO-101', inline['bodyText'])
         self.assertGreaterEqual(inline['bodyContrast'], 4.5, inline)
@@ -250,7 +249,7 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
                 () => {
                     window.__confirmText = null;
                     window.confirm = text => { window.__confirmText = text; return false; };
-                    const link = document.querySelector('nav.breadcrumb a[href]');
+                    const link = document.querySelector('.app-crumbs__trail a[href]');
                     const event = new MouseEvent('click', {bubbles: true, cancelable: true});
                     link.dispatchEvent(event);
                     window.__blocked = event.defaultPrevented;

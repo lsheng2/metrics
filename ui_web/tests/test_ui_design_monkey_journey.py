@@ -38,7 +38,6 @@ from ui_web.data.task_data import (
 )
 from ui_web.data.task_forecast_data import (
     TaskForecastBreakdownItem,
-    TaskForecastParamsData,
     TaskForecastRequestData,
     TaskForecastSummaryData,
 )

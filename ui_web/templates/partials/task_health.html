@@ -1,0 +1,1 @@
+{% if forecast and forecast.health_status %}<span class="health" data-health="{{ forecast.health_status.name }}"><span class="health__dot" aria-hidden="true"></span>{{ forecast.health_status.name|title }}</span>{% else %}<span class="has-text-grey-light">—</span>{% endif %}

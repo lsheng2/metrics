@@ -3,6 +3,7 @@ from pathlib import Path
 
 from django.test import override_settings
 
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 from ui_web.tests.report_authoring_browser_support import (
     ReportAuthoringBrowserTestCase,
@@ -350,21 +351,33 @@ class TestReportAuthoringEditRuntimeBrowser(ReportAuthoringBrowserTestCase):
                     const root = document.querySelector('[data-report-editor]');
                     const icons = Array.from(root.querySelectorAll('.report-editor-toolbar [class*="iconoir-"]'));
                     const row = root.querySelector('.report-row-editor');
-                    const title = root.querySelector('.report-row-editor .title');
+                    const title = root.querySelector('.report-row-editor .report-field-title');
+                    const luminance = color => color.match(/\\d+/g).slice(0, 3)
+                        .map(value => Number(value) / 255)
+                        .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+                        .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+                    const contrast = (foreground, background) => {
+                        const [fg, bg] = [luminance(foreground), luminance(background)];
+                        return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+                    };
+                    const rowBackground = getComputedStyle(row).backgroundColor;
                     return {
                         icons: icons.map(icon => {
                             const style = getComputedStyle(icon);
                             const rect = icon.getBoundingClientRect();
                             return {width: rect.width, height: rect.height, mask: style.maskImage || style.webkitMaskImage};
                         }),
-                        rowColor: getComputedStyle(row).color,
-                        titleColor: getComputedStyle(title).color,
+                        rowContrast: contrast(getComputedStyle(row).color, rowBackground),
+                        titleContrast: contrast(getComputedStyle(title).color, rowBackground),
                     };
                 }
             """)
-            self.assertTrue(all(item['width'] >= 10 and item['height'] >= 10 and 'iconoir' in item['mask'] for item in metrics['icons']))
-            self.assertEqual('rgb(17, 24, 39)', metrics['rowColor'])
-            self.assertEqual('rgb(17, 24, 39)', metrics['titleColor'])
+            icon_min = geometry.REPORT_TOOLBAR_ICON_MIN_SIZE
+            self.assertTrue(all(
+                item['width'] >= icon_min and item['height'] >= icon_min and 'iconoir' in item['mask'] for item in metrics['icons']
+            ))
+            self.assertGreaterEqual(metrics['rowContrast'], 4.5, metrics)
+            self.assertGreaterEqual(metrics['titleContrast'], 4.5, metrics)
 
             note = self._blank_note(page, 0)
             self._focus_region(note, page)

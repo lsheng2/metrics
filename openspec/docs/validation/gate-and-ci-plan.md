@@ -49,6 +49,16 @@ Current observed result on 2026-08-21: `4 passed`, C0 checker PASS, C1 checker P
 
 The second pytest command is explicit because `pytest.ini` does not include all module-local test roots.
 
+### File-Size Gate Semantics
+
+`scripts/check_file_size_limits.py` reads `.github/file-size-limits.json`:
+
+- Rules are ordered and the first matching glob wins. Globs are segment-aware: `*` stays inside one path segment and `**` spans directories.
+- Every tracked file must match a rule or an exemption. An unclaimed file fails, so a new file type cannot bypass the gate silently; a run that checks no file also fails.
+- Exemptions cover only generated, vendored, cache, lock, binary, locale and separately validated artifacts (Grafana dashboard exports, OpenSpec CLI output). Each needs a reason.
+- Legacy allowances name already-oversized files with an owner and split plan. They apply only in changed-file mode, only while the base revision (`HEAD`) is already over the limit, and allow zero added lines. Explicit paths and `--all` are strict.
+- `scripts/tests/test_check_file_size_limits.py` keeps the matcher, ratchet and whole-repository coverage honest. `scripts/tests` is outside `pytest.ini` defaults; run it explicitly.
+
 ## Release Gate
 
 Use this before merge to the default branch, release branches, or broad release-readiness claims.

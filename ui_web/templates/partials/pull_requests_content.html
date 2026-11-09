@@ -1,23 +1,47 @@
-{% if error %}
-    <article class="message is-danger">
-        <div class="message-header">
-            <p>Error</p>
+<article id="pull-requests-page" class="block">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Pull requests</h2>
+            <p class="page-header__meta">Open pull requests for the selected member group, with reviewer approvals, the internal review gate and merge policies.</p>
         </div>
-        <div class="message-body">
-            {{ error }}
+    </header>
+    {% if error %}
+        <article class="message is-danger" role="alert">
+            <div class="message-header"><p>Pull requests unavailable</p></div>
+            <div class="message-body">{{ error }}</div>
+        </article>
+    {% elif not pull_requests_enabled %}
+        <div class="empty-state is-warning">
+            <span class="empty-state__icon"><i class="iconoir-git-pull-request" aria-hidden="true"></i></span>
+            <p class="empty-state__title">Pull requests are not configured</p>
+            <p class="empty-state__body">Configure an Azure DevOps organization (Azure tracker) or Bitbucket credentials (Jira tracker) to list open pull requests here.</p>
         </div>
-    </article>
-{% elif not pull_requests_enabled %}
-    <article class="message is-warning">
-        <div class="message-header">
-            <p>Pull Requests not configured</p>
+    {% else %}
+        {% with has_filters=selected_author|default:selected_iteration|default:selected_release %}
+        {% include "partials/pull_request_filters.html" %}
+        <div class="results-bar">
+            <p class="results-bar__count" role="status"><strong>{{ pull_requests|length }}</strong> open pull request{{ pull_requests|length|pluralize }}{% if has_filters %} match the filters{% endif %}</p>
         </div>
-        <div class="message-body">
-            Configure an Azure DevOps organization (Azure tracker) or Bitbucket credentials (JIRA tracker) to view pull requests.
-        </div>
-    </article>
-{% else %}
-    {% include "partials/pull_request_summary_table.html" %}
-    {% include "partials/pull_request_filters.html" %}
-    {% include "partials/pull_requests_table.html" with pull_requests=pull_requests %}
-{% endif %}
+        {% if pull_requests %}
+            {% include "partials/pull_request_summary_table.html" %}
+            {% include "partials/pull_requests_table.html" %}
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-state__icon"><i class="iconoir-git-pull-request" aria-hidden="true"></i></span>
+                {% if has_filters %}
+                <p class="empty-state__title">No pull requests match the filters</p>
+                <p class="empty-state__body">Loosen or clear the filters to see every open pull request again.</p>
+                <div class="empty-state__actions">
+                    <a class="button" href="{% url 'ui_web:pull_requests' %}{% if selected_member_group_id %}?member_group_id={{ selected_member_group_id|urlencode }}{% endif %}"
+                       hx-get="{% url 'ui_web:partials_pull_requests' %}{% if selected_member_group_id %}?member_group_id={{ selected_member_group_id|urlencode }}{% endif %}"
+                       hx-target="#main-content" hx-indicator="#loading-indicator" hx-push-url="true">Clear filters</a>
+                </div>
+                {% else %}
+                <p class="empty-state__title">No open pull requests</p>
+                <p class="empty-state__body">Nobody in this member group has a pull request waiting for review.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% endwith %}
+    {% endif %}
+</article>

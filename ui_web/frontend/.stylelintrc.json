@@ -1,0 +1,77 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "ignoreFiles": [
+    "../static/css/theme.css",
+    "../static/vendor/**"
+  ],
+  "rules": {
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch"],
+    "declaration-property-value-disallowed-list": {
+      "font-family": ["/^(?!var\\(|inherit|monospace)/"],
+      "/^(padding|margin|gap|row-gap|column-gap)/": ["/\\d*\\.?\\d+r?em\\b/", "/\\b([4-9]|[1-9]\\d+)(\\.\\d+)?px\\b/"]
+    },
+    "declaration-property-value-allowed-list": {
+      "z-index": ["auto", "/^-?[0-3]$/", "/^var\\(--z-[a-z]+\\)$/", "/^calc\\(var\\(--z-[a-z]+\\) \\+ [1-9]\\)$/"]
+    },
+    "media-feature-name-value-allowed-list": {
+      "max-width": ["768px"],
+      "min-width": ["769px"]
+    },
+    "selector-class-pattern": null,
+    "selector-id-pattern": null,
+    "custom-property-pattern": null,
+    "keyframes-name-pattern": null,
+    "no-descending-specificity": null,
+    "alpha-value-notation": null,
+    "color-function-notation": null,
+    "property-no-vendor-prefix": null,
+    "value-no-vendor-prefix": null,
+    "no-duplicate-selectors": null,
+    "declaration-empty-line-before": null,
+    "comment-empty-line-before": null,
+    "media-feature-range-notation": null,
+    "declaration-no-important": null,
+    "selector-not-notation": null,
+    "declaration-block-single-line-max-declarations": null,
+    "shorthand-property-no-redundant-values": null,
+    "declaration-block-no-redundant-longhand-properties": null,
+    "number-max-precision": null,
+    "length-zero-no-unit": null,
+    "value-keyword-case": null
+  },
+  "overrides": [
+    {
+      "files": ["../static/css/foundation/page-patterns.css"],
+      "rules": {
+        "media-feature-name-value-allowed-list": {
+          "max-width": ["768px"],
+          "min-width": ["769px", "1024px"]
+        }
+      }
+    },
+    {
+      "files": ["../static/css/pages/workbench-evidence.css"],
+      "rules": {
+        "media-feature-name-value-allowed-list": {
+          "max-width": ["768px", "1023px"],
+          "min-width": ["769px", "1024px"]
+        }
+      }
+    },
+    {
+      "files": [
+        "../static/css/pages/workbench-shell.css",
+        "../static/css/pages/workbench-panes.css",
+        "../static/css/shell/statusbar.css"
+      ],
+      "rules": {
+        "media-feature-name-value-allowed-list": {
+          "max-width": ["768px"],
+          "min-width": ["769px", "1024px"]
+        }
+      }
+    }
+  ]
+}

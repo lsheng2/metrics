@@ -1,0 +1,87 @@
+{% load i18n %}
+{% comment %}One template block editor. Saved rows pass `row`; the clone template passes row=None, so both share markup.{% endcomment %}
+<article class="template-block" data-template-row data-block-id="{{ row.block_id|default:'' }}" data-slot-id="{{ row.slot_id|default:'' }}" data-kind="{{ row.kind|default:'content' }}">
+    <header class="template-block__head">
+        <div class="select is-small">
+            <select data-template-kind aria-label="{% trans "Block type" %}">
+                <option value="content"{% if row.kind == "content" %} selected{% endif %}>{% trans "Content" %}</option>
+                <option value="slot"{% if row.kind == "slot" %} selected{% endif %}>{% trans "Slot" %}</option>
+                <option value="data"{% if row.kind == "data" %} selected{% endif %}>{% trans "Data" %}</option>
+            </select>
+        </div>
+        <div class="template-block__commands">
+            <button class="button is-small is-light" type="button" data-template-row-command="up" aria-label="{% trans "Move up" %}" title="{% trans "Move up" %}"><span class="icon is-small"><i class="iconoir-arrow-up" aria-hidden="true"></i></span></button>
+            <button class="button is-small is-light" type="button" data-template-row-command="down" aria-label="{% trans "Move down" %}" title="{% trans "Move down" %}"><span class="icon is-small"><i class="iconoir-arrow-down" aria-hidden="true"></i></span></button>
+            <button class="button is-small is-light template-block__remove" type="button" data-template-row-command="remove" aria-label="{% trans "Remove block" %}" title="{% trans "Remove block" %}"><span class="icon is-small"><i class="iconoir-trash" aria-hidden="true"></i></span></button>
+        </div>
+    </header>
+    <div class="template-block__rich" data-template-rich-panel>
+        <p class="label" data-template-rich-label data-content-text="{% trans "Content" %}" data-slot-text="{% trans "Initial slot content" %}">{% trans "Rich text" %}</p>
+        <div class="report-editor-surface paper" data-template-editor-surface tabindex="0" aria-label="{% trans "Rich text" %}"></div>
+    </div>
+    <p class="help" data-template-panel="content">{% trans "This fixed content is read-only in reports." %}</p>
+    <div class="template-block__fields" data-template-panel="slot">
+        <label class="dashboard-form-field">
+            <span class="label">{% trans "Slot label" %}</span>
+            <input class="input" data-template-slot-label value="{% if row %}{{ row.label }}{% else %}{% trans "Manual slot" %}{% endif %}">
+        </label>
+        <label class="dashboard-form-field">
+            <span class="label">{% trans "Fill mode" %}</span>
+            <span class="select is-fullwidth">
+                <select data-template-slot-fill-mode>
+                    <option value="manual"{% if row.fill_mode == "manual" %} selected{% endif %}>{% trans "Manual" %}</option>
+                    <option value="ai_optional"{% if row.fill_mode == "ai_optional" %} selected{% endif %}>{% trans "AI optional" %}</option>
+                </select>
+            </span>
+        </label>
+        <label class="checkbox template-block__check"><input type="checkbox" data-template-slot-required{% if row.required %} checked{% endif %}> {% trans "Required" %}</label>
+        <label class="dashboard-form-field template-block__wide">
+            <span class="label">{% trans "Optional AI instructions" %}</span>
+            <textarea class="textarea" rows="2" data-template-slot-instruction>{{ row.instruction|default:'' }}</textarea>
+        </label>
+    </div>
+    <div class="template-block__fields" data-template-panel="data">
+        <label class="dashboard-form-field">
+            <span class="label">{% trans "Data source" %}</span>
+            <span class="select is-fullwidth">
+                <select data-template-data-source>
+                    {% for value, label in editor.data_sources %}<option value="{{ value }}"{% if row.source == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </span>
+        </label>
+        <label class="dashboard-form-field">
+            <span class="label">{% trans "Group by" %}</span>
+            <span class="select is-fullwidth">
+                <select data-template-data-group>
+                    {% for value, label in editor.group_choices %}<option value="{{ value }}"{% if row.group_by == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </span>
+        </label>
+        <fieldset class="template-block__options">
+            <legend class="label">{% trans "Optional columns" %}</legend>
+            <div class="template-block__checks">
+                <label class="checkbox"><input type="checkbox" value="summary_time" data-template-data-column{% if "summary_time" in row.optional_columns %} checked{% endif %}> {% trans "Summary time" %}</label>
+                <label class="checkbox"><input type="checkbox" value="source_hash" data-template-data-column{% if "source_hash" in row.optional_columns %} checked{% endif %}> {% trans "Source hash" %}</label>
+            </div>
+        </fieldset>
+        <div class="template-matrix template-block__wide" data-template-matrix-panel>
+            <label class="template-matrix__mode">
+                <span class="label">{% trans "Matrix groups" %}</span>
+                <span class="select is-small">
+                    <select data-template-matrix-group-mode>
+                        <option value="none"{% if row.matrix_group_mode == "none" %} selected{% endif %}>{% trans "No manual groups" %}</option>
+                        <option value="manual"{% if row.matrix_group_mode == "manual" %} selected{% endif %}>{% trans "Manual groups" %}</option>
+                    </select>
+                </span>
+            </label>
+            <div class="template-matrix__groups" data-template-matrix-groups>{% for group in row.matrix_groups %}{% include "projects/report_templates/matrix_group.html" %}{% endfor %}</div>
+            <div>
+                <button class="button is-small is-light" type="button" data-template-matrix-group-add>
+                    <span class="icon is-small"><i class="iconoir-plus" aria-hidden="true"></i></span>
+                    <span>{% trans "Add group" %}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% if row %}{{ row.fragment|json_script:row.fragment_script_id }}{% endif %}
+</article>

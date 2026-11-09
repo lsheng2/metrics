@@ -1,5 +1,51 @@
-from pathlib import Path
 from playwright.sync_api import sync_playwright
+
+from ui_web.tests import ui_geometry_contract as geometry
+from ui_web.tests.dashboard_asset_support import (
+    feature_scripts_source,
+    inline_dashboard_assets,
+    strip_static_asset_tags,
+)
+
+SPLITTER_ARIA_SCRIPT = (
+    "element => ({now: element.getAttribute('aria-valuenow'), "
+    "min: element.getAttribute('aria-valuemin'), max: element.getAttribute('aria-valuemax')})"
+)
+GRAFANA_PANEL_THEME_SCRIPT = "panel => new URL(panel.src).searchParams.get('theme')"
+PHONE_STACK_SCRIPT = """() => {
+    const rect = selector => document.querySelector(selector).getBoundingClientRect();
+    const root = document.documentElement;
+    const grid = rect('#workbench-grid');
+    const shell = rect('.workbench-shell');
+    const panes = Array.from(document.querySelectorAll('[data-workbench-pane]'), pane => [pane.dataset.workbenchPane, pane.getBoundingClientRect()]);
+    return {
+        scroll_locked: [root, document.body].some(element => getComputedStyle(element).overflowY === 'hidden'),
+        topbar_display: getComputedStyle(document.querySelector('.app-topbar')).display,
+        pane_order: panes.sort((a, b) => a[1].top - b[1].top).map(([name]) => name),
+        pane_width_delta: Math.max(...panes.map(([, pane]) => Math.abs(pane.width - grid.width))),
+        gutter_delta: Math.abs(shell.left - (root.clientWidth - shell.right)),
+        chart_frame_height: rect('[data-workbench-pane="chart"] .bug-trend-chart-frame').height,
+    };
+}"""
+PHONE_DETAIL_SCRIPT = """() => {
+    const rect = selector => document.querySelector(selector).getBoundingClientRect();
+    const detail = rect('[data-workbench-ticket-detail]');
+    return {
+        splitter_displays: Array.from(document.querySelectorAll('[data-workbench-splitter]'), splitter => getComputedStyle(splitter).display),
+        evidence_columns: getComputedStyle(document.querySelector('[data-workbench-evidence-layout]')).gridTemplateColumns.split(' ').length,
+        detail_gap_below_table: detail.top - rect('[data-workbench-evidence-layout] .workbench-evidence-table-wrap').bottom,
+        detail_under_topbar: rect('.app-topbar').bottom - detail.top,
+        detail_under_status_bar: detail.bottom - rect('[data-workbench-status-bar]').top,
+    };
+}"""
+PHONE_AI_SCRIPT = """() => {
+    const ai = document.querySelector('[data-workbench-pane="ai-assistant"]');
+    return {
+        ai_under_status_bar: ai.getBoundingClientRect().bottom - document.querySelector('[data-workbench-status-bar]').getBoundingClientRect().top,
+        ai_width_delta: Math.abs(ai.getBoundingClientRect().width - document.querySelector('#workbench-grid').getBoundingClientRect().width),
+        ai_body_display: getComputedStyle(ai.querySelector('.workbench-pane-body')).display,
+    };
+}"""
 
 
 class WorkbenchBrowserTestSupport:
@@ -86,14 +132,7 @@ class WorkbenchBrowserTestSupport:
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
-        static_dir = Path(__file__).resolve().parents[1] / 'static'
-        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
-        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
-        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
-        html = self._browser_html(response.content.decode()).replace(
-            '</body>',
-            f'<style>{vendor_css}\n{main_css}</style><script>{main_js}</script></body>',
-        )
+        html = inline_dashboard_assets(self._browser_html(response.content.decode()))
         try:
             page.route('http://testserver/workbench/', lambda route: route.fulfill(
                 status=200,
@@ -107,6 +146,12 @@ class WorkbenchBrowserTestSupport:
             page.locator('[data-workbench-ticket-row]').first.click()
             detail_open = page.locator('[data-ticket-detail-content]').is_visible()
             detail_issue = page.locator('[data-ticket-detail-issue]').inner_text()
+            detail_created = page.locator('[data-ticket-detail-created]').inner_text()
+            page.locator('[data-workbench-splitter="ticket-detail"]').press('ArrowLeft')
+            ticket_splitter_aria = page.locator('[data-workbench-splitter="ticket-detail"]').evaluate(SPLITTER_ARIA_SCRIPT)
+            ticket_detail_width = page.locator('[data-workbench-evidence-layout]').evaluate(
+                "element => getComputedStyle(element).getPropertyValue('--workbench-ticket-detail-width').trim()"
+            )
             page.locator('[data-workbench-ticket-select-all]').check()
             selected_count = page.locator('[data-workbench-ticket-selected-count]').inner_text()
             selected_ticket_payload = page.evaluate("window.metricsWorkbenchSelectedTickets")
@@ -117,7 +162,7 @@ class WorkbenchBrowserTestSupport:
             status_column_hidden = page.locator('[data-workbench-field="status"]').first.evaluate(
                 "element => element.classList.contains('is-hidden')"
             )
-            page.mouse.click(12, 12)
+            page.locator('#workbench-chart-title').click(position={'x': 4, 'y': 4})
             columns_menu_open_after_blank_click = page.locator('[data-workbench-evidence-workspace] .workbench-menu').first.evaluate(
                 "menu => menu.open"
             )
@@ -133,6 +178,7 @@ class WorkbenchBrowserTestSupport:
             chart_height = page.locator('#workbench-grid').evaluate(
                 "element => getComputedStyle(element).getPropertyValue('--workbench-chart-height').trim()"
             )
+            chart_splitter_aria = page.locator('[data-workbench-splitter="chart-evidence"]').evaluate(SPLITTER_ARIA_SCRIPT)
             page.locator('[data-workbench-ticket-detail-close]').click()
             detail_collapsed_after_close = page.locator('[data-workbench-evidence-layout]').evaluate(
                 "element => element.classList.contains('is-detail-collapsed')"
@@ -147,9 +193,10 @@ class WorkbenchBrowserTestSupport:
             ai_width = page.locator('#workbench-grid').evaluate(
                 "element => getComputedStyle(element).getPropertyValue('--workbench-ai-width').trim()"
             )
+            ai_splitter_aria = page.locator('[data-workbench-splitter="main-ai"]').evaluate(SPLITTER_ARIA_SCRIPT)
             page.locator('[data-workbench-collapse="ai-assistant"]').click()
             layout_metrics = page.evaluate("""
-                () => {
+                limits => {
                     const app = document.querySelector('[data-dashboard-layout]').getBoundingClientRect();
                     const sidebar = document.querySelector('[data-dashboard-sidebar]').getBoundingClientRect();
                     const shell = document.querySelector('.workbench-shell').getBoundingClientRect();
@@ -161,8 +208,8 @@ class WorkbenchBrowserTestSupport:
                         const rect = label.getBoundingClientRect();
                         return {
                             text: label.innerText.trim(),
-                            clipped: label.scrollHeight > Math.ceil(label.clientHeight) + 1 || label.scrollWidth > Math.ceil(label.clientWidth) + 1,
-                            outsideField: rect.top < field.top - 1 || rect.bottom > field.bottom + 1,
+                            clipped: label.scrollHeight > Math.ceil(label.clientHeight) + limits.OVERFLOW_TOLERANCE || label.scrollWidth > Math.ceil(label.clientWidth) + limits.OVERFLOW_TOLERANCE,
+                            outsideField: rect.top < field.top - limits.ALIGNMENT_TOLERANCE || rect.bottom > field.bottom + limits.ALIGNMENT_TOLERANCE,
                             topGap: Math.round(rect.top - toolbar.top),
                         };
                     });
@@ -180,7 +227,7 @@ class WorkbenchBrowserTestSupport:
                         toolbarMinLabelTopGap: Math.min(...labels.map(label => label.topGap)),
                     };
                 }
-            """)
+            """, geometry.browser_limits())
             page.reload(wait_until='domcontentloaded')
             restored_ai_collapsed = page.locator('#workbench-grid').evaluate(
                 "element => element.classList.contains('is-ai-collapsed')"
@@ -191,6 +238,9 @@ class WorkbenchBrowserTestSupport:
                 'initial_detail_collapsed': initial_detail_collapsed,
                 'detail_open': detail_open,
                 'detail_issue': detail_issue,
+                'detail_created': detail_created,
+                'ticket_splitter_aria': ticket_splitter_aria,
+                'ticket_detail_width': ticket_detail_width,
                 'selected_count': selected_count,
                 'selected_ticket_payload': selected_ticket_payload,
                 'bulk_detail_issue': bulk_detail_issue,
@@ -199,11 +249,13 @@ class WorkbenchBrowserTestSupport:
                 'first_issue_after_sort': first_issue_after_sort,
                 'chart_collapsed': chart_collapsed,
                 'chart_height': chart_height,
+                'chart_splitter_aria': chart_splitter_aria,
                 'detail_collapsed_after_close': detail_collapsed_after_close,
                 'ai_collapsed': ai_collapsed,
                 'ai_button_text': ai_button_text,
                 'ai_title_visible': ai_title_visible,
                 'ai_width': ai_width,
+                'ai_splitter_aria': ai_splitter_aria,
                 'layout_metrics': layout_metrics,
                 'restored_ai_collapsed': restored_ai_collapsed,
                 'restored_ai_button_text': restored_ai_button_text,
@@ -214,11 +266,44 @@ class WorkbenchBrowserTestSupport:
             browser.close()
             playwright.stop()
 
+    def _exercise_workbench_phone_layout(self, response):
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 390, 'height': 844})
+        html = inline_dashboard_assets(self._browser_html(response.content.decode()))
+        try:
+            page.route('http://testserver/workbench/', lambda route: route.fulfill(
+                status=200,
+                content_type='text/html',
+                body=html,
+            ))
+            page.goto('http://testserver/workbench/', wait_until='domcontentloaded')
+            # A wheel event counts as the user scrolling, which turns off the Workbench initial scroll-to-top guard.
+            page.evaluate("window.dispatchEvent(new WheelEvent('wheel'))")
+            result = page.evaluate(PHONE_STACK_SCRIPT)
+            last_row = page.locator('[data-workbench-ticket-row]').last
+            last_row.evaluate("row => row.scrollIntoView({block: 'end'})")
+            last_row.click()
+            result.update(page.evaluate(PHONE_DETAIL_SCRIPT))
+            page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+            result['ai_under_status_bar'] = page.evaluate(PHONE_AI_SCRIPT)['ai_under_status_bar']
+            page.locator('[data-workbench-collapse="ai-assistant"]').click()
+            collapsed = page.evaluate(PHONE_AI_SCRIPT)
+            result['collapsed_ai_width_delta'] = collapsed['ai_width_delta']
+            result['collapsed_ai_body_display'] = collapsed['ai_body_display']
+            result['collapsed_ai_title_visible'] = page.locator('#workbench-ai-title').is_visible()
+            result['collapsed_ai_button_text'] = page.locator('[data-workbench-collapse="ai-assistant"]').inner_text()
+            return result
+        finally:
+            page.close()
+            browser.close()
+            playwright.stop()
+
     def _exercise_workbench_navigation_state_restore(self):
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page()
-        main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
+        main_js = feature_scripts_source()
         html = f"""
             <html>
             <body>
@@ -265,7 +350,7 @@ class WorkbenchBrowserTestSupport:
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
-        main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
+        main_js = feature_scripts_source()
         html = self._browser_html(response.content.decode()).replace('</body>', f'<script>{main_js}</script></body>')
         child_html = """
             <html>
@@ -346,7 +431,7 @@ class WorkbenchBrowserTestSupport:
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
-        main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
+        main_js = feature_scripts_source()
         html = self._browser_html(response.content.decode()).replace('</body>', f'<script>{main_js}</script></body>')
         target_html = html
         if target_response is not None:
@@ -397,7 +482,7 @@ class WorkbenchBrowserTestSupport:
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
-        main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
+        main_js = feature_scripts_source()
         html = self._browser_html(response.content.decode()).replace('</body>', f'<script>{main_js}</script></body>')
         try:
             page.route('http://testserver/workbench/', lambda route: route.fulfill(
@@ -427,18 +512,50 @@ class WorkbenchBrowserTestSupport:
             playwright.stop()
 
     def _browser_html(self, html):
-        html = html.replace(
-            '<script src="/static/js/vendor_fallbacks.js"></script>',
-            '<script>' + self._htmx_stub() + self._chart_stub() + '</script>',
+        return strip_static_asset_tags(html).replace(
+            '</head>',
+            '<script>' + self._htmx_stub() + self._chart_stub() + '</script></head>',
+            1,
         )
-        external_assets = [
-            '<script src="/static/js/main.js"></script>',
-            '<link rel="stylesheet" href="/static/css/vendor_fallbacks.css">',
-            '<link rel="stylesheet" href="/static/css/main.css">',
-        ]
-        for asset in external_assets:
-            html = html.replace(asset, '')
-        return html
+
+    def _exercise_grafana_preview_theme(self, response):
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={'width': 1280, 'height': 900}, color_scheme='light')
+        html = inline_dashboard_assets(
+            self._browser_html(response.content.decode()),
+            scripts=('js/shell.js', 'js/grafana-embeds.js'),
+        )
+        try:
+            page.route('http://testserver/workbench/', lambda route: route.fulfill(
+                status=200,
+                content_type='text/html',
+                body=html,
+            ))
+            page.route('http://grafana.test/**', lambda route: route.fulfill(
+                status=200,
+                content_type='text/html',
+                body='<!doctype html><title>Panel</title>',
+            ))
+            page.goto('http://testserver/workbench/', wait_until='domcontentloaded')
+            panel = page.locator('.workbench-grafana-panel')
+            src_before_open = panel.get_attribute('src')
+            page.locator('.workbench-grafana-preview > summary').click()
+            page.wait_for_function("() => document.querySelector('.workbench-grafana-panel').hasAttribute('src')", timeout=5000)
+            src_after_open = panel.get_attribute('src')
+            theme_after_open = panel.evaluate(GRAFANA_PANEL_THEME_SCRIPT)
+            page.locator('[data-theme-choice="dark"]').click()
+            theme_after_switch = panel.evaluate(GRAFANA_PANEL_THEME_SCRIPT)
+            return {
+                'src_before_open': src_before_open,
+                'src_after_open': src_after_open,
+                'theme_after_open': theme_after_open,
+                'theme_after_switch': theme_after_switch,
+            }
+        finally:
+            page.close()
+            browser.close()
+            playwright.stop()
 
     def _chart_stub(self):
         return """

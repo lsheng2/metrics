@@ -44,10 +44,10 @@ See the [current guide](openspec/docs/current-baseline/project-reporting.md) and
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![Django 6.0+](https://img.shields.io/badge/django-6.0+-green.svg)
-![HTMX](https://img.shields.io/badge/htmx-1.9.12-blue)
-![Chart.js](https://img.shields.io/badge/Chart.js-4.5.1-orange)
+![HTMX](https://img.shields.io/badge/htmx-2.0.11-blue)
+![Chart.js](https://img.shields.io/badge/Chart.js-4.6.1-orange)
 ![chartjs-plugin-annotation](https://img.shields.io/badge/chartjs--plugin--annotation-3.1.0-orange)
-![Bulma CSS](https://img.shields.io/badge/bulma-1.0.4-green)
+![Meridian design system](https://img.shields.io/badge/UI-Meridian%20design%20system-3e63dd)
 
 ## What It Does
 
@@ -650,11 +650,14 @@ tasks = await (
 
 ### Frontend Architecture
 
-The UI is a dynamic, server-rendered application that leverages modern libraries to create a responsive and interactive experience without a complex JavaScript toolchain:
+The UI is a server-rendered application with no client-side framework or runtime bundler. A small
+Node toolchain in `ui_web/frontend/` runs only during development to generate design tokens,
+vendor pinned libraries and enforce the frontend quality gates:
 
-- **Bulma**: A lightweight, modern CSS framework used for all styling.
+- **Meridian design system**: DTCG design tokens built with Style Dictionary generate `theme.css`; `css/foundation/` provides the primitives and `css/shell/` plus `shell.js`/`command-palette.js` the app frame with sidebar, command palette and light/dark/system themes. `ui_web/static_assets.py` is the single ordered list of stylesheets and scripts. Every UI change follows the binding [frontend design requirements](openspec/docs/current-baseline/frontend-design-requirements.md).
 - **HTMX**: The core of the UI's interactivity. HTMX is used to perform AJAX requests and update parts of a page directly from HTML, enabling a dynamic, single-page application feel.
-- **Chart.js**: Powers all data visualizations, rendering the charts and graphs for velocity and forecasting.
+- **Chart.js**: Powers all data visualizations; `DashboardCharts` maps every chart color to the active theme tokens.
+- **Quality gates**: Stylelint, WCAG contrast checks over token pairs, and Playwright + axe-core browser QA across themes and viewports.
 
 ### Core Implementation Classes
 

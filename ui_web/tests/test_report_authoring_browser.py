@@ -83,7 +83,7 @@ class TestReportAuthoringBrowser(ReportAuthoringBrowserTestCase):
                 () => {
                     window.__confirmText = null;
                     window.confirm = text => { window.__confirmText = text; return false; };
-                    const link = document.querySelector('nav.breadcrumb a[href]');
+                    const link = document.querySelector('.app-crumbs__trail a[href]');
                     const event = new MouseEvent('click', {bubbles: true, cancelable: true});
                     link.dispatchEvent(event);
                     return {blocked: event.defaultPrevented, confirmText: window.__confirmText};

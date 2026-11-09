@@ -12,7 +12,8 @@ from ui_web.convertors.velocity_chart_convertor import VelocityChartConvertor
 from ui_web.convertors.velocity_report_convertor import VelocityReportConvertor
 from ui_web.utils.federated_data_post_processors import MemberGroupTaskFilter
 from ui_web.utils.task_grouping_utils import TaskGroupingUtils
-from ui_web.tests.fixtures.ui_web_builders import BusinessScenarios, DomainTaskBuilder, TaskDataBuilder
+from ui_web.tests.fixtures.business_scenarios import BusinessScenarios
+from ui_web.tests.fixtures.ui_web_builders import DomainTaskBuilder, TaskDataBuilder
 from ui_web.tests.mocks.mock_task_search_api import MockTaskSearchApi
 from ui_web.tests.mocks.mock_forecast_api import MockForecastApi
 from ui_web.tests.mocks.mock_velocity_api import MockVelocityApi

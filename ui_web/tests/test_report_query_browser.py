@@ -12,6 +12,7 @@ from project_management.services.report_sources import ReportSourceReader
 from project_management.tests.history_persistence_fixtures import history_fixture
 from project_management.tests.summary_fixtures import PACK_ROOT
 from ui_web.facades.project_reports import ProjectReportFacade
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 from ui_web.tests.test_report_daily_ui_views import choice, patch_default_facade, seed_retained_capture
 from ui_web.tests.test_report_template_browser import project_page
@@ -77,7 +78,7 @@ class TestReportQueryBrowser(StaticLiveServerTestCase):
                 page.screenshot(path=str(evidence / 'editor-desktop.png'))
                 page.set_viewport_size({'width': 390, 'height': 844})
                 page.screenshot(path=str(evidence / 'editor-mobile.png'))
-                self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), 390)
+                self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), geometry.REPORT_PHONE_PAGE_WIDTH_MAX)
                 page.locator('[data-report-finalize-confirm]').check()
                 with page.expect_navigation(wait_until='domcontentloaded'):
                     page.locator('[data-report-finalize-button]').click()

@@ -1,0 +1,14 @@
+<article class="message is-danger">
+    <div class="message-header">
+        <p>Velocity data unavailable</p>
+    </div>
+    <div class="message-body">
+        <p><strong>{{ error }}</strong></p>
+        {% if config_help %}
+            <p>{{ config_help }}</p>
+            <p>Ask your administrator to configure the required data source.</p>
+        {% else %}
+            <p>Check the configuration or refresh the page.</p>
+        {% endif %}
+    </div>
+</article>

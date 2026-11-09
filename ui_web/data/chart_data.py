@@ -6,12 +6,7 @@ from typing import List, Union, Optional
 class ChartDatasetData:
     label: str
     data: List[Union[float, int]]
-    color: Optional[str] = None
-    background_color: Optional[str] = None
-    border_color: Optional[str] = None
-    border_width: Optional[int] = None
-    fill: Optional[bool] = None
-    point_radius: Optional[int] = None
+    is_done: bool = False
 
 
 @dataclass(slots=True)

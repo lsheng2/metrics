@@ -14,7 +14,7 @@
          data-canceled="{% trans "AI request canceled. Original text is unchanged." %}"
          data-failed="{% trans "AI request failed. Original text is unchanged." %}">
     <header class="report-assist-header">
-        <h2 id="report-assist-title" class="title is-6">{% trans "AI assist" %}</h2>
+        <h2 id="report-assist-title" class="report-assist-title">{% trans "AI assist" %}</h2>
         <button type="button" class="button is-small" data-report-assist-close aria-label="{% trans "Close" %}" title="{% trans "Close" %}">
             <span class="icon is-small" aria-hidden="true"><i class="iconoir-xmark"></i></span>
         </button>
@@ -24,11 +24,11 @@
         <textarea id="report-assist-instruction" class="textarea" data-report-assist-instruction rows="2" maxlength="1000" required></textarea>
     </div>
     <p data-report-assist-status role="status" aria-live="polite"></p>
-    <div class="content report-assist-preview" data-report-assist-preview hidden></div>
+    <div class="report-assist-preview paper" data-report-assist-preview hidden></div>
     <div class="dashboard-action-bar">
         <div class="dashboard-action-group">
             <button type="button" class="button is-small" data-report-assist-generate disabled>
-                <span class="icon is-small" aria-hidden="true"><i class="iconoir-refresh-double"></i></span>
+                <span class="icon is-small" aria-hidden="true"><i class="iconoir-sparks"></i></span>
                 <span>{% trans "Generate" %}</span>
             </button>
             <button type="button" class="button is-small is-primary" data-report-assist-apply hidden disabled>

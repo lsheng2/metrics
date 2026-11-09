@@ -1370,3 +1370,603 @@ msgstr "丢弃恢复记录"
 
 msgid "Download checkpoint"
 msgstr "下载恢复记录"
+
+msgid "Home"
+msgstr "首页"
+
+msgid "Overview"
+msgstr "概览"
+
+msgid "Workspace overview, health and shortcuts"
+msgstr "工作区概览、健康状况与快捷入口"
+
+msgid "Workbench"
+msgstr "工作台"
+
+msgid "Chart, evidence and AI assistant in one view"
+msgstr "图表、证据与 AI 助手集于一屏"
+
+msgid "Delivery"
+msgstr "交付"
+
+msgid "Velocity"
+msgstr "速率"
+
+msgid "Team Velocity"
+msgstr "团队速率"
+
+msgid "Team throughput and story points per sprint"
+msgstr "每个冲刺的团队吞吐量与故事点"
+
+msgid "Dev Velocity"
+msgstr "开发者速率"
+
+msgid "Per-developer throughput and story points"
+msgstr "每位开发者的吞吐量与故事点"
+
+msgid "Current Tasks"
+msgstr "当前任务"
+
+msgid "Active sprint work by member group"
+msgstr "按成员组查看当前冲刺工作"
+
+msgid "Task Forecast"
+msgstr "任务预测"
+
+msgid "Completion forecast from historical throughput"
+msgstr "基于历史吞吐量的完成预测"
+
+msgid "Quality"
+msgstr "质量"
+
+msgid "Bug Trend"
+msgstr "缺陷趋势"
+
+msgid "Bug inflow, outflow and open backlog per scope"
+msgstr "各范围的缺陷流入、流出与未关闭积压"
+
+msgid "Pull Requests"
+msgstr "拉取请求"
+
+msgid "Open pull requests and review state"
+msgstr "未关闭的拉取请求及评审状态"
+
+msgid "Projects, stage reports and publications"
+msgstr "项目、阶段报告与发布版本"
+
+msgid "AI Workflow"
+msgstr "AI 工作流"
+
+msgid "AI-generated dashboard intents and publishing"
+msgstr "AI 生成的仪表板意图与发布"
+
+msgid "Configuration"
+msgstr "配置"
+
+msgid "Scope Library"
+msgstr "范围库"
+
+msgid "Saved provider scopes and their configuration"
+msgstr "已保存的提供方范围及其配置"
+
+msgid "Provider Setup"
+msgstr "提供方设置"
+
+msgid "Provider profiles, credentials and bindings"
+msgstr "提供方配置档案、凭据与绑定"
+
+msgid "Data Health"
+msgstr "数据健康"
+
+msgid "Sync freshness, cursors and calculation runs"
+msgstr "同步新鲜度、游标与计算运行"
+
+msgid "Skip to content"
+msgstr "跳到主要内容"
+
+msgid "Metrics home"
+msgstr "Metrics 首页"
+
+msgid "Main navigation"
+msgstr "主导航"
+
+msgid "Sidebar"
+msgstr "侧边栏"
+
+msgid "%(label)s member groups"
+msgstr "%(label)s 成员组"
+
+msgid "Resize navigation"
+msgstr "调整导航宽度"
+
+msgid "Drag or use arrow keys to resize; double-click to reset"
+msgstr "拖动或使用方向键调整宽度；双击恢复默认宽度"
+
+msgid "Open navigation"
+msgstr "打开导航"
+
+msgid "Toggle sidebar"
+msgstr "切换侧边栏"
+
+msgid "Toggle sidebar (Ctrl+\\)"
+msgstr "切换侧边栏 (Ctrl+\\)"
+
+msgid "Breadcrumb"
+msgstr "面包屑导航"
+
+msgid "Search"
+msgstr "搜索"
+
+msgid "Search pages and actions"
+msgstr "搜索页面和操作"
+
+msgid "Search pages and actions (Ctrl+K)"
+msgstr "搜索页面和操作 (Ctrl+K)"
+
+msgid "Search pages and actions…"
+msgstr "搜索页面和操作…"
+
+msgid "Search (Ctrl+K)"
+msgstr "搜索 (Ctrl+K)"
+
+msgid "Search or jump to…"
+msgstr "搜索或跳转到…"
+
+msgid "Color theme"
+msgstr "颜色主题"
+
+msgid "Light theme"
+msgstr "浅色主题"
+
+msgid "Dark theme"
+msgstr "深色主题"
+
+msgid "Match system theme"
+msgstr "跟随系统主题"
+
+msgid "Match system theme (system appearance is light)"
+msgstr "跟随系统主题（系统当前为浅色）"
+
+msgid "Match system theme (system appearance is dark)"
+msgstr "跟随系统主题（系统当前为深色）"
+
+msgid "Use light theme"
+msgstr "使用浅色主题"
+
+msgid "Use dark theme"
+msgstr "使用深色主题"
+
+msgid "Appearance"
+msgstr "外观"
+
+msgid "Preferences"
+msgstr "偏好设置"
+
+msgid "Command palette"
+msgstr "命令面板"
+
+msgid "Results"
+msgstr "结果"
+
+msgid "No matching pages or actions"
+msgstr "没有匹配的页面或操作"
+
+msgid "navigate"
+msgstr "选择"
+
+msgid "open"
+msgstr "打开"
+
+msgid "new tab"
+msgstr "新标签页"
+
+msgid "close"
+msgstr "关闭"
+
+msgid "Loading"
+msgstr "加载中"
+
+msgid "Loading…"
+msgstr "加载中…"
+
+msgid "Request failed"
+msgstr "请求失败"
+
+msgid "Network error"
+msgstr "网络错误"
+
+msgid "Dismiss"
+msgstr "关闭"
+
+msgid "Request could be blocked by WAF due to long execution time. Retry."
+msgstr "请求可能因执行时间过长被 WAF 拦截。请重试。"
+
+msgid "Service status"
+msgstr "服务状态"
+
+msgid "No active job"
+msgstr "无运行中的任务"
+
+msgid "Dashboard UI"
+msgstr "仪表板界面"
+
+msgctxt "service state"
+msgid "connected"
+msgstr "已连接"
+
+msgctxt "service state"
+msgid "available"
+msgstr "可用"
+
+msgctxt "service state"
+msgid "ready"
+msgstr "就绪"
+
+msgctxt "service state"
+msgid "configured"
+msgstr "已配置"
+
+msgctxt "service state"
+msgid "starting"
+msgstr "启动中"
+
+msgctxt "service state"
+msgid "degraded"
+msgstr "降级"
+
+msgctxt "service state"
+msgid "auth required"
+msgstr "需要认证"
+
+msgctxt "service state"
+msgid "unavailable"
+msgstr "不可用"
+
+msgctxt "service state"
+msgid "unreachable"
+msgstr "无法访问"
+
+msgctxt "service state"
+msgid "disconnected"
+msgstr "已断开"
+
+msgctxt "service state"
+msgid "disabled"
+msgstr "已禁用"
+
+msgctxt "service state"
+msgid "stopped"
+msgstr "已停止"
+
+msgctxt "service state"
+msgid "aborted"
+msgstr "已中止"
+
+msgctxt "service state"
+msgid "unknown"
+msgstr "未知"
+
+msgid "If this shell stops responding, restart %(command)s on the Dashboard port."
+msgstr "如果此界面停止响应，请在仪表板端口上重启 %(command)s。"
+
+msgid "METRICS_AI_GRAFANA_BASE_URL is empty."
+msgstr "METRICS_AI_GRAFANA_BASE_URL 为空。"
+
+msgid "Set METRICS_AI_GRAFANA_BASE_URL and start the Grafana service before using the panel preview."
+msgstr "使用面板预览前，请设置 METRICS_AI_GRAFANA_BASE_URL 并启动 Grafana 服务。"
+
+msgid "If the panel is blank, check that Grafana is listening on port %(port)s."
+msgstr "如果面板为空白，请检查 Grafana 是否在端口 %(port)s 上监听。"
+
+msgid "If the panel is blank, check the configured Grafana URL and service health."
+msgstr "如果面板为空白，请检查已配置的 Grafana URL 和服务健康状况。"
+
+msgid "Use the AI pane with the bounded workbench context."
+msgstr "在 AI 面板中使用限定的工作台上下文。"
+
+msgid "Restart the unified stack with: %(command)s"
+msgstr "使用以下命令重启统一服务栈：%(command)s"
+
+msgid "Start or restart AI Base with: %(command)s"
+msgstr "使用以下命令启动或重启 AI Base：%(command)s"
+
+msgid "Metrics workspace"
+msgstr "Metrics 工作区"
+
+msgid "Delivery, velocity and quality at a glance"
+msgstr "交付、速率与质量一览"
+
+msgid "Pick a workflow below, or press Ctrl K to jump to any page or action."
+msgstr "从下方选择一个工作流，或按 Ctrl K 跳转到任意页面或操作。"
+
+msgid "Open Workbench"
+msgstr "打开工作台"
+
+msgid "Error 404"
+msgstr "错误 404"
+
+msgid "Page not found"
+msgstr "页面不存在"
+
+msgid "This page does not exist or has moved. Check the address, or start again from the home page."
+msgstr "此页面不存在或已移动。请检查地址，或从首页重新开始。"
+
+msgid "Requested"
+msgstr "请求的地址"
+
+msgid "Go to home"
+msgstr "返回首页"
+
+msgid "Go back"
+msgstr "返回上一页"
+
+msgid "Error 500"
+msgstr "错误 500"
+
+msgid "Something went wrong"
+msgstr "出错了"
+
+msgid "The server hit an unexpected error while loading this page. Try again in a moment; if it keeps failing, send the time below to the dashboard maintainers."
+msgstr "服务器在加载此页面时遇到意外错误。请稍后重试；如果仍然失败，请将下方时间发送给仪表板维护人员。"
+
+msgid "Time"
+msgstr "时间"
+
+msgid "Try again"
+msgstr "重试"
+
+msgid "Workbench selection"
+msgstr "工作台选择"
+
+msgid "This chart selection opened outside the Workbench."
+msgstr "此图表选择是在工作台之外打开的。"
+
+msgid "Open in Workbench"
+msgstr "在工作台中打开"
+
+msgid "Updating workbench evidence selection…"
+msgstr "正在更新工作台证据选择…"
+
+msgid "Project pages"
+msgstr "项目分页"
+
+msgid "Archive project"
+msgstr "归档项目"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "No report templates yet."
+msgstr "还没有报告模板。"
+
+msgid "Template settings"
+msgstr "模板设置"
+
+msgid "Daily note instructions"
+msgstr "每日备注说明"
+
+msgid "Applies to continuity meeting-matrix daily notes."
+msgstr "适用于连续会议矩阵的每日备注。"
+
+msgid "Blocks"
+msgstr "内容块"
+
+msgid "Archive template"
+msgstr "归档模板"
+
+msgid "Optional columns"
+msgstr "可选列"
+
+msgid "Matrix groups"
+msgstr "矩阵分组"
+
+msgid "No manual groups"
+msgstr "无手动分组"
+
+msgid "Manual groups"
+msgstr "手动分组"
+
+msgid "Add group"
+msgstr "添加分组"
+
+msgid "Remove group"
+msgstr "移除分组"
+
+msgid "Group"
+msgstr "分组"
+
+msgid "Group label"
+msgstr "分组标签"
+
+msgid "This fixed content is read-only in reports."
+msgstr "此固定内容在报告中为只读。"
+
+msgid "Continuity daily starter"
+msgstr "连续每日起始模板"
+
+msgid "Continuity weekly starter"
+msgstr "连续每周起始模板"
+
+msgid "Copy continuity daily starter"
+msgstr "复制连续每日起始模板"
+
+msgid "Copy continuity weekly starter"
+msgstr "复制连续每周起始模板"
+
+msgid "Untitled template"
+msgstr "未命名模板"
+
+msgid "%(name)s r%(revision)s (%(hash)s)"
+msgstr "%(name)s r%(revision)s (%(hash)s)"
+
+msgid "Meeting matrix"
+msgstr "会议矩阵"
+
+msgid "Changes"
+msgstr "变更"
+
+msgid "%(count)s source changes"
+msgstr "%(count)s 项来源变更"
+
+msgid "%(count)s issue rows"
+msgstr "%(count)s 行问题"
+
+msgid "%(accepted)s accepted, %(pending)s pending"
+msgstr "已接受 %(accepted)s，待处理 %(pending)s"
+
+msgid "%(count)s timeline days"
+msgstr "时间线 %(count)s 天"
+
+msgid "%(count)s key messages"
+msgstr "%(count)s 条关键信息"
+
+msgid "Action %(number)s"
+msgstr "行动项 %(number)s"
+
+msgid "Key message: %(message)s"
+msgstr "关键信息：%(message)s"
+
+msgid "Issue %(key)s"
+msgstr "问题 %(key)s"
+
+msgid "%(key)s %(field)s"
+msgstr "%(key)s %(field)s"
+
+msgid "%(key)s action: %(action)s"
+msgstr "%(key)s 行动项：%(action)s"
+
+msgid "%(key)s action %(field)s"
+msgstr "%(key)s 行动项 %(field)s"
+
+msgid "ISO 8601 week"
+msgstr "ISO 8601 周"
+
+msgid "Matrix template"
+msgstr "矩阵模板"
+
+msgid "Calendar is not available."
+msgstr "日历不可用。"
+
+msgid "Period"
+msgstr "周期"
+
+msgid "Weekly matrix template"
+msgstr "每周矩阵模板"
+
+msgid "Select period"
+msgstr "选择周期"
+
+msgid "Persistent note"
+msgstr "常驻备注"
+
+msgid "Carry forward"
+msgstr "顺延"
+
+msgid "Keep as human link"
+msgstr "保留为人工链接"
+
+msgid "Checking reference…"
+msgstr "正在查询引用…"
+
+msgid "Converted unsupported HTML to plain report content."
+msgstr "已将不支持的 HTML 转换为普通报告内容。"
+
+msgid "Converted unsupported heading level to paragraph."
+msgstr "已将不支持的标题级别转换为段落。"
+
+msgctxt "report state"
+msgid "Finalized"
+msgstr "已定稿"
+
+msgid "Finalizing"
+msgstr "定稿中"
+
+msgid "Source complete"
+msgstr "来源采集完整"
+
+msgid "Finalization"
+msgstr "定稿"
+
+msgid "Block style"
+msgstr "块样式"
+
+msgid "Text style"
+msgstr "文本样式"
+
+msgid "Text"
+msgstr "正文"
+
+msgid "Lists"
+msgstr "列表"
+
+msgid "Code block"
+msgstr "代码块"
+
+msgid "Code block language"
+msgstr "代码块语言"
+
+msgid "Color"
+msgstr "颜色"
+
+msgid "Clear"
+msgstr "清除"
+
+msgid "History"
+msgstr "历史"
+
+msgid "Add persistent"
+msgstr "添加常驻备注"
+
+msgid "Issue"
+msgstr "问题"
+
+msgid "Mark done"
+msgstr "标记完成"
+
+msgid "Resolution"
+msgstr "处理结果"
+
+msgid "Only current-day note slots are editable."
+msgstr "仅当天的备注填写槽可编辑。"
+
+msgid "Weekly period"
+msgstr "每周周期"
+
+msgid "Selected publications"
+msgstr "选定的发布版本"
+
+msgid "This period view is read only and uses the explicitly selected publications."
+msgstr "此周期视图为只读，仅使用明确选定的发布版本。"
+
+msgid "Manifest"
+msgstr "清单"
+
+msgid "New revision"
+msgstr "新修订"
+
+msgid "Create linked correction"
+msgstr "创建关联更正"
+
+msgid "Policy"
+msgstr "策略"
+
+msgid "Current source capture available."
+msgstr "当前来源捕获可用。"
+
+msgid "Only partial source capture is available."
+msgstr "仅有部分来源捕获可用。"
+
+msgid "Publication %(id)s"
+msgstr "发布版本 %(id)s"
+
+msgid "Fill all required template slots before finalizing."
+msgstr "定稿前请填写所有必填的模板填写槽。"
+
+msgid "Scope Audit"
+msgstr "范围审计"
+
+msgid "Scope Config"
+msgstr "范围配置"
+
+msgid "Profile Config"
+msgstr "档案配置"

@@ -1,3 +1,4 @@
-<div class="is-flex is-justify-content-center p-4">
-    <span class="loader is-size-3"></span>
+{% load i18n %}<div class="loader-block" role="status">
+    <span class="loader" aria-hidden="true"></span>
+    <span class="is-sr-only">{% trans "Loading…" %}</span>
 </div>

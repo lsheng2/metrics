@@ -24,7 +24,7 @@ from .views.ai_dashboard_publish_view import (
     AiDashboardPublishHistoryApiView,
     AiDashboardPublishDemoApiView,
 )
-from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
+from .views.dev_velocity_view import DevVelocityView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
 from .views.bug_trend_scope_views import BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView
@@ -85,7 +85,7 @@ from .views.project_run_views import (
     ProjectRunSubmitView,
 )
 from .views.task_forecast_view import TaskForecastView
-from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
+from .views.team_velocity_view import TeamVelocityView, TeamVelocityTasksView
 from .views.workbench_view import WorkbenchGrafanaSelectionView, WorkbenchView
 
 app_name = 'ui_web'
@@ -213,11 +213,7 @@ urlpatterns = [
          name='partials_task_children'),
     path(_base_prefix + 'partials/tasks/<str:task_id>/pr-gateway/', TaskPullRequestGatewayView.as_view(),
          name='partials_task_pr_gateway'),
-    path(_base_prefix + 'partials/dev-velocity/chart/', DevVelocityChartView.as_view(), name='dev_velocity_chart'),
-    path(_base_prefix + 'partials/dev-velocity/sp-chart/', DevStoryPointsChartView.as_view(), name='dev_sp_chart'),
     path(_base_prefix + 'partials/dev-velocity/tasks/', DevVelocityTasksView.as_view(), name='dev_velocity_tasks'),
-    path(_base_prefix + 'partials/team-velocity/chart/', TeamVelocityChartView.as_view(), name='team_velocity_chart'),
-    path(_base_prefix + 'partials/team-velocity/sp-chart/', TeamStoryPointsChartView.as_view(), name='team_sp_chart'),
     path(_base_prefix + 'partials/team-velocity/tasks/', TeamVelocityTasksView.as_view(), name='team_velocity_tasks'),
     path(_base_prefix + 'partials/bug-trend/evidence/', BugTrendEvidenceView.as_view(), name='bug_trend_evidence'),
      path(_base_prefix + 'partials/bug-trend/scope-metadata/', BugTrendScopeMetadataView.as_view(), name='bug_trend_scope_metadata'),

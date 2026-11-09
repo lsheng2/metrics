@@ -1,18 +1,24 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n dashboard_format %}
 
 {% block title %}{{ draft.snapshot.project_name }} - {% trans "Draft report" %}{% endblock %}
 {% block page_title %}{% trans "Draft report" %}{% endblock %}
-
-{% block content %}
+{% block breadcrumbs %}<a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a>{% endblock %}
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/report_editor.css' %}">
 <link rel="stylesheet" href="{% static 'css/report_assist.css' %}">
 <link rel="stylesheet" href="{% static 'css/report_exports.css' %}">
-<article class="block" data-report-editor data-draft-id="{{ draft.draft_id }}" data-revision="{{ draft.revision }}" data-revision-hash="{{ draft.revision_hash }}" data-snapshot-hash="{{ draft.snapshot_hash }}" data-template-hash="{{ draft.template_definition.template_hash }}" data-clipboard-url="{{ clipboard_url }}" data-completion-url="{{ completion_url }}"
+{% endblock %}
+
+{% block content %}
+<article class="block project-reports" data-report-editor data-draft-id="{{ draft.draft_id }}" data-revision="{{ draft.revision }}" data-revision-hash="{{ draft.revision_hash }}" data-snapshot-hash="{{ draft.snapshot_hash }}" data-template-hash="{{ draft.template_definition.template_hash }}" data-clipboard-url="{{ clipboard_url }}" data-completion-url="{{ completion_url }}"
          data-assist-url="{% url 'ui_web:report_assists' detail.project.id stage.id draft.draft_id %}"
          data-recovery-url="{% url 'ui_web:report_recovery' detail.project.id stage.id draft.draft_id %}"
          data-message-ar-owner="{% trans "AR owner" %}" data-message-ar-body="{% trans "AR" %}"
          data-message-remove-ar="{% trans "Remove unsaved AR" %}"
+         data-message-persistent-note="{% trans "Persistent note" %}"
+         data-message-carry-forward="{% trans "Carry forward" %}"
+         data-message-keep-human-link="{% trans "Keep as human link" %}"
          data-message-payload-missing="{% trans "Clipboard payload is not available." %}"
          data-message-download-fallback="{% trans "Copy payload could not be loaded. Download HTML is still available." %}"
          data-message-ready="{% trans "Saved revision is ready to copy." %}"
@@ -42,47 +48,35 @@
          data-disabled-owner="{% trans "Owner unavailable" %}"
          data-disabled-title="{% trans "Title unavailable" %}"
          data-disabled-unavailable="{% trans "Unavailable" %}">
-    <nav class="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
-            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
-            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
-            <li class="is-active"><a href="#" aria-current="page">{% trans "Draft" %} {{ draft.revision }}</a></li>
-        </ul>
-    </nav>
-
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-4">{{ draft.snapshot.project_name }} · {{ draft.snapshot.stage_name }}</h2>
-                <p class="subtitle is-6">
-                    {% trans "Revision" %} {{ draft.revision }} <code>{{ draft.revision_hash }}</code><br>
-                    {% trans "Source cutoff" %}: {{ draft.snapshot.source_as_of }} · {% trans "Capture" %}: <code>{{ draft.snapshot.capture_id }}</code>
-                </p>
-            </div>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">{{ draft.snapshot.project_name }} · {{ draft.snapshot.stage_name }}</h2>
+            <p class="page-header__meta project-reports-meta">
+                {% if draft.state == "finalized" %}<span class="tag is-success">{% trans "Finalized" context "report state" %}</span>{% elif draft.state == "finalizing" %}<span class="tag is-warning">{% trans "Finalizing" %}</span>{% else %}<span class="tag is-info">{% trans "Draft" %}</span>{% endif %}
+                <span>{% trans "Revision" %} {{ draft.revision }} <code title="{{ draft.revision_hash }}">{{ draft.revision_hash|slice:":12" }}</code></span>
+                <span>{% trans "Source cutoff" %} {{ draft.snapshot.source_as_of|timestamp }}</span>
+            </p>
         </div>
-        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
-    </div>
+        <div class="page-header__actions">{% include "projects/language_switcher.html" %}</div>
+    </header>
 
     {% if draft.state == "finalized" %}
-        <div class="notification is-info is-light">{% trans "This edition is finalized. Create a revision from the publication page before editing." %}</div>
+        <div class="message is-info" role="status"><div class="message-body">{% trans "This edition is finalized. Create a revision from the publication page before editing." %}</div></div>
     {% endif %}
     {% if required_slot_error %}
-        <div class="notification is-danger is-light" data-required-slot-error role="alert">{{ required_slot_error }}</div>
+        <div class="message is-danger" data-required-slot-error role="alert"><div class="message-body">{{ required_slot_error }}</div></div>
     {% endif %}
-    <div class="notification is-warning is-light is-hidden" data-report-dirty-banner role="status">{% trans "Unsaved edits disable copy and finalization." %}</div>
-    <div class="notification is-light" data-report-copy-status role="status">{% trans "Copy waits for the saved revision payload." %}</div>
-    {% include "projects/reports/recovery.html" %}
-    {% if report_body.readiness %}
-    <div class="mb-3" data-report-readiness>
-        {% trans "Source" %}: {{ report_body.readiness.source_complete }} {% trans "complete" %},
-        {{ report_body.readiness.source_incomplete }} {% trans "incomplete" %},
-        {{ report_body.readiness.source_unavailable }} {% trans "unavailable" %} ·
-        {% trans "AI summaries" %}: {{ report_body.readiness.summaries_available }}/{{ report_body.readiness.tickets }} ·
-        {% trans "Notes" %}: {{ report_body.readiness.notes_present }}/{{ report_body.readiness.tickets }} ·
-        {% trans "Meeting review" %}: {{ report_body.readiness.reviewed }}/{{ report_body.readiness.tickets }}
+    {% if report_body.readiness %}{% with readiness=report_body.readiness %}
+    <div class="stat-grid is-compact" role="group" aria-label="{% trans "Readiness" %}" data-report-readiness>
+        <div class="stat"><span class="stat__label">{% trans "Source complete" %}</span><span class="stat__value">{{ readiness.source_complete }}<span class="stat__unit">/ {{ readiness.tickets }}</span></span></div>
+        <div class="stat{% if readiness.source_incomplete %} is-warning{% endif %}"><span class="stat__label">{% trans "Source incomplete" %}</span><span class="stat__value">{{ readiness.source_incomplete }}</span></div>
+        <div class="stat{% if readiness.source_unavailable %} is-danger{% endif %}"><span class="stat__label">{% trans "Source unavailable" %}</span><span class="stat__value">{{ readiness.source_unavailable }}</span></div>
+        <div class="stat"><span class="stat__label">{% trans "AI summaries" %}</span><span class="stat__value">{{ readiness.summaries_available }}<span class="stat__unit">/ {{ readiness.tickets }}</span></span></div>
+        <div class="stat"><span class="stat__label">{% trans "Notes" %}</span><span class="stat__value">{{ readiness.notes_present }}<span class="stat__unit">/ {{ readiness.tickets }}</span></span></div>
+        <div class="stat"><span class="stat__label">{% trans "Meeting review" %}</span><span class="stat__value">{{ readiness.reviewed }}<span class="stat__unit">/ {{ readiness.tickets }}</span></span></div>
     </div>
-    {% endif %}
+    {% endwith %}{% endif %}
+    {% include "projects/reports/recovery.html" %}
 
     {% if draft.state == "draft" %}
     <form method="post" action="{% url 'ui_web:report_draft_save' detail.project.id stage.id draft.draft_id %}" class="dashboard-edit-form report-authoring-form" data-report-save-form data-report-authored-form>
@@ -94,191 +88,125 @@
         {{ authored_save_form.authored_edits }}
         <input type="hidden" name="continuity_changes" value="[]">
 
-        <div class="buttons has-addons">
-            <button class="button is-primary" type="submit" data-report-save-button{% if draft.state != "draft" %} disabled aria-disabled="true"{% endif %}>
-                <span class="icon is-small"><i class="iconoir-check"></i></span>
-                <span>{% trans "Save" %}</span>
-            </button>
-            <button class="button" type="button" data-report-copy-button disabled aria-disabled="true">
-                <span class="icon is-small"><i class="iconoir-list"></i></span>
-                <span>{% trans "Copy formatted report" %}</span>
-            </button>
-            <a class="button" href="{{ download_url }}">
-                <span class="icon is-small"><i class="iconoir-download"></i></span>
-                <span>{% trans "Download HTML" %}</span>
-            </a>
-            <button class="button" type="button" data-report-assist-open title="{% trans "AI assist" %}">
-                <span class="icon is-small" aria-hidden="true"><i class="iconoir-refresh-double"></i></span>
-                <span>{% trans "AI assist" %}</span>
-            </button>
+        <div class="report-command-bar">
+            <div class="dashboard-action-group">
+                <button class="button is-primary is-small" type="submit" data-report-save-button>
+                    <span class="icon is-small" aria-hidden="true"><i class="iconoir-check"></i></span>
+                    <span>{% trans "Save" %}</span>
+                </button>
+                <button class="button is-small" type="button" data-report-copy-button disabled aria-disabled="true">
+                    <span class="icon is-small" aria-hidden="true"><i class="iconoir-copy"></i></span>
+                    <span>{% trans "Copy formatted report" %}</span>
+                </button>
+                <a class="button is-small" href="{{ download_url }}">
+                    <span class="icon is-small" aria-hidden="true"><i class="iconoir-download"></i></span>
+                    <span>{% trans "Download HTML" %}</span>
+                </a>
+                <button class="button is-small" type="button" data-report-assist-open>
+                    <span class="icon is-small" aria-hidden="true"><i class="iconoir-sparks"></i></span>
+                    <span>{% trans "AI assist" %}</span>
+                </button>
+            </div>
+            {% url 'ui_web:report_draft_export' detail.project.id stage.id draft.draft_id as export_url %}
+            {% include "projects/reports/export_controls.html" with export_url=export_url export_revision=draft.revision %}
+            <p class="status-line is-warning is-hidden" data-report-dirty-banner role="status">{% trans "Unsaved edits disable copy and finalization." %}</p>
+            <p class="status-line" data-report-copy-status role="status">{% trans "Copy waits for the saved revision payload." %}</p>
         </div>
 
         {% include "projects/reports/editor_toolbar.html" %}
-        {% url 'ui_web:report_draft_export' detail.project.id stage.id draft.draft_id as export_url %}
-        {% include "projects/reports/export_controls.html" with export_url=export_url export_revision=draft.revision %}
 
-        <section class="block report-body-editor">
+        <section class="report-body-editor">
             {% if report_body.pinned %}
                 {% include "projects/reports/pinned_blocks.html" %}
             {% else %}
-            <div class="report-section-band">
-                <h3 class="title is-5">{% trans "Key messages" %}</h3>
-                <div class="report-message-grid">
-                    {% for message in report_body.messages %}
-                        <article class="report-message-row">
-                            <div class="report-source-cell">
-                                <strong>{{ message.message_id }}</strong>
-                                <p class="help">{{ message.source_refs|join:", " }}</p>
-                            </div>
-                            {% with region=message.text_region label="Key message" %}
-                                {% include "projects/reports/editor_region.html" %}
-                            {% endwith %}
-                        </article>
-                    {% endfor %}
-                </div>
-                <div class="report-note-strip">
-                    <h4 class="title is-6">{% trans "Meeting note" %}</h4>
-                    {% for region in report_body.report_notes %}
-                        {% with label="Meeting note" %}
-                            {% include "projects/reports/editor_region.html" %}
-                        {% endwith %}
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="report-section-band">
-                <h3 class="title is-5">{% trans "Issue register" %}</h3>
-                {% for row in report_body.rows %}
-                    <article class="report-row-editor">
-                        <header class="report-row-header">
-                            <div>
-                                <strong>{{ row.key }}</strong>
-                                <p>{{ row.title }}</p>
-                            </div>
-                            <dl>
-                                <div><dt>{% trans "Status" %}</dt><dd>{{ row.status }}</dd></div>
-                                <div><dt>{% trans "Assignee" %}</dt><dd>{{ row.assignee|default:"-" }}</dd></div>
-                            </dl>
-                        </header>
-                        <div class="report-row-grid">
-                            <div>
-                                <h4 class="title is-6">{% trans "Summary" %}</h4>
-                                {% with region=row.what_region label="Summary" %}
-                                    {% include "projects/reports/editor_region.html" %}
-                                {% endwith %}
-                            </div>
-                            <div>
-                                <h4 class="title is-6">{% trans "Current" %}</h4>
-                                {% with region=row.position_region label="Current" %}
-                                    {% include "projects/reports/editor_region.html" %}
-                                {% endwith %}
-                            </div>
-                            <div>
-                                <h4 class="title is-6">{% trans "Verification" %}</h4>
-                                {% with region=row.verification_region label="Verification" %}
-                                    {% include "projects/reports/editor_region.html" %}
-                                {% endwith %}
-                            </div>
-                        </div>
-                        <div class="report-note-strip">
-                            <h4 class="title is-6">{% trans "Meeting note" %}</h4>
-                            {% for region in row.note_regions %}
-                                {% with label="Meeting note" %}
-                                    {% include "projects/reports/editor_region.html" %}
-                                {% endwith %}
-                            {% endfor %}
-                        </div>
-                        {% for action in row.actions %}
-                            <div class="report-action-row">
-                                <div class="report-source-cell">
-                                    <strong>{{ action.label }}</strong>
-                                </div>
-                                <div class="report-row-grid">
-                                    <div>
-                                        <h4 class="title is-6">{% trans "Action" %}</h4>
-                                        {% with region=action.action_region label="Action" %}
-                                            {% include "projects/reports/editor_region.html" %}
-                                        {% endwith %}
-                                    </div>
-                                    <div>
-                                        <h4 class="title is-6">{% trans "Owner" %}</h4>
-                                        {% with region=action.owner_region label="Owner" %}
-                                            {% include "projects/reports/editor_region.html" %}
-                                        {% endwith %}
-                                    </div>
-                                </div>
-                                {% for region in action.note_regions %}
-                                    {% with label="Meeting note" %}
-                                        {% include "projects/reports/editor_region.html" %}
-                                    {% endwith %}
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                    </article>
-                {% endfor %}
-            </div>
+                {% include "projects/reports/register_blocks.html" %}
             {% endif %}
         </section>
     </form>
     {% include "projects/reports/assist.html" %}
-    {% endif %}
-
-    {% if draft.state == "draft" %}
-    <form method="post" action="{% url 'ui_web:report_draft_finalize' detail.project.id stage.id draft.draft_id %}" class="dashboard-action-form mt-4" data-report-finalize-form>
-        {% csrf_token %}
-        {{ finalize_form.command_id }}
-        {{ finalize_form.expected_revision }}
-        <label class="checkbox">
-            <input type="checkbox" name="{{ finalize_form.confirm.html_name }}" required data-report-finalize-confirm>
-            {% trans "Finalize this exact saved revision" %} <span data-report-finalize-revision>{{ draft.revision }}</span> <code data-report-finalize-revision-hash>{{ draft.revision_hash|slice:":12" }}</code>
-        </label>
-        <button class="button is-warning is-light" type="submit" data-report-finalize-button{% if draft.state != "draft" %} data-server-disabled="true" disabled aria-disabled="true"{% endif %}>
-            <span class="icon is-small"><i class="iconoir-archive"></i></span>
-            <span>{% trans "Finalize and commit" %}</span>
-        </button>
-    </form>
+    <section class="card" aria-labelledby="report-finalize-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="report-finalize-title">{% trans "Finalization" %}</h3>
+        </header>
+        <div class="card-content">
+            <form method="post" action="{% url 'ui_web:report_draft_finalize' detail.project.id stage.id draft.draft_id %}" class="dashboard-action-form" data-report-finalize-form>
+                {% csrf_token %}
+                {{ finalize_form.command_id }}
+                {{ finalize_form.expected_revision }}
+                <label class="checkbox">
+                    <input type="checkbox" name="{{ finalize_form.confirm.html_name }}" required data-report-finalize-confirm>
+                    {% trans "Finalize this exact saved revision" %} <span data-report-finalize-revision>{{ draft.revision }}</span> <code data-report-finalize-revision-hash>{{ draft.revision_hash|slice:":12" }}</code>
+                </label>
+                <div class="dashboard-action-group">
+                    <button class="button is-warning" type="submit" data-report-finalize-button>
+                        <span class="icon is-small" aria-hidden="true"><i class="iconoir-archive"></i></span>
+                        <span>{% trans "Finalize and commit" %}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
     {% endif %}
 
     {% if resume_form %}
-        <form method="post" action="{% url 'ui_web:report_draft_resume' detail.project.id stage.id draft.draft_id %}" class="dashboard-action-form mt-4">
-            {% csrf_token %}
-            {{ resume_form.command_id }}
-            <button class="button is-warning" type="submit">
-                <span class="icon is-small"><i class="iconoir-refresh-double"></i></span>
-                <span>{% trans "Resume finalization" %}</span>
-            </button>
-            <p class="help">{% trans "Uses the original retained finalization command." %}</p>
-        </form>
+    <section class="card" aria-labelledby="report-resume-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="report-resume-title">{% trans "Resume finalization" %}</h3>
+        </header>
+        <div class="card-content">
+            <form method="post" action="{% url 'ui_web:report_draft_resume' detail.project.id stage.id draft.draft_id %}" class="dashboard-action-form">
+                {% csrf_token %}
+                {{ resume_form.command_id }}
+                <p class="help">{% trans "Uses the original retained finalization command." %}</p>
+                <div class="dashboard-action-group">
+                    <button class="button is-warning" type="submit">
+                        <span class="icon is-small" aria-hidden="true"><i class="iconoir-refresh-double"></i></span>
+                        <span>{% trans "Resume finalization" %}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
     {% endif %}
 
-    <section class="block mt-5">
-        <h3 class="title is-5">{% trans "Source state" %}</h3>
-        <p>
-            {% if report_body.readiness %}
-            {% trans "Source" %}: {{ report_body.readiness.source_complete }} {% trans "complete" %},
-            {{ report_body.readiness.source_incomplete }} {% trans "incomplete" %},
-            {{ report_body.readiness.source_unavailable }} {% trans "unavailable" %} ·
-            {% trans "AI summaries" %}: {{ report_body.readiness.summaries_available }}/{{ report_body.readiness.tickets }}
-            {% else %}
-            {% trans "Coverage" %}: {% if draft.snapshot.coverage.complete %}{% trans "complete" %}{% else %}{% trans "partial" %}{% endif %} ·
-            {% trans "Accepted" %}: {{ draft.snapshot.coverage.accepted_count }} ·
-            {% trans "Pending" %}: {{ draft.snapshot.coverage.pending_count }}
-            {% endif %}
-        </p>
-    </section>
+    <div class="project-reports-grid">
+        <section class="card" aria-labelledby="report-source-state-title">
+            <header class="card-header">
+                <h3 class="card-header-title" id="report-source-state-title">{% trans "Source state" %}</h3>
+            </header>
+            <div class="card-content">
+                <dl class="description-list">
+                    <dt>{% trans "Capture" %}</dt><dd><code>{{ draft.snapshot.capture_id }}</code></dd>
+                    {% if draft.snapshot.coverage %}
+                    <dt>{% trans "Coverage" %}</dt><dd>{% if draft.snapshot.coverage.complete %}<span class="tag is-success">{% trans "complete" %}</span>{% else %}<span class="tag is-warning">{% trans "partial" %}</span>{% endif %}</dd>
+                    <dt>{% trans "Accepted" %}</dt><dd>{{ draft.snapshot.coverage.accepted_count|default:0 }}</dd>
+                    <dt>{% trans "Pending" %}</dt><dd>{{ draft.snapshot.coverage.pending_count|default:0 }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="report-publication-target-title">
+            <header class="card-header">
+                <h3 class="card-header-title" id="report-publication-target-title">{% trans "Publication target" %}</h3>
+            </header>
+            <div class="card-content">
+                <dl class="description-list">
+                    <dt>{% trans "Registered archive" %}</dt><dd><code>{{ publication_target.archive_id }}</code></dd>
+                    <dt>{% trans "Project" %}</dt><dd>{{ detail.project.name }} <code>{{ publication_target.project_id }}</code></dd>
+                    <dt>{% trans "Stage" %}</dt><dd>{{ stage.name }} <code>{{ publication_target.stage_id }}</code></dd>
+                </dl>
+            </div>
+        </section>
+    </div>
 
-    <section class="block">
-        <h3 class="title is-5">{% trans "Publication target" %}</h3>
-        <p>
-            {% trans "Registered archive" %}: <code>{{ publication_target.archive_id }}</code><br>
-            {% trans "Project" %}: {{ detail.project.name }} <code>{{ publication_target.project_id }}</code><br>
-            {% trans "Stage" %}: {{ stage.name }} <code>{{ publication_target.stage_id }}</code>
-        </p>
-    </section>
-
-    <details class="block report-export-preview">
-        <summary class="has-text-weight-semibold">{% trans "Saved report preview" %}</summary>
-        <iframe title="{% trans "Saved report preview" %}" src="{{ render_url }}" sandbox style="width:100%; min-height:520px; border:1px solid #d9dee8; background:#fff;"></iframe>
+    <details class="disclosure report-export-preview">
+        <summary class="disclosure__summary">
+            <i class="disclosure__chevron iconoir-nav-arrow-right" aria-hidden="true"></i>
+            <span class="disclosure__title">{% trans "Saved report preview" %}</span>
+        </summary>
+        <div class="disclosure__body">
+            <iframe class="report-export-frame" title="{% trans "Saved report preview" %}" src="{{ render_url }}" sandbox></iframe>
+        </div>
     </details>
 </article>
 {% endblock %}

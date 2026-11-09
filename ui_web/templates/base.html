@@ -1,222 +1,216 @@
-{% load static i18n %}
+{% load static i18n dashboard_assets %}
 {% get_current_language as CURRENT_LANGUAGE %}
 <!doctype html>
-<html lang="{% if CURRENT_LANGUAGE|slice:':2' == 'en' %}en{% else %}{{ CURRENT_LANGUAGE }}{% endif %}" data-theme="dark" class="has-navbar-fixed-top {% block html_class %}{% endblock %}">
+<html lang="{% if CURRENT_LANGUAGE|slice:':2' == 'en' %}en{% else %}{{ CURRENT_LANGUAGE }}{% endif %}" data-theme="light" class="{% block html_class %}{% endblock %}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="{% static 'css/vendor_fallbacks.css' %}">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
-    <script src="{% static 'js/vendor_fallbacks.js' %}"></script>
-    <script src="{% static 'js/main.js' %}"></script>
-    <title>{% block title %}Metrics Dashboard{% endblock %}</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="htmx-config" content='{"historyCacheSize":0,"refreshOnHistoryMiss":true,"includeIndicatorStyles":false}'>
+    {% include "partials/theme_bootstrap.html" %}
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var collapsed = false;
+            var sidebarWidth = 0;
+            try {
+                collapsed = window.localStorage.getItem('metricsDashboard.sidebarCollapsed') === 'true';
+                sidebarWidth = parseInt(window.localStorage.getItem('metricsDashboard.sidebarWidth'), 10) || 0;
+            } catch (error) {
+                collapsed = false;
+            }
+            if (collapsed) {
+                root.setAttribute('data-sidebar', 'collapsed');
+            }
+            if (sidebarWidth >= 168 && sidebarWidth <= 360) {
+                root.style.setProperty('--dashboard-sidebar-width', sidebarWidth + 'px');
+            }
+        })();
+    </script>
+    <title>{% block title %}{% if dashboard_nav_active %}{{ dashboard_nav_active.link.item.label }}{% else %}Metrics{% endif %}{% endblock %} · Metrics</title>
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    <link rel="preload" href="{% static 'vendor/fonts/mona-sans-latin-wdth-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+    {% dashboard_stylesheets %}
+    {% block extra_css %}{% endblock %}
+    {% dashboard_scripts %}
 </head>
-<body class="is-flex is-flex-direction-column is-fullheight {% block body_class %}{% endblock %}">
-    <header>
-        <nav class="navbar is-fixed-top">
-            <div class="navbar-brand">
-                <div class="navbar-item">
-                    <h1 class="title">{% block page_title %}Metrics Dashboard{% endblock %}</h1>
-                    {% block header_extra %}{% endblock %}
+<body class="app-body {% block body_class %}{% endblock %}">
+    <a class="skip-link" href="#app-content">{% trans "Skip to content" %}</a>
+    <div class="app-shell" data-dashboard-layout>
+        <aside class="app-sidebar" id="app-sidebar" data-dashboard-sidebar aria-label="{% trans 'Sidebar' %}">
+            <div class="app-sidebar__header">
+                {% include "partials/app_brand.html" %}
+            </div>
+            <button type="button" class="app-search-trigger" data-shell-palette-open aria-haspopup="dialog" title="{% trans 'Search pages and actions (Ctrl+K)' %}">
+                <i class="iconoir-search" aria-hidden="true"></i>
+                <span class="app-search-trigger__label">{% trans "Search or jump to…" %}</span>
+                <kbd class="app-kbd">Ctrl K</kbd>
+            </button>
+            <nav class="menu app-nav" aria-label="{% trans 'Main navigation' %}">
+                {% for section in dashboard_navigation %}
+                    <p class="menu-label" id="nav-group-{{ section.group.key }}">{{ section.group.label }}</p>
+                    <ul class="menu-list" aria-labelledby="nav-group-{{ section.group.key }}">
+                        {% for link in section.links %}
+                            {% with item=link.item %}
+                            <li class="app-nav__item">
+                                <div class="app-nav__row">
+                                    <a class="app-nav__link{% if link.is_active %} is-active{% endif %}"
+                                       href="{{ link.href }}"
+                                       title="{{ item.label }}"
+                                       data-nav-label="{{ item.label }}"
+                                       data-nav-group-label="{{ section.group.label }}"
+                                       {% if link.is_active %}aria-current="page"{% endif %}
+                                       {% if item.key == 'workbench' %}data-workbench-nav-link{% endif %}>
+                                        <i class="{{ item.icon }} app-nav__icon" aria-hidden="true"></i>
+                                        <span class="app-nav__text">{{ item.label }}</span>
+                                    </a>
+                                    {% if item.member_group_filter and global_available_member_groups %}
+                                        <button type="button"
+                                                class="menu-toggle app-nav__toggle"
+                                                data-target="{{ item.key }}-submenu"
+                                                aria-controls="{{ item.key }}-submenu"
+                                                aria-expanded="false"
+                                                aria-label="{% blocktrans with label=item.label %}{{ label }} member groups{% endblocktrans %}">
+                                            <i class="iconoir-nav-arrow-down" aria-hidden="true"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                {% if item.member_group_filter and global_available_member_groups %}
+                                    <ul class="menu-submenu app-nav__submenu is-hidden" id="{{ item.key }}-submenu">
+                                        {% for group in global_available_member_groups %}
+                                            {% with group_id=group.id|stringformat:"s" %}
+                                            <li>
+                                                <a href="{{ link.href }}?member_group_id={{ group.id }}"
+                                                   {% if link.is_active and request.GET.member_group_id == group_id %}class="is-active" aria-current="page"{% endif %}
+                                                   hx-get="{{ link.partial_href|default:link.href }}?member_group_id={{ group.id }}"
+                                                   hx-target="#main-content"
+                                                   hx-indicator="#loading-indicator"
+                                                   hx-push-url="{{ link.href }}?member_group_id={{ group.id }}"
+                                                   data-nav-label="{{ item.label }} · {{ group.name }}"
+                                                   data-nav-group-label="{{ section.group.label }}">{{ group.name }}</a>
+                                            </li>
+                                            {% endwith %}
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            </li>
+                            {% endwith %}
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            </nav>
+            <div class="app-sidebar__footer">
+                <div class="theme-switch" role="radiogroup" aria-label="{% trans 'Color theme' %}" data-theme-switch>
+                    <button type="button" class="theme-switch__option" role="radio" aria-checked="false" tabindex="-1" data-theme-choice="light" title="{% trans 'Light theme' %}" aria-label="{% trans 'Light theme' %}"><i class="iconoir-sun-light" aria-hidden="true"></i></button>
+                    <button type="button" class="theme-switch__option" role="radio" aria-checked="false" tabindex="-1" data-theme-choice="dark" title="{% trans 'Dark theme' %}" aria-label="{% trans 'Dark theme' %}"><i class="iconoir-half-moon" aria-hidden="true"></i></button>
+                    <button type="button" class="theme-switch__option" role="radio" aria-checked="true" data-theme-choice="system" title="{% trans 'Match system theme' %}" aria-label="{% trans 'Match system theme' %}" data-theme-hint-light="{% trans 'Match system theme (system appearance is light)' %}" data-theme-hint-dark="{% trans 'Match system theme (system appearance is dark)' %}"><i class="iconoir-computer" aria-hidden="true"></i></button>
+                </div>
+                <button type="button" class="app-icon-button" data-shell-collapse aria-controls="app-sidebar" aria-expanded="true" aria-label="{% trans 'Toggle sidebar' %}" title="{% trans 'Toggle sidebar (Ctrl+\)' %}">
+                    <i class="iconoir-sidebar-collapse" aria-hidden="true"></i>
+                </button>
+            </div>
+        </aside>
+        <div class="dashboard-sidebar-splitter" role="separator" aria-orientation="vertical" aria-label="{% trans 'Resize navigation' %}" tabindex="0" data-dashboard-sidebar-splitter title="{% trans 'Drag or use arrow keys to resize; double-click to reset' %}"></div>
+        <div class="app-main">
+            <progress class="progress app-progress is-hidden" id="loading-indicator" aria-label="{% trans 'Loading' %}"></progress>
+            <header class="app-topbar">
+                <button type="button" class="app-icon-button app-topbar__menu" data-shell-drawer-open aria-controls="app-sidebar" aria-expanded="false" aria-label="{% trans 'Open navigation' %}">
+                    <i class="iconoir-menu" aria-hidden="true"></i>
+                </button>
+                <div class="app-crumbs">
+                    <nav class="app-crumbs__trail" aria-label="{% trans 'Breadcrumb' %}" data-shell-crumb-trail>{% block breadcrumbs %}{% if dashboard_nav_active %}<span class="app-crumbs__group">{{ dashboard_nav_active.group.label }}</span>{% endif %}{% endblock %}</nav>
+                    <h1 class="app-crumbs__page" data-shell-crumb-page>{% block page_title %}{% if dashboard_nav_active %}{{ dashboard_nav_active.link.item.label }}{% else %}Metrics{% endif %}{% endblock %}</h1>
+                </div>
+                <div class="app-topbar__extra">{% block header_extra %}{% endblock %}</div>
+                <div class="app-topbar__actions">
+                    <button type="button" class="app-icon-button app-topbar__search" data-shell-palette-open aria-haspopup="dialog" aria-label="{% trans 'Search pages and actions' %}" title="{% trans 'Search (Ctrl+K)' %}">
+                        <i class="iconoir-search" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+            <main class="app-content" id="app-content" tabindex="-1">
+                <div class="app-content__inner" id="main-content">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+            {% block footer %}{% endblock %}
+        </div>
+    </div>
+
+    <div class="app-toasts" id="notification-container" aria-live="polite"
+         data-message-request-failed="{% trans 'Request failed' %}"
+         data-message-network-error="{% trans 'Network error' %}"
+         data-message-dismiss="{% trans 'Dismiss' %}"
+         data-message-waf-retry="{% trans 'Request could be blocked by WAF due to long execution time. Retry.' %}"></div>
+
+    <dialog class="command-palette" data-shell-palette aria-label="{% trans 'Command palette' %}">
+        <div class="command-palette__search">
+            <i class="iconoir-search" aria-hidden="true"></i>
+            <input class="command-palette__input"
+                   type="search"
+                   data-shell-palette-input
+                   role="combobox"
+                   aria-expanded="true"
+                   aria-controls="command-palette-list"
+                   aria-autocomplete="list"
+                   aria-label="{% trans 'Search pages and actions' %}"
+                   placeholder="{% trans 'Search pages and actions…' %}"
+                   autocomplete="off"
+                   spellcheck="false">
+            <kbd class="app-kbd">Esc</kbd>
+        </div>
+        <div class="command-palette__list" id="command-palette-list" role="listbox" aria-label="{% trans 'Results' %}">
+            {% for section in dashboard_navigation %}
+                <div class="command-palette__group" role="group" aria-labelledby="palette-group-{{ section.group.key }}">
+                    <div class="command-palette__group-label" id="palette-group-{{ section.group.key }}" aria-hidden="true">{{ section.group.label }}</div>
+                    {% for link in section.links %}
+                        <div class="command-palette__item"
+                             role="option"
+                             id="palette-{{ link.item.key }}"
+                             aria-selected="false"
+                             data-palette-href="{{ link.href }}"
+                             data-palette-text="{{ link.item.label }} {{ section.group.label }} {{ link.item.description }} {% language 'en' %}{{ link.item.label }} {{ section.group.label }}{% endlanguage %} {{ link.item.keywords }}">
+                            <i class="{{ link.item.icon }}" aria-hidden="true"></i>
+                            <span class="command-palette__label">{{ link.item.label }}</span>
+                            <span class="command-palette__hint">{{ link.item.description }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <div class="command-palette__group" role="group" aria-labelledby="palette-group-preferences">
+                <div class="command-palette__group-label" id="palette-group-preferences" aria-hidden="true">{% trans "Preferences" %}</div>
+                <div class="command-palette__item" role="option" id="palette-theme-light" aria-selected="false" data-palette-action="theme:light" data-palette-text="{% trans 'Use light theme' %} {% trans 'Appearance' %} light theme appearance day mode">
+                    <i class="iconoir-sun-light" aria-hidden="true"></i>
+                    <span class="command-palette__label">{% trans "Use light theme" %}</span>
+                    <span class="command-palette__hint">{% trans "Appearance" %}</span>
+                </div>
+                <div class="command-palette__item" role="option" id="palette-theme-dark" aria-selected="false" data-palette-action="theme:dark" data-palette-text="{% trans 'Use dark theme' %} {% trans 'Appearance' %} dark theme appearance night mode">
+                    <i class="iconoir-half-moon" aria-hidden="true"></i>
+                    <span class="command-palette__label">{% trans "Use dark theme" %}</span>
+                    <span class="command-palette__hint">{% trans "Appearance" %}</span>
+                </div>
+                <div class="command-palette__item" role="option" id="palette-theme-system" aria-selected="false" data-palette-action="theme:system" data-palette-text="{% trans 'Match system theme' %} {% trans 'Appearance' %} system theme appearance auto os mode">
+                    <i class="iconoir-computer" aria-hidden="true"></i>
+                    <span class="command-palette__label">{% trans "Match system theme" %}</span>
+                    <span class="command-palette__hint">{% trans "Appearance" %}</span>
+                </div>
+                <div class="command-palette__item" role="option" id="palette-sidebar-toggle" aria-selected="false" data-palette-action="sidebar:toggle" data-palette-text="{% trans 'Toggle sidebar' %} toggle sidebar navigation collapse expand rail">
+                    <i class="iconoir-sidebar-collapse" aria-hidden="true"></i>
+                    <span class="command-palette__label">{% trans "Toggle sidebar" %}</span>
+                    <span class="command-palette__hint">Ctrl+\</span>
                 </div>
             </div>
-        </nav>
-    </header>
-    
-    <div class="columns is-gapless is-flex-grow-1 dashboard-app-layout" data-dashboard-layout>
-        <!-- Left sidebar menu -->
-        <div class="column is-2-desktop is-3-tablet dashboard-sidebar-column" data-dashboard-sidebar>
-            <aside class="menu p-4" role="navigation" aria-label="main navigation">
-                <ul class="menu-list">
-                        <li>
-                            <a href="{% url 'ui_web:homepage' %}"
-                               {% if request.resolver_match.url_name == 'homepage' %}class="is-active"{% endif %}>Home</a>
-                        </li>
-                        <li>
-                            <a href="{% url 'ui_web:workbench' %}"
-                               data-workbench-nav-link
-                               {% if request.resolver_match.url_name == 'workbench' %}class="is-active"{% endif %}>Workbench</a>
-                        </li>
-                        <li>
-                            <a href="{% url 'ui_web:projects' %}"
-                               {% if request.resolver_match.url_name == 'projects' or request.resolver_match.url_name == 'project_detail' or request.resolver_match.url_name == 'project_stage_preview' %}class="is-active"{% endif %}>{% trans "Projects" %}</a>
-                        </li>
-                        <li>
-                            {% if global_available_member_groups %}
-                                <a class="menu-toggle {% if request.resolver_match.url_name == 'current_tasks' %}is-active{% endif %}" 
-                                   data-target="current-tasks-submenu" 
-                                   aria-expanded="false" 
-                                   aria-controls="current-tasks-submenu">Current Tasks</a>
-                                <ul id="current-tasks-submenu" class="menu-submenu is-hidden" role="menu">
-                                    <li>
-                                        <a href="{% url 'ui_web:current_tasks' %}"
-                                           {% if request.resolver_match.url_name == 'current_tasks' and not request.GET.member_group_id %}class="is-active"{% endif %}
-                                           hx-get="{% url 'ui_web:partials_tasks' %}"
-                                           hx-target="#main-content"
-                                           hx-indicator="#loading-indicator"
-                                           hx-push-url="{% url 'ui_web:current_tasks' %}">All Groups</a>
-                                    </li>
-                                    {% for group in global_available_member_groups %}
-                                        <li>
-                                            <a href="{% url 'ui_web:current_tasks' %}?member_group_id={{ group.id }}"
-                                               {% if request.resolver_match.url_name == 'current_tasks' and request.GET.member_group_id == group.id %}class="is-active"{% endif %}
-                                               hx-get="{% url 'ui_web:partials_tasks' %}?member_group_id={{ group.id }}"
-                                               hx-target="#main-content"
-                                               hx-indicator="#loading-indicator"
-                                               hx-push-url="{% url 'ui_web:current_tasks' %}?member_group_id={{ group.id }}">{{ group.name }}</a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <a href="{% url 'ui_web:current_tasks' %}"
-                                   {% if request.resolver_match.url_name == 'current_tasks' %}class="is-active"{% endif %}>Current Tasks</a>
-                            {% endif %}
-                        </li>
-                        <li>
-                            {% if global_available_member_groups %}
-                                <a class="menu-toggle {% if request.resolver_match.url_name == 'pull_requests' %}is-active{% endif %}"
-                                   data-target="pull-requests-submenu"
-                                   aria-expanded="false"
-                                   aria-controls="pull-requests-submenu">Pull Requests</a>
-                                <ul id="pull-requests-submenu" class="menu-submenu is-hidden" role="menu">
-                                    <li>
-                                        <a href="{% url 'ui_web:pull_requests' %}"
-                                           {% if request.resolver_match.url_name == 'pull_requests' and not request.GET.member_group_id %}class="is-active"{% endif %}
-                                           hx-get="{% url 'ui_web:partials_pull_requests' %}"
-                                           hx-target="#main-content"
-                                           hx-indicator="#loading-indicator"
-                                           hx-push-url="{% url 'ui_web:pull_requests' %}">All Groups</a>
-                                    </li>
-                                    {% for group in global_available_member_groups %}
-                                        <li>
-                                            <a href="{% url 'ui_web:pull_requests' %}?member_group_id={{ group.id }}"
-                                               {% if request.resolver_match.url_name == 'pull_requests' and request.GET.member_group_id == group.id %}class="is-active"{% endif %}
-                                               hx-get="{% url 'ui_web:partials_pull_requests' %}?member_group_id={{ group.id }}"
-                                               hx-target="#main-content"
-                                               hx-indicator="#loading-indicator"
-                                               hx-push-url="{% url 'ui_web:pull_requests' %}?member_group_id={{ group.id }}">{{ group.name }}</a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <a href="{% url 'ui_web:pull_requests' %}"
-                                   {% if request.resolver_match.url_name == 'pull_requests' %}class="is-active"{% endif %}
-                                   hx-get="{% url 'ui_web:partials_pull_requests' %}"
-                                   hx-target="#main-content"
-                                   hx-indicator="#loading-indicator"
-                                   hx-push-url="{% url 'ui_web:pull_requests' %}">Pull Requests</a>
-                            {% endif %}
-                        </li>
-                        <li>
-                            {% if global_available_member_groups %}
-                                <a class="menu-toggle {% if request.resolver_match.url_name == 'team_velocity' %}is-active{% endif %}"
-                                   data-target="team-velocity-submenu"
-                                   aria-expanded="false"
-                                   aria-controls="team-velocity-submenu">Team Velocity</a>
-                                <ul id="team-velocity-submenu" class="menu-submenu is-hidden" role="menu">
-                                    <li>
-                                        <a href="{% url 'ui_web:team_velocity' %}"
-                                           {% if request.resolver_match.url_name == 'team_velocity' and not request.GET.member_group_id %}class="is-active"{% endif %}
-                                           hx-get="{% url 'ui_web:team_velocity' %}"
-                                           hx-target="#main-content"
-                                           hx-indicator="#loading-indicator"
-                                           hx-push-url="{% url 'ui_web:team_velocity' %}">All Groups</a>
-                                    </li>
-                                    {% for group in global_available_member_groups %}
-                                        <li>
-                                            <a href="{% url 'ui_web:team_velocity' %}?member_group_id={{ group.id }}"
-                                               {% if request.resolver_match.url_name == 'team_velocity' and request.GET.member_group_id == group.id %}class="is-active"{% endif %}
-                                               hx-get="{% url 'ui_web:team_velocity' %}?member_group_id={{ group.id }}"
-                                               hx-target="#main-content"
-                                               hx-indicator="#loading-indicator"
-                                               hx-push-url="{% url 'ui_web:team_velocity' %}?member_group_id={{ group.id }}">{{ group.name }}</a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <a href="{% url 'ui_web:team_velocity' %}"
-                                   {% if request.resolver_match.url_name == 'team_velocity' %}class="is-active"{% endif %}>Team Velocity</a>
-                            {% endif %}
-                        </li>
-                        <li>
-                            {% if global_available_member_groups %}
-                                <a class="menu-toggle {% if request.resolver_match.url_name == 'dev_velocity' %}is-active{% endif %}" 
-                                   data-target="dev-velocity-submenu"
-                                   aria-expanded="false"
-                                   aria-controls="dev-velocity-submenu">Dev Velocity</a>
-                                <ul id="dev-velocity-submenu" class="menu-submenu is-hidden" role="menu">
-                                    <li>
-                                        <a href="{% url 'ui_web:dev_velocity' %}"
-                                           {% if request.resolver_match.url_name == 'dev_velocity' and not request.GET.member_group_id %}class="is-active"{% endif %}
-                                           hx-get="{% url 'ui_web:dev_velocity' %}"
-                                           hx-target="#main-content"
-                                           hx-indicator="#loading-indicator"
-                                           hx-push-url="{% url 'ui_web:dev_velocity' %}">All Groups</a>
-                                    </li>
-                                    {% for group in global_available_member_groups %}
-                                        <li>
-                                            <a href="{% url 'ui_web:dev_velocity' %}?member_group_id={{ group.id }}"
-                                               {% if request.resolver_match.url_name == 'dev_velocity' and request.GET.member_group_id == group.id %}class="is-active"{% endif %}
-                                               hx-get="{% url 'ui_web:dev_velocity' %}?member_group_id={{ group.id }}"
-                                               hx-target="#main-content"
-                                               hx-indicator="#loading-indicator"
-                                               hx-push-url="{% url 'ui_web:dev_velocity' %}?member_group_id={{ group.id }}">{{ group.name }}</a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <a href="{% url 'ui_web:dev_velocity' %}"
-                                   {% if request.resolver_match.url_name == 'dev_velocity' %}class="is-active"{% endif %}>Dev Velocity</a>
-                            {% endif %}
-                        </li>
-                        <li>
-                            <a href="{% url 'ui_web:task_forecast' %}"
-                               {% if request.resolver_match.url_name == 'task_forecast' %}class="is-active"{% endif %}>Task Forecast</a>
-                        </li>
-                        <li>
-                            <a href="{% url 'ui_web:bug_trend' %}"
-                               {% if request.resolver_match.url_name == 'bug_trend' %}class="is-active"{% endif %}
-                               hx-get="{% url 'ui_web:bug_trend' %}"
-                               hx-target="#main-content"
-                               hx-indicator="#loading-indicator"
-                               hx-push-url="{% url 'ui_web:bug_trend' %}">Bug Trend</a>
-                        </li>
-                        <li>
-                            <a href="{% url 'ui_web:ai_dashboard_workflow' %}"
-                               {% if request.resolver_match.url_name == 'ai_dashboard_workflow' %}class="is-active"{% endif %}>AI Workflow</a>
-                        </li>
-                                <li>
-                                     <a href="{% url 'ui_web:bug_trend_scope_library' %}"
-                                         {% if request.resolver_match.url_name == 'bug_trend_scope_library' or request.resolver_match.url_name == 'bug_trend_scope_config' %}class="is-active"{% endif %}>Scope Library</a>
-                                </li>
-                           <li>
-                            <a href="{% url 'ui_web:provider_setup' %}"
-                               {% if request.resolver_match.url_name == 'provider_setup' %}class="is-active"{% endif %}>Provider Setup</a>
-                           </li>
-                           <li>
-                            <a href="{% url 'ui_web:data_health' %}"
-                               {% if request.resolver_match.url_name == 'data_health' %}class="is-active"{% endif %}>Data Health</a>
-                           </li>
-                    </ul>
-                    {% block sidebar_extra %}{% endblock %}
-            </aside>
         </div>
-        <div class="dashboard-sidebar-splitter" role="separator" aria-orientation="vertical" tabindex="0" data-dashboard-sidebar-splitter title="Resize navigation and work area"></div>
-        
-        <main class="column is-flex is-flex-direction-column dashboard-main-column">
-            <progress class="progress is-medium is-primary is-hidden loading-indicator-sticky" id="loading-indicator"></progress>
-            <section class="section is-flex-grow-1">
-                <div class="container">
-                    <div id="main-content">
-                        <div id="notification-container"></div>
-                        {% block content %}{% endblock %}
-                    </div>
-                </div>
-            </section>
-            
-            {% block footer %}{% endblock %}
-        </main>
-    </div>
+        <p class="command-palette__empty" data-shell-palette-empty hidden>{% trans "No matching pages or actions" %}</p>
+        <div class="command-palette__footer" aria-hidden="true">
+            <span><kbd class="app-kbd">↑</kbd><kbd class="app-kbd">↓</kbd>{% trans "navigate" %}</span>
+            <span><kbd class="app-kbd">Enter</kbd>{% trans "open" %}</span>
+            <span><kbd class="app-kbd">Ctrl</kbd><kbd class="app-kbd">Enter</kbd>{% trans "new tab" %}</span>
+            <span><kbd class="app-kbd">Esc</kbd>{% trans "close" %}</span>
+        </div>
+    </dialog>
+
+    <div class="app-scrim" data-shell-scrim hidden></div>
 
     {% block extra_js %}{% endblock %}
     {% include "partials/service_status_bar.html" %}

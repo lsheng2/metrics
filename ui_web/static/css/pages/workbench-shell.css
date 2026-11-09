@@ -1,0 +1,175 @@
+/*
+ * Page layer: Workbench shell, toolbar controls, scope binding and grid layout.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+.workbench-shell {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.workbench-toolbar {
+    --workbench-toolbar-label-height: var(--dashboard-top-toolbar-label-height);
+    --workbench-toolbar-control-height: var(--control-height-sm);
+    container: workbench-toolbar / inline-size;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    margin-bottom: 0;
+    padding: var(--space-1-5);
+}
+
+.workbench-shell .button,
+.workbench-shell .input,
+.workbench-shell .select select {
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    min-height: var(--control-height);
+}
+
+.workbench-shell .button {
+    height: var(--control-height);
+    padding: 0 var(--space-2-5);
+}
+
+.workbench-shell .button.is-small,
+.workbench-shell .input.is-small,
+.workbench-shell .select.is-small select {
+    min-height: var(--control-height-sm);
+}
+
+.workbench-shell .button.is-small {
+    height: var(--control-height-sm);
+}
+
+.workbench-control-grid {
+    display: grid;
+    grid-template-columns:
+        minmax(14rem, 1.6fr)
+        minmax(8rem, 0.9fr)
+        minmax(6rem, 0.65fr)
+        minmax(7rem, 0.75fr)
+        minmax(9rem, 0.95fr)
+        minmax(7rem, 0.68fr)
+        minmax(7rem, 0.68fr)
+        4.75rem;
+    gap: var(--space-1-5);
+    align-items: stretch;
+}
+
+/* The toolbar width follows the sidebar state, so adapt to the container rather than the viewport. */
+@container workbench-toolbar (max-width: 65.5rem) {
+    .workbench-control-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.workbench-control-grid .field {
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+.workbench-toolbar-field {
+    display: grid;
+    grid-template-rows: var(--workbench-toolbar-label-height) var(--workbench-toolbar-control-height);
+    gap: var(--space-0-5);
+    min-width: 0;
+}
+
+.workbench-toolbar-field .label {
+    display: flex;
+    align-items: center;
+    height: var(--workbench-toolbar-label-height);
+    font-size: var(--text-2xs);
+    line-height: 1.14;
+    margin-bottom: 0;
+    min-width: 0;
+    overflow: visible;
+}
+
+.workbench-control-grid .input,
+.workbench-control-grid .select,
+.workbench-control-grid select {
+    min-width: 0;
+}
+
+.workbench-control-grid .input,
+.workbench-control-grid .select,
+.workbench-control-grid .select select,
+.workbench-control-grid .button {
+    box-sizing: border-box !important;
+    height: var(--workbench-toolbar-control-height) !important;
+    min-height: var(--workbench-toolbar-control-height) !important;
+    line-height: 1.1 !important;
+}
+
+.workbench-control-grid .input,
+.workbench-control-grid .select,
+.workbench-control-grid .select select,
+.workbench-control-grid .workbench-control-input {
+    width: 100%;
+}
+
+.workbench-control-grid .input,
+.workbench-control-grid .select select {
+    padding-bottom: var(--space-1) !important;
+    padding-top: var(--space-1) !important;
+}
+
+/* Same specificity as the foundation `.message:not(:last-child)` spacing; the page layer loads later. */
+.workbench-shell > .workbench-binding-warning {
+    margin-bottom: 0;
+}
+
+.workbench-binding-warning > .message-body {
+    padding: var(--space-1-5) var(--space-2-5);
+}
+
+.workbench-apply-field {
+    align-items: stretch;
+}
+
+.workbench-apply-button {
+    width: 100%;
+}
+
+/* Below 1024px the panes stack in the page flow: chart, evidence, then the AI pane. */
+.workbench-grid {
+    --workbench-ai-rail-width: 40px;
+    --workbench-ai-width: 340px;
+    --workbench-chart-height: 38vh;
+    --workbench-gap: var(--space-2);
+    --workbench-splitter-size: var(--space-1-5);
+    display: grid;
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--workbench-gap);
+}
+
+/* From 1024px the shell fills the full-bleed frame (shell/statusbar.css): chart over evidence beside the
+   AI pane, sized by the splitters. */
+@media screen and (min-width: 1024px) {
+    .workbench-shell {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .workbench-grid {
+        flex: 1 1 auto;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr) minmax(var(--workbench-ai-rail-width), var(--workbench-ai-width));
+        grid-template-rows: minmax(3rem, var(--workbench-chart-height)) minmax(0, 1fr);
+    }
+}
+
+.workbench-grid.is-ai-collapsed {
+    --workbench-ai-width: var(--workbench-ai-rail-width);
+}
+
+.workbench-grid.is-chart-collapsed {
+    --workbench-chart-height: 3.15rem;
+}

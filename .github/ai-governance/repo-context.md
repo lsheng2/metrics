@@ -32,7 +32,7 @@ Planned MVP owner additions:
 
 1. Modules communicate through public APIs under `app/api/`.
 2. Domain code remains pure Python and framework-free.
-3. UI uses semantic HTML, Bulma, htmx and Chart.js, plus the approved local Milkdown report editor.
+3. UI uses semantic HTML, htmx, the Meridian design system and Chart.js (via `DashboardCharts`), plus the approved local Milkdown report editor. UI work follows `openspec/docs/current-baseline/frontend-design-requirements.md`.
 4. Dataclasses use `@dataclass(slots=True)`.
 5. External tracker behavior should reuse `sd-metrics-lib` when practical.
 6. Secrets stay in `.env` or deployment environment variables and must not appear in committed files, docs, tests, or chat output.
@@ -50,6 +50,7 @@ python -m pytest path\to\test_file.py::TestClass::test_method -q
 python manage.py check
 python scripts/check_file_size_limits.py --include-untracked
 python scripts/check_diff_whitespace.py --include-untracked
+npm --prefix ui_web/frontend run check   # UI changes: token/vendor drift, Stylelint, WCAG contrast
 ```
 
 ## Local Pitfalls
@@ -66,3 +67,5 @@ python scripts/check_diff_whitespace.py --include-untracked
 7. If no severity mapping exists for a scope, hide critical/high series instead of guessing severity.
 8. Chart buckets and drilldown issue rows must share the same `calculation_run_id`; do not reconstruct drilldown membership from mutable current issue state.
 9. Avoid naming new shared abstractions `Jira*` unless the abstraction truly cannot apply to GitHub, Azure DevOps, or another work-item provider. Prefer `Provider*`, `WorkItem*`, `Tracker*`, or provider-neutral domain names and put Jira vocabulary in adapter-local code or UI helper text.
+10. `.github/file-size-limits.json` must claim every tracked file (first matching rule wins; a file matching no rule or exemption fails, as does a run that checks nothing). Split by concern before a file reaches its limit: templates into partials, CSS into `css/foundation/`, `css/shell/` or `css/pages/<feature>.css`, browser JS into feature modules. Legacy allowances allow zero growth, apply only in changed-file mode and only while the base revision is already oversized; never raise a limit or add an exemption to make new code fit.
+11. Every stylesheet and script is registered once in `ui_web/static_assets.py`, in cascade/dependency order; `base.html` renders it and browser tests inline the same list. Icon classes must be literal `iconoir-<name>` strings so `npm --prefix ui_web/frontend run build:vendor` can vendor the subset.

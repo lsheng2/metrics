@@ -1,52 +1,41 @@
 <div class="table-container">
-    <table class="table is-striped is-hoverable is-fullwidth dashboard-dense-table">
+    <table class="table is-hoverable is-fullwidth dashboard-dense-table">
         <thead>
             <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Title</th>
-                <th scope="col">Total SP</th>
-                <th scope="col">Total Est.</th>
-                <th scope="col">Dev SP</th>
-                <th scope="col">Dev Est.</th>
-                <th scope="col">Dev Time</th>
-                <th scope="col">Deviation</th>
+                <th scope="col">Task</th>
+                <th scope="col" class="is-numeric">Total SP</th>
+                <th scope="col" class="is-numeric">Total est.</th>
+                <th scope="col" class="is-numeric">Dev SP</th>
+                <th scope="col" class="is-numeric">Dev est.</th>
+                <th scope="col" class="is-numeric">Dev time</th>
+                <th scope="col" class="is-numeric">Deviation</th>
             </tr>
         </thead>
         <tbody>
             {% for task in tasks %}
             <tr>
-                <td><code>{{ task.id }}</code></td>
                 <td>
-                    {% if task.system_metadata.url %}
-                        <a href="{{ task.system_metadata.url }}" target="_blank">{{ task.title }}</a>
-                    {% else %}
-                        {{ task.title }}
-                    {% endif %}
+                    <div class="work-item-ref">
+                        <span class="work-item-ref__key">{{ task.id }}</span>
+                        <div class="work-item-ref__body">
+                            {% if task.system_metadata.url %}
+                                <a class="work-item-ref__title" href="{{ task.system_metadata.url }}" target="_blank" rel="noopener noreferrer" title="{{ task.title }}">{{ task.title }}</a>
+                            {% else %}
+                                <span class="work-item-ref__title" title="{{ task.title }}">{{ task.title }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </td>
-                <td>{{ task.story_points|floatformat:1|default:"-" }}</td>
-                <td>
-                    {% if task.total_estimated_days is not None %}
-                        {{ task.total_estimated_days|floatformat:1 }}d
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td>{{ task.developer_story_points|floatformat:2 }}</td>
-                <td>
-                    {% if task.estimated_days is not None %}
-                        {{ task.estimated_days|floatformat:1 }}d
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td>{{ task.developer_time_days|floatformat:1 }}d</td>
-                <td>
+                <td class="is-numeric">{% if task.story_points is not None %}{{ task.story_points|floatformat:1 }}{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                <td class="is-numeric">{% if task.total_estimated_days is not None %}{{ task.total_estimated_days|floatformat:1 }}d{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                <td class="is-numeric">{{ task.developer_story_points|floatformat:2 }}</td>
+                <td class="is-numeric">{% if task.estimated_days is not None %}{{ task.estimated_days|floatformat:1 }}d{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                <td class="is-numeric">{{ task.developer_time_days|floatformat:1 }}d</td>
+                <td class="is-numeric">
                     {% if task.deviation_percent is not None %}
-                        <span class="{% if task.deviation_percent >= 0 %}has-text-success{% else %}has-text-danger{% endif %}">
-                            {{ task.deviation_percent|floatformat:0 }}%
-                        </span>
+                        <span class="{% if task.deviation_percent >= 0 %}has-text-success{% else %}has-text-danger{% endif %}">{{ task.deviation_percent|floatformat:0 }}%</span>
                     {% else %}
-                        -
+                        <span class="has-text-grey-light">—</span>
                     {% endif %}
                 </td>
             </tr>
@@ -55,9 +44,9 @@
         {% if summary %}
         <tfoot>
             <tr>
-                <th colspan="2">
+                <th>
                     {% if summary.working_days is not None %}
-                        Working Days: {{ summary.working_days|floatformat:1 }} / {{ summary.working_days_in_month }}
+                        Working days: {{ summary.working_days|floatformat:1 }} / {{ summary.working_days_in_month }}
                         {% if summary.workload_percent is not None %}
                             ({{ summary.workload_percent|floatformat:0 }}%)
                         {% endif %}
@@ -66,24 +55,22 @@
                         <br>Velocity: {{ summary.velocity|floatformat:2 }} SP/day
                     {% endif %}
                 </th>
-                <th>
+                <th class="is-numeric">
                     {% if summary.total_task_story_points is not None %}
                         {{ summary.total_task_story_points|floatformat:1 }} SP
                     {% endif %}
                 </th>
-                <th></th>
-                <th>{{ summary.total_story_points|floatformat:2 }} SP</th>
-                <th>
+                <th class="is-numeric"></th>
+                <th class="is-numeric">{{ summary.total_story_points|floatformat:2 }} SP</th>
+                <th class="is-numeric">
                     {% if summary.total_estimated_days is not None %}
                         {{ summary.total_estimated_days|floatformat:1 }}d
                     {% endif %}
                 </th>
-                <th>{{ summary.total_time_days|floatformat:1 }}d</th>
-                <th>
+                <th class="is-numeric">{{ summary.total_time_days|floatformat:1 }}d</th>
+                <th class="is-numeric">
                     {% if summary.average_deviation_percent is not None %}
-                        <span class="{% if summary.average_deviation_percent >= 0 %}has-text-success{% else %}has-text-danger{% endif %}">
-                            {{ summary.average_deviation_percent|floatformat:0 }}%
-                        </span>
+                        <span class="{% if summary.average_deviation_percent >= 0 %}has-text-success{% else %}has-text-danger{% endif %}">{{ summary.average_deviation_percent|floatformat:0 }}%</span>
                     {% endif %}
                 </th>
             </tr>

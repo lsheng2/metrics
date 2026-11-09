@@ -1,0 +1,7 @@
+{% load i18n %}
+<div class="template-matrix-group" data-template-matrix-group data-group-id="{{ group.group_id|default:'' }}">
+    <input class="input is-small" data-template-matrix-group-label value="{% if group %}{{ group.label }}{% else %}{% trans "Group" %}{% endif %}" aria-label="{% trans "Group label" %}">
+    <button class="button is-small is-light" type="button" data-template-matrix-group-command="up" aria-label="{% trans "Move up" %}" title="{% trans "Move up" %}"><span class="icon is-small"><i class="iconoir-arrow-up" aria-hidden="true"></i></span></button>
+    <button class="button is-small is-light" type="button" data-template-matrix-group-command="down" aria-label="{% trans "Move down" %}" title="{% trans "Move down" %}"><span class="icon is-small"><i class="iconoir-arrow-down" aria-hidden="true"></i></span></button>
+    <button class="button is-small is-light template-block__remove" type="button" data-template-matrix-group-command="remove" aria-label="{% trans "Remove group" %}" title="{% trans "Remove group" %}"><span class="icon is-small"><i class="iconoir-trash" aria-hidden="true"></i></span></button>
+</div>

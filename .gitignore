@@ -108,3 +108,5 @@ ENV/
 
 # Rope project settings
 .ropeproject
+ui_web/frontend/node_modules/
+ui_web/frontend/.qa/

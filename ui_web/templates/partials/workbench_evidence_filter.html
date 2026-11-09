@@ -1,0 +1,38 @@
+{# The Workbench's only evidence filter form: list filters are Workbench URL state, so it swaps the whole shell. #}
+<form class="dashboard-tool-form workbench-evidence-filter" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+    <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
+    <input type="hidden" name="range_mode" value="{{ workbench_state.range_mode }}">
+    <input type="hidden" name="begin" value="{{ workbench_state.begin }}">
+    <input type="hidden" name="end" value="{{ workbench_state.end }}">
+    <input type="hidden" name="chart_id" value="{{ workbench_state.chart_id }}">
+    <input type="hidden" name="chart_version" value="{{ workbench_state.chart_version }}">
+    <input type="hidden" name="run" value="{{ workbench_state.calculation_run_id }}">
+    <input type="hidden" name="snapshot" value="{{ workbench_state.fact_snapshot_id }}">
+    <input type="hidden" name="bucket" value="{{ workbench_state.selected_bucket_id }}">
+    <input type="hidden" name="series" value="{{ workbench_state.selected_series_name }}">
+    <div class="dashboard-tool-grid workbench-evidence-filter-grid">
+        <div class="dashboard-tool-field workbench-evidence-filter-text">
+            <label class="label" for="workbench-filter-text">Text</label>
+            <input class="input is-small" id="workbench-filter-text" name="text" value="{{ workbench_state.list_filters.text }}" placeholder="Filter evidence text">
+        </div>
+        <div class="dashboard-tool-field">
+            <label class="label" for="workbench-filter-status">Status</label>
+            <input class="input is-small" id="workbench-filter-status" name="status" value="{{ workbench_state.list_filters.status }}" placeholder="Status">
+        </div>
+        <div class="dashboard-tool-field">
+            <label class="label" for="workbench-filter-severity">Severity</label>
+            <input class="input is-small" id="workbench-filter-severity" name="severity" value="{{ workbench_state.list_filters.severity }}" placeholder="Severity">
+        </div>
+        <div class="dashboard-tool-field">
+            <label class="label" for="workbench-filter-owner">Owner</label>
+            <input class="input is-small" id="workbench-filter-owner" name="owner" value="{{ workbench_state.list_filters.owner }}" placeholder="Owner">
+        </div>
+        <div class="dashboard-tool-field">
+            <label class="label" for="workbench-filter-component">Component</label>
+            <input class="input is-small" id="workbench-filter-component" name="component" value="{{ workbench_state.list_filters.component }}" placeholder="Component">
+        </div>
+        <div class="dashboard-tool-actions is-right workbench-evidence-filter-actions">
+            <button class="button is-small" type="submit">Filter</button>
+        </div>
+    </div>
+</form>

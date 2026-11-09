@@ -1,8 +1,5 @@
 {% extends "base.html" %}
-
-{% block title %}Metrics Workbench{% endblock %}
-
-{% block page_title %}Metrics Workbench{% endblock %}
+{% load dashboard_format %}
 
 {% block html_class %}has-workbench-shell{% endblock %}
 
@@ -65,9 +62,10 @@
     </form>
 
     {% if workbench_binding_warning %}
-        <div class="notification is-warning is-light workbench-binding-warning">
-            {{ workbench_binding_warning }}
-            <a href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a>
+        <div class="message is-warning workbench-binding-warning" role="status">
+            <div class="message-body">
+                <p>{{ workbench_binding_warning }} <a href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></p>
+            </div>
         </div>
     {% endif %}
 
@@ -75,9 +73,9 @@
         <article class="workbench-pane workbench-pane-primary" data-workbench-pane="chart" aria-labelledby="workbench-chart-title">
             <header class="workbench-pane-header">
                 <div class="workbench-pane-title-group">
-                    <h2 class="title is-5" id="workbench-chart-title">Quality Chart{% include "partials/help_tip.html" with label="Quality Chart" text="Dashboard-owned chart area. Clicking supported Grafana bars refreshes the evidence list for the selected bucket and series." %}</h2>
+                    <h2 class="workbench-pane-title" id="workbench-chart-title">Quality Chart{% include "partials/help_tip.html" with label="Quality Chart" text="Dashboard-owned chart area. Clicking supported Grafana bars refreshes the evidence list for the selected bucket and series." %}</h2>
                     {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
-                        <span class="tag is-light">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</span>
+                        <span class="tag">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</span>
                     {% endif %}
                 </div>
                 <div class="workbench-pane-actions" data-ui-action-group>
@@ -86,10 +84,10 @@
             </header>
             <div class="workbench-pane-body">
                 {% include "partials/bug_trend_chart.html" %}
-                <details class="mt-3">
+                <details class="workbench-grafana-preview">
                     <summary class="button is-small">Grafana panel preview{% include "partials/help_tip.html" with label="Grafana panel preview" text="Embedded Grafana panel for this chart. The full Grafana page remains available through the external link." inert=True %}</summary>
-                    <iframe class="workbench-grafana-panel mt-3" src="{{ workbench_grafana_panel_url }}" title="Grafana Bug Trend panel"></iframe>
-                    <p class="is-size-7 mt-2"><a href="{{ workbench_grafana_full_url }}" target="_blank" rel="noopener">Open full Grafana dashboard</a></p>
+                    <iframe class="workbench-grafana-panel" data-grafana-src="{{ workbench_grafana_panel_url }}" title="Grafana Bug Trend panel"></iframe>
+                    <p class="help"><a href="{{ workbench_grafana_full_url }}" target="_blank" rel="noopener">Open full Grafana dashboard</a></p>
                 </details>
             </div>
         </article>
@@ -97,64 +95,30 @@
 
         <article class="workbench-pane workbench-pane-evidence" data-workbench-pane="evidence" aria-labelledby="workbench-evidence-title">
             <header class="workbench-pane-header">
-                <h2 class="title is-5" id="workbench-evidence-title">Ticket Evidence{% include "partials/help_tip.html" with label="Ticket Evidence" text="The normalized Jira or HSD-ES tickets behind the selected chart range, bucket, and series." %}</h2>
+                <h2 class="workbench-pane-title" id="workbench-evidence-title">Ticket Evidence{% include "partials/help_tip.html" with label="Ticket Evidence" text="The normalized Jira or HSD-ES tickets behind the selected chart range, bucket, and series." %}</h2>
                 {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
                     <a class="button is-small" href="{{ workbench_clear_selection_url }}" hx-get="{{ workbench_clear_selection_url }}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">Clear selection</a>
                 {% endif %}
             </header>
             <div id="bug-trend-evidence-container" class="workbench-pane-body">
                 {% if workbench_selection_error %}
-                    <div class="notification is-danger is-light">{{ workbench_selection_error }}</div>
+                    <div class="message is-danger" role="alert"><div class="message-body">{{ workbench_selection_error }}</div></div>
                 {% endif %}
                 {% if workbench_evidence_unavailable_reason %}
-                    <div class="notification is-warning is-light">{{ workbench_evidence_unavailable_reason }}</div>
+                    <div class="message is-warning" role="status"><div class="message-body">{{ workbench_evidence_unavailable_reason }}</div></div>
                 {% elif evidence %}
-                    {% include "partials/bug_trend_evidence.html" %}
+                    {% include "partials/bug_trend_evidence.html" with workbench_evidence=True %}
                 {% else %}
                     <p class="has-text-grey">Evidence pane placeholder. It will refresh from Metrics-owned selection state.</p>
                     {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
-                        <p class="is-size-7">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</p>
+                        <p class="help">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</p>
                     {% else %}
-                        <p class="is-size-7">Evidence tickets for the current chart range.</p>
+                        <p class="help">Evidence tickets for the current chart range.</p>
                     {% endif %}
                 {% endif %}
-                <form class="dashboard-tool-form workbench-evidence-filter mt-3" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
-                    <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
-                    <input type="hidden" name="range_mode" value="{{ workbench_state.range_mode }}">
-                    <input type="hidden" name="begin" value="{{ workbench_state.begin }}">
-                    <input type="hidden" name="end" value="{{ workbench_state.end }}">
-                    <input type="hidden" name="chart_id" value="{{ workbench_state.chart_id }}">
-                    <input type="hidden" name="chart_version" value="{{ workbench_state.chart_version }}">
-                    <input type="hidden" name="run" value="{{ workbench_state.calculation_run_id }}">
-                    <input type="hidden" name="snapshot" value="{{ workbench_state.fact_snapshot_id }}">
-                    <input type="hidden" name="bucket" value="{{ workbench_state.selected_bucket_id }}">
-                    <input type="hidden" name="series" value="{{ workbench_state.selected_series_name }}">
-                    <div class="dashboard-tool-grid workbench-evidence-filter-grid">
-                        <div class="dashboard-tool-field workbench-evidence-filter-text">
-                            <label class="label" for="workbench-filter-text">Text</label>
-                            <input class="input is-small" id="workbench-filter-text" name="text" value="{{ workbench_state.list_filters.text }}" placeholder="Filter evidence text">
-                        </div>
-                        <div class="dashboard-tool-field">
-                            <label class="label" for="workbench-filter-status">Status</label>
-                            <input class="input is-small" id="workbench-filter-status" name="status" value="{{ workbench_state.list_filters.status }}" placeholder="Status">
-                        </div>
-                        <div class="dashboard-tool-field">
-                            <label class="label" for="workbench-filter-severity">Severity</label>
-                            <input class="input is-small" id="workbench-filter-severity" name="severity" value="{{ workbench_state.list_filters.severity }}" placeholder="Severity">
-                        </div>
-                        <div class="dashboard-tool-field">
-                            <label class="label" for="workbench-filter-owner">Owner</label>
-                            <input class="input is-small" id="workbench-filter-owner" name="owner" value="{{ workbench_state.list_filters.owner }}" placeholder="Owner">
-                        </div>
-                        <div class="dashboard-tool-field">
-                            <label class="label" for="workbench-filter-component">Component</label>
-                            <input class="input is-small" id="workbench-filter-component" name="component" value="{{ workbench_state.list_filters.component }}" placeholder="Component">
-                        </div>
-                        <div class="dashboard-tool-actions is-right workbench-evidence-filter-actions">
-                            <button class="button is-small" type="submit">Filter</button>
-                        </div>
-                    </div>
-                </form>
+                {% if workbench_evidence_unavailable_reason or not evidence %}
+                    {% include "partials/workbench_evidence_filter.html" %}
+                {% endif %}
             </div>
         </article>
         <div class="workbench-splitter workbench-splitter-vertical" role="separator" aria-orientation="vertical" tabindex="0" data-workbench-splitter="main-ai" title="Resize main work area and AI pane"></div>
@@ -162,8 +126,8 @@
         <aside class="workbench-pane workbench-pane-ai" data-workbench-pane="ai-assistant" aria-labelledby="workbench-ai-title">
             <header class="workbench-pane-header">
                 <div class="workbench-pane-title-group">
-                    <h2 class="title is-5" id="workbench-ai-title">AI Assistant{% include "partials/help_tip.html" with label="AI Assistant" text="Embedded AI Base chat bound to the selected scope profile and synced workspace context when available." %}</h2>
-                    <span class="tag is-light">{{ workbench_ai_context.ai_base.status }}</span>
+                    <h2 class="workbench-pane-title" id="workbench-ai-title">AI Assistant{% include "partials/help_tip.html" with label="AI Assistant" text="Embedded AI Base chat bound to the selected scope profile and synced workspace context when available." %}</h2>
+                    {{ workbench_ai_context.ai_base.status|status_tag }}
                 </div>
                 <div class="workbench-pane-actions" data-ui-action-group>
                     {% if workbench_ai_context.ai_base.chat_ready %}
@@ -176,7 +140,7 @@
                 <div class="workbench-ai-binding-note {% if workbench_ai_context.scope_binding.status != 'explicit' %}is-warning{% endif %}">
                     <span>Binding{% include "partials/help_tip.html" with label="Binding" text="The selected scope to provider profile link. AI chat requires a registry-backed explicit binding and synced workspace context." %}</span>
                     <strong>{{ workbench_ai_context.scope_binding.status|default:"configuration_required" }}</strong>
-                    <span>{{ workbench_ai_context.scope_binding.provider_id|default:"-" }} / {{ workbench_ai_context.scope_binding.profile_id|default:"-" }}</span>
+                    <span>{{ workbench_ai_context.scope_binding.provider_id|or_dash }} / {{ workbench_ai_context.scope_binding.profile_id|or_dash }}</span>
                     {% if workbench_ai_context.scope_binding.blockers %}
                         <span>{{ workbench_ai_context.scope_binding.blockers.0.message }}</span>
                         <a href="{% url 'ui_web:bug_trend_scope_library' %}">Repair</a>
@@ -193,24 +157,26 @@
                     </iframe>
                 {% else %}
                     <div class="workbench-ai-unavailable">
-                        {% if workbench_ai_context.ai_base.chat_gate.status == "registry_profile_required" %}
-                            <p class="has-text-weight-semibold">AI workspace needs a registry-backed profile.</p>
-                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
-                        {% elif workbench_ai_context.ai_base.chat_gate.status == "workspace_sync_required" %}
-                            <p class="has-text-weight-semibold">AI workspace context is not synced for this scope.</p>
-                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
-                        {% elif not workbench_ai_context.ai_base.enabled %}
-                            <p class="has-text-weight-semibold">AI chat is not enabled for this Dashboard process.</p>
-                            <p class="is-size-7 has-text-grey">Restart the unified stack to enable the embedded AI Base chat side window.</p>
-                        {% else %}
-                            <p class="has-text-weight-semibold">AI chat is not ready for this scope.</p>
-                            <p class="is-size-7 has-text-grey">{{ workbench_ai_context.ai_base.chat_gate.message|default:workbench_ai_context.ai_base.reason }}</p>
-                        {% endif %}
-                        {% if workbench_ai_workspace_error %}
-                            <p class="is-size-7 has-text-danger">Workspace sync failed: {{ workbench_ai_workspace_error }}</p>
-                        {% endif %}
+                        <div class="workbench-ai-unavailable__reason">
+                            {% if workbench_ai_context.ai_base.chat_gate.status == "registry_profile_required" %}
+                                <p class="workbench-ai-unavailable__title">AI workspace needs a registry-backed profile.</p>
+                                <p class="help">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
+                            {% elif workbench_ai_context.ai_base.chat_gate.status == "workspace_sync_required" %}
+                                <p class="workbench-ai-unavailable__title">AI workspace context is not synced for this scope.</p>
+                                <p class="help">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
+                            {% elif not workbench_ai_context.ai_base.enabled %}
+                                <p class="workbench-ai-unavailable__title">AI chat is not enabled for this Dashboard process.</p>
+                                <p class="help">Restart the unified stack to enable the embedded AI Base chat side window.</p>
+                            {% else %}
+                                <p class="workbench-ai-unavailable__title">AI chat is not ready for this scope.</p>
+                                <p class="help">{{ workbench_ai_context.ai_base.chat_gate.message|default:workbench_ai_context.ai_base.reason }}</p>
+                            {% endif %}
+                            {% if workbench_ai_workspace_error %}
+                                <p class="help is-danger">Workspace sync failed: {{ workbench_ai_workspace_error }}</p>
+                            {% endif %}
+                        </div>
                         {% if workbench_ai_context.ai_base.chat_gate.can_sync_workspace %}
-                            <form method="post" class="dashboard-action-form mt-3">
+                            <form method="post" class="dashboard-action-form">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="sync_ai_workspace">
                                 <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
@@ -226,11 +192,11 @@
                                 <button class="button is-primary is-small" type="submit">Sync AI workspace</button>
                             </form>
                         {% endif %}
-                        <div class="workbench-ai-start-command mt-3">
+                        <div class="workbench-ai-start-command">
                             <span>Start stack</span>
                             <code>{{ workbench_ai_context.ai_base.launcher_command }}</code>
                         </div>
-                        <div class="buttons are-small mt-3">
+                        <div class="buttons are-small">
                             <a class="button" href="{% url 'ui_web:ai_dashboard_workflow' %}">Diagnostics</a>
                             <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Binding</a>
                             {% if workbench_ai_context.ai_base.frontend_url %}

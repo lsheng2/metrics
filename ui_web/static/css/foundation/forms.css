@@ -1,0 +1,282 @@
+/*
+ * Meridian foundation: inputs, selects, textareas, checkboxes, radios, fields and controls.
+ * Tokens only; the layer order lives in ui_web/static_assets.py.
+ */
+
+.input,
+.textarea,
+.select select {
+    width: 100%;
+    max-width: 100%;
+    border: var(--control-border-width) solid var(--color-border-strong);
+    border-bottom-color: var(--color-border-input);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    transition:
+        border-color var(--duration-fast) var(--ease-standard),
+        box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.input,
+.select select {
+    height: var(--control-height);
+    min-height: var(--control-height);
+    padding: 0 var(--space-2-5);
+    line-height: var(--leading-tight);
+}
+
+.textarea {
+    display: block;
+    min-height: 5.5rem;
+    padding: var(--space-2) var(--space-2-5);
+    line-height: var(--leading-snug);
+    resize: vertical;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+    color: var(--color-text-tertiary);
+    opacity: 1;
+}
+
+.input:hover,
+.textarea:hover,
+.select select:hover {
+    border-color: var(--color-border-input);
+}
+
+.input:focus,
+.textarea:focus,
+.select select:focus {
+    border-color: var(--color-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-focus-halo);
+}
+
+.input.is-danger,
+.textarea.is-danger,
+.select.is-danger select {
+    border-color: var(--color-danger);
+}
+
+/* partials/form_error_summary.html: one labelled line per bound-form error inside a danger message. */
+.form-error-summary {
+    display: grid;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding-inline-start: var(--space-4);
+    list-style: disc;
+}
+
+.form-error-summary strong {
+    margin-inline-end: var(--space-1-5);
+}
+
+.input.is-success,
+.textarea.is-success,
+.select.is-success select {
+    border-color: var(--color-success);
+}
+
+.input.is-warning,
+.textarea.is-warning,
+.select.is-warning select {
+    border-color: var(--color-warning);
+}
+
+.input[readonly],
+.textarea[readonly] {
+    background: var(--color-surface-muted);
+}
+
+.input[disabled],
+.textarea[disabled],
+.select select[disabled],
+fieldset[disabled] :is(.input, .textarea, .select select) {
+    background: var(--color-surface-muted);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+}
+
+.input.is-small,
+.select.is-small select {
+    height: var(--control-height-sm);
+    min-height: var(--control-height-sm);
+    font-size: var(--text-xs);
+}
+
+.input.is-small {
+    padding: 0 var(--space-2);
+}
+
+.select.is-small select {
+    padding: 0 var(--space-6) 0 var(--space-2);
+}
+
+.textarea.is-small {
+    font-size: var(--text-xs);
+}
+
+.select {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: top;
+}
+
+.select:not(.is-multiple) {
+    height: var(--control-height);
+}
+
+.select.is-small:not(.is-multiple) {
+    height: var(--control-height-sm);
+}
+
+.select select {
+    padding-right: var(--space-8);
+    appearance: none;
+    cursor: pointer;
+}
+
+.select:not(.is-multiple)::after {
+    --select-chevron-size: 0.4rem;
+
+    position: absolute;
+    top: 50%;
+    right: var(--space-3);
+    width: var(--select-chevron-size);
+    height: var(--select-chevron-size);
+    margin-top: calc(var(--select-chevron-size) * -0.75);
+    border: 1.5px solid var(--color-text-tertiary);
+    border-top: 0;
+    border-right: 0;
+    content: "";
+    pointer-events: none;
+    transform: rotate(-45deg);
+}
+
+.select.is-small:not(.is-multiple)::after {
+    right: var(--space-2-5);
+}
+
+.select.is-multiple,
+.select:has(select[multiple]) {
+    height: auto;
+}
+
+.select.is-multiple select,
+.select select[multiple] {
+    height: auto;
+    padding: var(--space-1);
+}
+
+.select:has(select[multiple])::after {
+    display: none;
+}
+
+.select:has(> select[hidden]) {
+    display: none;
+}
+
+.select.is-fullwidth,
+.select.is-fullwidth select {
+    width: 100%;
+}
+
+.checkbox,
+.radio {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    color: var(--color-text);
+    line-height: var(--leading-tight);
+    cursor: pointer;
+}
+
+.checkbox input,
+.radio input {
+    flex: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    margin: 0;
+}
+
+.checkbox[disabled],
+.radio[disabled] {
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+}
+
+.field:not(:last-child) {
+    margin-bottom: var(--space-3);
+}
+
+.field.is-grouped {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+.field.is-grouped > .control {
+    flex-shrink: 0;
+}
+
+.field.has-addons {
+    display: flex;
+    align-items: stretch;
+}
+
+.field.has-addons .control:not(:last-child) {
+    margin-right: -1px;
+}
+
+.field.has-addons .control:not(:first-child, :last-child) :is(.button, .input, .select select) {
+    border-radius: 0;
+}
+
+.field.has-addons .control:first-child:not(:only-child) :is(.button, .input, .select select) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+.field.has-addons .control:last-child:not(:only-child) :is(.button, .input, .select select) {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+}
+
+.field.has-addons .control :is(.button, .input, .select select):is(:hover, :focus) {
+    position: relative;
+    z-index: 1;
+}
+
+.control {
+    position: relative;
+    min-width: 0;
+    font-size: var(--text-sm);
+    text-align: inherit;
+}
+
+.control.is-expanded,
+.is-expanded {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.control.is-loading::after,
+.select.is-loading::after {
+    position: absolute;
+    top: calc(50% - 0.5em);
+    right: var(--space-2-5);
+    width: 1em;
+    height: 1em;
+    border: 2px solid var(--color-text-tertiary);
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-radius: var(--radius-full);
+    animation: meridian-spin 600ms linear infinite;
+    content: "";
+}

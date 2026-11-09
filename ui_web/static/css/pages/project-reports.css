@@ -1,0 +1,273 @@
+/*
+ * Page layer: Stage report workbench: daily preparation, drafts, publications, series, runs and meetings.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ * Tables are direct card children with widths on header cells only, so `.is-cardable` phone cards keep full-width cells.
+ */
+
+.project-reports-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+}
+
+.project-reports-source {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+}
+
+/* Paired form cards share a row on wide canvases and stack once either card would drop under 34rem. */
+.project-reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr));
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.project-reports-grid:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+.project-reports-grid > .card {
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+/* Card bodies stack messages, forms and fact panels on one gap instead of per-element margins. */
+.project-reports .card-content,
+.project-reports .card-content > form {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.project-reports .card-content > *,
+.project-reports .card-content > form > *,
+.project-reports-baseline > * {
+    margin: 0;
+}
+
+/* Multi-line messages stack block lines on one small gap; inline runs stay wrapped in a paragraph. */
+.project-reports .message-body {
+    display: grid;
+    gap: var(--space-1-5);
+}
+
+.project-reports .message-body > * {
+    margin: 0;
+}
+
+.project-reports .card > .table-container {
+    margin-bottom: 0;
+}
+
+/* A rejected meeting change without a calendar keeps the typed reason visible for a retry. */
+.project-meeting-reason {
+    max-width: 32rem;
+    margin-bottom: var(--space-4);
+}
+
+.project-reports .dashboard-form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    margin-bottom: 0;
+}
+
+/* Fact panels are a muted inset, never a second bordered surface inside the card. */
+.project-reports .description-list.project-reports-facts {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+}
+
+.project-reports-baseline {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.project-reports-checks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.project-reports-checks > legend.label {
+    margin-bottom: var(--space-1);
+    padding: 0;
+}
+
+/* Django renders CheckboxSelectMultiple as one wrapper div of per-choice divs. */
+.project-reports-checks > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+}
+
+.project-reports-pager {
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.project-reports-pager .pagination-next {
+    margin-left: auto;
+}
+
+.project-reports-table {
+    --responsive-admin-table-min-width: 46rem;
+}
+
+.project-reports-table:is(.draft-table, .publication-table) {
+    --responsive-admin-table-min-width: 58rem;
+}
+
+.project-reports-table.series-table {
+    --responsive-admin-table-min-width: 64rem;
+}
+
+.project-reports-table.meeting-table {
+    --responsive-admin-table-min-width: 40rem;
+}
+
+.project-reports-table.run-item-table {
+    --responsive-admin-table-min-width: 50rem;
+}
+
+.project-reports-table th.report-col-number {
+    width: 7.5rem;
+}
+
+.project-reports-table th.report-col-date {
+    width: 8rem;
+}
+
+.project-reports-table th.report-col-state {
+    width: 8rem;
+}
+
+.project-reports-table th.report-col-hash {
+    width: 8.5rem;
+}
+
+.project-reports-table th.report-col-calendar {
+    width: 9rem;
+}
+
+.project-reports-table th.report-col-revision {
+    width: 9.5rem;
+}
+
+.project-reports-table th.report-col-time {
+    width: 10rem;
+}
+
+.project-reports-table th.report-col-template {
+    width: 10rem;
+}
+
+.project-reports-table th.report-col-policy {
+    width: 24rem;
+}
+
+.project-reports-table th.report-col-action {
+    width: 6.5rem;
+}
+
+.project-reports-table :is(th, td).report-col-action {
+    text-align: end;
+}
+
+/* The policy cell holds a wrapping inline form, so it must not clip like plain dense cells. */
+.table.project-reports-table td.report-col-policy {
+    overflow: visible;
+    white-space: normal;
+}
+
+.project-series-policy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+}
+
+.project-series-policy > .input,
+.project-series-policy > .select {
+    flex: 1 1 7rem;
+    min-width: 0;
+}
+
+.project-series-policy > .select select {
+    width: 100%;
+}
+
+.project-series-policy > .help {
+    flex: 0 0 100%;
+    margin: 0;
+}
+
+@container (max-width: 40rem) {
+    .project-reports-table td.report-col-action {
+        text-align: start;
+    }
+}
+
+/* Meeting changes: the reason grows, the three same-size actions keep their width and wrap below it. */
+.project-meeting-change {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-2) var(--space-3);
+}
+
+.project-meeting-change > .dashboard-form-field {
+    flex: 1 1 16rem;
+}
+
+.project-meeting-change > .dashboard-action-group {
+    flex: 0 1 auto;
+}
+
+.project-run-state .status-dot {
+    margin-right: var(--space-2);
+    vertical-align: middle;
+}
+
+/* Report command bar: primary commands lead, export controls take the far edge, live status lines wrap below. */
+.report-command-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+}
+
+.project-reports > .report-command-bar:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+.report-command-bar > .status-line {
+    flex: 1 0 100%;
+    min-width: 0;
+    margin: 0;
+}
+
+.report-command-bar > .report-export-controls {
+    margin-inline-start: auto;
+}
+
+.report-publication-list {
+    display: grid;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+}
+
+@media (max-width: 768px) {
+    .project-meeting-change > .dashboard-action-group {
+        flex-basis: 100%;
+    }
+}

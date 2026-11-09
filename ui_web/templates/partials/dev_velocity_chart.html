@@ -1,39 +1,22 @@
-<div class="box">
-    <h3 class="title is-4">Developer Velocity (Last 6 Months{% if velocity_rolling_avg %}, {{ velocity_rolling_avg }}M Avg{% endif %}{% if include_all_statuses %}, Include Unfinished Tasks{% endif %}){% if use_custom_filter %} - Member Group Custom Filter{% endif %}</h3>
-    <div class="buttons are-small">
-        <button class="button" id="showAll-dev-velocity">Show All</button>
-        <button class="button" id="hideAll-dev-velocity">Hide All</button>
-        <button class="button {% if velocity_rolling_avg %}is-info{% endif %}"
-                hx-get="{% url 'ui_web:dev_velocity_chart' %}?member_group_id={{ member_group_id }}{% if not velocity_rolling_avg %}&rolling_avg=3{% endif %}{% if include_all_statuses %}&all_tasks=true{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-push-url="{% url 'ui_web:dev_velocity' %}?member_group_id={{ member_group_id }}{% if not velocity_rolling_avg %}&rolling_avg=3{% endif %}{% if include_all_statuses %}&all_tasks=true{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-target="#velocity-chart-container"
-                hx-swap="innerHTML"
-                hx-indicator="#loading-indicator">
-            Rolling Average
-        </button>
-        <button class="button {% if include_all_statuses %}is-info{% endif %}"
-                hx-get="{% url 'ui_web:dev_velocity_chart' %}?member_group_id={{ member_group_id }}{% if velocity_rolling_avg %}&rolling_avg={{ velocity_rolling_avg }}{% endif %}{% if not include_all_statuses %}&all_tasks=true{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-push-url="{% url 'ui_web:dev_velocity' %}?member_group_id={{ member_group_id }}{% if velocity_rolling_avg %}&rolling_avg={{ velocity_rolling_avg }}{% endif %}{% if not include_all_statuses %}&all_tasks=true{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-target="#velocity-chart-container"
-                hx-swap="innerHTML"
-                hx-indicator="#loading-indicator">
-            Include Unfinished Tasks
-        </button>
-        {% if has_custom_filter %}
-        <button class="button {% if use_custom_filter %}is-info{% endif %}"
-                hx-get="{% url 'ui_web:dev_velocity_chart' %}?member_group_id={{ member_group_id }}{% if velocity_rolling_avg %}&rolling_avg={{ velocity_rolling_avg }}{% endif %}{% if include_all_statuses %}&all_tasks=true{% endif %}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-push-url="{% url 'ui_web:dev_velocity' %}?member_group_id={{ member_group_id }}{% if velocity_rolling_avg %}&rolling_avg={{ velocity_rolling_avg }}{% endif %}{% if include_all_statuses %}&all_tasks=true{% endif %}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-target="#velocity-chart-container"
-                hx-swap="innerHTML"
-                hx-indicator="#loading-indicator">
-            Member Group Custom Filter
-        </button>
+<section class="card chart-card" aria-labelledby="dev-velocity-chart-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="dev-velocity-chart-title">Velocity<span class="card-header-meta">SP per logged day{% if velocity_rolling_avg %} · {{ velocity_rolling_avg }}-month average{% endif %}{% if include_all_statuses %} · incl. unfinished{% endif %}</span></h3>
+    </header>
+    <div class="chart-card__body">
+        {% if month_velocity %}
+            <div class="chart-frame">
+                <canvas id="velocityChart" role="img" aria-label="Velocity per developer per month"></canvas>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-state__icon"><i class="iconoir-graph-up" aria-hidden="true"></i></span>
+                <p class="empty-state__title">No velocity yet</p>
+                <p class="empty-state__body">No developer resolved work with logged time in the last 6 months.</p>
+            </div>
         {% endif %}
     </div>
-    <canvas id="velocityChart" width="400" height="200"></canvas>
-    <p class="help has-text-grey">Click on a data point to see task details below</p>
-</div>
-
+</section>
+{% if month_velocity %}
 <script>
 (function() {
     function initVelocityChart() {
@@ -41,161 +24,95 @@
             setTimeout(initVelocityChart, 100);
             return;
         }
-
-        const showAllBtn = document.getElementById('showAll-dev-velocity');
-        const hideAllBtn = document.getElementById('hideAll-dev-velocity');
-
-        if (showAllBtn) {
-            showAllBtn.addEventListener('click', () => {
-                if (window.devVelocityChartInstance) {
-                    window.devVelocityChartInstance.data.datasets.forEach((dataset, index) => {
-                        window.devVelocityChartInstance.setDatasetVisibility(index, true);
-                    });
-                    window.devVelocityChartInstance.update();
-                }
-            });
-        }
-
-        if (hideAllBtn) {
-            hideAllBtn.addEventListener('click', () => {
-                if (window.devVelocityChartInstance) {
-                    window.devVelocityChartInstance.data.datasets.forEach((dataset, index) => {
-                        window.devVelocityChartInstance.setDatasetVisibility(index, false);
-                    });
-                    window.devVelocityChartInstance.update();
-                }
-            });
-        }
-
         if (window.devVelocityChartInstance) {
             window.devVelocityChartInstance.destroy();
             window.devVelocityChartInstance = null;
         }
-
         const canvas = document.getElementById('velocityChart');
-        if (!canvas) {
-            console.error('Velocity chart canvas not found');
-            return;
-        }
-
+        if (!canvas) return;
         const chartData = {{ month_velocity|safe }};
-        const thresholdsData = {{ velocity_thresholds|safe }};
+        const thresholds = ({{ velocity_thresholds|safe }}).thresholds || [];
+        const charts = () => window.DashboardCharts;
+        const lineColor = index => () => charts().paletteColor(index);
+        const guideColor = () => charts().alpha(charts().token('--color-text-tertiary'), 0.6);
 
-        function hslToHsla(hsl, alpha) {
-            return hsl.replace('hsl(', 'hsla(').replace(')', `, ${alpha})`);
-        }
-
-        function buildThresholdAnnotations(thresholds) {
+        // Seniority targets as dashed guides; levels with the same rounded target share one label.
+        function thresholdAnnotations() {
+            const groups = new Map();
+            thresholds.forEach(level => {
+                const key = Number(level.threshold).toFixed(1);
+                const group = groups.get(key) || { value: Number(level.threshold), names: [] };
+                group.names.push(level.level_name);
+                groups.set(key, group);
+            });
             const annotations = {};
-            const rangePercent = 0.25;
-
-            thresholds.forEach((t) => {
-                const rangeMin = t.threshold * (1 - rangePercent);
-                const rangeMax = t.threshold * (1 + rangePercent);
-
-                annotations[`band_${t.level_name}`] = {
-                    type: 'box',
-                    yMin: rangeMin,
-                    yMax: rangeMax,
-                    backgroundColor: hslToHsla(t.color, 0.04),
-                    borderColor: hslToHsla(t.color, 0.2),
+            Array.from(groups.entries()).forEach(([key, group], index) => {
+                annotations[`threshold${index}`] = {
+                    type: 'line',
+                    drawTime: 'beforeDatasetsDraw',
+                    yMin: group.value,
+                    yMax: group.value,
+                    borderColor: guideColor,
                     borderWidth: 1,
-                    borderDash: [3, 3],
+                    borderDash: [4, 4],
                     label: {
-                        content: `${t.level_name} (~${t.threshold.toFixed(1)})`,
                         display: true,
+                        drawTime: 'afterDatasetsDraw',
+                        content: `${group.names.join(' · ')} ~${key}`,
                         position: 'end',
-                        color: 'rgba(200, 200, 200, 0.6)'
+                        color: () => charts().token('--color-text-tertiary'),
+                        backgroundColor: () => charts().alpha(charts().token('--color-surface'), 0.85),
+                        font: { size: 10, weight: '500' },
+                        padding: { x: 4, y: 2 },
+                        borderRadius: 3,
+                        yAdjust: -9
                     }
                 };
             });
             return annotations;
         }
 
-        const thresholdAnnotations = buildThresholdAnnotations(thresholdsData.thresholds);
-
-        const taskDetailsBaseUrl = '{% url "ui_web:dev_velocity_tasks" %}';
-        const dashboardBaseUrl = '{% url "ui_web:dev_velocity" %}';
-        const memberGroupId = '{{ member_group_id }}';
-        const rollingAvg = '{{ velocity_rolling_avg }}';
-        const allTasks = '{{ include_all_statuses|yesno:"true,false" }}';
-        const useCustomFilter = '{{ use_custom_filter|yesno:"true,false" }}';
-
-        function getVisibleDevelopers(chart) {
-            const visible = [];
-            chart.data.datasets.forEach(function(dataset, index) {
-                if (chart.isDatasetVisible(index)) {
-                    visible.push(chartData.data[index].developer);
-                }
-            });
-            return visible;
-        }
-
-        if (chartData && chartData.labels && chartData.data) {
-            window.devVelocityChartInstance = new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: chartData.data.map(item => ({
-                        label: item.developer,
-                        data: item.metrics.map(value => value === 0 ? null : value),
-                        borderColor: item.color,
-                        backgroundColor: item.color,
-                        fill: false,
-                        tension: 0.1,
-                        spanGaps: true
-                    }))
+        const chart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.data.map((item, index) => ({
+                    label: item.developer,
+                    data: item.metrics.map(value => value === 0 ? null : value),
+                    borderColor: lineColor(index),
+                    backgroundColor: lineColor(index),
+                    pointBackgroundColor: lineColor(index),
+                    fill: false,
+                    tension: 0.25,
+                    spanGaps: true
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                onHover: window.DashboardVelocity.pointerOnHover,
+                onClick: (event, elements, chartInstance) => {
+                    if (elements.length) window.DashboardVelocity.openDeveloperPeriod(chartInstance, elements[0].index);
                 },
-                options: {
-                    responsive: true,
-                    onClick: function(event, elements, chart) {
-                        if (!elements || elements.length === 0) return;
-                        const period = chartData.labels[elements[0].index];
-                        const developers = getVisibleDevelopers(chart);
-                        if (developers.length === 0) return;
-                        const someHidden = developers.length < chartData.data.length;
-                        const sharedParams = '?period=' + encodeURIComponent(period)
-                            + (someHidden ? '&developers=' + encodeURIComponent(developers.join(',')) : '')
-                            + '&member_group_id=' + encodeURIComponent(memberGroupId)
-                            + (rollingAvg && rollingAvg !== '0' ? '&rolling_avg=' + encodeURIComponent(rollingAvg) : '')
-                            + (allTasks === 'true' ? '&all_tasks=true' : '')
-                            + (useCustomFilter === 'true' ? '&use_custom_filter=true' : '');
-                        history.pushState(null, '', dashboardBaseUrl + sharedParams);
-                        htmx.ajax('GET', taskDetailsBaseUrl + sharedParams, {target: '#task-details-container', swap: 'innerHTML'}).then(function() {
-                            document.getElementById('task-details-container').scrollIntoView({behavior: 'smooth'});
-                        });
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        annotation: {
-                            annotations: thresholdAnnotations
-                        },
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            usePointStyle: true,
-                            itemSort: (a, b) => b.raw - a.raw
-                        }
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grace: '10%' }
+                },
+                plugins: {
+                    annotation: { annotations: thresholdAnnotations() },
+                    legend: { display: false },
+                    tooltip: {
+                        itemSort: (a, b) => (b.raw || 0) - (a.raw || 0),
+                        filter: item => item.raw !== null && item.raw !== undefined,
+                        callbacks: { label: context => `${context.dataset.label}: ${Number(context.parsed.y).toFixed(2)}` }
                     }
                 }
-            });
-        }
+            }
+        });
+        window.devVelocityChartInstance = chart;
+        window.DashboardVelocity.registerDeveloperChart(chart);
     }
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initVelocityChart);
     } else {
@@ -203,3 +120,4 @@
     }
 })();
 </script>
+{% endif %}

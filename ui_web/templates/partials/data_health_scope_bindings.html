@@ -1,0 +1,159 @@
+{% load dashboard_format %}
+<section class="card" aria-labelledby="data-health-binding-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="data-health-binding-title">Scope Binding Health{% include "partials/help_tip.html" with label="Scope Binding Health" text="Checks whether scopes are bound to provider profiles strongly enough for Dashboard, Workbench, and AI workflows." %}</h3>
+    </header>
+    <div class="card-content">
+        <div class="scope-binding-readiness {% if data_health.scope_binding_health.explicit_only_ready %}is-ready{% else %}is-blocked{% endif %}">
+            <div>
+                <strong>Explicit-only readiness{% include "partials/help_tip.html" with label="Explicit-only readiness" text="Ready means all enabled scopes have explicit provider bindings. Blocked means at least one enabled scope still depends on compatibility or missing binding." %}</strong>
+                {% if data_health.scope_binding_health.explicit_only_ready %}
+                    <span class="tag is-success">Ready</span>
+                {% else %}
+                    <span class="tag is-warning">Blocked</span>
+                {% endif %}
+                <span class="tag">Policy: {{ data_health.scope_binding_health.runtime_policy|default:"compatibility_allowed" }}{% include "partials/help_tip.html" with label="Binding policy" text="compatibility_allowed permits inferred legacy bindings. explicit_only requires operator-confirmed bindings before runtime use." %}</span>
+            </div>
+            <div>
+                <span>{{ data_health.scope_binding_health.explicit_only_blocked_count }} impacted scopes</span>
+                <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Repair bindings</a>
+            </div>
+        </div>
+        <div class="stat-grid is-compact" role="group" aria-label="Binding counts">
+            <div class="stat">
+                <span class="stat__label">Total</span>
+                <span class="stat__value">{{ data_health.scope_binding_health.total }}</span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Explicit{% include "partials/help_tip.html" with label="Explicit" text="The provider profile binding was explicitly selected or confirmed by an operator." %}</span>
+                <span class="stat__value">{{ data_health.scope_binding_health.counts.explicit }}</span>
+            </div>
+            <div class="stat{% if data_health.scope_binding_health.counts.compatibility %} is-info{% endif %}">
+                <span class="stat__label">Inferred{% include "partials/help_tip.html" with label="Inferred binding" text="The provider profile binding was inferred from legacy behavior and should be confirmed before explicit-only operation." %}</span>
+                <span class="stat__value">{{ data_health.scope_binding_health.counts.compatibility }}</span>
+            </div>
+            <div class="stat{% if data_health.scope_binding_health.counts.configuration_required %} is-warning{% endif %}">
+                <span class="stat__label">Config required{% include "partials/help_tip.html" with label="Config required" text="The scope does not have enough provider binding information to participate in provider-backed workflows." %}</span>
+                <span class="stat__value">{{ data_health.scope_binding_health.counts.configuration_required }}</span>
+            </div>
+            <div class="stat{% if data_health.scope_binding_health.counts.ambiguous %} is-warning{% endif %}">
+                <span class="stat__label">Ambiguous{% include "partials/help_tip.html" with label="Ambiguous" text="More than one provider profile could match the scope, so an operator must choose the intended one." %}</span>
+                <span class="stat__value">{{ data_health.scope_binding_health.counts.ambiguous }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="table-container responsive-admin-table-box">
+    <table class="table is-fullwidth is-hoverable responsive-admin-table is-cardable">
+        <thead>
+            <tr>
+                <th class="has-help-tip">Scope{% include "partials/help_tip.html" with label="Scope" text="A query definition used to sync source facts, calculate buckets, and drive chart evidence." %}</th>
+                <th class="has-help-tip">Status{% include "partials/help_tip.html" with label="Binding status" text="explicit is confirmed, compatibility is inferred, configuration_required is incomplete, and ambiguous needs manual selection." %}</th>
+                <th class="has-help-tip">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile bound to this scope." %}</th>
+                <th class="has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the profile, such as Jira or HSD-ES." %}</th>
+                <th class="has-help-tip">Provenance{% include "partials/help_tip.html" with label="Provenance" text="How Metrics determined this binding, for example registry match, legacy inference, or operator confirmation." %}</th>
+                <th class="has-help-tip">Blockers{% include "partials/help_tip.html" with label="Blockers" text="Reasons this scope cannot satisfy the selected runtime policy or workflow readiness." %}</th>
+                <th>Repair</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data_health.scope_binding_health.rows %}
+                <tr>
+                    <td data-label="Scope">{{ item.scope_name }}</td>
+                    <td data-label="Status">
+                        {% if item.status == "explicit" %}
+                            <span class="tag is-success">{{ item.status }}</span>
+                        {% elif item.status == "compatibility" %}
+                            <span class="tag is-info">inferred</span>
+                        {% else %}
+                            <span class="tag is-warning">{{ item.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Profile" class="is-nowrap">{{ item.profile_id|or_dash }}</td>
+                    <td data-label="Provider">{{ item.provider_id|or_dash }}</td>
+                    <td data-label="Provenance">{{ item.provenance_summary|or_dash }}</td>
+                    <td data-label="Blockers">
+                        {% for blocker in item.blockers %}
+                            {{ blocker.message }}
+                        {% empty %}
+                            -
+                        {% endfor %}
+                    </td>
+                    <td data-label="Repair"><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
+                </tr>
+            {% empty %}
+                <tr class="is-empty-row"><td colspan="7">No scope bindings found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+
+{% if data_health.scope_binding_health.explicit_only_impacted_rows %}
+<section class="card" aria-labelledby="data-health-impacted-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="data-health-impacted-title">Explicit-only impacted scopes</h3>
+        <div class="card-header-actions"><span class="count-badge" title="Impacted scopes">{{ data_health.scope_binding_health.explicit_only_impacted_rows|length }}</span></div>
+    </header>
+    <div class="table-container responsive-admin-table-box">
+    <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable">
+        <thead>
+            <tr>
+                <th>Scope</th>
+                <th class="has-help-tip">Status{% include "partials/help_tip.html" with label="Explicit-only impact" text="These rows must be confirmed or repaired before the system can run safely in explicit-only mode." %}</th>
+                <th class="has-help-tip">Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile currently associated with the impacted scope." %}</th>
+                <th class="has-help-tip">Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the profile, such as Jira or HSD-ES." %}</th>
+                <th class="has-help-tip">Provenance{% include "partials/help_tip.html" with label="Provenance" text="How this binding was derived." %}</th>
+                <th>Repair</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data_health.scope_binding_health.explicit_only_impacted_rows %}
+                <tr>
+                    <td data-label="Scope">{{ item.scope_name }}</td>
+                    <td data-label="Status"><span class="tag is-warning">{% if item.status == "compatibility" %}inferred{% else %}{{ item.status }}{% endif %}</span></td>
+                    <td data-label="Profile" class="is-nowrap">{{ item.profile_id|or_dash }}</td>
+                    <td data-label="Provider">{{ item.provider_id|or_dash }}</td>
+                    <td data-label="Provenance">{{ item.provenance_summary|or_dash }}</td>
+                    <td data-label="Repair"><a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="data-health-binding-audit-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="data-health-binding-audit-title">Scope Binding Audit History{% include "partials/help_tip.html" with label="Scope Binding Audit History" text="Recent binding changes used to explain why a scope moved between compatibility, explicit, or blocked states." %}</h3>
+        <div class="card-header-actions"><span class="count-badge" title="Recent binding audit events">{{ data_health.scope_binding_audit_events|length }}</span></div>
+    </header>
+    <div class="table-container responsive-admin-table-box">
+    <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable scope-binding-audit-table">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Actor</th>
+                <th>Operation</th>
+                <th>Scope</th>
+                <th>Before</th>
+                <th>After</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in data_health.scope_binding_audit_events %}
+                <tr>
+                    <td data-label="Time">{{ event.created_at|timestamp }}</td>
+                    <td data-label="Actor">{{ event.actor }}</td>
+                    <td data-label="Operation">{{ event.event_type }}</td>
+                    <td data-label="Scope">{{ event.scope_name|or_dash }}</td>
+                    <td data-label="Before">{{ event.before_summary }}</td>
+                    <td data-label="After">{{ event.after_summary }}</td>
+                </tr>
+            {% empty %}
+                <tr class="is-empty-row"><td colspan="6">No scope binding audit events yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>

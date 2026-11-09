@@ -143,7 +143,8 @@ def runtime_source_identity():
         'ui_web/templates/base.html',
         'ui_web/templates/projects/language_switcher.html',
         'ui_web/static/js/report*.js',
-        'ui_web/static/css/main.css',
+        'ui_web/static/css/**/*.css',
+        'ui_web/static_assets.py',
     ):
         for path in ROOT.glob(pattern):
             if path.is_file():

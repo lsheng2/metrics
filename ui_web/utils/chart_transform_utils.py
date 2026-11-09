@@ -18,8 +18,7 @@ class ChartTransformUtils:
                     smoothed_data.append(round(avg, 2) if avg else None)
             new_datasets.append(ChartDatasetData(
                 label=dataset.label,
-                data=smoothed_data,
-                color=dataset.color
+                data=smoothed_data
             ))
         return ChartData(labels=chart.labels, datasets=new_datasets)
 
@@ -31,7 +30,6 @@ class ChartTransformUtils:
             trimmed_data = dataset.data[-n:] if len(dataset.data) > n else dataset.data
             trimmed_datasets.append(ChartDatasetData(
                 label=dataset.label,
-                data=trimmed_data,
-                color=dataset.color
+                data=trimmed_data
             ))
         return ChartData(labels=trimmed_labels, datasets=trimmed_datasets)

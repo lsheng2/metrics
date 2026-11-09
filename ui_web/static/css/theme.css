@@ -1,0 +1,265 @@
+/*
+ * Meridian design tokens. GENERATED FILE - DO NOT EDIT.
+ * Source: ui_web/frontend/tokens/*.tokens.json + @radix-ui/colors ramps.
+ * Rebuild: cd ui_web/frontend && npm run build:tokens
+ */
+
+:root {
+  --font-sans: 'Mona Sans Variable', 'Microsoft YaHei UI', 'PingFang SC', 'Noto Sans SC', 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Cascadia Mono', Consolas, 'Microsoft YaHei UI', monospace;
+  --text-2xs: 0.6875rem; /* 11px - micro labels, dense badges */
+  --text-xs: 0.75rem; /* 12px - captions, table headers, help */
+  --text-sm: 0.8125rem; /* 13px - default UI and table text */
+  --text-md: 0.875rem; /* 14px - emphasized body, card titles */
+  --text-lg: 1rem; /* 16px - section headings */
+  --text-xl: 1.25rem; /* 20px - page titles */
+  --text-2xl: 1.625rem; /* 26px - KPI values */
+  --text-3xl: 2.125rem; /* 34px - hero KPI values */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-paper-regular: 400; /* Paper is fixed-light, so it keeps light weights; dark optical compensation must not thin dark-on-white text */
+  --weight-paper-medium: 500;
+  --weight-paper-semibold: 600;
+  --weight-paper-bold: 700;
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-caps: 0.06em;
+  --stretch-condensed: 92%; /* Mona Sans wdth axis for dense data tables */
+  --stretch-normal: 100%;
+  --stretch-display: 112%; /* Mona Sans wdth axis for page titles and KPI values */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-px: 1px;
+  --space-0-5: 0.125rem;
+  --space-1-5: 0.375rem;
+  --space-2-5: 0.625rem;
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-full: 9999px;
+  --control-height: 2rem; /* 32px default control */
+  --control-height-sm: 1.75rem; /* 28px small control */
+  --control-height-xs: 1.5rem; /* 24px in-table control */
+  --control-label-height: 1.375rem; /* 22px field label row; labels in one form row share it */
+  --control-padding-x: 0.75rem;
+  --control-padding-x-sm: 0.5rem;
+  --control-border-width: 1px;
+  --layout-sidebar-width: 15rem; /* Default expanded sidebar; users can resize 168-360px */
+  --layout-sidebar-rail: 3.25rem;
+  --layout-topbar-height: 2.75rem;
+  --layout-statusbar-height: 1.75rem;
+  --layout-content-max: 112rem;
+  --layout-gutter: 1.25rem;
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --z-sticky: 10;
+  --z-topbar: 30;
+  --z-statusbar: 35;
+  --z-dropdown: 40;
+  --z-overlay: 45;
+  --z-drawer: 50;
+  --z-toast: 60;
+  --color-provider-green: #2f9e44;
+  --color-provider-blue: #1c7ed6;
+  --color-provider-purple: #8b5cf6;
+  --color-paper-bg: #ffffff;
+  --color-paper-bg-muted: #f8fafc; /* Quoted read-only notes and code inside paper */
+  --color-paper-text: #1f2933;
+  --color-paper-link: #0f766e;
+  --color-paper-rule: #cbd5e1; /* Table borders and blockquote rules inside paper */
+  --color-paper-table-header: #ecfeff;
+  --color-paper-accent: #0f766e; /* Checked task boxes inside paper */
+  --color-paper-control: #64748b; /* Unchecked task box strokes inside paper; keeps 3:1 on paper (WCAG 1.4.11) */
+  --color-paper-selection: #bfdbfe;
+}
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --color-canvas: #f9f9fb; /* App background behind cards, sidebar and topbar */
+  --color-surface: #ffffff; /* Cards, panels, tables */
+  --color-surface-raised: #ffffff; /* Popovers, dialogs, dropdowns, toasts */
+  --color-surface-muted: #f9f9fb; /* Table headers, secondary fills, wells */
+  --color-surface-hover: #f0f0f3;
+  --color-surface-active: #e8e8ec;
+  --color-surface-inverse: #1c2024; /* Ink primary buttons, tooltips */
+  --color-on-inverse: #ffffff;
+  --color-border: #e0e1e6; /* Card and panel outlines */
+  --color-border-subtle: #e8e8ec; /* Row dividers, inner separators */
+  --color-border-strong: #cdced6; /* Hovered outlines, emphasized dividers */
+  --color-border-input: #8b8d98; /* Bottom stroke of text controls; keeps 3:1 on surfaces (WCAG 1.4.11) */
+  --color-text: #1c2024;
+  --color-text-secondary: #60646c;
+  --color-text-tertiary: #696c75; /* Low-emphasis meta text (labels, timestamps, crumbs); between slate 10 and 11 so small text keeps >= 4.5:1 on canvas, surface, muted and hover fills */
+  --color-text-disabled: #b9bbc6;
+  --color-accent: #3e63dd;
+  --color-accent-hover: #3358d4;
+  --color-accent-text: #3a5bc7; /* Links, active nav text, accent labels */
+  --color-accent-subtle: #edf2fe;
+  --color-accent-subtle-hover: #e1e9ff;
+  --color-accent-border: #abbdf9;
+  --color-on-accent: #ffffff;
+  --color-focus-ring: #3e63dd;
+  --color-focus-halo: #d2deff; /* Soft 3px halo around focused inputs */
+  --color-selection: #d2deff;
+  --color-success: #46a758;
+  --color-success-text: #2a7e3b;
+  --color-success-subtle: #e9f6e9;
+  --color-success-subtle-hover: #daf1db;
+  --color-success-border: #94ce9a;
+  --color-on-success: #ffffff; /* Glyph on a solid success fill (icons only, 3:1). Text uses success-text on success-subtle. */
+  --color-warning: #ffc53d;
+  --color-warning-text: #966400; /* Tuned darker than amber 11 for AA on warning-subtle */
+  --color-warning-subtle: #fff7c2;
+  --color-warning-subtle-hover: #ffee9c;
+  --color-warning-border: #e9c162;
+  --color-on-warning: #4f3422;
+  --color-danger: #e5484d;
+  --color-danger-text: #ce2c31;
+  --color-danger-subtle: #feebec;
+  --color-danger-subtle-hover: #ffdbdc;
+  --color-danger-border: #f4a9aa;
+  --color-on-danger: #ffffff; /* Glyph on a solid danger fill (icons only, 3:1) */
+  --color-info: #0090ff;
+  --color-info-text: #0969da; /* Tuned darker than blue 11 for AA on info-subtle */
+  --color-info-subtle: #e6f4fe;
+  --color-info-subtle-hover: #d5efff;
+  --color-info-border: #8ec8f6;
+  --color-on-info: #ffffff; /* Glyph on a solid info fill (icons only, 3:1) */
+  --color-neutral-subtle: #f0f0f3;
+  --color-neutral-subtle-hover: #e8e8ec;
+  --color-neutral-text: #60646c;
+  --color-neutral-border: #d9d9e0;
+  --color-scrollbar: #cdced6;
+  --color-scrollbar-hover: #b9bbc6;
+  --color-skeleton: #f0f0f3;
+  --color-scrim: rgba(0, 0, 0, 0.4);
+  --color-chart-1: #3e63dd;
+  --color-chart-2: #12a594;
+  --color-chart-3: #ef5f00; /* Orange 9 is 2.97:1 on white; step 10 keeps the 3:1 graphics minimum */
+  --color-chart-4: #e93d82;
+  --color-chart-5: #00a2c7;
+  --color-chart-6: #46a758;
+  --color-chart-7: #6e56cf;
+  --color-chart-8: #ab6400;
+  --color-series-all-open-bugs: #3e63dd;
+  --color-series-all-open-critical-high: #ef5f00;
+  --color-series-new-critical-high: #e5484d;
+  --color-series-new-medium-low: #00a2c7;
+  --color-series-fixed-or-closed-bugs: #46a758;
+  --color-health-green: #3e9b4f; /* Grass 9 is 2.88:1 on muted fills; step 10 keeps 3:1 on striped rows */
+  --color-health-yellow: #b07a00; /* Amber 9 is 1.6:1 on white; tuned gold keeps the 3:1 graphics minimum on surface and muted fills */
+  --color-health-orange: #ef5f00;
+  --color-health-red: #e5484d;
+  --color-health-gray: #8b8d98;
+  --shadow-xs: 0 1px 1px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 16px 40px -8px rgba(0, 0, 0, 0.15), 0 4px 12px -4px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #111113; /* App background behind cards, sidebar and topbar */
+  --color-surface: #18191b; /* Cards, panels, tables */
+  --color-surface-raised: #212225; /* Popovers, dialogs, dropdowns, toasts */
+  --color-surface-muted: #212225; /* Table headers, secondary fills, wells */
+  --color-surface-hover: #272a2d;
+  --color-surface-active: #2e3135;
+  --color-surface-inverse: #edeef0; /* Ink primary buttons, tooltips */
+  --color-on-inverse: #111113;
+  --color-border: #363a3f; /* Card and panel outlines */
+  --color-border-subtle: #2e3135; /* Row dividers, inner separators */
+  --color-border-strong: #5a6169; /* Hovered outlines, emphasized dividers */
+  --color-border-input: #696e77; /* Bottom stroke of text controls; keeps 3:1 on surfaces (WCAG 1.4.11) */
+  --color-text: #edeef0;
+  --color-text-secondary: #b0b4ba;
+  --color-text-tertiary: #8e929a; /* Low-emphasis meta text (labels, timestamps, crumbs); between slate 10 and 11 so small text keeps >= 4.5:1 on canvas, surface, muted, raised and hover fills */
+  --color-text-disabled: #5a6169;
+  --color-accent: #3e63dd;
+  --color-accent-hover: #435db1; /* Darker than accent so on-accent text keeps AA */
+  --color-accent-text: #9eb1ff; /* Links, active nav text, accent labels */
+  --color-accent-subtle: #182449;
+  --color-accent-subtle-hover: #1d2e62;
+  --color-accent-border: #3a4f97;
+  --color-on-accent: #ffffff;
+  --color-focus-ring: #5472e4;
+  --color-focus-halo: #304384; /* Soft 3px halo around focused inputs */
+  --color-selection: #304384;
+  --color-success: #46a758;
+  --color-success-text: #71d083;
+  --color-success-subtle: #1b2a1e;
+  --color-success-subtle-hover: #1d3a24;
+  --color-success-border: #366740;
+  --color-on-success: #ffffff;
+  --color-warning: #ffc53d;
+  --color-warning-text: #ffca16;
+  --color-warning-subtle: #302008;
+  --color-warning-subtle-hover: #3f2700;
+  --color-warning-border: #714f19;
+  --color-on-warning: #16120c;
+  --color-danger: #e5484d;
+  --color-danger-text: #ff9592;
+  --color-danger-subtle: #3b1219;
+  --color-danger-subtle-hover: #500f1c;
+  --color-danger-border: #8c333a;
+  --color-on-danger: #ffffff;
+  --color-info: #0090ff;
+  --color-info-text: #70b8ff;
+  --color-info-subtle: #0d2847;
+  --color-info-subtle-hover: #003362;
+  --color-info-border: #205d9e;
+  --color-on-info: #ffffff;
+  --color-neutral-subtle: #272a2d;
+  --color-neutral-subtle-hover: #2e3135;
+  --color-neutral-text: #b0b4ba;
+  --color-neutral-border: #363a3f;
+  --color-scrollbar: #43484e;
+  --color-scrollbar-hover: #5a6169;
+  --color-skeleton: #272a2d;
+  --color-scrim: rgba(0, 0, 0, 0.6);
+  --color-chart-1: #5472e4;
+  --color-chart-2: #0eb39e;
+  --color-chart-3: #ff801f;
+  --color-chart-4: #ee518a;
+  --color-chart-5: #23afd0;
+  --color-chart-6: #53b365;
+  --color-chart-7: #7d66d9;
+  --color-chart-8: #ffc53d;
+  --color-series-all-open-bugs: #5472e4;
+  --color-series-all-open-critical-high: #ff801f;
+  --color-series-new-critical-high: #ec5d5e;
+  --color-series-new-medium-low: #23afd0;
+  --color-series-fixed-or-closed-bugs: #53b365;
+  --color-health-green: #53b365;
+  --color-health-yellow: #ffc53d;
+  --color-health-orange: #ff801f;
+  --color-health-red: #ec5d5e;
+  --color-health-gray: #696e77;
+  --weight-regular: 380;
+  --weight-medium: 480;
+  --weight-semibold: 580;
+  --weight-bold: 680;
+  --shadow-xs: 0 1px 1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4), 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 6px 16px -4px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 48px -12px rgba(0, 0, 0, 0.8), 0 6px 16px -6px rgba(0, 0, 0, 0.6);
+}

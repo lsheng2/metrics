@@ -38,7 +38,6 @@ from ui_web.data.task_data import (
 )
 from ui_web.data.task_forecast_data import (
     TaskForecastBreakdownItem,
-    TaskForecastParamsData,
     TaskForecastRequestData,
     TaskForecastSummaryData,
 )
@@ -46,7 +45,8 @@ from ui_web.data.velocity_threshold_data import VelocityThresholdsData
 from ui_web.data.velocity_task_detail_data import DeveloperVelocitySummary, TaskVelocityData
 
 
-from ui_web.tests.ui_design_browser_metrics_support import UiDesignBrowserMetricsSupport
+from ui_web.tests.dashboard_asset_support import dashboard_css, shell_fragment_html
+from ui_web.tests.ui_design_browser_metrics_support import MetricViolations, UiDesignBrowserMetricsSupport
 
 
 class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
@@ -88,7 +88,7 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
             self.assertIn('dashboard-action-bar', content, str(path))
             self.assertIn('dashboard-action-group', content, str(path))
 
-        css = (project_root / 'ui_web' / 'static' / 'css' / 'main.css').read_text(encoding='utf-8')
+        css = dashboard_css()
         for color in ['green', 'blue', 'purple']:
             self.assertIn(f'is-provider-{color}', css)
 
@@ -175,42 +175,46 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
             for label, response, expectations in responses
         ])
 
-        for label, viewport_results in results.items():
-            for viewport, metrics in viewport_results.items():
-                self.assertFalse(metrics['page_horizontal_overflow'], f'{label} {viewport}')
-                self.assertEqual([], metrics['clipped_action_buttons'], f'{label} {viewport}')
-                self.assertGreater(metrics['visible_button_count'], 0, f'{label} {viewport}')
-                self.assertLessEqual(
-                    metrics['max_button_font_weight'],
-                    400,
-                    f"{label} {viewport} bold buttons: {metrics['bold_button_labels']}",
-                )
-                self.assertEqual([], metrics['table_contract_failures'], f'{label} {viewport}')
-                self.assertEqual([], metrics['table_density_failures'], f'{label} {viewport}')
-                self.assertEqual([], metrics['table_button_failures'], f'{label} {viewport}')
-                self.assertEqual([], metrics['button_metric_failures'], f'{label} {viewport}')
-                self.assertEqual([], metrics['form_metric_failures'], f'{label} {viewport}')
-                if metrics['expects_table']:
-                    self.assertGreater(metrics['responsive_table_count'], 0, f'{label} {viewport}')
-                if metrics['expects_dense_table']:
-                    self.assertGreater(metrics['dense_table_count'], 0, f'{label} {viewport}')
-                    self.assertLessEqual(metrics['dense_table_max_row_height'], 72, f'{label} {viewport}')
-                    self.assertLessEqual(metrics['dense_table_button_height_delta'], 1, f'{label} {viewport}')
-                if metrics['expects_tool_form']:
-                    self.assertGreater(metrics['tool_form_count'], 0, f'{label} {viewport}')
-                    self.assertGreater(metrics['tool_grid_count'], 0, f'{label} {viewport}')
-                    self.assertEqual(0, metrics['tool_form_dirty_count'], f'{label} {viewport}')
-                    self.assertLessEqual(metrics['tool_form_button_height_delta'], 1, f'{label} {viewport}')
-                    self.assertLessEqual(metrics['tool_form_control_height_delta'], 1, f'{label} {viewport}')
-                if metrics['expects_editor']:
-                    self.assertEqual(1, metrics['required_summary_count'], f'{label} {viewport}')
-                    self.assertEqual(1, metrics['dirty_banner_count'], f'{label} {viewport}')
-                    self.assertGreater(metrics['action_bar_count'], 0, f'{label} {viewport}')
-                    self.assertLessEqual(metrics['action_bar_button_height_delta'], 1, f'{label} {viewport}')
-                    self.assertLessEqual(metrics['editor_control_height_delta'], 1, f'{label} {viewport}')
-                if metrics['expects_provider_tabs']:
-                    self.assertGreater(metrics['provider_tab_shell_count'], 0, f'{label} {viewport}')
-                    self.assertTrue(metrics['selected_provider_check_visible'], f'{label} {viewport}')
+        violations = MetricViolations()
+        for check in violations.each(results):
+            check.false('page_horizontal_overflow', 'OVERFLOW_TOLERANCE')
+            check.empty('clipped_action_buttons', 'OVERFLOW_TOLERANCE')
+            check.above('visible_button_count', 0)
+            # Meridian buttons use the medium weight token; semibold or bold labels are a regression.
+            check.at_most(
+                'max_button_font_weight',
+                'BUTTON_FONT_WEIGHT_MAX',
+                f" bold buttons: {check.metrics['bold_button_labels']}",
+            )
+            check.empty('table_contract_failures')
+            check.empty('table_density_failures', 'TABLE_CELL_PADDING_BLOCK_MAX', 'DENSE_ROW_HEIGHT_MAX')
+            check.empty('table_edge_failures', 'ALIGNMENT_TOLERANCE')
+            check.empty('table_button_failures', 'HEIGHT_DELTA_MAX', 'OVERFLOW_TOLERANCE')
+            check.empty('button_metric_failures', 'HEIGHT_DELTA_MAX', 'OVERFLOW_TOLERANCE')
+            check.empty('form_metric_failures', 'HEIGHT_DELTA_MAX')
+            if check.metrics['expects_table']:
+                check.above('responsive_table_count', 0)
+            if check.metrics['expects_dense_table']:
+                check.above('dense_table_count', 0)
+                check.at_most('dense_table_max_row_height', 'DENSE_ROW_HEIGHT_MAX')
+                check.at_most('dense_table_button_height_delta', 'HEIGHT_DELTA_MAX')
+            if check.metrics['expects_tool_form']:
+                check.above('tool_form_count', 0)
+                check.above('tool_grid_count', 0)
+                check.equal('tool_form_dirty_count', 0)
+                check.at_most('tool_form_button_height_delta', 'HEIGHT_DELTA_MAX')
+                check.at_most('tool_form_control_height_delta', 'HEIGHT_DELTA_MAX')
+                check.at_most('tool_form_alignment_delta', 'HEIGHT_DELTA_MAX')
+            if check.metrics['expects_editor']:
+                check.equal('required_summary_count', 1)
+                check.equal('dirty_banner_count', 1)
+                check.above('action_bar_count', 0)
+                check.at_most('action_bar_button_height_delta', 'HEIGHT_DELTA_MAX')
+                check.at_most('editor_control_height_delta', 'HEIGHT_DELTA_MAX')
+            if check.metrics['expects_provider_tabs']:
+                check.above('provider_tab_shell_count', 0)
+                check.true('selected_provider_check_visible', 'PROVIDER_CHECK_MIN_WIDTH')
+        violations.assert_none(self)
 
     def test_shouldKeepDenseDashboardTablesWithinBrowserMetrics(self):
         pages = [
@@ -222,15 +226,17 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
 
         results = self._measure_baseline_pages(pages)
 
-        for label, viewport_results in results.items():
-            for viewport, metrics in viewport_results.items():
-                self.assertFalse(metrics['page_horizontal_overflow'], f'{label} {viewport}')
-                self.assertEqual([], metrics['table_contract_failures'], f'{label} {viewport}')
-                self.assertEqual([], metrics['table_density_failures'], f'{label} {viewport}')
-                self.assertEqual([], metrics['table_button_failures'], f'{label} {viewport}')
-                self.assertGreater(metrics['dense_table_count'], 0, f'{label} {viewport}')
-                self.assertLessEqual(metrics['dense_table_max_row_height'], 72, f'{label} {viewport}')
-                self.assertLessEqual(metrics['dense_table_button_height_delta'], 1, f'{label} {viewport}')
+        violations = MetricViolations()
+        for check in violations.each(results):
+            check.false('page_horizontal_overflow', 'OVERFLOW_TOLERANCE')
+            check.empty('table_contract_failures')
+            check.empty('table_density_failures', 'TABLE_CELL_PADDING_BLOCK_MAX', 'DENSE_ROW_HEIGHT_MAX')
+            check.empty('table_edge_failures', 'ALIGNMENT_TOLERANCE')
+            check.empty('table_button_failures', 'HEIGHT_DELTA_MAX', 'OVERFLOW_TOLERANCE')
+            check.above('dense_table_count', 0)
+            check.at_most('dense_table_max_row_height', 'DENSE_ROW_HEIGHT_MAX')
+            check.at_most('dense_table_button_height_delta', 'HEIGHT_DELTA_MAX')
+        violations.assert_none(self)
 
     def test_shouldRunVisualRegressionManifestAgainstCoreRoutes(self):
         scope, run, bucket = self._seed_bound_scope_with_run()
@@ -273,11 +279,12 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
 
         results = self._measure_visual_manifest_pages(pages, manifest['viewports'])
 
-        for label, viewport_results in results.items():
-            for viewport, metrics in viewport_results.items():
-                self.assertFalse(metrics['page_horizontal_overflow'], f'{label} {viewport}')
-                self.assertEqual([], metrics['clipped_buttons'], f'{label} {viewport}')
-                self.assertEqual([], metrics['unnamed_icon_buttons'], f'{label} {viewport}')
+        violations = MetricViolations()
+        for check in violations.each(results):
+            check.false('page_horizontal_overflow', 'OVERFLOW_TOLERANCE')
+            check.empty('clipped_buttons', 'OVERFLOW_TOLERANCE')
+            check.empty('unnamed_icon_buttons')
+        violations.assert_none(self)
 
     def _visual_manifest_params(self, route, scope, run, bucket):
         if route == '/bug-trend/scope-config/':
@@ -309,12 +316,12 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
         return {}
 
     def _dense_current_tasks_html(self):
-        return self._fragment_html(render_to_string('partials/task_table.html', {
+        return shell_fragment_html(render_to_string('partials/task_table.html', {
             'tasks': [self._current_task_data()],
             'show_header': True,
             'pr_gateway_column_enabled': True,
             'release_column_enabled': True,
-            'task_table_colspan': 11,
+            'task_table_colspan': 10,
         }))
 
     def _dense_pull_requests_html(self):
@@ -322,23 +329,21 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
             PersonActivitySummaryData('Monkey User', created_count=1, approved_count=0, changes_requested_count=0),
             PersonActivitySummaryData('Lead Reviewer', created_count=0, approved_count=1, changes_requested_count=0),
         ]
-        return self._fragment_html(
+        return shell_fragment_html(
             render_to_string('partials/pull_request_summary_table.html', {'activity_summary': summary})
             + render_to_string('partials/pull_requests_table.html', {'pull_requests': [self._pull_request_data()]})
         )
 
     def _dense_task_forecast_html(self):
-        return self._fragment_html(render_to_string('partials/task_forecast_content.html', {
-            'success': True,
+        return shell_fragment_html(render_to_string('partials/task_forecast_content.html', {
             'task_forecast': self._task_forecast_summary_data(),
             'chart_data': '',
             'include_done_tasks': True,
-            'time_unit': 'days',
-            'forecast_params': TaskForecastParamsData(task_id='TASK-101', task_scope=TaskScope.ALL),
+            'forecast_params': TaskForecastRequestData(task_id='TASK-101', task_scope=TaskScope.ALL),
         }))
 
     def _dense_velocity_task_html(self):
-        return self._fragment_html(render_to_string('partials/velocity_task_table.html', {
+        return shell_fragment_html(render_to_string('partials/velocity_task_table.html', {
             'tasks': [self._velocity_task_data()],
             'summary': DeveloperVelocitySummary(
                 total_story_points=3.0,
@@ -429,13 +434,16 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
         )
 
     def _task_forecast_summary_data(self):
+        forecast_start = datetime(2026, 9, 9, tzinfo=timezone.utc)
+        forecast_end = datetime(2026, 9, 18, tzinfo=timezone.utc)
         task_forecasts = [
-            TaskForecastBreakdownItem('TASK-101', 'Forecast root task', 5.0, 0, True, False, 'In Progress'),
-            TaskForecastBreakdownItem('TASK-102', 'Child implementation task', 3.0, 1, False, False, 'Development'),
+            TaskForecastBreakdownItem('TASK-101', 'Forecast root task', 5.0, 0, True, False, 'In Progress',
+                                      forecast_start_date=forecast_start, forecast_end_date=forecast_end),
+            TaskForecastBreakdownItem('TASK-102', 'Child implementation task', 3.0, 1, False, False, 'Development',
+                                      forecast_start_date=forecast_start, forecast_end_date=forecast_end),
             TaskForecastBreakdownItem('TASK-103', 'Completed verification task', 1.0, 1, False, True, 'Done'),
         ]
         return TaskForecastSummaryData(
-            task_title='SUMMARY',
             total_estimation_days=9.0,
             forecasted_start_date=datetime(2026, 9, 9, tzinfo=timezone.utc),
             forecasted_end_date=datetime(2026, 9, 18, tzinfo=timezone.utc),
@@ -481,7 +489,7 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
 
             @staticmethod
             def task_table_colspan():
-                return 11
+                return 10
 
             async def get_tasks(self, _group_id):
                 return [self_task._current_task_data()]
@@ -516,10 +524,6 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
                 )
 
         class FakeTaskForecastFacade:
-            @staticmethod
-            async def get_forecast_params_data(request_data):
-                return TaskForecastParamsData(task_id=request_data.task_id, task_scope=request_data.task_scope)
-
             @staticmethod
             async def get_task_forecast_hierarchy_data(_request_data):
                 return []
@@ -586,17 +590,3 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
             ui_web_container=FakeDevVelocityContainer(),
         ))
         return stack
-
-    @staticmethod
-    def _fragment_html(fragment):
-        return (
-            '<!doctype html><html lang="en" data-theme="dark" class="has-navbar-fixed-top">'
-            '<head></head>'
-            '<body class="is-flex is-flex-direction-column is-fullheight">'
-            '<div class="columns is-gapless is-flex-grow-1 dashboard-app-layout">'
-            '<main class="column is-flex is-flex-direction-column dashboard-main-column">'
-            '<section class="section is-flex-grow-1"><div class="container"><div id="main-content">'
-            f'{fragment}'
-            '</div></div></section>'
-            '</main></div></body></html>'
-        )

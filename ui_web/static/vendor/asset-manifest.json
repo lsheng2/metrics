@@ -1,0 +1,558 @@
+{
+  "schema_version": 1,
+  "generator": "ui_web/frontend/scripts/build-vendor.mjs",
+  "build_command": "cd ui_web/frontend && npm ci && npm run build",
+  "package_json": "ui_web/frontend/package.json",
+  "package_json_sha256": "46d429dfa95d6f2814eb52c78e6953b11c13a39d138f1601c3908de487b6985b",
+  "package_lock": "ui_web/frontend/package-lock.json",
+  "package_lock_sha256": "27f12166c7c7e1b786ec4a7e628c662f22505702a57996cf218596280b1552ab",
+  "packages": {
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@fontsource-variable/mona-sans": "5.3.0",
+    "chart.js": "4.6.1",
+    "chartjs-adapter-date-fns": "3.0.0",
+    "chartjs-plugin-annotation": "3.1.0",
+    "htmx.org": "2.0.11",
+    "iconoir": "7.12.2",
+    "modern-normalize": "3.0.1"
+  },
+  "icons": [
+    "activity",
+    "archive",
+    "arrow-down",
+    "arrow-up",
+    "bug",
+    "calendar",
+    "chat-bubble-check",
+    "check",
+    "clock",
+    "collapse",
+    "community",
+    "computer",
+    "copy",
+    "dashboard-dots",
+    "download",
+    "edit-pencil",
+    "expand",
+    "eye",
+    "filter",
+    "filter-list",
+    "folder",
+    "git-pull-request",
+    "graph-up",
+    "half-moon",
+    "home-simple",
+    "hourglass",
+    "link",
+    "list",
+    "menu",
+    "nav-arrow-down",
+    "nav-arrow-left",
+    "nav-arrow-right",
+    "numbered-list-left",
+    "page",
+    "play-solid",
+    "plug-type-a",
+    "plus",
+    "plus-square",
+    "redo",
+    "refresh",
+    "refresh-double",
+    "search",
+    "settings",
+    "shield-check",
+    "sidebar-collapse",
+    "sparks",
+    "stat-up",
+    "sun-light",
+    "table",
+    "table-2-columns",
+    "table-rows",
+    "task-list",
+    "trash",
+    "undo",
+    "view-columns-3",
+    "warning-triangle",
+    "xmark"
+  ],
+  "files": {
+    "chartjs/chart.umd.min.js": {
+      "package": "chart.js",
+      "version": "4.6.1",
+      "source": "dist/chart.umd.min.js",
+      "transform": "strip-source-map-comment",
+      "sha256": "c17f2ce49fb9c71ef7fb39c03f868804ac5ab34730149976eebe6b7f807bef0c",
+      "bytes": 210040
+    },
+    "chartjs/chartjs-adapter-date-fns.bundle.min.js": {
+      "package": "chartjs-adapter-date-fns",
+      "version": "3.0.0",
+      "source": "dist/chartjs-adapter-date-fns.bundle.min.js",
+      "sha256": "ea7ab30d26c38dcf1f2d26bb43e73a94537b58f1906f55e1a546dd09321b5615",
+      "bytes": 50650
+    },
+    "chartjs/chartjs-plugin-annotation.min.js": {
+      "package": "chartjs-plugin-annotation",
+      "version": "3.1.0",
+      "source": "dist/chartjs-plugin-annotation.min.js",
+      "sha256": "ff03786a60f6c93ccacfe0fbb6c2e3c671d7930856a3689f2f393113d8d655ec",
+      "bytes": 38359
+    },
+    "fonts/fonts.css": {
+      "generated": true,
+      "sha256": "8622f7bea51dc6c4f2f2f2c139fc0b3c003ed099283c654a0cdaf2183c54e736",
+      "bytes": 1721
+    },
+    "fonts/geist-mono-latin-ext-wght-normal.woff2": {
+      "package": "@fontsource-variable/geist-mono",
+      "version": "5.3.0",
+      "source": "files/geist-mono-latin-ext-wght-normal.woff2",
+      "sha256": "1a189eb997c3e2ece68373e387afaec9e8617424186c4b1ab3cff7c54ba6223b",
+      "bytes": 14696
+    },
+    "fonts/geist-mono-latin-wght-normal.woff2": {
+      "package": "@fontsource-variable/geist-mono",
+      "version": "5.3.0",
+      "source": "files/geist-mono-latin-wght-normal.woff2",
+      "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc",
+      "bytes": 23128
+    },
+    "fonts/mona-sans-latin-ext-wdth-normal.woff2": {
+      "package": "@fontsource-variable/mona-sans",
+      "version": "5.3.0",
+      "source": "files/mona-sans-latin-ext-wdth-normal.woff2",
+      "sha256": "5658cdeea602a52f3e70a1a940fd7a7f05154651361e683f941afee32377425b",
+      "bytes": 32800
+    },
+    "fonts/mona-sans-latin-wdth-normal.woff2": {
+      "package": "@fontsource-variable/mona-sans",
+      "version": "5.3.0",
+      "source": "files/mona-sans-latin-wdth-normal.woff2",
+      "sha256": "5ea3740633e5ac7af56c13d7e8ec32bcae12e7723e53d34284469a8947ccb2f3",
+      "bytes": 98124
+    },
+    "htmx/htmx.min.js": {
+      "package": "htmx.org",
+      "version": "2.0.11",
+      "source": "dist/htmx.min.js",
+      "sha256": "d6fdc75f204e6bdefa99b69bf1e6d4ac69b8a364f77929f45c13476b4000f717",
+      "bytes": 52182
+    },
+    "iconoir/activity.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/activity.svg",
+      "sha256": "ea5a6551259d02f425678cb7f96f67c06391c30527c9437f6ce4d595d71a1b9f",
+      "bytes": 230
+    },
+    "iconoir/archive.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/archive.svg",
+      "sha256": "0952264c4179c765b76f0b902f1bbff4ff7d9a0134ee015b25de28fd1b22e3c5",
+      "bytes": 670
+    },
+    "iconoir/arrow-down.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/arrow-down.svg",
+      "sha256": "8ffb012f10a6dcf95af431d59ca32e46a3bc861a171456a8cb058bda1f22eaaf",
+      "bytes": 246
+    },
+    "iconoir/arrow-up.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/arrow-up.svg",
+      "sha256": "d1cf10b2dcbcb032898ef87f1198b1d3d26a4c0a558ba3c08bff97be6e5117f7",
+      "bytes": 244
+    },
+    "iconoir/bug.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/bug.svg",
+      "sha256": "3f628f2eec3300cefc69269c0ca9cf5a738cb052be67d6e1c35703880e194d7a",
+      "bytes": 1006
+    },
+    "iconoir/calendar.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/calendar.svg",
+      "sha256": "8ae89c6d771ae5371a978ee43b348c44313109780510ca9195a7fe989d24adbb",
+      "bytes": 623
+    },
+    "iconoir/chat-bubble-check.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/chat-bubble-check.svg",
+      "sha256": "41d85933111d81344bbc4ad04ae3ead2199d1e3aaced73401ec3f3f0e1334309",
+      "bytes": 477
+    },
+    "iconoir/check.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/check.svg",
+      "sha256": "54e0d558f52ec6b7c2d3874431495eeee442e5906889e997639f59f61941b215",
+      "bytes": 219
+    },
+    "iconoir/clock.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/clock.svg",
+      "sha256": "4ded22c3d1eda6eb07bb6820bf6f23fbd217a4d44dbf680a1ab587d92d9427dd",
+      "bytes": 416
+    },
+    "iconoir/collapse.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/collapse.svg",
+      "sha256": "750107f450834d90a0f41e01d7c220d3c96f066af5c87d631006d1f1e19cc5fe",
+      "bytes": 550
+    },
+    "iconoir/community.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/community.svg",
+      "sha256": "2f4b2c139f10028eb9d082307ef6f4c7c3dee27fbb93c6f42265bb099ab99651",
+      "bytes": 1100
+    },
+    "iconoir/computer.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/computer.svg",
+      "sha256": "f6e8345b720d99dbdd418f402f50b078e195fce7568f1c670c72086b5755278a",
+      "bytes": 501
+    },
+    "iconoir/copy.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/copy.svg",
+      "sha256": "af9f73f27deaa0f41e1f4a3064b3f72c455b341608096534212a62f93f04c88f",
+      "bytes": 527
+    },
+    "iconoir/dashboard-dots.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/dashboard-dots.svg",
+      "sha256": "061b645735da25207239dca0751a2b5d3117fe558892a72a61fb60f143ba3b90",
+      "bytes": 1363
+    },
+    "iconoir/download.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/download.svg",
+      "sha256": "f189b865ef0fff2926d268f0d812a2d6635e26b5fbd1ce789859947340eb9db2",
+      "bytes": 336
+    },
+    "iconoir/edit-pencil.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/edit-pencil.svg",
+      "sha256": "a01d659d78db9428e76f71abe111bb2d4b9fa5981149e8ea99efbc4d7ee3ba37",
+      "bytes": 614
+    },
+    "iconoir/expand.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/expand.svg",
+      "sha256": "ca71adae412a313c2235ea1c22f7b4ea40abef1563995de827665bf89779a97d",
+      "bytes": 550
+    },
+    "iconoir/eye.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/eye.svg",
+      "sha256": "7afa1efa3b4c294a2dd10fc4f8979ed2b40d61b40719e73db50456ad55111e53",
+      "bytes": 426
+    },
+    "iconoir/filter-list.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/filter-list.svg",
+      "sha256": "db32488192528e943106ee89a0f1e588e9ac3cdc2e99fe368b3fff505e74ce67",
+      "bytes": 398
+    },
+    "iconoir/filter.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/filter.svg",
+      "sha256": "2b4f9798a141b20203f4735d382148344222b6f8618c37fffe24cbd1659ca7fe",
+      "bytes": 674
+    },
+    "iconoir/folder.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/folder.svg",
+      "sha256": "90f754bcf21d501aaa381bc8050fe977c684bf505c65069fdb44965a4439dca9",
+      "bytes": 460
+    },
+    "iconoir/git-pull-request.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/git-pull-request.svg",
+      "sha256": "75781d285419b1eae2b777c611ac9a8e98da2210f32c0569138c4bd8da9d7b1e",
+      "bytes": 1025
+    },
+    "iconoir/graph-up.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/graph-up.svg",
+      "sha256": "88124635d5fa4ed652af9255b909838eae90c7fcf823c3c3f4b23821160979b1",
+      "bytes": 323
+    },
+    "iconoir/half-moon.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/half-moon.svg",
+      "sha256": "4237acb80850379fe603d60ea758aa76e3f06c9ef4490c2288c718d4b4ee16d7",
+      "bytes": 363
+    },
+    "iconoir/home-simple.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/home-simple.svg",
+      "sha256": "75c68dfa0cb25ba3ce8ed82a0d704a5c0545017e435fdafd7b1bb80940458416",
+      "bytes": 528
+    },
+    "iconoir/hourglass.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/hourglass.svg",
+      "sha256": "ca34b034b7f92239d142516b078eec137c2c4f3f0d1e5e49a618d9e55cc08dd9",
+      "bytes": 519
+    },
+    "iconoir/iconoir.css": {
+      "generated": true,
+      "sha256": "4b4a6f4868a856d810caf6655b8913c719a3a967f4dc8302ea65e69644cd1a07",
+      "bytes": 4560
+    },
+    "iconoir/link.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/link.svg",
+      "sha256": "84a5b6ae115d7afff785889a88d98a4615951a30f15984fb7b4e1644b8e8faed",
+      "bytes": 710
+    },
+    "iconoir/list.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/list.svg",
+      "sha256": "503708f73587ae9feba442c9f041f2b76698be15dcd5a70dce3c92ab46740a8a",
+      "bytes": 707
+    },
+    "iconoir/menu.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/menu.svg",
+      "sha256": "f32e91fcee89cc9c99eed6a6ea059a31d8c65468547cad885bd40bc40ec50c61",
+      "bytes": 391
+    },
+    "iconoir/nav-arrow-down.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/nav-arrow-down.svg",
+      "sha256": "ff19307d50e9f8dff6e219fef05c6628772bdaad2fe0c9e1b5cd2f2a1e0c11d3",
+      "bytes": 219
+    },
+    "iconoir/nav-arrow-left.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/nav-arrow-left.svg",
+      "sha256": "1a683d514ebe565659dfb5df83fe5b9ab15c252ae8630bf8baf92198b26c172d",
+      "bytes": 220
+    },
+    "iconoir/nav-arrow-right.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/nav-arrow-right.svg",
+      "sha256": "3f382c1de764702e5bc36dfd06c2ef5954c505788b02417dbb9dd501b0a84fe4",
+      "bytes": 219
+    },
+    "iconoir/numbered-list-left.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/numbered-list-left.svg",
+      "sha256": "1d787ab3ba821c142245b8ecb49f2730cff88d70385ce32cf53324a245c6d442",
+      "bytes": 1037
+    },
+    "iconoir/page.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/page.svg",
+      "sha256": "70a4dcf741f579eb51be9c5c66c54066039e1a8fe7e19894a92eeb2c6e6b6f13",
+      "bytes": 813
+    },
+    "iconoir/play-solid.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/solid/play.svg",
+      "sha256": "bdffe92b815be3b9683ad21cf4a206af439a9e8b419a83858f9cb911afb0678f",
+      "bytes": 403
+    },
+    "iconoir/plug-type-a.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/plug-type-a.svg",
+      "sha256": "e5b0da51a03d7103cf799edf3776a0221eb1dc8be781a0e63a2ea74980156bf9",
+      "bytes": 498
+    },
+    "iconoir/plus-square.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/plus-square.svg",
+      "sha256": "f76c898a6350323e533b19cb17d27a2b88ccff440fa6826eb086f28ce2a18ae8",
+      "bytes": 458
+    },
+    "iconoir/plus.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/plus.svg",
+      "sha256": "dbd0c9ec345745994d219d9bf30252abe534304e8f006316e14c32c8dbf3fb79",
+      "bytes": 238
+    },
+    "iconoir/redo.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/redo.svg",
+      "sha256": "f8519fef188a8e5cbb0a62b8d992b55266673f824b952a732a5caee04daa4ea9",
+      "bytes": 475
+    },
+    "iconoir/refresh-double.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/refresh-double.svg",
+      "sha256": "8dcde20a06ed4bf6492fc7b63e59b8cdb9c3488ace9e7e0c168febd638ea2f1b",
+      "bytes": 717
+    },
+    "iconoir/refresh.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/refresh.svg",
+      "sha256": "d7d5ded772fa339b0185d97958606f2214c2f3893f6232402a28633aed8ed282",
+      "bytes": 458
+    },
+    "iconoir/search.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/search.svg",
+      "sha256": "86e877c0a40c0e4a0055c580bd7aef2424a269658b669af159fb8d340afae7f2",
+      "bytes": 457
+    },
+    "iconoir/settings.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/settings.svg",
+      "sha256": "437c253a1c11ff214c490c766f2a3cdcf8547399fd0be48a7d222bf0703aefb5",
+      "bytes": 786
+    },
+    "iconoir/shield-check.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/shield-check.svg",
+      "sha256": "fcd0f7aaf49be11d89eccf2486165e0bdfafb0b9c7d05f659f084bbf1dbe8823",
+      "bytes": 579
+    },
+    "iconoir/sidebar-collapse.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/sidebar-collapse.svg",
+      "sha256": "128ea21bbd8a226fd8aced59d75e849445e4cfe8731b3c7d180a606e8d294ee2",
+      "bytes": 534
+    },
+    "iconoir/sparks.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/sparks.svg",
+      "sha256": "5259c3285eba49f0d4469171ee39a925abdee35683f37d1c1a9d67a5f367df04",
+      "bytes": 483
+    },
+    "iconoir/stat-up.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/stat-up.svg",
+      "sha256": "d0ec3cff5caa9efb9dec20b0ee75d78601d00f1f7d464ef373015dd89afff604",
+      "bytes": 339
+    },
+    "iconoir/sun-light.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/sun-light.svg",
+      "sha256": "42767b5358c2f19ff24a0f013df30727983741c83cd7c160527dcf75c72d2936",
+      "bytes": 1051
+    },
+    "iconoir/table-2-columns.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/table-2-columns.svg",
+      "sha256": "260dafc8a5cd667f254f504db2b12b72f7146edc305fbb9b8eaf46bd4117a27c",
+      "bytes": 565
+    },
+    "iconoir/table-rows.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/table-rows.svg",
+      "sha256": "c1cc044062e7f534f3497a8406faad4dd729f186d776202b361e9a408b840a15",
+      "bytes": 456
+    },
+    "iconoir/table.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/table.svg",
+      "sha256": "860f4208f8d9e0bb68d20eb1cff84abdf3cc171df8b38d2be1e61447785afb41",
+      "bytes": 766
+    },
+    "iconoir/task-list.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/task-list.svg",
+      "sha256": "5700f48d763355bf15c7258e05a0daaa9de4308505fb2f967811288ac8234cc6",
+      "bytes": 777
+    },
+    "iconoir/trash.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/trash.svg",
+      "sha256": "bfb9b7ecd43a9668c15f0e7547cbdcb76644ce8e29e27eeb65469a45ad7759f3",
+      "bytes": 527
+    },
+    "iconoir/undo.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/undo.svg",
+      "sha256": "b460b2f7faea4185b1e3f7497d5d71b992e276655a4a2076302c107067674f02",
+      "bytes": 480
+    },
+    "iconoir/view-columns-3.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/view-columns-3.svg",
+      "sha256": "539283b1a0e38496bedb622f2712bde11cb762dca766681e0f28b25716cf3aa5",
+      "bytes": 351
+    },
+    "iconoir/warning-triangle.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/warning-triangle.svg",
+      "sha256": "0bb7e2da61b34d2c36ede5048624fca23a58f5316e0cda70312f6dd8f5030676",
+      "bytes": 531
+    },
+    "iconoir/xmark.svg": {
+      "package": "iconoir",
+      "version": "7.12.2",
+      "source": "icons/regular/xmark.svg",
+      "sha256": "61aa0a4913a440aaafcc45064a87e24fe8eb22ba4abc4c5ef020530928ed8daf",
+      "bytes": 312
+    },
+    "modern-normalize/modern-normalize.css": {
+      "package": "modern-normalize",
+      "version": "3.0.1",
+      "source": "modern-normalize.css",
+      "sha256": "b4ad31da9b1b17de182a08e4c39159496574d90a82464c6d5afeda7133f0e110",
+      "bytes": 3338
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "generated": true,
+      "sha256": "0d2344f0d4154b26e15d98c37631f71f2c9d40b42e880d659b73b7a99696a1a0",
+      "bytes": 15772
+    }
+  }
+}

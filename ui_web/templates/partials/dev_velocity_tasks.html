@@ -3,7 +3,11 @@
     <div class="message-body">{{ error }}</div>
 </article>
 {% elif task_groups %}
-    {% include "partials/group_renderer.html" with items=task_groups %}
+    {% include "partials/group_renderer.html" with items=task_groups level=0 %}
 {% else %}
-    <p>No tasks found for this period.</p>
+<div class="empty-state">
+    <span class="empty-state__icon"><i class="iconoir-search" aria-hidden="true"></i></span>
+    <p class="empty-state__title">No tasks in this month</p>
+    <p class="empty-state__body">Nothing resolved in this period matches the current filters.</p>
+</div>
 {% endif %}

@@ -15,8 +15,12 @@ development contract shared with Codex and Claude; this file is a routing index.
 1. This is a Django modular monolith for software delivery metrics.
 2. Module communication goes through public APIs under each module's `app/api/` package.
 3. Domain code stays framework-free and uses `@dataclass(slots=True)` for dataclasses.
-4. UI code uses semantic HTML, Bulma, htmx and Chart.js; the approved local Milkdown adapter
-   provides report editing. Avoid a replacement frontend architecture.
+4. UI code uses semantic HTML, htmx and the Meridian design system (tokens, `css/foundation/`
+   primitives, `css/shell/` frame, every CSS/JS file registered once in `ui_web/static_assets.py`);
+   charts use Chart.js through `DashboardCharts`; the approved local Milkdown adapter
+   provides report editing. Every UI change follows the binding
+   `openspec/docs/current-baseline/frontend-design-requirements.md`. Avoid a replacement
+   frontend architecture.
 5. External tracker behavior should reuse `sd-metrics-lib` where practical.
 6. Secrets belong in `.env` or deployment environment variables and must not be committed or pasted into docs, tests, or chat output.
 7. Multi-provider first: Jira is the first rich work-item provider, not the platform boundary. New tracker/work-item/AI workflow designs must separate provider-neutral contracts, facts, scopes, action plans, audit, and UI flows from provider-specific adapters such as Jira, GitHub, Azure DevOps, or future systems. Do not create parallel product modules per provider unless the module owns external integration details only.
@@ -39,6 +43,9 @@ development contract shared with Codex and Claude; this file is a routing index.
    and no-dotenv entry in `docs/development/reporting-delivery.md`.
 4. Run isolated Django `check` for configuration or Django integration changes.
 5. Before review of a nontrivial code wave, run `python scripts/check_file_size_limits.py --include-untracked` and `python scripts/check_diff_whitespace.py --include-untracked`.
+   Every tracked file type must match a rule in `.github/file-size-limits.json` (unclaimed files fail);
+   split by concern before a file reaches its limit; a legacy allowance only freezes an over-cap
+   file until its owner splits it and deletes the entry.
 6. Use `.github/ai-governance/closure-verification-policy.md` before making broad completion claims.
 
 ## Agent And Skill Routing

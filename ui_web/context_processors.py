@@ -2,7 +2,21 @@ from django.conf import settings
 
 from .container import ui_web_container
 from .ai_base_workbench_adapter import AiBaseWorkbenchAdapter
+from .navigation import build_navigation
 from .workbench_service_status import DEFAULT_FULL_STACK_LAUNCHER_COMMAND, WorkbenchServiceStatusBuilder
+
+
+def dashboard_navigation(request):
+    if request.headers.get('HX-Request'):
+        return {}
+
+    resolver_match = getattr(request, 'resolver_match', None)
+    url_name = resolver_match.url_name if resolver_match else ''
+    sections, active = build_navigation(url_name or '')
+    return {
+        'dashboard_navigation': sections,
+        'dashboard_nav_active': active,
+    }
 
 
 def member_groups(request):

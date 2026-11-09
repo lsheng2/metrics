@@ -78,7 +78,7 @@ class TasksFacade:
         return self.pull_request_search_api is not None
 
     def task_table_colspan(self) -> int:
-        colspan = 9
+        colspan = 8
         if self._release_column_enabled:
             colspan += 1
         if self.is_pull_request_gateway_column_enabled():

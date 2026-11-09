@@ -1,0 +1,37 @@
+{
+  "name": "scrum-dashboard-frontend",
+  "private": true,
+  "type": "module",
+  "description": "Meridian design-system toolchain: design tokens, vendored runtime assets and frontend QA for the Django dashboard.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build:tokens && npm run build:vendor",
+    "build:tokens": "node scripts/build-tokens.mjs",
+    "build:vendor": "node scripts/build-vendor.mjs",
+    "check": "node scripts/build-tokens.mjs --check && node scripts/build-vendor.mjs --check && npm run lint:css && npm run qa:contrast",
+    "lint:css": "stylelint \"../static/css/**/*.css\"",
+    "qa:contrast": "node scripts/check-contrast.mjs",
+    "qa:browser": "node scripts/qa-browser.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@fontsource-variable/mona-sans": "5.3.0",
+    "chart.js": "4.6.1",
+    "chartjs-adapter-date-fns": "3.0.0",
+    "chartjs-plugin-annotation": "3.1.0",
+    "htmx.org": "2.0.11",
+    "iconoir": "7.12.2",
+    "modern-normalize": "3.0.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@radix-ui/colors": "3.0.0",
+    "culori": "4.0.2",
+    "playwright-core": "1.65.0",
+    "style-dictionary": "5.8.0",
+    "stylelint": "17.16.0",
+    "stylelint-config-standard": "40.0.0"
+  }
+}

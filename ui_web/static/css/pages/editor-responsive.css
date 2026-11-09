@@ -1,0 +1,93 @@
+/*
+ * Page layer: Editor signature list, responsive editor breakpoints and scope binding readiness.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+.dashboard-signature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: var(--space-2) var(--space-4);
+    margin: var(--space-4) 0 0;
+}
+
+.dashboard-signature-item {
+    display: grid;
+    gap: var(--space-0-5);
+    min-width: 0;
+}
+
+.dashboard-signature-label {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+}
+
+.dashboard-signature-item dd {
+    margin: 0;
+}
+
+.dashboard-signature-value {
+    display: block;
+    padding: 0;
+    background: none;
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+/* Phones: the cancel group starts its own wrapped row at the start edge, and tool-form actions span
+   the row with buttons growing to fill it. Button rows wrap; they never stack into a column. */
+@media (max-width: 768px) {
+    .dashboard-action-cancel,
+    .provider-action-cancel {
+        margin-left: 0;
+    }
+
+    .dashboard-tool-grid.is-toolbar > .dashboard-tool-actions {
+        flex: 1 1 100%;
+    }
+
+    .dashboard-tool-actions > .button {
+        flex: 1 1 auto;
+    }
+}
+
+@container (max-width: 40rem) {
+    .provider-profile-table {
+        min-width: 0;
+    }
+
+    .provider-row-actions {
+        justify-items: start;
+    }
+
+    .provider-row-primary-actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+}
+
+.scope-binding-readiness {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+}
+
+.scope-binding-readiness.is-ready {
+    border-color: var(--color-success-border);
+    background: var(--color-success-subtle);
+}
+
+.scope-binding-readiness.is-blocked {
+    border-color: var(--color-warning-border);
+    background: var(--color-warning-subtle);
+}

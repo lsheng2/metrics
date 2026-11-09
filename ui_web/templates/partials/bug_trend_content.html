@@ -1,7 +1,24 @@
+{% load dashboard_format %}
 <article id="bug-trend-content" class="block">
-    <h2 class="title is-3">Bug Trend Indicator</h2>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Bug Trend Indicator</h2>
+            <p class="page-header__meta">Open, new and closed bug series for a saved scope. Click a bucket to load the tickets behind it.</p>
+        </div>
+        <div class="page-header__actions">
+            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ selected_scope_id }}">
+                <span class="icon"><i class="iconoir-shield-check" aria-hidden="true"></i></span><span>Scope Audit</span>
+            </a>
+            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ selected_scope_id }}">
+                <span class="icon"><i class="iconoir-settings" aria-hidden="true"></i></span><span>Scope Config</span>
+            </a>
+            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">
+                <span class="icon"><i class="iconoir-filter-list" aria-hidden="true"></i></span><span>Scope Library</span>
+            </a>
+        </div>
+    </header>
     <form class="box dashboard-tool-form dashboard-top-toolbar" hx-get="{% url 'ui_web:bug_trend' %}" hx-target="#bug-trend-content" hx-swap="outerHTML" hx-indicator="#loading-indicator">
-        <div class="dashboard-tool-grid">
+        <div class="dashboard-tool-grid is-toolbar">
             <div class="dashboard-tool-field">
                 <label class="label" for="bug-trend-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope used to choose source facts, calculation runs, and evidence tickets for this chart." %}</label>
                 <div class="select is-fullwidth">
@@ -32,35 +49,41 @@
             </div>
             <div class="dashboard-tool-actions">
                 <button class="button is-primary" type="submit">Apply</button>
-                <a class="button" href="{% url 'ui_web:bug_trend_scope_audit' %}?scope_id={{ selected_scope_id }}">Scope Audit</a>
-                <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a>
-                <a class="button" href="{% url 'ui_web:bug_trend_scope_config' %}?scope_id={{ selected_scope_id }}">Scope Config</a>
             </div>
         </div>
     </form>
     {% if run_metadata %}
-        <div class="notification {% if run_metadata.freshness_status == 'fresh' %}is-info{% else %}is-warning{% endif %} is-light">
-            <p class="has-text-weight-semibold">Calculation run: {{ run_metadata.calculation_run_id }}</p>
-            <p class="is-size-7">Freshness: {{ run_metadata.freshness_status }}{% include "partials/help_tip.html" with label="Freshness" text="Whether this calculation run still matches the latest scope config and source facts." %}</p>
-            <p class="is-size-7">Run config hash: {{ run_metadata.run_config_version_hash }}{% include "partials/help_tip.html" with label="Run config hash" text="The config fingerprint used when this calculation run was produced." %}</p>
-            <p class="is-size-7">Current config hash: {{ run_metadata.current_config_version_hash }}{% include "partials/help_tip.html" with label="Current config hash" text="The current scope fingerprint. If it differs from the run hash, recalculate before trusting current evidence." %}</p>
-            <p class="is-size-7">Coverage: {{ run_metadata.source_coverage_start }} to {{ run_metadata.source_coverage_end }}{% include "partials/help_tip.html" with label="Coverage" text="The source data window included in this calculation run." %}</p>
-            <p class="is-size-7">Completed: {{ run_metadata.completed_at }}</p>
+        <section class="meta-strip{% if run_metadata.freshness_status != 'fresh' %} is-warning{% endif %}" aria-label="Calculation run" data-freshness="{{ run_metadata.freshness_status }}">
+            <span class="tag {{ run_metadata.freshness_status|status_tone }}"><span class="status-dot {{ run_metadata.freshness_status|status_tone }}" aria-hidden="true"></span>{{ run_metadata.freshness_status }}</span>
+            <dl class="meta-strip__facts">
+                <div><dt>Run</dt><dd><code title="{{ run_metadata.calculation_run_id }}">{{ run_metadata.calculation_run_id|truncatechars:9 }}</code></dd></div>
+                <div><dt>Coverage{% include "partials/help_tip.html" with label="Coverage" text="The source data window included in this calculation run." %}</dt><dd>{{ run_metadata.source_coverage_start }} &rarr; {{ run_metadata.source_coverage_end }}</dd></div>
+                <div><dt>Completed</dt><dd>{{ run_metadata.completed_at|timestamp }}</dd></div>
+                <div>
+                    <dt>Config{% include "partials/help_tip.html" with label="Config fingerprint" text="The scope config fingerprint used by this run. When it differs from the current fingerprint, recalculate before trusting current evidence." %}</dt>
+                    <dd>
+                        <code title="Run config hash: {{ run_metadata.run_config_version_hash }}">{{ run_metadata.run_config_version_hash|slice:":12" }}</code>
+                        {% if run_metadata.run_config_version_hash != run_metadata.current_config_version_hash %}&rarr; <code title="Current config hash: {{ run_metadata.current_config_version_hash }}">{{ run_metadata.current_config_version_hash|slice:":12" }}</code>{% endif %}
+                    </dd>
+                </div>
+            </dl>
             {% if run_metadata.freshness_status != 'fresh' %}
-                <p class="is-size-7 has-text-weight-semibold">Recalculate this scope before using this chart as current evidence.</p>
+                <p class="meta-strip__note">Recalculate this scope before using this chart as current evidence.</p>
             {% endif %}
-        </div>
+        </section>
     {% endif %}
     <div id="bug-trend-chart-container">
         {% include "partials/bug_trend_chart.html" %}
     </div>
     {% if evidence %}
-        <div id="bug-trend-evidence-container" class="mt-5">
+        <div id="bug-trend-evidence-container">
             {% include "partials/bug_trend_evidence.html" %}
         </div>
     {% elif evidence_unavailable_reason %}
-        <div id="bug-trend-evidence-container" class="notification is-warning is-light mt-5">
-            {{ evidence_unavailable_reason }}
+        <div id="bug-trend-evidence-container">
+            <div class="message is-warning" role="status">
+                <div class="message-body">{{ evidence_unavailable_reason }}</div>
+            </div>
         </div>
     {% endif %}
 </article>

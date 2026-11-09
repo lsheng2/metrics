@@ -1,9 +1,9 @@
-from pathlib import Path
-
 from playwright.sync_api import sync_playwright
 
 from bug_metrics.app.api import bug_trend_api
 from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
+from ui_web.tests import ui_geometry_contract as geometry
+from ui_web.tests.dashboard_asset_support import inline_dashboard_assets
 
 
 class FakeScopeMetadataFacade:
@@ -131,7 +131,7 @@ class BugTrendScopeConfigViewTestSupport:
                 initial_dirty_fields = page.locator('.is-dirty-field').count()
                 page.fill('#scope-name', 'Unsaved scope name')
                 return page.evaluate("""
-                    initialDirtyFields => {
+                    ({initialDirtyFields, limits}) => {
                         const field = document.querySelector('#scope-name');
                         const shell = field.closest('.scope-config-form-field');
                         const label = document.querySelector('label[for="scope-name"]');
@@ -150,10 +150,10 @@ class BugTrendScopeConfigViewTestSupport:
                             cancel_button_visible: cancel ? cancel.getBoundingClientRect().height > 0 : false,
                             action_button_height_delta: Math.max(...heights) - Math.min(...heights),
                             action_gap_px: Math.round(parseFloat(getComputedStyle(actions).columnGap || getComputedStyle(actions).gap || '0')),
-                            page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                            page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
                         };
                     }
-                """, initial_dirty_fields)
+                """, {'initialDirtyFields': initial_dirty_fields, 'limits': geometry.browser_limits()})
             finally:
                 page.close()
         finally:
@@ -169,7 +169,7 @@ class BugTrendScopeConfigViewTestSupport:
             try:
                 page.set_content(html, wait_until='domcontentloaded')
                 return page.evaluate("""
-                    () => {
+                    limits => {
                         const actions = document.querySelector('.scope-editor-actions');
                         const signature = document.querySelector('.dashboard-signature-grid');
                         const values = Array.from(document.querySelectorAll('.dashboard-signature-value'));
@@ -177,12 +177,12 @@ class BugTrendScopeConfigViewTestSupport:
                         const signatureRect = signature ? signature.getBoundingClientRect() : null;
                         return {
                             signature_item_count: document.querySelectorAll('.dashboard-signature-item').length,
-                            signature_horizontal_overflow: signature ? signature.scrollWidth > signature.clientWidth + 1 : true,
-                            signature_values_fit: values.every(value => value.scrollWidth <= value.clientWidth + 1),
+                            signature_horizontal_overflow: signature ? signature.scrollWidth > signature.clientWidth + limits.OVERFLOW_TOLERANCE : true,
+                            signature_values_fit: values.every(value => value.scrollWidth <= value.clientWidth + limits.OVERFLOW_TOLERANCE),
                             actions_to_signature_gap: actionsRect && signatureRect ? Math.round(signatureRect.top - actionsRect.bottom) : 0,
                         };
                     }
-                """)
+                """, geometry.browser_limits())
             finally:
                 page.close()
         finally:
@@ -211,15 +211,15 @@ class BugTrendScopeConfigViewTestSupport:
             priority_picker.locator('[data-searchable-value-picker-option][data-searchable-value-picker-value="P1-Critical"]').click()
             page.locator('textarea[name="query_builder_resolutions"]').fill('Fixed')
             return page.evaluate("""
-                () => ({
-                    page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                limits => ({
+                    page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
                     issue_type_value: document.querySelector('textarea[name="query_builder_issue_types"]').value,
                     component_value: document.querySelector('textarea[name="query_builder_components"]').value,
                     metadata_option_count: document.querySelectorAll('[data-searchable-value-picker-option]').length,
                     custom_field_option_count: document.querySelectorAll('.scope-query-builder-custom-field [data-searchable-value-picker-option]').length,
                     preview_value: document.querySelector('#query-builder-preview').value,
                 })
-            """)
+            """, geometry.browser_limits())
         finally:
             page.close()
 
@@ -367,7 +367,7 @@ class BugTrendScopeConfigViewTestSupport:
         try:
             page.set_content(html, wait_until='domcontentloaded')
             return page.evaluate("""
-                () => {
+                limits => {
                     const shell = document.querySelector('.scope-config-provider-panel.provider-tab-shell');
                     const workflowFrame = document.querySelector('.scope-config-provider-workflow');
                     const tabBody = document.querySelector('.provider-tab-body');
@@ -386,12 +386,12 @@ class BugTrendScopeConfigViewTestSupport:
                         .filter(height => height > 0);
                     const maxHeight = values => values.length ? Math.max(...values) : 0;
                     const minHeight = values => values.length ? Math.min(...values) : 0;
-                    const shellBorderColor = shell ? getComputedStyle(shell).borderLeftColor : '';
+                    const selectedTabUnderlineColor = selectedTab ? getComputedStyle(selectedTab).borderBottomColor : '';
                     const workflowBorderColor = workflowFrame ? getComputedStyle(workflowFrame).borderLeftColor : '';
                     return {
-                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
                         tab_count: document.querySelectorAll('.provider-tab-list [role="tab"]').length,
-                        selected_check_visible: selectedCheck ? selectedCheck.getBoundingClientRect().width >= 14 : false,
+                        selected_check_visible: selectedCheck ? selectedCheck.getBoundingClientRect().width >= limits.PROVIDER_CHECK_MIN_WIDTH : false,
                         tab_shell_wraps_provider_content: Boolean(
                             shell && contextGrid && detailPanel && profileSelect
                             && shell.contains(contextGrid)
@@ -401,10 +401,10 @@ class BugTrendScopeConfigViewTestSupport:
                         tab_body_visible: tabBody ? tabBody.getBoundingClientRect().height > 0 : false,
                         selected_tab_attached_to_body: Boolean(
                             selectedTab && tabBody
-                            && Math.abs(selectedTab.getBoundingClientRect().bottom - tabBody.getBoundingClientRect().top) <= 2
+                            && Math.abs(selectedTab.getBoundingClientRect().bottom - tabBody.getBoundingClientRect().top) <= limits.TAB_ATTACHMENT_GAP_MAX
                         ),
                         selected_tab_is_hsdes: selectedTab ? selectedTab.textContent.includes('HSD-ES') : false,
-                        shell_border_is_blue: shellBorderColor === 'rgb(28, 126, 214)',
+                        selected_tab_underline_is_blue: selectedTabUnderlineColor === 'rgb(28, 126, 214)',
                         workflow_frame_is_blue: workflowBorderColor === 'rgb(28, 126, 214)',
                         workflow_frame_wraps_work_area: Boolean(
                             workflowFrame && shell && sourcePanel && mappingSection && actionBar
@@ -418,22 +418,12 @@ class BugTrendScopeConfigViewTestSupport:
                         scope_form_control_height_delta: maxHeight(formControlHeights) - minHeight(formControlHeights),
                     };
                 }
-            """)
+            """, geometry.browser_limits())
         finally:
             page.close()
 
     def _measure_scope_library_row_actions(self, html):
-        static_dir = Path(__file__).resolve().parents[1] / 'static'
-        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
-        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
-        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
-        html = html.replace(
-            '</head>',
-            f'<style>{vendor_css}\n{main_css}</style></head>',
-        ).replace(
-            '</body>',
-            f'<script>{main_js}</script></body>',
-        )
+        html = inline_dashboard_assets(html)
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
@@ -443,7 +433,7 @@ class BugTrendScopeConfigViewTestSupport:
             page.locator('.scope-import-menu summary').click()
             import_file_visible_after_open = page.locator('.scope-import-panel').is_visible()
             page.locator('.scope-import-menu').evaluate('menu => { menu.open = false; }')
-            page.locator('.scope-library-header .title').hover()
+            page.locator('.scope-library-header .page-header__title').hover()
             page.wait_for_timeout(180)
             help_result = page.evaluate("""
                 () => {
@@ -461,7 +451,7 @@ class BugTrendScopeConfigViewTestSupport:
             """)
             page.locator('.scope-row-menu summary').first.click()
             result = page.evaluate("""
-                () => {
+                limits => {
                     const actions = document.querySelector('tbody tr .scope-primary-actions');
                     const primaryButtons = Array.from(actions.querySelectorAll(':scope > .button, :scope > .scope-row-menu > summary.button'));
                     const primaryRects = primaryButtons.map(button => button.getBoundingClientRect());
@@ -471,21 +461,21 @@ class BugTrendScopeConfigViewTestSupport:
                     const archiveButton = actions.querySelector('button[value="disable"]');
                     const archiveRect = archiveButton ? archiveButton.getBoundingClientRect() : null;
                     return {
-                        same_row: primaryRects.length >= 2 && Math.abs(primaryRects[0].top - primaryRects[1].top) <= 1,
+                        same_row: primaryRects.length >= 2 && Math.abs(primaryRects[0].top - primaryRects[1].top) <= limits.ALIGNMENT_TOLERANCE,
                         primary_heights: Array.from(new Set(primaryRects.map(rect => Math.round(rect.height)))).sort((a, b) => a - b),
                         primary_widths: Array.from(new Set(primaryRects.map(rect => Math.round(rect.width)))).sort((a, b) => a - b),
                         panel_width: Math.round(panel.width),
                         action_cell_width: Math.round(cell.width),
                         archive_action_visible: archiveRect !== null && archiveRect.width > 0 && archiveRect.height > 0,
-                        horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                        horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
                         open_after_summary_click: menu.open,
                     };
                 }
-            """)
+            """, geometry.browser_limits())
             result.update(help_result)
             result['import_file_visible_initial'] = import_file_visible_initial
             result['import_file_visible_after_open'] = import_file_visible_after_open
-            page.mouse.click(20, 20)
+            page.locator('.app-crumbs__page').click()
             result['open_after_blank_click'] = page.locator('.scope-row-menu').first.evaluate('menu => menu.open')
             page.locator('.scope-row-menu summary').first.click()
             page.keyboard.press('Escape')
@@ -557,7 +547,7 @@ class BugTrendScopeConfigViewTestSupport:
         try:
             page.set_content(html, wait_until='domcontentloaded')
             return page.evaluate("""
-                () => {
+                limits => {
                     const rows = Array.from(document.querySelectorAll('.scope-library-table tbody tr'));
                     const bodyRowHeights = rows.map(row => Math.round(row.getBoundingClientRect().height));
                     const primaryActionLeftOffsets = rows
@@ -581,11 +571,11 @@ class BugTrendScopeConfigViewTestSupport:
                     const thead = document.querySelector('.scope-library-table thead');
                     const firstCell = document.querySelector('.scope-library-table tbody td');
                     return {
-                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-                        table_horizontal_overflow: document.querySelector('.scope-library-table-box').scrollWidth > document.querySelector('.scope-library-table-box').clientWidth + 1,
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
+                        table_horizontal_overflow: document.querySelector('.scope-library-table-box').scrollWidth > document.querySelector('.scope-library-table-box').clientWidth + limits.OVERFLOW_TOLERANCE,
                         scope_lifecycle_height: lifecycle ? Math.round(lifecycle.getBoundingClientRect().height) : 0,
                         max_body_row_height: Math.max(...bodyRowHeights),
-                        actions_wrap: actionRects.length >= 2 && Math.abs(actionRects[0].top - actionRects[1].top) > 1,
+                        actions_wrap: actionRects.length >= 2 && Math.abs(actionRects[0].top - actionRects[1].top) > limits.ALIGNMENT_TOLERANCE,
                         primary_action_left_offset_delta: Math.max(...primaryActionLeftOffsets) - Math.min(...primaryActionLeftOffsets),
                         hash_column_display: hashCell ? getComputedStyle(hashCell).display : '',
                         ip_column_display: ipCell ? getComputedStyle(ipCell).display : '',
@@ -594,19 +584,9 @@ class BugTrendScopeConfigViewTestSupport:
                         first_cell_display: firstCell ? getComputedStyle(firstCell).display : '',
                     };
                 }
-            """)
+            """, geometry.browser_limits())
         finally:
             page.close()
 
     def _scope_library_browser_html(self, html):
-        static_dir = Path(__file__).resolve().parents[1] / 'static'
-        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
-        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
-        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
-        return html.replace(
-            '</head>',
-            f'<style>{vendor_css}\n{main_css}</style></head>',
-        ).replace(
-            '</body>',
-            f'<script>{main_js}</script></body>',
-        )
+        return inline_dashboard_assets(html)

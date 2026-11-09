@@ -1,6 +1,7 @@
 import json
 from django.test import override_settings
 
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 from ui_web.tests.report_authoring_browser_support import (
     browser_page,
@@ -41,7 +42,7 @@ class TestReportCompletionBrowser(ReportAuthoringBrowserTestCase):
             page.wait_for_timeout(400)
             after_count = len(requests)
 
-        self.assertLess(abs(before['menuLeft'] - before['tokenLeft']), 48, before)
+        self.assertLess(abs(before['menuLeft'] - before['tokenLeft']), geometry.REPORT_COMPLETION_MENU_OFFSET_MAX, before)
         self.assertLessEqual(before['menuTop'], before['viewportBottom'] - before['menuHeight'])
         self.assertGreaterEqual(before['menuTop'], 0)
         self.assertNotEqual(round(before['menuTop']), round(before['regionBottom']), before)

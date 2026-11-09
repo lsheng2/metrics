@@ -1,15 +1,19 @@
-{% for approval in approvals %}
-    {% if approval.state == 'approved' %}
-        <span class="tag is-small mr-1 mb-1 is-success" title="Approved"><i class="iconoir-check mr-1"></i>{{ approval.display_name }}</span>
-    {% elif approval.state == 'approved_with_suggestions' %}
-        <span class="tag is-small mr-1 mb-1 is-success is-light" title="Approved with suggestions"><i class="iconoir-chat-bubble-check mr-1"></i>{{ approval.display_name }}</span>
-    {% elif approval.state == 'waiting' %}
-        <span class="tag is-small mr-1 mb-1 is-warning" title="Changes requested — waiting for author"><i class="iconoir-warning-triangle mr-1"></i>{{ approval.display_name }}</span>
-    {% elif approval.state == 'rejected' %}
-        <span class="tag is-small mr-1 mb-1 is-danger"><i class="iconoir-xmark mr-1"></i>{{ approval.display_name }}</span>
-    {% elif approval.state == 'stale_approved' %}
-        <span class="is-inline-flex is-align-items-center is-size-7 has-text-grey-light mr-2" title="Approved, then invalidated by a new commit"><i class="iconoir-refresh-double mr-1"></i>{{ approval.display_name }}</span>
-    {% endif %}
-{% empty %}
-    <span class="has-text-grey-light">—</span>
-{% endfor %}
+{% if approvals %}
+<span class="tags">
+    {% for approval in approvals %}
+        {% if approval.state == 'approved' %}
+            <span class="tag is-small is-success" title="Approved"><i class="iconoir-check" aria-hidden="true"></i><span class="is-sr-only">Approved: </span>{{ approval.display_name }}</span>
+        {% elif approval.state == 'approved_with_suggestions' %}
+            <span class="tag is-small is-success" title="Approved with suggestions"><i class="iconoir-chat-bubble-check" aria-hidden="true"></i><span class="is-sr-only">Approved with suggestions: </span>{{ approval.display_name }}</span>
+        {% elif approval.state == 'waiting' %}
+            <span class="tag is-small is-warning" title="Changes requested, waiting for the author"><i class="iconoir-warning-triangle" aria-hidden="true"></i><span class="is-sr-only">Waiting for the author: </span>{{ approval.display_name }}</span>
+        {% elif approval.state == 'rejected' %}
+            <span class="tag is-small is-danger" title="Rejected"><i class="iconoir-xmark" aria-hidden="true"></i><span class="is-sr-only">Rejected: </span>{{ approval.display_name }}</span>
+        {% elif approval.state == 'stale_approved' %}
+            <span class="tag is-small" title="Approved, then reset by a new commit"><i class="iconoir-refresh-double" aria-hidden="true"></i><span class="is-sr-only">Approval reset by a new commit: </span>{{ approval.display_name }}</span>
+        {% endif %}
+    {% endfor %}
+</span>
+{% else %}
+<span class="has-text-grey-light">—</span>
+{% endif %}

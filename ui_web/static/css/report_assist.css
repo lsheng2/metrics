@@ -1,16 +1,17 @@
+/* AI assist dialog: a raised theme surface whose candidate preview renders on paper. */
 .report-assist-dialog {
     box-sizing: border-box;
     position: fixed;
-    z-index: 45;
+    z-index: var(--z-overlay);
     width: min(28rem, calc(100vw - 1rem));
     max-height: calc(100vh - 1rem);
     overflow: auto;
-    padding: 0.75rem;
-    border: 1px solid #9ca3af;
-    border-radius: 6px;
-    background: #ffffff;
-    color: #111827;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-lg);
+    color: var(--color-text);
 }
 
 .report-assist-dialog[hidden],
@@ -20,37 +21,35 @@
 
 .report-assist-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
 }
 
-.report-assist-header .title {
+.report-assist-title {
     margin: 0;
-    color: inherit;
-}
-
-.report-assist-dialog .label {
-    color: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
 }
 
 .report-assist-dialog [role="status"] {
-    margin: 0.75rem 0;
+    margin: var(--space-3) 0;
+    color: var(--color-text-secondary);
     overflow-wrap: anywhere;
+}
+
+.report-assist-dialog [role="status"].is-danger {
+    color: var(--color-danger-text);
 }
 
 .report-assist-preview {
-    border-top: 1px solid #d9dee8;
-    padding-top: 0.5rem;
     max-height: 15rem;
     overflow: auto;
-    overflow-wrap: anywhere;
-    color: #111827;
-}
-
-.report-assist-dialog .report-assist-preview :is(p, li, blockquote, h1, h2, h3, td, th) {
-    color: inherit;
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-2-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
 }
 
 .report-assist-dialog .dashboard-action-group {

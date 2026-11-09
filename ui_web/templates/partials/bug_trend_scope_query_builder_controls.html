@@ -1,7 +1,7 @@
 {% url 'ui_web:bug_trend_scope_metadata' as scope_metadata_url %}
 <section class="dashboard-form-grid scope-config-form-grid scope-query-builder-grid">
     <div class="dashboard-form-field scope-config-form-field">
-        <label class="label" for="query-builder-project">Jira project <span class="dashboard-required-tag tag is-small is-danger is-light">Required</span></label>
+        <label class="label" for="query-builder-project">Jira project <span class="dashboard-required-tag">Required to save</span></label>
         <div data-query-builder-project-picker>
             {% include "partials/searchable_value_picker.html" with field_id="query-builder-project" field_name="query_builder_project" field_value=source_mode_context.query_builder_state.project label="Jira project" placeholder="STDEL" search_placeholder="Search Jira projects" search_label="Search Jira projects" empty_message="No Jira project metadata. Type a project key manually." options=source_mode_context.query_builder_project_options source_mode=source_mode_context.query_builder_mode enabled=source_mode_context.query_builder_active required_actions="save_draft save_enable" required_label="Jira project" required_message="Jira project is required before saving a Query Builder scope." picker_key="project" open_picker=source_mode_context.open_picker refresh_url=scope_metadata_url %}
         </div>
@@ -10,7 +10,7 @@
         <div class="dashboard-form-field scope-config-form-field scope-query-builder-control">
             <label class="label" for="{{ control.input_id }}">{{ control.label }}</label>
             {% include "partials/searchable_value_picker.html" with field_id=control.input_id field_name=control.name field_value=control.value_text label=control.label placeholder=control.placeholder search_placeholder=control.search_placeholder search_label=control.search_placeholder empty_message=control.empty_message options=control.options source_mode=source_mode_context.query_builder_mode enabled=source_mode_context.query_builder_active picker_key=control.picker_key open_picker=source_mode_context.open_picker refresh_url=scope_metadata_url multiline=True %}
-            <p class="is-size-7">{{ control.help_text }}</p>
+            <p class="help">{{ control.help_text }}</p>
         </div>
     {% endfor %}
 </section>

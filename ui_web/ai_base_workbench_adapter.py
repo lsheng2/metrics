@@ -4,6 +4,7 @@ from urllib.request import Request, urlopen
 import json
 
 from django.conf import settings
+from django.utils.translation import gettext
 
 from .workbench_state import WorkbenchPageQueryState
 
@@ -193,10 +194,10 @@ class AiBaseWorkbenchAdapter:
 
     def next_action(self, status: str) -> str:
         if status in {'ready', 'connected', 'available'}:
-            return 'Use the AI pane with the bounded workbench context.'
+            return gettext('Use the AI pane with the bounded workbench context.')
         if status == 'disabled':
-            return f'Restart the unified stack with: {self._launcher_command}'
-        return f'Start or restart AI Base with: {self._launcher_command}'
+            return gettext('Restart the unified stack with: %(command)s') % {'command': self._launcher_command}
+        return gettext('Start or restart AI Base with: %(command)s') % {'command': self._launcher_command}
 
     def _legacy_workbench_query(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
         return {

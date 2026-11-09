@@ -1,0 +1,12 @@
+{% if lazy_loading %}
+<div class="disclosure__body"
+     hx-get="{% url 'ui_web:partials_tasks_stage' %}?task_ids={% for task in tasks %}{{ task.id|urlencode }}{% if not forloop.last %},{% endif %}{% endfor %}"
+     hx-trigger="{{ lazy_trigger|default:'toggle once from:closest details' }}"
+     hx-swap="innerHTML">
+    <div class="skeleton-lines" role="status" aria-label="Loading tasks"><div></div><div></div><div></div></div>
+</div>
+{% else %}
+<div class="disclosure__body">
+    {% include "partials/task_table.html" with tasks=tasks %}
+</div>
+{% endif %}

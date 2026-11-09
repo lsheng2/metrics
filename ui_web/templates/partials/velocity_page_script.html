@@ -1,0 +1,149 @@
+{% comment %}
+Shared behaviour for the velocity pages. #velocity-options owns the URL state (filters plus the
+selected month and developers). A month click on any chart lists that month's tasks; on the
+developer page the #velocity-developers toggles drive every registered chart and that task list.
+{% endcomment %}
+<script>
+window.DashboardVelocity = (function () {
+    'use strict';
+
+    let developerCharts = [];
+
+    function optionsForm() {
+        return document.getElementById('velocity-options');
+    }
+
+    function taskDetails() {
+        return document.getElementById('task-details-container');
+    }
+
+    function fieldInput(name) {
+        const form = optionsForm();
+        return form && form.elements.namedItem(name);
+    }
+
+    function setField(name, value) {
+        const input = fieldInput(name);
+        if (input) {
+            input.value = value || '';
+            input.disabled = !value;
+        }
+    }
+
+    // Empty fields are disabled, so the URL carries only the active state.
+    function syncUrl(push) {
+        const form = optionsForm();
+        const query = new URLSearchParams(new FormData(form)).toString();
+        const url = query ? `${form.getAttribute('hx-get')}?${query}` : form.getAttribute('hx-get');
+        window.history[push ? 'pushState' : 'replaceState'](null, '', url);
+        return query;
+    }
+
+    function loadTasks(query, scroll) {
+        const details = taskDetails();
+        details.hidden = false;
+        htmx.ajax('GET', `${optionsForm().dataset.tasksUrl}?${query}`, { source: details, target: details, swap: 'innerHTML' }).then(() => {
+            if (scroll) {
+                const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                details.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+            }
+        });
+    }
+
+    function openPeriod(period, developers) {
+        if (!optionsForm() || !taskDetails() || !period) {
+            return;
+        }
+        setField('period', period);
+        setField('developers', developers);
+        loadTasks(syncUrl(true), true);
+    }
+
+    function developerToggles() {
+        return Array.from(document.querySelectorAll('#velocity-developers [data-developer]'));
+    }
+
+    function shownDevelopers() {
+        return developerToggles()
+            .filter(toggle => toggle.getAttribute('aria-pressed') === 'true')
+            .map(toggle => toggle.dataset.developer);
+    }
+
+    // No developers parameter means everyone, so "all shown" and "none shown" both omit it.
+    function developerParam() {
+        const shown = shownDevelopers();
+        return shown.length < developerToggles().length ? shown.join(',') : '';
+    }
+
+    function applyDevelopers(chart) {
+        const pressed = new Map(developerToggles().map(toggle => [toggle.dataset.developer, toggle.getAttribute('aria-pressed') === 'true']));
+        chart.data.datasets.forEach((dataset, index) => chart.setDatasetVisibility(index, pressed.get(dataset.label) !== false));
+    }
+
+    function setDevelopers(isShown) {
+        const before = shownDevelopers().join(',');
+        developerToggles().forEach(toggle => toggle.setAttribute('aria-pressed', String(isShown(toggle))));
+        if (shownDevelopers().join(',') === before) {
+            return;
+        }
+        developerCharts.forEach(chart => {
+            applyDevelopers(chart);
+            chart.update();
+        });
+        setField('developers', developerParam());
+        const query = syncUrl(false);
+        const period = fieldInput('period');
+        if (period && !period.disabled && taskDetails()) {
+            if (shownDevelopers().length) {
+                loadTasks(query, false);
+            } else {
+                taskDetails().hidden = true;
+            }
+        }
+    }
+
+    function bindDeveloperToggles() {
+        const group = document.getElementById('velocity-developers');
+        if (!group || group.dataset.bound) {
+            return;
+        }
+        group.dataset.bound = 'true';
+        group.addEventListener('click', event => {
+            const toggle = event.target.closest('[data-developer]');
+            const bulk = event.target.closest('[data-developers]');
+            if (toggle) {
+                setDevelopers(item => {
+                    const pressed = item.getAttribute('aria-pressed') === 'true';
+                    return item === toggle ? !pressed : pressed;
+                });
+            } else if (bulk) {
+                setDevelopers(() => bulk.dataset.developers === 'all');
+            }
+        });
+    }
+
+    return {
+        openPeriod,
+
+        // Developer charts list a month's tasks for the developers toggled on.
+        openDeveloperPeriod(chart, index) {
+            if (developerToggles().length && !shownDevelopers().length) {
+                return;
+            }
+            openPeriod(chart.data.labels[index], developerParam());
+        },
+
+        registerDeveloperChart(chart) {
+            developerCharts = developerCharts.filter(item => item !== chart && item.canvas && item.canvas.isConnected);
+            developerCharts.push(chart);
+            applyDevelopers(chart);
+            chart.update('none');
+            bindDeveloperToggles();
+        },
+
+        pointerOnHover(event, elements, chart) {
+            chart.canvas.style.cursor = elements.length ? 'pointer' : '';
+        },
+    };
+})();
+</script>

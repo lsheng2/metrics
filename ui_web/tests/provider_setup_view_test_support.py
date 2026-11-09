@@ -1,7 +1,9 @@
 import json
-from pathlib import Path
 
 from playwright.sync_api import sync_playwright
+
+from ui_web.tests import ui_geometry_contract as geometry
+from ui_web.tests.dashboard_asset_support import inline_dashboard_assets
 
 
 class ProviderSetupViewTestSupport:
@@ -56,7 +58,7 @@ class ProviderSetupViewTestSupport:
         try:
             page.set_content(html, wait_until='domcontentloaded')
             return page.evaluate("""
-                () => {
+                limits => {
                     const editor = document.querySelector('.provider-setup-editor');
                     const advanced = document.querySelector('.provider-advanced-config');
                     const tableBox = document.querySelector('.provider-profile-table-box');
@@ -79,27 +81,27 @@ class ProviderSetupViewTestSupport:
                     const maxHeight = values => values.length ? Math.max(...values) : 0;
                     const minHeight = values => values.length ? Math.min(...values) : 0;
                     return {
-                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-                        table_horizontal_overflow: tableBox ? tableBox.scrollWidth > tableBox.clientWidth + 1 : false,
+                        page_horizontal_overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + limits.OVERFLOW_TOLERANCE,
+                        table_horizontal_overflow: tableBox ? tableBox.scrollWidth > tableBox.clientWidth + limits.OVERFLOW_TOLERANCE : false,
                         inventory_visible: tableBox ? tableBox.getBoundingClientRect().height > 0 : false,
                         editor_visible: editor ? editor.getBoundingClientRect().height > 0 : false,
                         provider_choice_count: document.querySelectorAll('.scope-provider-choice').length,
                         advanced_json_open: advanced ? advanced.open : false,
                         primary_action_button_height_delta: maxHeight(primaryButtonHeights) - minHeight(primaryButtonHeights),
                         provider_choice_max_height: maxHeight(providerChoiceHeights),
-                        selected_check_visible: selectedCheck ? selectedCheck.getBoundingClientRect().width >= 14 : false,
+                        selected_check_visible: selectedCheck ? selectedCheck.getBoundingClientRect().width >= limits.PROVIDER_CHECK_MIN_WIDTH : false,
                         tab_shell_wraps_context: Boolean(shell && contextPanel && identityRow && shell.contains(contextPanel) && shell.contains(identityRow)),
                         tab_body_visible: tabBody ? tabBody.getBoundingClientRect().height > 0 : false,
                         selected_tab_attached_to_body: Boolean(
                             selectedTab && tabBody
-                            && Math.abs(selectedTab.getBoundingClientRect().bottom - tabBody.getBoundingClientRect().top) <= 2
+                            && Math.abs(selectedTab.getBoundingClientRect().bottom - tabBody.getBoundingClientRect().top) <= limits.TAB_ATTACHMENT_GAP_MAX
                         ),
                         tab_shell_wraps_editor_controls: Boolean(shell && advanced && actions && shell.contains(advanced) && shell.contains(actions)),
                         context_panel_left_border_width: contextPanel ? Math.round(parseFloat(getComputedStyle(contextPanel).borderLeftWidth)) : 0,
                         provider_form_control_height_delta: maxHeight(formControlHeights) - minHeight(formControlHeights),
                     };
                 }
-            """)
+            """, geometry.browser_limits())
         finally:
             page.close()
 
@@ -159,17 +161,7 @@ class ProviderSetupViewTestSupport:
             playwright.stop()
 
     def _provider_setup_browser_html(self, html):
-        static_dir = Path(__file__).resolve().parents[1] / 'static'
-        vendor_css = (static_dir / 'css' / 'vendor_fallbacks.css').read_text(encoding='utf-8')
-        main_css = (static_dir / 'css' / 'main.css').read_text(encoding='utf-8')
-        main_js = (static_dir / 'js' / 'main.js').read_text(encoding='utf-8')
-        return html.replace(
-            '</head>',
-            f'<style>{vendor_css}\n{main_css}</style></head>',
-        ).replace(
-            '</body>',
-            f'<script>{main_js}</script></body>',
-        )
+        return inline_dashboard_assets(html)
 
     def _measure_provider_auth_visibility(self, html):
         html = self._provider_setup_browser_html(html)
@@ -221,19 +213,19 @@ class ProviderSetupViewTestSupport:
             try:
                 page.set_content(html, wait_until='domcontentloaded')
                 return page.evaluate("""
-                    () => {
+                    limits => {
                         const result = document.querySelector('#provider-connection-test-result');
                         const actions = document.querySelector('.provider-editor-actions');
                         return {
                             result_visible: result ? result.getBoundingClientRect().height > 0 : false,
                             result_before_actions: Boolean(
                                 result && actions
-                                && result.getBoundingClientRect().bottom <= actions.getBoundingClientRect().top + 1
+                                && result.getBoundingClientRect().bottom <= actions.getBoundingClientRect().top + limits.ALIGNMENT_TOLERANCE
                             ),
                             result_text: result ? result.innerText : '',
                         };
                     }
-                """)
+                """, geometry.browser_limits())
             finally:
                 page.close()
         finally:
@@ -356,7 +348,7 @@ class ProviderSetupViewTestSupport:
             try:
                 page.set_content(html, wait_until='domcontentloaded')
                 return page.evaluate("""
-                    () => {
+                    limits => {
                         const summary = document.querySelector('.provider-advanced-config summary');
                         const actions = document.querySelector('.provider-editor-actions');
                         const signature = document.querySelector('.dashboard-signature-grid');
@@ -369,12 +361,12 @@ class ProviderSetupViewTestSupport:
                             advanced_summary_cursor: summaryStyle ? summaryStyle.cursor : '',
                             advanced_summary_display: summaryStyle ? summaryStyle.display : '',
                             signature_item_count: document.querySelectorAll('.dashboard-signature-item').length,
-                            signature_horizontal_overflow: signature ? signature.scrollWidth > signature.clientWidth + 1 : true,
-                            signature_values_fit: signatureValues.every(value => value.scrollWidth <= value.clientWidth + 1),
+                            signature_horizontal_overflow: signature ? signature.scrollWidth > signature.clientWidth + limits.OVERFLOW_TOLERANCE : true,
+                            signature_values_fit: signatureValues.every(value => value.scrollWidth <= value.clientWidth + limits.OVERFLOW_TOLERANCE),
                             actions_to_signature_gap: actionsRect && signatureRect ? Math.round(signatureRect.top - actionsRect.bottom) : 0,
                         };
                     }
-                """)
+                """, geometry.browser_limits())
             finally:
                 page.close()
         finally:

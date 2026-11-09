@@ -1,21 +1,22 @@
-<div class="box">
-    <h3 class="title is-4">Resolved Story Points{% if use_custom_filter %} - Member Group Custom Filter{% endif %}</h3>
-    {% if has_custom_filter %}
-    <div class="buttons are-small">
-        <button class="button {% if use_custom_filter %}is-info{% endif %}"
-                hx-get="{% url 'ui_web:team_sp_chart' %}?member_group_id={{ member_group_id }}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}{% endif %}"
-                hx-push-url="{% url 'ui_web:team_velocity' %}?member_group_id={{ member_group_id }}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}{% endif %}"
-                hx-target="#team-sp-chart-container"
-                hx-swap="innerHTML"
-                hx-indicator="#loading-indicator">
-            Member Group Custom Filter
-        </button>
+<section class="card chart-card" aria-labelledby="team-sp-chart-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="team-sp-chart-title">Resolved story points<span class="card-header-meta">per month</span></h3>
+    </header>
+    <div class="chart-card__body">
+        {% if month_sp %}
+            <div class="chart-frame">
+                <canvas id="teamStoryPointsChart" role="img" aria-label="Resolved story points per month"></canvas>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-state__icon"><i class="iconoir-stat-up" aria-hidden="true"></i></span>
+                <p class="empty-state__title">No resolved story points</p>
+                <p class="empty-state__body">Story points appear here once estimated work is resolved.</p>
+            </div>
+        {% endif %}
     </div>
-    {% endif %}
-    <canvas id="teamStoryPointsChart" width="400" height="200"></canvas>
-    <p class="help has-text-grey">Click on a bar to see task details below</p>
-</div>
-
+</section>
+{% if month_sp %}
 <script>
 (function() {
     function initTeamStoryPointsChart() {
@@ -23,74 +24,46 @@
             setTimeout(initTeamStoryPointsChart, 100);
             return;
         }
-
         if (window.teamStoryPointsChartInstance) {
             window.teamStoryPointsChartInstance.destroy();
             window.teamStoryPointsChartInstance = null;
         }
-
-        var canvas = document.getElementById('teamStoryPointsChart');
-        if (!canvas) {
-            return;
-        }
-
-        var chartData = {{ month_sp|safe }};
-        var taskDetailsBaseUrl = '{% url "ui_web:team_velocity_tasks" %}';
-        var dashboardBaseUrl = '{% url "ui_web:team_velocity" %}';
-        var memberGroupId = '{{ member_group_id }}';
-        var useCustomFilter = '{{ use_custom_filter|yesno:"true,false" }}';
-
-        if (chartData && chartData.labels && chartData.data) {
-            window.teamStoryPointsChartInstance = new Chart(canvas.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: chartData.labels,
-                    datasets: chartData.data.map(function(item) {
-                        return {
-                            label: item.developer === 'max_sp' ? 'Max Capacity' : item.developer,
-                            data: item.metrics,
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            borderWidth: 1
-                        };
-                    })
+        const canvas = document.getElementById('teamStoryPointsChart');
+        if (!canvas) return;
+        const chartData = {{ month_sp|safe }};
+        const barColor = index => () => window.DashboardCharts.paletteColor(index);
+        window.teamStoryPointsChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.data.map((item, index) => ({
+                    label: item.developer,
+                    data: item.metrics,
+                    backgroundColor: barColor(index),
+                    hoverBackgroundColor: barColor(index)
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                onHover: window.DashboardVelocity.pointerOnHover,
+                onClick: (event, elements) => {
+                    if (elements.length) window.DashboardVelocity.openPeriod(chartData.labels[elements[0].index]);
                 },
-                options: {
-                    responsive: true,
-                    onClick: function(event, elements) {
-                        if (!elements || elements.length === 0) return;
-                        var period = chartData.labels[elements[0].index];
-                        var sharedParams = '?period=' + encodeURIComponent(period)
-                            + '&member_group_id=' + encodeURIComponent(memberGroupId)
-                            + (useCustomFilter === 'true' ? '&use_custom_filter=true' : '');
-                        history.pushState(null, '', dashboardBaseUrl + sharedParams);
-                        htmx.ajax('GET', taskDetailsBaseUrl + sharedParams, {target: '#task-details-container', swap: 'innerHTML'}).then(function() {
-                            document.getElementById('task-details-container').scrollIntoView({behavior: 'smooth'});
-                        });
-                    },
-                    scales: {
-                        x: {
-                            stacked: true
-                        },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            usePointStyle: true,
-                            itemSort: function(a, b) { return b.raw - a.raw; }
-                        }
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: context => `${context.formattedValue} SP` }
                     }
                 }
-            });
-        }
+            }
+        });
     }
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initTeamStoryPointsChart);
     } else {
@@ -98,3 +71,4 @@
     }
 })();
 </script>
+{% endif %}

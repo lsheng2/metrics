@@ -26,11 +26,12 @@ class TestBugTrendViews(TestCase):
         self.assertIn(str(run.id), content)
         self.assertIn(str(bucket.id), content)
         self.assertIn('bugTrendChart', content)
-        self.assertIn('Freshness: fresh', content)
-        self.assertIn('Run config hash:', content)
-        self.assertIn(scope.config_version_hash, content)
-        self.assertIn('Coverage: 2026-08-03 to 2026-08-09', content)
-        self.assertIn('Completed: 2026-08-19T00:00:00+00:00', content)
+        self.assertIn('data-freshness="fresh"', content)
+        self.assertIn(f'Run config hash: {scope.config_version_hash}', content)
+        self.assertNotIn('Current config hash:', content)
+        self.assertIn('2026-08-03 &rarr; 2026-08-09', content)
+        self.assertIn('<time datetime="2026-08-19T00:00:00+00:00"', content)
+        self.assertIn('2026-08-19 00:00 UTC', content)
 
     def test_shouldShowStaleRunGuidanceWhenScopeConfigChanged(self):
         # Given
@@ -50,9 +51,9 @@ class TestBugTrendViews(TestCase):
         self.assertEqual(200, response.status_code)
         content = response.content.decode()
         self.assertIn(str(run.id), content)
-        self.assertIn('Freshness: stale_config', content)
-        self.assertIn(old_hash, content)
-        self.assertIn(scope.config_version_hash, content)
+        self.assertIn('data-freshness="stale_config"', content)
+        self.assertIn(f'Run config hash: {old_hash}', content)
+        self.assertIn(f'Current config hash: {scope.config_version_hash}', content)
         self.assertIn('Recalculate this scope before using this chart as current evidence.', content)
         self.assertNotIn('id="bug-trend-evidence-container"', content)
 

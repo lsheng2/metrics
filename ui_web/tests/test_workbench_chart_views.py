@@ -2,7 +2,6 @@ from datetime import date, datetime, timezone
 import json
 import os
 import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
@@ -17,6 +16,7 @@ from bug_metrics.models import (
     BugTrendScopeProviderBinding,
     JiraScopeConfig,
 )
+from ui_web.tests.dashboard_asset_support import feature_scripts_source
 from ui_web.workbench_registry import default_workbench_panes
 from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupport
 
@@ -116,6 +116,32 @@ class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupp
         self.assertNotIn('bucket=', clear_link)
         self.assertNotIn('series=', clear_link)
 
+    def test_shouldRenderOneUrlStateEvidenceFilterInsideWorkbenchEvidenceCard(self):
+        # Given
+        scope, run, bucket = self._seed_trend_data()
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {
+            'scope_id': scope.id,
+            'begin': '2026-08-03',
+            'end': '2026-08-09',
+            'chart_id': 'default_bug_trend',
+            'run': str(run.id),
+            'bucket': str(bucket.id),
+            'series': 'new_critical_high',
+            'text': 'crash',
+        })
+
+        # Then: list filters and Clear selection stay Workbench URL state, never the Bug Trend evidence endpoint.
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, content.count('workbench-evidence-filter-grid'))
+        self.assertNotIn(f'hx-get="{reverse("ui_web:bug_trend_evidence")}', content)
+        self.assertIn('name="text" value="crash"', content)
+        filter_at = content.index('workbench-evidence-filter-grid')
+        self.assertLess(content.index('data-workbench-evidence-workspace'), filter_at)
+        self.assertLess(filter_at, content.index('data-workbench-evidence-layout'))
+
     def test_shouldShowSummaryOnlyEvidenceStateWithoutStaleRows(self):
         # Given
         scope, run, bucket = self._seed_trend_data()
@@ -189,6 +215,8 @@ class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupp
         self.assertIn('postMessage', content)
         self.assertIn("params.get('begin_ww')", content)
         self.assertIn("params.get('fact_snapshot_id')", content)
+        self.assertIn('class="standalone-body is-embedded"', content)
+        self.assertIn(f'href="{reverse("ui_web:workbench")}" data-grafana-selection-link', content)
 
     @override_settings(METRICS_AI_GRAFANA_BASE_URL='', METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldShowScopedNextActionsWhenDependentServicesAreUnavailable(self):
@@ -218,7 +246,7 @@ class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupp
 
     def test_shouldRefreshWorkbenchFromGrafanaSelectionMessageWithoutLeavingShell(self):
         # Given
-        main_js = (Path(__file__).resolve().parents[1] / 'static' / 'js' / 'main.js').read_text(encoding='utf-8')
+        main_js = feature_scripts_source()
         html = f"""
             <html>
             <body>

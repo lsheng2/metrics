@@ -485,8 +485,8 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertIn('A controlled Metrics workflow request', content)
         self.assertIn('Unsupported series become recipe gaps', content)
         self.assertIn('responsive-admin-table', content)
-        self.assertIn('data-label="Field"', content)
-        self.assertIn('data-label="Value"', content)
+        self.assertIn('class="description-list is-2"', content)
+        self.assertIn('class="pipeline"', content)
         self.assertIn('responsive-admin-table is-cardable', content)
 
     def test_shouldRenderJiraWorkflowResultOnPagePost(self):

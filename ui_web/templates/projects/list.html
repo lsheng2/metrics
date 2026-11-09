@@ -1,79 +1,74 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n dashboard_format %}
 
 {% block title %}{% trans "Projects" %}{% endblock %}
 {% block page_title %}{% trans "Projects" %}{% endblock %}
 
 {% block content %}
 <article class="block">
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-3">{% trans "Projects" %}</h2>
-            </div>
-        </div>
-        <div class="level-right">
+    <header class="page-header">
+        <h2 class="page-header__title">{% trans "Projects" %}</h2>
+        <div class="page-header__actions">
             {% include "projects/language_switcher.html" %}
+            <details class="popover"{% if create_form.errors %} open{% endif %}>
+                <summary class="button is-primary is-small"><span class="icon is-small"><i class="iconoir-plus" aria-hidden="true"></i></span><span>{% trans "Create project" %}</span></summary>
+                <div class="popover__panel">
+                    <form method="post" class="dashboard-edit-form">
+                        {% csrf_token %}
+                        {% if create_form.non_field_errors %}
+                            <div class="message is-danger" role="alert"><div class="message-body">{{ create_form.non_field_errors|join:", " }}</div></div>
+                        {% endif %}
+                        <div class="dashboard-form-grid is-stacked">
+                            <div class="dashboard-form-field">
+                                <label class="label" for="{{ create_form.key.id_for_label }}">{{ create_form.key.label }}</label>
+                                <input class="input{% if create_form.key.errors %} is-danger{% endif %}" id="{{ create_form.key.id_for_label }}" name="{{ create_form.key.html_name }}" value="{{ create_form.key.value|default_if_none:'' }}"{% if create_form.key.errors %} aria-invalid="true" aria-describedby="{{ create_form.key.id_for_label }}_error" autofocus{% endif %}>
+                                {% for error in create_form.key.errors %}<p class="help is-danger" id="{{ create_form.key.id_for_label }}_error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="dashboard-form-field">
+                                <label class="label" for="{{ create_form.name.id_for_label }}">{{ create_form.name.label }}</label>
+                                <input class="input{% if create_form.name.errors %} is-danger{% endif %}" id="{{ create_form.name.id_for_label }}" name="{{ create_form.name.html_name }}" value="{{ create_form.name.value|default_if_none:'' }}"{% if create_form.name.errors %} aria-invalid="true" aria-describedby="{{ create_form.name.id_for_label }}_error"{% endif %}{% if not create_form.key.errors and create_form.name.errors %} autofocus{% endif %}>
+                                {% for error in create_form.name.errors %}<p class="help is-danger" id="{{ create_form.name.id_for_label }}_error">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                        <div class="dashboard-action-group is-right">
+                            <button class="button is-primary is-small" type="submit">{% trans "Create" %}</button>
+                        </div>
+                    </form>
+                </div>
+            </details>
         </div>
-    </div>
+    </header>
 
-    <section class="block">
-        <h3 class="title is-5">{% trans "Create project" %}</h3>
-        <form method="post" class="dashboard-edit-form">
-            {% csrf_token %}
-            {% if create_form.non_field_errors %}
-                <div class="notification is-danger is-light" role="alert">{{ create_form.non_field_errors|join:", " }}</div>
-            {% endif %}
-            <div class="dashboard-form-grid">
-                <div class="dashboard-form-field">
-                    <label class="label" for="{{ create_form.key.id_for_label }}">{{ create_form.key.label }}</label>
-                    <input class="input{% if create_form.key.errors %} is-danger{% endif %}" id="{{ create_form.key.id_for_label }}" name="{{ create_form.key.html_name }}" value="{{ create_form.key.value|default_if_none:'' }}"{% if create_form.key.errors %} aria-invalid="true" aria-describedby="{{ create_form.key.id_for_label }}_error" autofocus{% endif %}>
-                    {% for error in create_form.key.errors %}<p class="help is-danger" id="{{ create_form.key.id_for_label }}_error">{{ error }}</p>{% endfor %}
-                </div>
-                <div class="dashboard-form-field">
-                    <label class="label" for="{{ create_form.name.id_for_label }}">{{ create_form.name.label }}</label>
-                    <input class="input{% if create_form.name.errors %} is-danger{% endif %}" id="{{ create_form.name.id_for_label }}" name="{{ create_form.name.html_name }}" value="{{ create_form.name.value|default_if_none:'' }}"{% if create_form.name.errors %} aria-invalid="true" aria-describedby="{{ create_form.name.id_for_label }}_error"{% endif %}{% if not create_form.key.errors and create_form.name.errors %} autofocus{% endif %}>
-                    {% for error in create_form.name.errors %}<p class="help is-danger" id="{{ create_form.name.id_for_label }}_error">{{ error }}</p>{% endfor %}
-                </div>
-                <div class="dashboard-action-group">
-                    <button class="button is-primary" type="submit"><span class="icon is-small"><i class="iconoir-plus"></i></span><span>{% trans "Create" %}</span></button>
-                </div>
-            </div>
-        </form>
-    </section>
-
-    <div class="table-container responsive-admin-table-box">
-        <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table dashboard-dense-table">
+    <div class="table-container responsive-admin-table-box is-framed">
+        <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable project-table">
             <thead>
                 <tr>
-                    <th>{% trans "Name" %}</th>
-                    <th>{% trans "Key" %}</th>
-                    <th>{% trans "State" %}</th>
-                    <th>{% trans "Created" %}</th>
+                    <th scope="col">{% trans "Name" %}</th>
+                    <th scope="col" class="project-col-key">{% trans "Key" %}</th>
+                    <th scope="col" class="project-col-state">{% trans "State" %}</th>
+                    <th scope="col" class="project-col-time">{% trans "Created" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for project in projects %}
                     <tr>
-                        <td><a href="{% url 'ui_web:project_detail' project.id %}">{{ project.name }}</a></td>
-                        <td><code>{{ project.key }}</code></td>
-                        <td>{% if project.archived %}<span class="tag is-warning is-light">{% trans "Archived" %}</span>{% else %}<span class="tag is-success is-light">{% trans "Active" %}</span>{% endif %}</td>
-                        <td>{{ project.created_at }}</td>
+                        <td data-label="{% trans "Name" %}"><a href="{% url 'ui_web:project_detail' project.id %}">{{ project.name }}</a></td>
+                        <td data-label="{% trans "Key" %}"><code>{{ project.key }}</code></td>
+                        <td data-label="{% trans "State" %}">{% if project.archived %}<span class="tag">{% trans "Archived" %}</span>{% else %}<span class="tag is-success">{% trans "Active" %}</span>{% endif %}</td>
+                        <td data-label="{% trans "Created" %}">{{ project.created_at|timestamp }}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="4">{% trans "No projects yet." %}</td></tr>
+                    <tr class="is-empty-row"><td colspan="4">{% trans "No projects yet." %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <nav class="pagination is-small" aria-label="pagination">
-        {% if previous_offset != None %}
-            <a class="pagination-previous" href="?offset={{ previous_offset }}">{% trans "Previous" %}</a>
-        {% endif %}
-        {% if next_offset != None %}
-            <a class="pagination-next" href="?offset={{ next_offset }}">{% trans "Next" %}</a>
-        {% endif %}
-    </nav>
+    {% if previous_offset != None or next_offset != None %}
+        <nav class="pagination is-small" aria-label="{% trans "Project pages" %}">
+            {% if previous_offset != None %}<a class="pagination-previous" href="?offset={{ previous_offset }}">{% trans "Previous" %}</a>{% endif %}
+            {% if next_offset != None %}<a class="pagination-next" href="?offset={{ next_offset }}">{% trans "Next" %}</a>{% endif %}
+        </nav>
+    {% endif %}
 </article>
 {% endblock %}

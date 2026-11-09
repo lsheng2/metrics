@@ -1,0 +1,221 @@
+/*
+ * Page layer: Dense admin tables, cardable table layout, report matrices and read-only report data.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+.responsive-admin-table-box {
+    box-sizing: border-box;
+    container-type: inline-size;
+    display: block;
+    position: relative;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    width: 100%;
+}
+
+.responsive-admin-table {
+    min-width: var(--responsive-admin-table-min-width, 58rem);
+    width: 100%;
+    table-layout: fixed;
+}
+
+.dashboard-dense-table {
+    font-size: var(--text-sm);
+    line-height: 1.14;
+}
+
+.table.responsive-admin-table th,
+.table.responsive-admin-table td {
+    min-width: 0;
+    overflow: hidden;
+    padding: var(--space-1) var(--space-1-5);
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table.dashboard-dense-table :is(th, td):where(:not(.paper *)) {
+    overflow: hidden;
+    padding: var(--space-1) var(--space-1-5);
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Edge cells of a flush card table take the card's inline padding so cell text shares the title's edge.
+   Same (0,2,1) specificity as the density rules: source order beats them here and lets the cardable
+   layout below win in narrow containers. */
+:where(.card > .table-container:not(.is-framed)) > .table :is(th, td):first-child {
+    padding-inline-start: var(--space-4);
+}
+
+:where(.card > .table-container:not(.is-framed)) > .table :is(th, td):last-child {
+    padding-inline-end: var(--space-4);
+}
+
+/* Report matrices hold rich notes and editors per cell, so their cells wrap and align to the top. */
+.table.report-matrix > :is(thead, tbody) > tr > :is(th, td) {
+    min-width: 12rem;
+    overflow: visible;
+    padding: var(--space-2);
+    white-space: normal;
+    vertical-align: top;
+}
+
+.table.report-matrix > tbody > tr > td {
+    background: var(--color-surface);
+}
+
+.table.report-matrix > tbody > tr > th {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+.report-matrix-observation {
+    color: var(--color-text-secondary);
+}
+
+/* Cell content stacks with one rhythm; empty JS mount points add no space. */
+.table.report-matrix > tbody > tr > :is(th, td) > :not(:empty) ~ :not(:empty) {
+    margin-top: var(--space-1-5);
+}
+
+/* Read-only report data: exported or authored HTML shown on the .paper surface. */
+.report-readonly-data {
+    overflow-x: auto;
+    padding: var(--space-2) var(--space-2-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+/* Export bodies inline <main style="padding:24px">; !important is the only way to collapse an inline style. */
+.report-readonly-data main {
+    padding: 0 !important;
+}
+
+.responsive-admin-table .button,
+.dashboard-dense-table .button,
+.responsive-admin-table .input.is-small,
+.dashboard-dense-table .input.is-small,
+.responsive-admin-table .select.is-small,
+.dashboard-dense-table .select.is-small,
+.responsive-admin-table .select.is-small select,
+.dashboard-dense-table .select.is-small select {
+    height: var(--control-height-sm);
+    min-height: var(--control-height-sm);
+}
+
+.responsive-admin-table .button,
+.dashboard-dense-table .button {
+    font-size: var(--text-xs);
+    padding: 0 var(--control-padding-x-sm);
+}
+
+.responsive-admin-table .tag,
+.dashboard-dense-table .tag {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.responsive-admin-table code,
+.dashboard-dense-table code {
+    font-size: var(--text-xs);
+}
+
+@container (max-width: 40rem) {
+    .responsive-admin-table.is-cardable colgroup {
+        display: none;
+    }
+
+    .responsive-admin-table.is-cardable,
+    .responsive-admin-table.is-cardable thead,
+    .responsive-admin-table.is-cardable tbody,
+    .responsive-admin-table.is-cardable tr,
+    .responsive-admin-table.is-cardable th,
+    .responsive-admin-table.is-cardable td {
+        display: block;
+        width: 100%;
+    }
+
+    .responsive-admin-table.is-cardable thead {
+        display: none;
+    }
+
+    .responsive-admin-table.is-cardable tbody {
+        display: grid;
+        gap: var(--space-2);
+    }
+
+    .responsive-admin-table.is-cardable tr {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface-muted);
+        padding: var(--space-2);
+    }
+
+    .responsive-admin-table.is-cardable td {
+        display: grid;
+        grid-template-columns: minmax(4.75rem, 28%) minmax(0, 1fr);
+        gap: var(--space-1-5);
+        border: 0;
+        padding: var(--space-1) 0;
+        white-space: normal;
+        width: 100%;
+    }
+
+    .responsive-admin-table.is-cardable td[class*="scope-col-"] {
+        width: 100%;
+    }
+
+    /* Children keep their natural width (tags, buttons) instead of stretching across the value column. */
+    .responsive-admin-table.is-cardable td > * {
+        grid-column: 2;
+        justify-self: start;
+        max-width: 100%;
+    }
+
+    /* The value column has a fixed width here, so a long machine value wraps inside its tag instead of
+       being clipped; table mode keeps tags on one line. */
+    .responsive-admin-table.is-cardable .tag {
+        height: auto;
+        min-height: 1.25rem;
+        padding-block: var(--space-0-5);
+        line-height: var(--leading-tight);
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    .responsive-admin-table.is-cardable :is(td, th).is-numeric {
+        text-align: start;
+    }
+
+    .responsive-admin-table.is-cardable td::before {
+        content: attr(data-label);
+        grid-column: 1;
+        grid-row: 1 / span 4;
+        color: var(--color-text-secondary);
+        font-size: var(--text-xs);
+        font-weight: var(--weight-medium);
+    }
+
+    .responsive-admin-table.is-cardable td:not([data-label])::before {
+        content: none;
+    }
+
+    .responsive-admin-table.is-cardable tr.is-empty-row {
+        border: 0;
+        background: none;
+        padding: 0;
+    }
+
+    .responsive-admin-table.is-cardable tr.is-empty-row > td {
+        display: block;
+        padding: var(--space-5) var(--space-3);
+    }
+
+    .responsive-admin-table.is-cardable {
+        min-width: 0;
+    }
+}

@@ -222,7 +222,7 @@ class TestReportHistoryUiRoutesBrowser(ReportHistoryUiBrowserSupport):
                     return {
                         oldVisible: Boolean(oldNode),
                         oldEditable: Boolean(oldNode?.closest('[data-report-wysiwyg-region]')),
-                        oldFallbackTags: oldCell.querySelectorAll('.tag.is-light').length,
+                        oldFallbackTags: oldCell.querySelectorAll('[data-matrix-empty]').length,
                         currentEditable: Boolean(current),
                     };
                 }
@@ -238,7 +238,7 @@ class TestReportHistoryUiRoutesBrowser(ReportHistoryUiBrowserSupport):
                     .filter(cell => (cell.querySelector('[data-matrix-readonly-note]')
                         || cell.querySelector('[data-matrix-action-body]')
                         || cell.querySelector('[data-report-wysiwyg-region]'))
-                        && cell.querySelector('.tag.is-light'))
+                        && cell.querySelector('[data-matrix-empty]'))
                     .map(cell => cell.textContent.trim())
             """)
 

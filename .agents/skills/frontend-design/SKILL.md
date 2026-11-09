@@ -9,4 +9,4 @@ Canonical source for this project is the Copilot-facing adapter:
 
 `../../../.github/skills/frontend-design/SKILL.md`
 
-Load that file first. Project UI constraints still come from `AGENTS.md`, `.github/copilot-instructions.md`, and existing Bulma/htmx/Chart.js patterns.
+Load that file first. Project UI constraints come from `AI_CONTRACT.md` and the binding `openspec/docs/current-baseline/frontend-design-requirements.md`.
