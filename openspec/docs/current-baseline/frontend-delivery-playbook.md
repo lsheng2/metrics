@@ -226,6 +226,6 @@ Run, in order, and record the evidence before claiming closure:
 4. Isolated `manage.py check`: `settings.configure(**test_settings(temp))` from `scripts/validation/run_report_authoring_tests.py`, `django.setup()`, then `call_command('check')`.
 5. `python -I scripts/check_file_size_limits.py --include-untracked` and `python -I scripts/check_diff_whitespace.py --include-untracked`, then `git --no-pager diff --check`.
 6. `qa:browser` against the preview server, then a real-browser pass in both themes at 1440 and 390 for each touched page.
-7. `openspec validate adopt-meridian-design-system --strict` (or the validation of the active change).
+7. `npx --no-install openspec validate <change> --strict` for the change being delivered; after archiving it, `npx --no-install openspec validate <capability> --type spec --strict` for every capability the archive wrote.
 
 Only the evidence of a command that ran counts; a gate that was skipped is reported as skipped.

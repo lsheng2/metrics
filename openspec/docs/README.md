@@ -4,7 +4,7 @@
 
 ## Normative Sources
 
-- 当前 baseline requirements: `openspec/specs/dashboard-ui-baseline/`, `openspec/specs/engineering-metrics-baseline/`, `openspec/specs/bug-trend-baseline/`, `openspec/specs/provider-facts-and-sync/`
+- 当前 baseline requirements: `openspec/specs/dashboard-ui-baseline/`, `openspec/specs/dashboard-design-system/`, `openspec/specs/engineering-metrics-baseline/`, `openspec/specs/bug-trend-baseline/`, `openspec/specs/provider-facts-and-sync/`
 - 未来 Grafana/Jira/HSD-ES/AI target: `openspec/changes/define-grafana-jira-first-ai-dashboard-target/`
 - 当前 baseline migration change: `openspec/changes/baseline-existing-dashboard-capabilities/`
 
