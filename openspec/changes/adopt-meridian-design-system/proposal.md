@@ -18,19 +18,19 @@ Dashboard 前端长期依赖 Bulma 默认样式和不断累积的页面级 CSS�
   - `css/foundation/*.css`（按关注点拆分）提供 primitives，并保留模板和测试依赖的 Bulma 兼容 class 词汇。
   - `css/shell/*.css`、`shell.js` 和 `command-palette.js` 提供应用框架。
   - 移除 Bulma CSS 和 `vendor_fallbacks.css/js`；凡是依赖 Bulma 内部样式或 CDN fallback 的代码，都必须改用 Meridian primitives。
-  - `ui_web/static_assets.py` 成为唯一的有序资源清单；页面样式和脚本按 feature 放 `css/pages/<feature>.css` 与 `js/<feature>.js`，删除兜底的 `main.css`/`main.js`（分别拆成 14 个页面样式表和 9 个 feature 模块）。
+  - `ui_web/static_assets.py` 成为共享资源的唯一有序清单；页面样式和脚本按 feature 放 `css/pages/<feature>.css` 与 `js/<feature>.js`，删除兜底的 `main.css`/`main.js`（分别拆成 17 个页面样式表和 11 个 feature 模块）。只有报告页通过页面模板加载自己专用的样式表和脚本。
 - 新增 light、dark、system 三态主题。主题在首帧渲染前应用，选择持久化保存，图表通过 `DashboardCharts` 跟随主题变化。
 - 新的应用框架和用户动线：
   - 分组侧边栏，来源于服务端 navigation registry，可折叠、可调整宽度。
-  - topbar 提供上下文和主题切换。
+  - topbar 提供面包屑上下文和手机端抽屉入口；主题切换位于侧栏底部，也可以从命令面板切换。
   - 命令面板，快捷键 Ctrl/⌘+K 或 `/`。
   - 手机端改为抽屉式导航。
   - 首页改为按任务分组的 launchpad。
 - 所有页面改用共享 primitives：page header、toolbar、stat/KPI、card、dense table、tag/health/avatar、disclosure 和 empty state。缺失值统一显示为 "—"。
 - Velocity 页面的图表改为随页面内容一起渲染。移除四个不再使用的 velocity chart partial 路由；任务下钻仍然是独立的 HTMX partial。
-- 第三方运行时资源全部本地 vendored 并固定版本：htmx、Chart.js 及其插件、Mona Sans / Geist Mono 可变字体、Iconoir 子集。`asset-manifest.json` 记录每个文件的 sha256。
+- 第三方运行时资源全部本地 vendored 并固定版本：htmx、Chart.js 及其插件、Mona Sans / Geist Mono 可变字体、Iconoir 子集。`asset-manifest.json` 记录每个文件的 sha256；本地构建的 Milkdown 报告编辑器 bundle 有自己的 manifest，记录 bundle、metafile 和依赖锁文件的 sha256。
 - 新增开发期前端工具链 `ui_web/frontend/` 和两道质量门禁：
-  - `npm run check`：token 漂移、vendor manifest、Stylelint 和 WCAG 对比度检查。
+  - `npm run check`：token 漂移、vendor manifest、Milkdown bundle hash、Stylelint（pages、shell 和报告样式禁用 `!important`）和 WCAG 对比度检查。
   - `npm run qa:browser`：Playwright + axe-core，覆盖 light/dark 两种主题和 desktop/phone 两种宽度。
 - 新增具有约束力的 `openspec/docs/current-baseline/frontend-design-requirements.md`，并同步更新 `AI_CONTRACT.md`、agent 入口、UI skill overlay 和验证文档。
 - 升级仓库体积门禁：`.github/file-size-limits.json` 的规则覆盖所有文件类型（模板、CSS、JS、mjs、PowerShell、YAML、Markdown 等），未被认领的文件直接失败；glob 按路径分段匹配。已超限的存量文件登记为临时冻结的 legacy allowance（不得增长，必须写明 owner 和拆分计划，过期条目会让 meta-test 失败）；本 change 拆完全部前端存量超限文件并删除对应条目。
@@ -57,7 +57,7 @@ Dashboard 前端长期依赖 Bulma 默认样式和不断累积的页面级 CSS�
 
 - 代码：
   - `ui_web/static/css/`：新增 `theme.css`、`foundation/`、`shell/`、`pages/`，删除 `main.css`。
-  - `ui_web/static/js/`：新增 `shell.js`、`command-palette.js`、`charts.js` 和 10 个 feature 模块（`table-interactions.js` 等），删除 `main.js`。
+  - `ui_web/static/js/`：新增 `shell.js`、`command-palette.js`、`charts.js` 和 11 个 feature 模块（`table-interactions.js` 等），删除 `main.js`。
   - `ui_web/static_assets.py` 与 `ui_web/templatetags/dashboard_assets.py`：有序资源清单及其模板标签。
   - `scripts/check_file_size_limits.py`、`.github/file-size-limits.json`：体积门禁升级及其测试。
   - `ui_web/static/vendor/`、`ui_web/templates/**`、`ui_web/navigation.py` 及其 context processor。

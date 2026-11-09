@@ -203,6 +203,7 @@ class TestBugTrendScopeActionViews(BugTrendScopeConfigViewTestSupport, TestCase)
         # Then
         self.assertEqual(200, response.status_code)
         self.assertEqual(['name', 'jql', 'bug_type_values'], result['save_draft_missing_names'])
+        self.assertEqual(3, result['save_draft_visible_border_count'])
         self.assertTrue(result['save_draft_summary_visible'])
         self.assertEqual('scope-name', result['save_draft_focused_id'])
         self.assertIn('At least one bug type value is required before saving this scope.', result['save_draft_messages'])
@@ -217,6 +218,7 @@ class TestBugTrendScopeActionViews(BugTrendScopeConfigViewTestSupport, TestCase)
             ],
             result['enable_missing_names'],
         )
+        self.assertEqual(6, result['enable_visible_border_count'])
         self.assertTrue(result['enable_summary_visible'])
         self.assertEqual('scope-critical-high', result['enable_focused_id'])
         self.assertIn('Add at least one fixed or closed status value before enabling this scope.', result['enable_messages'])

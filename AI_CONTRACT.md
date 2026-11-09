@@ -155,12 +155,16 @@ the code and fix the document in the same change.
   which needs no context. Phones break at 768px; the only other viewport width is the Workbench
   1024px IDE frame, which stacks into a scrolling page below it (stylelint allow-lists widths per file).
 - **Primitives first.** Compose `css/foundation/` primitives. Page CSS owns page layout only and
-  never overrides a primitive's display, size, padding or type, nor wins with `!important`. The
+  never overrides a primitive's display, size, padding or type, nor wins with `!important`
+  (stylelint rejects it outside `foundation/`; control states use the `forms.css` hooks
+  `is-dirty-control` and `is-required-missing-control`). The
   Bulma compatibility layer is retired: templates use none of its layout, spacing, size or weight
   classes, and every `is-*`/`has-*` class matches a stylesheet rule (design-system tests enforce
   both; grep scripts and presenters before retiring a class). Every table carries
   `dashboard-dense-table` or `responsive-admin-table`; empty values render as a muted dash through
-  `dashboard_format`.
+  `dashboard_format`. Long ids and values truncate (`truncatechars`, or `span.is-truncated` inside a
+  tag) with the full value in `title`; they never wrap the heading beside them or run under
+  neighbouring actions.
   Menus and tips inside scroll boxes are fitted by script or placement, never by setting
   `overflow: visible` on the scroll box; pinned table cells are opaque.
 - **Editors.** An editor is one card: the form carries the 2px `--provider-color` rail, provider
@@ -178,10 +182,13 @@ the code and fix the document in the same change.
   commands enter messages through placeholders. Times are 24-hour.
 - **Files and assets.** Primitives live in `css/foundation/`, the frame in `css/shell/`, page styles
   in `css/pages/<feature>.css` and behavior in one-concern `js/<feature>.js` modules; there is no
-  catch-all page stylesheet or script. Register each file once in `ui_web/static_assets.py`: no
-  bundler, `@import` chain, second list or CDN. Feature modules self-initialise on DOMContentLoaded
+  catch-all page stylesheet or script. Register each shared file once in `ui_web/static_assets.py`:
+  no bundler, `@import` chain, second list or CDN. Only report pages load their own assets, through
+  `extra_css`/`extra_js`, and never a manifest file again (`test_frontend_assets.py` enforces both
+  directions). Feature modules self-initialise on DOMContentLoaded
   and `htmx:afterSwap`, so `FEATURE_SCRIPTS` order is init order. Libraries, fonts and icons are
-  pinned and vendored by `npm run build:vendor`; icon classes are literal `iconoir-<name>`.
+  pinned and vendored by `npm run build:vendor`; icon classes are literal `iconoir-<name>`;
+  `npm run check` re-hashes every vendored file and the Milkdown report-editor bundle.
 - **Size gate.** Every tracked file is claimed by a rule in `.github/file-size-limits.json` or a
   reasoned exemption (templates 300, CSS 400, browser JS 400 lines). Split by concern before a file
   nears its cap; never raise a cap, add an exemption or minify to pass. A legacy allowance is a

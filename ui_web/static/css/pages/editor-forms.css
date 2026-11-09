@@ -123,11 +123,6 @@
     padding: var(--space-1);
 }
 
-.is-dirty-control {
-    border-color: color-mix(in srgb, var(--color-warning) 76%, var(--color-border)) !important;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-warning) 26%, transparent);
-}
-
 .dashboard-form-field.is-missing-required,
 .provider-form-field.is-missing-required,
 .scope-config-form-field.is-missing-required,
@@ -145,11 +140,6 @@
 .scope-config-form-field.is-missing-required,
 .provider-json-panel.is-missing-required {
     padding: var(--space-1);
-}
-
-.is-required-missing-control {
-    border-color: var(--color-danger) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-danger) 24%, transparent) !important;
 }
 
 .dashboard-required-message {

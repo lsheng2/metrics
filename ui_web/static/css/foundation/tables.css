@@ -180,6 +180,12 @@
     white-space: nowrap;
 }
 
+/* A long value truncates in a child `span.is-truncated` (full value in `title`); the tag's line-height 1 under that
+   span's overflow: hidden would clip descenders and underscores. */
+.tag > .is-truncated {
+    line-height: var(--leading-tight);
+}
+
 .tag.is-primary,
 .tag.is-link {
     --tone-bg: var(--color-accent-subtle);

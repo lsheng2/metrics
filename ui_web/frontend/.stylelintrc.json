@@ -43,6 +43,12 @@
   },
   "overrides": [
     {
+      "files": ["../static/css/pages/**/*.css", "../static/css/shell/**/*.css", "../static/css/report_*.css"],
+      "rules": {
+        "declaration-no-important": true
+      }
+    },
+    {
       "files": ["../static/css/foundation/page-patterns.css"],
       "rules": {
         "media-feature-name-value-allowed-list": {

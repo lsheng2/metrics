@@ -218,6 +218,7 @@ class TestProviderSetupViews(ProviderSetupViewTestSupport, TestCase):
         self.assertEqual(0, results['initial_dirty_fields'])
         self.assertTrue(results['dirty_field_highlighted'])
         self.assertTrue(results['dirty_control_highlighted'])
+        self.assertTrue(results['focused_dirty_border_distinct'])
         self.assertTrue(results['dirty_banner_visible'])
         self.assertIn('Unsaved *', results['dirty_label_text'])
         self.assertTrue(results['cancel_button_visible'])

@@ -123,6 +123,15 @@ async function audit(browser, check) {
       failedRequests.push(`${response.status()} ${target}`);
     }
   });
+  // Same-origin requests that never got a response (refused, reset, DNS); ERR_ABORTED is a request
+  // superseded by navigation or an htmx swap, not a broken asset.
+  page.on('requestfailed', (request) => {
+    const target = sameOriginPath(request.url());
+    const reason = request.failure()?.errorText ?? 'unknown failure';
+    if (target && reason !== 'net::ERR_ABORTED') {
+      failedRequests.push(`${reason} ${target}`);
+    }
+  });
   const result = { ...check, viewport: `${viewport.width}x${viewport.height}`, problems: [], warnings: [] };
   try {
     const response = await page.goto(new URL(route, origin).href, { waitUntil: 'load', timeout: 60_000 });

@@ -17,12 +17,16 @@ Dashboard design system 统一定义 Django dashboard 的以下内容：
 ## ADDED Requirements
 
 ### Requirement: Visual tokens are the single styling source
-Dashboard 的颜色、字体、字号、间距、圆角、阴影和层级 SHALL 来自同一套 design tokens，每个颜色 token SHALL 同时定义 light 和 dark 取值。页面级样式 SHALL 只引用 semantic tokens，SHALL NOT 写入原始颜色值或自定义 font-family。
+Dashboard 的颜色、字体、字号、间距、圆角、阴影和层级 SHALL 来自同一套 design tokens。主题 token 中的每个颜色 token SHALL 同时定义 light 和 dark 取值；provider 身份色和报告 paper 色在两种主题下保持不变，SHALL 只在 base tokens 中定义一次。页面级样式 SHALL 只引用 semantic tokens，SHALL NOT 写入原始颜色值或自定义 font-family。
 
 #### Scenario: Maintainer changes a token
 - **WHEN** 维护者修改 token 源并重新生成主题样式
 - **THEN** 所有引用该 token 的页面元素 SHALL 一致地反映新值
 - **AND** 已提交的主题样式与 token 源不一致时，frontend check SHALL 失败
+
+#### Scenario: A theme color token lacks one theme
+- **WHEN** 主题 token 中的某个颜色 token 只定义了 light 或 dark 其中一个取值
+- **THEN** token 构建 SHALL 失败，并指出缺少取值的 token
 
 #### Scenario: Page styles hard-code a color
 - **WHEN** 页面级样式出现 hex、命名颜色、颜色函数或非 token 的 font-family
@@ -32,7 +36,7 @@ Dashboard 的颜色、字体、字号、间距、圆角、阴影和层级 SHALL 
 Dashboard SHALL 让用户在 light、dark 和 system 三种主题之间切换。用户的选择 SHALL 在页面跳转和重新加载后保留；system 模式 SHALL 跟随操作系统的 color scheme。
 
 #### Scenario: User selects the dark theme
-- **WHEN** 用户在 topbar 的主题切换中选择 dark
+- **WHEN** 用户在侧栏底部的主题切换（或命令面板的主题动作）中选择 dark
 - **THEN** 当前页面 SHALL 立即切换为 dark，不需要重新加载
 - **AND** 之后打开的每个 dashboard 页面都 SHALL 使用 dark，直到用户再次修改
 
@@ -53,7 +57,7 @@ Dashboard 图表的轴线、网格、文字、tooltip 和数据系列颜色 SHAL
 - **AND** 图表数据、当前选择和下钻状态 SHALL 保持不变
 
 ### Requirement: Application shell provides grouped navigation
-每个 dashboard 页面 SHALL 渲染同一个应用框架。框架中的分组导航 SHALL 来自同一份服务端导航定义，并标记当前页面。导航 SHALL 可折叠，折叠状态 SHALL 在页面之间保留；在手机宽度下，导航 SHALL 以抽屉形式呈现。
+每个 dashboard 页面 SHALL 渲染同一个应用框架；只有 404/500 错误页和 iframe 桥接页（如 Grafana selection）例外，它们 SHALL 继承不依赖页面 context 的 `standalone_base.html`。框架中的分组导航 SHALL 来自同一份服务端导航定义，并标记当前页面。导航 SHALL 可折叠，折叠状态 SHALL 在页面之间保留；在手机宽度下，导航 SHALL 以抽屉形式呈现。
 
 #### Scenario: User opens a dashboard page
 - **WHEN** 用户打开任意 dashboard 页面
@@ -81,7 +85,7 @@ Dashboard SHALL 提供命令面板。用户可通过 Ctrl/⌘+K 打开它；当�
 - **THEN** 命令面板 SHALL 关闭，并且 SHALL NOT 改变当前页面
 
 ### Requirement: Dense pages compose shared primitives
-Dashboard 页面 SHALL 由共享界面 primitives 组合而成：page header、toolbar、KPI、card、dense table、tag、disclosure 和 empty state。页面级样式 SHALL NOT 修改 primitive 的 display 或尺寸。缺失值 SHALL 统一显示为弱化的 "—"。
+Dashboard 页面 SHALL 由共享界面 primitives 组合而成：page header、toolbar、KPI、card、dense table、tag、disclosure 和 empty state。页面级样式 SHALL NOT 修改 primitive 的 display 或尺寸，pages、shell 和报告页样式 SHALL NOT 使用 `!important`；控件的 dirty 和 required-missing 状态 SHALL 使用 foundation 提供的状态 class。缺失值 SHALL 统一显示为弱化的 "—"。
 
 #### Scenario: A table cell has no value
 - **WHEN** 表格单元格或 KPI 的值缺失
@@ -90,6 +94,16 @@ Dashboard 页面 SHALL 由共享界面 primitives 组合而成：page header、t
 #### Scenario: A data region has no rows
 - **WHEN** 表格或列表的数据集为空
 - **THEN** 该区域 SHALL 显示一条 empty state 消息，说明原因或下一步操作
+
+#### Scenario: A heading carries a long value on a phone
+- **WHEN** 390px 宽的手机视口中，pane 标题旁的 chip 带有很长的值（例如 Workbench 的 bucket 选择）
+- **THEN** chip SHALL 以省略号截断，完整值放在 `title` 中
+- **AND** 标题 SHALL 保持单行，chip SHALL NOT 延伸到同一 header 中的操作按钮下方
+
+#### Scenario: Page styles use !important
+- **WHEN** pages、shell 或报告页样式中的声明使用 `!important`
+- **THEN** frontend lint gate SHALL 报错
+- **AND** 只有覆盖导出 HTML 内联样式、并带有写明原因的 lint disable 注释的声明可以例外
 
 ### Requirement: Colors meet WCAG AA contrast in every theme
 在 light 和 dark 两种主题下，正文文字与其背景的对比度 SHALL 不低于 4.5:1；交互控件、焦点指示和图形元素与相邻背景的对比度 SHALL 不低于 3:1。键盘焦点 SHALL 始终有可见的指示。
@@ -103,18 +117,18 @@ Dashboard 页面 SHALL 由共享界面 primitives 组合而成：page header、t
 - **THEN** 获得焦点的元素在两种主题下都 SHALL 显示可见的焦点环
 
 ### Requirement: Runtime frontend assets are served locally
-Dashboard 运行时需要的字体、图标、样式和 JavaScript 库 SHALL 全部由应用自身的静态文件提供，并固定版本。每个 vendored 文件的来源包、版本和 sha256 SHALL 记录在 manifest 中。Dashboard SHALL NOT 在运行时依赖 CDN。
+Dashboard 运行时需要的字体、图标、样式和 JavaScript 库 SHALL 全部由应用自身的静态文件提供，并固定版本。每个 vendored 文件的来源包、版本和 sha256 SHALL 记录在 manifest 中；本地构建的报告编辑器（Milkdown）bundle SHALL 在自己的 manifest 中记录 bundle、构建 metafile 以及构建所用 `package.json` 和 lockfile 的 sha256。Dashboard SHALL NOT 在运行时依赖 CDN。
 
 #### Scenario: Dashboard runs without internet access
 - **WHEN** Dashboard 部署在无法访问外部网络的内网环境中
 - **THEN** 字体、图标、图表和 htmx 交互 SHALL 全部正常工作
 
 #### Scenario: A vendored file drifts from its manifest
-- **WHEN** 某个 vendored 文件被修改、缺失，或与 manifest 记录的 sha256 不一致
+- **WHEN** 某个 vendored 文件、报告编辑器 bundle 或其构建输入被修改、缺失，或与 manifest 记录的 sha256 不一致
 - **THEN** frontend check SHALL 失败，并指出不一致的文件
 
 ### Requirement: Frontend source files stay reviewable
-Dashboard 的模板、样式表和浏览器脚本 SHALL 受仓库体积门禁约束，样式表和脚本 SHALL 通过唯一一份有序资源清单加载。仓库中每个被跟踪的文件 SHALL 被一条体积规则或一条带理由的豁免认领。已超过上限的存量文件 SHALL NOT 增长。
+Dashboard 的模板、样式表和浏览器脚本 SHALL 受仓库体积门禁约束。共享的样式表和脚本 SHALL 只在唯一一份有序资源清单中登记一次；只有报告页通过页面模板加载自己专用的样式表、脚本和 ES module，且 SHALL NOT 再次加载清单中的资源。仓库中每个被跟踪的文件 SHALL 被一条体积规则或一条带理由的豁免认领。已超过上限的存量文件 SHALL NOT 增长。
 
 #### Scenario: A file matches no size rule
 - **WHEN** 变更新增了一个没有任何体积规则或豁免能匹配的文件
@@ -128,6 +142,10 @@ Dashboard 的模板、样式表和浏览器脚本 SHALL 受仓库体积门禁约
 - **WHEN** 维护者把一个样式表按关注点拆成多个文件
 - **THEN** 新文件 SHALL 只在资源清单中登记一次，页面和浏览器测试 SHALL 按清单顺序加载它们
 
+#### Scenario: An asset is orphaned or loaded twice
+- **WHEN** 某个顶层样式表或脚本既不在资源清单中，也没有被任何页面模板加载；或者页面模板再次加载了清单中的资源
+- **THEN** 前端资源测试 SHALL 失败，并列出这些文件
+
 ### Requirement: UI changes pass the frontend quality gates
 修改模板、样式、前端脚本或图表的变更，在被视为完成之前 SHALL 通过 frontend check 和 browser QA。browser QA SHALL 覆盖受影响的路由，并在 light 与 dark 主题下分别使用 desktop 和 phone 宽度运行。
 
@@ -138,5 +156,5 @@ Dashboard 的模板、样式表和浏览器脚本 SHALL 受仓库体积门禁约
   - 页面级横向溢出
   - 实际生效的主题与请求的主题不一致
   - console 错误
-  - 同源请求失败
+  - 同源请求返回 HTTP 错误，或没有得到响应（被导航或 htmx 交换中止的请求除外）
   - serious 或 critical 级别的可访问性违规

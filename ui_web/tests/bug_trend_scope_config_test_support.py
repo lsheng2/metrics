@@ -4,6 +4,7 @@ from bug_metrics.app.api import bug_trend_api
 from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
 from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.dashboard_asset_support import inline_dashboard_assets
+from ui_web.tests.required_field_browser_support import REQUIRED_STATE_SCRIPT
 
 
 class FakeScopeMetadataFacade:
@@ -326,32 +327,20 @@ class BugTrendScopeConfigViewTestSupport:
             try:
                 page.set_content(html, wait_until='domcontentloaded')
                 page.click('.scope-editor-actions button[value="save_draft"]')
-                save_draft = page.evaluate("""
-                    () => ({
-                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
-                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
-                        focused_id: document.activeElement.id,
-                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
-                    })
-                """)
+                save_draft = page.evaluate(REQUIRED_STATE_SCRIPT)
                 page.fill('#scope-name', 'Required visual scope')
                 page.fill('#scope-jql', 'project = STDEL')
                 page.fill('#scope-bug-types', 'Bug')
                 page.click('.scope-editor-actions button[value="save_enable"]')
-                enable = page.evaluate("""
-                    () => ({
-                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
-                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
-                        focused_id: document.activeElement.id,
-                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
-                    })
-                """)
+                enable = page.evaluate(REQUIRED_STATE_SCRIPT)
                 return {
                     'save_draft_missing_names': save_draft['missing_names'],
+                    'save_draft_visible_border_count': save_draft['visible_border_count'],
                     'save_draft_summary_visible': save_draft['summary_visible'],
                     'save_draft_focused_id': save_draft['focused_id'],
                     'save_draft_messages': save_draft['messages'],
                     'enable_missing_names': enable['missing_names'],
+                    'enable_visible_border_count': enable['visible_border_count'],
                     'enable_summary_visible': enable['summary_visible'],
                     'enable_focused_id': enable['focused_id'],
                     'enable_messages': enable['messages'],

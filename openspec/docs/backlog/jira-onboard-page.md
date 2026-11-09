@@ -36,7 +36,7 @@ The page should guide the user through a small number of clear steps:
 
 ## Required UX Elements
 
-The reference image implies these functional elements should be covered for the Jira first version, though the final layout should fit the existing Django/Bulma dashboard style and keep generic provider flow separate from Jira-specific fields:
+The reference image implies these functional elements should be covered for the Jira first version, though the final layout should fit the existing Django/Meridian dashboard style and keep generic provider flow separate from Jira-specific fields:
 
 | Element | UX expectation |
 | --- | --- |
@@ -103,7 +103,7 @@ This contract should stay focused on connection readiness. It must not absorb pr
 
 ## Suggested Web UI Direction
 
-Use a guided setup page rather than a dense dialog clone. A practical first version could be a full-width Bulma page with a left-side connection profile list and a main setup panel containing step cards:
+Use a guided setup page rather than a dense dialog clone. A practical first version could be a full-width Meridian page with a left-side connection profile list and a main setup panel containing step cards:
 
 1. `Provider` card: provider selector, profile name, and provider-owned endpoint fields. First implementation may expose only Jira.
 2. `Verify Endpoint` card: check button, detected provider/server type, capability warnings.

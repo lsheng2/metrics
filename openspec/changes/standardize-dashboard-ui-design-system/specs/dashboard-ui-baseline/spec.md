@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Dashboard UI uses shared design-system tokens and components
 Dashboard UI SHALL define reusable design-system tokens and component classes for typography, controls, badges, form grids, action bars, dirty-state feedback and panels. Page templates SHALL compose those shared classes instead of creating independent button/font/layout variants for each editor.

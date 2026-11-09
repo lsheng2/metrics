@@ -96,27 +96,12 @@
     min-width: 0;
 }
 
-.workbench-control-grid .input,
-.workbench-control-grid .select,
-.workbench-control-grid .select select,
-.workbench-control-grid .button {
-    box-sizing: border-box !important;
-    height: var(--workbench-toolbar-control-height) !important;
-    min-height: var(--workbench-toolbar-control-height) !important;
-    line-height: 1.1 !important;
-}
-
+/* Control height comes from the controls' `is-small` modifier, which the toolbar grid row matches. */
 .workbench-control-grid .input,
 .workbench-control-grid .select,
 .workbench-control-grid .select select,
 .workbench-control-grid .workbench-control-input {
     width: 100%;
-}
-
-.workbench-control-grid .input,
-.workbench-control-grid .select select {
-    padding-bottom: var(--space-1) !important;
-    padding-top: var(--space-1) !important;
 }
 
 /* Same specificity as the foundation `.message:not(:last-child)` spacing; the page layer loads later. */

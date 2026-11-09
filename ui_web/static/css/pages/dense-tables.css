@@ -44,6 +44,11 @@
     white-space: nowrap;
 }
 
+/* A cell that hosts a help tip lets the tip bubble escape the ellipsis clip above. */
+.table:is(.responsive-admin-table, .dashboard-dense-table) :is(th, td).has-help-tip {
+    overflow: visible;
+}
+
 /* Edge cells of a flush card table take the card's inline padding so cell text shares the title's edge.
    Same (0,2,1) specificity as the density rules: source order beats them here and lets the cardable
    layout below win in narrow containers. */
@@ -92,6 +97,7 @@
 
 /* Export bodies inline <main style="padding:24px">; !important is the only way to collapse an inline style. */
 .report-readonly-data main {
+    /* stylelint-disable-next-line declaration-no-important -- overrides the export's inline style */
     padding: 0 !important;
 }
 

@@ -6,7 +6,7 @@ This project-local overlay customizes `dag-plan-doc-review` for this repository.
 
 - Treat `CLAUDE.md`, `.github/copilot-instructions.md`, `.github/ai-governance/`, and `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` as the AI-workflow authority set for DAG plan reviews.
 - Treat `openspec/docs/historical/implementation-start.md`, `openspec/docs/current-baseline/architecture-manual.md`, and `openspec/docs/current-baseline/bug-trend-architecture-spec.md` as the current Intel Jira bug trend MVP authority set when a plan touches `jira_sync/`, `jira_history/`, `bug_metrics/`, `ui_web/`, `ops/`, or Grafana artifacts.
-- Enforce the modular-monolith owner boundaries from `CLAUDE.md`: cross-module communication goes through `*/app/api/`, domain code stays framework-free, and UI behavior stays in semantic HTML, Bulma, htmx, and Chart.js surfaces.
+- Enforce the modular-monolith owner boundaries from `CLAUDE.md`: cross-module communication goes through `*/app/api/`, domain code stays framework-free, and UI behavior stays in semantic HTML, the Meridian design system, htmx, and Chart.js surfaces.
 - A DAG plan must keep `jira_scope_config` as the single project-specific Jira semantics authority. Workflow statuses, severities, components, milestones, and bug-type truth must not move into global environment variables or hardcoded calculators.
 - Bug trend dashboard plans must preserve durable-history ownership: pages and drilldowns read persisted history, calculation runs, buckets, and bucket memberships; they must not re-query live Jira during dashboard render.
 

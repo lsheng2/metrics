@@ -47,6 +47,13 @@
     line-height: var(--leading-tight);
 }
 
+/* Takes only the room the pane title leaves, up to its own width; its text truncates (full value in `title`). */
+.workbench-selection-tag {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: max-content;
+}
+
 .workbench-pane-body {
     padding: var(--space-2) var(--space-2-5);
     min-height: 9rem;

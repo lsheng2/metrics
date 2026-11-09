@@ -12,7 +12,7 @@ REPO_ROOT = UI_WEB_DIR.parent
 VENDOR_DIR = STATIC_DIR / 'vendor'
 ICON_CLASS = re.compile(r'\biconoir-([a-z0-9]+(?:-[a-z0-9]+)*)')
 DYNAMIC_ICON_CLASS = re.compile(r'\biconoir-(?:\{|\$\{|[\'"`]\s*\+)')
-TEMPLATE_SCRIPT = re.compile(r"\{%\s*static\s+'(js/[^']+\.js)'\s*%\}")
+TEMPLATE_ASSET = re.compile(r"\{%\s*static\s+'((?:css|js)/[^']+\.(?:css|js))'\s*%\}")
 
 
 class TestFrontendAssets(SimpleTestCase):
@@ -69,20 +69,27 @@ class TestFrontendAssets(SimpleTestCase):
         self.assertEqual([], missing)
         self.assertEqual([], unregistered, 'Register split stylesheets in ui_web/static_assets.py')
 
-    def test_shouldLoadEveryTopLevelScriptThroughTheManifestOrItsPageTemplate(self):
+    def test_shouldLoadEveryTopLevelAssetOnceThroughTheManifestOrItsPageTemplate(self):
         # Given
-        page_scripts = {
-            script
+        manifest = set(SCRIPTS) | set(STYLESHEETS)
+        page_assets = {
+            asset
             for template in (UI_WEB_DIR / 'templates').rglob('*.html')
-            for script in TEMPLATE_SCRIPT.findall(template.read_text(encoding='utf-8'))
+            for asset in TEMPLATE_ASSET.findall(template.read_text(encoding='utf-8'))
         }
-        scripts = {path.relative_to(STATIC_DIR).as_posix() for path in (STATIC_DIR / 'js').glob('*.js')}
+        top_level = {
+            path.relative_to(STATIC_DIR).as_posix()
+            for folder, pattern in (('js', '*.js'), ('css', '*.css'))
+            for path in (STATIC_DIR / folder).glob(pattern)
+        }
 
         # When
-        orphaned = sorted(scripts - set(SCRIPTS) - page_scripts)
+        orphaned = sorted(top_level - manifest - page_assets)
+        doubled = sorted(page_assets & manifest)
 
         # Then
-        self.assertEqual([], orphaned, 'Register feature scripts in ui_web/static_assets.py or load them from their page template')
+        self.assertEqual([], orphaned, 'Register shared assets in ui_web/static_assets.py or load report-only assets from their page template')
+        self.assertEqual([], doubled, 'base.html loads manifest assets once; page templates add only report-only assets')
 
     def _manifest(self):
         return json.loads((VENDOR_DIR / 'asset-manifest.json').read_text(encoding='utf-8'))

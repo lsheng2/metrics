@@ -49,7 +49,7 @@
   - `main.css` 拆为 14 个 `css/pages/*.css`，`main.js` 拆为 9 个 feature 模块（加上 `table-interactions.js` 共 10 个，按 `FEATURE_SCRIPTS` 顺序初始化），两者删除；
   - 4 个超限模板拆出 6 个 partial：`partials/bug_trend_scope_source_query.html`、`partials/bug_trend_scope_semantic_mapping.html`、`partials/bug_trend_scope_lifecycle_guide.html`、`partials/provider_profile_credentials.html`、`projects/reports/stage_series.html`、`projects/reports/stage_drafts.html`；
   - 3 个超限测试文件拆出 `tests/fixtures/business_scenarios.py`、`tests/fixtures/ui_web_facade_harness.py`、`test_unit_task_sort_value_handling.py`、`test_api_ui_web_member_group_filters.py`，拆分前后收集到的测试 ID 集合一致（94 个）；
-  - 删除 `main.css`/`main.js`、`legacy-page-templates`、`legacy-python-tests` 共 4 组条目；剩余 3 组非前端 allowance（report editor 脚本、AI stack launcher、2 个 Python 模块）由各自 owner 按拆分计划处理。
+  - 删除 `main.css`/`main.js`、`legacy-page-templates`、`legacy-python-tests` 共 4 组条目；剩余 3 组 allowance 由各自 owner 按拆分计划处理：report editor 脚本（唯一的前端 allowance）、AI stack launcher、2 个 Python 模块。此后页面层继续按 feature 拆分，现为 17 个页面样式表和 11 个 feature 模块（design 决策 10）。
 
   验证：体积门禁 `--include-untracked` PASS，`scripts/tests/test_check_file_size_limits.py` 通过；scope、provider、report 的模板测试和拆分后的测试通过（剩余失败均已在 HEAD 上复现）；浏览器复查拆分后的页面，无 404，交互正常。
 
@@ -138,7 +138,44 @@
 
   验证：`npx --no-install openspec validate adopt-meridian-design-system --strict` 输出 "Change 'adopt-meridian-design-system' is valid"。
 
+## 6. Closure review fixes
+
+- [x] 6.1 资源加载口径（发现 1）：spec、`AI_CONTRACT.md`、requirements 和 playbook 写明共享层只走唯一资源清单，报告专属的样式表、脚本和 ES module 只由页面模板的 `extra_css`/`extra_js` 加载
+  - `test_frontend_assets.py` 中原来的脚本测试扩展为 `test_shouldLoadEveryTopLevelAssetOnceThroughTheManifestOrItsPageTemplate`，同时覆盖顶层 `js/*.js` 和 `css/*.css`：既不在清单中、也不由页面模板加载的孤儿资源会失败；页面模板重复加载清单中的资源也会失败。
+
+  验证：4 passed。临时放入一个孤儿 CSS 文件后测试失败，删除后恢复通过。
+- [x] 6.2 主题切换位置与框架例外（发现 2、6）：spec、proposal 和 design 改为"侧栏底部的主题切换，或命令面板的主题动作"；"每个颜色 token 同时定义 light/dark"限定为主题 token，provider 身份色和报告 paper 色只在 base tokens 中定义一次；"每个页面渲染同一框架"补充例外：404/500 和 iframe 桥接页继承 `standalone_base.html`。
+
+  验证：两个 change 的 `openspec validate --strict` 均通过。
+- [x] 6.3 页面 CSS 不再使用 `!important`（发现 3）
+  - Workbench 工具栏控件都带 `is-small`，foundation 已经给出相同的高度，删除冗余的 `!important` 尺寸和 padding 覆盖；
+  - dirty 和 required-missing 状态改为 `foundation/forms.css` 提供的 hook，聚焦时 dirty 边框保持不变；页面层不再争夺控件的 border 和 box-shadow；
+  - `.has-help-tip` 的 `overflow: visible` 移到 `pages/dense-tables.css`，改用特异性足够、无需 `!important` 的选择器；
+  - stylelint 对 pages、shell 和报告页样式启用 `declaration-no-important`。唯一例外是覆盖导出 HTML 内联样式的那条声明，带写明原因的 disable 注释；
+  - 新增 `ui_web/tests/required_field_browser_support.py`，取代 provider 和 scope 测试支持代码中 4 份相同的 JS，并检查 hook 在视觉上确实生效，包括字段处于 `:focus` 时。
+
+  验证：在 pages 样式中插入 `!important`，lint 报错退出（exit 2），还原后通过。负向探测 A：删除 hook 规则后，dirty 测试失败，scope required 测试失败（3 != 0）；探测 B：把 dirty 选择器降为 `.is-dirty-control`，特异性输给 `:focus`，dirty 测试失败。两次探测后 forms.css 都按字节还原。ego-browser 第 73 轮：Workbench 工具栏 8 个控件在 light/dark × 1440/390 下高度都是 28px，横向溢出为 0；Provider 页 missing 边框为 danger 色，dirty 边框为 warning 混合色，聚焦后不变；help-tip 在 hover 时气泡可见，所在 `th` 不裁切。
+- [x] 6.4 qa:browser 记录网络失败（发现 4）：`qa-browser.mjs` 增加 `requestfailed` 监听，记录同源、且原因不是 `net::ERR_ABORTED` 的失败请求。
+
+  验证：对 8793 运行，导航路由 52 项检查 0 失败，11 条深层路由 44 项检查 0 失败，没有误报。
+- [x] 6.5 Milkdown vendor 哈希校验（发现 5）：新增 `ui_web/frontend/scripts/check-report-editor-vendor.mjs` 并接入 `npm run check`。它把 CRLF 折叠为 LF 后，校验 bundle、metafile、package.json 和 package-lock 的 sha256；`build_report_editor_vendor.py` 的 `sha256()` 也同样折叠换行。
+
+  验证：改动 bundle 的一个字节后脚本 exit 1 并点名该文件，还原后通过。重新生成 manifest 时只有 `package_json_sha256` 变化。
+- [x] 6.6 过期表述（发现 7、8）：删除 requirements 中"旧 Bulma 布局类只允许存量"的条款，清理 8 份文档中的 Bulma 表述；修正 playbook 中的 `FEATURE_SCRIPTS` 列表、不存在的 `PAGE_SCRIPTS` 和 legacy allowance 的称谓，requirements 中的 shell 列表（补 `standalone`），以及 design 和 proposal 中的计数（17 个页面样式表、11 个 feature 模块，首页共 59 个资源：41 个样式表、18 个脚本）。`standardize-dashboard-ui-design-system` 中指向不存在 requirement 的 delta header 由 MODIFIED 改为 ADDED。
+
+  验证：全仓 grep Bulma（排除 archive、vendor 和"已退役"这类表述）无残留；两个 change 的 strict 校验通过。
+- [x] 6.7 Workbench 选择 chip 在手机上延伸到操作按钮下方（复查时发现；第 68 轮截图中已经存在）
+  - chip 的文本放进内层 `span.is-truncated`，完整值写在 `title`；页面 CSS `.workbench-selection-tag` 只占用标题剩下的空间，最宽不超过自身内容；
+  - foundation 新增 `.tag > .is-truncated { line-height: var(--leading-tight) }`。tag 的 line-height 为 1，在 overflow hidden 下会裁掉降部字母和下划线；
+  - `PHONE_STACK_SCRIPT` 新增两项测量：pane header 中标题组与操作区的重叠量，以及每个 pane 标题的行数；
+  - 规则已写回 spec（场景 "A heading carries a long value on a phone"）、recipes §2.7 和 §5、requirements（tags 条目和复查经验）以及 `AI_CONTRACT.md` 的 Primitives first 条目。
+
+  验证：还原模板和 CSS 后，重叠量为 208.53px，测试失败；只保留 `min-width: 0` 时，标题行数为 `[2, 1, 1]`，测试失败。修复后 ego-browser 第 75 轮（390/1100/1440 × light/dark）：3 个 pane 标题都是单行，chip 与 Collapse 之间留出 8px，横向溢出为 0；chip 在 390 和 1100 下截断，1440 下完整显示，文字高 14px、chip 高 20px，`all_open_bugs` 的下划线完整。
+- [x] 6.8 在最终代码上重跑全部 gate
+
+  验证（每个文件单独进程）：87 个非浏览器文件 672 passed、27 subtests passed；22 个浏览器测试文件 90 passed。失败项与 5.1 登记的 6 项和 4 项存量失败完全相同。`scripts/tests/test_check_file_size_limits.py` 与 tasks/forecast/velocity 测试 222 passed；node 测试 26/26。`npm run check` 通过：report editor vendor 与 manifest 一致，stylelint 无告警，对比度 152 对、0 失败。qa:browser 覆盖 Workbench（含选中 bucket 的深层 URL）和 Bug Trend × light/dark × 1440/390，共 12 项、0 失败。size、whitespace、`git diff --check` 和隔离环境下的 `manage.py check` 均通过；两个 change 的 strict 校验通过。
+
 ## Workflow follow-up
 
 - 按 allowlist 提交，commit 带 Co-authored-by trailer。
-- 评审通过后归档本 change；归档 `standardize-dashboard-ui-design-system` 之前，先修正其中指向不存在 requirement 的 delta。
+- 评审通过后归档本 change。`standardize-dashboard-ui-design-system` 的 delta 已修正（6.6），但 `scripts/validate_ui_design_gate.ps1` 仍按名称校验它，因此本次不归档；由其 owner 归档时同步更新该脚本和对应测试。

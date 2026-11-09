@@ -73,7 +73,7 @@
 
 - 做法：
   - `base.html` 的 `<head>` 内联脚本读取 `localStorage['dashboard-theme']`，默认值为 `system`，在首次绘制前写入 `<html data-theme>`。
-  - `shell.js` 负责 topbar 中的切换控件，监听 `prefers-color-scheme` 的变化，并派发 `dashboard:themechange` 事件。
+  - `shell.js` 负责侧栏底部的切换控件（命令面板的主题动作也通过 `window.DashboardShell` 切换），监听 `prefers-color-scheme` 的变化，并派发 `dashboard:themechange` 事件。
 - 备选方案：
   - 服务端 cookie：需要改动 view，还要处理缓存差异。
   - 按时间自动切换：不符合平台惯例，用户难以预期。
@@ -105,6 +105,7 @@
   - `build-vendor.mjs` 从固定版本的 npm 包复制 htmx、Chart.js、插件、字体，以及按实际使用裁剪的 Iconoir 子集，复制到 `ui_web/static/vendor/`。
   - 同时写出包含 sha256 的 `asset-manifest.json`。
   - `--check` 模式检测缺失文件和内容漂移。
+  - Milkdown 报告编辑器 bundle 由 `scripts/validation/build_report_editor_vendor.py` 在 `ui_web/editor_build/` 本地构建，并写出自己的 manifest（bundle、metafile、`package.json`、lockfile 的 sha256）；`npm run check` 中的 `check-report-editor-vendor.mjs` 把 CRLF 折叠为 LF 后重新计算这四个 hash。
 - `defaults.py` 声明的 `STATICFILES_STORAGE`（whitenoise `CompressedManifestStaticFilesStorage`）自 Django 5.1 起已不生效，实际使用的是不带 hash 的 `StaticFilesStorage`。本 change 不修改 storage，但所有资源都保持 manifest-safe，并在 manifest backend 下验证 `collectstatic`；迁移到 `STORAGES` 后就能得到带 hash 的文件名和长缓存（见 Risks）。
 - 备选方案：
   - CDN：内网无法访问，还涉及 CSP 和隐私问题。
@@ -112,8 +113,8 @@
 
 ### 8. 质量门禁：静态检查 + 浏览器检查 + 人工视觉复查
 
-- `npm run check`：依次运行 token 漂移检查、vendor manifest 检查、Stylelint（只允许 token 颜色和字体）、对比度检查。对比度检查读取 `contrast-pairs.json`：文字对阈值 4.5:1，UI 和焦点对阈值 3:1。
-- `npm run qa:browser`：使用 playwright-core 加 @axe-core/playwright，覆盖 light/dark 两种主题和 1440×900、390×844 两种视口，检查 HTTP 错误、横向溢出、主题不一致、console 错误、同源请求失败，以及 serious/critical 级别的 axe 违规。
+- `npm run check`：依次运行 token 漂移检查、vendor manifest 检查、Milkdown bundle hash 检查、Stylelint（只允许 token 颜色和字体，pages、shell 和报告样式禁用 `!important`）、对比度检查。对比度检查读取 `contrast-pairs.json`：文字对阈值 4.5:1，UI 和焦点对阈值 3:1。
+- `npm run qa:browser`：使用 playwright-core 加 @axe-core/playwright，覆盖 light/dark 两种主题和 1440×900、390×844 两种视口，检查 HTTP 错误、横向溢出、主题不一致、console 错误、同源请求返回错误或没有响应（导航或 htmx 交换中止的请求除外），以及 serious/critical 级别的 axe 违规。
 - 人工复查：在真实浏览器中按 light、dark、手机宽度三种情况查看受影响页面，并截图作为证据。
 - 备选方案：
   - Lighthouse CI：一次只测一页，偏重性能，运行较慢。
@@ -128,18 +129,18 @@
 ### 10. 资源文件架构与体积门禁
 
 - 做法：
-  - CSS 分层：`css/foundation/*.css` 放 primitives；`css/shell/*.css` 放外壳（frame、sidebar、topbar、palette、statusbar、responsive）；页面样式按 feature 放 `css/pages/<feature>.css`（14 个），不设兜底的总样式表，原 `main.css` 已全部拆分并删除。
-  - JS 按职责拆分：`shell.js` 负责主题、侧栏和抽屉，并暴露 `window.DashboardShell`；`command-palette.js` 和 10 个 feature 模块各自独立，每个模块在 `DOMContentLoaded` 和 `htmx:afterSwap` 上自初始化，`FEATURE_SCRIPTS` 的顺序就是初始化顺序；原 `main.js` 已全部拆分并删除。
-  - `ui_web/static_assets.py` 是唯一的有序清单：`base.html` 通过 `{% dashboard_stylesheets %}` 和 `{% dashboard_scripts %}` 渲染，浏览器测试内联同一份清单。
+  - CSS 分层：`css/foundation/*.css` 放 primitives；`css/shell/*.css` 放外壳（frame、sidebar、topbar、palette、statusbar、responsive、standalone）；页面样式按 feature 放 `css/pages/<feature>.css`（17 个），不设兜底的总样式表，原 `main.css` 已全部拆分并删除。pages 和 shell 层由 Stylelint 禁用 `!important`，控件的 dirty 和 required-missing 状态由 `foundation/forms.css` 的 hook 统一提供。
+  - JS 按职责拆分：`shell.js` 负责主题、侧栏和抽屉，并暴露 `window.DashboardShell`；`command-palette.js` 和 11 个 feature 模块各自独立，每个模块在 `DOMContentLoaded` 和 `htmx:afterSwap` 上自初始化，`FEATURE_SCRIPTS` 的顺序就是初始化顺序；原 `main.js` 已全部拆分并删除。
+  - `ui_web/static_assets.py` 是共享资源的唯一有序清单：`base.html` 通过 `{% dashboard_stylesheets %}` 和 `{% dashboard_scripts %}` 渲染，浏览器测试内联同一份清单。只有报告页通过 `extra_css`/`extra_js` 加载自己专用的资源，且不得重复加载清单中的文件；`test_frontend_assets.py` 对孤儿资源和重复加载双向检查。
   - 体积门禁借鉴 `phone_teams_copilot` 的检查器：
     - 规则覆盖所有文件类型，未被规则或豁免认领的文件直接失败；
     - glob 按路径分段匹配；
-    - legacy allowance 必须写明 owner 和拆分计划，只在 changed 模式下、且 base 已超限时生效，允许新增 0 行。它只是临时冻结：owner 拆分到上限以下后删除条目，过期条目会让 `test_legacy_allowances_name_an_owner_and_still_cover_over_cap_files` 失败。前端页面、样式和脚本不再有任何 allowance。
+    - legacy allowance 必须写明 owner 和拆分计划，只在 changed 模式下、且 base 已超限时生效，允许新增 0 行。它只是临时冻结：owner 拆分到上限以下后删除条目，过期条目会让 `test_legacy_allowances_name_an_owner_and_still_cover_over_cap_files` 失败。dashboard 模板、样式表和 shell/feature 脚本不再有任何 allowance；唯一剩下的前端 allowance 是报告编辑器脚本（`legacy-report-editor-scripts`）。
   - 浏览器几何约束集中在 `ui_web/tests/ui_geometry_contract.py`：每条约束有稳定 key、阈值、单位、比较方式、所属界面、测量对象、适用视口和执行它的测试模块；Python 断言引用常量，`page.evaluate` 接收 `browser_limits()` 并读取 `limits.<KEY>`；`test_ui_geometry_contract.py` 扫描所有在浏览器里测量的测试模块，拒绝字面量阈值、无人执行的规则和与实际引用不符的 `enforced_by`；baseline gate 收集全部违规后一次失败。改阈值只改注册表并经设计确认，不在测试代码里重新推导。
 - 备选方案：
   - 使用 bundler 或 CSS `@import` 合并：前者增加构建步骤，后者在运行时串行加载。
   - 调高上限或豁免大文件：问题会持续累积。之前 CSS、JS 和模板没有被任何规则覆盖，被静默跳过，结果才出现 3000 行以上的文件。
-- 取舍：首页加载的本地 CSS/JS 文件（含本地 vendored 文件）从 14 个增加到 54 个（37 个样式表、17 个脚本）。换来的是可审阅的文件粒度和明确的归属；长缓存要等 storage 迁移到 `STORAGES` 后才生效（见 Risks）。如果首次加载的请求数成为瓶颈，在 `ui_web/frontend` 增加构建期按清单顺序拼接的步骤，源码分层不变。
+- 取舍：首页加载的本地 CSS/JS 文件（含本地 vendored 文件）从 14 个增加到 59 个（41 个样式表、18 个脚本）。换来的是可审阅的文件粒度和明确的归属；长缓存要等 storage 迁移到 `STORAGES` 后才生效（见 Risks）。如果首次加载的请求数成为瓶颈，在 `ui_web/frontend` 增加构建期按清单顺序拼接的步骤，源码分层不变。
 
 ### 11. Shell 双语：页面名单一来源 + 目录完整性门禁
 
@@ -159,7 +160,7 @@
 - [Bulma 风格 class 的语义已经改变，贡献者可能按 Bulma 文档的习惯去使用] → 以 `frontend-design-requirements.md` 列出的词汇为准；Stylelint 和 UI 测试会拦截常见的误用。
 - [Node 工具链只在开发期使用，仓库也没有 CI，gate 依赖人或 agent 自觉执行] → `AI_CONTRACT.md` 第 4 节把 `npm run check` 和 `qa:browser` 定为 UI 变更的完成条件；生成物已提交，并且都有 `--check` 漂移检测。
 - [`qa:browser` 默认只覆盖导航中的一级页面] → 修改项目详情、报告等深层页面时，必须通过 `DASHBOARD_QA_ROUTES` 显式传入这些路由。
-- [未归档的 `standardize-dashboard-ui-design-system` change 中，MODIFIED delta 指向一条主 spec 里不存在的 requirement，归档时会失败] → 本 change 不依赖它；归档那个 change 时，需要由其 owner 把 delta 改为 ADDED，或者直接删除该 delta。
+- [未归档的 `standardize-dashboard-ui-design-system` change 中，MODIFIED delta 曾指向一条主 spec 里不存在的 requirement，归档时会失败] → 本 change 不依赖它。closure review 时已把该 delta 改为 ADDED（主 spec 中确实没有这条 requirement），两个 change 可以按任意顺序归档。它暂不归档，因为 `scripts/validate_ui_design_gate.ps1` 按名称校验它，何时归档由其 owner 决定。
 - [移除 Bulma 后，没有被测试覆盖的页面可能出现样式退化，例如报告编辑器、Grafana selection] → 对所有导航页面以及项目和报告深层页面做真实浏览器巡检，并迁移相关的 Django/Playwright 测试。
 - [可变字体增加首屏体积，约 165 KB] → 只 vendored latin 和 latin-ext 子集，预加载主字体，并设置 `font-display: swap`。
 - [用户把 system 模式误解为按时间切换] → 切换控件明确列出三种状态，文档说明 system 跟随操作系统设置。

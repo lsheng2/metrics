@@ -109,6 +109,8 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         self.assertLessEqual(result['pane_width_delta'], geometry.ALIGNMENT_TOLERANCE)
         self.assertLessEqual(result['gutter_delta'], geometry.ALIGNMENT_TOLERANCE)
         self.assertGreaterEqual(result['chart_frame_height'], geometry.WORKBENCH_PHONE_CHART_MIN_HEIGHT)
+        self.assertLessEqual(result['pane_header_overlap'], geometry.OVERFLOW_TOLERANCE)
+        self.assertEqual([1, 1, 1], result['pane_title_lines'])
         self.assertEqual(['none', 'none', 'none'], result['splitter_displays'])
         self.assertEqual(1, result['evidence_columns'])
         self.assertGreaterEqual(result['detail_gap_below_table'], 0)

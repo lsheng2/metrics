@@ -201,8 +201,8 @@ words. "bug" and "缺陷" both find Bug Trend.
   `matchMedia('(min-width: 1024px)')`). The 1024px/1023px pair is the only Workbench layout breakpoint, because two panes
   side by side need that width (§3.4). The base styles are the stacked page; the IDE frame lives in `min-width: 1024px`
   blocks. Guarded by `test_shouldStackWorkbenchPanesIntoAScrollablePageOnPhones` (390×844: scrollable page, visible
-  topbar, stacked full-width panes, `WORKBENCH_PHONE_CHART_MIN_HEIGHT`, revealed ticket detail, AI pane above the status
-  bar).
+  topbar, stacked full-width panes, `WORKBENCH_PHONE_CHART_MIN_HEIGHT`, one-line pane titles, pane headings that stay
+  clear of their actions within `OVERFLOW_TOLERANCE`, revealed ticket detail, AI pane above the status bar).
 - Splitters are focusable `role="separator"` elements, so each needs `aria-valuenow/min/max`. `syncSplitterValue(splitter,
   value, min, max)` also sets `aria-valuetext` "N pixels", is NaN-safe and must run on init, in every setter and in
   double-click resets (axe `aria-required-attr`). Constants: AI rail 40 (tests bound it by
@@ -386,7 +386,9 @@ lazy_loading_enabled`. A zero result renders an `.empty-state` with a Clear acti
   `data-required-label`; required defaults come from the form's `data-required-actions` with per-field overrides; only
   visible, enabled fields count (a closed `details` is ignored), in DOM order; `[data-disable-when-clean]` and
   `[data-dirty-guard]` use the confirm text "Discard unsaved changes?"; dirty classes are `is-dirty-field` and
-  `is-dirty-control`. Auth panels toggle `.is-hidden` and disable inputs through `[data-auth-modes]`,
+  `is-dirty-control`. The control states `is-dirty-control` (`editor-forms.js`) and `is-required-missing-control`
+  (`form-validation.js`) are styled once by the `foundation/forms.css` hooks (warning border and ring; danger border
+  and ring), never by page CSS. Auth panels toggle `.is-hidden` and disable inputs through `[data-auth-modes]`,
   `[data-auth-empty-panel]`, `[data-provider-ids]` and `[data-provider-auth-select]`. The label-strip selector must
   include `.dashboard-required-tag`.
 - Editors carry exactly one `[data-required-summary]` and one `[data-dirty-banner]`; `data-dirty-form` may appear only on
@@ -429,7 +431,8 @@ lazy_loading_enabled`. A zero result renders an `.empty-state` with a Clear acti
   `shell.js` closes it on outside click and Escape and returns focus to the summary. Panel: min 16rem, max `min(26rem,
   calc(100vw - 2 * var(--layout-gutter)))`, `z-index: var(--z-dropdown)`, `.is-start` aligns left.
 - A tip beside a tag in a table cell wraps both in `span.scope-tag-tip` (inline-block, `flex: none`, nowrap) inside a
-  `td.has-help-tip`, so the zero-width anchor keeps the tag's baseline and the cell never clips the bubble.
+  `td.has-help-tip`, so the zero-width anchor keeps the tag's baseline; `pages/dense-tables.css` sets `overflow:
+  visible` on `has-help-tip` cells of dense and admin tables, so the cell never clips the bubble.
 - Wide reference popovers (Scope Library "Readiness matrix") add a page class on the panel: `width: min(52rem,
   calc(100vw - 2 * var(--layout-gutter))); max-width: none; max-height: min(70vh, 40rem); overflow-y: auto`. The panel
   stays right-aligned (`left: 0` pushes it off a phone screen). The summary is a ghost `button is-small is-light` with a
@@ -456,6 +459,11 @@ lazy_loading_enabled`. A zero result renders an `.empty-state` with a Clear acti
   clipped; migrate it, never extend it.
 - Dense tags are `tag.is-small`. A table cell holds one `status_tag` plus an optional `.cell-meta` (two tags truncate to
   an ellipsis).
+- A tag holding an unbounded value (the Workbench selection chip `.workbench-selection-tag`) keeps its flex display and
+  wraps the text in `span.is-truncated`; `foundation/tables.css` gives `.tag > .is-truncated` `line-height:
+  var(--leading-tight)`, because the tag's line-height 1 under `overflow: hidden` clips descenders and underscores. In
+  its flex row the page gives the tag `flex: 1 1 0; min-width: 0; max-width: max-content`, so it takes only the room the
+  heading leaves, the heading never wraps, and the full value is in `title`.
 - `.tag` has no `is-light` variant: every tone is already soft. `test_shouldNotRenderRetiredLegacyMarkup` allows
   `is-light` only on a plain `.button` (the ghost button).
 - `status_tone` maps machine statuses by whole word with the precedence danger (failed, error, blocked, invalid,
@@ -697,12 +705,17 @@ alternative beyond `aria-label` is specified yet (known gap).
 - Authored paint colors are chosen against white (`#0055aa`, `#008000`, `#aa0000`; highlights `#fff4cc`, `#dff7e8`,
   `#fde2e2`). Chrome around paper follows the theme.
 - Documented inline-paint exceptions: the toolbar swatch `style="background:#…"` synced with `data-color`;
-  `.report-readonly-data main { padding: 0 !important }` (exports inline `<main style="padding:24px">`); fragment-codec
+  `.report-readonly-data main { padding: 0 !important }` (exports inline `<main style="padding:24px">`; the only
+  `!important` outside `foundation/`, kept by a stylelint disable comment with its reason); fragment-codec
   `node.style.color`.
-- Report CSS (`report_editor.css`, `report_assist.css`, `report_exports.css`) is token-only and linted.
-  `reports/editor.html` loads editor, assist and exports; `report_templates/editor.html` loads the editor;
-  `publication.html` loads exports; `period.html` loads none, so shared report rules belong in foundation or the page
-  layer.
+- Report CSS (`report_editor.css`, `report_assist.css`, `report_exports.css`) is token-only and linted, with no
+  `!important`. Report pages are the only pages that load their own assets: `reports/editor.html` loads the editor,
+  assist and exports CSS, `project_reports.js`, `report_exports.js` (module), the Milkdown bundle and
+  `report_editor/index.js` (module); `report_templates/editor.html` loads the editor CSS, the bundle and
+  `report_editor/template_builder.js` (module); `publication.html` loads the exports CSS and `report_exports.js`;
+  `preparation.html`, `preparation_error.html` and `stage.html` load `report_daily.js`; `run.html` loads
+  `project_run_status.js` (`defer`). None reloads a manifest file. `period.html` loads none, so shared report rules
+  belong in foundation or the page layer.
 - Chrome values: toolbar sticky at `top: calc(var(--layout-topbar-height) + var(--space-2))` with `--z-sticky`,
   `--color-surface-raised`, `--shadow-sm`; section band and row editor opaque `--color-surface`; completion menu
   `--z-dropdown` + `--shadow-md`; assist dialog `--z-overlay` + `--shadow-lg`; `.report-export-frame` min-height 32.5rem;

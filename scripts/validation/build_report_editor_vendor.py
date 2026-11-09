@@ -58,7 +58,8 @@ def manifest_payload():
 
 
 def sha256(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    # CRLF is folded to LF so a core.autocrlf checkout records the hash npm run check verifies.
+    return hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()
 
 
 def run(command, cwd, env):

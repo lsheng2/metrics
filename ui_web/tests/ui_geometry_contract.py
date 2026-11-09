@@ -94,7 +94,8 @@ GEOMETRY_RULES: tuple[GeometryRule, ...] = (
         'OVERFLOW_TOLERANCE', OVERFLOW_TOLERANCE, 'px', 'tolerance', 'shared',
         'Pixels scrollWidth or scrollHeight may exceed the client size before the page, a table box, the'
         ' signature grid or values, a button or a workbench toolbar label counts as overflowing or clipped;'
-        ' also how far a stacked Workbench ticket detail or AI pane may run under the top bar or status bar.',
+        ' also how far a stacked Workbench ticket detail or AI pane may run under the top bar or status bar,'
+        ' and how far a Workbench pane heading (title and selection chip) may run under its pane actions.',
         (),
         (
             _METRICS, _BASELINE, _PROVIDER_SUPPORT, _SCOPE_SUPPORT, _WORKBENCH_SUPPORT, _WORKBENCH_BROWSER,

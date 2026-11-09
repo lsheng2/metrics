@@ -859,8 +859,8 @@ Timezone | Bucket granularity
 
 | 字段类型        | UI 控件                                | 行为                                   |
 | --------------- | -------------------------------------- | -------------------------------------- |
-| 单个文本值      | Bulma`.input`                        | `name`、`ip`、`project_label`。  |
-| JQL             | Bulma`.textarea`                     | 保留高级能力，旁边放 Discover 按钮。   |
+| 单个文本值      | Meridian `.input`                      | `name`、`ip`、`project_label`。  |
+| JQL             | Meridian `.textarea`                   | 保留高级能力，旁边放 Discover 按钮。   |
 | 可枚举列表      | checkbox chips 或`<select multiple>` | 用户点击选择，提交仍然使用现有字段名。 |
 | 字段名          | searchable select                      | 显示`name (id)`，保存 `id`。       |
 | 大量用户        | htmx typeahead                         | owner/assignee 不全量渲染。            |
@@ -911,7 +911,7 @@ Scope Config 页面必须按字段语义选择控件，不应把所有字段都�
 - 字段选择保存 field id/name，值选择保存 Jira issue payload 中实际出现的 display value。
 - 每个自动控件旁边保留 `Advanced edit as text`，但默认折叠。
 
-首版可以不用引入新的前端框架。继续使用 Django template、Bulma、htmx：
+首版可以不用引入新的前端框架。继续使用 Django template、Meridian design system、htmx：
 
 - `hx-get` 触发 metadata refresh。
 - metadata partial 只替换候选区域。

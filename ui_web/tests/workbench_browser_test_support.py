@@ -25,6 +25,16 @@ PHONE_STACK_SCRIPT = """() => {
         pane_width_delta: Math.max(...panes.map(([, pane]) => Math.abs(pane.width - grid.width))),
         gutter_delta: Math.abs(shell.left - (root.clientWidth - shell.right)),
         chart_frame_height: rect('[data-workbench-pane="chart"] .bug-trend-chart-frame').height,
+        pane_header_overlap: Math.max(...Array.from(document.querySelectorAll('.workbench-pane-header'), header => {
+            const [lead, ...rest] = header.children;
+            const leadRight = Math.max(...[lead, ...lead.querySelectorAll('*')].map(node => node.getBoundingClientRect().right));
+            return rest.length ? leadRight - rest.at(-1).getBoundingClientRect().left : -Infinity;
+        })),
+        pane_title_lines: Array.from(document.querySelectorAll('.workbench-pane-title'), title => {
+            const range = document.createRange();
+            range.selectNodeContents(title.firstChild);
+            return new Set(Array.from(range.getClientRects(), line => Math.round(line.top))).size;
+        }),
     };
 }"""
 PHONE_DETAIL_SCRIPT = """() => {

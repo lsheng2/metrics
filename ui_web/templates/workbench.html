@@ -75,7 +75,7 @@
                 <div class="workbench-pane-title-group">
                     <h2 class="workbench-pane-title" id="workbench-chart-title">Quality Chart{% include "partials/help_tip.html" with label="Quality Chart" text="Dashboard-owned chart area. Clicking supported Grafana bars refreshes the evidence list for the selected bucket and series." %}</h2>
                     {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
-                        <span class="tag">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</span>
+                        <span class="tag workbench-selection-tag" title="Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}"><span class="is-truncated">Selection: {{ workbench_state.selected_bucket_id }} {{ workbench_state.selected_series_name }}</span></span>
                     {% endif %}
                 </div>
                 <div class="workbench-pane-actions" data-ui-action-group>

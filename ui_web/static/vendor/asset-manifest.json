@@ -3,7 +3,7 @@
   "generator": "ui_web/frontend/scripts/build-vendor.mjs",
   "build_command": "cd ui_web/frontend && npm ci && npm run build",
   "package_json": "ui_web/frontend/package.json",
-  "package_json_sha256": "46d429dfa95d6f2814eb52c78e6953b11c13a39d138f1601c3908de487b6985b",
+  "package_json_sha256": "34489bc8f5903ac6ceeef7afd5922241b871ecd187b2a2cdf7a50efc3db1121a",
   "package_lock": "ui_web/frontend/package-lock.json",
   "package_lock_sha256": "27f12166c7c7e1b786ec4a7e628c662f22505702a57996cf218596280b1552ab",
   "packages": {

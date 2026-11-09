@@ -124,7 +124,3 @@ span:focus-within > .help-tip::after,
     opacity: 1;
     transform: translate(0, 0);
 }
-
-.has-help-tip {
-    overflow: visible !important;
-}

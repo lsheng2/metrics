@@ -10,7 +10,7 @@
     "build": "npm run build:tokens && npm run build:vendor",
     "build:tokens": "node scripts/build-tokens.mjs",
     "build:vendor": "node scripts/build-vendor.mjs",
-    "check": "node scripts/build-tokens.mjs --check && node scripts/build-vendor.mjs --check && npm run lint:css && npm run qa:contrast",
+    "check": "node scripts/build-tokens.mjs --check && node scripts/build-vendor.mjs --check && node scripts/check-report-editor-vendor.mjs && npm run lint:css && npm run qa:contrast",
     "lint:css": "stylelint \"../static/css/**/*.css\"",
     "qa:contrast": "node scripts/check-contrast.mjs",
     "qa:browser": "node scripts/qa-browser.mjs"

@@ -4,6 +4,7 @@ from playwright.sync_api import sync_playwright
 
 from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.dashboard_asset_support import inline_dashboard_assets
+from ui_web.tests.required_field_browser_support import REQUIRED_STATE_SCRIPT
 
 
 class ProviderSetupViewTestSupport:
@@ -253,9 +254,18 @@ class ProviderSetupViewTestSupport:
                         const heights = Array.from(actions.querySelectorAll('.button'))
                             .map(button => Math.round(button.getBoundingClientRect().height))
                             .filter(height => height > 0);
+                        const dirtyControl = field.classList.contains('is-dirty-control');
+                        field.focus();
+                        field.style.transition = 'none';
+                        const dirtyBorder = getComputedStyle(field).borderTopColor;
+                        field.classList.remove('is-dirty-control');
+                        const pristineBorder = getComputedStyle(field).borderTopColor;
+                        field.classList.toggle('is-dirty-control', dirtyControl);
+                        field.style.removeProperty('transition');
                         return {
                             dirty_field_highlighted: shell.classList.contains('is-dirty-field'),
-                            dirty_control_highlighted: field.classList.contains('is-dirty-control'),
+                            dirty_control_highlighted: dirtyControl,
+                            focused_dirty_border_distinct: dirtyBorder !== pristineBorder,
                             dirty_banner_visible: banner ? !banner.classList.contains('is-hidden') : false,
                             dirty_label_text: label ? label.innerText : '',
                             cancel_button_visible: cancel ? cancel.getBoundingClientRect().height > 0 : false,
@@ -382,25 +392,11 @@ class ProviderSetupViewTestSupport:
             try:
                 page.set_content(html, wait_until='domcontentloaded')
                 page.click('.provider-editor-actions button[value="save_draft"]')
-                save_draft = page.evaluate("""
-                    () => ({
-                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
-                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
-                        focused_id: document.activeElement.id,
-                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
-                    })
-                """)
+                save_draft = page.evaluate(REQUIRED_STATE_SCRIPT)
                 page.fill('#provider-profile-id', 'hsdes-required-test')
                 page.fill('#provider-display-name', 'HSD-ES Required Test')
                 page.click('.provider-editor-actions button[value="test_connection"]')
-                test_connection = page.evaluate("""
-                    () => ({
-                        missing_names: Array.from(document.querySelectorAll('.is-required-missing-control')).map(field => field.name),
-                        summary_visible: !document.querySelector('[data-required-summary]').classList.contains('is-hidden'),
-                        focused_id: document.activeElement.id,
-                        messages: Array.from(document.querySelectorAll('.dashboard-required-message')).map(message => message.textContent),
-                    })
-                """)
+                test_connection = page.evaluate(REQUIRED_STATE_SCRIPT)
                 return {
                     'save_draft_missing_names': save_draft['missing_names'],
                     'save_draft_summary_visible': save_draft['summary_visible'],

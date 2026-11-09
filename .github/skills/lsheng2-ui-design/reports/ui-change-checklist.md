@@ -59,4 +59,4 @@
 
 ## Future Adapter Note
 
-- [ ] If this is React, Next.js, Tailwind, Storybook, or a component-tree frontend, use the reserved adapter contract and do not apply Django/Bulma assumptions.
+- [ ] If this is React, Next.js, Tailwind, Storybook, or a component-tree frontend, use the reserved adapter contract and do not apply Django/Meridian assumptions.

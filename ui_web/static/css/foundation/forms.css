@@ -87,6 +87,27 @@
     border-color: var(--color-warning);
 }
 
+/*
+ * Field-state hooks: editor-forms.js marks an unsaved value with `is-dirty-control` and
+ * form-validation.js a missing required value with `is-required-missing-control`. The `:is()` list
+ * gives every field the `.select select` specificity, and the rules follow :hover/:focus and the
+ * semantic borders, so the state stays visible while the field is edited; a dirty field keeps the
+ * focus halo.
+ */
+:is(.select select, input, textarea, select).is-dirty-control {
+    border-color: color-mix(in srgb, var(--color-warning) 76%, var(--color-border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-warning) 26%, transparent);
+}
+
+:is(.select select, input, textarea, select).is-dirty-control:focus {
+    box-shadow: 0 0 0 3px var(--color-focus-halo);
+}
+
+:is(.select select, input, textarea, select).is-required-missing-control {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-danger) 24%, transparent);
+}
+
 .input[readonly],
 .textarea[readonly] {
     background: var(--color-surface-muted);
