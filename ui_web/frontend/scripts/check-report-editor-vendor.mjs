@@ -1,6 +1,6 @@
-// Verifies the Milkdown report-editor bundle and its build inputs against the manifest written by
-// scripts/validation/build_report_editor_vendor.py. Both sides hash bytes with CRLF folded to LF, so a
-// core.autocrlf checkout verifies the same content the generator recorded.
+// Verifies the Milkdown report-editor bundle, its metafile and its build inputs (source entry, package.json,
+// package-lock.json) against the manifest written by scripts/validation/build_report_editor_vendor.py. Both sides
+// hash bytes with CRLF folded to LF, so a core.autocrlf checkout verifies the same content the generator recorded.
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -16,6 +16,7 @@ function lfBytes(filePath) {
 
 const pinned = [
   [path.join(VENDOR_DIR, manifest.bundle), manifest.bundle_sha256],
+  [path.join(repoRoot, manifest.source_entry), manifest.source_entry_sha256],
   [path.join(repoRoot, manifest.metafile), manifest.metafile_sha256],
   [path.join(repoRoot, manifest.package_json), manifest.package_json_sha256],
   [path.join(repoRoot, manifest.package_lock), manifest.package_lock_sha256],

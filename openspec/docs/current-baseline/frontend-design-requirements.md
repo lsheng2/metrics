@@ -589,8 +589,8 @@ A UI change is complete only when all of the following hold:
   asset used only by a report page is loaded by that page's template instead. Split the owning
   file first when it nears its size cap.
 - Report editor bundle: change `ui_web/editor_build/`, then run
-  `scripts/validation/build_report_editor_vendor.py`; commit the bundle, metafile, lockfile and
-  manifest together (playbook §1.3).
+  `scripts/validation/build_report_editor_vendor.py`; commit the changed inputs (source entry,
+  `package.json`, lockfile) with the bundle, metafile and manifest (playbook §1.3).
 - Rewriting a legacy page: move its styles to `pages/<feature>.css`, delete the rules and scripts
   that become dead, and keep every string and class that a test asserts.
 - Dependency changes: pin the exact version in `package.json`, run `npm install`, then

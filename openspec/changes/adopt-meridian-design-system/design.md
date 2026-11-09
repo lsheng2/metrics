@@ -105,7 +105,7 @@
   - `build-vendor.mjs` 从固定版本的 npm 包复制 htmx、Chart.js、插件、字体，以及按实际使用裁剪的 Iconoir 子集，复制到 `ui_web/static/vendor/`。
   - 同时写出包含 sha256 的 `asset-manifest.json`。
   - `--check` 模式检测缺失文件和内容漂移。
-  - Milkdown 报告编辑器 bundle 由 `scripts/validation/build_report_editor_vendor.py` 在 `ui_web/editor_build/` 本地构建，并写出自己的 manifest（bundle、metafile、`package.json`、lockfile 的 sha256）；`npm run check` 中的 `check-report-editor-vendor.mjs` 把 CRLF 折叠为 LF 后重新计算这四个 hash。
+  - Milkdown 报告编辑器 bundle 由 `scripts/validation/build_report_editor_vendor.py` 在 `ui_web/editor_build/` 本地构建，并写出自己的 manifest（bundle、metafile、源入口 `report_milkdown.js`、`package.json`、lockfile 的 sha256）；`npm run check` 中的 `check-report-editor-vendor.mjs` 把 CRLF 折叠为 LF 后重新计算这五个 hash，所以只改源入口而不重建会让 `check` 失败。
 - `defaults.py` 声明的 `STATICFILES_STORAGE`（whitenoise `CompressedManifestStaticFilesStorage`）自 Django 5.1 起已不生效，实际使用的是不带 hash 的 `StaticFilesStorage`。本 change 不修改 storage，但所有资源都保持 manifest-safe，并在 manifest backend 下验证 `collectstatic`；迁移到 `STORAGES` 后就能得到带 hash 的文件名和长缓存（见 Risks）。
 - 备选方案：
   - CDN：内网无法访问，还涉及 CSP 和隐私问题。

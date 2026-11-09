@@ -12,7 +12,7 @@ REPO_ROOT = UI_WEB_DIR.parent
 VENDOR_DIR = STATIC_DIR / 'vendor'
 ICON_CLASS = re.compile(r'\biconoir-([a-z0-9]+(?:-[a-z0-9]+)*)')
 DYNAMIC_ICON_CLASS = re.compile(r'\biconoir-(?:\{|\$\{|[\'"`]\s*\+)')
-TEMPLATE_ASSET = re.compile(r"\{%\s*static\s+'((?:css|js)/[^']+\.(?:css|js))'\s*%\}")
+TEMPLATE_ASSET = re.compile(r"""\{%\s*static\s+['"]((?:css|js|vendor)/[^'"]+\.(?:css|js))['"]\s*%\}""")
 
 
 class TestFrontendAssets(SimpleTestCase):

@@ -28,12 +28,12 @@ Dashboard 前端长期依赖 Bulma 默认样式和不断累积的页面级 CSS�
   - 首页改为按任务分组的 launchpad。
 - 所有页面改用共享 primitives：page header、toolbar、stat/KPI、card、dense table、tag/health/avatar、disclosure 和 empty state。缺失值统一显示为 "—"。
 - Velocity 页面的图表改为随页面内容一起渲染。移除四个不再使用的 velocity chart partial 路由；任务下钻仍然是独立的 HTMX partial。
-- 第三方运行时资源全部本地 vendored 并固定版本：htmx、Chart.js 及其插件、Mona Sans / Geist Mono 可变字体、Iconoir 子集。`asset-manifest.json` 记录每个文件的 sha256；本地构建的 Milkdown 报告编辑器 bundle 有自己的 manifest，记录 bundle、metafile 和依赖锁文件的 sha256。
+- 第三方运行时资源全部本地 vendored 并固定版本：htmx、Chart.js 及其插件、Mona Sans / Geist Mono 可变字体、Iconoir 子集。`asset-manifest.json` 记录每个文件的 sha256；本地构建的 Milkdown 报告编辑器 bundle 有自己的 manifest，记录 bundle、metafile、源入口 `report_milkdown.js`、`package.json` 和锁文件的 sha256。
 - 新增开发期前端工具链 `ui_web/frontend/` 和两道质量门禁：
   - `npm run check`：token 漂移、vendor manifest、Milkdown bundle hash、Stylelint（pages、shell 和报告样式禁用 `!important`）和 WCAG 对比度检查。
   - `npm run qa:browser`：Playwright + axe-core，覆盖 light/dark 两种主题和 desktop/phone 两种宽度。
 - 新增具有约束力的 `openspec/docs/current-baseline/frontend-design-requirements.md`，并同步更新 `AI_CONTRACT.md`、agent 入口、UI skill overlay 和验证文档。
-- 升级仓库体积门禁：`.github/file-size-limits.json` 的规则覆盖所有文件类型（模板、CSS、JS、mjs、PowerShell、YAML、Markdown 等），未被认领的文件直接失败；glob 按路径分段匹配。已超限的存量文件登记为临时冻结的 legacy allowance（不得增长，必须写明 owner 和拆分计划，过期条目会让 meta-test 失败）；本 change 拆完全部前端存量超限文件并删除对应条目。
+- 升级仓库体积门禁：`.github/file-size-limits.json` 的规则覆盖所有文件类型（模板、CSS、JS、mjs、PowerShell、YAML、Markdown 等），未被认领的文件直接失败；glob 按路径分段匹配。已超限的存量文件登记为临时冻结的 legacy allowance（不得增长，必须写明 owner 和拆分计划，过期条目会让 meta-test 失败）；本 change 拆完 dashboard 模板、样式表和 shell/feature 脚本的存量超限文件并删除对应条目，报告编辑器脚本（`legacy-report-editor-scripts`）仍是唯一的前端 legacy allowance，由其 owner 拆分。
 - 浏览器几何约束（padding、行高、控件高度差、溢出容差等）集中登记在 `ui_web/tests/ui_geometry_contract.py`，浏览器测试从注册表读取阈值，不再在测试代码里散落魔法数字。
 
 ## Capabilities

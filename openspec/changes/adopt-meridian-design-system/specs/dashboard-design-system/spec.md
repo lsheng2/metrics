@@ -117,7 +117,7 @@ Dashboard 页面 SHALL 由共享界面 primitives 组合而成：page header、t
 - **THEN** 获得焦点的元素在两种主题下都 SHALL 显示可见的焦点环
 
 ### Requirement: Runtime frontend assets are served locally
-Dashboard 运行时需要的字体、图标、样式和 JavaScript 库 SHALL 全部由应用自身的静态文件提供，并固定版本。每个 vendored 文件的来源包、版本和 sha256 SHALL 记录在 manifest 中；本地构建的报告编辑器（Milkdown）bundle SHALL 在自己的 manifest 中记录 bundle、构建 metafile 以及构建所用 `package.json` 和 lockfile 的 sha256。Dashboard SHALL NOT 在运行时依赖 CDN。
+Dashboard 运行时需要的字体、图标、样式和 JavaScript 库 SHALL 全部由应用自身的静态文件提供，并固定版本。每个 vendored 文件的来源包、版本和 sha256 SHALL 记录在 manifest 中；本地构建的报告编辑器（Milkdown）bundle SHALL 在自己的 manifest 中记录 bundle、构建 metafile、源入口 `report_milkdown.js` 以及构建所用 `package.json` 和 lockfile 的 sha256。Dashboard SHALL NOT 在运行时依赖 CDN。
 
 #### Scenario: Dashboard runs without internet access
 - **WHEN** Dashboard 部署在无法访问外部网络的内网环境中

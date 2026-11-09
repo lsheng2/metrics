@@ -45,7 +45,7 @@
   - AI contract、requirements 规则 18、playbook §4.1/§4.3/§6.4/§7 和 `ui-design-system.md` 改为指向注册表，不再复述数值。
 
   验证：`test_ui_geometry_contract.py` 通过；改动过的浏览器测试和 support 模块所在测试通过（剩余失败均已在 HEAD 上复现）；文档中不再复述阈值数值。
-- [x] 3.10 拆完前端存量超限文件，删除对应的 legacy allowance：
+- [x] 3.10 拆完 dashboard 模板、样式表、shell/feature 脚本和相关测试的存量超限文件，删除对应的 legacy allowance（报告编辑器脚本除外，由其 owner 拆分）：
   - `main.css` 拆为 14 个 `css/pages/*.css`，`main.js` 拆为 9 个 feature 模块（加上 `table-interactions.js` 共 10 个，按 `FEATURE_SCRIPTS` 顺序初始化），两者删除；
   - 4 个超限模板拆出 6 个 partial：`partials/bug_trend_scope_source_query.html`、`partials/bug_trend_scope_semantic_mapping.html`、`partials/bug_trend_scope_lifecycle_guide.html`、`partials/provider_profile_credentials.html`、`projects/reports/stage_series.html`、`projects/reports/stage_drafts.html`；
   - 3 个超限测试文件拆出 `tests/fixtures/business_scenarios.py`、`tests/fixtures/ui_web_facade_harness.py`、`test_unit_task_sort_value_handling.py`、`test_api_ui_web_member_group_filters.py`，拆分前后收集到的测试 ID 集合一致（94 个）；
@@ -174,6 +174,12 @@
 - [x] 6.8 在最终代码上重跑全部 gate
 
   验证（每个文件单独进程）：87 个非浏览器文件 672 passed、27 subtests passed；22 个浏览器测试文件 90 passed。失败项与 5.1 登记的 6 项和 4 项存量失败完全相同。`scripts/tests/test_check_file_size_limits.py` 与 tasks/forecast/velocity 测试 222 passed；node 测试 26/26。`npm run check` 通过：report editor vendor 与 manifest 一致，stylelint 无告警，对比度 152 对、0 失败。qa:browser 覆盖 Workbench（含选中 bucket 的深层 URL）和 Bug Trend × light/dark × 1440/390，共 12 项、0 失败。size、whitespace、`git diff --check` 和隔离环境下的 `manage.py check` 均通过；两个 change 的 strict 校验通过。
+  - [x] 6.9 复审后续（R1–R3，均为 Minor）
+    - R1：`test_frontend_assets.py` 的 `TEMPLATE_ASSET` 同时匹配单引号和双引号，以及 `css/`、`js/`、`vendor/` 三类路径。此前页面模板若用双引号写法或引用 vendor 资源，重复加载 manifest 中的资源时测试检查不到；
+    - R2：报告编辑器 manifest 新增 `source_entry_sha256`（`ui_web/editor_build/report_milkdown.js`），`check-report-editor-vendor.mjs` 一并校验；playbook §1.3、requirements、design、proposal 和 spec delta 同步改为五个 hash。重新生成的 manifest 只多出这一行，原有 4 个 hash 不变。源入口、bundle 和 metafile 最后一次修改在同一个提交里，metafile 记录的源入口字节数等于磁盘文件折叠 CRLF 后的大小，所以没有重建 bundle；
+    - R3：`ui-design-system.md`、proposal 和 3.10 标题不再写"前端没有 allowance"，改为 dashboard 模板、样式表和 shell/feature 脚本没有 allowance，报告编辑器脚本（`legacy-report-editor-scripts`）是唯一的前端 allowance。
+
+    验证：在报告模板中临时加入一条双引号写法的 `css/foundation/base.css` 引用和一条 `vendor/htmx/htmx.min.js` 引用，新正则下测试失败并同时列出两者，旧正则下仍然通过；按字节还原后 4 passed。旧 manifest 下 checker 报告源入口漂移（exit 1），重新生成后通过；改动源入口一个字节后 exit 1 并点名该文件，按字节还原后通过；git blob 的 sha256 与 manifest 记录一致。`test_frontend_assets`、`test_dashboard_ui_design_system` 和 `test_check_file_size_limits` 共 30 passed；`npm run check` 通过（对比度 152 对、0 失败）。
 
 ## Workflow follow-up
 
