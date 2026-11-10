@@ -185,6 +185,10 @@ English/简体中文来自Django gettext静态资源。语言选择、页面`lan
 旧的项目/阶段配置Demo不会自动升级到这些源码。
 
 列表每页20条并保留采集游标；过多记录明确拒绝，不把截断结果或Git故障显示为空列表。
+只有阶段archive目录确实不存在才算尚未建档：显示Run，GET不创建文件。已存在的目录在打开前
+未通过路径或身份校验（如空目录或`ARCHIVE_IDENTITY_MISMATCH`）时，`ReportQueryService.workspace()`
+返回`REPORT_ARTIFACT_INVALID`：页面以400显示“Report artifact is invalid.”，不显示Run、不创建文件，
+也不当作缺失报告或空工作台；存储不可用或不支持读取仍返回`REPORT_STORAGE_UNAVAILABLE`。
 保存支持多条注释，未显式删除的旧注释会保留。Copy与Finalize仅作用于精确已保存修订，
 有未保存修改时禁用；切换界面语言不会悄悄丢弃或保存这些修改。
 定稿确认显示实际注册的数据archive UUID、项目和阶段，不暴露路径或让用户输入remote。
@@ -645,8 +649,8 @@ Dashboard端正式模型profile仍未注册或部署；冻结回执不等于生�
 当前跨仓执行入口为[execution-handoff](../../changes/add-provider-neutral-project-reporting/execution-handoff.md)，
 双方各写本仓OpenSpec；不是由Dashboard代写基座内部实现。
 [C0 SDK进件计划](../../changes/add-provider-neutral-project-reporting/sdk-intake-plan.md)已细化环境、
-接口、12个验证用例和退出条件。C0.N1已落地为
-[可运行验证脚本](../../../scripts/validation/test_task_run_sdk_intake.py)，12例全部通过；
+接口、12个验证用例和退出条件。C0.N1的独立验证脚本曾12例全部通过；该脚本固定校验早期
+SDK0.1.0a1，已于2026-11-10删除，历史结果保留在进件计划和任务台账中；
 C0.R、W1.R和W2.R已通过隔离候选的独立评审；新的业务接线由W5.JOIN单独验证。
 这些是已安装SDK的MockTransport测试，不是基座服务或项目报告验收。
 BASE-B及Dashboard后续波次仍须各owner按包达到就绪标准，具体等待点见execution-handoff第4节。
@@ -688,7 +692,9 @@ Git归档、锁和空间占用配额，不另建一份attempt数据库。
 当前明确下一负责人。当前基本文字检查也不等于已完成真实模型语言/内容质量资格。
 
 联合验证使用显式的独立D盘数据根；代码、来源Git、模型运行库和验证回执分离。
-`--resume-source`只复用尚无attempt的合成采集检查点，不代表已实现原生Run冷恢复。
-精确接口、命令、源码移植范围和资格边界见
+W5.JOIN时期的`project_summary_join.py`已于2026-11-10删除；其`--resume-source`只复用尚无attempt的
+合成采集检查点，从未代表原生Run冷恢复。当前联合资格验证使用`project_full_stack.py`，见
+[验证指南](../../../docs/development/reporting-delivery.md)。
+精确接口、源码移植范围、资格边界及历史命令见
 [W5.JOIN实施包](../../changes/add-provider-neutral-project-reporting/early-ai-integration.md)。
 手动Run按钮现已消费该切片并通过合成验证；定时任务、真实凭据采用及自动发布未启用。

@@ -39,8 +39,8 @@ development contract shared with Codex and Claude; this file is a routing index.
 
 1. Start from the current task frontier, owning module and nearest existing test.
 2. Keep changes inside the module boundary unless the public API contract must change.
-3. Use focused tests first, with explicit module paths. Reporting uses the selected environment
-   and no-dotenv entry in `docs/development/reporting-delivery.md`.
+3. Use focused tests first, with explicit module paths. Reporting, `ui_web` and `project_management`
+   tests use the selected interpreter and isolated no-dotenv entry in `docs/development/reporting-delivery.md`.
 4. Run isolated Django `check` for configuration or Django integration changes.
 5. Before review of a nontrivial code wave, run `python scripts/check_file_size_limits.py --include-untracked` and `python scripts/check_diff_whitespace.py --include-untracked`.
    Every tracked file type must match a rule in `.github/file-size-limits.json` (unclaimed files fail);

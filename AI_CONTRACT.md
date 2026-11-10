@@ -11,6 +11,8 @@ It does not grant permissions beyond the current user request or higher-level in
   when it answers a concrete question. Do not repeatedly reload unchanged historical reports.
 - OpenSpec owns requirements and changes; Superpowers supplies implementation and quality methods.
   One change has one authoritative `tasks.md`, one implementation coordinator and one evidence trail.
+  Delta-spec and archive authoring rules are in
+  [repo context](.github/ai-governance/repo-context.md#openspec-authoring).
 - The current reporting ledger is
   [provider-neutral reporting tasks](openspec/changes/add-provider-neutral-project-reporting/tasks.md).
   Skill-default plan/ledger locations must not create a second execution state.
@@ -63,6 +65,11 @@ It does not grant permissions beyond the current user request or higher-level in
   Save verifies the server-owned candidate receipt under the existing revision/CAS boundary.
 - Changes to SDK/profile/pack/runtime compatibility require explicit selection and consumer checks.
   Never patch immutable released artifacts, old request bytes or historical receipts in place.
+- The repository is early-stage and keeps no backward compatibility: when a consumer migrates to the
+  SDK or embedded runtime, delete the legacy path with its settings, scripts, fixtures and tests in
+  the same change and drop it from current docs; do not keep a fallback, mode switch or shim (for
+  example the retired `embed=workbench` / `METRICS_AI_BASE_EMBED_MODE` path). User data, released
+  artifacts and historical receipts are not legacy paths; the rule above still applies to them.
 
 ## 4. Match Tests To The Risk
 
@@ -79,9 +86,13 @@ It does not grant permissions beyond the current user request or higher-level in
   database, browser or Base fixture. Mutable state remains isolated between scenarios.
 - Use explicit test paths: default pytest discovery does not cover all modules, including
   `project_management` and `provider_sync`. Collection, empty selections and skips are not acceptance.
-- For reporting, use the selected SDK environment and no-dotenv entry in
-  [development and validation](docs/development/reporting-delivery.md). Do not accidentally run
-  migrated consumers in the retained legacy `.venv` or test against the existing 8017 service.
+- Reporting, `ui_web` and `project_management` tests run with the selected SDK interpreter through
+  the isolated no-dotenv entry in [development and validation](docs/development/reporting-delivery.md).
+  Do not accidentally run migrated consumers in the retained legacy `.venv` or test against the
+  existing 8017 service.
+- Deleting or renaming a test, script or fixture updates every current regression list, guide and
+  command that names it in the same change (grep the old name). Archived changes and historical
+  receipts stay unchanged as evidence.
 - Inspect the actual HTTP result/state before waiting for navigation. Preserve failed responses,
   screenshots and logs under unique names. A later pass does not explain an earlier failure.
 - Before review/commit, run the scoped size/whitespace gates and inspect staged bytes and paths.

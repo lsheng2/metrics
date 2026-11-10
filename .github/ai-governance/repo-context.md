@@ -41,7 +41,7 @@ Planned MVP owner additions:
 9. Multi-provider first: Jira is the first rich work-item provider, not the architecture boundary. New tracker/work-item/AI workflow designs must define provider-neutral contracts and UI semantics first, then implement Jira, GitHub, Azure DevOps, or other systems as adapters with declared capabilities.
 10. Project-management execution now lives in this Dashboard checkout. Chiplet is an instance only; never use its project ID, query or name as a production default. Jira and HSD-ES use the same project/stage contracts with honest per-provider coverage.
 11. Do not create parallel product surfaces per provider. Shared concepts such as connection profile, work-item facts, metadata discovery, scope query/filter, action plan, approval/audit, and dashboard consumption belong in provider-neutral contracts; provider-specific modules own only external API quirks, auth, pagination, field identity, and sync implementation.
-12. AI Base/SDK early-development policy (2026-11-01): coordinated breaking API changes are allowed and preferred over unnecessary permanent compatibility layers. Follow [API-EVO-01](../../openspec/changes/add-provider-neutral-project-reporting/ai-api-evolution.md) for versioned change records and per-app Agent handoffs; preserve security, evidence and business acceptance, not obsolete signatures. This is a design policy, not proof of migration or permission to delete data.
+12. AI Base/SDK early-development policy (2026-11-01): coordinated breaking API changes are allowed and preferred over unnecessary permanent compatibility layers. Follow [API-EVO-01](../../openspec/changes/add-provider-neutral-project-reporting/ai-api-evolution.md) for versioned change records and per-app Agent handoffs; preserve security, evidence and business acceptance, not obsolete signatures. This is a design policy, not proof of migration or permission to delete data. Once a consumer migrates, delete its legacy path outright, with no fallback or mode switch (`AI_CONTRACT.md` §3).
 
 ## Common Validation
 
@@ -53,11 +53,22 @@ python scripts/check_diff_whitespace.py --include-untracked
 npm --prefix ui_web/frontend run check   # UI changes: token/vendor drift, Stylelint, WCAG contrast
 ```
 
+## OpenSpec Authoring
+
+Rules learned with OpenSpec CLI 1.14.x. Validate the change with
+`npx --no-install openspec validate <change> --strict` and, after archiving,
+`npx --no-install openspec validate --specs --strict`.
+
+1. A `MODIFIED` requirement restates the whole main-spec requirement and keeps every scenario heading that requirement already has.
+2. When a scenario's premise disappears, do not drop or rename it under `MODIFIED`: move the requirement to `## REMOVED Requirements` with `**Reason**:` and `**Migration**:` lines, and put the new behavior under `## ADDED Requirements` with a new title.
+3. Archiving can create a main spec whose Purpose is "TBD - created by archiving ..."; replace it with the real purpose in the same change.
+
 ## Local Pitfalls
 
-1. Default pytest paths omit `pull_requests`, `project_management` and `provider_sync`.
-   Select affected paths explicitly; reporting uses the no-dotenv entry and selected SDK environment
-   in `docs/development/reporting-delivery.md`.
+1. Default pytest paths omit `pull_requests`, `project_management` and `provider_sync`, and plain `pytest` loads `.env`.
+   Select affected paths explicitly; reporting, `ui_web` and `project_management` tests use the isolated no-dotenv runner,
+   selected SDK interpreter and real `ReportDraftService` doubles in `docs/development/reporting-delivery.md`; present but
+   invalid stage archives are `REPORT_ARTIFACT_INVALID` (`openspec/docs/current-baseline/project-reporting.md`).
 2. Follow the task's owned runtime/port. Do not reuse the unrelated 8017 service or silently upgrade
    the retained legacy `.venv`; current reporting validation uses SDK 0.2.0a1 with the original a2 pack.
 3. Azure PR list pagination can return short or overlapping pages. Keep fixed-stride paging and de-duplication in the repository adapter.

@@ -23,16 +23,27 @@ The retained main `.venv` contains SDK0.1.0a2 and is not a supported shortcut fo
 report consumers. No current service is silently switched or upgraded.
 The import check is environment evidence only, not a business test.
 
-Use the existing no-dotenv entry, with explicit test nodes and a unique evidence filename:
+Run every reporting, `ui_web` and `project_management` test through the existing no-dotenv
+entry with the selected interpreter in isolated mode (`-I`), naming test files or nodes explicitly:
 
 ```powershell
-& $reportingPython -I scripts/validation/run_report_authoring_tests.py ui_web/tests/test_report_daily_ui_browser.py::TestReportDailyUiBrowser::test_shouldCarryEditablePersistentReferenceIntoActualNextDay -q --tb=short --durations=5 --junitxml=.tmp/dashboard-delivery-20261105/daily-two-day.xml
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py <test files or nodes> -q --tb=short -p no:cacheprovider
+```
+
+Plain `pytest` is not equivalent: `pytest.ini` discovers only `tasks`, `forecast`, `velocity` and
+`ui_web` tests, so `project_management` and other modules are silently omitted, and the root
+`conftest.py` loads development settings that read `.env`. The runner denies external networking
+and suppresses dotenv loading; local browser HTTP and separately scoped runtime IPC remain permitted.
+
+Evidence runs add durations and a unique evidence filename:
+
+```powershell
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py ui_web/tests/test_report_daily_ui_browser.py::TestReportDailyUiBrowser::test_shouldCarryEditablePersistentReferenceIntoActualNextDay -q --tb=short -p no:cacheprovider --durations=5 --junitxml=.tmp/dashboard-delivery-20261105/daily-two-day.xml
 ```
 
 The named next-day case is the DAILY closure target; its existence alone is not a pass.
 Do not run a missing test node as evidence. The tasks ledger records its implementation
-and actual result. The runner denies external networking and suppresses dotenv loading;
-local browser HTTP and separately scoped runtime IPC remain permitted.
+and actual result.
 
 ## Validation Selection
 
@@ -49,6 +60,13 @@ Reuse immutable input/profile/source fixtures. Do not share mutable command, dra
 or acceptance state between independent cases. Case failures must preserve the actual response
 and stop widening the test set until the relevant lower-level cause is understood.
 Do not rebuild a week for every bad field or treat a passing same-source week as proof of delta analysis.
+
+Report service doubles are real `ReportDraftService` instances seeded with real drafts and
+publications, or subclasses that override only what the case needs (for example
+`UnusedReportService` in `ui_web/tests/test_project_run_views.py`). Do not hand-build fake service
+classes: when the facade/service contract changes, a real-service double fails the test, while an
+ad hoc fake hides the drift. Patch view facade factories with
+`ProjectRouteTestSupport.patch_view_factory`, not a manual `setattr` restore.
 
 ## Review And Publication
 
