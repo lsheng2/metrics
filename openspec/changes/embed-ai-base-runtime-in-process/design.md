@@ -12,9 +12,13 @@
   `open_session(..., session_key)`、D9 task-run 真实模型执行与准入错误码（`upstream-ai-base-runtime-proposal.md`）。
 - owner 于 2026-11-10 决定保留 Docker 部署：镜像改为单进程 `manage.py serve`，非回环绑定不强制 Basic 认证，
   维持现有的匿名姿态（决策 3、16）。
+- owner 于 2026-11-11 根据 S0 结果（`s0-spike-report.md`，C5 不通过）选择方向 1：Django 保持线程化 WSGI；运行时经
+  `start_blocking` 运行在 `ai_host` 的专用循环线程上；`/ai` 经 WSGI 适配器桥接到同一循环。Goals 与决策 1、2、3、16
+  中以 uvicorn、`metrics.asgi`、lifespan 为前提的内容已被取代，将按 S0b 结论改写（tasks 0.5）；改写前不得据以实施。
 - 本设计只使用 v2 文档定义的运行时 API（`create_runtime`、`start_blocking`、`runtime.running()`、`runtime.asgi_app()`、
   `runtime.chat`、`runtime.task_runs`、`runtime.blocking`、`runtime.ui.asset_url`、`ai_base_runtime.spi/apps/contracts/testkit`）。
-- 发布顺序：AIB-0（AI Base 热修）→ S0 共装 spike → AIB-2 与 MDB-2 同版本发布（v2 §9）。
+- 发布顺序：AIB-0（AI Base 热修）→ S0 共装 spike（不通过）→ S0b（方向 1）→ 上游提案 v2.1 → AIB-2 与 MDB-2
+  同版本发布（v2 §9）。
 
 与设计相关的现状：
 

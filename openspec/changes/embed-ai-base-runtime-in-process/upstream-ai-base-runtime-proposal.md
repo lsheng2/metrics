@@ -1,6 +1,9 @@
 # AI Base 可嵌入运行时：上游架构建议（v2）
 
-- 状态：建议稿，待 AI Base owner 评审。
+- 状态：v2 的 Q1–Q9 已于 2026-11-10 由 owner 签署（见 `design.md` 已定输入）。v2.1 修订中：S0 的 C5 不通过
+  （`s0-spike-report.md`），owner 于 2026-11-11 选择方向 1（同步 WSGI 宿主，运行时运行在专用循环线程上）。D1、D8、
+  §5.1、§6 的 WSGI→ASGI 与事件循环两行、§9 第 2 条将按 S0b 结论修订；修订完成前，其中以 uvicorn 或 ASGI lifespan
+  为宿主前提的内容不得据以实施。
 - 取代：v1《AI Base SDK 中立评估》。v1 以"多个 App 通过网络带外接入"为前提，这个前提已被否定，v1 撤回且未提交。
 - 证据基线：AI Base `3c3f8b4`（2026-11-09）。AI Base 路径默认相对于 `services/app-service/`；以 `apps/`、
   `packages/`、`config/`、`openspec/` 开头的路径相对于 AI Base 仓库根目录。Metrics 路径相对于本仓库根目录；以 `specs/`
