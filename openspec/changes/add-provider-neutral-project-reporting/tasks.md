@@ -4,7 +4,7 @@
 > Do not execute parent summaries as one giant task.
 
 Goal: user-defined projects/stages for Jira and HSD-ES, followed by generic project reporting.
-Architecture: Dashboard host, project_management business owner, existing provider APIs, shared AI Base.
+Architecture: Dashboard host, project_management business owner, existing provider APIs, in-process ai-base-runtime.
 Tech stack: current Python3.13/Django6.0.7, Bulma/htmx, ORM/SQLite, pytest.
 Spec: specs/project-reporting/spec.md and design.md.
 profile_source: repo-local (.github/skills/lsheng2-dag-based-planning/templates/project-profile.md).
@@ -12,10 +12,15 @@ agent_routing_mode: multiagent-configured. Coordinator owns plan/integration; on
 agent owns the active source packet; independent reviews cover completed behavior boundaries.
 Debugger skipped unless a distinct failure needs diagnosis. No parallel source writers.
 Task path overrides older profile default openspec/docs: this change's status is maintained only here.
-Current cross-repo execution entry: execution-handoff.md. The C0 packet is sdk-intake-plan.md;
-base and Dashboard keep separate canonical implementation ledgers.
+Current AI runtime entry: MDB-2 [embed-ai-base-runtime-in-process](../embed-ai-base-runtime-in-process/tasks.md);
+execution-handoff.md, sdk-intake-plan.md and the SDK020/C0/BASE appendices are superseded history.
 
 ## Current Execution
+
+2026-11-11 MDB-2取代AI接入前提：AI Base作为`ai-base-runtime`在Metrics进程内运行；未完成节点经
+project_management同步task-run端口与`ai_profiles`精确`id@version`调用，不再以HTTP SDK、App注册、
+connector、contract pack或doctor为前提；下列SDK/C0/BASE/SDK020回执及各附录与交付packet中的
+SDK/Base HTTP表述仅为已完成节点的历史证据或迁移前实现描述，与MDB-2冲突时以MDB-2为准。
 
 2026-11-08当前前沿已收口：用户批准修复真实使用审查发现的六项缺口，并补齐逐票会议确认
 和未保存编辑恢复。架构/接口/消费者/执行顺序见
@@ -180,9 +185,8 @@ Excel是明确声明的文本表格导出，颜色继续由HTML/JSON保真；Out
 | PM-PROVIDER high | same generic DTO | Jira/HSD translators -> Stage -> future capture | HSD no Jira scope; fake source/history cannot claim live or complete |
 | PM-REPORT high | capture/accept/publication | W3 capture -> W4 delta -> W5 candidate -> W6 publication | no-change zero AI, partial coverage/policy drift/invalid evidence cannot advance success |
 | PM-CONNECTION high | profile/endpoint/auth/credential source | bug_metrics/app/api/provider_connections.py -> provider_access CLI, existing sync/metadata/task clients | ACCESS-01/02/06: endpoint mismatch, missing reference, failed auth cannot fallback |
-| PM-AI-PACK high | task prompt/schema/policy/loader versions | project_management/ai_bundle -> AI Base loader/client/doctor -> candidate acceptance | APP-01/02/04: invalid hash, hidden history/tools, wrong-stage result refused |
-| PM-AI-VERSION high | base canonical contract/SDK and app migration map | base release pack -> existing ui_web workbench, W5 Task client, ai_integration doctor | APP-09: unsupported version fails before model/publication; changed identity preserves ownership and approvals |
-| PM-SDK-INTAKE high | delivered wheel/pack hashes and qualification | base artifacts -> C0 copied/installed consumer -> C0.R/W4.REPLAN | C0-01..12: valid and invalid responses, no source import/retry/network/synthetic-to-provider upgrade |
+| PM-AI-PROFILE high | Metrics-owned AI profile data (prompt/schema/policy, exact id@version) | project_management/ai_profiles -> ai_host.package TaskProfile -> runtime admission -> candidate acceptance | APP-01/02/04: undeclared/disabled profile or invalid input refused before model; wrong-stage result refused |
+| PM-AI-RUNTIME high | pinned ai-base-runtime version and admission (MDB-2 5.11) | requirements pin + wheel digest -> ai_host -> W5 port, workbench, report assist | APP-09: unsupported runtime refused before model/publication; affected consumers named in admission |
 | PM-PORT high | pinned donor source/resources/behavior | migration-catalog.md + leaf source closure -> actual destination API/tests | target runtime/import/provider negative cases; donor-only green is insufficient |
 | PM-EDIT-V2 / PM-TEMPLATE-V1 / PM-COMPLETION / PM-AI-DRAFT / PM-PUBLICATION-V2 high | 本轮作者层新增契约，不覆盖旧W1 authority | [authoring validation](report-authoring-validation.md)提供精确producer/consumer/反例；仅W6.AUTHOR消费 | RA01-40，不能继承旧HTML绿色 |
 | PM-PAINT-V2 / PM-CONTINUITY / PM-PREPARE high | 用户有效富文本、raw状态、系列基线/周周期/稳定行序和准备幂等 | 同附录的保存/renderer/归档/翌日/CLI/UI消费者；HISTORY/DAILY加入原lane | RA41-69，旧样张检查非生产资格 |
@@ -222,8 +226,8 @@ MIG-01..19是能力族索引，不是完整文件闭包。每个W3-W7 REPLAN/叶
 W3不激活provider_access capture/operation；这两个公开运行能力只属于W7.RUN。
 
 ```text
-BASE-A.R -> C0.PLAN.R -> C0.N1 -> C0.R
-C0.R supplies verified SDK evidence to W4.REPLAN; it does not bypass the business chain below.
+BASE-A.R -> C0.PLAN.R -> C0.N1 -> C0.R  (completed SDK-era history, superseded by MDB-2)
+MDB-2 merged + W4.R -> W4.REPLAN; MDB-2 does not bypass the business chain below.
 
 C0.R + W1/W2 + W3.ARCHIVE + W3.GATEWAY/CAPTURE
  -> W5.JOIN.PLAN -> W5.JOIN.CORE -> W5.JOIN.LOOPBACK -> W5.JOIN.R
@@ -278,15 +282,15 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [ ] W4.EVIDENCE Port provider-neutral identity, reference and quote validation.
 - [ ] W4.IMPORT Port source-closed historical import and protect original hashes/bytes.
 - [ ] W4.R Verify retained versions, baseline and incomplete/revoked source behavior.
-- [ ] W4.REPLAN Freeze AI Base fixed contract pack and consumer mapping.
-- [ ] W5.N1 Add strict task client, candidate acceptance and no-change reuse.
-- [ ] W5.APP Deliver app registration/task profile/prompt/schema/manifest and offline doctor.
-- [ ] W5.MIGRATE Update existing AI workbench consumers affected by the selected breaking contract; APP-09 is not optional W5.CHAT.
+- [ ] W4.REPLAN Freeze the admitted ai-base-runtime version, exact AI profile id@version and port consumer closure; requires merged MDB-2.
+- [ ] W5.N1 Run strict summary through the project_management task-run port, with candidate acceptance and no-change reuse.
+- [ ] W5.APP Evolve Metrics AI profile data in ai_profiles (MDB-2 5.1): bump the exact version on content change, strict summary declares no tools, verify with check_app_package; no registration/manifest/contract pack/doctor.
+- [ ] W5.MIGRATE Confirm MDB-2 migrated every existing workbench/project AI consumer; later runtime upgrades go through version admission naming affected consumer tests (APP-09); not part of W5.CHAT.
 - [ ] W5.INPUT Port full input preparation and bounded fragments; optional lossless wire codec.
-- [ ] W5.CLIENT Integrate fixed AI Base Task SDK and attempt/usage recovery.
+- [ ] W5.CLIENT Integrate through the task-run port with durable attempts; on unknown outcome query by the original client_run_key, never resubmit or extend the deadline; usage from run audit.
 - [ ] W5.ACCEPT Wire original semantic/evidence/CAS acceptance and no-call reuse.
-- [ ] W5.CHAT Optional assistant skill/connector/host actions; disabled unless separately enabled and qualified.
-- [ ] W5.R Verify usage/unknown/identity/evidence; qualified backend separately authorized.
+- [ ] W5.CHAT Optional project assistant as a Metrics App read tool over Project public APIs with the authenticated principal; disabled by default; no connector or host action.
+- [ ] W5.R Verify usage/unknown/identity/evidence; real-model qualification of the admitted runtime separately authorized.
 - [ ] W5.REPLAN Freeze publication formats and expected business reports.
 - [ ] W6.N1 Deliver HTML-first templated reports plus required English Markdown/Excel and complete pending/action list.
 - [ ] W6.RENDER Port generic report DTO/renderers and provider-specific safe source links; include the HTML projection without new model calls.
@@ -362,7 +366,7 @@ PLAN.R + W1.VA -> W1.N1 -> W1.R -> W1.REPLAN
 - [ ] W7.DEPLOY Verify new installation paths, identity, legacy coexistence and required recovery.
 - [ ] W7.PROTECTION Port backup/retention/remote/scheduling contracts with explicit inactive activation gates.
 - [ ] W7.SCHEDULE Qualify the optional disabled-by-default scheduler over the same daily preparation API; no automatic finalization.
-- [ ] CLOSE.R Full matched-candidate integration, required live qualifications and unresolved issues.
+- [ ] CLOSE.R Full integration on the admitted embedded runtime, required live qualifications and unresolved issues.
 
 ## W6 Authoring V2
 
@@ -459,7 +463,7 @@ Validation Engineer只在VA有独立验证风险时派发，Debugger当前跳过
 ### SDK020: Preparation And Integration Gates
 
 Spec: [SDK contract](sdk-020-integration.md), [post-IP execution](sdk-020-post-integration.md),
-[observable requirements](specs/sdk-consumer-integration/spec.md).
+[observable requirements](specs/project-reporting/spec.md) (former sdk-consumer-integration delta, merged 2026-11-11).
 Goal: use the delivered 0.2.0a1 Python client with the original a2 pack, preserving app authority.
 Architecture: existing app adapter plus isolated installed client; no new service or execution engine.
 The pre-integration scope ended at IP-SDK020-READY. The user released this stop on
@@ -919,14 +923,14 @@ Future W3 capture/list/dependency/attachment/HSD and W4 remain in scope under th
 
 W1 review owner_paths above. W2 UI owns only new project-specific facade/view/template/static/tests and necessary
 url/nav hooks, avoiding dirty scope editor. W3 adapters consume existing provider APIs; W4 history owns a new
-archive service; W5 AI client consumes externally delivered contract; W6 publication owns reports;
+archive service; W5 AI consumes the MDB-2 task-run port with Metrics-owned profiles; W6 publication owns reports;
 W7 operation/runtime owns launcher adapters. Each REPLAN refines these into exact files before execution.
 Remaining high-risk waves cannot be executed until their predecessor REPLAN and validation signoff resolve APIs.
 The user-authorized W5.JOIN lane has its own precise packet/signoff and actual
 prerequisites above; the old whole-wave ordering does not block that lane.
 They are not implemented by placeholder success, nor silently dropped when dependencies are unavailable.
-C0 is independent of W1.R/BASE-B and owns only the dev validation script/environment/docs listed in
-sdk-intake-plan.md. W4.REPLAN requires C0.R plus W4.R; no app data/service code is pulled forward into C0.
+C0 is completed SDK-era history (sdk-intake-plan.md). W4.REPLAN requires the merged MDB-2 runtime host plus W4.R;
+no app data/service code is pulled forward.
 
 Optional W5.CHAT is not a prerequisite of W5.R or report completion when disabled. Track its residual scope
 explicitly; no marking implemented without its own APP-06..08 tests. W7.PROTECTION code/interface verification
@@ -1025,6 +1029,7 @@ No deterministic completion date or percent; evaluate next user outcome, not tot
 
 ## AI Base Counterpart Boundary
 
+2026-11-11起本节与下节仅为历史：W4.REPLAN/W5前提由MDB-2运行时版本准入与task-run端口定义，API-EVO-01不兼容原则保留。
 2026-11-01用户要求从整个基座角度列出独立增强，不只满足本应用。
 `ai-base-enhancement-request.md`定义E1-E9公共能力及BASE-A/B/C/D交付分组，
 不在此维护基座实施状态。W5.APP消费实际profile/schema loader与版本包；

@@ -1,5 +1,7 @@
 # Dashboard C0 SDK Intake Implementation Plan
 
+> Superseded on 2026-11-11 by [MDB-2](../embed-ai-base-runtime-in-process/proposal.md); historical evidence only, defines no remaining work.
+
 > For agentic workers: use the current OpenSpec tasks ledger and bounded validation.
 > This packet is a development qualification task, not production W5 implementation.
 

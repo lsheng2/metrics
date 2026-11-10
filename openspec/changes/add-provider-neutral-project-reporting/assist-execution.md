@@ -3,6 +3,9 @@
 Date: 2026-11-06. Implementation and qualification state is recorded in `tasks.md`.
 Parent contracts: `report-authoring-contracts.md` section 4 and
 `sdk-020-post-integration.md` section 4. State stays in `tasks.md`.
+Superseded on 2026-11-11 for AI submission: assist runs go through the MDB-2 synchronous task-run port
+(decision 10) and assist wire records move to v2 without `backend` (MDB-2 5.8); SDK/Base wording below
+describes the pre-migration implementation.
 Depends on qualified DELTA.CORE and `W6.AUTHOR.SOURCE`.
 One writer and one bounded independent plan/behavior reviewer.
 

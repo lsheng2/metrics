@@ -1,5 +1,7 @@
 # Execution After IP-SDK020-READY
 
+> Superseded on 2026-11-11 by [MDB-2](../embed-ai-base-runtime-in-process/proposal.md); historical evidence only, defines no remaining work.
+
 Date: 2026-11-05. Status: authorized after the user's explicit release of the reached IP.
 Necessary small counterpart fixes are allowed; immutable releases and historical evidence remain
 unchanged. Execution state stays in [tasks.md](tasks.md).

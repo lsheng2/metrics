@@ -205,17 +205,17 @@ public Project API. A stage SHALL be confirmed against the exact source definiti
 - **AND** a repeated confirmation SHALL NOT create a second stage or audit event
 
 ### Requirement: Application integration assets are versioned and isolated
-The application SHALL provide a versioned AI integration package with registration, task policy, prompt, input/output schemas, source hashes and consumer conformance tests. Optional interactive skills and tool bindings SHALL NOT be required or enabled for authoritative summary tasks.
+The application SHALL declare report AI work as Metrics-owned task profiles in `ai_profiles` with instructions, input/output schemas and policy, requested by exact `id@version` through the project_management task-run port and checked with the runtime `check_app_package`. Strict summary and authoring profiles SHALL NOT declare tools. Optional assistant tools SHALL be read-only and SHALL NOT be required for authoritative summaries.
 
-#### Scenario: Application package references are invalid
-- **WHEN** the prompt, schema, profile version or supported AI Base capability does not match the package manifest
-- **THEN** integration validation SHALL reject activation before any model request
-- **AND** SHALL NOT report readiness from file existence or registration alone
+#### Scenario: Profile admission fails
+- **WHEN** a requested profile is undeclared or disabled, has no configured model, or the input violates its schema
+- **THEN** the runtime SHALL reject the run before any model request with `profile_not_declared`, `profile_disabled`, `model_not_configured` or `input_schema_invalid`
+- **AND** the application SHALL NOT report AI readiness from profile file existence alone
 
-#### Scenario: Strict and interactive manifests cannot mix
-- **WHEN** a strict-summary manifest includes skills, CLI tools, MCP or host-action activation
-- **THEN** the loader SHALL reject that manifest
-- **AND** a missing AI Base contract pack SHALL return blocked readiness without registering placeholder assets
+#### Scenario: A strict profile references tools
+- **WHEN** a strict summary or authoring profile definition references a tool, agent, skill or host action
+- **THEN** `ai_host` package conversion and the Metrics contract tests SHALL reject it
+- **AND** SHALL NOT declare a placeholder profile in its place
 
 #### Scenario: Summary uses explicit data rather than interactive tools
 - **WHEN** a report summary task executes
@@ -223,42 +223,66 @@ The application SHALL provide a versioned AI integration package with registrati
 - **AND** SHALL exclude development skills, implicit chat history, tracker credentials and arbitrary tool access
 
 #### Scenario: Optional assistant reads another project
-- **WHEN** an interactive connector, CLI tool or host action targets a project, stage or artifact outside the authenticated user's authority
-- **THEN** the application service SHALL reject it even if the AI Base application credential is valid
-- **AND** skill instructions SHALL NOT substitute for authorization
+- **WHEN** an optional assistant read tool targets a project, stage or artifact outside the authenticated principal's authority
+- **THEN** the application service SHALL reject it
+- **AND** instructions SHALL NOT substitute for authorization
 
 ### Requirement: AI contract upgrades have explicit migration and version admission
-The application MAY adopt breaking AI Base and SDK changes. Each adopted change SHALL be mapped to a versioned contract record, affected application consumers and migration tests. Preserving obsolete API signatures SHALL NOT be required, while ownership, source integrity, truthful execution accounting and business approval guarantees SHALL remain enforced.
+The application MAY adopt breaking embedded-runtime changes. Each adopted runtime version SHALL pass MDB-2 version admission and SHALL be mapped to the affected reporting consumers and their migration tests. Preserving obsolete API signatures SHALL NOT be required, while ownership, source integrity, truthful execution accounting and business approval guarantees SHALL remain enforced.
 
-#### Scenario: A required contract version is not supported
-- **WHEN** the installed SDK, service contract or application registration is outside the declared supported combination
-- **THEN** the application SHALL reject AI activation or submission before model execution or business publication
-- **AND** SHALL NOT silently fall back to an old Chat endpoint to execute an authoritative summary
+#### Scenario: AI execution is not available
+- **WHEN** the runtime rejects admission, is not running (`RUN_UNAVAILABLE`) or is busy (`RUN_BUSY`)
+- **THEN** no model request or business publication SHALL occur and the application SHALL surface the code with its runtime `recovery`
+- **AND** SHALL NOT fall back to chat or another profile version to execute an authoritative summary
 - **AND** local project and stored-history inspection SHALL remain independent of AI readiness
 
 #### Scenario: A breaking change affects existing workbench consumers
-- **WHEN** the selected AI Base contract changes binding, context, host-action or SDK interfaces used by the existing Dashboard
+- **WHEN** an admitted runtime version changes context, tool, approval or host-action interfaces used by the existing Dashboard
 - **THEN** the migration plan SHALL name those existing consumers and their replacement tests
 - **AND** SHALL NOT classify their migration as the optional new project assistant
 
 #### Scenario: An application identity or protocol is replaced
-- **WHEN** an upgrade replaces app identities, binding formats or API responses
+- **WHEN** an upgrade replaces app identities, profile versions or result envelopes
 - **THEN** the migration SHALL preserve traceable object ownership and approved business-result acceptance
 - **AND** SHALL associate replaced protocol assertions with the new contract and negative tests
 - **AND** documentation delivery alone SHALL NOT count as application migration acceptance
 
-### Requirement: Installed AI client qualification is isolated from product execution
-The project SHALL verify a selected SDK and contract pack using their immutable artifact identities and an application-owned isolated environment before production integration. Development qualification SHALL NOT initialize application settings, access business data or claim provider qualification from synthetic tests.
+### Requirement: Installed AI runtime qualification is isolated from product execution
+The project SHALL qualify the pinned `ai-base-runtime` wheel by its recorded digest, using the runtime testkit scripted model in an application-owned isolated environment, before production integration. Development qualification SHALL NOT read deployment credentials, access business data or claim real-model qualification from synthetic tests.
 
-#### Scenario: Client prerequisites or artifact identity are missing
-- **WHEN** the selected SDK dependencies are unavailable or the copied wheel or contract pack does not match its declared hashes
-- **THEN** consumer qualification SHALL fail before any model or service request
+#### Scenario: Runtime artifact identity is missing or wrong
+- **WHEN** the pinned runtime wheel is unavailable or its digest differs from the admitted record
+- **THEN** qualification SHALL fail before any model request
 - **AND** SHALL NOT import another repository's source or site-packages as an installation fallback
 
-#### Scenario: Synthetic client checks succeed
-- **WHEN** the installed client passes the selected isolated schema and transport checks
-- **THEN** the evidence SHALL identify the package, environment, selected cases and actual results
-- **AND** SHALL NOT mark provider execution, cancellation, native recovery or application result acceptance as passed without their own tests
+#### Scenario: Synthetic runtime checks succeed
+- **WHEN** host conformance and reporting port tests pass with the scripted model
+- **THEN** the evidence SHALL identify the runtime version, wheel digest, environment, selected cases and actual results
+- **AND** SHALL NOT mark real model execution, cancellation, recovery or application result acceptance as passed without their own tests
+
+### Requirement: Runtime results do not replace application authority
+The task-run port SHALL preserve original-key recovery, and a wait timeout SHALL NOT be treated as cancellation. A completed runtime run SHALL NOT imply domain acceptance, saved human edits or publication. Each report AI use SHALL request its own declared profile version and SHALL NOT borrow another profile's permission.
+
+#### Scenario: Run outcome is unknown
+- **WHEN** a task-run outcome is unknown after a timeout, `RUN_UNAVAILABLE` or a process restart
+- **THEN** the application SHALL resolve it with the original `client_run_key` and its stored run record
+- **AND** SHALL NOT issue a new key or renew the original deadline to manufacture success
+
+#### Scenario: A schema-valid result is semantically invalid
+- **WHEN** a completed run output matches its profile output schema but contains an ungrounded owner, invalid source evidence or a mismatched application binding
+- **THEN** the application SHALL refuse domain acceptance
+- **AND** SHALL preserve source, accepted-summary and publication watermarks
+
+#### Scenario: Authoring profile is not available
+- **WHEN** an AI filling request finds no declared and enabled `metrics.report_authoring` profile version
+- **THEN** the application SHALL report `REPORT_AI_UNAVAILABLE` and preserve manual editing
+- **AND** SHALL NOT reuse the summary profile as an authoring permission
+
+#### Scenario: Final authoring qualification crosses a work week
+- **WHEN** the full-week authoring qualification is executed
+- **THEN** it SHALL run the accepted five-day and next-week scenario through actual application, editor and storage paths
+- **AND** SHALL preserve human text, deletions, colors, original source statuses, row identity and unresolved actions
+- **AND** SHALL keep real-provider, model, Outlook and scheduling qualification separate from synthetic success
 
 ### Requirement: Provider access shares one public authority
 The Provider CLI, project reporting worker and affected legacy sync consumers SHALL use the same approved connection resolution and provider access service. Jira and HSD-ES SHALL retain their adapter-specific authentication and coverage semantics.

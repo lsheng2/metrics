@@ -1,5 +1,9 @@
 # Dashboard Delivery Sequence
 
+> 2026-11-11: the SDK/Base/pack prerequisites below are superseded by
+> [MDB-2](../embed-ai-base-runtime-in-process/proposal.md); completed steps keep their evidence and
+> remaining AI work follows tasks.md W4.REPLAN/W5 on the in-process task-run port.
+
 Date: 2026-11-05. Status: user-approved reassessment, staged execution.
 Parent: [design.md](design.md). State belongs only to [tasks.md](tasks.md).
 profile_source: repo-local. agent_routing_mode: one implementation writer with bounded independent review.

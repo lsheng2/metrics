@@ -211,7 +211,7 @@ Jira SHALL 使用显式 scope/profile，HSDES SHALL 使用自己的 saved-query 
 
 #### Scenario: User requests AI fill for selected slots
 - **WHEN** 用户在已保存草稿中选择填写槽并请求AI
-- **THEN** 应用 SHALL 只向获准Base任务提交对应输入
+- **THEN** 应用 SHALL 只经task-run端口向已声明的authoring profile精确版本提交对应输入
 - **AND** 候选 SHALL 不修改数据区、owner确认、source hash或summary水位
 - **AND** 人工接受/调整 SHALL 保留操作者和原AI结果来源
 
@@ -221,7 +221,7 @@ Jira SHALL 使用显式 scope/profile，HSDES SHALL 使用自己的 saved-query 
 - **AND** SHALL NOT 编造事实、自动定稿或把失败当作人工内容
 
 #### Scenario: Draft changes or cancellation is unresolved
-- **WHEN** 候选返回前草稿变化，或Base取消/提交结果未知
+- **WHEN** 候选返回前草稿变化，或运行被取消/提交结果未知
 - **THEN** 应用 SHALL 保留原候选/任务关联并显示冲突或未知
 - **AND** SHALL NOT 以新key重复派发或自动覆盖当前内容
 

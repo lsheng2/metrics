@@ -105,7 +105,7 @@ RA为本附录唯一case前缀。下表函数名是设计目标；已落地测�
 | RA26 | 同文件 `test_archive_and_cross_project_copy_preserve_history` | 只允许双owner结构复制；归档前use可按原command恢复，归档后的新command不能选择，stage锁内不回写DB |
 | RA27 | `test_report_template_compilation.py::test_draft_pins_complete_template_snapshot` | template library不可用/更名/新head不改变旧draft；新unknown renderer明确拒绝 |
 | RA28 | 同文件 `test_template_layout_does_not_recompute_analysis` | 改顺序/固定文字后source_hash、summary refs不变；0模型调用 |
-| RA29 | `test_report_assists.py::test_manual_work_is_independent_of_ai_readiness` | Base offline或profile未注册，人工create/edit/save可用；普通render0SDK |
+| RA29 | `test_report_assists.py::test_manual_work_is_independent_of_ai_readiness` | 运行时不可用或profile未声明，人工create/edit/save可用；普通render 0次AI调用 |
 | RA30 | 同文件 `test_authoring_profile_and_result_are_bound` | 错误runStore/scope/profile/hash、未知target、扩大context、恶意URL输出拒绝 |
 | RA31 | 同文件 `test_insufficient_evidence_keeps_slot_pending` | 模型缺证据结果不编内容；可保存草稿，required slot未填禁止finalize |
 | RA32 | 同文件 `test_apply_is_provisional_until_saved` | 接受到dirty不advance summary/Git；期间新revision使候选stale且原文保留 |
@@ -290,7 +290,7 @@ RA38使用原确认的Outlook目标，执行时刷新实际版本；不可用时
 | `REPORT_TEMPLATE_ARCHIVED` | 新选择已归档模板；保留原draft的snapshot，回到模板选择不丢填写 |
 | `REPORT_TEMPLATE_LIMIT` | 数量/字节/版本额度超限；整个事务拒绝，无部分模板或丢失历史 |
 | `REPORT_REQUIRED_SLOT_EMPTY` | finalization缺必填内容；标注具体slot，草稿仍能保存 |
-| `REPORT_AI_UNAVAILABLE` | SDK/profile/grant/backend未就绪；AI操作禁用并说明，人工编辑保持 |
+| `REPORT_AI_UNAVAILABLE` | profile未声明/禁用、模型未配置或运行时不可用；AI操作禁用并说明，人工编辑保持 |
 | `REPORT_AI_RESULT_INVALID` | wrong identity/schema/evidence；候选拒绝，无内容覆盖或summary推进 |
 | `REPORT_AI_STALE` | 原候选base revision/slot hash变化；仍可看旧候选但不能自动应用 |
 | `REPORT_AI_PENDING` | unknown/cancel_requested；显示原任务状态，不能新key重派 |
@@ -338,7 +338,8 @@ RA67; it does not replace the original week or claim live qualifications.
   不强迫含capture元数据的整个snapshot/HTML hash相同。
 - 覆盖至少三票独立行，共用PR/owner也不合并；包含Fixed及In Analysis，
   用不含企业原文的固定fixture。scope/排序/pending/AR覆盖保持显式。
-  主验收首日通过已安装SDK/真实本地Base HTTP与获准synthetic executor产生并接受摘要；
+  主验收首日经task-run端口与获准synthetic模型产生并接受摘要（MDB-2起为嵌入运行时；
+  已完成的运行使用已安装SDK/本地Base HTTP，仅为历史）；
   后续无变化复用，原summary/input/result身份不被人工note改写。
   预置accepted summary仅可用于局部故障测试，不能替代主full-stack链路。
 
@@ -362,7 +363,7 @@ RA67; it does not replace the original week or claim live qualifications.
 
 ### Evidence And Exit
 
-运行前冻结源码候选SHA/dirty文件hash、lockfile/vendor hash、Python/Chrome/SDK身份、
+运行前冻结源码候选SHA/dirty文件hash、lockfile/vendor hash、Python/Chrome/运行时版本与wheel摘要、
 fixture/schema/prompt hash及日历规则。每次run使用唯一owned目录，不覆盖旧失败证据。
 每日保留：
 

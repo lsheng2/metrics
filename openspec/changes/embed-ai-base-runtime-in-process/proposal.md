@@ -92,10 +92,10 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 - **前置 change 已归档**：`isolate-dashboard-runtime-instances`、`remove-legacy-ai-base-workbench-embed` 和
   `harden-ai-base-sidecar-and-connector-inputs` 已于 2026-11-10 归档。本 change 的 delta 以归档后的主 spec 为基线，
   并通过 strict 校验。
-- **与进行中 change 的冲突**：`add-provider-neutral-project-reporting` 中的以下内容都以 HTTP SDK、App 注册和
-  connector 为前提，必须在本 change 实施之前改写为"运行时版本准入"和"进程内 task-run 端口"（任务 0.4）：
-  - W4.REPLAN、W5.N1、W5.APP、W5.MIGRATE、W5.CLIENT、W5.CHAT；
-  - `sdk-consumer-integration` delta。
+- **与进行中 change 的冲突（2026-11-11 已由任务 0.4 消除）**：`add-provider-neutral-project-reporting` 中原以 HTTP SDK、
+  App 注册和 connector 为前提的内容已改写为"运行时版本准入"和"进程内 task-run 端口"：
+  - W4.REPLAN、W5.N1、W5.APP、W5.MIGRATE、W5.CLIENT、W5.CHAT 已改写；
+  - `sdk-consumer-integration` delta 已删除，仍有效的规则并入该 change 的 `project-reporting` delta。
 - **代码**：
   - `metrics/`：`asgi.py`、`middleware.py`、`settings/*`；删除 `wsgi.py`；
   - 新模块 `ai_host/`：组合根装配、宿主 SPI、App 包、task-run 端口实现、审计表、`serve` 命令；

@@ -1,5 +1,7 @@
 # Early AI Business Integration
 
+> Superseded on 2026-11-11 by [MDB-2](../embed-ai-base-runtime-in-process/proposal.md); historical evidence only, defines no remaining work.
+
 Status: implemented and synthetic-business-join verified after independent
 CORE and harness review. Exact qualification and limitations are recorded in
 [w5-join-delivery.json](w5-join-delivery.json). This does not close the full W5 wave.
