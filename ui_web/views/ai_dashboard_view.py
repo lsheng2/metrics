@@ -4,7 +4,6 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from bug_metrics.app.api import (
@@ -17,6 +16,7 @@ from bug_metrics.app.api import (
 )
 
 from ..container import ui_web_container
+from .ai_dashboard_connector_endpoint import connector_endpoint
 from .bug_trend_query import validate_query_contract
 
 
@@ -60,7 +60,7 @@ class AiDashboardCatalogApiView(View):
         return JsonResponse(catalog)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardIntentValidationApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -87,7 +87,7 @@ class AiDashboardIntentValidationApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardRenderConfigValidationApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -103,7 +103,7 @@ class AiDashboardRenderConfigValidationApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardArtifactValidationApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -125,7 +125,7 @@ class AiDashboardArtifactValidationApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardGcxPreconditionApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -145,7 +145,7 @@ class AiDashboardGcxPreconditionApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardGcxPublicationCallbackApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -271,7 +271,7 @@ class AiDashboardWorkflowView(TemplateView):
         ]
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardWorkflowApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

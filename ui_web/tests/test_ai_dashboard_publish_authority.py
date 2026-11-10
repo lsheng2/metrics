@@ -178,6 +178,28 @@ class TestAiDashboardPublishAuthority(AiDashboardPublishTestSupport, TestCase):
         self.assertEqual(200, state_response.status_code)
         self.assertEqual('approved', state_response.json()['status'])
 
+    def test_shouldIgnoreApprovalDecisionForgedAsCrossSiteSimpleRequest(self):
+        approval_id = self.client.post(
+            reverse('ui_web:ai_dashboard_publish_approval_api'),
+            data=self.publish_request_json({
+                'dry_run_proof_id': 'dryrun-local-demo',
+                'artifact_ref': 'ai-base-artifact://workspace/art_publish',
+                'artifact_version': 3,
+                'artifact_hash': 'sha256:publishhash',
+            }),
+            content_type='application/json',
+        ).json()['approval_id']
+
+        forged_response = self.client.post(
+            reverse('ui_web:ai_dashboard_publish_approval_decision_api'),
+            data=json.dumps({'approval_id': approval_id, 'decision': 'approved', 'actor': 'local_operator'}),
+            content_type='text/plain',
+        )
+        state_response = self.client.get(reverse('ui_web:ai_dashboard_publish_approval_api'), {'approval_id': approval_id})
+
+        self.assertEqual(415, forged_response.status_code)
+        self.assertEqual('pending_approval', state_response.json()['status'])
+
     def test_shouldRejectAiGrafanaPublishApprovalWithoutArtifactHash(self):
         response = self.client.post(
             reverse('ui_web:ai_dashboard_publish_approval_api'),

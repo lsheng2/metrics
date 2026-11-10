@@ -34,7 +34,6 @@ class AiSidecarProbeService:
             'enabled': bool(getattr(settings, 'METRICS_AI_SIDECAR_ENABLED', False)),
             'base_url': str(getattr(settings, 'METRICS_AI_BASE_URL', 'http://127.0.0.1:48300')).rstrip('/'),
             'service_id': str(getattr(settings, 'METRICS_AI_BASE_SERVICE_ID', 'dashboard-query-agent-app-service')),
-            'instance_token': str(getattr(settings, 'METRICS_AI_BASE_INSTANCE_TOKEN', '') or ''),
             'profile_id': str(getattr(settings, 'METRICS_AI_BASE_PROFILE_ID', 'dashboard_query_agent')),
             'handshake_path': str(getattr(settings, 'METRICS_AI_BASE_HANDSHAKE_PATH', '/health/handshake')),
             'timeout_seconds': float(getattr(settings, 'METRICS_AI_BASE_TIMEOUT_SECONDS', 3.0)),
@@ -56,11 +55,9 @@ class AiSidecarProbeService:
         }
 
     def _handshake_mismatch(self, config: dict, handshake: dict) -> str:
+        # serviceId only catches misconfiguration; the unauthenticated handshake cannot prove identity.
         if handshake.get('serviceId') != config['service_id']:
             return 'AI Base service identity mismatch.'
-        expected_token = config['instance_token']
-        if expected_token and handshake.get('instanceToken') != expected_token:
-            return 'AI Base instance token mismatch.'
         return ''
 
     def _runtime_mismatch(self, config: dict, runtime_info: dict) -> str:

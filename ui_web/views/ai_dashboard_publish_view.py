@@ -4,15 +4,15 @@ from uuid import uuid4
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 
 from bug_metrics.app.api import DashboardAiPublishApprovalRequest, DashboardAiPublishRequest
 
 from ..container import ui_web_container
+from .ai_dashboard_connector_endpoint import connector_endpoint
 from .ai_dashboard_view import json_body, requested_series_from_payload, safe_ai_payload
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardPublishDemoApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -48,7 +48,7 @@ class AiDashboardPublishDemoApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardPublishApprovalApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -84,7 +84,7 @@ class AiDashboardPublishApprovalApiView(View):
             return JsonResponse({'error': str(error)}, status=400)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(connector_endpoint, name='dispatch')
 class AiDashboardPublishApprovalDecisionApiView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

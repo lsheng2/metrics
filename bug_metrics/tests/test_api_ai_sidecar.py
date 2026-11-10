@@ -23,7 +23,6 @@ class TestAiSidecarProbeService(SimpleTestCase):
             'http://127.0.0.1:48300/health/handshake': {
                 'status': 'ok',
                 'serviceId': 'dashboard-query-agent-app-service',
-                'instanceToken': 'local-token',
                 'handshakePath': '/health/handshake',
             },
             'http://127.0.0.1:48300/api/runtime/info': {
@@ -39,7 +38,6 @@ class TestAiSidecarProbeService(SimpleTestCase):
             METRICS_AI_SIDECAR_ENABLED=True,
             METRICS_AI_BASE_URL='http://127.0.0.1:48300',
             METRICS_AI_BASE_SERVICE_ID='dashboard-query-agent-app-service',
-            METRICS_AI_BASE_INSTANCE_TOKEN='local-token',
             METRICS_AI_BASE_PROFILE_ID='dashboard_query_agent',
         ):
             status = AiSidecarProbeService(lambda url, timeout: responses[url]).get_status()
@@ -49,6 +47,37 @@ class TestAiSidecarProbeService(SimpleTestCase):
         self.assertEqual('dashboard_query_agent', status['profile_id'])
         self.assertEqual('dashboard-query-agent-app-service', status['service_id'])
         self.assertTrue(status['capabilities']['dashboardQuery'])
+
+    def test_shouldNotTreatPubliclyReturnedInstanceTokenAsSidecarIdentity(self):
+        # Given
+        responses = {
+            'http://127.0.0.1:48300/health/handshake': {
+                'status': 'ok',
+                'serviceId': 'dashboard-query-agent-app-service',
+                'instanceToken': 'token-any-caller-can-read',
+                'handshakePath': '/health/handshake',
+            },
+            'http://127.0.0.1:48300/api/runtime/info': {
+                'app': {
+                    'profileId': 'dashboard_query_agent',
+                    'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
+                },
+            },
+        }
+
+        # When
+        with override_settings(
+            METRICS_AI_SIDECAR_ENABLED=True,
+            METRICS_AI_BASE_URL='http://127.0.0.1:48300',
+            METRICS_AI_BASE_SERVICE_ID='dashboard-query-agent-app-service',
+            METRICS_AI_BASE_INSTANCE_TOKEN='binding-token',
+            METRICS_AI_BASE_PROFILE_ID='dashboard_query_agent',
+        ):
+            status = AiSidecarProbeService(lambda url, timeout: responses[url]).get_status()
+
+        # Then
+        self.assertEqual('ready', status['status'])
+        self.assertNotIn('token', str(status))
 
     def test_shouldReportReadyWhenDashboardCapabilityIsNestedInFeatureCapabilities(self):
         # Given
@@ -137,7 +166,6 @@ class TestAiSidecarProbeService(SimpleTestCase):
             METRICS_AI_SIDECAR_ENABLED=True,
             METRICS_AI_BASE_URL='http://127.0.0.1:48300',
             METRICS_AI_BASE_SERVICE_ID='dashboard-query-agent-app-service',
-            METRICS_AI_BASE_INSTANCE_TOKEN='local-token',
             METRICS_AI_BASE_PROFILE_ID='dashboard_query_agent',
         ):
             status = AiSidecarProbeService(lambda url, timeout: responses[url]).get_status()

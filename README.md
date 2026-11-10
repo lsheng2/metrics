@@ -547,7 +547,9 @@ If not set, the dashboard will be publicly accessible.
 #### Environment Security
 
 - Set `DEBUG=False` in production
-- Configure `ALLOWED_HOSTS` with your domain: `ALLOWED_HOSTS=your-domain.com,www.your-domain.com`
+- `ALLOWED_HOSTS` defaults to loopback only (`127.0.0.1`, `localhost`, `[::1]`) so DNS-rebound pages cannot
+  reach the dashboard; set it to your domain when serving under another hostname:
+  `ALLOWED_HOSTS=your-domain.com,www.your-domain.com`
 - Use strong, unique passwords for `METRICS_BASIC_AUTH_USERS`
 - Store API tokens securely and rotate them regularly
 

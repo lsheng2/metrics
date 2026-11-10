@@ -6,6 +6,19 @@ from django.urls import reverse
 from bug_metrics.app.api import DashboardCompositionIntent, bug_trend_api
 
 
+CONNECTOR_WRITE_ROUTES = (
+    'ui_web:ai_dashboard_intent_validation_api',
+    'ui_web:ai_dashboard_render_config_validation_api',
+    'ui_web:ai_dashboard_artifact_validation_api',
+    'ui_web:ai_dashboard_workflow_api',
+    'ui_web:ai_dashboard_gcx_precondition_api',
+    'ui_web:ai_dashboard_gcx_publication_callback_api',
+    'ui_web:ai_dashboard_publish_approval_api',
+    'ui_web:ai_dashboard_publish_approval_decision_api',
+    'ui_web:ai_dashboard_publish_demo_api',
+)
+
+
 class TestAiDashboardApiSurface(TestCase):
     def test_shouldExposeAiDashboardConnectorIdentity(self):
         response = self.client.get(reverse('ui_web:ai_dashboard_identity_api'))
@@ -507,3 +520,13 @@ class TestAiDashboardApiSurface(TestCase):
         self.assertIn('jira', content)
         self.assertIn('chiplet-2a-jira', content)
         self.assertIn('ready_for_dry_run', content)
+
+    def test_shouldRejectCorsSimpleContentTypesOnEveryConnectorWriteRoute(self):
+        body = json.dumps({'profile_id': 'chiplet-2a-jira', 'approval_id': 'apr-any', 'decision': 'approved'})
+        for route in CONNECTOR_WRITE_ROUTES:
+            for content_type in ('text/plain', 'application/x-www-form-urlencoded', 'multipart/form-data'):
+                with self.subTest(route=route, content_type=content_type):
+                    response = self.client.post(reverse(route), data=body, content_type=content_type)
+
+                    self.assertEqual(415, response.status_code)
+                    self.assertIn('application/json', response.json()['error'])
