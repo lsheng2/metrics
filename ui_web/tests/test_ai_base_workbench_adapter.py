@@ -31,18 +31,8 @@ class TestAiBaseWorkbenchAdapter(TestCase):
         self.assertEqual('metrics.hsdes.nvu-ttl-hsdes', payload['ai_base']['workspace_key'])
         self.assertIn('e2e_dashboard_ai_stack.ps1', payload['ai_base']['launcher_command'])
 
-    @override_settings(METRICS_AI_BASE_FRONTEND_URL='http://127.0.0.1:48310', METRICS_AI_BASE_EMBED_MODE='workbench')
-    def test_shouldBuildLegacyCompactEmbedUrlByDefault(self):
-        url = self.adapter.chat_url(self.state, {'profile_id': 'dashboard_query_agent'})
-
-        self.assertIn('http://127.0.0.1:48310/?embed=workbench#/chat?', url)
-        self.assertIn('source=metrics-workbench', url)
-        self.assertIn('workspace_key=metrics.hsdes.nvu-ttl-hsdes', url)
-        self.assertIn('agent_id=dashboard_query_agent', url)
-
     @override_settings(
         METRICS_AI_BASE_FRONTEND_URL='http://127.0.0.1:48310',
-        METRICS_AI_BASE_EMBED_MODE='app-chat',
         METRICS_AI_BASE_INSTANCE_TOKEN='secret-token',
     )
     def test_shouldBuildGenericAppChatUrlWithoutLeakingInstanceToken(self):

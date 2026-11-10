@@ -92,13 +92,8 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
             report_templates.ReportTemplateArchiveView,
             report_templates.ReportTemplateCopyView,
         )
-        originals = [view.facade_factory for view in report_classes + template_classes]
-        for view in report_classes:
-            view.facade_factory = staticmethod(self.report_facade)
-        for view in template_classes:
-            view.facade_factory = staticmethod(self.template_facade)
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(report_classes + template_classes, originals)])
+        self.patch_view_factory(self.report_facade, *report_classes)
+        self.patch_view_factory(self.template_facade, *template_classes)
 
     def test_visualTemplateLibraryPinsReportSlotAndCompletionFlow(self):
         with project_page(self.template_library_url()) as page:
@@ -118,12 +113,17 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
             page.screenshot(path=str(BUILDER_FIX_SCREENSHOT), full_page=True)
 
         ready = self.template_service.list(self.actor, self.project.id, limit=20, offset=0).items[0]
+        create_url = reverse('ui_web:report_draft_create', kwargs={
+            'project_id': self.project.id,
+            'stage_id': self.stage.id,
+        })
         with project_page(self.stage_reports_url()) as page:
-            page.locator('[name="template_choice"]').select_option(
+            create_form = page.locator(f'form[action="{create_url}"]')
+            create_form.locator('[name="template_choice"]').select_option(
                 f'user|{ready.template_id}|{ready.current_revision}|{ready.revision_hash}'
             )
             with page.expect_navigation():
-                page.get_by_text('Create draft').click()
+                create_form.get_by_text('Create draft').click()
             page.wait_for_selector('[data-report-wysiwyg-region]')
             page.wait_for_selector('[data-report-authoring-initialized="true"]')
             page.locator('[data-template-slot-id]').first.wait_for()

@@ -1,7 +1,7 @@
 # ai-base-connector-boundary-policy Specification
 
 ## Purpose
-TBD - created by archiving change harden-ai-dashboard-publish-authority-and-boundary. Update Purpose after archive.
+Keep AI Base access to Metrics Dashboard connector operations inside the active Metrics workspace and its safety policy: model-visible tools stay bound to the bound workspace context, every operation declares its sensitivity so publish or mutation operations never become model-visible, connector transport verifies the local Dashboard sidecar identity before sending context, and loopback calls never travel through environment proxies.
 
 ## Requirements
 

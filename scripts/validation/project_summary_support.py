@@ -7,6 +7,7 @@ import shlex
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+import time
 from urllib.parse import urlsplit
 import zipfile
 
@@ -16,7 +17,6 @@ from scripts.service_lifecycle_engine import PlatformOperationSet
 BASE_COMMIT = '2332d549ab69a7e927865acd0e3db2a19295c609'
 BASE_TREE_SHA = 'db92bb903a5d47aeffe3707ef5da27b3dc031b0c7e28bdde527ccb8bf66ac261'
 SOURCE_SHA = 'c5534b86913b2bf4867b6352f1e8c0d185b50378c9626dbf424b98aa181e8fe3'
-WHEEL_SHA = '32e54c5f443e39daa55190c4de142ac6c12478204d8fba6bf9909149c3b365f9'
 SDK020_SELECTION = {
     'schema_version': 1,
     'selection_id': 'sdk020-summary-a2',
@@ -30,36 +30,15 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def owned_work_root(value, repository):
-    root = Path(value).resolve()
-    expected = Path(repository).resolve() / '.tmp' / 'task-run-w5'
-    if root != expected or not root.is_dir():
-        raise ValueError('Use the prepared owned W5 work directory.')
-    return root
-
-
-def owned_data_root(value, repository):
-    requested = Path(value)
-    repository = Path(repository).resolve()
-    root = requested.resolve()
-    if (not requested.is_absolute() or root != requested.absolute()
-            or root.is_relative_to(repository) or repository.is_relative_to(root)
-            or any((parent / '.git').exists() for parent in (root, *root.parents))):
-        raise ValueError('Validation data must be outside code repositories.')
-    identity = {'schema_version': 1, 'owner': 'dashboard-w5-join', 'repository': str(repository)}
-    marker = root / 'owner.json'
-    if root.exists():
-        if not root.is_dir():
-            raise ValueError('Invalid validation data root.')
-        if marker.exists():
-            if json.loads(marker.read_text(encoding='utf-8')) != identity:
-                raise ValueError('The validation data root has another owner.')
-            return root
-        if any(root.iterdir()):
-            raise ValueError('Refusing an existing unowned validation data root.')
-    root.mkdir(parents=True, exist_ok=True)
-    write_json(marker, identity)
-    return root
+def ai_base_python():
+    # AI Base is a sibling of the main checkout; linked worktrees resolve the same interpreter.
+    environment = {key: value for key, value in os.environ.items() if not key.upper().startswith('GIT_')}
+    result = subprocess.run(
+        ['git', '-C', str(Path(__file__).resolve().parents[2]), 'rev-parse', '--path-format=absolute',
+         '--git-common-dir'],
+        stdin=subprocess.DEVNULL, capture_output=True, encoding='utf-8', env=environment, check=True, timeout=10,
+    )
+    return Path(result.stdout.strip()).parent.parent / 'Report_creater_agent' / '.venv' / 'Scripts' / 'python.exe'
 
 
 def checked_connection(value, directory, pid, scope, *, worker_matches=None):
@@ -84,6 +63,19 @@ def checked_connection(value, directory, pid, scope, *, worker_matches=None):
     except (ValueError, KeyError, TypeError, AttributeError):
         raise ValueError('Synthetic connection identity is invalid.') from None
     return {**value, 'launcherPid': pid}
+
+
+def wait_connection(process, directory, scope):
+    until = time.monotonic() + 20
+    while time.monotonic() < until:
+        path = directory / 'connection.json'
+        if path.exists():
+            return checked_connection(json.loads(path.read_text(encoding='utf-8')), directory, process.pid, scope,
+                                      worker_matches=lambda child: worker_matches_process(child, process))
+        if process.poll() is not None:
+            raise RuntimeError('The synthetic Base fixture exited before readiness.')
+        time.sleep(0.05)
+    raise TimeoutError('Synthetic fixture readiness timed out.')
 
 
 def worker_record_matches(record, worker_pid, launcher_pid, command):
@@ -150,14 +142,6 @@ def verify_source_inventory(source, expected):
         raise ValueError('Unexpected or missing resources in the Base source candidate.')
 
 
-def assert_checkpoint_not_dispatched(archive, *, runner=subprocess.run):
-    environment = {key: value for key, value in os.environ.items() if not key.upper().startswith('GIT_')}
-    result = runner(['git', '-C', str(archive), 'ls-tree', '--name-only', 'main', 'analysis_attempts'],
-                    stdin=subprocess.DEVNULL, capture_output=True, env=environment, check=True, timeout=10)
-    if result.stdout.strip():
-        raise ValueError('Only a source checkpoint with no analysis attempt can use a new Base fixture.')
-
-
 def probe_base_imports(python, source, data_directory, evidence_directory):
     code = """
 import asyncio
@@ -195,11 +179,8 @@ asyncio.run(probe())
 
 
 def sdk_selection(work):
-    path = work / 'sdk-selection.json'
-    if not path.exists():
-        return {'sdk_version': '0.1.0a2', 'sdk_wheel_sha256': WHEEL_SHA}
     try:
-        value = json.loads(path.read_text(encoding='utf-8'))
+        value = json.loads((work / 'sdk-selection.json').read_text(encoding='utf-8'))
         if value != SDK020_SELECTION or type(value.get('schema_version')) is not int:
             raise ValueError
     except (OSError, ValueError, TypeError):
@@ -208,8 +189,7 @@ def sdk_selection(work):
 
 
 def sdk_selection_digest(work):
-    path = work / 'sdk-selection.json'
-    return digest(path.read_bytes()) if path.is_file() else None
+    return digest((work / 'sdk-selection.json').read_bytes())
 
 
 def verify_installed_sdk(work, sdk_module):

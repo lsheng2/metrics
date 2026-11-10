@@ -98,6 +98,7 @@ class SlowCancelClient:
 class WritableMemoryRepository(MemoryRepository):
     def __init__(self, project, stage, files, root):
         super().__init__(project, stage, files)
+        self.history = [self.commit]
         self.stage_root = root / 'projects' / project.id / 'stages' / stage.id
         self.archive = self.stage_root / 'archive'
         self.runtime = self.stage_root / 'runtime'
@@ -109,6 +110,13 @@ class WritableMemoryRepository(MemoryRepository):
     def initialize(self):
         return self.commit
 
+    def _check_commit(self, git_path, commit):
+        # Appends build a linear history, so like git a path stays readable at every later commit.
+        requested = self.commit if commit == 'main' else commit
+        written = self.history.index(self.commits[git_path])
+        if requested not in self.history or written > self.history.index(requested):
+            raise ArchiveError('ARCHIVE_MANIFEST_INVALID')
+
     def append_record(self, record_id, namespace, files, *, expected_head, record_fingerprint):
         if self.commit != expected_head:
             raise ArchiveError('ARCHIVE_CHAIN_CONFLICT')
@@ -119,10 +127,11 @@ class WritableMemoryRepository(MemoryRepository):
             if parts[0] != namespace or type(data) is not bytes:
                 raise ArchiveError('UNSAFE_PATH')
         parent = self.commit
-        commit = f'{len(set(self.commits.values())) + 1:040x}'
+        commit = f'{len(self.history) + 1:040x}'
         for path, data in files.items():
             self.files[path] = bytes(data)
             self.commits[path] = commit
+        self.history.append(commit)
         self.commit = commit
         return CommitReceipt(commit, parent, 'f' * 40, record_fingerprint, 'current')
 
@@ -356,7 +365,7 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
         request['logicalInputHash'] = dict(request['logicalInputHash'], digest=input_hash)
         return replace(attempt, attempt_id=attempt_id, prepared=prepared, request=request, dispatched=dispatched)
 
-    def analysis_files(self, attempts, *, accepted=()):
+    def analysis_files(self, attempts):
         files = {}
         for attempt in attempts:
             stored = replace(attempt, dispatched=False, cancel_requested=False)
@@ -371,25 +380,7 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
                                 'claimed_at': datetime.now(UTC).isoformat()},
                 }
                 files[f'analysis_attempts/{attempt.attempt_id}/dispatch.json'] = canonical_bytes(dispatch)
-        for attempt, snapshot, result in accepted:
-            source_hash = content_hash(attempt.source_key)
-            summary = self.accepted_summary(attempt, snapshot, result)
-            envelope = {
-                'schema_version': 1,
-                'kind': 'accepted',
-                'attempt_id': attempt.attempt_id,
-                'payload': {'summary': summary, 'snapshot': snapshot},
-                'source_key_hash': source_hash,
-                'revision': 1,
-            }
-            files[f'accepted_summaries/{source_hash}/00000001.json'] = canonical_bytes(envelope)
         return files
-
-    def accepted_summary(self, attempt, snapshot, result):
-        candidate = self.contract.validate_result(attempt, snapshot, result)
-        return AcceptedSummary('summary-fixture', 1, attempt.prepared.target_capture_id,
-                               attempt.prepared.source_hash, self.contract.definition_hash,
-                               attempt.prepared.input_hash, candidate, deepcopy(result))
 
     @contextmanager
     def memory_archive(self, files):
@@ -427,15 +418,10 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
         snapshot['dispatch']['remoteStop'] = 'confirmed'
         return {'contractVersion': 'task-run/1', 'cancelApplied': True, 'run': snapshot}
 
-    def test_shouldFenceDispatchReserveCancelObservationAndReplayAcceptanceUsingMemoryRepository(self):
+    def test_shouldFenceDispatchAndReserveCancelObservationUsingMemoryRepository(self):
         cancel_attempt = self.attempt_variant('cancel-before-dispatch')
         observed_attempt = self.attempt_variant('reserved-observation', dispatched=True)
-        accepted_attempt = self.attempt_variant('accepted-before-cancel', dispatched=True)
-        snapshot, result = self.responses(accepted_attempt)
-        files = self.analysis_files(
-            (cancel_attempt, observed_attempt, accepted_attempt),
-            accepted=((accepted_attempt, snapshot, result),),
-        )
+        files = self.analysis_files((cancel_attempt, observed_attempt))
         with self.memory_archive(files) as archive:
             canceled = archive.request_analysis_cancel(self.actor, self.project.id, self.stage.id,
                                                        cancel_attempt.attempt_id)
@@ -455,15 +441,26 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
                                                 cancellation=True)
             observations = archive.read_analysis_observations(self.actor, self.project.id, self.stage.id,
                                                               observed_attempt.attempt_id)
-            archive.request_analysis_cancel(self.actor, self.project.id, self.stage.id, accepted_attempt.attempt_id)
-            replay = archive.accept_analysis(self.actor, self.project.id, self.stage.id,
-                                             accepted_attempt.attempt_id, snapshot, result, self.contract)
 
         self.assertEqual(('ANALYSIS_CANCELED', 'ANALYSIS_OBSERVATION_LIMIT', True),
                          (dispatch_refused.exception.code, ordinary_overflow.exception.code,
                           canceled.cancel_requested))
-        self.assertEqual((17, True, 'summary-fixture'),
-                         (len(observations), observations[-1]['cancel']['cancelApplied'], replay.summary_id))
+        self.assertEqual((17, True), (len(observations), observations[-1]['cancel']['cancelApplied']))
+
+    def test_shouldReplayAcceptedSummaryAfterLaterCancelRequestUsingMemoryRepository(self):
+        with self.memory_archive({}) as archive:
+            # Replay re-verifies accepted history, so acceptance must come from the real journal path.
+            attempt = self.prepare(archive, self.capture_source(archive))
+            archive.claim_analysis_dispatch(self.actor, self.project.id, self.stage.id, attempt.attempt_id)
+            snapshot, result = self.responses(attempt)
+            accepted = archive.accept_analysis(self.actor, self.project.id, self.stage.id,
+                                               attempt.attempt_id, snapshot, result, self.contract)
+            canceled = archive.request_analysis_cancel(self.actor, self.project.id, self.stage.id, attempt.attempt_id)
+            replay = archive.accept_analysis(self.actor, self.project.id, self.stage.id,
+                                             attempt.attempt_id, snapshot, result, self.contract)
+
+        self.assertEqual((True, str(uuid.uuid5(uuid.UUID(attempt.attempt_id), 'accepted')), accepted),
+                         (canceled.cancel_requested, replay.summary_id, replay))
 
     def test_shouldRefuseDamagedCancelIntentHashWithoutNetworkOrJournalGrowth(self):
         attempt = self.attempt_variant('damaged-cancel-intent')

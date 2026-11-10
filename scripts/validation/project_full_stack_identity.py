@@ -11,9 +11,8 @@ from urllib.parse import urlsplit
 from scripts.service_lifecycle_engine import StopResult
 from scripts.service_lifecycle_engine.provenance import command_fingerprint
 from scripts.validation.project_full_stack_support import digest_file, json_lines, read_json, safe_url, write_json
-from scripts.validation.project_summary_support import worker_matches_process
 from scripts.validation.project_summary_support import (
-    owned_work_root, sdk_selection, sdk_selection_digest, verify_base_source, verify_installed_sdk,
+    sdk_selection, sdk_selection_digest, verify_base_source, verify_installed_sdk, worker_matches_process,
 )
 
 
@@ -111,8 +110,8 @@ def write_exit_receipt(path: Path, *, service: str, launch_id: str, pid: int, ex
     }, replace=path.exists())
 
 
-def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, default_base_python: Path, app_python: Path, allowed_work_roots=()) -> None:
-    work = work_root_for_manifest(manifest, root, allowed_work_roots)
+def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, default_base_python: Path, app_python: Path, approved_work_root: Path) -> None:
+    work = work_root_for_manifest(manifest, approved_work_root)
     if manifest.get('schema_version') != 1 or manifest.get('execution_mode') != 'synthetic':
         raise ValueError('Runtime manifest schema is invalid.')
     expected_paths = {
@@ -129,7 +128,7 @@ def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, default_base
     if Path(manifest['app_python']).resolve(strict=True) != app_python.resolve(strict=True):
         raise ValueError('Runtime manifest app interpreter is not trusted.')
     selection = sdk_selection(work)
-    if (manifest.get('sdk_version', '0.1.0a2') != selection['sdk_version']
+    if (manifest.get('sdk_version') != selection['sdk_version']
             or manifest.get('sdk_selection_sha256') != sdk_selection_digest(work)):
         raise ValueError('Runtime manifest SDK identity mismatch.')
     verify_base_source(work, Path(manifest['base_source']).resolve(strict=True))
@@ -138,7 +137,7 @@ def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, default_base
         raise ValueError('Runtime manifest SDK identity mismatch.')
     if digest_file(Path(manifest['pack_root']) / 'manifest.json') != manifest.get('contract_pack_manifest_sha256'):
         raise ValueError('Runtime manifest contract pack identity mismatch.')
-    if selection.get('contract_pack_manifest_sha256', manifest['contract_pack_manifest_sha256']) != manifest['contract_pack_manifest_sha256']:
+    if selection['contract_pack_manifest_sha256'] != manifest['contract_pack_manifest_sha256']:
         raise ValueError('Selected SDK contract pack identity mismatch.')
     if digest_file(run_dir / 'fixture-vector.json') != manifest['catalog'].get('fixture_vector_sha256'):
         raise ValueError('Runtime manifest vector identity mismatch.')
@@ -147,43 +146,10 @@ def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, default_base
     validate_catalog_route(manifest)
 
 
-def resolve_qualification_work_root(value: Path, root: Path, approved_work_roots) -> Path:
-    try:
-        return owned_work_root(value, root)
-    except ValueError:
-        candidate = Path(value).resolve(strict=True)
-        if candidate not in {path.resolve(strict=False) for path in approved_work_roots}:
-            raise
-        return candidate
-
-
-def relocated_manifest(run_dir: Path, manifest: dict, work: Path, *, root: Path, default_base_python: Path, app_python: Path, allowed_work_roots=()) -> dict:
-    if manifest.get('sdk_version', '0.1.0a2') != sdk_selection(work)['sdk_version']:
-        raise ValueError('SDK selection cannot be changed for a retained run.')
-    base_source = (work / 'base-source').resolve(strict=True)
-    pack_root = (work / 'artifacts' / 'contract-pack').resolve(strict=True)
-    provenance = verify_base_source(work, base_source)
-    sdk = importlib.import_module('ai_base_application_sdk')
-    updated = {
-        **manifest,
-        'base_source': str(base_source),
-        'pack_root': str(pack_root),
-        'base_source_provenance': provenance,
-        'sdk_wheel_sha256': verify_installed_sdk(work, sdk),
-        'sdk_selection_sha256': sdk_selection_digest(work),
-        'contract_pack_manifest_sha256': digest_file(pack_root / 'manifest.json'),
-    }
-    validate_manifest(run_dir, updated, root=root, default_base_python=default_base_python,
-                      app_python=app_python, allowed_work_roots=allowed_work_roots)
-    return updated
-
-
-def work_root_for_manifest(manifest: dict, root: Path, allowed_work_roots) -> Path:
+def work_root_for_manifest(manifest: dict, approved_work_root: Path) -> Path:
     base_source = Path(manifest['base_source']).resolve(strict=True)
     work = base_source.parent
-    allowed = {Path(value).resolve(strict=False) for value in allowed_work_roots}
-    allowed.add((root / '.tmp' / 'task-run-w5').resolve(strict=False))
-    if work not in allowed or base_source != work / 'base-source':
+    if work != Path(approved_work_root).resolve(strict=False) or base_source != work / 'base-source':
         raise ValueError('Runtime manifest work root is not trusted.')
     return work
 
@@ -285,7 +251,7 @@ def process_relation(candidate: int, wrapper_pid: int, command: tuple[str, ...],
             return 'registered_wrapper'
         return None
     reference = ProcessReference(wrapper_pid, command, platform_ops)
-    return 'w5_worker_child' if worker_matches_process(candidate, reference) else None
+    return 'worker_child' if worker_matches_process(candidate, reference) else None
 
 
 def stdout_offset(service_state: dict) -> int:

@@ -59,14 +59,12 @@ class TestReportCompletionViews(CaptureArchiveScenario, ProjectRouteTestSupport,
     def patch_view(self):
         from ui_web.views.report_completion import ReportDraftCompletionView
 
-        completion_original = ReportDraftCompletionView.completion_factory
-        project_original = ReportDraftCompletionView.project_api_factory
-        ReportDraftCompletionView.completion_factory = staticmethod(lambda: self.completion)
-        ReportDraftCompletionView.project_api_factory = staticmethod(
-            lambda: ProjectApiStub(self.project, self.stage, owner_subject=self.actor.subject)
+        self.patch_view_factory(lambda: self.completion, ReportDraftCompletionView, attribute='completion_factory')
+        self.patch_view_factory(
+            lambda: ProjectApiStub(self.project, self.stage, owner_subject=self.actor.subject),
+            ReportDraftCompletionView,
+            attribute='project_api_factory',
         )
-        self.addCleanup(lambda: setattr(ReportDraftCompletionView, 'completion_factory', completion_original))
-        self.addCleanup(lambda: setattr(ReportDraftCompletionView, 'project_api_factory', project_original))
 
     def url(self):
         return reverse('ui_web:report_draft_completion', kwargs={

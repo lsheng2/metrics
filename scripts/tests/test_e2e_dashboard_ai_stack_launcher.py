@@ -9,7 +9,6 @@ def test_dashboard_ai_stack_smoke_checks_unified_workbench():
 
     assert "'-OpenEntrypoint', 'none'" in script
     assert "METRICS_AI_BASE_FRONTEND_URL = $AiBaseFrontendUrl" in script
-    assert "METRICS_AI_BASE_EMBED_MODE = 'app-chat'" in script
     assert "Update-DashboardRuntimeUrls" in script
     assert 'state\\e2e\\bug_trend_ports.json' in script
     assert '"$DashboardBaseUrl/workbench/"' in script

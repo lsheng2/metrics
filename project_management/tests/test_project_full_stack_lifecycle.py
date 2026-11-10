@@ -26,7 +26,9 @@ from scripts.validation.project_full_stack_identity import (
     write_exit_receipt,
 )
 from scripts.validation.project_full_stack_support import base_environment, ensure_data_root, initialize_run_dir, read_json, write_json
-from scripts.validation.project_summary_support import WHEEL_SHA, child_environment, verify_base_source
+from scripts.validation.project_summary_support import (
+    ai_base_python, child_environment, sdk_selection, sdk_selection_digest, verify_base_source,
+)
 
 
 def test_should_stop_project_services_with_qualification_grace_without_forcing(tmp_path, monkeypatch):
@@ -178,7 +180,7 @@ def test_should_refuse_restart_after_nonzero_app_exit_receipt(tmp_path, monkeypa
     assert platform.started_names.count(project_full_stack.APP_NAME) == 1
 
 
-def test_should_accept_null_listener_with_valid_w5_worker_process_proof(tmp_path, monkeypatch):
+def test_should_accept_null_listener_with_valid_worker_process_proof(tmp_path, monkeypatch):
     run_dir, engine, platform = running_owned_services(tmp_path, graceful_after=1.0)
     state = dict(engine.read_state()[project_full_stack.BASE_NAME])
     launch = current_launch_for_service(run_dir, state, project_full_stack.BASE_NAME)
@@ -196,7 +198,7 @@ def test_should_accept_null_listener_with_valid_w5_worker_process_proof(tmp_path
 
     proof = read_json(launch.directory / 'process-proof.json')
     assert proof['worker_pid'] == 95564
-    assert proof['relation'] == 'w5_worker_child'
+    assert proof['relation'] == 'worker_child'
     assert calls
 
 
@@ -274,10 +276,8 @@ def test_should_reject_unowned_base_store_path(tmp_path):
 
 
 def test_should_repeat_base_factory_without_server_and_retain_store(tmp_path):
-    base_python = Path.cwd().parent / 'Report_creater_agent' / '.venv' / 'Scripts' / 'python.exe'
-    work = Path.cwd() / '.tmp' / 'task-run-w5-clean-merged-20261103'
-    if not work.is_dir():
-        pytest.skip('approved clean W5 work root is not available yet')
+    base_python = ai_base_python()
+    work = project_full_stack.APPROVED_WORK_ROOT
     source = work / 'base-source'
     verify_base_source(work, source)
     run_dir = prepared_run_without_services(tmp_path)
@@ -321,14 +321,14 @@ def running_owned_services(tmp_path, *, graceful_after):
     return run_dir, engine, platform
 
 
-def prepared_run_without_services(tmp_path, *, work=None):
+def prepared_run_without_services(tmp_path):
     data_root = tmp_path / 'data'
     ensure_data_root(data_root)
     run_dir = data_root / str(uuid.uuid4())
     run_dir.mkdir(parents=True)
     initialize_run_dir(run_dir, data_root)
     write_json(run_dir / 'fixture-vector.json', {'schema_version': 1})
-    write_json(run_dir / 'runtime-manifest.json', manifest(run_dir, work=work))
+    write_json(run_dir / 'runtime-manifest.json', manifest(run_dir))
     return run_dir
 
 
@@ -388,8 +388,9 @@ print(json.dumps({'same_store': second.state.task_run_service.run_store_id == st
 """
 
 
-def manifest(run_dir: Path, *, work=None):
-    work = work or Path.cwd() / '.tmp' / 'task-run-w5-clean-merged-20261103'
+def manifest(run_dir: Path):
+    work = project_full_stack.APPROVED_WORK_ROOT
+    selection = sdk_selection(work)
     pack_root = work / 'artifacts' / 'contract-pack'
     project_id = str(uuid.uuid4())
     stage_id = str(uuid.uuid4())
@@ -399,10 +400,12 @@ def manifest(run_dir: Path, *, work=None):
         'run_dir': str(run_dir),
         'repository': str(Path.cwd()),
         'base_source': str(work / 'base-source'),
-        'base_python': str((Path.cwd().parent / 'Report_creater_agent' / '.venv' / 'Scripts' / 'python.exe')),
+        'base_python': str(ai_base_python()),
         'pack_root': str(pack_root),
         'app_python': sys.executable,
-        'sdk_wheel_sha256': WHEEL_SHA,
+        'sdk_version': selection['sdk_version'],
+        'sdk_wheel_sha256': selection['sdk_wheel_sha256'],
+        'sdk_selection_sha256': sdk_selection_digest(work),
         'contract_pack_manifest_sha256': hashlib.sha256((pack_root / 'manifest.json').read_bytes()).hexdigest(),
         'catalog': {
             'project_id': project_id,

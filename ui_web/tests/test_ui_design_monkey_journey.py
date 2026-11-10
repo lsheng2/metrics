@@ -69,8 +69,8 @@ class TestUiDesignMonkeyJourney(UiDesignBrowserMetricsSupport, TestCase):
         self.assertTrue(profile_required_state['summary_visible'])
 
         jira_payload = self._jira_profile_payload('monkey-jira-profile')
-        with patch('bug_metrics.app.api.provider_profile_connection_test.create_jira_client') as create_jira_client:
-            create_jira_client.return_value.get_server_info.return_value = {
+        with patch('bug_metrics.app.api.provider_profile_connection_test.Jira') as jira_factory:
+            jira_factory.return_value.get_server_info.return_value = {
                 'serverTitle': 'Monkey Jira',
                 'version': '10.0',
             }

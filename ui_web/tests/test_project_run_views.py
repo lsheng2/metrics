@@ -8,6 +8,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from project_management.app.api import ProjectActor
+from project_management.app.api import reports as report_api
 from project_management.app.api.capture_archive import ArchiveStorageConfig
 from project_management.out.capture_archive import LocalArchiveRepositoryFactory
 from project_management.services.capture_archive import CaptureArchiveService
@@ -18,7 +19,7 @@ from project_management.tests.report_render_fixtures import daily_template
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 
 
-class UnusedReportService:
+class UnusedReportService(report_api.ReportDraftService):
     def list_drafts(self, *args, **kwargs):
         raise AssertionError('Absent stage archive must not list drafts.')
 
@@ -51,16 +52,8 @@ class TestProjectRunViews(ProjectRouteTestSupport, TestCase):
             project_run_views.ProjectRunCancelView,
             project_run_views.ProjectRunResumeView,
         ]
-        report_originals = [view.facade_factory for view in report_classes]
-        run_originals = [view.facade_factory for view in run_classes]
-        for view in report_classes:
-            view.facade_factory = staticmethod(lambda: report_facade)
-        for view in run_classes:
-            view.facade_factory = staticmethod(lambda: run_facade)
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(report_classes, report_originals)])
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(run_classes, run_originals)])
+        self.patch_view_factory(lambda: report_facade, *report_classes)
+        self.patch_view_factory(lambda: run_facade, *run_classes)
 
     def report_url(self, project_id, stage_id):
         return reverse('ui_web:project_stage_reports', kwargs={'project_id': project_id, 'stage_id': stage_id})
@@ -121,6 +114,9 @@ class TestProjectRunViews(ProjectRouteTestSupport, TestCase):
             environment.archive,
         )
 
+    def unused_report_service(self, environment, archive):
+        return UnusedReportService(archive, environment.draft_service.source_reader, environment.draft_service.renderer)
+
     def test_shouldExposeRunOnAbsentStageArchiveWithoutCreatingFiles(self):
         environment = self.browser_environment(notifier=None)
         self.root.mkdir(parents=True, exist_ok=True)
@@ -131,7 +127,7 @@ class TestProjectRunViews(ProjectRouteTestSupport, TestCase):
             ArchiveStorageConfig(self.root, 'Archive Test', 'archive@example.test', environment.archive.config.limits),
         )
         _, _, project_runs, project_reports = self.route_modules()
-        report_facade = project_reports.ProjectReportFacade(project_api, UnusedReportService(), archive)
+        report_facade = project_reports.ProjectReportFacade(project_api, self.unused_report_service(environment, archive), archive)
         run_facade = project_runs.ProjectRunFacade(project_api, environment.run_service, runtime_ready=True)
         self.patch_facades(report_facade, run_facade)
 
@@ -157,7 +153,7 @@ class TestProjectRunViews(ProjectRouteTestSupport, TestCase):
             ArchiveStorageConfig(self.root, 'Archive Test', 'archive@example.test', environment.archive.config.limits),
         )
         _, _, project_runs, project_reports = self.route_modules()
-        report_facade = project_reports.ProjectReportFacade(project_api, UnusedReportService(), archive)
+        report_facade = project_reports.ProjectReportFacade(project_api, self.unused_report_service(environment, archive), archive)
         run_facade = project_runs.ProjectRunFacade(project_api, environment.run_service, runtime_ready=True)
         self.patch_facades(report_facade, run_facade)
         before = sorted(path.relative_to(self.root).as_posix() for path in self.root.rglob('*'))
@@ -167,6 +163,7 @@ class TestProjectRunViews(ProjectRouteTestSupport, TestCase):
         after = sorted(path.relative_to(self.root).as_posix() for path in self.root.rglob('*'))
         content = response.content.decode('utf-8')
         self.assertEqual(400, response.status_code)
+        self.assertIn('Report artifact is invalid.', content)
         self.assertEqual(before, after)
         self.assertNotIn('Run stage report', content)
 

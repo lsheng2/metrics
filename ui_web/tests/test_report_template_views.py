@@ -63,13 +63,8 @@ class TestReportTemplateViews(ProjectRouteTestSupport, TestCase):
             report_templates.ReportTemplateArchiveView,
             report_templates.ReportTemplateCopyView,
         )
-        originals = [view.facade_factory for view in report_classes + template_classes]
-        for view in report_classes:
-            view.facade_factory = staticmethod(lambda facade=report_facade: facade)
-        for view in template_classes:
-            view.facade_factory = staticmethod(lambda facade=template_facade: facade)
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(report_classes + template_classes, originals)])
+        self.patch_view_factory(lambda: report_facade, *report_classes)
+        self.patch_view_factory(lambda: template_facade, *template_classes)
 
     def library_url(self):
         return reverse('ui_web:report_templates', kwargs={'project_id': self.project.id})

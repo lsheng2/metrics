@@ -64,6 +64,14 @@ class ProjectRouteTestSupport:
         self.registry_patch.start()
         self.addCleanup(self.registry_patch.stop)
 
+    def patch_view_factory(self, factory, *views, attribute='facade_factory'):
+        # Reading a staticmethod through the class unwraps it; restoring that function with setattr
+        # turns later self.<factory>() calls into bound calls, so cleanup must go through patch.object.
+        for view in views:
+            patcher = patch.object(view, attribute, staticmethod(factory))
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
     def create_jira_scope(self, *, name='Alpha Jira Scope', profile_id='alpha-jira',
                           provider_id='jira', status='explicit', enabled=True):
         scope = JiraScopeConfig.objects.create(name=name, jql='project = ALPHA', enabled=enabled)

@@ -8,7 +8,6 @@ from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupp
 
 
 class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
-    @override_settings(METRICS_AI_BASE_EMBED_MODE='workbench')
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
     def test_shouldRenderReadyAiBasePaneWithCurrentContext(self, status_payload):
         # Given
@@ -35,17 +34,13 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('AI Assistant', content)
         self.assertIn('AI Base chat side window', content)
         self.assertIn('tabindex="-1"', content)
-        self.assertIn('http://127.0.0.1:48310/?embed=workbench#/chat?', content)
-        self.assertIn('source=metrics-workbench', content)
-        self.assertIn('workspace_key=metrics.hsdes.nvu-ttl-hsdes', content)
-        self.assertIn('agent_id=dashboard_query_agent', content)
         self.assertIn('ready', content)
         self.assertIn('nvu-ttl-hsdes', content)
         self.assertIn('open_bug_trend', content)
 
-    @override_settings(METRICS_AI_BASE_EMBED_MODE='app-chat', METRICS_AI_BASE_INSTANCE_TOKEN='secret-token')
+    @override_settings(METRICS_AI_BASE_INSTANCE_TOKEN='secret-token')
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
-    def test_shouldRenderAiBasePaneThroughAdapterWhenAppChatModeIsEnabled(self, status_payload):
+    def test_shouldRenderAppChatPaneWithoutLeakingInstanceToken(self, status_payload):
         # Given
         scope = self._bound_scope('nvu-ttl-hsdes', 'hsdes')
         status_payload.return_value = {
@@ -78,7 +73,6 @@ class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
         self.assertIn('binding_request', content)
         self.assertNotIn('secret-token', content)
 
-    @override_settings(METRICS_AI_BASE_EMBED_MODE='app-chat')
     @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
     def test_shouldBlockAppChatWhenOnlyUrlProfileAndProviderAreProvided(self, status_payload):
         # Given

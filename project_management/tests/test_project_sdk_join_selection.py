@@ -1,4 +1,3 @@
-import hashlib
 from importlib import metadata
 from pathlib import Path
 from shutil import copy2, copytree
@@ -17,8 +16,18 @@ WORK = Path(__file__).resolve().parents[2] / '.tmp/sdk-020-join-20261105'
 SDK_SHA = '1ab6c7aa7255abeb4637734f65613827d39593ff72b7ef9d630885922c2dd134'
 
 
-def test_should_admit_new_sdk_fixture_without_reusing_a_legacy_run():
+def test_should_admit_only_the_prepared_sdk020_work_root(tmp_path):
     assert project_full_stack.qualify_work_root(WORK) == WORK.resolve()
+    copy = tmp_path / WORK.name
+    copy.mkdir()
+
+    with pytest.raises(ValueError, match='work root'):
+        project_full_stack.qualify_work_root(copy)
+
+
+def test_should_refuse_work_root_without_sdk_selection(tmp_path):
+    with pytest.raises(ValueError, match='SDK selection'):
+        verify_installed_sdk(tmp_path, ai_base_application_sdk)
 
 
 def test_should_verify_all_installed_sdk020_bytes_against_selected_wheel():
@@ -60,8 +69,8 @@ def test_should_refuse_changed_sdk_module_beyond_the_old_two_file_check(tmp_path
         verify_installed_sdk(WORK, candidate)
 
 
-def test_should_refuse_manifest_claiming_legacy_sdk_for_new_fixture(tmp_path):
-    run_dir = selected_run(tmp_path)
+def test_should_refuse_manifest_with_unselected_sdk_version(tmp_path):
+    run_dir = prepared_run_without_services(tmp_path)
     manifest = read_json(run_dir / 'runtime-manifest.json')
     manifest['sdk_version'] = '0.1.0a2'
     write_json(run_dir / 'runtime-manifest.json', manifest, replace=True)
@@ -70,34 +79,22 @@ def test_should_refuse_manifest_claiming_legacy_sdk_for_new_fixture(tmp_path):
         project_full_stack.trusted_manifest(run_dir)
 
 
-def test_should_refuse_retagging_legacy_run_by_relocation(tmp_path):
+def test_should_refuse_manifest_from_another_work_root(tmp_path):
     run_dir = prepared_run_without_services(tmp_path)
-    original = (run_dir / 'runtime-manifest.json').read_bytes()
+    other = tmp_path / 'other-root' / 'base-source'
+    other.mkdir(parents=True)
+    manifest = read_json(run_dir / 'runtime-manifest.json')
+    manifest['base_source'] = str(other)
+    write_json(run_dir / 'runtime-manifest.json', manifest, replace=True)
 
-    with pytest.raises(ValueError, match='SDK selection'):
-        project_full_stack.relocate_work_root(SimpleNamespace(run_dir=run_dir, work_root=WORK))
-
-    assert (run_dir / 'runtime-manifest.json').read_bytes() == original
+    with pytest.raises(ValueError, match='work root'):
+        project_full_stack.trusted_manifest(run_dir)
 
 
 def test_should_accept_new_manifest_with_selected_interpreter_and_pack(tmp_path):
-    run_dir = selected_run(tmp_path)
+    run_dir = prepared_run_without_services(tmp_path)
 
     manifest = project_full_stack.trusted_manifest(run_dir)
 
     assert manifest['sdk_version'] == '0.2.0a1'
     assert manifest['sdk_wheel_sha256'] == SDK_SHA
-
-
-def selected_run(tmp_path):
-    run_dir = prepared_run_without_services(tmp_path)
-    manifest = read_json(run_dir / 'runtime-manifest.json')
-    manifest.update(
-        base_source=str(WORK / 'base-source'),
-        pack_root=str(WORK / 'artifacts/contract-pack'),
-        sdk_version='0.2.0a1',
-        sdk_wheel_sha256=SDK_SHA,
-        sdk_selection_sha256=hashlib.sha256((WORK / 'sdk-selection.json').read_bytes()).hexdigest(),
-    )
-    write_json(run_dir / 'runtime-manifest.json', manifest, replace=True)
-    return run_dir

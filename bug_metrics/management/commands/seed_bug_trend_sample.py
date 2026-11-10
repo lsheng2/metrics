@@ -13,14 +13,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with transaction.atomic():
-            self._seed_scope(
-                name='Local STDEL Bug Trend',
-                ip='NVU',
-                project_label='STDEL',
-                milestone_field='',
-                jql='project = STDEL AND issuetype = Bug',
-                component_value='team_emulation',
-            )
             parity_scope = self._seed_scope(
                 name='chiplet-2a-jira',
                 ip='chiplet_ip',

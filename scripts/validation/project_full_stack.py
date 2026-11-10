@@ -37,8 +37,6 @@ from scripts.validation.project_full_stack_identity import (
     create_launch,
     current_launch_for_service,
     normal_stop_evidence,
-    relocated_manifest,
-    resolve_qualification_work_root,
     status_url,
     stdout_offset,
     validate_connection,
@@ -48,7 +46,7 @@ from scripts.validation.project_full_stack_identity import (
     wait_valid_connection,
 )
 from scripts.validation.project_summary_support import (
-    probe_base_imports, sdk_selection, sdk_selection_digest, verify_base_source, verify_installed_sdk,
+    ai_base_python, probe_base_imports, sdk_selection, sdk_selection_digest, verify_base_source, verify_installed_sdk,
 )
 from scripts.validation.project_week_scenarios import fixture_for, settings_for
 
@@ -58,17 +56,14 @@ INSTANCE = 'qualify'
 APP_NAME = 'project-app'
 BASE_NAME = 'ai-base'
 SAFE_STOP_SECONDS = 620
-APPROVED_CLEAN_WORK_ROOT = ROOT / '.tmp' / 'task-run-w5-clean-merged-20261103'
-APPROVED_SDK020_WORK_ROOT = ROOT / '.tmp' / 'sdk-020-join-20261105'
-APPROVED_WORK_ROOTS = (APPROVED_CLEAN_WORK_ROOT, APPROVED_SDK020_WORK_ROOT)
-
-
-def default_base_python() -> Path:
-    return ROOT.parent / 'Report_creater_agent' / '.venv' / 'Scripts' / 'python.exe'
+APPROVED_WORK_ROOT = ROOT / '.tmp' / 'sdk-020-join-20261105'
 
 
 def qualify_work_root(value: Path) -> Path:
-    return resolve_qualification_work_root(value, ROOT, APPROVED_WORK_ROOTS)
+    work = Path(value).resolve()
+    if work != APPROVED_WORK_ROOT.resolve() or not work.is_dir():
+        raise ValueError('Use the prepared SDK 0.2.0a1 work root.')
+    return work
 
 
 def prepare(args) -> dict:
@@ -144,19 +139,9 @@ def lifecycle(run_dir: Path, platform_ops: PlatformOperationSet | None = None) -
 
 def trusted_manifest(run_dir: Path) -> dict:
     manifest = read_json(run_dir / 'runtime-manifest.json')
-    validate_manifest(run_dir, manifest, root=ROOT, default_base_python=default_base_python(),
-                      app_python=Path(sys.executable), allowed_work_roots=APPROVED_WORK_ROOTS)
+    validate_manifest(run_dir, manifest, root=ROOT, default_base_python=ai_base_python(),
+                      app_python=Path(sys.executable), approved_work_root=APPROVED_WORK_ROOT)
     return manifest
-
-
-def relocate_work_root(args) -> dict:
-    run_dir = require_owned_run_dir(args.run_dir)
-    work = qualify_work_root(args.work_root)
-    manifest = read_json(run_dir / 'runtime-manifest.json')
-    updated = relocated_manifest(run_dir, manifest, work, root=ROOT, default_base_python=default_base_python(),
-                                 app_python=Path(sys.executable), allowed_work_roots=APPROVED_WORK_ROOTS)
-    write_json(run_dir / 'runtime-manifest.json', updated, replace=True)
-    return {'status': 'relocated', 'run_dir': str(run_dir), 'work_root': str(work), 'execution_mode': 'synthetic'}
 
 
 def base_spec(run_dir: Path, lifetime_seconds: int, launch) -> ServiceSpec:
@@ -360,8 +345,8 @@ def build_parser():
     sub = parser.add_subparsers(dest='command', required=True)
     prepare_cmd = sub.add_parser('prepare')
     prepare_cmd.add_argument('--data-root', type=Path, default=DEFAULT_DATA_ROOT)
-    prepare_cmd.add_argument('--base-python', type=Path, default=default_base_python())
-    prepare_cmd.add_argument('--work-root', type=Path, default=ROOT / '.tmp' / 'task-run-w5')
+    prepare_cmd.add_argument('--base-python', type=Path, default=ai_base_python())
+    prepare_cmd.add_argument('--work-root', type=Path, default=APPROVED_WORK_ROOT)
     prepare_cmd.add_argument('--scenario', choices=('single', 'full-week'), default='single')
     prepare_cmd.set_defaults(func=prepare)
     start_cmd = sub.add_parser('start')
@@ -369,10 +354,6 @@ def build_parser():
     start_cmd.add_argument('--port', type=available_port)
     start_cmd.add_argument('--lifetime-seconds', type=positive_int, default=1800)
     start_cmd.set_defaults(func=start)
-    relocate_cmd = sub.add_parser('relocate-work-root')
-    relocate_cmd.add_argument('--run-dir', type=Path, required=True)
-    relocate_cmd.add_argument('--work-root', type=Path, required=True)
-    relocate_cmd.set_defaults(func=relocate_work_root)
     for name, handler in (('status', status), ('restart-app', restart_app), ('stop', stop)):
         command = sub.add_parser(name)
         command.add_argument('--run-dir', type=Path, required=True)

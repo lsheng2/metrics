@@ -87,19 +87,13 @@ class ReportAuthoringBrowserTestCase(CaptureArchiveScenario, ProjectRouteTestSup
             project_reports.ReportPublicationRevisionView,
             project_reports.ReportPublicationDownloadView,
         )
-        originals = [view.facade_factory for view in classes]
-        for view in classes:
-            view.facade_factory = staticmethod(self.report_facade)
-        completion_original = ReportDraftCompletionView.completion_factory
-        project_api_original = ReportDraftCompletionView.project_api_factory
-        ReportDraftCompletionView.completion_factory = staticmethod(lambda: self.completion)
-        ReportDraftCompletionView.project_api_factory = staticmethod(
-            lambda: ProjectApiStub(self.project, self.stage, owner_subject=self.actor.subject)
+        self.patch_view_factory(self.report_facade, *classes)
+        self.patch_view_factory(lambda: self.completion, ReportDraftCompletionView, attribute='completion_factory')
+        self.patch_view_factory(
+            lambda: ProjectApiStub(self.project, self.stage, owner_subject=self.actor.subject),
+            ReportDraftCompletionView,
+            attribute='project_api_factory',
         )
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(classes, originals)])
-        self.addCleanup(lambda: setattr(ReportDraftCompletionView, 'completion_factory', completion_original))
-        self.addCleanup(lambda: setattr(ReportDraftCompletionView, 'project_api_factory', project_api_original))
 
     def editor_url(self, draft_id):
         from django.urls import reverse

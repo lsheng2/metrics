@@ -212,7 +212,6 @@ function Invoke-WithDashboardAiEnv {
         METRICS_AI_SIDECAR_ENABLED = 'true'
         METRICS_AI_BASE_URL = $AiBaseBackendUrl
         METRICS_AI_BASE_FRONTEND_URL = $AiBaseFrontendUrl
-        METRICS_AI_BASE_EMBED_MODE = 'app-chat'
     } -ScriptBlock $ScriptBlock
 }
 

@@ -46,7 +46,7 @@ def load_selected_profile(root, profile_file=None, expected_sha256=None):
 
 class ExactVectorExecutor:
     execution_mode = 'synthetic'
-    backend_id = 'dashboard-w5-join-fixture'
+    backend_id = 'dashboard-summary-fixture'
 
     def __init__(self, vector, observations):
         self.vector = vector

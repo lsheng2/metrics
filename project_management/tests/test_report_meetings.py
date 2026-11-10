@@ -196,7 +196,7 @@ def test_intent_only_reservation_blocks_skip_and_original_request_can_repair_slo
         failure.setattr(ReportPreparationStore, 'write_slot', fail_slot)
         with pytest.raises(report_api.ReportError) as interrupted:
             preparation.prepare(fixture.actor, fixture.project.id, fixture.stage.id, **request)
-        assert interrupted.value.code == 'REPORT_ARTIFACT_INVALID'
+        assert interrupted.value.code == 'REPORT_STORAGE_UNAVAILABLE'
     view = calendar_read(fixture, service, '2026-11-02', '2026-11-03')
     assert view.days[0].state == 'occupied'
     with pytest.raises(report_api.ReportError) as error:

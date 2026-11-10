@@ -82,25 +82,27 @@ class TestApiUIWebWorkflow(unittest.IsolatedAsyncioTestCase):
         # Given - Multiple data sources that can be fetched concurrently
         current_tasks = BusinessScenarios.active_sprint_tasks()
         finished_tasks = BusinessScenarios.recently_completed_tasks()
-        
-        # Add delay to simulate realistic API response times
-        async def delayed_search(criteria, enrichment):
-            await asyncio.sleep(0.01)  # 10ms delay per call
+        in_flight = []
+        both_in_flight = asyncio.Event()
+
+        # Each search waits until both are in flight, so a sequential fetch times out instead of passing.
+        async def overlapping_search(criteria, enrichment):
+            in_flight.append(criteria.status_filter)
+            if len(in_flight) == 2:
+                both_in_flight.set()
+            await asyncio.wait_for(both_in_flight.wait(), timeout=5)
             if criteria.status_filter == ["In Progress", "Development", "Testing"]:
                 return current_tasks
             else:
                 return finished_tasks
-        
-        self.task_search_api.mock.search.side_effect = delayed_search
-        
+
+        self.task_search_api.mock.search.side_effect = overlapping_search
+
         # When - Execute federated data workflow
-        start_time = asyncio.get_event_loop().time()
         result = await self.facade.get_tasks()
-        end_time = asyncio.get_event_loop().time()
-        
-        # Then - Should complete in roughly single delay time due to concurrent execution
-        elapsed_time = end_time - start_time
-        self.assertLess(elapsed_time, 0.05)  # Should be ~10ms, not ~20ms sequential
+
+        # Then - Both searches overlapped instead of running one after another
+        self.assertEqual(2, len(in_flight))
         self.assertEqual(5, len(result))  # 3 current + 2 finished tasks
     
     async def test_shouldApplyDataEnrichmentPipelineSequentiallyForAccurateBusinessInsights(self):

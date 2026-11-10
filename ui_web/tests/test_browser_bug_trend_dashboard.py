@@ -12,9 +12,9 @@ from jira_history.models import JiraIssue
 from ui_web.tests.dashboard_asset_support import strip_static_asset_tags
 
 class TestBugTrendDashboardBrowser(TestCase):
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldSyncMockJiraDataAndRenderDashboardEvidence(self, adapter_class, create_jira_client):
+    def test_shouldSyncMockJiraDataAndRenderDashboardEvidence(self, adapter_class, jira_factory):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL emulation',
@@ -66,9 +66,9 @@ class TestBugTrendDashboardBrowser(TestCase):
         self.assertIn('series=fixed_or_closed_bugs', chart_config['evidenceUrl'])
         self.assertEqual(1, bucket.fixed_or_closed_count)
 
-    @patch('jira_sync.management.commands.sync_jira_scope.create_jira_client')
+    @patch('jira_sync.management.commands.sync_jira_scope.Jira')
     @patch('jira_sync.management.commands.sync_jira_scope.JiraScopeIssueAdapter')
-    def test_shouldRenderTwoBucketDashboardFromRicherMockJiraData(self, adapter_class, create_jira_client):
+    def test_shouldRenderTwoBucketDashboardFromRicherMockJiraData(self, adapter_class, jira_factory):
         # Given
         scope = JiraScopeConfig.objects.create(
             name='STDEL richer trend',

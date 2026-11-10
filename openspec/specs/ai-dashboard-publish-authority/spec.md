@@ -1,7 +1,7 @@
 # ai-dashboard-publish-authority Specification
 
 ## Purpose
-TBD - created by archiving change harden-ai-dashboard-publish-authority-and-boundary. Update Purpose after archive.
+Make publishing an AI-generated Grafana dashboard depend on a persisted, human-approved authorization object rather than free-form approval or proof strings: the authorization binds the exact scope, artifact version, range and dry-run proof, publish refuses any missing, forged, expired or mismatched authorization, and every successful publish leaves an auditable history record.
 
 ## Requirements
 

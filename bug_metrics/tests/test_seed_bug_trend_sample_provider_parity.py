@@ -20,8 +20,9 @@ class TestSeedBugTrendSampleProviderParity(TestCase):
         self.assertTrue(JiraIssue.objects.filter(scope=scope, is_in_current_scope=True).exists())
         self.assertTrue(BugTrendCalculationRun.objects.filter(scope=scope, status=BugTrendCalculationRun.STATUS_COMPLETED).exists())
         self.assertEqual(
-            2,
-            BugTrendScopeProviderBinding.objects.filter(status=BugTrendScopeProviderBinding.STATUS_EXPLICIT).count(),
+            [('chiplet-2a-jira', 'chiplet-2a-jira', BugTrendScopeProviderBinding.STATUS_EXPLICIT)],
+            [(binding.scope.name, binding.profile_id, binding.status)
+             for binding in BugTrendScopeProviderBinding.objects.select_related('scope')],
         )
 
     def test_shouldSeedJiraFirstAiPublishCoverageForTargetRange(self):

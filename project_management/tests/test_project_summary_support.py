@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -6,14 +5,12 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from project_management.storage.paths import ensure_configured_archive_root
 from scripts.validation.project_summary_support import (
-    assert_checkpoint_not_dispatched, checked_connection, owned_data_root, owned_work_root,
-    probe_base_imports, verify_base_source, verify_source_inventory, worker_record_matches,
+    checked_connection, probe_base_imports, verify_base_source, verify_source_inventory, worker_record_matches,
 )
 
 
-class TestProjectSummaryJoinSafety(unittest.TestCase):
+class TestProjectSummarySupport(unittest.TestCase):
     def test_shouldRetainBaseImportTimeoutDiagnostics(self):
         with TemporaryDirectory() as root:
             directory = Path(root)
@@ -77,71 +74,6 @@ class TestProjectSummaryJoinSafety(unittest.TestCase):
         self.assertFalse(worker_record_matches(
             {**record, 'CommandLine': record['CommandLine'].replace('D:/owned', 'D:/another')}, 124, 123, command,
         ))
-
-    def test_shouldRefuseAFreshBaseStoreWhenTheSourceAlreadyHasAnAnalysisAttempt(self):
-        def runner(*args, **kwargs):
-            return subprocess.CompletedProcess(args, 0, stdout=b'analysis_attempts\n', stderr=b'')
-
-        with self.assertRaises(ValueError):
-            assert_checkpoint_not_dispatched(Path('owned-archive'), runner=runner)
-
-    def test_shouldAdmitAnOwnedExternalArchiveRootAndRejectCodeRepositoryData(self):
-        with TemporaryDirectory() as root:
-            repository = Path(root) / 'code'
-            repository.mkdir()
-            (repository / '.git').mkdir()
-            target = Path(root) / 'validation'
-            admitted = owned_data_root(target, repository)
-            data = admitted / 'data'
-            data.mkdir()
-            ensure_configured_archive_root(data)
-            self.assertEqual(admitted, owned_data_root(target, repository))
-            forbidden = repository / '.tmp' / 'data'
-            with self.assertRaises(ValueError):
-                owned_data_root(forbidden, repository)
-            self.assertFalse(forbidden.exists())
-
-    def test_shouldBootstrapActualProviderConsumersWithoutAmbientDatabase(self):
-        repository = Path(__file__).resolve().parents[2]
-        code = """
-import importlib
-from pathlib import Path
-import sys
-from django.db import connections
-from scripts.validation.project_summary_join import configure_catalog
-try:
-    configure_catalog(Path(sys.argv[1]))
-    importlib.import_module('provider_sync.tests.capture_gateway_fixtures')
-    from django.conf import settings
-    assert Path(settings.DATABASES['default']['NAME']).resolve() == Path(sys.argv[1]).resolve() / 'catalog.sqlite3'
-    print('bootstrap-ok')
-finally:
-    connections.close_all()
-"""
-        with TemporaryDirectory() as root:
-            directory = Path(root)
-            canary = directory / 'ambient-must-not-be-created.sqlite3'
-            environment = {**os.environ, 'METRICS_SQLITE_DATABASE_PATH': str(canary)}
-            result = subprocess.run([sys.executable, '-c', code, str(directory)], cwd=repository,
-                                    env=environment, capture_output=True, text=True, timeout=30)
-            self.assertEqual(0, result.returncode, result.stderr)
-            self.assertIn('bootstrap-ok', result.stdout)
-            self.assertFalse(canary.exists())
-
-    def test_shouldRejectForeignWorkRootWithoutCreatingIt(self):
-        with TemporaryDirectory() as root:
-            repository = Path(root) / 'repository'
-            outside = Path(root) / 'outside'
-            with self.assertRaises(ValueError):
-                owned_work_root(outside, repository)
-            self.assertFalse(outside.exists())
-
-    def test_shouldAcceptOnlyTheOwnedTemporaryRoot(self):
-        with TemporaryDirectory() as root:
-            repository = Path(root)
-            work = repository / '.tmp' / 'task-run-w5'
-            work.mkdir(parents=True)
-            self.assertEqual(work.resolve(), owned_work_root(work, repository))
 
     def test_shouldRefuseWrongProcessOrEscapedStopFileBeforeCleanup(self):
         with TemporaryDirectory() as root:

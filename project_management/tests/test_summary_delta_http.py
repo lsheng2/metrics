@@ -17,16 +17,15 @@ from project_management.app.domain.summary_delta import build_analysis_input
 from project_management.services.summary_analysis import SummaryAnalysisService
 from project_management.tests.report_source_fixtures import ReportSourceScenario
 from project_management.tests.summary_fixtures import PACK_ROOT
-from scripts.validation.project_summary_join import advance_to_acceptance, wait_connection
 from scripts.validation.project_summary_support import (
-    child_environment, probe_base_imports, stop_owned_fixture, verify_base_source,
+    ai_base_python, child_environment, probe_base_imports, stop_owned_fixture, verify_base_source, wait_connection,
 )
 
 
 def test_shouldAcceptCumulativeDeltaThroughInstalledSdkAndRealBaseHttp():
     root = Path(__file__).resolve().parents[2]
     selected = root / '.tmp/sdk-020-join-20261105'
-    base_python = root.parent / 'Report_creater_agent/.venv/Scripts/python.exe'
+    base_python = ai_base_python()
     evidence = root / '.tmp/dashboard-delta-20261105' / f'http-{uuid4()}'
     evidence.mkdir(parents=True)
     provenance = verify_base_source(selected, selected / 'base-source')
@@ -118,3 +117,17 @@ def test_shouldAcceptCumulativeDeltaThroughInstalledSdkAndRealBaseHttp():
                 cleanup = stop_owned_fixture(process, connection, directory)
                 (evidence / 'cleanup.json').write_bytes(canonical_bytes(cleanup))
                 assert cleanup['normal'], cleanup
+
+
+async def advance_to_acceptance(service, source, attempt, backend, end):
+    for _ in range(8):
+        if time.monotonic() >= end:
+            raise TimeoutError('The joint validation window expired.')
+        step = await service.advance(source.actor, source.project.id, source.stage.id, attempt.attempt_id,
+                                     backend=backend)
+        if step.state == 'accepted':
+            return step.accepted
+        if step.state not in {'queued', 'running'}:
+            raise RuntimeError(f'Analysis did not progress: {step.state}.')
+        await asyncio.sleep(0.1)
+    raise RuntimeError('The joint observation limit was reached.')

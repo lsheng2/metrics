@@ -84,11 +84,7 @@ class TestReportAuthoringViews(CaptureArchiveScenario, ProjectRouteTestSupport, 
             project_reports.ReportPublicationRevisionView,
             project_reports.ReportPublicationDownloadView,
         )
-        originals = [view.facade_factory for view in classes]
-        for view in classes:
-            view.facade_factory = staticmethod(self.report_facade)
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(classes, originals)])
+        self.patch_view_factory(self.report_facade, *classes)
 
     def create_url(self):
         return reverse('ui_web:report_draft_create', kwargs={

@@ -108,4 +108,4 @@ class TestWorkbenchScopeProfileSync(TestCase):
         self.assertIn('id="workbench-profile" value="" readonly data-workbench-derived-field="profile_id"', content)
         self.assertIn('id="workbench-provider" value="" readonly data-workbench-derived-field="provider_id"', content)
         self.assertIn('Scope is not bound to a provider profile.', content)
-        self.assertNotIn('workspace_key=metrics.jira.chiplet-2a-jira', content)
+        self.assertNotIn('metrics.jira.chiplet-2a-jira', content)

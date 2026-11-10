@@ -68,7 +68,6 @@ class AiBaseWorkbenchAdapter:
             'capabilities': sidecar_status.get('capabilities', {}),
             'chat_url': self.chat_url(state, sidecar_status, host_origin),
             'workspace_key': self.workspace_key_for_state(state),
-            'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
             'binding_request': self.public_binding_request(state, sidecar_status),
             'launcher_command': self._launcher_command,
         }
@@ -140,11 +139,8 @@ class AiBaseWorkbenchAdapter:
         )
 
     def chat_url(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> str:
-        mode = self._embed_mode()
         base_url = self.frontend_base_url(sidecar_status)
-        if mode == 'app-chat':
-            return f'{base_url}/?embed=app-chat#/chat?{urlencode(self._app_chat_query(state, host_origin))}'
-        return f'{base_url}/?embed=workbench#/chat?{urlencode(self._legacy_workbench_query(state, sidecar_status))}'
+        return f'{base_url}/?embed=app-chat#/chat?{urlencode(self._app_chat_query(state, host_origin))}'
 
     def binding_request(self, state: WorkbenchPageQueryState, sidecar_status: dict, host_origin: str = '') -> dict:
         workspace_key = self.workspace_key_for_state(state)
@@ -198,21 +194,6 @@ class AiBaseWorkbenchAdapter:
         if status == 'disabled':
             return gettext('Restart the unified stack with: %(command)s') % {'command': self._launcher_command}
         return gettext('Start or restart AI Base with: %(command)s') % {'command': self._launcher_command}
-
-    def _legacy_workbench_query(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
-        return {
-            'source': 'metrics-workbench',
-            'profile_id': state.profile_id,
-            'provider_id': state.provider_id,
-            'workspace_key': self.workspace_key_for_state(state),
-            'agent_id': sidecar_status.get('profile_id') or 'dashboard_query_agent',
-            'range_mode': state.range_mode,
-            'begin': state.begin,
-            'end': state.end,
-            'chart_id': state.chart_id,
-            'bucket': state.selected_bucket_id,
-            'series': state.selected_series_name,
-        }
 
     def _app_chat_query(self, state: WorkbenchPageQueryState, host_origin: str = '') -> dict:
         request = self.binding_request(state, {}, host_origin)
@@ -271,8 +252,3 @@ class AiBaseWorkbenchAdapter:
     def _session_key(state: WorkbenchPageQueryState) -> str:
         profile_id = state.profile_id or 'default'
         return f'metrics.workbench.{profile_id}.overview'
-
-    @staticmethod
-    def _embed_mode() -> str:
-        mode = str(getattr(settings, 'METRICS_AI_BASE_EMBED_MODE', 'workbench') or 'workbench').strip().lower()
-        return 'app-chat' if mode == 'app-chat' else 'workbench'

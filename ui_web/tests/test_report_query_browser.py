@@ -55,8 +55,9 @@ class TestReportQueryBrowser(StaticLiveServerTestCase):
                     preview.locator('[data-report-daily-preview]').click()
                 self.assertEqual(1, page.locator('[data-report-preparation-page]').count())
                 page.locator('[data-report-daily-prepare-form] select[name="capture_id"]').select_option(capture)
-                with page.expect_navigation(wait_until='domcontentloaded'):
-                    page.locator('[data-report-daily-generate]').click()
+                # Prepare and Finalize are Git-backed writes without a read SLO; measured 12-20s under load.
+                with page.expect_navigation(wait_until='domcontentloaded', timeout=120000):
+                    page.locator('[data-report-daily-generate]').click(no_wait_after=True)
                 editor_url = page.url
                 region = page.locator('[data-report-wysiwyg-region][data-target-json*="daily_note"]').first
                 region.locator('[data-report-editor-surface]').click()
@@ -80,8 +81,8 @@ class TestReportQueryBrowser(StaticLiveServerTestCase):
                 page.screenshot(path=str(evidence / 'editor-mobile.png'))
                 self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), geometry.REPORT_PHONE_PAGE_WIDTH_MAX)
                 page.locator('[data-report-finalize-confirm]').check()
-                with page.expect_navigation(wait_until='domcontentloaded'):
-                    page.locator('[data-report-finalize-button]').click()
+                with page.expect_navigation(wait_until='domcontentloaded', timeout=120000):
+                    page.locator('[data-report-finalize-button]').click(no_wait_after=True)
                 self.assertIn('/publications/', page.url)
                 publication_id = page.url.rstrip('/').rsplit('/', 1)[-1]
                 with page.expect_download() as download:

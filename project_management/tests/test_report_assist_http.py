@@ -22,9 +22,8 @@ from project_management.tests.history_persistence_fixtures import (
     git_head, history_fixture, note_by_id, prepare_daily, publication_file_bytes, ref_for,
 )
 from project_management.tests.summary_fixtures import PACK_ROOT
-from scripts.validation.project_summary_join import wait_connection
 from scripts.validation.project_summary_support import (
-    child_environment, probe_base_imports, stop_owned_fixture, verify_base_source,
+    ai_base_python, child_environment, probe_base_imports, stop_owned_fixture, verify_base_source, wait_connection,
 )
 
 
@@ -43,7 +42,7 @@ def test_shouldSelectOnlyHashMatchedAuthoringProfileForSyntheticBase():
 def test_shouldRetainAuthoringProvenanceThroughRealBaseHttpGitAndNextDay(tmp_path):
     root = Path(__file__).resolve().parents[2]
     selected = root / '.tmp/sdk-020-join-20261105'
-    base_python = root.parent / 'Report_creater_agent/.venv/Scripts/python.exe'
+    base_python = ai_base_python()
     evidence = root / '.tmp/dashboard-assist-20261106' / f'http-{uuid4()}'
     evidence.mkdir(parents=True)
     provenance = verify_base_source(selected, selected / 'base-source')
