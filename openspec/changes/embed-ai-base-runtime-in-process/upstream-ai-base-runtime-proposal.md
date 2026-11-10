@@ -155,7 +155,8 @@ flowchart LR
 1. 认证：`authenticate(request) -> Principal | None`，只回答"这是谁"。返回 `None` 或抛出异常都按 401 处理
    （fail closed）。运行时只从这里得到 principal，从不信任请求体或 tool 参数里的 actor。
 2. 审批授权：`can_decide(principal, approval) -> bool`。
-3. 审计：`record_audit(event)`，接收会话、tool 调用、审批和认证失败事件。
+3. 审计：`record_audit(event)`，接收会话、tool 调用、审批和认证失败事件；认证失败事件带路径、客户端地址与原因，
+   不带凭据。事件写到哪里由宿主决定：认证失败可由未认证的请求无限触发，宿主应只写日志，不写持久化审计。
 4. 配置注入：`HostConfig` 提供状态目录、允许的 Host、挂载路径、`NetworkPolicy`、`TracerProvider`、模型凭据
    （`SecretStr`），以及是否允许匿名 principal 决定审批。
 
@@ -341,7 +342,8 @@ flowchart LR
 - `open_session` 是幂等的"打开或恢复"：
   - 以（principal, app_id, session_key）为键。状态库对这个三元组加唯一约束，并发调用只会得到一个会话。恢复时绑定
     本次传入的 `context_ref`（按 D5 校验）；
-  - `session_key` 由 App 命名空间限定：必须以 `<app_id>.` 开头，字符集和长度受限，否则返回 `session_key_invalid`。
+  - `session_key` 由 App 命名空间限定：必须以 `<app_id>.` 开头，只含 `[A-Za-z0-9._:-]`，总长不超过 200 个字符，否则
+  返回 `session_key_invalid`。
     不传 `session_key` 时总是新建会话；
   - 恢复时传入的 agent 与会话已有的 agent 不一致，返回 `session_agent_mismatch`；
   - 取代现在的 App chat binding：它按（source_app_id, session_key）查找会话，不区分 principal，同一 App 的两个用户
@@ -603,11 +605,24 @@ def local_task_run_port() -> Iterator[RuntimeTaskRunPort]:
 ```python
 # ai_host/host.py and ai_host/package.py (abridged); only ai_host imports ai_base_runtime.
 from asgiref.sync import sync_to_async
+from django.db import close_old_connections
 from pydantic import BaseModel
 
 from ai_base_runtime.apps import AppPackage, TaskProfile, ToolContext, ToolError, tool
 from ai_base_runtime.contracts import canonical_digest
 from ai_base_runtime.spi import ApprovalView, AuditEvent, HostRequest, Principal
+
+
+async def run_sync(fn, /, *args, **kwargs):
+    # Runtime callbacks have no ThreadSensitiveContext: use a worker thread and drop stale DB connections.
+    def call():
+        close_old_connections()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            close_old_connections()
+
+    return await sync_to_async(call, thread_sensitive=False)()
 
 
 class MetricsHost:
@@ -621,7 +636,10 @@ class MetricsHost:
         return True  # the runtime already rejects anonymous principals unless HostConfig allows them
 
     async def record_audit(self, event: AuditEvent) -> None:
-        await sync_to_async(write_ai_audit_event)(event)
+        if is_auth_failure(event):
+            log_ai_auth_failed(event)  # structured log only: unauthenticated requests must not grow the audit table
+            return
+        await run_sync(write_ai_audit_event, event)
 
 
 class PublishChart(BaseModel):
@@ -645,7 +663,7 @@ class PublishedChart(BaseModel):
 
 async def preview_chart_publication(params: PublishChart, ctx: ToolContext) -> ChartPublication:
     require_in_boundary(params, ctx.context_ref)  # ToolError("CONTEXT_BOUNDARY_VIOLATION") otherwise
-    return await sync_to_async(render_chart_publication)(params)  # same params and data -> same bytes
+    return await run_sync(render_chart_publication, params)  # same params and data -> same bytes
 
 
 @tool(effect="external", preview=preview_chart_publication)
@@ -655,8 +673,11 @@ async def publish_chart(params: PublishChart, ctx: ToolContext) -> PublishedChar
     if canonical_digest(publication) != ctx.approval.preview_digest:
         raise ToolError("PREVIEW_DIGEST_MISMATCH")
     # The operator comes from the approval, never from model-supplied parameters.
-    return await sync_to_async(import_publication_to_grafana)(
-        publication, operator=ctx.approval.decided_by, idempotency_key=ctx.tool_call_id
+    return await run_sync(
+        import_publication_to_grafana,
+        publication,
+        operator=ctx.approval.decided_by,
+        idempotency_key=ctx.tool_call_id,
     )
 
 
@@ -732,7 +753,7 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
 |---|---|---|
 | 故障隔离 | 运行时的崩溃、内存泄漏或阻塞会直接拖垮 Metrics 页面 | D8 的并发、超时和输出上限；D2 禁止在循环上阻塞，并有 slow callback 门禁；异常只以 API 错误返回 |
 | 依赖冲突 | 两套依赖进入同一个 venv，例如 `portalocker` 4.4.1 与 ≥4.4.2 | 单一锁文件；运行时按实际需要声明依赖下限；可选依赖拆成 extras；S0 用 `pip check` 验证 |
-| 单 worker | 状态目录锁决定了只能有一个进程 | 一对一本地部署本来就是单进程，现在的 `project_serve` 也是单进程 |
+| 单 worker | 状态目录锁决定了只能有一个进程；Metrics 的 Docker 镜像从 gunicorn 多 worker 改为单进程 | 本地部署本来就是单进程（`project_serve`）；Docker 单副本运行 `manage.py serve`，吞吐下降由 owner 接受（2026-11-10） |
 | WSGI → ASGI | Metrics 从多线程 WSGI 服务改为 uvicorn；开发服务器、静态文件和启动脚本都要改 | Django 原生支持 ASGI，同步视图按请求在线程中执行；开发和生产使用同一个组合根；S0 跑 Metrics 浏览器测试子集 |
 | 发布耦合 | AI Base 发版必须跟随 Metrics 发版，回滚也要一起回滚 | Metrics 固定运行时的精确版本；宿主一致性套件作为升级门禁 |
 | 事件循环 | 宿主的事件循环类型决定子进程等能力是否可用 | 组合根固定使用 Proactor；一致性套件断言 |

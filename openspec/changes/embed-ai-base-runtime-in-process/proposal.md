@@ -19,8 +19,9 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 ## What Changes
 
 - **BREAKING** `metrics.asgi` 成为唯一的组合根。一个 uvicorn 进程同时托管 Django 和挂载在 `<URL 前缀>/ai`
-  的运行时；组合根的 lifespan 负责进入运行时的运行期，并安装 project run 运行时。新增 `manage.py serve`
-  （只接受回环地址），取代 `project_serve`。
+  的运行时；组合根的 lifespan 负责进入运行时的运行期，并安装 project run 运行时。新增 `manage.py serve`，
+  取代 `project_serve` 和 gunicorn：默认绑定回环地址，容器以 `--host 0.0.0.0` 运行，development settings 下拒绝
+  非回环绑定。删除 `metrics/wsgi.py` 与 `WSGI_APPLICATION`，Docker 镜像改为单进程、单副本。
 - 新增 `ai_host` 模块，它是 Metrics 中唯一导入 `ai_base_runtime` 的地方，负责：组合根装配；宿主 SPI（认证、
   审批授权、审计、`HostConfig`）；Metrics App 包；task-run 端口的实现；AI pane 的状态。
 - 新增 Metrics App 包（`app_id=metrics`），包含：
@@ -33,7 +34,8 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - Metrics 的 `preview()` 生成将要导入的确切 dashboard JSON 及其内容摘要，审批绑定这个摘要；
   - 执行前重新生成并比较摘要，不一致就不导入；
   - 以 `tool_call_id` 作为幂等键；
-  - chart 草稿只存在于对话的 tool 调用中，不另建 artifact 存储；发布历史保存被批准的规范化 render config 和摘要。
+  - chart 草稿只存在于对话的 tool 调用中，不另建 artifact 存储；发布结果写入 Metrics 自有的新表
+    `AiChartPublication`（`tool_call_id` 唯一，`supersedes` 唯一），`/api/ai-publish-history/` 只读这张表。
 - **BREAKING** 删除 gcx，包括 gcx 操作词表、precondition、publication callback 和 `dry_run_proof_id`。
 - **BREAKING** 删除 Metrics 与 AI Base 之间的全部 HTTP 集成：
   - 14 个 connector 路由，以及 `connector_endpoint`；
@@ -41,15 +43,19 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - `ai_base_workbench_adapter.py`；
   - workspace 同步（表单、视图、JS）；
   - `AiGrafanaPublishApprovalService`；
-  - `TaskRunClient`，以及 `AiBackendTarget` 中面向 HTTP 的字段；
-  - 设置项 `METRICS_AI_SIDECAR_ENABLED`、`METRICS_AI_BASE_*`、`METRICS_PROJECT_AI_*`、`METRICS_PROJECT_RUNTIME_FACTORY`；
+  - `TaskRunClient`、`AiBackendTarget`、`execution_mode`，以及 `run_factories`、`report_factories` 中的工厂；
+  - 设置项 `METRICS_AI_SIDECAR_ENABLED`、`METRICS_AI_BASE_*`、`METRICS_PROJECT_AI_*`、`METRICS_PROJECT_RUNTIME_FACTORY`、
+    `METRICS_REPORT_ASSIST_FACTORY`；
   - `requirements-ai-task.txt`；
   - launcher 中对 AI Base 进程的管理。
 - **BREAKING** project_management 的摘要分析、报告辅助和 project run worker 改为调用 Metrics 自有的同步
-  task-run 端口，并删除 AI 路径上的全部 `asyncio.run`。
+  task-run 端口，并删除 AI 路径上的全部 `asyncio.run`。档案改由 Metrics 自有的 `ai_profiles/` 以数据维护
+  （`metrics.project_summary`、`metrics.report_authoring`），取代 vendored 的 `ai_bundle/`；准入记录只认一个
+  schema 版本，旧格式一律 `RUN_STORAGE_INVALID`，不做兼容读取。
 - 运行时状态固定存放在 `METRICS_STATE_DIR/ai-base`，只允许一个写入进程；服务运行期间，CLI 会得到 `RUN_BUSY`。
 - AI pane 改为同源 iframe，并加载运行时提供的 `embed-host.js`。scope 变化时只传递 `ContextRef`。
 - `ALLOWED_HOSTS` 成为 Django 和运行时共用的唯一 Host 白名单。
+- 运行时的会话、tool 和审批事件写入 `ai_host` 自有的只追加审计表；认证失败只输出结构化日志 `ai_auth_failed`。
 - `/ai-dashboard/workflow/` 页面保留，改为显示运行时状态、工作流结果和发布就绪状态，不再出现 gcx。
 
 ## Capabilities
@@ -78,28 +84,36 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 ## Impact
 
 - **前置条件（tasks 第 0 组）**：
-  - owner 确认 Q1–Q9；
+  - owner 已于 2026-11-10 签署 Q1–Q9；
   - S0 共装 spike 的全部退出条件通过；
-  - AIB-2 发布的 `ai-base-runtime` 提供 v2 D1–D11 中的 SPI，包括 v2 D5–D7 补充的三项：`ToolContext.context_ref`、
-    preview 摘要绑定、`open_session` 的 `session_key`。
-- **归档顺序**：`remove-legacy-ai-base-workbench-embed` 和 `harden-ai-base-sidecar-and-connector-inputs` 必须先归档。
-  本 change 的 delta 以这两者归档后的主 spec 为基线。
+  - AIB-2 发布的 `ai-base-runtime` 提供 v2 D1–D11 中的 SPI，包括 owner 同日接受的五项补充：D4
+    `AppPackage.task_profiles`、D5 `ToolContext.context_ref`、D6 preview 摘要绑定、D7 `open_session` 的
+    `session_key`、D9 task-run 真实模型执行与准入错误码。
+- **前置 change 已归档**：`isolate-dashboard-runtime-instances`、`remove-legacy-ai-base-workbench-embed` 和
+  `harden-ai-base-sidecar-and-connector-inputs` 已于 2026-11-10 归档。本 change 的 delta 以归档后的主 spec 为基线，
+  并通过 strict 校验。
 - **与进行中 change 的冲突**：`add-provider-neutral-project-reporting` 中的以下内容都以 HTTP SDK、App 注册和
   connector 为前提，必须在本 change 实施之前改写为"运行时版本准入"和"进程内 task-run 端口"（任务 0.4）：
   - W4.REPLAN、W5.N1、W5.APP、W5.MIGRATE、W5.CLIENT、W5.CHAT；
   - `sdk-consumer-integration` delta。
 - **代码**：
-  - `metrics/`：`asgi.py`、`wsgi.py`、`middleware.py`、`settings/*`；
-  - 新模块 `ai_host/`；
-  - `project_management`：run_factories、runtime、summary_analysis、report_assists、project_run_worker、
-    project_serve、project_run；
-  - `bug_metrics/app/api/`：ai_sidecar、ai_dashboard_approval、ai_context、ai_dashboard_composition、
-    ai_dashboard_workflow；
+  - `metrics/`：`asgi.py`、`middleware.py`、`settings/*`；删除 `wsgi.py`；
+  - 新模块 `ai_host/`：组合根装配、宿主 SPI、App 包、task-run 端口实现、审计表、`serve` 命令；
+  - `project_management`：删除 `ai_bundle/` 与 `project_serve`，新增 `ai_profiles/`；`out/ai_task_contract.py` 和
+    `out/report_ai_task.py` 改写为同步端口；run_factories、report_factories、runtime、summary_analysis、
+    report_assists、project_run_worker、project_run 与准入记录值对象；
+  - `bug_metrics`：新表 `AiChartPublication`；`app/api/` 下的 ai_sidecar、ai_dashboard_approval、ai_context、
+    ai_dashboard_composition、ai_dashboard_workflow；
   - `ui_web`：urls、views、adapter、service status、context processors、workbench 模板与 JS；
+  - `ops/docker/Dockerfile`、`README.md`、`scripts/dashboard_runtime_instance_profile.py`；
   - `scripts/validation/project_*`、`scripts/e2e_dashboard_ai_stack.ps1`。
 - **依赖**：
-  - 新增精确版本的 `ai-base-runtime` 和 `uvicorn`；
-  - 删除 `ai-base-application-sdk`；
+  - 新增精确版本的 `ai-base-runtime`、`uvicorn` 和 `starlette`；
+  - 删除 `ai-base-application-sdk`、`requirements-ai-task.txt` 和 `gunicorn`；
   - `portalocker` 升级到 ≥4.4.2。
-- **运行方式**：服务改为 `manage.py serve`，即单进程、单 worker、不 reload；开发和生产使用同一个组合根。
-- **状态**：切换时不迁移 `dashboard_query_agent` 独立壳的会话、审批和技能目录（Q8）。发布历史保留，表结构随迁移调整。
+- **运行方式**：本地与 Docker 都改为 `manage.py serve`，即单进程、单 worker、不 reload；开发和生产使用同一个组合根。
+  Docker 只允许单副本，`METRICS_STATE_DIR` 挂载为卷。按 owner 2026-11-10 的决定，非回环绑定不强制 Basic 认证，
+  维持现有姿态。
+- **状态**：切换时不迁移 `dashboard_query_agent` 独立壳的会话、审批和技能目录（Q8），并删除 archive 中的
+  `runtime/operations/`。发布历史改由新表 `AiChartPublication` 记录，旧 `BugTrendAuditEvent` 发布行保留在表中但
+  不再列出。数据库、`METRICS_STATE_DIR` 与 archive root 作为一个单元备份和回滚。

@@ -9,7 +9,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 ## ADDED Requirements
 
 ### Requirement: Metrics serves Django and the AI runtime from one composition root
-`metrics.asgi` SHALL 是 Metrics 唯一的组合根：一个 ASGI 应用把 `<URL 前缀>/ai` 交给 AI Base 运行时，其余路径（包括静态文件）交给 Django。组合根的 lifespan SHALL 在接受第一个请求之前进入运行时的运行期并安装 project run 运行时，关闭时按相反顺序停止。受支持的启动方式 SHALL 只有 `manage.py serve`：只接受回环地址，单 worker，不 reload，Windows 上使用 Proactor 事件循环。
+`metrics.asgi` SHALL 是 Metrics 唯一的组合根：一个 ASGI 应用把 `<URL 前缀>/ai` 交给 AI Base 运行时，其余路径（包括静态文件）交给 Django；Metrics SHALL NOT 保留 WSGI 入口或其他组合根。组合根的 lifespan SHALL 在接受第一个请求之前进入运行时的运行期并安装 project run 运行时，关闭时按相反顺序停止。受支持的启动方式 SHALL 只有 `manage.py serve`，本地与容器部署相同：单 worker，不 reload，默认绑定回环地址，Windows 上使用 Proactor 事件循环。绑定非回环地址时，settings 允许匿名决定审批的情况下命令 SHALL 拒绝启动；未配置 Basic 用户时命令 SHALL 输出不含凭据的匿名暴露警告。
 
 #### Scenario: Operator starts the server
 - **WHEN** 操作者运行 `manage.py serve --host 127.0.0.1 --port <port>`
@@ -17,8 +17,21 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **AND** `<URL 前缀>/ai/` 下的请求 SHALL 由运行时处理，其余请求 SHALL 由 Django 处理
 - **AND** project run worker SHALL 已经安装并可以接收运行
 
-#### Scenario: Operator requests a non-loopback bind
-- **WHEN** 操作者以 `--host 0.0.0.0` 或其他非回环地址运行 `manage.py serve`
+#### Scenario: Container image starts Metrics
+- **WHEN** 使用 production settings 的容器镜像启动
+- **THEN** 镜像 SHALL 以 `manage.py serve --host 0.0.0.0 --port 8000` 运行单个进程
+- **AND** 镜像 SHALL NOT 包含 gunicorn 或 WSGI 入口
+
+#### Scenario: Static files sit behind Basic authentication
+- **WHEN** 已配置 Basic 用户，请求不带凭据访问静态文件
+- **THEN** Metrics SHALL 返回 401，与 Django 页面一致
+
+#### Scenario: Non-loopback bind without Basic users
+- **WHEN** 使用 production settings、未配置 Basic 用户，操作者以非回环地址运行 `manage.py serve`
+- **THEN** 服务 SHALL 正常启动，并输出一条只包含绑定地址的匿名暴露警告
+
+#### Scenario: Development settings request a non-loopback bind
+- **WHEN** 使用允许匿名决定审批的 development settings，操作者以 `--host 0.0.0.0` 或其他非回环地址运行 `manage.py serve`
 - **THEN** 命令 SHALL 在启动服务之前以错误退出
 
 #### Scenario: URL prefix is configured
@@ -62,6 +75,11 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **WHEN** 使用 production settings 且未配置 Basic 用户，匿名本地操作者尝试批准一个发布审批
 - **THEN** 运行时 SHALL 拒绝该决定，审批 SHALL 保持 pending
 
+#### Scenario: Production deployment has no Basic users
+- **WHEN** 使用 production settings 且未配置 Basic 用户，操作者打开 AI pane
+- **THEN** AI pane SHALL 提示发布审批需要配置 `METRICS_BASIC_AUTH_USERS`
+- **AND** read tool SHALL 照常可用
+
 #### Scenario: Anonymous operator approves in development settings
 - **WHEN** 使用 development settings，匿名本地操作者批准一个审批
 - **THEN** 运行时 SHALL 接受该决定，并把本地操作者记录为 `decided_by`
@@ -98,35 +116,60 @@ Metrics 中 SHALL 只有 `ai_host` 模块导入 `ai_base_runtime`；组合根 SH
 - **AND** 测试 SHALL 覆盖受影响的用户工作流在 `ready` 状态和非 `ready` 状态下的行为
 
 ### Requirement: Domain services call AI task runs through a synchronous port
-project_management 的摘要分析、报告辅助和 project run worker SHALL 通过 project_management 定义的同步 task-run 端口调用 AI；端口由 `ai_host` 基于运行时的 `blocking.task_runs` 实现，由组合根注入。Metrics SHALL NOT 用 `asyncio.run` 调用运行时协程，SHALL NOT 在运行时的事件循环线程上调用 blocking 门面，SHALL NOT 保留 HTTP task-run 客户端、凭据引用或 token 设置。
+project_management 的摘要分析、报告辅助和 project run worker SHALL 通过 project_management 定义的同步 task-run 端口调用 AI；端口由 `ai_host` 基于运行时的 `blocking.task_runs` 实现，由组合根注入。端口 SHALL 原样传递运行时的准入错误码及其 `recovery`。运行记录 SHALL 归 project_management 所有，只有一个 schema 版本，SHALL NOT 携带 AI 后端绑定或执行模式；其他版本的记录 SHALL 作为无效存储拒绝，SHALL NOT 兼容读取。Metrics SHALL NOT 用 `asyncio.run` 调用运行时协程，SHALL NOT 在运行时的事件循环线程上调用 blocking 门面，SHALL NOT 保留 HTTP task-run 客户端、凭据引用或 token 设置。
 
 #### Scenario: Project run worker starts an AI run
 - **WHEN** project run worker 线程处理一个需要 AI 的运行
 - **THEN** 它 SHALL 通过 task-run 端口启动运行，principal SHALL 来自提交运行的用户
-- **AND** 运行结果 SHALL 按 task-run/1 契约记录
+- **AND** 运行结果 SHALL 写入 project_management 自有的运行记录，包括档案 `id@version`、模型身份和运行时版本
+
+#### Scenario: Runtime rejects admission
+- **WHEN** 运行时拒绝一次准入，例如返回 `model_not_configured`
+- **THEN** 端口 SHALL 返回同一个错误码及其 `recovery`，SHALL NOT 改写为其他错误码
+
+#### Scenario: Run storage holds a record of another schema version
+- **WHEN** 读取到不是当前 schema 版本的准入记录，例如带有 `backend` 或 `execution_mode` 的旧记录
+- **THEN** 读取 SHALL 以 `RUN_STORAGE_INVALID` 失败，SHALL NOT 兼容读取
 
 #### Scenario: Runtime is not running
 - **WHEN** 进程不是经组合根启动的（例如 Django 测试客户端），领域服务调用 task-run 端口
 - **THEN** 端口 SHALL 返回结构化的 `RUN_UNAVAILABLE`，SHALL NOT 自行创建事件循环或运行时
 
 ### Requirement: Metrics App package declares the whole AI surface
-Metrics SHALL 用一个 `AppPackage`（`app_id=metrics`）声明全部 AI 能力：agent、带类型和 effect 的 tool、按 `ContextRef` 解析上下文的 context provider，以及只做 UI 动作的 host action。tool handler SHALL 是 async 函数，通过 `sync_to_async` 在工作线程中调用 Metrics 公共 API，并在该线程中调用 `close_old_connections`。tool 参数 SHALL NOT 包含 actor、审批 id 或证明 id；操作者 SHALL 只取自 `ctx.principal` 或 `ctx.approval.decided_by`。
+Metrics SHALL 用一个 `AppPackage`（`app_id=metrics`）声明全部 AI 能力：agent、带类型和 effect 的 tool、task profile、按 `ContextRef` 解析上下文的 context provider，以及只做 UI 动作的 host action。task profile 的 schema 与 instructions SHALL 由 project_management 以数据维护并随 Metrics 版本化，task run 请求 SHALL 引用精确的 `id@version`。
 
 #### Scenario: Runtime starts with the Metrics package
 - **WHEN** 组合根构造运行时
 - **THEN** tool 注册表 SHALL 包含 `read` tool `metrics.catalog`、`metrics.chart_workflow` 和 `external` tool `metrics.publish_chart`
 - **AND** 运行时 SHALL 拥有 context provider `metrics.workbench` 和 host action `metrics.openChart`、`metrics.openEvidence`
+- **AND** 运行时 SHALL 拥有 task profile `metrics.project_summary` 和 `metrics.report_authoring`
 
-#### Scenario: Tool schema exposes authority fields
-- **WHEN** 某个 Metrics tool 的参数模型包含 actor、approval id、proof id 或 workspace key 字段
-- **THEN** App 包测试 SHALL 失败
+#### Scenario: App package is checked
+- **WHEN** Metrics 测试对 Metrics App 包运行 `check_app_package`
+- **THEN** 检查 SHALL 通过，包括 task profile 的 schema 校验和 `metrics.publish_chart` preview 的确定性
+
+#### Scenario: Task run names its profile
+- **WHEN** task-run 端口提交一次运行
+- **THEN** 请求 SHALL 引用精确的 `id@version`，SHALL NOT 使用 `latest`
 
 #### Scenario: Embedded chat requests a host action
 - **WHEN** iframe 请求执行 `metrics.openChart`
 - **THEN** 宿主页面 SHALL 只在 workbench 中切换到该图表，SHALL NOT 改变任何服务端状态
 
+### Requirement: Metrics tools call public APIs off the event loop
+tool handler、preview 和 context provider SHALL 是 async 函数，通过 `sync_to_async(thread_sensitive=False)` 在工作线程中调用各模块 `app/api/` 的公共 API，并在该线程中于调用前后各执行一次 `close_old_connections`；它们 SHALL NOT 直接访问 ORM 模型。tool 参数 SHALL NOT 包含 actor、审批 id 或证明 id；操作者 SHALL 只取自 `ctx.principal` 或 `ctx.approval.decided_by`。
+
+#### Scenario: Tool handler reads Metrics data
+- **WHEN** 运行时调用一个读取 Metrics 数据的 tool handler
+- **THEN** 公共 API 调用 SHALL 在工作线程而不是事件循环线程上执行
+- **AND** 该线程 SHALL 在调用前后各关闭一次过期的数据库连接
+
+#### Scenario: Tool schema exposes authority fields
+- **WHEN** 某个 Metrics tool 的参数模型包含 actor、approval id、proof id 或 workspace key 字段
+- **THEN** App 包测试 SHALL 失败
+
 ### Requirement: Metrics and the AI runtime share no HTTP integration
-Metrics 与运行时之间 SHALL NOT 存在 HTTP 调用、connector 回调路由、App 注册、instance token、credential ref 或 workspace 同步。`/api/ai-dashboard/` 前缀下的全部路由、sidecar 握手与探活，以及设置项 `METRICS_AI_SIDECAR_ENABLED`、`METRICS_AI_BASE_*`、`METRICS_PROJECT_AI_*`、`METRICS_PROJECT_RUNTIME_FACTORY` SHALL 不存在；workbench 使用的发布历史只读 API SHALL 改用 `/api/ai-publish-history/`。grep gate SHALL 阻止这些名称和 `ai_base_application_sdk` 的导入重新出现。
+Metrics 与运行时之间 SHALL NOT 存在 HTTP 调用、connector 回调路由、App 注册、instance token、credential ref 或 workspace 同步。`/api/ai-dashboard/` 前缀下的全部路由、sidecar 握手与探活，设置项 `METRICS_AI_SIDECAR_ENABLED`、`METRICS_AI_BASE_*`、`METRICS_PROJECT_AI_*`、`METRICS_PROJECT_RUNTIME_FACTORY`、`METRICS_REPORT_ASSIST_FACTORY`，以及 `TaskRunClient`、`AiBackendTarget`、`execution_mode` 和 vendored 的 `ai_bundle` SHALL 不存在；workbench 使用的发布历史只读 API SHALL 改用 `/api/ai-publish-history/`。grep gate SHALL 阻止这些名称和 `ai_base_application_sdk` 的导入重新出现。
 
 #### Scenario: A former connector route is requested
 - **WHEN** 任何客户端请求 `/api/ai-dashboard/workflow/`、`/api/ai-dashboard/identity/` 或该前缀下的其他路径
@@ -137,7 +180,7 @@ Metrics 与运行时之间 SHALL NOT 存在 HTTP 调用、connector 回调路由
 - **THEN** 它 SHALL 读取 `/api/ai-publish-history/`，响应字段 SHALL 符合 `grafana-render-config` 的 "AI-generated Grafana dashboards are listed and auditable"
 
 #### Scenario: A change reintroduces an HTTP integration name
-- **WHEN** 代码、settings 或脚本中出现上述设置名、connector 路由前缀或 `ai_base_application_sdk` 导入
+- **WHEN** 代码、settings 或脚本中出现上述名称、connector 路由前缀或 `ai_base_application_sdk` 导入
 - **THEN** grep gate SHALL 失败
 
 ### Requirement: AI pane reports runtime readiness without blocking the workbench
@@ -156,7 +199,7 @@ AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_
 - **THEN** AI pane SHALL 渲染同源的嵌入聊天
 
 ### Requirement: One host allowlist protects Django and the AI runtime
-`ALLOWED_HOSTS` SHALL 是 Django 和运行时共用的唯一 Host 白名单，经 `HostConfig.allowed_hosts` 传给运行时。未显式配置时，它 SHALL 只包含 `127.0.0.1`、`localhost` 和 `[::1]`，settings SHALL NOT 用通配符作为默认值。Host 不在白名单内的请求 SHALL 在进入任何 Django 视图或运行时路由之前得到 HTTP 400，否则 DNS rebinding 之后的页面会被浏览器当作同源。
+`ALLOWED_HOSTS` SHALL 是 Django 和运行时共用的唯一 Host 白名单，经 `HostConfig.allowed_hosts` 传给运行时。未显式配置时，它 SHALL 只包含 `127.0.0.1`、`localhost` 和 `[::1]`，settings SHALL NOT 用通配符作为默认值。Host 不在白名单内的请求 SHALL 在进入任何 Django 视图或运行时路由之前得到 HTTP 400，否则 DNS rebinding 之后的页面会被浏览器当作同源。WhiteNoise 提供的静态文件公开且不含用户数据，不在此列。
 
 #### Scenario: DNS-rebound page calls Metrics
 - **WHEN** 未配置 `ALLOWED_HOSTS`，请求的 Host 是 `rebind.attacker.example`
@@ -182,15 +225,16 @@ Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合�
 - **THEN** 测试 SHALL 用 testkit 的脚本化模型产生确定的 tool 调用，SHALL NOT 调用真实模型
 
 ### Requirement: AI runtime audit is written to Metrics
-Metrics 宿主 SHALL 把运行时的会话、tool 调用、审批（请求、决定、消费、过期）和认证失败事件写入 Metrics 的 AI 审计存储，记录 principal、session id、run id、`tool_call_id`、tool 名称、审批 id 和结果状态。审计 SHALL NOT 包含模型凭据、provider token、Basic 密码或其他秘密。
+Metrics 宿主 SHALL 把运行时的会话、tool 调用和审批（请求、决定、消费、过期）事件写入 `ai_host` 自有的只追加审计表，记录 principal、session id、run id、`tool_call_id`、tool 名称、审批 id 和结果状态。认证失败 SHALL 只输出一条结构化日志 `ai_auth_failed`，SHALL NOT 写入数据库。Metrics 代码 SHALL 只插入审计记录，SHALL NOT 更新或删除；这些事件 SHALL NOT 写入 bug_metrics 的业务审计 `BugTrendAuditEvent`。审计记录与日志 SHALL NOT 包含模型凭据、provider token、Basic 密码或其他秘密。
 
 #### Scenario: Publish approval completes its lifecycle
 - **WHEN** 一次 `metrics.publish_chart` 调用经历请求审批、批准和执行
-- **THEN** AI 审计存储 SHALL 按顺序记录审批请求、决定、消费和 tool 调用结果，每条都带有同一个 `tool_call_id`
+- **THEN** `ai_host` 审计表 SHALL 按顺序记录审批请求、决定、消费和 tool 调用结果，每条都带有同一个 `tool_call_id`
 
 #### Scenario: Authentication fails
-- **WHEN** 运行时路由上的认证失败
-- **THEN** AI 审计存储 SHALL 记录一次认证失败事件，SHALL NOT 记录提交的凭据
+- **WHEN** 已配置 Basic 用户，运行时路由上的一个请求认证失败
+- **THEN** `ai_host` 审计表的行数 SHALL 不变
+- **AND** 宿主 SHALL 输出恰好一条 `ai_auth_failed` 日志，记录路径、客户端地址与原因，SHALL NOT 包含提交的凭据
 
 ### Requirement: Runtime version is pinned and admitted explicitly
 Metrics SHALL 在 `requirements.txt` 中固定 `ai-base-runtime` 的精确版本；准入时 SHALL 校验 wheel 摘要、`pip check` 无冲突、宿主一致性套件通过。Metrics SHALL NOT 依赖 Python HTTP SDK `ai-base-application-sdk`，SHALL NOT vendor 运行时的前端资产；嵌入脚本 SHALL 使用运行时 `ui.asset_url` 返回的带内容哈希的地址。
