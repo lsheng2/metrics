@@ -185,13 +185,14 @@ Workbench SHALL allow evidence-backed chart interactions to update the ticket ev
 
 #### Scenario: AI Base is embedded in the workbench
 - **WHEN** AI Base is ready and the workbench renders the AI assistant pane
-- **THEN** Dashboard SHALL request an AI Base compact embed URL for the iframe
+- **THEN** Dashboard SHALL request only the AI Base app-chat embed surface (`embed=app-chat`) for the iframe
 - **AND** AI Base SHALL render a sidebar-oriented chat surface without the full app shell navigation, session setup sidebar, session files panel, or app status chrome
 - **AND** AI Base SHALL keep full application navigation available only through an explicit external/full-app link
 
 #### Scenario: AI Base compact embed runs in Dashboard app context
-- **WHEN** Dashboard embeds AI Base for a selected provider profile
-- **THEN** Dashboard SHALL pass a fixed `source=metrics-workbench`, `workspace_key` and Dashboard agent id to AI Base
+- **WHEN** Dashboard embeds AI Base for a selected scope whose provider profile binding is resolved
+- **THEN** the iframe URL SHALL carry the Dashboard app identity (`sourceAppId`), binding key, Dashboard agent key, session key and the workspace key derived from the bound provider and profile
+- **AND** the iframe URL and the rendered page SHALL NOT contain the AI Base instance token or credential reference; Dashboard SHALL send them only in server-side binding and workspace-sync requests
 - **AND** AI Base SHALL bind compact chat creation and session filtering to that app-owned workspace
 - **AND** AI Base SHALL activate the Dashboard agent when it is available
 - **AND** compact embed SHALL NOT expose arbitrary agent or workspace selection controls to the user
