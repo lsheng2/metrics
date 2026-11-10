@@ -78,7 +78,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 ## Impact
 
 - **前置条件（tasks 第 0 组）**：
-  - owner 确认 Q1–Q8；
+  - owner 确认 Q1–Q9；
   - S0 共装 spike 的全部退出条件通过；
   - AIB-2 发布的 `ai-base-runtime` 提供 v2 D1–D11 中的 SPI，包括 v2 D5–D7 补充的三项：`ToolContext.context_ref`、
     preview 摘要绑定、`open_session` 的 `session_key`。
