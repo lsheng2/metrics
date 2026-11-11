@@ -1,10 +1,10 @@
 # AIB-0 Metrics launcher 验收回执
 
-日期：2026-11-11。结论：AIB-0 第五项验收"现有 launcher 端到端"**通过**。AIB-F1、AIB-F2 修复后，在 `85f4ea9` 上重新验收，同样**通过**（见第 9 节）。
+日期：2026-11-11。结论：AIB-0 第五项验收"现有 launcher 端到端"**通过**。AIB-F1、AIB-F2 修复后，在 `85f4ea9` 上重新验收，同样**通过**（见第 9 节）。同日 `85f4ea9` 合入 AI Base main 并 push 到 origin（见第 10 节）。
 
 同时发现 AI Base 侧问题 AIB-F1、AIB-F2（见第 6 节），不影响本项结论。owner 已决定两项在 AIB-0 合入 main 前同轮修复（见第 8 节）。
 
-本回执是 `tasks.md` 0.3 中 Metrics 部分的证据。两项修复和重新验收都已完成，0.3 只等 owner 把 AIB-0 合入 main 后勾选。
+本回执是 `tasks.md` 0.3 中 Metrics 部分的证据。两项修复、重新验收与合入 main 都已完成，0.3 已勾选。
 
 ## 1. 被验收的代码
 
@@ -240,3 +240,12 @@ run1 之后执行了 teardown；run2 前重新预检（13:38）并生成新的�
   - 修复为 `tasks.md` 9.10。
 
 本地证据位于 `.tmp\aib0-reaccept\`（gitignored，不入库），两次运行的产物分别带 `-run1`、`-run2` 后缀。
+
+## 10. 合入 main
+
+- 2026-11-11 22:41，经 owner 授权，AI Base main（本地签出 `D:/AIGC/Report_creater_agent`）由 `3c3f8b4` fast-forward 到 `85f4ea98e4681ed142bb1dcee7a5d8e8753576bf`，带入 6 个提交（`cf44d62` 至 `85f4ea9`），没有合并提交。
+- 合入前：`85f4ea9` 是 main 的后代；origin 与本地的 main 都是 `3c3f8b4`；main 签出中没有运行中的 AI Base 进程；唯一的未跟踪内容是此前就存在的 `services/app-service/report_creator_agent_app_service.egg-info/`，与合入内容无关。
+- 合入后：main 的树与 `85f4ea9` 一致，工作树、索引与 HEAD 之间没有差异。
+- 同日 push 到 origin（`3c3f8b4..85f4ea9 main -> main`），`git ls-remote` 确认 origin 的 main 为 `85f4ea9`。
+- 合入的正是第 9 节重新验收的 HEAD，第 9 节的结论直接适用于 main。
+- AI Base 侧剩余收尾：AIB-0 change 的 2.3（引用本回执第 9 节）、2.4 CLOSE.R 与 change 归档，由 AI Base 按其仓库流程完成后再合入 main。收尾只改 openspec 与文档时，不需要 Metrics 重新验收；改动代码或启动脚本时，按第 8 节重新验收。

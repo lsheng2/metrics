@@ -754,8 +754,8 @@
 
 ## Migration Plan
 
-前置条件：AIB-0 已发布并通过现有 launcher 端到端流程；S0b 的退出条件逐项通过，复签 PASS（tasks 0.5，含终测 M1–M6，
-已满足）；AIB-2 wheel 已发布，Metrics 已精确固定其版本并通过宿主一致性套件。
+前置条件：AIB-0 已发布并通过现有 launcher 端到端流程（tasks 0.3，已满足）；S0b 的退出条件逐项通过，复签 PASS
+（tasks 0.5，含终测 M1–M6，已满足）；AIB-2 wheel 已发布，Metrics 已精确固定其版本并通过宿主一致性套件。
 
 切换步骤（一次完成，不设并行期）：
 
