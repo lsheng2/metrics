@@ -1,12 +1,12 @@
 # AI Base 可嵌入运行时：上游架构建议（v2.1）
 
-- 状态：v2.1 草案，尚未定稿。v2 的 Q1–Q9 已于 2026-11-10 由 owner 签署（见 `design.md` 已定输入）。S0 的 C5 不通过
+- 状态：v2.1 定稿（2026-11-11）。v2 的 Q1–Q9 已于 2026-11-10 由 owner 签署（见 `design.md` 已定输入）。S0 的 C5 不通过
   （`s0-spike-report.md`），owner 于 2026-11-11 选择方向 1，即同步 WSGI 宿主，运行时运行在专用循环线程上。§1、D1、D2、
-  D3、D7、D8、D9、D10、§5.1、§5.3、§6、§8、§9 已按方向 1 改写；新增 D12（同步宿主的托管要求 H1–H8）和 Q10。草案已并入
-  S0b 首轮结论（方向 1 可行；新要求 R14–R23 并入 D10、D12 与 §9，各条要求写在正文中）和 owner 2026-11-11 的两项决定
-  （AI pane 冷加载方案 A、Metrics 显式退出）。S0b 签核结论为 NEEDS_FIX，依赖 Metrics 补测的取值是推荐值，注明"按
-  Metrics S0b 补测定稿"。补测复签、owner 签署 Q10 之后定稿为 v2.1，S0b 报告与签核随定稿提交；句柄方法和配置项的最终
-  名称以 AIB-2 的接口回执为准。修订内容见文末修订记录。
+  D3、D7、D8、D9、D10、§5.1、§5.3、§6、§8、§9 已按方向 1 改写；新增 D12（同步宿主的托管要求 H1–H8）和 Q10。本版并入
+  S0b 结论（方向 1 可行；新要求 R14–R24 并入 D10、D12 与 §9，各条要求写在正文中）和 owner 2026-11-11 的决定（AI pane
+  冷加载方案 A、Metrics 显式退出、请求定序表、两段式停止看门狗）。S0b 首轮签核为 NEEDS_FIX；终测在最终组合上补测
+  M1–M6，全部通过；复签 PASS（附条件，不需要重跑，条件已并入 D3、D10、H6、H7、§5.1 与 §9），owner 同日签署 Q10。S0b
+  报告与签核随定稿提交；句柄方法和配置项的最终名称以 AIB-2 的接口回执为准。修订内容见文末修订记录。
 - 取代：v1《AI Base SDK 中立评估》。v1 以"多个 App 通过网络带外接入"为前提，这个前提已被否定，v1 撤回且未提交。
 - 证据基线：AI Base `3c3f8b4`（2026-11-09）。AI Base 路径默认相对于 `services/app-service/`；以 `apps/`、
   `packages/`、`config/`、`openspec/` 开头的路径相对于 AI Base 仓库根目录。Metrics 路径相对于本仓库根目录；以 `specs/`
@@ -19,7 +19,7 @@
 | AIB-0 | AI Base | `harden-standalone-app-service` | 独立壳热修，不破坏现有集成 | 立即 |
 | MDB-0 | Metrics | `harden-ai-base-sidecar-and-connector-inputs` | 删除无效的 token 比对；connector 写路由只收 JSON；`ALLOWED_HOSTS` 只接受回环地址 | 已完成 |
 | S0 | Metrics 临时分支 | 不合入 | 共装 spike，验证合并的硬前提；2026-11-11 结论 FAIL（C5） | 已完成 |
-| S0b | Metrics 临时分支 | 不合入 | 方向 1 spike：WSGI server、静态文件姿态、WSGI 适配器原型、带流停止与页面性能；2026-11-11 结论：方向 1 可行，签核 NEEDS_FIX，补测 M1–M6 后复签 | AIB-2 实施之前 |
+| S0b | Metrics 临时分支 | 不合入 | 方向 1 spike：WSGI server、静态文件姿态、WSGI 适配器原型、带流停止与页面性能；2026-11-11 结论：方向 1 可行；首轮签核 NEEDS_FIX，终测 M1–M6 全部通过，复签 PASS（附条件，不需要重跑） | 已完成 |
 | AIB-2 | AI Base | `extract-embeddable-agent-runtime` | 抽出可嵌入运行时；独立壳切换到同源 UI 和启动密钥 | 与 MDB-2 同版本 |
 | MDB-2 | Metrics | `embed-ai-base-runtime-in-process` | Metrics 进程内嵌入运行时，删除全部 HTTP 集成 | 与 AIB-2 同版本 |
 
@@ -42,8 +42,8 @@
 7. 物理合并有真实代价（故障隔离、依赖冲突、单 worker、同步宿主与异步运行时的桥接、发布耦合），见 §6。在一对一
    本地部署下这些代价可以接受。S0 证明 Metrics 不能改用 ASGI server 托管 Django（C5），因此运行时必须能被同步宿主
    托管：`start_blocking()` 在专用线程上运行运行时，`/ai` 经核心 wheel 中的 WSGI 适配器进入（D12）。S0b 表明这条
-   路径可行，并提出新要求 R14–R23（`s0b-spike-report.md` §4.1，已并入 D10、D12）；Metrics 完成补测 M1–M6 并复签之后，
-   AIB-2 才开始实施（§9 第 4 条）。
+   路径可行，并提出新要求 R14–R24（`s0b-spike-report.md` §4.1，已并入 D10、D12）；S0b 终测（M1–M6）已复签 PASS，
+   owner 已签署 Q10，AIB-2 实施的这一前提已经满足（§9 第 4 条）。
 8. 运行时不假设宿主是 ASGI server。ASGI 宿主（独立壳）和同步宿主（Metrics 的 WSGI 服务，以及将来的 Flask、CLI、
    桌面工具等同步 Python 宿主）使用同一个运行时、同一套两段式停止语义和同一个一致性套件（D1、D10、D12）。
 
@@ -189,8 +189,9 @@ filter、logging handler 和事件循环 policy 都没有变化；asyncio debug 
   必须和请求自身的 origin 一致。不返回任何 CORS 响应头。
 - 资源归属：会话、审批和任务只对创建它们的 principal 可见，其他 principal 访问时返回 404。
 - 嵌入页带 `Content-Security-Policy: frame-ancestors 'self'` 和 `X-Frame-Options: SAMEORIGIN`。
-- 顺序固定：Host 校验、请求完整性、认证，然后才是 UI 资产（D7）或准入（D12 H7）与路由；任一步失败即返回，
-  不执行后面的步骤。
+- 顺序固定：Host 校验、请求完整性、认证、精确访问挂载路径时的 308（`Location` 为 `root_path` 加 `/`，只含路径，保留
+  查询串），然后才是 UI 资产（D7）、运行时未运行的 503、准入（D12 H7）与路由；任一步失败即返回，不执行后面的步骤。
+  宿主可以在此之前做传输层检查、自己的 Host 校验与停止中的 503（Metrics 的定序见 §5.1），但不能跳过或调换这些步骤。
 
 这样划分的理由：
 
@@ -472,9 +473,9 @@ filter、logging handler 和事件循环 policy 都没有变化；asyncio debug 
   错误码和审计记录；App 包不需要、也不应该自己判断"模型是否已配置"。宿主若要在自己的页面上显示就绪状态，应由
   构造 `HostConfig` 的同一个函数推导，与准入结果保持一致。
 - 每个 App 得到的：report_creator 和 soc_ai_driver 的档案（D4）直接在真实模型上运行；sample_agent 演示最小的调用；
-  Metrics 的 project run worker 以提交用户的身份运行（`specs/embedded-ai-runtime-host/spec.md:228-231`），
+  Metrics 的 project run worker 以提交用户的身份运行（`specs/embedded-ai-runtime-host/spec.md:262-265`），
   `model_not_configured` 可以直接对应到 AI 状态 `not_configured`，与运行时未运行时的 `RUN_UNAVAILABLE` 区分开
-  （同一文件 `:233-235,241-243`）。真实模型执行推翻了 draft 冻结的 synthetic-only 范围，见 Q9。
+  （同一文件 `:267-269,275-277`）。真实模型执行推翻了 draft 冻结的 synthetic-only 范围，见 Q9。
 - 删除：
   - Python HTTP SDK `ai-base-application-sdk`（`packages/application-sdk-python`）。AI Base 仓库内只有 app-service 的
     两个测试在用（`tests/test_public_sdk_observation.py`、`tests/test_task_runs_client.py`），外部唯一的消费方是 Metrics；
@@ -523,8 +524,9 @@ filter、logging handler 和事件循环 policy 都没有变化；asyncio debug 
       WSGI 线程上读取，超过上限返回 413；客户端读得慢时响应块队列不超过上限，`send` 等待形成背压；
     - 在途请求达到上限时，新请求立即得到 503 和 `Retry-After`，已有请求不受影响，释放后恢复受理；流占满流的上限时，
       其他请求仍被受理（R22）；请求正常结束、出错、客户端中止和停止之后名额都归还，在途数与拒绝数可观测（R20、R22）；
-    - Host 校验、请求完整性与认证先于准入：未认证的并发请求得到 401，不占名额；UI 资产不经循环与准入，循环被阻塞时
-      仍返回 200，清单之外的路径返回 404；资产 URL 跟随 `root_path`；导航请求被拒时得到自动刷新的 503 页面；
+    - 按 D3 的顺序逐项断言，任一步拒绝时后面的步骤不执行：未认证的并发请求得到 401，不占名额，不带凭据访问挂载路径
+      得到 401 而不是 308；UI 资产不经循环与准入，循环被阻塞时仍返回 200，清单之外的路径返回 404；资产 URL 跟随
+      `root_path`；导航请求被拒时得到自动刷新的 503 页面；
     - 循环被阻塞时，经适配器的短请求在总时限内得到 503 或 504，健康检查报告循环滞后（R23）；
   - 本提案的五项运行时能力，用 testkit 自带的夹具 App 包验证，不依赖宿主自己的 App：
     - D4：档案 schema 不合法或 id 前缀错误时，运行时不启动；
@@ -567,15 +569,15 @@ AIB-2：与 MDB-2 同版本切换。
 S0 实测：Django 在 ASGI 下每个请求（包括每个静态资源）都要新建线程上下文和执行器
 （`django/core/handlers/asgi.py:169`），Metrics 主要页面的 p95 是线程化 WSGI 基线的 1.82–3.23 倍，不挂运行时的
 uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留同步 server，运行时需要提供以下托管能力。H1–H5、H8
-与托管方式无关，H6、H7 只用于同步宿主。S0b 在方向 1 上实测得到的新要求 R14–R23（`s0b-spike-report.md` §4.1）并入
-下列各项，按 R 编号引用；依赖 Metrics 补测 M1–M4 的取值是推荐值，注明"按 Metrics S0b 补测定稿"。
+与托管方式无关，H6、H7 只用于同步宿主。S0b 在方向 1 上实测得到的新要求 R14–R24（`s0b-spike-report.md` §4.1）并入
+下列各项，按 R 编号引用；取值已按 Metrics S0b 终测（报告 §3.11）定稿。
 
 - H1 生命周期与宿主类型无关：`running()` 可以在任何循环上进入，包括非主线程中的循环；`asgi_app()` 不依赖 ASGI
   lifespan 事件（F16），同步宿主经 `start_blocking` 句柄显式启停（H6，R14）；进入 `running()` 之前和停止之后，`/ai`
   下所有请求返回 503。
 - H2 两段式停止：
   - 第一段"关闭 HTTP 面"：新的 `/ai` 请求返回 503；所有打开的流（包括空闲流）先发送终止事件再结束（例如 NDJSON 一行
-    `{"type":"shutdown"}`），在宿主配置的时限内完成（推荐默认 2 秒，按 Metrics S0b 补测定稿）；进行中的 task run 和
+    `{"type":"shutdown"}`），在宿主配置的时限内完成（默认 2 秒，Metrics S0b 终测定稿）；进行中的 task run 和
     blocking 门面照常工作（R15：spike 中只有支持关闭事件的流能在 0.01–1.01 秒内发送终止事件，与聊天流同类的
     Starlette 端点在 2 秒宽限期后被取消，客户端收不到终止事件）；
   - 第二段"完整停止"：取消未完成的运行并标记为中断，按相反顺序关闭服务；有时限，结果（是否按时完成、未完成的运行）
@@ -603,9 +605,9 @@ uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留�
   停止、WSGI 适配器，以及"运行时已结束"事件和结束错误码，宿主借此发现运行期内意外结束的运行时并停止服务；退出
   `with` 时执行第二段停止，取消剩余 task，关闭循环并 join 循环线程，把停止结果交给宿主。CLI 使用同一个入口。
   - 句柄的停止有上限且可配置（R14、R18）：第二段停止、关闭循环与 join 合计不超过宿主传入的停止时限，到期后返回
-    "未按时完成"的结果，不无限等待；宿主借此把总停止时间控制在自己的预算内（Metrics 从停止触发到进程实际退出合计
-    不超过 10 秒，传入 1.0 秒，按 Metrics S0b 终测定稿）。
-  - 句柄退出时持久状态已经写完（owner 于 2026-11-11 决定 Metrics 显式退出，§5.1）：退出 `with` 返回之前，运行时
+    "未按时完成"的结果，不无限等待；宿主借此把总停止时间控制在自己的预算内（Metrics 从停止触发到进程实际退出的预算
+    为 10 秒，由宿主的两段式看门狗按段保证，这一段传入 1.0 秒，按 Metrics S0b 终测定稿，见 §5.1）。
+  - 句柄退出时持久状态已经写完（R24；owner 于 2026-11-11 决定 Metrics 显式退出，§5.1）：退出 `with` 返回之前，运行时
     （包括它使用的依赖库，例如向量库客户端）已写完持久状态，并关闭自己打开的资源（状态库连接、文件句柄、状态目录锁、
     它启动的子进程）。持久化不依赖 atexit、`weakref.finalize` 的退出回调、对象析构、非 daemon 线程或解释器收尾；只在
     atexit 中 flush 的依赖库由运行时在第二段停止中显式关闭。宿主可以在句柄退出后立即 `os._exit`；停止未按时完成时宿主
@@ -613,8 +615,8 @@ uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留�
     `os._exit(0)`，重启后已完成的运行、会话与审批记录都在，状态目录锁可以再次获取。
   - 句柄内的等待（包括退出 `with` 时的 join）按不超过 0.5 秒分片：Windows 上一次长的 `join(timeout)` 可能推迟
     调用线程上的信号处理器，宿主"停止期间第二次信号强制退出"就无法在 1 秒内生效（S0b 在 CPython 3.13.7 的合成
-    子进程上测得：不分片的 `join(10)` 使第二次信号推迟 8.58–8.61 秒，分片后为 0.22–0.23 秒；组合宿主上由 Metrics
-    补测 M1 验证）。
+    子进程上测得：不分片的 `join(10)` 使第二次信号推迟 8.58–8.61 秒，分片后为 0.22–0.23 秒；Metrics 终测 M1 在组合
+    宿主上 8/8，第二次信号到进程退出 0.07–0.50 秒）。
 - H7 WSGI 适配器，放在核心 wheel 中，只用标准库和 asyncio，由 AI Base 实现并测试，不使用 a2wsgi（R19：spike 自写的
   桥约 450 行才满足 S0b 的 B3–B5）；server 特定的断开探测作为可选的宿主钩子，没有钩子时靠心跳（H3）发现断开：
   - 响应逐块转发，不缓冲；循环线程到 WSGI 线程之间的响应块队列有上限，队列满时 ASGI `send` 等待，对运行时形成
@@ -623,10 +625,13 @@ uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留�
   - 所有跨线程等待都有上限；运行时未运行、停止中或已停止时立即返回 503（R18）；
   - `SCRIPT_NAME` 映射为 `root_path`；如实传递 Host、客户端地址、scheme 和全部请求头；
   - D3 的 Host 校验、请求完整性和 `authenticate`（普通函数）在 WSGI 线程上、准入之前执行：未认证的请求直接得到
-    401，不占名额，不进入循环；认证失败事件交给 `record_audit` 时不等待结果，投递有上限，满时丢弃并计数。认证放在
-    准入之后时，未认证的并发请求就能占满名额，挡住已登录的用户（S0b spike 的宿主也是先认证、后准入）；
+    401，不占名额，不进入循环，精确访问挂载路径的 308 也在认证之后（D3）；认证失败事件交给 `record_audit` 时不等待
+    结果，投递有上限，满时丢弃并计数。认证放在准入之后时，未认证的并发请求就能占满名额，挡住已登录的用户（S0b spike
+    的宿主也是先认证、后准入）；
   - UI 资产在认证之后由适配器直接返回，不进入循环，不计入名额（D7）；
-  - 请求体在 WSGI 线程上从 `wsgi.input` 读取，有大小上限，超限返回 413，不在循环线程上做阻塞读取；
+  - 请求体在 WSGI 线程上从 `wsgi.input` 读取，按路由有大小上限（有界默认值由 AIB-2 定，S0b 的 16 MiB 只是占位值），
+    超限返回 413，不在循环线程上做阻塞读取。适配器公开其中的最大值：同步 server 往往在调用应用之前就读完并缓冲请求体
+    （waitress 如此），资源上限只能由宿主配置 server 实现（Metrics 取 N + 1，§5.1），适配器的 413 只保证语义与顺序；
   - 在途请求有上限，由宿主配置（UI 资产与未认证的请求不计入），流式请求与其他请求分开限额（哪些路由是流由运行时
     声明）：达到上限时立即返回 503 和 `Retry-After`，不排队，只短暂占用当前线程（R22）。同步 server 的线程池是
     固定的，每个在途请求（包括整条流的持续时间）都占用一个线程；没有上限时，几个长时间的聊天回合就能占满页面请求的
@@ -661,11 +666,10 @@ uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留�
   - 采用通用桥接库（见上）。
 - S0b 的取值与 server 差异（`s0b-spike-report.md` §4）：
   - 心跳默认间隔 2 秒、可配置（H3，R16）；
-  - 第一段停止中结束流的时限推荐默认 2 秒，按 Metrics S0b 终测定稿（H2，R15）；
-  - 句柄的停止时限可配置，Metrics 传入 1.0 秒，按 Metrics S0b 终测定稿（H6，R14）；
-  - 流与其他请求各自在途上限的推荐默认值为 4 与 4，按 Metrics S0b 补测定稿；Metrics 由自己的线程预算推导后显式传入
-    （H7，R22）。S0b 测的是 4 与 2；owner 于 2026-11-11 为 AI pane 冷加载改为 4 与 4（D7），Metrics 的线程数随之由
-    12 改为 14（4 + 4 + 页面并发 4 + 余量 2）；
+  - 第一段停止中结束流的时限默认 2 秒（H2，R15）；句柄的停止时限可配置，Metrics 传入 1.0 秒（H6，R14）；
+  - 流与其他请求各自在途上限默认 4 与 4，`Retry-After` 2 秒；Metrics 由自己的线程预算推导后显式传入（H7，R22）。S0b
+    首轮测的是 4 与 2；owner 于 2026-11-11 为 AI pane 冷加载改为 4 与 4（D7），Metrics 的线程数随之由 12 改为 14
+    （4 + 4 + 页面并发 4 + 余量 2）；终测 M2 在该组合上 12/12，hold 期间 1944 个短请求全部 200（最大 70.78 ms）；
   - 响应块队列上限：S0b 没有测量，由 AIB-2 定默认值；队列必须有上限，背压由宿主一致性套件验证（H7）；
   - 适配器与宿主要处理的 server 差异：waitress 默认的关闭方式丢弃未写出的输出缓冲，慢读的客户端收不到终止事件，
     宿主要等输出写完再关闭连接（Metrics 的 flush 收尾）；不靠 server 探测时，断开只能在写失败时发现，所以需要心跳
@@ -688,14 +692,16 @@ uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留�
 ### 5.1 Metrics 组合根
 
 `manage.py serve` 是唯一的启动方式，Metrics 不再有 `metrics/asgi.py` 和 `metrics/wsgi.py`。句柄方法 `close_http`、
-`wsgi_app`、`stop_result`、结束事件 `ended` 与错误码 `end_code`，以及 `start_blocking` 的 `stop_timeout` 参数和
-`wsgi_app` 的两个上限参数，是 D12 H2、H6、H7 的示意名称，以 AIB-2 的接口回执为准（Q10）。`ai_host.http_server`
-封装 `waitress==3.0.2`（S0b 选定），只影响 Metrics；监听 socket 由 `ai_host` 在主线程上自建后交给 server，waitress
-不自己绑定（Windows 上设置 `SO_EXCLUSIVEADDRUSE`），其他进程借 `SO_REUSEADDR` 也无法绑定同一地址与端口（S0b：得到
-10013；通配地址上的绑定只得到回环以外的接口，截不走发往回环的连接）。停止各段的时限是推荐值，按 Metrics S0b 补测 M4 定稿。
+`wsgi_app`、`stop_result`、结束事件 `ended` 与错误码 `end_code`，`start_blocking` 的 `stop_timeout` 参数，`wsgi_app`
+的两个上限参数，以及适配器公开的请求体上限，是 D12 H2、H6、H7 的示意名称，以 AIB-2 的接口回执为准（Q10）。
+`ai_host.http_server` 封装 `waitress==3.0.2`（S0b 选定），只影响 Metrics；监听 socket 由 `ai_host` 在主线程上自建后交给
+server，waitress 不自己绑定（Windows 上设置 `SO_EXCLUSIVEADDRUSE`），其他进程借 `SO_REUSEADDR` 也无法绑定同一地址与
+端口（S0b：得到 10013；通配地址上的绑定只得到回环以外的接口，截不走发往回环的连接）。停止各段的时限按 S0b 终测 M4
+定稿，请求定序（L0/L1）与两段式看门狗按复签后 owner 2026-11-11 的决定。
 
 ```python
-# ai_host/management/commands/serve.py (abridged); manage.py has already run django.setup().
+# ai_host/management/commands/serve.py (abridged). Before importing Django, manage.py wrapped atexit.register
+# to record registrants for the exit inventory (R24-host); it has already run django.setup().
 import os
 import signal
 import sys
@@ -735,28 +741,25 @@ from django.core.wsgi import get_wsgi_application
 
 from ai_base_runtime import start_blocking
 from ai_host.host import MetricsHost
-from ai_host.http_server import bind_server
+from ai_host.http_server import bind_server, host_allowed, plain_response
 from ai_host.package import METRICS_APP
-from ai_host.settings import (  # stop deadlines are seconds after t0; recommended values, finalized by M4
-    AI_MAX_REQUESTS,  # 4
-    AI_MAX_STREAMS,  # 4
-    DRAIN_BY,  # 4.0: requests counted by the host (Django until close()) reach zero
-    FLUSH_BY,  # 7.0: flush-mode close, so slow readers still receive the terminal event
-    HTTP_STOPPED_BY,  # 8.0: server closed, worker pool shut down (1 s), serve-http joined
-    PROJECT_RUN_STOP_SECONDS,  # 620: run timeout (600 s) plus grace; returns at once when no run executes
-    RUNTIME_STOP_SECONDS,  # 1.5: stage 2, loop close and join (D12 H6)
-    SERVER_THREADS,  # 14
+from ai_host.settings import (  # stop deadlines are seconds after t0, finalized by S0b M4 and the re-signoff
+    AI_MAX_REQUESTS, AI_MAX_STREAMS, SERVER_THREADS,  # 4, 4, 14
     STREAMS_END_BY,  # 2.0: stage 1
+    DRAIN_BY,  # 3.0: requests counted by the host (Django until close()) reach zero
+    FLUSH_BY,  # 6.5: flush-mode close, so slow readers still receive the terminal event
+    HTTP_STOPPED_BY,  # 7.5: server closed, worker pool shut down (0.5 s), serve-http joined
+    PROJECT_RUN_STOP_SECONDS,  # 620: run timeout (600 s) plus grace; returns at once when no run executes
+    RUNTIME_STOP_SECONDS,  # 1.0: stage 2, loop close and join (D12 H6)
+    WATCHDOG_BY, WATCHDOG_RUNS_BY, WATCHDOG_AFTER_RUNS,  # 9.2, 659.2, and 1.2 after project runs stopped
+    MAX_REQUEST_BODY,  # N = max(adapter's published body limit, largest Django request 1 MiB); 16 MiB for now
     STREAM_HEARTBEAT_SECONDS,  # 2.0: idle streams; a disconnect is found within heartbeat + 1 s (D12 H3)
-    ai_mount_path,
-    build_settings,
+    ai_mount_path, build_settings,
 )
-from ai_host.state import attach, detach, lifecycle
+from ai_host.state import attach, detach, lifecycle, start_watchdog
 from ai_host.task_runs import RuntimeTaskRunPort
 from project_management.app.api.project_runs import (
-    build_project_runtime,
-    clear_project_runtime,
-    install_project_runtime,
+    build_project_runtime, clear_project_runtime, install_project_runtime,
 )
 
 
@@ -765,7 +768,7 @@ def run_composed_host(host, port, stop) -> None:
     # a failed startup step unwinds the completed ones in reverse order.
     # Bind first: a taken port fails within 2 s, before the state-dir lock and run recovery.
     # bind_server creates the listening socket itself (SO_EXCLUSIVEADDRUSE on Windows) and hands it to the server.
-    with bind_server(host, port, threads=SERVER_THREADS) as server:
+    with bind_server(host, port, threads=SERVER_THREADS, max_request_body_size=MAX_REQUEST_BODY + 1) as server:
         # RuntimeBusy and invalid settings are raised here, on the main thread (D12 H6).
         with start_blocking(
             build_settings(),
@@ -793,12 +796,16 @@ def run_composed_host(host, port, stop) -> None:
                             break
                 finally:
                     t0 = time.monotonic()
-                    server.stop_accepting()  # listener closed; new requests on open connections get a plain 503
+                    watchdog = start_watchdog(t0 + WATCHDOG_BY)  # on expiry: "serve cleanup failed.", os._exit(3)
+                    server.stop_accepting()  # listener closed, lifecycle.stopping set: L1 answers a plain 503
                     runtime.close_http(timeout=STREAMS_END_BY)  # stage 1: /ai answers 503, streams end
                     server.drain(until=t0 + DRAIN_BY)  # sliced waits on the host's own in-flight count
                     server.close_flushed(flush_until=t0 + FLUSH_BY, stopped_by=t0 + HTTP_STOPPED_BY)
                     # Stage 1 keeps the blocking facade working for the worker's last calls.
-                    lifecycle.project_stop = project_runs.stop(PROJECT_RUN_STOP_SECONDS)
+                    if project_runs.request_stop():  # True while a run executes
+                        watchdog.set_deadline(t0 + WATCHDOG_RUNS_BY)
+                    lifecycle.project_stop = project_runs.wait_stopped(PROJECT_RUN_STOP_SECONDS)  # sliced joins
+                    watchdog.set_deadline(min(watchdog.deadline, time.monotonic() + WATCHDOG_AFTER_RUNS))
                     clear_project_runtime(project_runs)
             finally:
                 detach()
@@ -808,20 +815,20 @@ def run_composed_host(host, port, stop) -> None:
 
 def build_wsgi_application(django_app, ai_app):
     mount = ai_mount_path()  # "/ai", or "/metrics/ai" when METRICS_BASE_URL is "/metrics/"
-    prefix = mount + "/"
 
     def application(environ, start_response):
+        # L1. L0 (waitress) already checked the request line, headers, framing and body size.
+        if not host_allowed(environ):  # every path, static files included; same rule as Django's get_host()
+            return plain_response(start_response, 400)
+        if lifecycle.stopping:  # before authentication; fixed text, Retry-After: 2, no hop-by-hop headers
+            return plain_response(start_response, 503, retry_after=2)
         path = environ.get("PATH_INFO", "")
-        if path == mount:
-            query = environ.get("QUERY_STRING", "")
-            location = prefix + (f"?{query}" if query else "")
-            start_response("308 Permanent Redirect", [("Location", location), ("Content-Length", "0")])
-            return [b""]
-        if path.startswith(prefix):
-            # The adapter maps SCRIPT_NAME to root_path; Host, client address, scheme and headers pass unchanged.
+        if path == mount or path.startswith(mount + "/"):
+            # The adapter runs D3 in order (308 for the bare mount after authentication) and maps SCRIPT_NAME
+            # to root_path; Host, client address, scheme and headers pass unchanged.
             script_name = environ.get("SCRIPT_NAME", "") + mount
             return ai_app({**environ, "SCRIPT_NAME": script_name, "PATH_INFO": path[len(mount):]}, start_response)
-        return django_app(environ, start_response)  # pages and WhiteNoise static files, same path as today
+        return django_app(environ, start_response)  # BasicAuthMiddleware first, then pages and WhiteNoise
 
     return application
 
@@ -834,25 +841,31 @@ def local_task_run_port() -> Iterator[RuntimeTaskRunPort]:
 ```
 
 - Metrics 中只有 `ai_host` 导入 `ai_base_runtime` 和 `waitress`，由导入规则测试强制
-  （`specs/embedded-ai-runtime-host/spec.md:209-214`）；project_management 只认识自己的 task-run 端口，实现由这里注入，
-  它不导入 `ai_host`（同一文件 `:216-218`）。
-- 挂载路径随 URL 前缀：`METRICS_BASE_URL=/metrics/` 时为 `/metrics/ai`（`:35-38`）；精确访问挂载路径时 308 到加 `/`
-  的路径并保留查询串（`:40-42`）；`/ai` 的流与其他请求分开限额，达到各自上限时立即返回 503，页面照常，名额在请求
-  结束、出错、中止或停止时归还；UI 资产与未认证的请求不计入名额，缓存为空时 AI pane 也能加载，导航被拒时得到自动
-  刷新的 503 页面（`:105-139`）。
-- 先绑定再启动运行时：端口被占用或绑定被拒绝时 2 秒内输出 `serve bind failed.`，不获取状态目录锁（`:51-54`）；其他
-  进程以默认方式或借 `SO_REUSEADDR` 都无法绑定同一地址和端口（`:56-58`）。运行时无法进入运行期时，`serve` 只输出错误码并以
-  非零退出，不会只提供 Django 页面（`:60-64`）。
-  停止顺序为停止受理、第一段停止、排空、按 flush 方式关闭连接、停止 project run worker、第二段停止；停止期间的新请求
-  立即得到 503；正在输出、空闲与读得慢的客户端都在连接关闭之前收到终止事件；没有执行中的 project run 时，从停止触发
-  到进程实际退出不超过 10 秒，客户端一直不读取时也是如此（`:66-84`）。停止顺序结束后 `serve` 写出并 flush 全部输出，
-  经 `os._exit` 立即退出，不等待剩余线程与解释器收尾（`:72,100-103`，依赖 H6 的持久状态契约）。运行时意外结束和
-  清理失败各有一行固定输出与非零退出，停止期间的第二次信号输出一行后以 130 退出（`:86-98`）。
+  （`specs/embedded-ai-runtime-host/spec.md:243-248`）；project_management 只认识自己的 task-run 端口，实现由这里注入，
+  它不导入 `ai_host`（同一文件 `:250-252`）。
+- 请求定序（`:363-376`）：L0 是 waitress 在调用应用之前的传输层检查，L1 是上面的分派；由此经 `serve` 的 Django 路径上
+  非法 Host 且不带凭据的请求由 401 变为 400。waitress 在调用应用之前读完并缓冲请求体，资源上限因此是
+  `max_request_body_size`，以 `>=` 判定，设为 N + 1；N 取适配器公开的上限与 Django 侧最大的合法请求（1 MiB）中的较大值，
+  AIB-2 回执之前以 16 MiB 占位（`:378-395`）。
+- 挂载路径随 URL 前缀：`METRICS_BASE_URL=/metrics/` 时为 `/metrics/ai`（`:35-38`）；精确访问挂载路径时，认证通过后 308
+  到加 `/` 的路径并保留查询串（`:40-43`）；`/ai` 的流与其他请求分开限额，达到各自上限时立即返回 503，页面照常，名额在
+  请求结束、出错、中止或停止时归还；UI 资产与未认证的请求不计入名额，缓存为空时 AI pane 也能加载，导航被拒时得到自动
+  刷新的 503 页面（`:139-173`）。
+- 先绑定再启动运行时：端口被占用或绑定被拒绝时 2 秒内输出 `serve bind failed.` 并以 1 退出，不获取状态目录锁
+  （`:52-55`）；其他进程以默认方式或借 `SO_REUSEADDR` 都无法绑定同一地址和端口（`:57-59`）。运行时无法进入运行期时，
+  `serve` 只输出错误码并以 1 退出，不会只提供 Django 页面（`:61-65`）。
+  停止顺序见上面的 `finally`；停止期间已有连接上的新请求得到 503（`:74-77`）；正在输出、空闲与读得慢的客户端都在连接
+  关闭之前收到终止事件；没有执行中的 project run 时，从停止触发到进程实际退出的预算为 10 秒，客户端一直不读取时也是如此
+  （`:67-86`），由两段式看门狗按段保证（`:107-121`，截止与算术见 MDB-2 design 决策 3）。之后 `serve` 先做退出清点
+  （R24-host：atexit 回调及其注册者、非 daemon 线程与子进程等与白名单比对，`:123-137`），再写出并 flush 全部输出，经
+  `os._exit` 立即退出，不等待剩余线程与解释器收尾（`:72,102-105`，依赖 H6 的持久状态契约）。运行时意外结束以 1 退出，
+  清理失败或看门狗到期以 3 退出，停止期间的第二次信号以 130 退出，各有一行固定输出（`:88-100`）。
 - project run runtime 的构造、启动和停止都在 `serve` 主线程上直接调用。主线程上没有事件循环：`start()` 扫描运行档案、
   经 ORM 恢复中断的运行（`project_management/services/project_run_recovery.py:17-29`），既不会阻塞运行时的循环，也不会
   触发 `SynchronousOnlyOperation`。停止的宽限期沿用 `project_management/management/commands/project_serve.py:70` 的
-  620 秒（没有执行中的 run 时立即返回），进程内的停止预算因此是停止触发到进程实际退出的各段 10 + 620 + 余量 30 = 660
-  秒；Docker 的 `--stop-timeout` 与 Compose 的 `stop_grace_period` 设为 690 秒，再留 30 秒余量。
+  620 秒（没有执行中的 run 时立即返回），有执行中的 run 时看门狗截止放宽为 t0 + 659.2 秒，进程在触发后 660 秒内退出；
+  持有 GIL 的长 C 调用会挡住看门狗，最终由外层强制结束：启动入口 15 秒，Docker 的 `--stop-timeout` 与 Compose 的
+  `stop_grace_period` 690 秒。
 - 静态文件只由 Django 中间件链中的 WhiteNoise 提供，位于 Basic 认证之后；`WHITENOISE_AUTOREFRESH=False`（S0b B6：
   开启时 C5 不达标），启动后新增或修改的静态文件要重启 `serve` 才生效；`/ai` 下的资产由运行时提供（D7）。
 
@@ -1046,7 +1059,7 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
 | 故障隔离 | 运行时的崩溃、内存泄漏或阻塞会直接拖垮 Metrics 页面 | D8 的并发、超时和输出上限；D2 禁止在循环上阻塞，并有 slow callback 门禁；异常只以 API 错误返回 |
 | 依赖冲突 | 两套依赖进入同一个 venv，例如 `portalocker` 4.4.1 与 ≥4.4.2 | 单一锁文件；运行时按实际需要声明依赖下限；可选依赖拆成 extras；S0 用 `pip check` 验证，S0b 连同 `waitress==3.0.2` 复验；核心 wheel 不依赖 uvicorn（D12 H8） |
 | 单 worker | 状态目录锁决定了只能有一个进程；Metrics 的 Docker 镜像从 gunicorn 多 worker 改为单进程 | 本地部署本来就是单进程（`project_serve`）；Docker 单副本运行 `manage.py serve`，吞吐下降由 owner 接受（2026-11-10） |
-| 同步宿主与异步运行时 | S0 证明 Metrics 不能改用 ASGI server 托管 Django（C5：主要页面 p95 是线程化 WSGI 基线的 1.82–3.23 倍），运行时因此运行在专用循环线程上，`/ai` 要从 WSGI 桥接；同步 server 的线程池固定，每个在途 `/ai` 请求（包括整条流）占用一个线程 | Django 保持线程化 WSGI，页面请求路径与现在相同；核心 wheel 提供 WSGI 适配器，流与其他请求分开限额、名额必定归还、响应块队列形成背压、达到上限返回 503（D12 H7）；两段式停止先结束流（H2）；心跳让断开及时被发现（H3）；S0b 在 waitress 3.0.2 上实测 C5 通过（Phase 2 12/12，threads 8；推荐组合整体由补测 M2 复测），流、停止与准入的要求并入 D12（R14–R23） |
+| 同步宿主与异步运行时 | S0 证明 Metrics 不能改用 ASGI server 托管 Django（C5：主要页面 p95 是线程化 WSGI 基线的 1.82–3.23 倍），运行时因此运行在专用循环线程上，`/ai` 要从 WSGI 桥接；同步 server 的线程池固定，每个在途 `/ai` 请求（包括整条流）占用一个线程 | Django 保持线程化 WSGI，页面请求路径与现在相同；核心 wheel 提供 WSGI 适配器，流与其他请求分开限额、名额必定归还、响应块队列形成背压、达到上限返回 503（D12 H7）；两段式停止先结束流（H2）；心跳让断开及时被发现（H3）；S0b 在 waitress 3.0.2 上实测 C5 通过（Phase 2 12/12，threads 8；终测在推荐组合 threads 14 上 12/12），流、停止与准入的要求并入 D12（R14–R24） |
 | 发布耦合 | AI Base 发版必须跟随 Metrics 发版，回滚也要一起回滚 | Metrics 固定运行时的精确版本；宿主一致性套件作为升级门禁 |
 | 事件循环 | 宿主的事件循环类型决定子进程等能力是否可用 | `start_blocking()` 在专用线程上自建 Proactor 循环；ASGI 宿主由宿主保证；一致性套件断言 |
 | 机密性 | 模型凭据和 Jira PAT 位于同一进程内存中 | 与现状等价：现在两个进程以同一个 OS 用户运行，本来就能互相读取内存和文件；凭据使用 `SecretStr`，日志脱敏 |
@@ -1096,8 +1109,8 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
    Proactor 与 blocking 门面、带流停止都可行；唯一不通过的是性能：uvicorn 下 Metrics 主要页面的 p95 是线程化 WSGI
    基线的 1.82–3.23 倍，门槛是 1.2 倍，不挂运行时的 uvicorn 组合同样超标（`s0-spike-report.md`）。owner 选择方向 1，
    门槛不放宽：Django 保持线程化 WSGI，运行时按 D12 由同步宿主托管。
-3. **S0b 方向 1 spike**（Metrics 临时分支，不合入；2026-11-11 完成，结论：方向 1 可行，签核 NEEDS_FIX）。退出条件（MDB-2
-   `tasks.md` 0.5）：
+3. **S0b 方向 1 spike**（Metrics 临时分支，不合入；2026-11-11 完成，结论：方向 1 可行；首轮签核 NEEDS_FIX，终测通过）。
+   退出条件（MDB-2 `tasks.md` 0.5）：
    - B0 依赖：Metrics、AI Base 与候选 WSGI server 可以在同一个 venv 中解析，`pip check` 无冲突；
    - B1 组合与生命周期：挂载路径以 308 重定向到加 `/` 的路径，`/ai/*` 无凭据返回 401，`root_path` 正确；端口被占用时
      2 秒内失败且不启动运行时；服务运行期间，其他进程设置 `SO_REUSEADDR` 后也无法绑定同一地址与端口；每种停止触发都以 0
@@ -1114,12 +1127,15 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
    - 只有 Django 线程化开发服务器达标、只有静态文件不经认证的组合达标，或者全部不达标时，停止 AIB-2 的实施，带证据
      回到 owner 决策。
    - 结论（`s0b-spike-report.md`）：停止条件没有触发；选定 waitress 3.0.2、WhiteNoise 位于 Basic 认证之后且关闭
-     autorefresh、自写桥（由核心 wheel 提供，R19）与分离准入（流 4、短请求 2）。签核（`s0b-signoff.md`）
-     结论为 NEEDS_FIX：推荐组合没有作为整体运行过，停止期间第二次信号的强制退出只在合成子进程上验证，停止总预算没有
-     上界。Metrics 完成补测 M1–M6（组合宿主上的第二次信号、threads 12 下的 B6/B9 与 B7、各停止触发 × flush 收尾的
-     10 秒预算、名额归还、反向绑定补强）并复签后，0.5 才逐项通过。
-4. **AIB-2**（AI Base）：D1–D12 中属于 AI Base 的部分。规划在 AIB-0 交付后即可开始；实施需要 S0b 补测 M1–M6 完成并复签、
-   owner 签署 Q10。以独立壳和 `start_blocking()` + WSGI 适配器两种托管方式通过宿主一致性套件作为验收；套件包括 D10
+     autorefresh、自写桥（由核心 wheel 提供，R19）与分离准入。首轮签核（`s0b-signoff.md`）为 NEEDS_FIX：推荐组合
+     没有作为整体运行过，第二次信号的强制退出只在合成子进程上验证，停止总预算没有上界。终测（报告 §3.11）在最终组合
+     （threads 14、流与短请求上限 4 与 4、资产直出、flush 收尾、显式退出）上补测 M1–M6，全部通过：第二次信号到进程
+     退出 0.07–0.50 秒（8/8，退出码 130）；B6 与 B9 (a)(b)(c) 在同一次运行中通过（两组 12/12，hold 期间短请求全部
+     200 且小于 100 ms）；B7 11/11；三种停止触发与慢读、不读的客户端 5/5 在 10 秒内以 0 退出（最长 6.69 秒）；客户端
+     中止与服务端异常后名额都归还；反向绑定被拒。复签 PASS（附条件，不需要重跑；条件已并入 D3、D10、H6、H7、§5.1），
+     0.5 逐项通过。
+4. **AIB-2**（AI Base）：D1–D12 中属于 AI Base 的部分。规划在 AIB-0 交付后即可开始；S0b 终测已复签、owner 已签署
+   Q10，实施的这一前提已满足。以独立壳和 `start_blocking()` + WSGI 适配器两种托管方式通过宿主一致性套件作为验收；套件包括 D10
    列出的 D12 托管要求，其中第一段停止与句柄停止都在配置的时限内完成（R14、R15），请求正常结束、出错、客户端中止
    和停止之后流与其他请求的名额都归还（R22）。另外：
    - report_creator、soc_ai_driver、sample_agent 的 App 包都通过 `check_app_package`（D10）；
@@ -1150,8 +1166,8 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
   句柄内的等待按 0.5 秒分片，句柄停止在配置的时限内返回；两段式停止（所有打开的流在第一段时限内发送终止事件，终止
   事件先于连接关闭）、心跳（默认 2 秒）、断开释放；WSGI 适配器逐块转发（首事件不超过 200 ms，到达间隔 p95 不超过
   150 ms），请求体超限返回 413，响应块队列形成背压，流与其他请求分开限额，达到上限返回 503 和 `Retry-After`，名额在
-  正常结束、出错、客户端中止和停止后都归还；循环被阻塞时短请求在总时限内返回 503 或 504；认证先于准入，未认证的
-  请求不占名额；UI 资产不经循环与准入（循环被阻塞时仍返回 200），URL 跟随 `root_path`；导航请求被拒时得到自动
+  正常结束、出错、客户端中止和停止后都归还；循环被阻塞时短请求在总时限内返回 503 或 504；适配器按 D3 的顺序逐项
+  拒绝，未认证的请求不占名额；UI 资产不经循环与准入（循环被阻塞时仍返回 200），URL 跟随 `root_path`；导航请求被拒时得到自动
   刷新的 503 页面。
 
 ## 10. 需要 owner 确认的决策
@@ -1167,7 +1183,7 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
 | Q7 | 运行时固定挂载在 `/ai` | 同意 | 独立壳把 `/` 重定向到 `/ai/` |
 | Q8 | 嵌入后的状态目录固定为 `METRICS_STATE_DIR/ai-base`，不迁移 `dashboard_query_agent` 独立壳的现有状态 | 同意 | 会话、审批和技能目录在切换时清空；模型凭据和模型选择改由 Metrics 的 `HostConfig` 提供 |
 | Q9 | task-run/1 在真实模型上执行 App 包声明的档案，删除 synthetic 执行、vendored 契约包和 `ScopeGrant`（D4、D9） | 同意 | 推翻 draft 冻结的 synthetic-only 范围，需要 draft owner 签署；授权只来自宿主给出的 principal 和声明档案的 App 包 |
-| Q10 | 运行时提供同步宿主托管：`start_blocking()` 句柄、两段式停止、空闲流心跳，以及核心 wheel 中的 WSGI 适配器（D12 H1–H8），并满足 S0b 提出的 R14–R23（句柄停止有上限且可配置、第一段停止中所有打开的流发送终止事件、心跳默认 2 秒、断开投递与资源释放、跨线程等待有上限、适配器由核心 wheel 实现并测试、在途数可观测、门面超时语义与 `client_run_key`、流与短请求分开准入且名额必定归还、循环滞后监测），以及 owner 2026-11-11 关于 AI pane 冷加载的决定（同步托管时认证为普通函数且先于准入、UI 资产由适配器直接返回且 URL 跟随 `root_path`、短请求上限推荐 4、UI 按 `Retry-After` 重试、导航请求被拒时返回自动刷新的 503 页面） | 同意 | 请 owner 签署 v2.1 新增内容，包括 R14–R23 与 H6 的持久状态契约（Metrics 显式退出的前提）；依赖 Metrics 补测 M1–M4 的取值是推荐值，补测定稿后记入修订记录；句柄方法和配置项的最终名称以 AIB-2 的接口回执为准 |
+| Q10 | 运行时提供同步宿主托管：`start_blocking()` 句柄、两段式停止、空闲流心跳，以及核心 wheel 中的 WSGI 适配器（D12 H1–H8），并满足 S0b 提出的 R14–R24（句柄停止有上限且可配置、第一段停止中所有打开的流发送终止事件、心跳默认 2 秒、断开投递与资源释放、跨线程等待有上限、适配器由核心 wheel 实现并测试、在途数可观测、门面超时语义与 `client_run_key`、流与短请求分开准入且名额必定归还、循环滞后监测、句柄退出时已写完持久状态并关闭全部持久资源），以及 owner 2026-11-11 关于 AI pane 冷加载的决定（同步托管时认证为普通函数且先于准入、UI 资产由适配器直接返回且 URL 跟随 `root_path`、短请求上限 4、UI 按 `Retry-After` 重试、导航请求被拒时返回自动刷新的 503 页面），以及复签后的补充（适配器按 D3 的顺序逐项拒绝、挂载路径的 308 在认证之后、按路由的请求体上限并公开其最大值） | 同意 | owner 已于 2026-11-11 签署 v2.1 新增内容，包括 R14–R24（R24 即 H6 的持久状态契约，是 Metrics 显式退出的前提）、按 S0b 终测定稿的取值与复签后的补充；句柄方法和配置项的最终名称以 AIB-2 的接口回执为准 |
 
 ## 修订记录
 
@@ -1179,3 +1195,5 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
 | v2.1 草案（S0b 首轮） | 2026-11-11 | 并入 S0b 首轮结论（`s0b-spike-report.md`）：方向 1 可行，停止条件没有触发；waitress 3.0.2 + WhiteNoise（认证之后、关闭 autorefresh）+ 自写桥 + 分离准入；C5 在 threads 8 下通过（Phase 2 12/12），推荐组合整体由补测 M2 复测；a2wsgi 不满足 B4/B5，cheroot 在 Windows 上不满足 C5。原【待 S0b】项已填：心跳默认 2 秒，第一段结束流 2 秒，流与短请求上限 4 与 2，server 差异，响应块队列上限由 AIB-2 定。R14–R23 并入 D10、D12 H1–H7 与 §9；H6 增加句柄停止时限，H7 增加名额归还、在途数可观测、短请求总时限与循环滞后监测。签核 NEEDS_FIX：依赖补测 M1–M4 的取值注明"按 Metrics S0b 补测定稿"；§5.1 改为 waitress、`serve-http` 线程、第二次信号以 130 退出、SIGBREAK 与分段停止时限；§5.3 写明 pane 时限 1 秒与并发 2；Q10 请 owner 签署 v2.1 新增内容 |
 | v2.1 草案（AI pane 冷加载） | 2026-11-11 | owner 对 AI pane 冷加载的决定：同步托管时 `authenticate` 为普通函数，Host 校验、请求完整性与认证在 WSGI 线程上先于准入执行，未认证的请求不占名额（D3、H7）；UI 资产 URL 跟随 `root_path`，同步托管时由适配器在认证之后直接返回，不经循环与准入（D7）；短请求上限推荐值由 2 改为 4，Metrics 线程数由 12 改为 14；UI 按 `Retry-After` 重试幂等 GET，导航请求被拒时返回自动刷新的 503 页面（D7、H7）；D10、§5.1、§5.2、§9、Q10 同步。S0b 与补测 M2、M3 测的是旧配置（线程 12、短请求上限 2、UI 资产计入短请求名额） |
 | v2.1 草案（显式退出） | 2026-11-11 | owner 决定 Metrics `serve` 在停止顺序结束后显式退出：写出并 flush 全部输出后 `os._exit`，不等待剩余线程、atexit 与解释器收尾（S0b 签核补测中这段收尾 0.96–1.16 秒，不在停止预算与看门狗之内；终测 M4 5/5 在 10 秒预算内以 0 退出，`os._exit` 到进程退出 44–61 毫秒）。H6 增加持久状态契约：句柄退出时持久状态已写完、自己打开的资源已关闭，不依赖 atexit、退出回调、析构或解释器收尾，由宿主一致性套件以"句柄退出后立即 `os._exit(0)`、重启后状态完整"验证；H8 同步；Metrics 传入的句柄停止时限由推荐 1.5 秒改为 1.0 秒，第一段结束流时限 2 秒按终测定稿；§5.1、Q10 同步，§5.1 与 D9 中的 host spec 行号按新版重算 |
+| v2.1 草案（S0b 终测） | 2026-11-11 | 并入 S0b 终测（`s0b-spike-report.md` §3.11）：最终组合（waitress 3.0.2、`serve-http` 线程、threads 14、流与短请求上限 4 与 4、资产直出、flush 收尾、显式退出）上补测 M1–M6 全部通过；依赖补测的取值定稿（心跳 2 秒、第一段结束流 2 秒、句柄停止 1.0 秒、上限 4 与 4、`Retry-After` 2 秒）；新增 R24（句柄退出时已写完持久状态并关闭全部持久资源，即 H6 的持久状态契约）；请求体上限由 AIB-2 定有界默认值（S0b 的 16 MiB 是占位值）；状态、§1、D12、§5.1、§6、§9、Q10 同步 |
+| v2.1 定稿 | 2026-11-11 | S0b 终测 M1–M6 复签 PASS（附条件，不需要重跑；`s0b-signoff.md` 的复签与勘误）；owner 签署 Q10，并决定请求定序表、两段式停止看门狗与不重跑 M3。D3 写明 308 在认证之后，宿主可在前面做传输层检查、自己的 Host 校验与停止中的 503；D10 按 D3 的顺序逐项断言；H6 的 10 秒预算由宿主的两段式看门狗按段保证；H7 写明 308 在认证之后，请求体按路由限制并公开其最大值；§5.1 按定稿取值（排空 3.0、flush 6.5、HTTP 停止 7.5、句柄停止 1.0 秒）、两段式看门狗（9.2、659.2、1.2 秒）、L1 分派、请求体上限 N + 1、退出清点 R24-host 与退出码 1、3、130 改写；状态、§1、§9、Q10 同步；host spec 行号按新版重算 |

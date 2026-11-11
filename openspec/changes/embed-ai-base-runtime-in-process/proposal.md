@@ -89,8 +89,9 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 
 - **前置条件（tasks 第 0 组）**：
   - owner 已于 2026-11-10 签署 Q1–Q9；
-  - S0 共装 spike 不通过（C5，`s0-spike-report.md`），owner 于 2026-11-11 选择方向 1；S0b 的退出条件逐项通过并复签
-    （tasks 0.5，含补测 M1–M6）；
+  - S0 共装 spike 不通过（C5，`s0-spike-report.md`），owner 于 2026-11-11 选择方向 1；S0b 的退出条件逐项通过，复签
+    PASS（附条件，不需要重跑；tasks 0.5，含终测 M1–M6）；owner 同日签署 Q10，并决定请求定序表、两段式停止看门狗与
+    不重跑 M3，上游提案 v2.1 定稿（`upstream-ai-base-runtime-proposal.md`）；
   - AIB-2 发布的 `ai-base-runtime` 提供 v2.1 D1–D12 中的 SPI，包括 owner 同日接受的五项补充：D4
     `AppPackage.task_profiles`、D5 `ToolContext.context_ref`、D6 preview 摘要绑定、D7 `open_session` 的
     `session_key`、D9 task-run 真实模型执行与准入错误码。

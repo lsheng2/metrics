@@ -10,7 +10,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 ## ADDED Requirements
 
 ### Requirement: Metrics serves Django and the AI runtime from one composition root
-`manage.py serve` SHALL 是 Metrics 唯一的组合根和唯一受支持的启动方式，本地与容器部署相同：单进程，不 reload，默认绑定回环地址。它 SHALL 用一个线程化 WSGI 应用受理全部请求：`<URL 前缀>/ai/` 下的请求交给运行时的 WSGI 适配器，其余路径（包括静态文件）交给 Django。Metrics SHALL NOT 保留 `metrics.wsgi`、`metrics.asgi` 或其他组合根，SHALL NOT 用 ASGI server 托管 Django。
+`manage.py serve` SHALL 是 Metrics 唯一的组合根和唯一受支持的启动方式，本地与容器部署相同：单进程，不 reload，默认绑定回环地址。它 SHALL 用一个线程化 WSGI 应用受理全部请求：路径等于挂载路径 `<URL 前缀>/ai` 或以挂载路径加 `/` 开头的请求交给运行时的 WSGI 适配器，其余路径（包括静态文件）交给 Django。Metrics SHALL NOT 保留 `metrics.wsgi`、`metrics.asgi` 或其他组合根，SHALL NOT 用 ASGI server 托管 Django。
 
 #### Scenario: Operator starts the server
 - **WHEN** 操作者运行 `manage.py serve --host 127.0.0.1 --port <port>`
@@ -38,19 +38,20 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **AND** 嵌入页路径和运行时资产地址 SHALL 带有同一个前缀
 
 #### Scenario: Mount path is requested without a trailing slash
-- **WHEN** 请求的路径恰好是 `<URL 前缀>/ai`
-- **THEN** Metrics SHALL 返回 308，`Location` 为 `<URL 前缀>/ai/`，并保留查询串
+- **WHEN** 请求的路径恰好是 `<URL 前缀>/ai`，Host 合法且认证通过
+- **THEN** 运行时适配器 SHALL 返回 308，`Location` 为只含路径的 `<URL 前缀>/ai/`，并保留查询串
+- **AND** 已配置 Basic 用户而请求不带凭据时，响应 SHALL 是 401 而不是 308
 
 #### Scenario: Settings module is not set
 - **WHEN** 进程启动时没有设置 `DJANGO_SETTINGS_MODULE`
 - **THEN** `manage.py serve` SHALL 使用 `metrics.settings.production`
 
 ### Requirement: Serve starts and stops the runtime in a fixed order
-`serve` SHALL 先绑定端口，再让运行时在同一进程的专用事件循环线程上进入运行期（Windows 上为 Proactor 事件循环）并安装 project run 运行时，然后才受理第一个请求；任一步失败时 SHALL 以错误退出，SHALL NOT 处理任何请求。停止时 `serve` SHALL 依次停止受理新请求、结束打开的 AI 流、排空在途请求并在已缓冲的输出写出后关闭连接、停止 project run，最后停止运行时；没有执行中的 project run 时，从停止触发到进程实际退出 SHALL 不超过 10 秒；停止顺序结束后 `serve` SHALL 写出全部输出并立即结束进程，SHALL NOT 等待剩余线程或解释器收尾。运行期内运行时意外结束时，`serve` SHALL 按同一顺序停止并以非零退出，SHALL NOT 在没有运行时的情况下继续服务。
+`serve` SHALL 先绑定端口，再让运行时在同一进程的专用事件循环线程上进入运行期（Windows 上为 Proactor 事件循环）并安装 project run 运行时，然后才受理第一个请求；任一步失败时 SHALL 以 1 退出，SHALL NOT 处理任何请求。停止时 `serve` SHALL 依次停止受理新请求、结束打开的 AI 流、排空在途请求并在已缓冲的输出写出后关闭连接、停止 project run，最后停止运行时；没有执行中的 project run 时，从停止触发到进程退出的预算为 10 秒，由看门狗按段保证；停止顺序结束后 `serve` SHALL 写出全部输出并立即结束进程，SHALL NOT 等待剩余线程或解释器收尾。运行期内运行时意外结束时，`serve` SHALL 按同一顺序停止并以 1 退出，SHALL NOT 在没有运行时的情况下继续服务。
 
 #### Scenario: Port is already in use
 - **WHEN** 操作者运行 `manage.py serve`，目标地址和端口已被其他进程占用，或绑定被拒绝（`EADDRINUSE` 或 `EACCES`）
-- **THEN** 命令 SHALL 在 2 秒内输出 `serve bind failed.` 并以非零退出
+- **THEN** 命令 SHALL 在 2 秒内输出 `serve bind failed.` 并以 1 退出
 - **AND** 命令 SHALL NOT 启动运行时，SHALL NOT 获取状态目录锁
 
 #### Scenario: Another process binds the serving port
@@ -59,7 +60,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 
 #### Scenario: Runtime cannot start
 - **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定或运行时配置无效
-- **THEN** 服务 SHALL 以非零退出，并只输出一行 `serve startup failed (<code>).`
+- **THEN** 服务 SHALL 以 1 退出，并只输出一行 `serve startup failed (<code>).`
 - **AND** 输出与日志 SHALL NOT 包含异常消息或 traceback
 - **AND** 服务 SHALL NOT 在没有运行时的情况下继续提供 Django 页面
 
@@ -71,8 +72,9 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **AND** 进程退出前 SHALL 写出全部日志与 `project_runtime_stopped` 事件
 
 #### Scenario: Requests arrive while the server stops
-- **WHEN** `serve` 已开始停止，已有连接上又到达页面请求或 `/ai` 请求
-- **THEN** 该请求 SHALL 立即得到 503，SHALL NOT 等待停止完成
+- **WHEN** `serve` 已开始停止，已有连接上又到达 Host 合法的页面请求或 `/ai` 请求，不论是否带凭据
+- **THEN** 该请求 SHALL 立即得到固定文本的 503 和 `Retry-After`，SHALL NOT 等待停止完成
+- **AND** 响应 SHALL NOT 带 hop-by-hop 头
 
 #### Scenario: Server stops while chat streams are open
 - **WHEN** 没有执行中的 project run，一条聊天流正在输出、一条处于空闲、另一条的客户端积压了未读的输出并暂停读取时，`serve` 收到停止信号或 `--stop-file` 指定的文件出现
@@ -86,7 +88,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 #### Scenario: Runtime stops unexpectedly
 - **WHEN** 服务运行期间，运行时因内部错误结束
 - **THEN** `serve` SHALL 在 1 秒内输出 `serve runtime failed (<code>).`
-- **AND** `serve` SHALL 按停止顺序清理后以非零退出
+- **AND** `serve` SHALL 按停止顺序清理后以 1 退出，清理失败时以 3 退出
 
 #### Scenario: Second signal arrives during shutdown
 - **WHEN** `serve` 正在停止（包括排空在途请求与关闭连接期间），又收到一次 SIGINT、SIGTERM 或 Windows 上的 SIGBREAK
@@ -95,12 +97,44 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 
 #### Scenario: Cleanup does not finish cleanly
 - **WHEN** 停止后在途请求在排空时限内没有结束、project run 没有全部停下、运行时停止超时，或某一步清理出错
-- **THEN** `serve` SHALL 输出 `serve cleanup failed.`（有错误码时附带）并以非零退出
+- **THEN** `serve` SHALL 输出 `serve cleanup failed.`（有错误码时附带）并以 3 退出
 
 #### Scenario: A thread outlives the stop sequence
 - **WHEN** 没有执行中的 project run，停止顺序结束时运行时的事件循环线程或 HTTP server 线程仍未结束，例如运行时停止超时
 - **THEN** `serve` SHALL 写出全部输出后立即结束进程，SHALL NOT 等待该线程
-- **AND** 进程 SHALL 在停止触发后 10 秒内输出 `serve cleanup failed.` 并以非零退出
+- **AND** 进程 SHALL 在停止触发后 10 秒内输出 `serve cleanup failed.` 并以 3 退出
+
+### Requirement: Serve bounds shutdown with a two-stage watchdog
+`serve` SHALL 在停止开始时（t0，停止触发后至多 0.5 秒）启动看门狗，截止时刻为 t0 + 9.2 秒；停止 project run 时发现执行中的运行，SHALL 放宽到 t0 + 659.2 秒；project run 的停止在时刻 T 返回后，SHALL 改为当前截止时刻与 T + 1.2 秒中的较早者。到期时看门狗 SHALL 从辅助线程写出 `serve cleanup failed.` 并 flush，至多再等 0.1 秒后以 `os._exit(3)` 结束进程。退出码 SHALL 为：干净停止 0；绑定、启动或运行期失败 1；清理失败或看门狗到期 3，与 1 同时出现时取 3；停止期间第二次信号 130。
+
+#### Scenario: A stop step never returns
+- **WHEN** 测试缩短看门狗时限，停止顺序中的某一步一直不返回
+- **THEN** 看门狗 SHALL 在截止时刻输出 `serve cleanup failed.`，该行 SHALL 已落盘，进程 SHALL 以 3 退出
+
+#### Scenario: A project run is executing when the server stops
+- **WHEN** 停止开始时有一个执行中的 project run，测试使用可注入的时钟
+- **THEN** 看门狗截止时刻 SHALL 放宽为 t0 + 659.2 秒
+- **AND** 该运行在 620 秒内没有停下时，`serve` SHALL 输出 `serve cleanup failed.` 并以 3 退出
+
+#### Scenario: Project runs finish stopping
+- **WHEN** 停止顺序中 project run 的停止在时刻 T 返回
+- **THEN** 看门狗截止时刻 SHALL 变为原截止时刻与 T + 1.2 秒中的较早者
+
+### Requirement: Serve verifies process state before it exits
+`serve` SHALL 在启动最早处包装 `atexit.register` 以记录注册者，并在显式退出之前、`logging.shutdown()` 之前清点：atexit 回调及注册者、`threading._register_atexit` 回调、存活的非 daemon 线程与子进程、`weakref.finalize(atexit=True)` 与日志 handler。清点结果 SHALL 写成一条结构化日志 `serve_exit_inventory`，并与 `ai_host` settings 中的白名单比对。必需的清理 SHALL 在显式退出中显式执行；出现白名单之外的项，或必需的清理失败、超时时，`serve` SHALL 输出 `serve cleanup failed.` 并以 3 退出。
+
+#### Scenario: Server stops cleanly
+- **WHEN** 没有执行中的 project run，`serve` 收到停止信号并完成停止顺序
+- **THEN** `serve_exit_inventory` 与最后一行输出 SHALL 已落盘，临时目录 SHALL 已清除，SHALL NOT 留下子进程
+- **AND** 进程 SHALL 以 0 退出
+
+#### Scenario: An unlisted exit hook is registered
+- **WHEN** 运行期间有代码注册了白名单之外的 atexit 回调
+- **THEN** `serve_exit_inventory` SHALL 记录该回调及其注册者，`serve` SHALL 输出 `serve cleanup failed.` 并以 3 退出
+
+#### Scenario: A required cleanup fails
+- **WHEN** 测试注入一个失败的必需清理
+- **THEN** `serve` SHALL 输出 `serve cleanup failed.` 并以 3 退出
 
 ### Requirement: AI requests cannot exhaust the page threads
 `/ai` 的在途请求 SHALL 按流式请求与其他请求分开限额（4 与 4），服务线程数（14）减去两个上限后 SHALL 至少为页面保留 6 个线程。UI 资产与未认证的请求 SHALL NOT 计入名额。达到各自上限后新到的 `/ai` 请求 SHALL 立即得到 503 和 `Retry-After`，不排队；页面请求 SHALL 始终有可用线程。请求正常结束、出错、被客户端中止或因服务停止而结束时 SHALL 归还名额。空闲的流 SHALL 按心跳间隔（默认 2 秒）发送心跳，客户端断开 SHALL 在心跳间隔加 1 秒内被发现。
@@ -312,11 +346,11 @@ AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_
 - **AND** 页面 SHALL 照常返回 200，因等待运行时增加的时间 SHALL NOT 超过 1 秒，图表与证据 SHALL 正常显示
 
 ### Requirement: One host allowlist protects Django and the AI runtime
-`ALLOWED_HOSTS` SHALL 是 Django 和运行时共用的唯一 Host 白名单，经 `HostConfig.allowed_hosts` 传给运行时。未显式配置时，它 SHALL 只包含 `127.0.0.1`、`localhost` 和 `[::1]`，settings SHALL NOT 用通配符作为默认值。Host 不在白名单内的请求 SHALL 在进入任何 Django 视图或运行时路由之前得到 HTTP 400，否则 DNS rebinding 之后的页面会被浏览器当作同源。WhiteNoise 提供的静态文件公开且不含用户数据，不在此列。
+`ALLOWED_HOSTS` SHALL 是 Django 和运行时共用的唯一 Host 白名单，经 `HostConfig.allowed_hosts` 传给运行时。未显式配置时，它 SHALL 只包含 `127.0.0.1`、`localhost` 和 `[::1]`，settings SHALL NOT 用通配符作为默认值。Host 不在白名单内的请求 SHALL 在进入任何 Django 视图、静态文件或运行时路由之前得到 HTTP 400，否则 DNS rebinding 之后的页面会被浏览器当作同源。静态文件 SHALL NOT 豁免。
 
 #### Scenario: DNS-rebound page calls Metrics
 - **WHEN** 未配置 `ALLOWED_HOSTS`，请求的 Host 是 `rebind.attacker.example`
-- **THEN** Django 路径和 `<URL 前缀>/ai/` 下的路径 SHALL 都返回 HTTP 400，且不执行任何视图或运行时处理
+- **THEN** Django 路径、静态文件和 `<URL 前缀>/ai/` 下的路径 SHALL 都返回 HTTP 400，且不执行任何认证、视图或运行时处理
 
 #### Scenario: Loopback host carries a port
 - **WHEN** 未配置 `ALLOWED_HOSTS`，请求的 Host 是 `127.0.0.1:8793`、`localhost:8793` 或 `[::1]:8793`
@@ -326,6 +360,40 @@ AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_
 - **WHEN** `ALLOWED_HOSTS` 环境变量显式列出 `metrics.example.internal`
 - **THEN** Django 和运行时 SHALL 都接受该 Host
 
+### Requirement: Requests pass the host layers in a fixed order
+`serve` 的请求 SHALL 按固定顺序处理。L0 由 waitress 在调用应用之前完成：请求行与头部大小、`Content-Length` 语法、chunked 分帧和请求体上限。L1 由 `serve` 的分派完成：先按 Django `get_host()` 的规则对所有路径校验 Host，非法时返回固定文本的 400；Host 合法且已开始停止时返回 503；然后挂载路径交给运行时适配器，其余路径进入 Django 中间件链。适配器 SHALL 依次执行 Host 校验、请求完整性、认证、308、UI 资产、运行时未运行的 503 与准入。
+
+#### Scenario: Invalid host arrives while the server stops
+- **WHEN** 已配置 Basic 用户、`serve` 已开始停止，一个不带凭据的请求以不在白名单内的 Host 到达
+- **THEN** 响应 SHALL 是 400，SHALL NOT 是 503 或 401
+
+#### Scenario: Django path gets an invalid host without credentials
+- **WHEN** 已配置 Basic 用户，经 `serve` 访问 Django 路径的请求 Host 不在白名单内且不带凭据
+- **THEN** 响应 SHALL 是 400 而不是 401
+
+#### Scenario: Unauthenticated requests reach the mount path
+- **WHEN** 已配置 Basic 用户，不带凭据的请求访问 `<URL 前缀>/ai`、挂载路径下的 UI 资产，或在短请求名额已满时访问 `/ai` 路由
+- **THEN** 每个请求 SHALL 得到 401，SHALL NOT 得到 308、200 或 503
+
+### Requirement: The server caps request bodies
+`serve` SHALL 显式把 waitress 的 `max_request_body_size` 设为 N + 1 字节，N 取运行时适配器公开的请求体上限与 Django 侧最大合法请求中的较大值。waitress 在调用应用之前读完并缓冲请求体，超过 512 KiB 时写入临时文件，因此这个 413 SHALL 是唯一的资源上限，最坏的临时文件占用约为 N 乘以连接上限；适配器的 413 只保证语义与顺序。宿主对非数字 `Content-Length` 返回 400 的分支 SHALL 作为纵深防御保留。
+
+#### Scenario: Declared body exceeds the cap
+- **WHEN** 一个不带凭据的请求声明的 `Content-Length` 为 N + 1
+- **THEN** waitress SHALL 在读取请求体之前返回 413，响应体 SHALL 含 `(generated by waitress)`，应用 SHALL NOT 被调用
+
+#### Scenario: Chunked body exceeds the cap
+- **WHEN** 一个 chunked 请求体累计达到 N + 1 字节
+- **THEN** waitress SHALL 返回 413，应用 SHALL NOT 被调用
+
+#### Scenario: Body is exactly at the cap
+- **WHEN** 一个请求的请求体恰好为 N 字节
+- **THEN** waitress SHALL 调用应用，SHALL NOT 在 L0 返回 413
+
+#### Scenario: Content-Length is not a number
+- **WHEN** 请求的 `Content-Length` 不是数字
+- **THEN** waitress SHALL 返回 400，应用 SHALL NOT 被调用
+
 ### Requirement: Host conformance suite gates the composed runtime
 Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合后的宿主，检查项见下方场景。确定性的对话测试 SHALL 使用 testkit 的脚本化模型，SHALL NOT 依赖真实模型或聊天快捷方式。升级运行时版本 SHALL 以该套件通过为门禁。
 
@@ -333,7 +401,7 @@ Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合�
 - **WHEN** Metrics 测试对组合后的宿主运行宿主一致性套件
 - **THEN** 套件 SHALL 覆盖 Host 校验、请求完整性、资源归属、`frame-ancestors`、审批持久化、`os.environ` 与全局 tracer 不变、Proactor 事件循环、slow callback 阈值与 `RuntimeBusy`
 - **AND** 套件 SHALL 覆盖运行时未运行或进入第一段停止后 `/ai` 返回 503、第一段停止开始后所有打开的流在配置的时限（2 秒）内发送终止事件后结束、句柄停止在配置的时限内返回、在事件循环线程上调用 blocking 门面立即报错、门面超时抛出定义好的异常并取消循环侧协程、以同一个 `client_run_key` 重试只产生一次运行、运行时结束事件在 1 秒内可见
-- **AND** 套件 SHALL 覆盖 WSGI 适配器逐块转发流式响应、空闲流按心跳间隔发送心跳且断开在心跳间隔加 1 秒内被发现、在 WSGI 线程上从 `wsgi.input` 读取有上限的请求体、响应块交接队列有上限并形成背压、客户端断开后释放连接级资源、流与其他 `/ai` 请求分开的在途上限、名额在正常结束、出错、客户端中止与停止后都归还、循环被阻塞时短请求在总时限内得到 503 或 504、Host 校验、请求完整性与认证先于准入且未认证请求不占名额、UI 资产不经循环与准入（循环被阻塞时仍返回 200）且 URL 跟随挂载路径、导航请求被拒时得到自动刷新的 503 页面
+- **AND** 套件 SHALL 覆盖 WSGI 适配器逐块转发流式响应、空闲流按心跳间隔发送心跳且断开在心跳间隔加 1 秒内被发现、在 WSGI 线程上从 `wsgi.input` 读取有上限的请求体、响应块交接队列有上限并形成背压、客户端断开后释放连接级资源、流与其他 `/ai` 请求分开的在途上限、名额在正常结束、出错、客户端中止与停止后都归还、循环被阻塞时短请求在总时限内得到 503 或 504、适配器按 Host 校验、请求完整性、认证、308、UI 资产、运行时未运行的 503、准入的顺序逐项执行且未认证请求不占名额、UI 资产不经循环与准入（循环被阻塞时仍返回 200）且 URL 跟随挂载路径、导航请求被拒时得到自动刷新的 503 页面
 - **AND** 套件 SHALL 覆盖运行时不安装信号处理器、不注册 atexit，以及第二段停止期间宿主的信号处理器在 1 秒内执行
 - **AND** 套件 SHALL 在句柄退出后立即以 `os._exit(0)` 结束运行时所在的子进程，重启后已完成的运行、会话与审批记录 SHALL 完整，状态目录锁 SHALL 可再次获取
 
