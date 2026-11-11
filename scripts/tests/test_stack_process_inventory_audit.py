@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -261,6 +263,39 @@ def test_shouldFailWhenAiBaseVisibleNoExitWindowModeReturns(tmp_path, capsys):
     output = capsys.readouterr().out
     assert exit_code == 1
     assert "visible -NoExit window mode" in output
+
+
+def test_shouldEscapeUnencodableCommandLineWhenConsoleCannotEncodeIt(tmp_path):
+    dashboard_state_path, ai_base_workspace, ai_base_state_path = write_runtime_state(tmp_path)
+    stale_config = f"{tmp_path}\\.worktrees\\stale\\state\\grafana\\runtime\\grafana-e2e-3011-\u2717.ini"
+    snapshot_path = write_process_snapshot(
+        tmp_path,
+        [{"ProcessId": 900, "ParentProcessId": 1, "Name": "grafana.exe", "CommandLine": f"grafana.exe server --config {stale_config}"}],
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "audit_stack_process_inventory.py"),
+            "--dashboard-workspace",
+            str(tmp_path),
+            "--dashboard-state",
+            str(dashboard_state_path),
+            "--ai-base-workspace",
+            str(ai_base_workspace),
+            "--ai-base-state",
+            str(ai_base_state_path),
+            "--process-snapshot-json",
+            str(snapshot_path),
+        ],
+        capture_output=True,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert b"UnicodeEncodeError" not in completed.stderr
+    assert "grafana-e2e-3011-\\u2717.ini" in completed.stdout.decode("cp1252")
 
 
 def test_dashboardAiStackRunsProcessInventoryAuditBeforeOpeningBrowser():

@@ -290,4 +290,5 @@ def parse_since_timestamp(value: str) -> float | None:
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(errors="backslashreplace")
     sys.exit(main())

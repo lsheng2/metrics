@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -232,3 +234,19 @@ def test_shouldScanAiBaseHeadlessRuntimeLogs(tmp_path, capsys):
     assert exit_code == 1
     assert "backend.err.log" in output
     assert "backend failed to bind" in output
+
+
+def test_shouldEscapeUnencodableLogTextWhenConsoleCannotEncodeIt(tmp_path):
+    log_path = tmp_path / "grafana-3001.out.log"
+    log_path.write_text('logger=http.server level=error msg="failed to open listener \u2717"\n', encoding="utf-8")
+
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "audit_stack_boot_logs.py"), "--dashboard-workspace", str(tmp_path), "--log-file", str(log_path)],
+        capture_output=True,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert b"UnicodeEncodeError" not in completed.stderr
+    assert "failed to open listener \\u2717" in completed.stdout.decode("cp1252")

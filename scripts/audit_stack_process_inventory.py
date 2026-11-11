@@ -356,4 +356,5 @@ def default_ai_base_state_path(workspace: Path | None) -> Path | None:
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(errors="backslashreplace")
     sys.exit(main())
