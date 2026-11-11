@@ -58,6 +58,9 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 - `ALLOWED_HOSTS` 成为 Django 和运行时共用的唯一 Host 白名单。
 - 运行时的会话、tool 和审批事件写入 `ai_host` 自有的只追加审计表；认证失败只输出结构化日志 `ai_auth_failed`。
 - `/ai-dashboard/workflow/` 页面保留，改为显示运行时状态、工作流结果和发布就绪状态，不再出现 gcx。
+- launcher 与停止脚本改为启动 `serve`，并经 `--stop-file` 正常停止，等待超时后才强制结束。
+- 修复 AIB-0 验收中发现的两个 Metrics 缺陷：没有 Jira 配置时，读本地数据的页面与图表 API 返回 500（F-a）；Orca
+  worktree 布局下 Grafana 找不到共享的 Infinity 插件（F-b）。
 
 ## Capabilities
 
@@ -79,15 +82,15 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 - `ai-dashboard-publish-authority`：授权对象改为运行时审批加 preview 摘要，删除 dry-run proof。
 - `ai-centric-metrics-workspace-composition`：上下文改由 context provider 按 `ContextRef` 拉取，不再同步到 workspace。
 - `unified-metrics-workbench-ui`：本地运行改为单进程；AI pane 的诊断不再涉及 workspace 同步。
-- `provider-facts-and-sync`：发布就绪在 `publish_chart` 请求审批之前判定。
+- `provider-facts-and-sync`：发布就绪在 `publish_chart` 请求审批之前判定；没有 Jira 配置时，读本地 durable 数据的页面与图表 API 仍可用（F-a）。
 - `grafana-render-config`：发布前置条件从 dry-run proof 改为已批准的 preview 摘要。
 
 ## Impact
 
 - **前置条件（tasks 第 0 组）**：
   - owner 已于 2026-11-10 签署 Q1–Q9；
-  - S0 共装 spike 不通过（C5，`s0-spike-report.md`），owner 于 2026-11-11 选择方向 1；S0b 的全部退出条件通过
-    （tasks 0.5）；
+  - S0 共装 spike 不通过（C5，`s0-spike-report.md`），owner 于 2026-11-11 选择方向 1；S0b 的退出条件逐项通过并复签
+    （tasks 0.5，含补测 M1–M6）；
   - AIB-2 发布的 `ai-base-runtime` 提供 v2.1 D1–D12 中的 SPI，包括 owner 同日接受的五项补充：D4
     `AppPackage.task_profiles`、D5 `ToolContext.context_ref`、D6 preview 摘要绑定、D7 `open_session` 的
     `session_key`、D9 task-run 真实模型执行与准入错误码。
@@ -108,11 +111,15 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
     ai_dashboard_composition、ai_dashboard_workflow；
   - `ui_web`：urls、views、adapter、service status、context processors、workbench 模板与 JS；
   - `ops/docker/Dockerfile`、`README.md`、`scripts/dashboard_runtime_instance_profile.py`；
-  - `scripts/validation/project_*`、`scripts/e2e_dashboard_ai_stack.ps1`。
+  - `scripts/validation/project_*`、`scripts/e2e_dashboard_ai_stack.ps1`、`scripts/e2e_bug_trend.*`、
+    `scripts/local_*_backend.ps1` 与进程审计脚本；
+  - AIB-0 验收发现的缺陷：`jira_sync/container.py`（F-a）、`scripts/e2e_grafana_runtime.py`（F-b），见
+    `aib0-acceptance.md`。
 - **依赖**：
-  - 新增精确版本的 `ai-base-runtime` 和 S0b 选定的 WSGI server；`uvicorn`、`starlette` 不作为直接依赖；
+  - 新增精确版本的 `ai-base-runtime` 与 `waitress==3.0.2`（S0b）；`uvicorn`、`starlette`、`cheroot`、
+    `a2wsgi` 不作为直接依赖；
   - 删除 `ai-base-application-sdk`、`requirements-ai-task.txt` 和 `gunicorn`；
-  - `portalocker` 升级到 ≥4.4.2。
+  - `portalocker` 升级并精确固定为 4.4.2（S0）。
 - **运行方式**：本地与 Docker 都改为 `manage.py serve`，即单进程、单 worker、不 reload；开发和生产使用同一个组合根。
   Docker 只允许单副本，`METRICS_STATE_DIR` 挂载为卷。按 owner 2026-11-10 的决定，非回环绑定不强制 Basic 认证，
   维持现有姿态。

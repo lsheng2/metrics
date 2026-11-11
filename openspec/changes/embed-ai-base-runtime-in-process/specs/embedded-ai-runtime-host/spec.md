@@ -27,6 +27,11 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **WHEN** 已配置 Basic 用户，请求不带凭据访问静态文件
 - **THEN** Metrics SHALL 返回 401，与 Django 页面一致
 
+#### Scenario: Requests are written to the access log
+- **WHEN** 请求携带 `Authorization` 或 `Cookie` 头访问 Django 页面或 `<URL 前缀>/ai/` 下的路径
+- **THEN** `serve` SHALL 为该请求写一行访问日志，包含方法、路径与状态码
+- **AND** 访问日志 SHALL NOT 包含 `Authorization` 与 `Cookie` 的值
+
 #### Scenario: URL prefix is configured
 - **WHEN** `METRICS_BASE_URL` 是 `/metrics/`
 - **THEN** 运行时 SHALL 挂载在 `/metrics/ai`
@@ -41,16 +46,16 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **THEN** `manage.py serve` SHALL 使用 `metrics.settings.production`
 
 ### Requirement: Serve starts and stops the runtime in a fixed order
-`serve` SHALL 先绑定端口，再让运行时在同一进程的专用事件循环线程上进入运行期（Windows 上为 Proactor 事件循环）并安装 project run 运行时，然后才受理第一个请求；任一步失败时 SHALL 以错误退出，SHALL NOT 处理任何请求。停止时 `serve` SHALL 依次停止受理新请求、结束打开的 AI 流、停止 project run，最后停止运行时。运行期内运行时意外结束时，`serve` SHALL 按同一顺序停止并以非零退出，SHALL NOT 在没有运行时的情况下继续服务。
+`serve` SHALL 先绑定端口，再让运行时在同一进程的专用事件循环线程上进入运行期（Windows 上为 Proactor 事件循环）并安装 project run 运行时，然后才受理第一个请求；任一步失败时 SHALL 以错误退出，SHALL NOT 处理任何请求。停止时 `serve` SHALL 依次停止受理新请求、结束打开的 AI 流、排空在途请求并在已缓冲的输出写出后关闭连接、停止 project run，最后停止运行时；没有执行中的 project run 时，从停止触发到进程实际退出 SHALL 不超过 10 秒；停止顺序结束后 `serve` SHALL 写出全部输出并立即结束进程，SHALL NOT 等待剩余线程或解释器收尾。运行期内运行时意外结束时，`serve` SHALL 按同一顺序停止并以非零退出，SHALL NOT 在没有运行时的情况下继续服务。
 
 #### Scenario: Port is already in use
-- **WHEN** 操作者运行 `manage.py serve`，目标端口已被其他进程占用
-- **THEN** 命令 SHALL 在 2 秒内以错误退出
+- **WHEN** 操作者运行 `manage.py serve`，目标地址和端口已被其他进程占用，或绑定被拒绝（`EADDRINUSE` 或 `EACCES`）
+- **THEN** 命令 SHALL 在 2 秒内输出 `serve bind failed.` 并以非零退出
 - **AND** 命令 SHALL NOT 启动运行时，SHALL NOT 获取状态目录锁
 
 #### Scenario: Another process binds the serving port
-- **WHEN** `serve` 正在运行，另一个进程设置 `SO_REUSEADDR` 后绑定同一地址和端口
-- **THEN** 该绑定 SHALL 失败，发往该端口的连接 SHALL 全部由 `serve` 受理
+- **WHEN** `serve` 绑定 `127.0.0.1` 并正在运行，另一个进程以默认选项或设置 `SO_REUSEADDR` 后绑定同一地址和端口
+- **THEN** 该绑定 SHALL 失败，发往该地址和端口的连接 SHALL 全部由 `serve` 受理
 
 #### Scenario: Runtime cannot start
 - **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定或运行时配置无效
@@ -59,15 +64,24 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **AND** 服务 SHALL NOT 在没有运行时的情况下继续提供 Django 页面
 
 #### Scenario: Server shuts down
-- **WHEN** `serve` 收到 SIGINT 或 SIGTERM，或者 `--stop-file` 指定的文件出现、`--lifetime-seconds` 到期
+- **WHEN** `serve` 收到 SIGINT、SIGTERM 或 Windows 上的 SIGBREAK，或者 `--stop-file` 指定的文件出现、`--lifetime-seconds` 到期
 - **THEN** `serve` SHALL 先停止受理新请求，打开的 AI 流 SHALL 发送终止事件后结束
 - **AND** project run worker SHALL 随后停止，运行时最后停止
 - **AND** 未完成的运行 SHALL 被取消并标记为中断，状态目录锁 SHALL 被释放，进程 SHALL 以 0 退出
+- **AND** 进程退出前 SHALL 写出全部日志与 `project_runtime_stopped` 事件
+
+#### Scenario: Requests arrive while the server stops
+- **WHEN** `serve` 已开始停止，已有连接上又到达页面请求或 `/ai` 请求
+- **THEN** 该请求 SHALL 立即得到 503，SHALL NOT 等待停止完成
 
 #### Scenario: Server stops while chat streams are open
-- **WHEN** 一条聊天流正在输出、另一条处于空闲时，`serve` 收到停止信号
-- **THEN** 两条流的客户端 SHALL 在连接关闭之前收到终止事件
-- **AND** 进程 SHALL 在 10 秒内以 0 退出
+- **WHEN** 没有执行中的 project run，一条聊天流正在输出、一条处于空闲、另一条的客户端积压了未读的输出并暂停读取时，`serve` 收到停止信号或 `--stop-file` 指定的文件出现
+- **THEN** 正在输出与空闲的流 SHALL 在第一段停止开始后 2 秒内发送终止事件后结束
+- **AND** 三个客户端 SHALL 都在连接关闭之前收到终止事件，进程 SHALL 在停止触发后 10 秒内以 0 退出
+
+#### Scenario: A client never reads during shutdown
+- **WHEN** 没有执行中的 project run，一个流的客户端一直不读取，`serve` 收到停止信号
+- **THEN** `serve` SHALL 在关闭连接的时限到期后关闭该连接，进程 SHALL 在停止触发后 10 秒内以 0 退出
 
 #### Scenario: Runtime stops unexpectedly
 - **WHEN** 服务运行期间，运行时因内部错误结束
@@ -75,19 +89,24 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **AND** `serve` SHALL 按停止顺序清理后以非零退出
 
 #### Scenario: Second signal arrives during shutdown
-- **WHEN** `serve` 正在停止，又收到一次 SIGINT 或 SIGTERM
-- **THEN** `serve` SHALL 输出 `serve forced exit.`，并在 1 秒内以非零退出
+- **WHEN** `serve` 正在停止（包括排空在途请求与关闭连接期间），又收到一次 SIGINT、SIGTERM 或 Windows 上的 SIGBREAK
+- **THEN** `serve` SHALL 输出 `serve forced exit.`，并在 1 秒内以退出码 130 退出
 - **AND** 被中断的运行 SHALL 在下一次启动时由恢复标记为中断
 
 #### Scenario: Cleanup does not finish cleanly
-- **WHEN** 停止后 project run 没有全部停下、运行时停止超时，或某一步清理出错
+- **WHEN** 停止后在途请求在排空时限内没有结束、project run 没有全部停下、运行时停止超时，或某一步清理出错
 - **THEN** `serve` SHALL 输出 `serve cleanup failed.`（有错误码时附带）并以非零退出
 
+#### Scenario: A thread outlives the stop sequence
+- **WHEN** 没有执行中的 project run，停止顺序结束时运行时的事件循环线程或 HTTP server 线程仍未结束，例如运行时停止超时
+- **THEN** `serve` SHALL 写出全部输出后立即结束进程，SHALL NOT 等待该线程
+- **AND** 进程 SHALL 在停止触发后 10 秒内输出 `serve cleanup failed.` 并以非零退出
+
 ### Requirement: AI requests cannot exhaust the page threads
-`/ai` 的在途请求 SHALL 按流式请求与其他请求分开限额，两个上限之和小于服务线程数。达到各自上限后新到的 `/ai` 请求 SHALL 立即被拒绝，不排队；页面请求 SHALL 始终有可用线程。
+`/ai` 的在途请求 SHALL 按流式请求与其他请求分开限额（4 与 4），服务线程数（14）减去两个上限后 SHALL 至少为页面保留 6 个线程。UI 资产与未认证的请求 SHALL NOT 计入名额。达到各自上限后新到的 `/ai` 请求 SHALL 立即得到 503 和 `Retry-After`，不排队；页面请求 SHALL 始终有可用线程。请求正常结束、出错、被客户端中止或因服务停止而结束时 SHALL 归还名额。空闲的流 SHALL 按心跳间隔（默认 2 秒）发送心跳，客户端断开 SHALL 在心跳间隔加 1 秒内被发现。
 
 #### Scenario: AI requests reach the in-flight limit
-- **WHEN** `/ai` 的在途请求数已达上限，又有新的 `/ai` 请求到达
+- **WHEN** 流以外的 `/ai` 在途请求已达其上限，又有新的短 `/ai` 请求到达
 - **THEN** 新请求 SHALL 立即得到 503 和 `Retry-After`
 - **AND** 同时到达的 Django 页面请求 SHALL 照常处理
 
@@ -95,6 +114,29 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **WHEN** 打开的流已达到流的上限，又有一条新流和一个短的 `/ai` 请求到达
 - **THEN** 新流 SHALL 立即得到 503 和 `Retry-After`
 - **AND** 短的 `/ai` 请求和同时到达的页面请求 SHALL 照常处理
+
+#### Scenario: Requests return their admission slots
+- **WHEN** 占满流上限的流全部被客户端中止，或者 `/ai` 请求出错结束
+- **THEN** 这些请求的名额 SHALL 归还，新流 SHALL 在心跳间隔加 1 秒内被接受
+- **AND** 在途数与拒绝数 SHALL 可观测，停止完成后在途数 SHALL 为 0
+
+#### Scenario: Client disconnects from an idle stream
+- **WHEN** 一条流处于空闲，客户端断开连接
+- **THEN** 运行时 SHALL 在心跳间隔加 1 秒内发现断开，取消该流并释放它占用的资源与名额
+
+#### Scenario: AI pane loads with an empty browser cache
+- **WHEN** 浏览器缓存为空，用户打开带 AI pane 的工作台
+- **THEN** iframe 入口 HTML 引用的 UI 资产 SHALL 全部位于 `/ai` 挂载路径下并返回 200，SHALL NOT 占用 `/ai` 名额
+- **AND** 因名额已满被拒的幂等 GET SHALL 由 UI 按 `Retry-After` 重试，AI pane SHALL 加载完成
+
+#### Scenario: Unauthenticated requests arrive in a burst
+- **WHEN** 已配置 Basic 用户，超过短请求上限的未认证 `/ai` 请求同时到达
+- **THEN** 每个请求 SHALL 得到 401，SHALL NOT 占用名额，SHALL NOT 进入运行时的事件循环
+- **AND** 同时到达的已认证短 `/ai` 请求 SHALL 照常处理
+
+#### Scenario: Embedded page navigation finds the limit full
+- **WHEN** 短请求名额已满，iframe 导航到嵌入页
+- **THEN** 响应 SHALL 是带 `Retry-After` 的 503 HTML 页面，按该间隔自动刷新，名额释放后 SHALL 加载嵌入页
 
 ### Requirement: Non-loopback binds guard anonymous access
 `serve` 绑定非回环地址时，settings 允许匿名决定审批的情况下 SHALL 拒绝启动；未配置 Basic 用户时 SHALL 照常启动，并输出一条不含凭据的匿名暴露警告。
@@ -108,7 +150,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **THEN** 命令 SHALL 在启动服务之前以错误退出
 
 ### Requirement: AI runtime requests use the Metrics identity
-运行时挂载下的每个请求 SHALL 由 Metrics 宿主的 `authenticate` 确定 principal。`authenticate` 与 Django 的 `BasicAuthMiddleware` 调用同一个纯函数 `check_basic_authorization`，同一请求在两边的认证结果 SHALL 一致。认证失败 SHALL 返回 401。未配置 Basic 用户时，principal SHALL 是匿名的本地操作者。Basic 用户设置 SHALL fail-closed：格式不合法时 settings 加载 SHALL 失败，SHALL NOT 停用认证。运行时 SHALL NOT 从请求体、tool 参数或 iframe URL 中读取 actor。
+运行时挂载下的每个请求 SHALL 由 Metrics 宿主的 `authenticate` 确定 principal。`authenticate` 与 Django 的 `BasicAuthMiddleware` 调用同一个纯函数 `check_basic_authorization`，同一请求在两边的认证结果 SHALL 一致。`authenticate` SHALL 是普通函数，由运行时的 WSGI 适配器在 WSGI 线程上、准入之前调用。认证失败 SHALL 返回 401。未配置 Basic 用户时，principal SHALL 是匿名的本地操作者。Basic 用户设置 SHALL fail-closed：格式不合法时 settings 加载 SHALL 失败，SHALL NOT 停用认证。运行时 SHALL NOT 从请求体、tool 参数或 iframe URL 中读取 actor。
 
 #### Scenario: Request carries valid Basic credentials
 - **WHEN** 请求携带有效的 Basic 凭据访问 Django 页面或运行时路由
@@ -249,7 +291,7 @@ Metrics 与运行时之间 SHALL NOT 存在 HTTP 调用、connector 回调路由
 - **THEN** grep gate SHALL 失败
 
 ### Requirement: AI pane reports runtime readiness without blocking the workbench
-AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_configured`，即未配置模型；`not_running`，即运行时不在运行期，原因是进程不是经 `manage.py serve` 启动的，或者服务已开始停止。"是否已配置模型"SHALL 只由构造运行时配置的同一个函数判定。非 `ready` 状态 SHALL 说明原因和下一步操作，且 SHALL NOT 影响图表、证据、设置、发布历史和诊断页面。页面视图调用运行时 SHALL 有时限和并发上限。Metrics SHALL NOT 提供启用或禁用 AI 的开关，SHALL NOT 在渲染请求时启动任何进程。
+AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_configured`，即未配置模型；`not_running`，即运行时不在运行期，原因是进程不是经 `manage.py serve` 启动的，或者服务已开始停止。"是否已配置模型"SHALL 只由构造运行时配置的同一个函数判定。非 `ready` 状态 SHALL 说明原因和下一步操作，且 SHALL NOT 影响图表、证据、设置、发布历史和诊断页面。页面视图调用运行时 SHALL 有时限（1 秒）和并发上限（2，小于为页面保留的线程数），达到上限时 SHALL 不等待。Metrics SHALL NOT 提供启用或禁用 AI 的开关，SHALL NOT 在渲染请求时启动任何进程。
 
 #### Scenario: Model is not configured
 - **WHEN** 运行时已进入运行期，但 Metrics settings 中没有模型配置
@@ -265,9 +307,9 @@ AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_
 - **THEN** AI pane SHALL 渲染同源的嵌入聊天
 
 #### Scenario: Runtime does not answer in time
-- **WHEN** 页面渲染 AI pane 时，打开会话的调用超过时限，或者同时进行的调用已达上限
+- **WHEN** 页面渲染 AI pane 时，打开会话的调用超过 1 秒，或者同时进行的调用已达上限
 - **THEN** AI pane SHALL 显示可重试的暂不可用状态
-- **AND** 页面 SHALL 照常返回 200，图表与证据 SHALL 正常显示
+- **AND** 页面 SHALL 照常返回 200，因等待运行时增加的时间 SHALL NOT 超过 1 秒，图表与证据 SHALL 正常显示
 
 ### Requirement: One host allowlist protects Django and the AI runtime
 `ALLOWED_HOSTS` SHALL 是 Django 和运行时共用的唯一 Host 白名单，经 `HostConfig.allowed_hosts` 传给运行时。未显式配置时，它 SHALL 只包含 `127.0.0.1`、`localhost` 和 `[::1]`，settings SHALL NOT 用通配符作为默认值。Host 不在白名单内的请求 SHALL 在进入任何 Django 视图或运行时路由之前得到 HTTP 400，否则 DNS rebinding 之后的页面会被浏览器当作同源。WhiteNoise 提供的静态文件公开且不含用户数据，不在此列。
@@ -290,9 +332,10 @@ Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合�
 #### Scenario: Conformance suite runs against the composed host
 - **WHEN** Metrics 测试对组合后的宿主运行宿主一致性套件
 - **THEN** 套件 SHALL 覆盖 Host 校验、请求完整性、资源归属、`frame-ancestors`、审批持久化、`os.environ` 与全局 tracer 不变、Proactor 事件循环、slow callback 阈值与 `RuntimeBusy`
-- **AND** 套件 SHALL 覆盖运行时未运行或进入第一段停止后 `/ai` 返回 503、在事件循环线程上调用 blocking 门面立即报错、门面超时抛出定义好的异常并取消循环侧协程、运行时结束事件在 1 秒内可见
-- **AND** 套件 SHALL 覆盖 WSGI 适配器逐块转发流式响应、在 WSGI 线程上从 `wsgi.input` 读取有上限的请求体、响应块交接队列有上限并形成背压、客户端断开后释放连接级资源、流与其他 `/ai` 请求分开的在途上限
+- **AND** 套件 SHALL 覆盖运行时未运行或进入第一段停止后 `/ai` 返回 503、第一段停止开始后所有打开的流在配置的时限（2 秒）内发送终止事件后结束、句柄停止在配置的时限内返回、在事件循环线程上调用 blocking 门面立即报错、门面超时抛出定义好的异常并取消循环侧协程、以同一个 `client_run_key` 重试只产生一次运行、运行时结束事件在 1 秒内可见
+- **AND** 套件 SHALL 覆盖 WSGI 适配器逐块转发流式响应、空闲流按心跳间隔发送心跳且断开在心跳间隔加 1 秒内被发现、在 WSGI 线程上从 `wsgi.input` 读取有上限的请求体、响应块交接队列有上限并形成背压、客户端断开后释放连接级资源、流与其他 `/ai` 请求分开的在途上限、名额在正常结束、出错、客户端中止与停止后都归还、循环被阻塞时短请求在总时限内得到 503 或 504、Host 校验、请求完整性与认证先于准入且未认证请求不占名额、UI 资产不经循环与准入（循环被阻塞时仍返回 200）且 URL 跟随挂载路径、导航请求被拒时得到自动刷新的 503 页面
 - **AND** 套件 SHALL 覆盖运行时不安装信号处理器、不注册 atexit，以及第二段停止期间宿主的信号处理器在 1 秒内执行
+- **AND** 套件 SHALL 在句柄退出后立即以 `os._exit(0)` 结束运行时所在的子进程，重启后已完成的运行、会话与审批记录 SHALL 完整，状态目录锁 SHALL 可再次获取
 
 #### Scenario: Runtime version is upgraded
 - **WHEN** 一个变更修改了固定的 `ai-base-runtime` 版本

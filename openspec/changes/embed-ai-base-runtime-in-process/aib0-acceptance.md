@@ -1,10 +1,10 @@
 # AIB-0 Metrics launcher 验收回执
 
-日期：2026-11-11。结论：AIB-0 第五项验收"现有 launcher 端到端"**通过**。
+日期：2026-11-11。结论：AIB-0 第五项验收"现有 launcher 端到端"**通过**。AIB-F1、AIB-F2 修复后，在 `85f4ea9` 上重新验收，同样**通过**（见第 9 节）。
 
 同时发现 AI Base 侧问题 AIB-F1、AIB-F2（见第 6 节），不影响本项结论。owner 已决定两项在 AIB-0 合入 main 前同轮修复（见第 8 节）。
 
-本回执是 `tasks.md` 0.3 中 Metrics 部分的证据。0.3 要等两项修复完成、Metrics 在新的 HEAD 上重新验收通过、owner 把 AIB-0 合入 main 之后才勾选。
+本回执是 `tasks.md` 0.3 中 Metrics 部分的证据。两项修复和重新验收都已完成，0.3 只等 owner 把 AIB-0 合入 main 后勾选。
 
 ## 1. 被验收的代码
 
@@ -150,3 +150,93 @@ pwsh -NoProfile -File .\scripts\e2e_dashboard_ai_stack.ps1 -AiBaseWorkspace "C:\
     - 所有 AI Base 进程的命令行中不出现 token 值，`-EncodedCommand` 先解码再检查。
   - 重跑结果追加到本回执。
 - **F-a、F-b**：并入 MDB-2，作为 `tasks.md` 中的独立任务。
+
+## 9. 重新验收（85f4ea9）
+
+结论：AIB-0 `85f4ea9` 通过第五项验收和第 8 节追加的两项检查，AIB-F1、AIB-F2 已修复。另外发现 Metrics 侧问题 F-d、F-e、F-f，不属于 AIB-0。
+
+### 被验收的代码
+
+- AI Base worktree 与第 1 节相同：
+  - HEAD `85f4ea98e4681ed142bb1dcee7a5d8e8753576bf`；
+  - 修复提交 `1b223e89fddba40602349be4994303f273b5e645`；
+  - 运行前后 `git status --porcelain` 都为空。
+- Metrics：HEAD `4ba4878d2bf52cfc643b00e9d303e351007202a5`，launcher 未作修改。
+- 命令、偏离与第 2、3 节相同。
+
+### 运行记录
+
+| 运行 | 开始时间 | 结果 | 原因 |
+| --- | --- | --- | --- |
+| run1 | 13:28 | exit 1 | F-d：Grafana 启动失败；随后 F-e 使 boot log 审计崩溃；AI Base 未启动；teardown 结束了一个外部进程（F-f） |
+| run2 | 13:40 | 通过 | 本节 |
+
+run1 之后执行了 teardown；run2 前重新预检（13:38）并生成新的快照。
+
+### run2 结果
+
+- launcher 以 0 退出，输出 "Dashboard + AI Base E2E stack is ready."。
+- 端口：Django 8002、Grafana 3051（规划端口时 3001 已被外部进程占用）；AI Base backend 48300、frontend 48310，`portMode=fixed`。AI Base 启动用时 11.87 s。
+- boot log 审计、模型网关告警、launcher smoke 与第 5 节相同：三个阶段各 8 条 Grafana migrator warning；"Gateway probe failed"；5 项 smoke 通过；未执行 `-FullAiChatSmoke`。
+- 进程清点审计扫描 759 个进程，计数与第 4 节相同，没有发现过期进程。
+- 进程来源：每个监听端口的 owner 都在状态文件记录的进程树内：48300 为 PID 98180，48310 为 70936，8002 为 93120，3051 为 85620。
+- 第 5 节附加探针的结果全部相同，包括 `/api/runtime/info` 仍返回 `app.instanceToken` 这一延后风险。
+- security probe：token 长度 ≥16；`/health`、`/health/handshake`、diagnostics summary 都不含 token 字段和 token 值；handshake 的 `ok`、`matchesServiceId`、`matchesInstanceToken` 都为 True。
+
+### 第 8 节追加检查
+
+以下检查都只输出计数。
+
+**运行中扫描**（13:44）：token 从状态文件读入内存，与 `/api/runtime/info` 的值一致，没有写盘。
+
+| 范围 | 文件数 | 被锁跳过 | 含 token | Base64 解码后命中 |
+| --- | --- | --- | --- | --- |
+| Metrics `state\`（不含插件副本） | 18 | 6 | 0 | 0 |
+| AI Base `.tmp-validation\runtime\`（不含状态文件） | 8 | 4 | 0 | 0 |
+| AI Base app-data | 49 | 0 | 0 | 0 |
+| `%TEMP%` 中本次运行后修改的文件 | 7 | 4 | 0 | 0 |
+
+- launcher 日志：`Instance ID :` 1 行，值等于 token 的 SHA-256 前 8 位；旧格式 `Instance    :` 0 行。
+- 进程命令行：757 个进程，可读命令行 581 个，明文命中 0；`-EncodedCommand` 9 个，解码失败 0，解码后命中 0。
+
+**停止后补扫**（13:52）：运行中扫描时 launcher 日志正被写入、无法读取，被锁的文件也没有扫到，所以停止后补扫一次。
+
+- token 随状态文件在停止时删除，补扫改用指纹比对：
+  - 从文件中提取 GUID、32 位 hex（含去横线和大写形式）、UTF-16LE 文本和 Base64 解码结果作为候选；
+  - 计算每个候选的 SHA-256 前 8 位，与日志中的指纹比对。
+- 自测：植入 4 种形式全部检出，作对照的另一个 GUID 没有误报。
+- 结果：约 4350 个候选，命中 0。
+
+| 范围 | 文件数 | 跳过 |
+| --- | --- | --- |
+| launcher 日志（14088 字节） | 1 | 0 |
+| 验收证据目录 | 41 | 0 |
+| Metrics 仓库中本次运行后修改的文件 | 20 | 0 |
+| AI Base worktree 中本次运行后修改的文件 | 51 | 0 |
+| AI Base app-data | 49 | 0 |
+| `%TEMP%` 中本次运行后修改的文件 | 13 | 7（被其他进程锁定） |
+
+### 停止与清理
+
+- 13:48 停止。停止前外部进程命中 0 个；launcher stop 以 0 退出，停止用时 2.19 s。
+- 运行中记录的 18 个自有 PID 全部退出；8002、3051、48300、48310 都没有监听。
+- junction 已删除，app-venv 完好；本次新建的 4 个运行时 state 条目全部删除。
+- AI Base worktree 中 git 跟踪的文件保持干净，profile 状态文件没有残留。
+- F-c 再次出现：调用方在 13:49 才收到 EOF，晚于 AI Base 停止。
+
+### 新发现（Metrics 侧，不属于 AIB-0）
+
+- **F-d**：端口规划存在 TOCTOU 竞态，即"检查端口空闲"和"真正使用端口"之间有时间窗口。
+  - `ServiceLifecycleEngine.restart_services` 先为所有服务一次选定端口，然后依次启动。
+  - run1 中，规划时 3001 空闲；Django 启动用了约 24 s，Grafana 初始化又用了约 30 s。Grafana 绑定 3001 时，该端口已被本机 VS Code 的 utility 进程监听，几次观察到的 PID 都不同。
+  - Grafana 报 `bind: Only one usage of each socket address` 后退出；`wait_ready` 只报 "exited before becoming ready"，不会换端口重试。
+  - 修复为 `tasks.md` 9.8。
+- **F-e**：`scripts/audit_stack_boot_logs.py` 的 `print_findings` 在 cp1252 控制台输出 `✗`（U+2717）时抛 `UnicodeEncodeError`。
+  - launcher 随后只报 "Boot log audit also failed while handling the launch failure"，掩盖了真正的失败原因。
+  - 修复为 `tasks.md` 9.9。
+- **F-f**：run1 的 teardown 结束了一个不属于本次运行的进程。
+  - Grafana 因 F-d 在就绪前退出。记录 ABORTED 事件时 wrapper（PID 24340）已经退出，`provenance.resolve_owned_listener` 的启发式规则"wrapper 已退出且端口只有一个监听者时，认定该监听者为服务进程"把 3001 上唯一的监听者记为 Grafana 的 `listener_pid`，capability 为 `owned_listener`。该监听者是本机 VS Code 的 utility 进程 `node.mojom.NodeService`（PID 28512）。
+  - teardown 的 `stop_service` 把它当作自有监听者结束，日志输出 "grafana stopped on 127.0.0.1:3001"（只在确实停止了进程时输出）。VS Code 在 13:36:59 重建了该进程（PID 77144）。
+  - 修复为 `tasks.md` 9.10。
+
+本地证据位于 `.tmp\aib0-reaccept\`（gitignored，不入库），两次运行的产物分别带 `-run1`、`-run2` 后缀。
