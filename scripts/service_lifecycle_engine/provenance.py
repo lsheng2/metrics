@@ -51,8 +51,6 @@ def resolve_owned_listener(platform_ops: PlatformOperationSet, host: str, port: 
     owned_pids = platform_ops.owned_listener_pids(host, port, wrapper_pid)
     if owned_pids:
         return owned_pids[0]
-    if not platform_ops.process_exists(wrapper_pid) and len(listener_pids) == 1:
-        return listener_pids[0]
     return None
 
 

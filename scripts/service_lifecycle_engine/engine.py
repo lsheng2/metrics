@@ -3,14 +3,14 @@ from __future__ import annotations
 import os
 import subprocess
 import time
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Mapping, Sequence, TypeVar
 
-from .models import LifecycleEvent, LifecycleState, LifecycleStepTiming, ProcessProvenance, RestartResult, ServiceSpec, ServiceState, StopResult
+from .models import LifecycleEvent, LifecycleState, LifecycleStepTiming, ProcessProvenance, ServiceExitedBeforeReadyError, ServiceSpec, ServiceState, StopResult
 from .platform import PlatformOperationSet
 from .provenance import capture_listener_identity, capture_process_provenance, process_provenance_from_mapping
+from .starting import LifecycleStartingMixin
 from .state_store import FilesystemLifecycleStateStore, LifecycleStateStore
 from .stopping import LifecycleStoppingMixin
 from .storage import LifecycleStorageMixin, validate_lifecycle_identifier
@@ -18,7 +18,7 @@ from .storage import LifecycleStorageMixin, validate_lifecycle_identifier
 T = TypeVar("T")
 
 
-class ServiceLifecycleEngine(LifecycleStoppingMixin, LifecycleStorageMixin):
+class ServiceLifecycleEngine(LifecycleStartingMixin, LifecycleStoppingMixin, LifecycleStorageMixin):
     def __init__(
         self,
         project_name: str,
@@ -50,19 +50,6 @@ class ServiceLifecycleEngine(LifecycleStoppingMixin, LifecycleStorageMixin):
         self.pid_directory.mkdir(parents=True, exist_ok=True)
         self.log_directory.mkdir(parents=True, exist_ok=True)
         self.authority_directory.mkdir(parents=True, exist_ok=True)
-
-    def resolve_port(self, spec: ServiceSpec) -> int:
-        return self._resolve_port(spec, set())
-
-    def resolve_plan(self, specs: Sequence[ServiceSpec]) -> dict[str, int]:
-        plan: dict[str, int] = {}
-        reserved_ports: set[int] = set()
-        for spec in specs:
-            self._validate_service_name(spec.name)
-            port = self._resolve_port(spec, reserved_ports)
-            plan[spec.name] = port
-            reserved_ports.add(port)
-        return plan
 
     def start_service(self, spec: ServiceSpec, port: int | None = None, emit_events: bool = True) -> ServiceState:
         self._validate_service_name(spec.name)
@@ -174,61 +161,6 @@ class ServiceLifecycleEngine(LifecycleStoppingMixin, LifecycleStorageMixin):
             lifecycle_state,
         )
 
-    def prepare_startup(
-        self,
-        service_specs: Sequence[ServiceSpec],
-        graceful_timeout_seconds: float = 5.0,
-        force_by_port: bool = False,
-        force_graceful_timeout_seconds: float = 0.5,
-        port_process_resolver: Callable[[str, int], Sequence[int]] | None = None,
-    ) -> list[StopResult]:
-        for spec in service_specs:
-            self._validate_service_name(spec.name)
-        results = self.stop_all(graceful_timeout_seconds=graceful_timeout_seconds)
-        if force_by_port:
-            results.extend(self.force_stop_by_ports(service_specs, force_graceful_timeout_seconds, port_process_resolver))
-        return results
-
-    def restart_services(
-        self,
-        service_specs: Sequence[ServiceSpec],
-        graceful_timeout_seconds: float = 5.0,
-        force_by_port: bool = False,
-        force_graceful_timeout_seconds: float = 0.5,
-        port_process_resolver: Callable[[str, int], Sequence[int]] | None = None,
-        run_id: str | None = None,
-        after_prepare: Callable[[Sequence[StopResult]], None] | None = None,
-        before_start: Callable[[Mapping[str, int], Sequence[ServiceSpec]], Sequence[ServiceSpec]] | None = None,
-    ) -> RestartResult:
-        restart_run_id = run_id or str(uuid.uuid4())
-        timings: list[LifecycleStepTiming] = []
-        active_specs = tuple(service_specs)
-        for spec in active_specs:
-            self._validate_service_name(spec.name)
-        stop_results, timing = self._profile_step(
-            "prepare_startup",
-            lambda: self.prepare_startup(
-                active_specs,
-                graceful_timeout_seconds=graceful_timeout_seconds,
-                force_by_port=force_by_port,
-                force_graceful_timeout_seconds=force_graceful_timeout_seconds,
-                port_process_resolver=port_process_resolver,
-            ),
-            run_id=restart_run_id,
-        )
-        timings.append(timing)
-        if after_prepare:
-            after_prepare(stop_results)
-        port_plan, timing = self._profile_step("resolve_ports", lambda: self.resolve_plan(active_specs), run_id=restart_run_id)
-        timings.append(timing)
-        for spec in active_specs:
-            self._emit_lifecycle_event(spec.name, LifecycleState.PREPARED, "port_resolved", restart_run_id, spec.host, port_plan[spec.name])
-        if before_start:
-            active_specs = tuple(before_start(port_plan, active_specs))
-        service_states, start_timings = self._start_planned_services(active_specs, port_plan, restart_run_id)
-        timings.extend(start_timings)
-        return RestartResult(restart_run_id, tuple(stop_results), port_plan, tuple(service_states), tuple(timings))
-
     def profile_step(self, label: str, callback: Callable[[], T], run_id: str | None = None, prefix: str = "ServiceLifecycleEngine timing") -> T:
         result, _ = self._profile_step(label, callback, run_id=run_id, prefix=prefix)
         return result
@@ -238,6 +170,9 @@ class ServiceLifecycleEngine(LifecycleStoppingMixin, LifecycleStorageMixin):
         health_url = spec.health_url.format(port=port, host=spec.host, workspace=str(self.workspace)) if spec.health_url else None
         healthy_since: float | None = None
         while time.monotonic() < deadline:
+            exit_code = process.poll() if process else None
+            if exit_code not in (None, 0):
+                raise ServiceExitedBeforeReadyError(spec.name, exit_code)
             if health_url:
                 if self.platform_ops.http_status_ok(health_url):
                     healthy_since = healthy_since or time.monotonic()
@@ -246,10 +181,10 @@ class ServiceLifecycleEngine(LifecycleStoppingMixin, LifecycleStorageMixin):
                     time.sleep(0.05)
                     continue
                 healthy_since = None
-            if not health_url and not self.platform_ops.is_port_available(spec.host, port):
+            elif not self.platform_ops.is_port_available(spec.host, port):
                 return
-            if process and process.poll() is not None:
-                raise RuntimeError(f"{spec.name} exited before becoming ready")
+            if exit_code is not None:
+                raise ServiceExitedBeforeReadyError(spec.name, exit_code)
             time.sleep(0.2)
         raise TimeoutError(f"Timed out waiting for {spec.name} on {spec.host}:{port}")
 
@@ -315,35 +250,6 @@ class ServiceLifecycleEngine(LifecycleStoppingMixin, LifecycleStorageMixin):
             int(service.get("port", 0)),
             str(service.get("listener_identity_url") or ""),
         ) is not None
-
-    def _resolve_port(self, spec: ServiceSpec, reserved_ports: set[int]) -> int:
-        state = self.read_state()
-        owned_service = state.get(spec.name, {})
-        owned_port = owned_service.get("port")
-        if owned_port in spec.preferred_ports and int(owned_port) not in reserved_ports and self._service_process_running(owned_service):
-            return int(owned_port)
-        for port in spec.preferred_ports:
-            if port not in reserved_ports and self.platform_ops.is_port_available(spec.host, port):
-                return port
-        raise RuntimeError(f"No available port for {spec.name}: {', '.join(str(port) for port in spec.preferred_ports)}")
-
-    def _start_planned_services(self, active_specs: Sequence[ServiceSpec], port_plan: Mapping[str, int], run_id: str) -> tuple[list[ServiceState], list[LifecycleStepTiming]]:
-        service_states: list[ServiceState] = []
-        timings: list[LifecycleStepTiming] = []
-        for spec in active_specs:
-            if spec.name not in port_plan:
-                raise RuntimeError(f"Restart service {spec.name} has no resolved port")
-            try:
-                state, timing = self._profile_step(f"start:{spec.name}", lambda spec=spec: self.start_service(spec, port=port_plan[spec.name], emit_events=False), run_id=run_id)
-            except Exception as error:
-                if not getattr(error, "_service_lifecycle_aborted_emitted", False):
-                    provenance = self._provenance_from_state(spec.name)
-                    self._emit_lifecycle_event(spec.name, LifecycleState.ABORTED, f"failed:{type(error).__name__}", run_id, spec.host, port_plan[spec.name], provenance)
-                raise
-            timings.append(timing)
-            service_states.append(state)
-            self._emit_lifecycle_event(spec.name, LifecycleState.READY, "readiness_passed", run_id, spec.host, state.port, state.provenance)
-        return service_states, timings
 
     def _profile_step(self, label: str, callback: Callable[[], T], run_id: str | None = None, prefix: str = "ServiceLifecycleEngine timing") -> tuple[T, LifecycleStepTiming]:
         started_at = time.perf_counter()

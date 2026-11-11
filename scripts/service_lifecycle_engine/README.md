@@ -9,6 +9,7 @@ Core lifecycle:
 - `ServiceLifecycleEngine`
 - `ServiceSpec`
 - `ServiceState`
+- `ServiceExitedBeforeReadyError`
 - `build_external_service_state(...)`
 - `LifecycleState`
 - `LifecycleEvent`
@@ -98,6 +99,14 @@ Diagnostics and conformance:
 - `assert_service_lifecycle_conformance(fixture)`
 - `run_startup_orchestration_conformance_checks(startup_nodes=(), service_name="dashboard")`
 - `assert_startup_orchestration_conformance(startup_nodes=(), service_name="dashboard")`
+
+## Readiness And Port Ownership
+
+`wait_ready()` raises `ServiceExitedBeforeReadyError` (with `exit_code`) as soon as the started process exits with a non-zero code, even when an endpoint on the port answers; that endpoint belongs to another process. Exit code `0` means the launcher handed off to a detached listener, so readiness then depends on the health URL or, without one, on the port being bound.
+
+`restart_services()` re-checks each planned port immediately before starting the service. When another process holds the port, or the service exits before readiness while another process holds it, the engine rejects that port, moves the service to the next free preferred port, emits a `PREPARED` event with reason `port_reresolved`, and calls `before_start` again with the updated plan; only services that have not started yet receive the refreshed specs. `RestartResult.port_plan` carries the final ports. When no preferred port remains, the restart fails.
+
+Provenance adopts a listener other than the started process only with process-group or endpoint evidence captured at readiness. A process that merely listens on the port of an exited launcher is never adopted, so stopping a service cannot terminate it. Launchers that hand off to a detached listener must declare `health_url` so the listener can be adopted and stopped.
 
 ## Adapter Pattern
 

@@ -91,6 +91,22 @@ def test_shouldCaptureSingleEndpointListenerWhenWrapperAlreadyExited():
     assert provenance.capability == ProvenanceCapability.ENDPOINT_GRADE
 
 
+def test_shouldNotAdoptSoleListenerWhenWrapperExitedWithoutOwnershipEvidence():
+    operations = PlatformOperationSet(
+        process_exists=lambda pid: pid == 222,
+        process_matches_command=lambda pid, command: False,
+        process_command_line=lambda pid: "",
+        get_listening_process_ids=lambda host, port: (222,),
+        process_start_marker=lambda pid: "",
+    )
+
+    provenance = capture_process_provenance(operations, 111, ("python", "api.py"), "127.0.0.1", 8100)
+
+    assert resolve_owned_listener(operations, "127.0.0.1", 8100, 111) is None
+    assert provenance.listener_pid is None
+    assert provenance.capability == ProvenanceCapability.WRAPPER_ONLY
+
+
 def test_shouldCaptureSingleEndpointListenerWhenWrapperIsNotTheListener():
     operations = PlatformOperationSet(
         process_exists=lambda pid: pid in {111, 222},
