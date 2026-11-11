@@ -1135,9 +1135,9 @@ session_key=f"metrics.workbench.{profile_id}")`。range 或图表变化后，页
      中止与服务端异常后名额都归还；反向绑定被拒。复签 PASS（附条件，不需要重跑；条件已并入 D3、D10、H6、H7、§5.1），
      0.5 逐项通过。
 4. **AIB-2**（AI Base）：D1–D12 中属于 AI Base 的部分。规划在 AIB-0 交付后即可开始；S0b 终测已复签、owner 已签署
-   Q10，实施的这一前提已满足。以独立壳和 `start_blocking()` + WSGI 适配器两种托管方式通过宿主一致性套件作为验收；套件包括 D10
-   列出的 D12 托管要求，其中第一段停止与句柄停止都在配置的时限内完成（R14、R15），请求正常结束、出错、客户端中止
-   和停止之后流与其他请求的名额都归还（R22）。另外：
+   Q10，实施的这一前提已满足。以独立壳和 `start_blocking()` + WSGI 适配器两种托管方式通过宿主一致性套件作为验收；
+   套件包括 D10 列出的 D12 托管要求，其中第一段停止与句柄停止都在配置的时限内完成（R14、R15），请求正常结束、出错、
+   客户端中止和停止之后流与其他请求的名额都归还（R22）。另外：
    - report_creator、soc_ai_driver、sample_agent 的 App 包都通过 `check_app_package`（D10）；
    - report_creator 的报告审阅和 soc_ai_driver 的流水线 agent 以档案在真实模型上运行，输出经过 schema 校验（D4、D9）；
    - task-run/1 只剩进程内 API：`app/routes/task_runs.py`、`app/task_run_candidate.py`、`app/services/task_runs/pack.py`
