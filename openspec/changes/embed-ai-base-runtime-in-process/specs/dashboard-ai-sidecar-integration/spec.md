@@ -24,7 +24,7 @@
 
 ### Requirement: AI Base exposes reusable platform surfaces
 **Reason**: 这是对 AI Base 平台本身的要求，不应由 Metrics 规定；Metrics 也不再作为 AI Base 的第四个 profile 被加载。
-**Migration**: Metrics 侧的能力声明由 `embedded-ai-runtime-host` 的 "Metrics App package declares the whole AI surface" 承接；运行时的平台契约见本 change 的上游建议文档（v2 D1–D11）。
+**Migration**: Metrics 侧的能力声明由 `embedded-ai-runtime-host` 的 "Metrics App package declares the whole AI surface" 承接；运行时的平台契约见本 change 的上游建议文档（v2.1 D1–D12）。
 
 ### Requirement: Sidecar results are auditable and replayable
 **Reason**: 不再有跨进程的结果信封，运行时事件直接写入 Metrics。

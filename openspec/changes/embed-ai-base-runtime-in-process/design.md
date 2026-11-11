@@ -13,10 +13,13 @@
 - owner 于 2026-11-10 决定保留 Docker 部署：镜像改为单进程 `manage.py serve`，非回环绑定不强制 Basic 认证，
   维持现有的匿名姿态（决策 3、16）。
 - owner 于 2026-11-11 根据 S0 结果（`s0-spike-report.md`，C5 不通过）选择方向 1：Django 保持线程化 WSGI；运行时经
-  `start_blocking` 运行在 `ai_host` 的专用循环线程上；`/ai` 经 WSGI 适配器桥接到同一循环。Goals 与决策 1、2、3、16
-  中以 uvicorn、`metrics.asgi`、lifespan 为前提的内容已被取代，将按 S0b 结论改写（tasks 0.5）；改写前不得据以实施。
-- 本设计只使用 v2 文档定义的运行时 API（`create_runtime`、`start_blocking`、`runtime.running()`、`runtime.asgi_app()`、
-  `runtime.chat`、`runtime.task_runs`、`runtime.blocking`、`runtime.ui.asset_url`、`ai_base_runtime.spi/apps/contracts/testkit`）。
+  `start_blocking` 运行在自己的专用循环线程上；`/ai` 经运行时的 WSGI 适配器（v2.1 H7）进入同一循环。本文已按方向 1
+  改写；标注【待 S0b】的项（HTTP server、静态文件设置、线程数与 `/ai` 在途上限、第一段停止时限、精确版本）由 S0b
+  结论填充（tasks 0.5），填充前不得据以实施。本设计依赖上游 v2.1 的 Q10（运行时提供同步宿主托管：`start_blocking`
+  句柄、两段式停止、心跳与核心 wheel 中的 WSGI 适配器），由 owner 随 v2.1 定稿签署；Q10 不获签署时回到 owner 重新决策。
+- 本设计只使用上游提案 v2.1 定义的运行时 API：`start_blocking` 及其返回的句柄（`runtime.blocking` 同步门面，含
+  `chat` 与 `task_runs`；第一段停止；WSGI 适配器，v2.1 H2/H6/H7）、`runtime.ui.asset_url`、
+  `ai_base_runtime.spi/apps/contracts/testkit`。句柄方法与适配器配置的最终名称以 AIB-2 的接口回执为准（tasks 0.6，Q4）。
 - 发布顺序：AIB-0（AI Base 热修）→ S0 共装 spike（不通过）→ S0b（方向 1）→ 上游提案 v2.1 → AIB-2 与 MDB-2
   同版本发布（v2 §9）。
 
@@ -45,7 +48,8 @@
 
 **Goals:**
 
-- 一个 uvicorn 进程、一个组合根 `metrics.asgi` 同时托管 Django 与运行时；`manage.py serve` 是唯一受支持的启动方式。
+- 一个进程、一个组合根：`manage.py serve` 以线程化 WSGI 托管 Django，运行时在同一进程的专用循环线程上运行，`/ai`
+  经运行时的 WSGI 适配器进入；`manage.py serve` 是唯一受支持的启动方式。
 - 运行时只经新 Django app `ai_host` 进入 Metrics；project_management 只依赖自己定义的同步端口；domain 保持纯 Python。
 - project run 与 report assist 经 task-run 端口、以提交用户身份在真实模型上执行，记录只有一个版本。
 - 发布审批绑定确定性预览摘要，发布结果写入 Metrics 自有的 `AiChartPublication`。
@@ -55,6 +59,7 @@
 **Non-Goals:**
 
 - 多 worker、reload、多进程共享状态目录（v2 §8.9）。
+- 用 ASGI server 托管 Django（S0 C5：主要页面 p95 超过线程化 WSGI 基线 1.2 倍的门槛）。
 - 任何向后兼容：旧 admission/wire 记录不读取、`runtime/operations/` 不迁移、旧 `BugTrendAuditEvent` 发布行不进入新发布列表。
 - 迁移 dashboard_query_agent 的旧会话与外壳状态（Q8）。
 - 在 Metrics 中重做运行时已有的能力：审批 UI、会话存储、模型管线、task-run 准入；Metrics 不提供 AI 开关。
@@ -63,65 +68,117 @@
 
 ## Decisions
 
-### 决策 1：`metrics.asgi` 是唯一组合根，`ai_host` 是唯一导入运行时的模块
+### 决策 1：`manage.py serve` 是唯一组合根，`ai_host` 是唯一导入运行时的模块
 
 - **决定**：
-  - `metrics/asgi.py` 先 `os.environ.setdefault("DJANGO_SETTINGS_MODULE", "metrics.settings.production")`，调用
-    `get_asgi_application()` 完成 `django.setup()`，再导入 `ai_host.wiring.build_application`；除此之外不导入 AI 代码。
-  - 新 Django app `ai_host`（加入 `INSTALLED_APPS`）：`wiring.py`（组合根、lifespan、CLI 端口工厂）、`host.py`（宿主 SPI）、
+  - 组合根是 `ai_host` 的 `serve` 命令与 `wiring.py`：`manage.py` 完成 `django.setup()`（默认
+    `metrics.settings.production`，`manage.py:9`）之后，`serve` 构造运行时、WSGI 应用与 HTTP server，并持有整个生命周期
+    （决策 2、3）。删除 `metrics/asgi.py`、`metrics/wsgi.py` 与 `WSGI_APPLICATION`（`defaults.py:85`）。`runserver` 与
+    Django test client 仍能渲染页面（`WSGI_APPLICATION` 为空时 Django 回退到 `get_wsgi_application()`），此时 AI pane
+    为 `not_running`。
+  - 新 Django app `ai_host`（加入 `INSTALLED_APPS`）：`wiring.py`（WSGI 分派、生命周期、CLI 端口工厂）、`host.py`（宿主 SPI）、
     `package.py`（`METRICS_APP`）、`settings.py`、`state.py`（生命周期对象）、`task_runs.py`、`tools/`、`models.py`（审计表）、
     `management/commands/serve.py`。
-  - 外层 Starlette 应用：`Mount(ai_mount_path(), app=runtime.asgi_app())` 在前，`Mount("/", app=django_app)` 在后。
-    挂载路径为 `METRICS_BASE_URL + "ai"`（Q7）。静态文件只由中间件链中的 WhiteNoise 提供（`defaults.py:52-55`，位于
-    `BasicAuthMiddleware` 之后，与现在的 gunicorn 镜像相同），并设置 `WHITENOISE_USE_FINDERS = True`，让没有运行
-    `collectstatic` 的本地进程也能提供静态文件；不再使用 `project_serve.py:50` 的 `StaticFilesHandler` 或其 ASGI 等价物。
-    Django 6 已不读取 `STATICFILES_STORAGE`（`defaults.py:147`），实际生效的是不带哈希的 `StaticFilesStorage`，finders 与
-    `STATIC_ROOT` 中的文件名一致。
-  - 删除 `metrics/wsgi.py` 与 `WSGI_APPLICATION`（`defaults.py:85`）；Docker 与 README 的部署方式见决策 16。
-    `runserver` 与 Django test client 仍能渲染页面，此时 AI pane 为 `not_running`。
-  - 导入规则测试（import-linter 或等价 gate）：只有 `ai_host` 导入 `ai_base_runtime`；任何模块不导入
-    `ai_base_runtime._internal` 或 AI Base 的 `app.*`；`metrics/asgi.py` 只导入 Django 与 `ai_host.wiring`；
-    project_management 不导入 `ai_host`；各模块 `app/domain/` 不导入 Django、asgiref 与运行时。
-  - 依赖：精确固定 `ai-base-runtime`、`uvicorn`，以及 `ai_host` 直接导入的 `starlette`；删除 `gunicorn`、
-    `ai-base-application-sdk` 与 `requirements-ai-task.txt`；portalocker 升到 ≥4.4.2，精确值由 S0 确定。
-- **理由**：开发、验证、生产走同一条装配路径；运行时 API 面收敛在一个 app，升级只改一处；边界可由 gate 机器检查
-  （见 `embedded-ai-runtime-host`）。Django 的 ASGI handler 只处理 HTTP scope，Starlette 的 `Mount` 不转发 lifespan，
-  所以 lifespan 必须由外层应用持有。静态文件只走一条路径：外层的静态处理器会绕过整条中间件链，配置了 Basic 用户的镜像
-  会因此公开静态文件。
-- **否决的备选**：把运行时挂进 Django URLconf（Django 无法托管子应用的 lifespan）；在 `AppConfig.ready()` 构造运行时
-  （migrate、测试、CLI 等所有加载 Django 的进程都会争抢状态目录锁）；保留 WSGI 入口作备用（第二个组合根，永远进不了
-    `running()`）；外层用 `ASGIStaticFilesHandler` 提供静态文件（绕过中间件链，见理由）。
-
-### 决策 2：lifespan 与 project run 生命周期（与 v2 §5.1 一致）
-
-- **决定**：`build_application(django_app)` 调用 `create_runtime(build_settings(), host=MetricsHost(), apps=[METRICS_APP])`，
-  lifespan 严格按以下顺序：
-  1. Windows 上断言当前运行的循环是 Proactor 循环，否则以 Metrics 自有错误码 `EVENT_LOOP_NOT_PROACTOR` 启动失败；
-  2. `async with runtime.running()`：获取状态目录锁；`RuntimeBusy` 与无效设置直接向外传播；
-  3. `attach(runtime)`，供 `ai_host` 视图、嵌入路径与 AI pane 状态读取；
-  4. `port = RuntimeTaskRunPort(runtime.blocking.task_runs)`；
-  5. `project_runs = await asyncio.to_thread(build_project_runtime, task_runs=port)`，随后 `install_project_runtime(project_runs)`；
-  6. `await asyncio.to_thread(project_runs.start)`，然后 `yield`；
-  7. `finally`：`await asyncio.to_thread(project_runs.stop, 620)`，随后立即向 stdout 写一行 `project_runtime_stopped`
-     事件（格式同 `project_serve.py:86-93`；`stop` 抛错时按 `RuntimeStopResult(False, None, ())` 输出，同 `:69-75`）
-     → `clear_project_runtime(project_runs)` → `detach()` → 离开 `running()`。任一步的异常记入生命周期对象，不跳过后续步骤。
-  - `ai_host.state` 中只有一个生命周期对象，保存阶段（starting/running/stopped/failed）、启动或清理的错误码（异常的
-    `code` 属性，取法同 `project_serve.py:95-98`）和 `stop` 返回的 `RuntimeStopResult`。启动阶段的异常记录错误码后，
-    以只含错误码的异常重新抛出（`from None`）：uvicorn 会把 lifespan 启动失败的 traceback 文本写入日志
-    （`lifespan/on.py:115-121`），这样日志不含原异常消息。`serve` 与 AI pane 只读这个对象。
+  - `wiring.build_wsgi_application(django_app, ai_app)` 返回一个 WSGI 分派函数，按 `PATH_INFO` 分三路。挂载路径（Q7）为
+    `/` 加规范化的 `METRICS_BASE_URL` 再加 `ai`，规范化规则与页面路由前缀相同（`ui_web/urls.py:93` 经
+    `ui_web/utils/url_utils.py:4`：去掉首尾 `/`，非空时补一个 `/`）：为空或 `/` 时是 `/ai`，为 `/metrics/` 或 `metrics`
+    时是 `/metrics/ai`。
+    - 等于挂载路径时返回 308，`Location` 为挂载路径加 `/`，保留查询串；
+    - 以挂载路径加 `/` 开头时交给运行时的 WSGI 适配器（v2.1 H7）：`SCRIPT_NAME` 追加挂载路径，`PATH_INFO` 为余下部分，
+      请求头、Host、客户端地址与 scheme 原样传递；认证与 Host 校验由运行时经宿主 SPI 完成（决策 14）；
+    - 其余交给 Django 的 `get_wsgi_application()`，页面请求路径与现在相同。
+  - 静态文件只由中间件链中的 WhiteNoise 提供（`defaults.py:52-55`，位于 `BasicAuthMiddleware` 之后，与现在的 gunicorn
+    镜像相同），并设置 `WHITENOISE_USE_FINDERS = True`，让没有运行 `collectstatic` 的本地进程也能提供静态文件；
+    `WHITENOISE_AUTOREFRESH`【待 S0b】。不再使用 `project_serve.py:50` 的 `StaticFilesHandler`。Django 6 已不读取
+    `STATICFILES_STORAGE`（`defaults.py:147`），实际生效的是不带哈希的 `StaticFilesStorage`，finders 与 `STATIC_ROOT`
+    中的文件名一致。
+  - HTTP server 为【待 S0b】，必须接受 `serve` 预先绑定的监听 socket（决策 2 第 1 步）。线程数与 `/ai` 在途上限在
+    `ai_host.settings` 中显式设置：流式请求与其他 `/ai` 请求分开限额，两者之和小于线程数，页面始终至少保留【待 S0b】
+    个线程；超过各自上限的 `/ai` 请求立即得到 503 和 `Retry-After`，不排队（v2.1 H7）。流占满自己的限额时，其他
+    `/ai` 请求与页面照常处理。
+  - 导入规则测试（import-linter 或等价 gate）：只有 `ai_host` 导入 `ai_base_runtime` 与所选 HTTP server；任何模块不导入
+    `ai_base_runtime._internal` 或 AI Base 的 `app.*`；project_management 不导入 `ai_host`；各模块 `app/domain/` 不导入
+    Django、asgiref 与运行时。
+  - 依赖：精确固定 `ai-base-runtime` 与所选 HTTP server；`uvicorn`、`starlette` 不是 Metrics 的直接依赖；删除 `gunicorn`、
+    `ai-base-application-sdk` 与 `requirements-ai-task.txt`；portalocker 升到 4.4.2（S0 确定）。
 - **理由**：
-  - `ProjectRunRuntime.start()`（`project_management/runtime.py:39-43`）调用 `reconcile_interrupted()`
-    （`services/project_run_recovery.py:17-29`）扫描运行档案并访问 ORM，放在事件循环上会抛 `SynchronousOnlyOperation`
-    并阻塞循环；v2 §5.1 把构造、启动、停止都视为阻塞调用。
-  - `stop()` 要等待 worker 线程，而 worker 可能正阻塞在 blocking 门面上，门面的协程需要同一个循环推进；在循环上
-    stop 会死锁。先停 worker、后离开 `running()`，worker 的最后一次调用仍有运行中的运行时。
+  - S0 实测：Django 在 ASGI 下每个请求（包括每个静态资源）都要新建线程上下文与执行器，主要页面 p95 是线程化 WSGI
+    基线的 1.82–3.23 倍，不挂运行时的 uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。保持 WSGI，页面请求路径与
+    基线相同。
+  - 开发、验证、生产走同一条装配路径；运行时 API 面收敛在一个 app，升级只改一处；边界可由 gate 机器检查（见
+    `embedded-ai-runtime-host`）。
+  - 生命周期由 `serve` 显式控制，不依赖任何 server 的 lifespan 或信号语义；换 server 只影响决策 3 中的启停调用。
+  - 静态文件只走一条路径：在中间件链之外提供静态文件会绕过 Basic 认证，配置了 Basic 用户的镜像会因此公开静态文件。
+  - WSGI server 的线程池是固定的，每个 `/ai` 在途请求（包括整条流）占用一个线程；在途上限保证页面始终有线程可用。
+    流与其他 `/ai` 请求分开限额，长时间打开的流不会挤掉审批、会话列表等短请求。
+- **否决的备选**：
+  - uvicorn 同时托管 Django ASGI 与运行时（S0 C5 不通过）；uvicorn 托管运行时、Django 经 Starlette `WSGIMiddleware`
+    挂入：S0 测过两种静态文件姿态，`composed_wsgi` 的 p95 比值 seq 1.40–2.15、c4 1.85–2.38，`composed_sf_wsgi` seq
+    1.25–1.93、c4 1.55–1.73，都是 0/12 达标（`s0-spike-report.md:82,118,122`）；Granian（WSGI 模式在独立的 worker
+    进程中运行应用，`serve` 无法在同一进程内控制生命周期）；gunicorn（不支持 Windows，多 worker 与状态目录锁冲突，
+    见决策 16）。
+  - 由 Django 视图代理 `/ai`：同样需要线程与循环之间的桥接，另加一层 Django 响应处理（流要么被缓冲，要么被改写），
+    POST 还要豁免 CSRF。
+  - 通用桥接库 a2wsgi 1.10.10：跨线程等待没有上限（`a2wsgi/asgi.py:214` 的 `run_coroutine_threadsafe(...).result()`、
+    `:69,230` 的 `SyncEvent.wait()`）；响应生成器的 `yield`（`:248,269,303`）不在 try/finally 中，WSGI `close()` 时
+    既不发送 `http.disconnect`，也不取消 ASGI task。S0 测的是 Starlette `WSGIMiddleware`，没有安装 a2wsgi
+    （`s0-spike-report.md:127`）。
+  - 在 `AppConfig.ready()` 构造运行时（migrate、测试、CLI 等所有加载 Django 的进程都会争抢状态目录锁）；保留
+    `metrics/wsgi.py` 作备用入口（第二个组合根，永远不启动运行时）；在中间件链之外提供静态文件（见理由）。
+
+### 决策 2：生命周期与 project run（v2.1 §5.1）
+
+- **决定**：`serve` 的主线程只做生命周期控制，严格按以下顺序：
+  1. 按决策 3 的规则检查地址后，由 `ai_host` 自建监听 socket 并交给所选 server（例如 waitress 的 `sockets` 参数）：
+     Windows 设置 `SO_EXCLUSIVEADDRUSE`，POSIX 设置 `SO_REUSEADDR`，然后 bind 与 listen；端口被占用时 2 秒内以
+     `serve bind failed.` 非零退出，不启动运行时。
+  2. `with start_blocking(build_settings(), host=MetricsHost(), apps=[METRICS_APP]) as runtime:`：运行时在自己的专用线程上
+     创建事件循环（Windows 上为 Proactor）并进入 `running()`，获取状态目录锁；`RuntimeBusy`、无效设置等启动异常传回
+     主线程（v2.1 H6）。
+  3. `attach(runtime)`，供 WSGI 分派、`ai_host` 视图与 AI pane 状态读取。
+  4. `port = RuntimeTaskRunPort(runtime.blocking.task_runs)`。
+  5. `project_runs = build_project_runtime(task_runs=port)`，`install_project_runtime(project_runs)`，`project_runs.start()`，
+     都在主线程上直接调用。
+  6. 在 `serve-http` 线程中开始受理请求；主线程以不超过 0.5 秒的间隔检查停止事件（决策 3）与运行时的结束事件
+     （v2.1 H6）。运行时在运行期意外结束时，生命周期对象进入 `failed` 并记录错误码，`serve` 输出
+     `serve runtime failed (<code>).`，执行第 7 步后以非零退出。
+  7. 停止，在 `finally` 中按序执行；任一步的异常记入生命周期对象，不跳过后续步骤：
+     1. 停止受理新连接；
+     2. 运行时第一段停止（v2.1 H2）：新的 `/ai` 请求得到 503，打开的流发送终止事件后结束，时限【待 S0b】；task run 与
+        blocking 门面照常工作；
+     3. 排空进行中的请求：从第 1 步算起，与第一段停止合计最长 10 秒，到期后关闭剩余连接，然后 join `serve-http` 线程；
+     4. `project_runs.stop(620)`，随后立即向 stdout 写一行 `project_runtime_stopped` 事件（格式同
+        `project_serve.py:86-93`；`stop` 抛错时按 `RuntimeStopResult(False, None, ())` 输出，同 `:69-75`）；
+     5. `clear_project_runtime(project_runs)`，`detach()`；
+     6. 离开 `start_blocking`：运行时第二段停止，取消未完成的运行并标记中断，时限 30 秒，结果记入生命周期对象。
+  - 第 7 步（包括第 6 步发现运行时结束后的退出路径）中的每一次等待都按不超过 0.5 秒分片：排空后的 join、
+    `project_runs.stop` 内的 join、离开 `start_blocking` 时的 join。`ProjectRunRuntime.stop`
+    （`project_management/runtime.py:75` 是一次 `join(timeout_seconds)`）改为分片 join，总时限不变。
+  - 视图与 WSGI 分派在每个请求开始时从生命周期对象取一次运行时句柄，此后不再读取。`detach()` 之后仍持有旧句柄的
+    请求在第二段停止之前照常完成；第二段停止之后门面立即抛运行时未运行的异常（v2.1 H6），视图按 `not_running`
+    渲染，不返回 500。server 的工作线程是 daemon 线程，强制退出不等待它们。
+  - 第 2–6 步中任一步失败时，已完成的步骤按第 7 步的对应部分逆序清理，然后按决策 3 输出启动失败。
+  - `ai_host.state` 中只有一个生命周期对象，保存阶段（starting/running/stopping/stopped/failed）、启动或清理的错误码
+    （异常的 `code` 属性，取法同 `project_serve.py:95-98`）、`project_runs.stop` 返回的 `RuntimeStopResult` 与运行时的
+    停止结果。`serve` 与 AI pane 只读这个对象。
+- **理由**：
+  - 先绑定再启动：端口冲突在 2 秒内失败，不获取状态目录锁，也不触发 project run 的恢复扫描。
+  - 自建 socket：Windows 上 `SO_REUSEADDR` 的语义是强制绑定已被占用的端口，server 自己设置它时端口被占用也不报错；
+    不设置 `SO_EXCLUSIVEADDRUSE` 时，其他进程可以借 `SO_REUSEADDR` 绑定同一端口并截走连接。独占绑定因此不能依赖
+    各 server 的默认选项。
+  - 分片等待：Windows 上 `Thread.join(timeout)` 的等待可能不被信号打断，处理器要等 join 返回后才执行（CPython 3.13
+    的实际行为由 S0b 测量，见 tasks 0.5）。一次长 join 会让第二次信号推迟到 join 返回才生效；分片后最迟一个分片即
+    生效，与解释器版本无关。
+  - 主线程上没有事件循环：`ProjectRunRuntime.start()`（`project_management/runtime.py:39-43`）中访问 ORM 的
+    `reconcile_interrupted()`（`services/project_run_recovery.py:17-29`）与 `stop()` 中的线程等待都可以直接调用；worker
+    经 blocking 门面调用运行时，由运行时的循环线程推进，不会死锁。
+  - 第一段停止先于排空：每条打开的流占用一个 server 线程，不先结束流，排空就要等到时限。
+  - 先停 worker、后完整停止运行时：第一段停止不影响 blocking 门面，worker 的最后一次调用仍有运行中的运行时。
   - 620 秒 = `RunPolicy.timeout_seconds` 600（`app/domain/run_contracts.py:33`）加宽限，等于 `project_serve.py:70`。
-  - 停止事件紧接 `stop` 在 lifespan 中输出，而不是在 `serve` 的 `run()` 返回之后：非 PID 1 进程收到 SIGTERM 时，
-    uvicorn 重新抛出该信号，`run()` 之后的代码不会执行（决策 3）。
-  - Proactor 是 v2 D8 对 Windows 宿主的要求，由一致性套件断言。
-- **否决的备选**：在 `AppConfig.ready()` 启动 worker（非服务进程也会启动）；`sync_to_async(thread_sensitive=True)`
-  调用 start/stop（排进共享线程，与请求和 tool 调用互相阻塞）；在 lifespan 之外单独启停 project run（无法保证
-  "先停 worker、再停运行时"的顺序）。
+  - Proactor 由 `start_blocking` 保证（v2 D8、v2.1 H6）并由宿主一致性套件断言，Metrics 不再自定检查与错误码。
+- **否决的备选**：在 `AppConfig.ready()` 启动 worker（非服务进程也会启动）；HTTP server 占用主线程（停止顺序只能放进
+  server 的回调或另一个线程，各 server 的回调语义不同，而信号处理器只在主线程执行）；先排空再做第一段停止（见理由）；
+  在运行时的循环线程上启停 project run（`start()` 访问 ORM，`stop()` 等待的 worker 正需要这个循环推进）。
 
 ### 决策 3：`manage.py serve` 取代 `project_serve`
 
@@ -132,36 +189,29 @@
     按 owner 决定允许，另有两条规则：settings 允许匿名决定审批（只有 development settings，决策 14）时以
     `CommandError` 拒绝，避免匿名审批暴露到网络；未配置 Basic 用户时输出一条 `serve_anonymous_network_bind`
     警告，只含绑定地址。
-  - 运行 `uvicorn.Server(uvicorn.Config("metrics.asgi:application", host=..., port=..., lifespan="on", workers=1,
-    reload=False, timeout_graceful_shutdown=10)).run()`；不提供 workers 或 reload 参数。
-  - `serve` 捕获 `run()` 抛出的 `SystemExit`（lifespan 或端口绑定失败时 uvicorn 调用 `sys.exit`）与 `KeyboardInterrupt`
-    （Ctrl+C 关闭后 uvicorn 重新抛出 SIGINT），然后统一判断：`server.started` 为假且生命周期对象有启动错误码时输出
-    `serve startup failed (<code>).`；为假但没有启动错误码（lifespan 已启动、端口绑定失败）时输出 `serve bind failed.`；
-    两者都非零退出。
-  - 保留 `--stop-file`（绝对路径）与 `--lifetime-seconds`（`project_serve.py:24-25,117-130`）：命令内的监视线程在文件
-    出现或到期时设置 `server.should_exit`，走正常 lifespan 关闭。Windows 父进程无法可靠地向子进程发送 Ctrl+C，
-    验证脚本依赖这两个参数。
-  - `project_runtime_stopped` 事件由 lifespan 输出（决策 2 第 7 步），格式不变，仍由
-    `scripts/validation/project_full_stack_identity.py:304` 消费；`serve` 不再输出它。启动成功的情况下，未干净停止
-    （`stopped` 为假或 `unresolved` 非空）或生命周期对象有清理错误码时输出 `serve cleanup failed.`（有错误码时附带），
-    非零退出；否则退出码为 0。
-- **理由**：错误输出只含错误码，沿用 `project_serve.py:95-98` 不泄露细节的约定；保留停止事件让现有验证断言不变。
-  以下行为已在 uvicorn 0.54.0 源码中核实，S0 以固定版本复核：
-  - lifespan 启动失败时 `Server.startup` 调用 `sys.exit(STARTUP_FAILURE)`（`server.py:116-118`）；端口绑定失败时先执行
-    lifespan shutdown 再 `sys.exit`（`:189-192`）；`started` 只在启动成功后置真（`:205`）。0.47.0 在 lifespan 失败时
-    只是返回，上面的捕获方式对两种行为都成立。
-  - `timeout_graceful_shutdown` 默认 `None`（`config.py:236`）。关闭时先停止监听并通知各连接，再等待所有连接与任务结束
-    （`server.py:281-311`），打开的 SSE 或聊天流会让关闭无限等待；设为 10 秒后，超时的任务被取消，lifespan shutdown
-    照常执行。
-  - `capture_signals`（`:331-349`）在 `run()` 结束前恢复原信号处理器，并重新抛出捕获到的信号。非 PID 1 进程收到 SIGTERM
-    时在 lifespan 结束后以该信号退出，`run()` 之后的代码不执行，所以停止事件必须在 lifespan 中输出；SIGINT 则变成
-    `KeyboardInterrupt`。Docker 中 exec 形式的 Python 是 PID 1，内核不向它投递默认处理的 SIGTERM，`run()` 正常返回。
-  - 连续两次 Ctrl+C 会置 `force_exit`，不再发送 lifespan shutdown（`:310-311,351-356`），按强制终止处理：中断的运行由
-    下次 `start()` 的恢复标记出来。
-  - Windows 上不使用子进程时，循环工厂是 `ProactorEventLoop`（`loops/asyncio.py:8-10`）。
-- **否决的备选**：直接用 `uvicorn` CLI（无法做绑定规则、读错误码、输出停止事件）；`uvicorn.run()`（返回后拿不到
-  `Server` 实例判断 `started`）；把 `runserver` 作为支持的方式（不经 lifespan）；一律拒绝非回环绑定（容器无法部署）；
-  非回环绑定强制 Basic 认证（owner 选择维持现有姿态）。
+  - 不提供 workers、reload 或线程数参数：单进程、单副本（v2 §8.9），线程数与在途上限只来自 settings（决策 1）。
+  - 停止触发：SIGINT（Ctrl+C）、SIGTERM，以及保留的 `--stop-file`（绝对路径）与 `--lifetime-seconds`
+    （`project_serve.py:24-25,117-130`）。`serve` 在主线程为 SIGINT、SIGTERM 安装处理器，处理器只设置停止事件；监视线程
+    在文件出现或到期时设置同一个事件；主线程按决策 2 第 6 步的间隔检查该事件，然后执行决策 2 第 7 步。停止期间再次
+    收到 SIGINT 或 SIGTERM 时输出 `serve forced exit.`，经 `os._exit` 在 1 秒内以非零退出（依赖决策 2 的分片等待），
+    中断的运行由下次 `start()` 的恢复标记出来。
+  - 输出与退出码，只输出错误码，不输出异常消息或 traceback：
+    - 绑定失败：`serve bind failed.`；
+    - 运行时或 project run 启动失败：`serve startup failed (<code>).`；
+    - 运行时在运行期意外结束：`serve runtime failed (<code>).`（决策 2 第 6 步）；
+    - 停止后未干净结束（`stopped` 为假或 `unresolved` 非空、运行时停止超时，或有清理错误码）：`serve cleanup failed.`，
+      有错误码时附带；
+    - 以上都非零退出；否则退出码为 0。
+  - `project_runtime_stopped` 事件格式不变，仍由 `scripts/validation/project_full_stack_identity.py:304` 消费。
+  - 所选 HTTP server 必须接受预先绑定的 socket；它的开始受理、停止受理与排空调用【待 S0b】。
+- **理由**：
+  - 错误输出只含错误码，沿用 `project_serve.py:95-98` 不泄露细节的约定；停止事件与停止参数保留，现有验证断言不变。
+  - Windows 父进程无法可靠地向子进程发送 Ctrl+C，验证脚本依赖 `--stop-file` 与 `--lifetime-seconds`。
+  - 信号处理器由宿主安装，运行时核心不触碰信号（v2 D2、v2.1 H8）；停止顺序不依赖 server 的信号处理。Docker 中 Python
+    是 PID 1，内核不向 PID 1 投递默认处理的 SIGTERM，不安装处理器时 `docker stop` 只能等到 SIGKILL（决策 16）。
+- **否决的备选**：把 `runserver` 作为支持的方式（不启动运行时，默认的自动重载会派生子进程）；用 server 自带的命令行
+  入口启动（无法做绑定规则、读错误码、控制停止顺序）；一律拒绝非回环绑定（容器无法部署）；非回环绑定强制 Basic 认证
+  （owner 选择维持现有姿态）。
 
 ### 决策 4：tool handler 为 async，经 `sync_to_async(thread_sensitive=False)` 调用 Metrics 公共 API
 
@@ -199,21 +249,24 @@
     （`SecretStr`）。它们只来自环境变量，不进数据库，不出现在页面或日志中。
   - 三项齐全才在 `HostConfig` 中配置模型。任一缺失时运行时照常进入运行期，task run 准入返回 `model_not_configured`，
     AI pane 显示 `not_configured` 并只列出缺失的变量名。
-  - pane 状态由生命周期对象和设置推导：未经 lifespan 启动为 `not_running`，缺模型为 `not_configured`，否则为 `ready`。
-    scope binding 未解析的诊断与运行时就绪状态分开显示（见 `unified-metrics-workbench-ui`）。
+  - pane 状态由生命周期对象和设置推导：生命周期对象不在 `running` 阶段（未经 `serve` 启动，或已开始停止）为
+    `not_running`，缺模型为 `not_configured`，否则为 `ready`。scope binding 未解析的诊断与运行时就绪状态分开显示（见
+    `unified-metrics-workbench-ui`）。
   - 删除 `METRICS_AI_SIDECAR_ENABLED` 与 `METRICS_AI_BASE_*`（`defaults_metrics.py:149-156`），不提供 AI 开关。
 - **理由**：模型凭据与 `METRICS_AI_GRAFANA_PASSWORD` 一样经环境变量注入，沿用现有机密姿态；"模型是否已配置"
-  由运行时准入统一判断（v2 D9），Metrics 不重复判断，只把 `model_not_configured` 映射为 `not_configured`。
+  只由 `ai_host.settings` 中构造 `HostConfig` 的同一个函数判断：pane 的 `not_configured` 由它推导，运行时准入根据同一个
+  `HostConfig` 返回 `model_not_configured`（v2 D9），两边不会出现不一致。
 - **否决的备选**：在设置页保存模型凭据（需要新的机密存储和审计）；缺模型时不启动运行时（`not_configured` 会退化成
   `not_running`，失去可诊断性）；保留启用开关。
 
 ### 决策 7：工作台会话键与 `ContextRef`
 
 - **决定**：
-  - 嵌入路径来自 `runtime.chat.open_session(principal, app_id="metrics", agent=..., context_ref=...,
-    session_key=f"metrics.workbench.{profile_id}")`（D7），运行时按 (principal, app_id, session_key) 复用会话。
+  - 页面视图在 WSGI 线程上经 blocking 门面取得嵌入路径：`runtime.blocking.chat.open_session(principal, app_id="metrics",
+    agent=..., context_ref=..., session_key=f"metrics.workbench.{profile_id}")`（D7、v2.1 H6），运行时按
+    (principal, app_id, session_key) 复用会话。
   - range、图表或 bucket 变化时，页面局部刷新得到新的 `ai_context_ref`，经 `embed-host.js` 发送 `context-changed`，
-    运行时把同一会话重新绑定（进程内等价调用为 `runtime.chat.bind_context`），不新建会话。
+    运行时把同一会话重新绑定（进程内等价调用为 `runtime.blocking.chat.bind_context`），不新建会话。
   - `ContextRef(kind="metrics.workbench", values=...)` 只含标识：binding key、profile id、provider、range、chart id、
     bucket/series、已选 ticket id。值只能是 str/int/bool 或它们的扁平列表，规范化后不超过
     `RuntimeLimits.max_context_ref_bytes`（4 KiB）。ticket id 最多 50 个，超出数量或字节上限时按选择顺序保留能放入的
@@ -224,7 +277,11 @@
     `ToolError("CONTEXT_BOUNDARY_VIOLATION")`。
   - 同源 iframe，`embed-host.js` 地址取自 `runtime.ui.asset_url("embed-host.js")`。审批只在嵌入的运行时 UI 中决定，
     Metrics 不另建审批视图。
+  - 页面视图对 `open_session` 的调用设置时限，并先取得一个非阻塞信号量（上限小于页面保留的线程数），时限与上限是
+    `ai_host.settings` 中的常量【待 S0b】。超时或信号量已满时 pane 显示"暂时不可用，可重试"，门面报告运行时未运行时
+    显示 `not_running`；两种情况页面都照常返回 200。
 - **理由**：一个 profile 对应一个持续的工作台对话；上下文只传标识，数据在服务端按 principal 拉取，越界校验不依赖页面。
+  pane 嵌在每个 workbench 页面中，门面调用有时限与并发上限，运行时变慢或卡住时不会占满页面线程。
 - **否决的备选**：按 binding key 建会话（切换范围就丢失对话）；每个 principal 一个会话（不同 profile 的上下文混在一起）；
   不传 session key（每次打开都新建会话）；在 `ContextRef` 中放图表数据或 ticket 正文（超限，也无法校验）。
 
@@ -274,7 +331,10 @@
     该函数移到 `app/api/project_runs.py`；CLI 由 `ai_host` 的 `AppConfig.ready()` 把 `local_task_run_port`（基于
     `start_blocking`）注册为 CLI 端口工厂，project_management 经 `open_local_task_run_port()` 使用。
   - 端口原样传递运行时准入错误码与 `recovery`（`profile_not_declared`、`profile_disabled`、`model_not_configured`、
-    `input_schema_invalid`）；运行时未运行为 `RUN_UNAVAILABLE`，`RuntimeBusy` 为 `RUN_BUSY`。
+    `input_schema_invalid`）；运行时未运行或门面超时（v2.1 H5）为 `RUN_UNAVAILABLE`，`RuntimeBusy` 为 `RUN_BUSY`。
+  - 每次 `start` 都带 `client_run_key`，取现有的 `clientRunKey`（attempt id 或 assist id，`out/ai_task_contract.py:102`、
+    `services/report_assist_wire.py:21`）；运行时按 (principal, app_id, `client_run_key`) 去重（v2 D9），超时后以同一个
+    键重试不会产生第二次运行。
   - 删除 AI 路径上的全部 `asyncio.run`（见 Context）；report assist 也经端口提交。
 - **理由**：依赖倒置后 project_management 不导入 `ai_host` 或运行时，可以用假端口单测；blocking 门面只在工作线程调用，
   在循环线程误用会立即抛 `RuntimeUsageError`（D8），不会静默死锁；`asyncio.run` 会创建第二个事件循环，而运行时资源
@@ -304,9 +364,11 @@
 ### 决策 12：状态目录与单进程锁
 
 - **决定**：运行时状态目录固定为 `METRICS_STATE_DIR/ai-base`（Q8；`METRICS_STATE_DIR` 见 `defaults_metrics.py:44`），
-  不可单独配置；`running()` 持有 `state_dir/.runtime.lock`。服务进程持锁时，`project_run --execute-local`（现流程见
-  `management/commands/project_run.py:84-98`）经 `start_blocking` 得到 `RuntimeBusy`，映射为 `RUN_BUSY` 并提示通过服务
-  提交，不等待、不换目录。进程内的 project run 注册表（`project_management/runtime.py:178-193`）只由组合根安装。
+  不可单独配置；运行时在 `start_blocking` 进入运行期时获取 `state_dir/.runtime.lock`，停止后释放。该锁是 OS 级文件锁
+  （v2.1 D8），持有进程以任何方式终止（包括 SIGKILL）都由操作系统释放。服务进程持锁时，`project_run --execute-local`
+  （现流程见 `management/commands/project_run.py:84-98`）经 `start_blocking` 得到 `RuntimeBusy`，映射为 `RUN_BUSY` 并
+  提示通过服务提交，不等待、不换目录。进程内的 project run 注册表（`project_management/runtime.py:178-193`）只由组合根
+  安装。
 - **理由**：运行时状态与数据库位于同一个可备份的根目录下；锁让单进程前提可检查（D8），避免两个运行时实例同时写审批
   和会话。
 - **否决的备选**：独立的 `METRICS_AI_STATE_DIR`（多一个需要备份和对齐的位置）；CLI 等待锁（可能无限期阻塞）；CLI 改用
@@ -327,13 +389,19 @@
 - **理由**：只剩一个服务进程，launcher 不再分配、探活第二个服务；模型端点仍是外部服务，需要告诉 Metrics 它在哪里。
   启动方式只有 `serve` 一种（决策 3），入口与审计都按它识别，否则审计会把正常的单进程部署报告为缺少 AI Base。
 - **否决的备选**：保留 ai-base 端口但不用（死配置误导运维）；兼容读取旧 profile（违背不做兼容）；审计脚本同时识别
-  `runserver` 与 `serve`（`runserver` 不经 lifespan，不是支持的启动方式）。
+  `runserver` 与 `serve`（`runserver` 不启动运行时，不是支持的启动方式）。
 
 ### 决策 14：宿主 SPI 的认证、审批与审计
 
 - **决定**：
   - `authenticate`：从 `BasicAuthMiddleware`（`metrics/middleware.py:10-62`）抽出纯函数 `check_basic_authorization`，
     中间件与 `MetricsHost` 共用；未配置 Basic 用户时返回匿名的 `local_operator`，认证失败返回 `None`（401）。
+  - Basic 用户设置改为 fail-closed：`METRICS_BASIC_AUTH_USERS` 未设置或为空字符串表示未配置；其他取值必须是至少有一个
+    条目、键和值都是非空字符串的 JSON 对象，否则 settings 加载时抛 `ImproperlyConfigured`，消息只含变量名。
+    `check_basic_authorization` 只把 `None` 视为未配置，非空字典以外的其他值一律拒绝。现状下 JSON 数组、非对象 JSON
+    或 `{}` 会让中间件静默停用认证（`metrics/middleware.py:18-31,36-37`）。
+  - 401 带 `WWW-Authenticate: Basic realm="Restricted"`（`metrics/middleware.py:59-62`）；运行时路由的 401 使用宿主
+    提供的同一质询头（v2.1 D3），浏览器在两边弹出同一个登录框。
   - `HostConfig` 中"允许匿名 principal 决定审批"（字段名由 AIB-2 确定，见 Open Questions 4）只在 development settings
     中以常量打开，不读环境变量（Q5）；`can_decide` 返回真，匿名与模型的拒绝由运行时完成。`manage.py` 默认使用 production
     settings（`manage.py:9`），所以发布审批至少需要一个 Basic 用户（`METRICS_BASIC_AUTH_USERS`）；没有时 AI pane 提示
@@ -344,9 +412,10 @@
   - `HostConfig` 的允许 Host 取自 Django `ALLOWED_HOSTS`（默认只有回环，`defaults.py:21`）；挂载路径、状态目录、模型
     凭据与 `NetworkPolicy` 都由 `ai_host.settings` 生成。静态文件由 WhiteNoise 在 `CommonMiddleware` 之前返回，不经
     Host 校验（决策 1，与现状相同）；静态资源公开且不含用户数据，予以豁免。
-- **理由**：同一请求在 Django 和运行时两侧的认证结果必须一致（见 `embedded-ai-runtime-host`）；审批权限是安全控制，
-  不能被环境变量打开（v2 §8.5）；运行时的会话、tool 和审批事件与 bug_metrics 的业务审计语义不同。认证失败可由未认证
-  的请求无限触发，写入数据库会让审计表无限增长，并在 SQLite 上争用写锁；结构化日志足以排查。
+- **理由**：同一请求在 Django 和运行时两侧的认证结果必须一致（见 `embedded-ai-runtime-host`）；Basic 用户设置写错时
+  进程必须启动失败，而不是静默放行全站；审批权限是安全控制，不能被环境变量打开（v2 §8.5）；运行时的会话、tool 和
+  审批事件与 bug_metrics 的业务审计语义不同。认证失败可由未认证的请求无限触发，写入数据库会让审计表无限增长，并在
+  SQLite 上争用写锁；结构化日志足以排查。
 - **否决的备选**：运行时自己做认证（与 Django 不一致）；用环境变量开启匿名审批；把运行时审计写进
   `BugTrendAuditEvent`（混淆业务审计，且该表不归 `ai_host`）；认证失败写入审计表（理由见上）。
 
@@ -372,34 +441,40 @@
 ### 决策 16：Docker 镜像以单进程 `serve` 运行
 
 - **决定**：
-  - `ops/docker/Dockerfile` 删除 `GUNICORN_*` 环境变量（`:27-34`），`CMD` 改为 exec 形式
+  - `ops/docker/Dockerfile` 的基础镜像由 `python:slim`（`:2`，随上游 latest 漂移）改为 `python:3.13-slim`，与 S0/S0b
+    验证的 CPython 3.13 同一小版本；删除 `GUNICORN_*` 环境变量（`:27-34`），`CMD` 改为 exec 形式
     `["python", "manage.py", "serve", "--host", "0.0.0.0", "--port", "8000"]`；`collectstatic` 与 production settings 不变。
-  - exec 形式让 Python 成为 PID 1，uvicorn 在主线程捕获 SIGTERM，走正常的 lifespan 关闭（决策 2），`run()` 正常返回
-    （决策 3）。Docker 默认 10 秒后发送 SIGKILL；停止预算 660 秒 = 连接排空 10（`timeout_graceful_shutdown`）+
-    `project_runs.stop` 620 + 运行时停止与余量 30，所以 README 要求 `docker run --stop-timeout 660`（Compose 用
-    `stop_grace_period: 660s`）；被提前杀死时，中断的运行由下次 `start()` 的恢复标记出来，不会静默丢失。
+  - exec 形式让 Python 成为 PID 1。内核不向 PID 1 投递默认处理的信号，`serve` 在主线程安装的 SIGTERM 处理器（决策 3）
+    让 `docker stop` 走决策 2 的停止顺序。Docker 默认 10 秒后发送 SIGKILL；进程内停止预算 660 秒 = 第一段停止与排空
+    10 + `project_runs.stop` 620 + 运行时第二段停止 30，README 要求 `docker run --stop-timeout 690`（Compose 用
+    `stop_grace_period: 690s`），在预算之外留 30 秒给进程退出；被提前杀死时，状态目录锁由操作系统释放（决策 12），
+    中断的运行由下次 `start()` 的恢复标记出来，不会静默丢失。
   - 只允许一个副本：`METRICS_STATE_DIR`（镜像内为 `/metrics/state`）挂载为卷，数据库与 `ai-base/` 状态目录随卷持久化；
-    第二个副本挂载同一个卷时，`running()` 抛 `RuntimeBusy`，`serve` 以错误码退出（决策 3）。
+    第二个副本挂载同一个卷时，`start_blocking` 抛 `RuntimeBusy`，`serve` 输出 `serve startup failed (<code>).` 并以非零
+    退出（决策 3）。
   - README 的 Docker 快速上手与 "Production Setup"（`README.md:100-139,556-577`）改为上述命令、卷与停止超时，并写明
     单副本、非回环绑定的匿名姿态（决策 3）、production settings 下发布审批至少需要一个 Basic 用户（决策 14），以及配置
     `ALLOWED_HOSTS` 与由反向代理终止 TLS 的建议。
 - **理由**：容器与本地使用同一个组合根和同一条启动命令（决策 1、3）；状态目录锁决定了只能有一个进程，这也是 gunicorn
-  多 worker 不再可行的原因。
-- **否决的备选**：gunicorn 加 uvicorn worker 跑多个 worker（只有第一个 worker 能拿到状态目录锁，其余无法启动）；gunicorn
-  加单个 uvicorn worker（多一层进程管理，信号与停止超时另由 gunicorn 决定，启动方式不再唯一）；保留 WSGI 镜像（生产
-  没有运行时，AI 不可用，并形成第二个组合根）。
+  多 worker 不再可行的原因；固定 Python 小版本让镜像与验证环境的解释器一致。
+- **否决的备选**：gunicorn 多 worker（只有第一个 worker 能拿到状态目录锁，其余无法启动）；gunicorn 单 worker（多一层
+  进程管理，信号与停止超时另由 gunicorn 决定，启动方式不再唯一，且 gunicorn 不支持 Windows 本地运行）；保留 gunicorn
+  运行 `metrics.wsgi` 的镜像（生产没有运行时，AI 不可用，并形成第二个组合根）；shell 形式的 `CMD`（`/bin/sh` 成为 PID 1，
+  不转发 SIGTERM）。
 
 ## Risks / Trade-offs
 
 - [运行时阻塞、崩溃或内存泄漏会直接拖垮 Metrics 页面] → `RuntimeLimits` 限制并发、单次运行与 tool 超时、输出大小；
-  slow callback 门禁与宿主一致性套件；运行时异常只以 API 错误返回（v2 §6、D8）。
-- [两套依赖进入同一个 venv 后冲突] → 单一 requirements；S0 用 `pip check` 验证；`ai-base-runtime`、`uvicorn`、`starlette`
-  精确固定。
+  slow callback 门禁与宿主一致性套件；运行时异常只以 API 错误返回（v2 §6、D8）；运行时在运行期意外结束时 `serve`
+  输出 `serve runtime failed (<code>).` 并非零退出，不在没有运行时的情况下继续服务（决策 2）；pane 的门面调用有时限与
+  并发上限（决策 7）。
+- [两套依赖进入同一个 venv 后冲突] → 单一 requirements；S0 与 S0b 用 `pip check` 验证；`ai-base-runtime` 与所选 HTTP
+  server 精确固定。
 - [发布耦合：AIB-2 与 MDB-2 必须同版本，回滚也要一起回滚] → 精确版本固定；宿主一致性套件是升级门禁；回滚按
   Migration Plan 整体恢复。
 - [blocking 门面误用或 `asyncio.run` 回流导致死锁] → 在循环线程调用门面立即 `RuntimeUsageError`；残留 gate 用 AST 检查
-  `services/report_assists.py`、`services/project_run_worker.py` 与 `ai_host/` 中没有 `asyncio.run`；lifespan 中的阻塞调用
-  全部经 `asyncio.to_thread`。
+  `services/report_assists.py`、`services/project_run_worker.py` 与 `ai_host/` 中没有 `asyncio.run`；Metrics 只在
+  `serve` 主线程、WSGI 线程与 worker 线程上调用门面，运行在循环上的 tool 只经 `run_sync` 调用 Metrics 公共 API（决策 4）。
 - [project run 在 620 秒内没有停下] → `RuntimeStopResult.unresolved` 记录未停止的操作，`serve` 非零退出；下次
   `start()` 的恢复把中断的运行标记出来，不会静默丢失。
 - [导入成功、写库前崩溃导致重复导入] → 相同字节加 `overwrite: True` 使重导入等价；`tool_call_id` 唯一约束保证只记一行。
@@ -415,13 +490,24 @@
   照常可用；README 与 onboarding 写明这一要求（决策 14）。
 - [不认证的部署下，审计表随任何能访问端口的人的使用而增长] → 只记录会话、tool 与审批事件，认证失败只写日志，增长与实际
   使用成正比；`RuntimeLimits` 限制并发；保留与清理策略不在本 change 范围内。
-- [关闭时打开的 SSE 或聊天流让停止无限等待] → `timeout_graceful_shutdown=10` 到期后取消连接任务，lifespan 照常关闭；
-  0.5 的 S0 与 5.6 的命令测试都验证这一点。
-- [WSGI 改 ASGI 后页面变慢] → S0 门槛：主要页面 p95 比 `project_serve` 基线劣化不超过 20%；S0 跑 Metrics 浏览器测试子集。
-- [Docker 从 5 worker × 10 线程的 gunicorn 改为单进程，峰值吞吐下降] → Django 6.0.7 的 ASGI handler 为每个请求建立
-  `ThreadSensitiveContext`（`django/core/handlers/asgi.py:169`），同步视图仍按请求在各自线程中并发，I/O 等待不受影响，
-  只有 CPU 密集的渲染受 GIL 限制；Metrics 是团队内部看板，页面读取本地聚合；S0 在镜像中记录并发数据供 owner 参考，
-  不作为退出条件。
+- [关闭时打开的聊天流让停止无限等待] → 运行时第一段停止让打开的流发送终止事件后结束（v2.1 H2），客户端在连接关闭
+  之前收到终止事件；第一段停止与排空合计最长 10 秒，到期后关闭剩余连接；第二段停止取消未完成的运行并标记中断；
+  0.5 的 S0b（B5）与 5.6 的命令测试都验证这一点。
+- [`/ai` 流占满 server 线程，页面没有线程可用] → 每个 `/ai` 在途请求（包括整条流）占用一个 server 线程；流与其他 `/ai`
+  请求分开限额，两个上限之和小于线程数，超限立即返回 503 与 `Retry-After`，不排队（决策 1，v2.1 H7）；S0b 的 B9
+  验证流占满限额时短请求与页面不受影响；线程数与两个在途上限【待 S0b】。
+- [Windows 上其他进程绑定同一端口并截走连接] → `serve` 自建 socket 并设置 `SO_EXCLUSIVEADDRUSE`（决策 2 第 1 步）；
+  S0b 的 B1 验证其他进程即使设置 `SO_REUSEADDR` 也无法绑定。
+- [Basic 用户设置写错导致全站静默放行] → 设置 fail-closed，格式错误时 settings 加载失败（决策 14）。
+- [WSGI 线程与运行时循环之间的流桥接] → 运行时适配器逐块转发、不缓冲（v2.1 H7），请求体在 WSGI 线程上读取并有上限，
+  响应块交接队列有上限并对运行时形成背压（H7），跨线程等待都有上限（H5），客户端断开后在心跳间隔内被发现并释放
+  连接级资源（H3、H4）；S0b 的 B3、B4 实测缓冲、断开与残留，一致性套件持续断言。
+- [停止信号到不了 `serve`] → `serve` 在主线程为 SIGINT、SIGTERM 安装处理器（Docker 中 Python 是 PID 1，内核不投递默认
+  处理的信号）；Windows 无法可靠地向子进程发送 Ctrl+C，验证脚本用 `--stop-file` 与 `--lifetime-seconds`；停止期间第二次
+  信号在 1 秒内强制退出（决策 3，依赖分片等待）。运行时核心不触碰信号（v2.1 H8）。
+- [Docker 从 5 worker × 10 线程的 gunicorn 改为单进程，峰值吞吐下降] → 单进程线程化 WSGI，线程数【待 S0b】；同步视图
+  按请求在各自线程中并发，I/O 等待不受影响，只有 CPU 密集的渲染受 GIL 限制；Metrics 是团队内部看板，页面读取本地聚合；
+  镜像内的并发数据（S0 的 C7）未测量，只供 owner 参考，不作为退出条件。
 - [非回环绑定且未配置 Basic 用户时，能访问该端口的任何人都能匿名使用页面与 AI 对话] → owner 决定维持现有姿态；`serve`
   输出警告；development settings 下拒绝非回环绑定；production settings 下匿名 principal 不能决定审批（Q5）；README
   建议配置 Basic 用户并由反向代理终止 TLS。
@@ -430,8 +516,8 @@
 
 ## Migration Plan
 
-前置条件：AIB-0 已发布并通过现有 launcher 端到端流程；S0 的全部退出条件通过；AIB-2 wheel 已发布，Metrics 已精确固定其
-版本并通过宿主一致性套件。
+前置条件：AIB-0 已发布并通过现有 launcher 端到端流程；S0b 的全部退出条件通过（tasks 0.5）；AIB-2 wheel 已发布，Metrics
+已精确固定其版本并通过宿主一致性套件。
 
 切换步骤（一次完成，不设并行期）：
 
@@ -447,7 +533,7 @@
 5. 部署环境中删除 `METRICS_AI_SIDECAR_ENABLED`、`METRICS_AI_BASE_*`、`METRICS_PROJECT_AI_*`、`METRICS_PROJECT_RUNTIME_FACTORY`
    与 `GUNICORN_*`，设置 `METRICS_AI_MODEL_BASE_URL`、`_NAME`、`_API_KEY`；用新 `SCHEMA_VERSION` 重新生成 launcher profile。
 6. 本地运行 `manage.py serve --host 127.0.0.1 --port <port>`；Docker 以单副本运行新镜像，`METRICS_STATE_DIR` 挂载为卷，
-   `--stop-timeout 660`（决策 16）。冒烟检查：
+   `--stop-timeout 690`（决策 16）。冒烟检查：
    - `<prefix>/ai/api/health` 报告运行中；AI pane 为 `ready`（未配模型时为预期的 `not_configured`）；
    - Jira-first 工作台正常加载，切换 range 后仍是同一会话；
    - 一次发布审批后 `AiChartPublication` 出现 `published` 行，`/api/ai-publish-history/` 列出它；
@@ -472,12 +558,16 @@
 
 以下问题可以在实施期间回答，不改变 spec、方案或任务拆分；Q1–Q9 与 D4/D5/D6/D7/D9 已定，不在此列。
 
-1. S0 结果：任一退出条件不通过就停止 AIB-2，带证据回到 owner 决策；本设计不预置备选方案。
-2. AIB-2 的精确版本号、wheel 摘要，以及 S0 确定的 portalocker 精确版本，发布时写入 requirements。
+1. S0b 结果：任一退出条件不通过，或只有 Django 线程化开发服务器、只有静态文件不经认证的组达标时，停止实施，带证据回到
+   owner 决策（tasks 0.5）；本设计不预置其他备选方案。
+2. AIB-2 的精确版本号、wheel 摘要，S0 确定的 portalocker 精确版本，以及 S0b 选定的 WSGI server 精确版本，发布时写入
+   requirements。
 3. AIB-2 的 `session_key` 校验是否与 v2 D7 一致（字符集 `[A-Za-z0-9._:-]`，总长不超过 200）。`metrics.workbench.` 加
    profile id（`[a-z0-9][a-z0-9._-]{0,159}`）最长 178 个字符且只含允许的字符，由 0.6 确认；不一致时回到 v2 修正，
    `ai_host` 不做编码。
 4. AIB-2 中 task run 查询与取消的同步方法名（v2 只给出 `task_runs.start(principal, request, timeout=30)`）、
-   `HostConfig` 中"允许匿名 principal 决定审批"的字段名，以及 `ctx.approval` 中 preview、preview 摘要与 `decided_by`
-   的确切名称，由 0.6 记录。差异只影响 `RuntimeTaskRunPort`、`ai_host.settings` 与发布 tool 内部，project_management
-   的端口不变。
+   `start_blocking` 句柄上第一段停止、运行时结束事件与 WSGI 适配器的方法名及其配置项（心跳间隔、结束流时限、流与其他
+   `/ai` 请求各自的在途上限、请求体上限、响应块队列上限，v2.1 H2/H3/H6/H7）、门面超时异常的类型、`HostConfig` 中
+   "允许匿名 principal 决定审批"的字段名，以及 `ctx.approval` 中 preview、preview 摘要与 `decided_by` 的确切名称，
+   由 0.6 记录。差异只影响 `RuntimeTaskRunPort`、`ai_host.settings`、`ai_host.wiring`、`serve` 与发布 tool 内部，
+   project_management 的端口不变。

@@ -18,10 +18,11 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
 
 ## What Changes
 
-- **BREAKING** `metrics.asgi` 成为唯一的组合根。一个 uvicorn 进程同时托管 Django 和挂载在 `<URL 前缀>/ai`
-  的运行时；组合根的 lifespan 负责进入运行时的运行期，并安装 project run 运行时。新增 `manage.py serve`，
-  取代 `project_serve` 和 gunicorn：默认绑定回环地址，容器以 `--host 0.0.0.0` 运行，development settings 下拒绝
-  非回环绑定。删除 `metrics/wsgi.py` 与 `WSGI_APPLICATION`，Docker 镜像改为单进程、单副本。
+- **BREAKING** `manage.py serve` 成为唯一的组合根和唯一受支持的启动方式，取代 `project_serve` 和 gunicorn。一个进程
+  以线程化 WSGI 托管 Django；运行时经 `start_blocking` 在同一进程的专用事件循环线程上运行，挂载在 `<URL 前缀>/ai`，
+  请求经运行时的 WSGI 适配器进入。`serve` 负责运行时与 project run 运行时的启动和两段式停止；默认绑定回环地址，
+  容器以 `--host 0.0.0.0` 运行，development settings 下拒绝非回环绑定。删除 `metrics/wsgi.py`、`metrics/asgi.py`
+  与 `WSGI_APPLICATION`，Docker 镜像改为单进程、单副本。
 - 新增 `ai_host` 模块，它是 Metrics 中唯一导入 `ai_base_runtime` 的地方，负责：组合根装配；宿主 SPI（认证、
   审批授权、审计、`HostConfig`）；Metrics App 包；task-run 端口的实现；AI pane 的状态。
 - 新增 Metrics App 包（`app_id=metrics`），包含：
@@ -87,7 +88,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - owner 已于 2026-11-10 签署 Q1–Q9；
   - S0 共装 spike 不通过（C5，`s0-spike-report.md`），owner 于 2026-11-11 选择方向 1；S0b 的全部退出条件通过
     （tasks 0.5）；
-  - AIB-2 发布的 `ai-base-runtime` 提供 v2 D1–D11 中的 SPI，包括 owner 同日接受的五项补充：D4
+  - AIB-2 发布的 `ai-base-runtime` 提供 v2.1 D1–D12 中的 SPI，包括 owner 同日接受的五项补充：D4
     `AppPackage.task_profiles`、D5 `ToolContext.context_ref`、D6 preview 摘要绑定、D7 `open_session` 的
     `session_key`、D9 task-run 真实模型执行与准入错误码。
 - **前置 change 已归档**：`isolate-dashboard-runtime-instances`、`remove-legacy-ai-base-workbench-embed` 和
@@ -98,7 +99,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - W4.REPLAN、W5.N1、W5.APP、W5.MIGRATE、W5.CLIENT、W5.CHAT 已改写；
   - `sdk-consumer-integration` delta 已删除，仍有效的规则并入该 change 的 `project-reporting` delta。
 - **代码**：
-  - `metrics/`：`asgi.py`、`middleware.py`、`settings/*`；删除 `wsgi.py`；
+  - `metrics/`：`middleware.py`、`settings/*`；删除 `asgi.py` 与 `wsgi.py`；
   - 新模块 `ai_host/`：组合根装配、宿主 SPI、App 包、task-run 端口实现、审计表、`serve` 命令；
   - `project_management`：删除 `ai_bundle/` 与 `project_serve`，新增 `ai_profiles/`；`out/ai_task_contract.py` 和
     `out/report_ai_task.py` 改写为同步端口；run_factories、report_factories、runtime、summary_analysis、
@@ -109,7 +110,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - `ops/docker/Dockerfile`、`README.md`、`scripts/dashboard_runtime_instance_profile.py`；
   - `scripts/validation/project_*`、`scripts/e2e_dashboard_ai_stack.ps1`。
 - **依赖**：
-  - 新增精确版本的 `ai-base-runtime`、`uvicorn` 和 `starlette`；
+  - 新增精确版本的 `ai-base-runtime` 和 S0b 选定的 WSGI server；`uvicorn`、`starlette` 不作为直接依赖；
   - 删除 `ai-base-application-sdk`、`requirements-ai-task.txt` 和 `gunicorn`；
   - `portalocker` 升级到 ≥4.4.2。
 - **运行方式**：本地与 Docker 都改为 `manage.py serve`，即单进程、单 worker、不 reload；开发和生产使用同一个组合根。

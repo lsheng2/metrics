@@ -2,14 +2,15 @@
 
 ## Purpose
 
-Embedded AI runtime host 规定 Metrics 进程如何托管 AI Base 运行时：一个 ASGI 组合根同时服务 Django 和运行时；
+Embedded AI runtime host 规定 Metrics 进程如何托管 AI Base 运行时：`manage.py serve` 是唯一组合根，以线程化 WSGI
+同时服务 Django 和运行时，运行时在同一进程的专用事件循环线程上运行；
 `ai_host` 模块实现宿主 SPI 和 Metrics App 包；领域服务通过同步端口调用 task run；运行时状态只有一个写入进程；
 Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本准入作为升级门禁。Metrics 与运行时之间不存在任何 HTTP 集成。
 
 ## ADDED Requirements
 
 ### Requirement: Metrics serves Django and the AI runtime from one composition root
-`metrics.asgi` SHALL 是 Metrics 唯一的组合根：一个 ASGI 应用把 `<URL 前缀>/ai` 交给 AI Base 运行时，其余路径（包括静态文件）交给 Django；Metrics SHALL NOT 保留 WSGI 入口或其他组合根。组合根的 lifespan SHALL 在接受第一个请求之前进入运行时的运行期并安装 project run 运行时，关闭时按相反顺序停止。受支持的启动方式 SHALL 只有 `manage.py serve`，本地与容器部署相同：单 worker，不 reload，默认绑定回环地址，Windows 上使用 Proactor 事件循环。绑定非回环地址时，settings 允许匿名决定审批的情况下命令 SHALL 拒绝启动；未配置 Basic 用户时命令 SHALL 输出不含凭据的匿名暴露警告。
+`manage.py serve` SHALL 是 Metrics 唯一的组合根和唯一受支持的启动方式，本地与容器部署相同：单进程，不 reload，默认绑定回环地址。它 SHALL 用一个线程化 WSGI 应用受理全部请求：`<URL 前缀>/ai/` 下的请求交给运行时的 WSGI 适配器，其余路径（包括静态文件）交给 Django。Metrics SHALL NOT 保留 `metrics.wsgi`、`metrics.asgi` 或其他组合根，SHALL NOT 用 ASGI server 托管 Django。
 
 #### Scenario: Operator starts the server
 - **WHEN** 操作者运行 `manage.py serve --host 127.0.0.1 --port <port>`
@@ -20,11 +21,83 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 #### Scenario: Container image starts Metrics
 - **WHEN** 使用 production settings 的容器镜像启动
 - **THEN** 镜像 SHALL 以 `manage.py serve --host 0.0.0.0 --port 8000` 运行单个进程
-- **AND** 镜像 SHALL NOT 包含 gunicorn 或 WSGI 入口
+- **AND** 镜像 SHALL NOT 包含 gunicorn、`metrics.wsgi` 或 `metrics.asgi`
 
 #### Scenario: Static files sit behind Basic authentication
 - **WHEN** 已配置 Basic 用户，请求不带凭据访问静态文件
 - **THEN** Metrics SHALL 返回 401，与 Django 页面一致
+
+#### Scenario: URL prefix is configured
+- **WHEN** `METRICS_BASE_URL` 是 `/metrics/`
+- **THEN** 运行时 SHALL 挂载在 `/metrics/ai`
+- **AND** 嵌入页路径和运行时资产地址 SHALL 带有同一个前缀
+
+#### Scenario: Mount path is requested without a trailing slash
+- **WHEN** 请求的路径恰好是 `<URL 前缀>/ai`
+- **THEN** Metrics SHALL 返回 308，`Location` 为 `<URL 前缀>/ai/`，并保留查询串
+
+#### Scenario: Settings module is not set
+- **WHEN** 进程启动时没有设置 `DJANGO_SETTINGS_MODULE`
+- **THEN** `manage.py serve` SHALL 使用 `metrics.settings.production`
+
+### Requirement: Serve starts and stops the runtime in a fixed order
+`serve` SHALL 先绑定端口，再让运行时在同一进程的专用事件循环线程上进入运行期（Windows 上为 Proactor 事件循环）并安装 project run 运行时，然后才受理第一个请求；任一步失败时 SHALL 以错误退出，SHALL NOT 处理任何请求。停止时 `serve` SHALL 依次停止受理新请求、结束打开的 AI 流、停止 project run，最后停止运行时。运行期内运行时意外结束时，`serve` SHALL 按同一顺序停止并以非零退出，SHALL NOT 在没有运行时的情况下继续服务。
+
+#### Scenario: Port is already in use
+- **WHEN** 操作者运行 `manage.py serve`，目标端口已被其他进程占用
+- **THEN** 命令 SHALL 在 2 秒内以错误退出
+- **AND** 命令 SHALL NOT 启动运行时，SHALL NOT 获取状态目录锁
+
+#### Scenario: Another process binds the serving port
+- **WHEN** `serve` 正在运行，另一个进程设置 `SO_REUSEADDR` 后绑定同一地址和端口
+- **THEN** 该绑定 SHALL 失败，发往该端口的连接 SHALL 全部由 `serve` 受理
+
+#### Scenario: Runtime cannot start
+- **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定或运行时配置无效
+- **THEN** 服务 SHALL 以非零退出，并只输出一行 `serve startup failed (<code>).`
+- **AND** 输出与日志 SHALL NOT 包含异常消息或 traceback
+- **AND** 服务 SHALL NOT 在没有运行时的情况下继续提供 Django 页面
+
+#### Scenario: Server shuts down
+- **WHEN** `serve` 收到 SIGINT 或 SIGTERM，或者 `--stop-file` 指定的文件出现、`--lifetime-seconds` 到期
+- **THEN** `serve` SHALL 先停止受理新请求，打开的 AI 流 SHALL 发送终止事件后结束
+- **AND** project run worker SHALL 随后停止，运行时最后停止
+- **AND** 未完成的运行 SHALL 被取消并标记为中断，状态目录锁 SHALL 被释放，进程 SHALL 以 0 退出
+
+#### Scenario: Server stops while chat streams are open
+- **WHEN** 一条聊天流正在输出、另一条处于空闲时，`serve` 收到停止信号
+- **THEN** 两条流的客户端 SHALL 在连接关闭之前收到终止事件
+- **AND** 进程 SHALL 在 10 秒内以 0 退出
+
+#### Scenario: Runtime stops unexpectedly
+- **WHEN** 服务运行期间，运行时因内部错误结束
+- **THEN** `serve` SHALL 在 1 秒内输出 `serve runtime failed (<code>).`
+- **AND** `serve` SHALL 按停止顺序清理后以非零退出
+
+#### Scenario: Second signal arrives during shutdown
+- **WHEN** `serve` 正在停止，又收到一次 SIGINT 或 SIGTERM
+- **THEN** `serve` SHALL 输出 `serve forced exit.`，并在 1 秒内以非零退出
+- **AND** 被中断的运行 SHALL 在下一次启动时由恢复标记为中断
+
+#### Scenario: Cleanup does not finish cleanly
+- **WHEN** 停止后 project run 没有全部停下、运行时停止超时，或某一步清理出错
+- **THEN** `serve` SHALL 输出 `serve cleanup failed.`（有错误码时附带）并以非零退出
+
+### Requirement: AI requests cannot exhaust the page threads
+`/ai` 的在途请求 SHALL 按流式请求与其他请求分开限额，两个上限之和小于服务线程数。达到各自上限后新到的 `/ai` 请求 SHALL 立即被拒绝，不排队；页面请求 SHALL 始终有可用线程。
+
+#### Scenario: AI requests reach the in-flight limit
+- **WHEN** `/ai` 的在途请求数已达上限，又有新的 `/ai` 请求到达
+- **THEN** 新请求 SHALL 立即得到 503 和 `Retry-After`
+- **AND** 同时到达的 Django 页面请求 SHALL 照常处理
+
+#### Scenario: Open streams fill their limit
+- **WHEN** 打开的流已达到流的上限，又有一条新流和一个短的 `/ai` 请求到达
+- **THEN** 新流 SHALL 立即得到 503 和 `Retry-After`
+- **AND** 短的 `/ai` 请求和同时到达的页面请求 SHALL 照常处理
+
+### Requirement: Non-loopback binds guard anonymous access
+`serve` 绑定非回环地址时，settings 允许匿名决定审批的情况下 SHALL 拒绝启动；未配置 Basic 用户时 SHALL 照常启动，并输出一条不含凭据的匿名暴露警告。
 
 #### Scenario: Non-loopback bind without Basic users
 - **WHEN** 使用 production settings、未配置 Basic 用户，操作者以非回环地址运行 `manage.py serve`
@@ -34,27 +107,8 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **WHEN** 使用允许匿名决定审批的 development settings，操作者以 `--host 0.0.0.0` 或其他非回环地址运行 `manage.py serve`
 - **THEN** 命令 SHALL 在启动服务之前以错误退出
 
-#### Scenario: URL prefix is configured
-- **WHEN** `METRICS_BASE_URL` 是 `/metrics/`
-- **THEN** 运行时 SHALL 挂载在 `/metrics/ai`
-- **AND** 嵌入页路径和运行时资产地址 SHALL 带有同一个前缀
-
-#### Scenario: Settings module is not set
-- **WHEN** 进程启动时没有设置 `DJANGO_SETTINGS_MODULE`
-- **THEN** `metrics.asgi` SHALL 使用 `metrics.settings.production`，与 `manage.py` 一致
-
-#### Scenario: Runtime cannot start
-- **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定或运行时配置无效
-- **THEN** 服务 SHALL 以包含错误码的错误退出
-- **AND** 服务 SHALL NOT 在没有运行时的情况下继续提供 Django 页面
-
-#### Scenario: Server shuts down
-- **WHEN** 组合根的 lifespan 进入关闭阶段
-- **THEN** project run worker SHALL 先停止，运行时随后停止
-- **AND** 未完成的运行 SHALL 被取消并标记为中断，状态目录锁 SHALL 被释放
-
 ### Requirement: AI runtime requests use the Metrics identity
-运行时挂载下的每个请求 SHALL 由 Metrics 宿主的 `authenticate` 确定 principal。`authenticate` 与 Django 的 `BasicAuthMiddleware` 调用同一个纯函数 `check_basic_authorization`，同一请求在两边的认证结果 SHALL 一致。认证失败 SHALL 返回 401。未配置 Basic 用户时，principal SHALL 是匿名的本地操作者。运行时 SHALL NOT 从请求体、tool 参数或 iframe URL 中读取 actor。
+运行时挂载下的每个请求 SHALL 由 Metrics 宿主的 `authenticate` 确定 principal。`authenticate` 与 Django 的 `BasicAuthMiddleware` 调用同一个纯函数 `check_basic_authorization`，同一请求在两边的认证结果 SHALL 一致。认证失败 SHALL 返回 401。未配置 Basic 用户时，principal SHALL 是匿名的本地操作者。Basic 用户设置 SHALL fail-closed：格式不合法时 settings 加载 SHALL 失败，SHALL NOT 停用认证。运行时 SHALL NOT 从请求体、tool 参数或 iframe URL 中读取 actor。
 
 #### Scenario: Request carries valid Basic credentials
 - **WHEN** 请求携带有效的 Basic 凭据访问 Django 页面或运行时路由
@@ -63,6 +117,12 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 #### Scenario: Request carries invalid credentials
 - **WHEN** 已配置 Basic 用户，请求的凭据缺失或错误
 - **THEN** Django 页面和运行时路由 SHALL 都返回 401
+- **AND** 两边的 401 SHALL 带同一个 `WWW-Authenticate: Basic realm="Restricted"` 质询头
+
+#### Scenario: Basic user setting is malformed
+- **WHEN** `METRICS_BASIC_AUTH_USERS` 是 JSON 数组、非对象 JSON、`{}`，或者含空用户名或空密码
+- **THEN** settings 加载 SHALL 以错误失败，错误 SHALL 只指出设置项名称，SHALL NOT 包含设置值
+- **AND** Metrics SHALL NOT 在认证被停用的状态下启动
 
 #### Scenario: Basic authentication is not configured
 - **WHEN** 没有配置 Basic 用户
@@ -89,7 +149,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **THEN** 审批 SHALL 保持 pending，因为不存在任何能产生审批决定的 tool
 
 ### Requirement: AI runtime state has a single writer
-运行时状态 SHALL 存放在 `METRICS_STATE_DIR/ai-base`，这个路径不能单独配置。同一时间 SHALL 只有一个进程持有该目录的锁。服务进程持有锁时，需要运行时的 CLI（例如 `project_run --execute-local`）SHALL 立即以 `RUN_BUSY` 失败，不等待，也不改用其他目录。Metrics SHALL NOT 为多 worker 部署设计共享状态。
+运行时状态 SHALL 存放在 `METRICS_STATE_DIR/ai-base`，这个路径不能单独配置。同一时间 SHALL 只有一个进程持有该目录的锁；该锁 SHALL 是 OS 级文件锁，持有进程以任何方式终止时 SHALL 由操作系统释放。服务进程持有锁时，需要运行时的 CLI（例如 `project_run --execute-local`）SHALL 立即以 `RUN_BUSY` 失败，不等待，也不改用其他目录。Metrics SHALL NOT 为多 worker 部署设计共享状态。
 
 #### Scenario: CLI runs while the server holds the lock
 - **WHEN** 服务正在运行，操作者执行 `project_run --execute-local`
@@ -98,6 +158,11 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 #### Scenario: CLI runs while no server is running
 - **WHEN** 没有服务进程，操作者执行 `project_run --execute-local`
 - **THEN** 命令 SHALL 在自己的进程中启动运行时、获取锁、完成运行，并在退出时释放锁
+
+#### Scenario: Previous server was killed
+- **WHEN** 上一个服务进程被强制终止（例如 SIGKILL），没有执行停止顺序
+- **THEN** 下一次 `manage.py serve` SHALL 获得锁并正常启动
+- **AND** 被中断的运行 SHALL 由恢复标记为中断
 
 ### Requirement: Only the ai_host module imports the AI runtime
 Metrics 中 SHALL 只有 `ai_host` 模块导入 `ai_base_runtime`；组合根 SHALL 通过 `ai_host` 构造运行时。任何 Metrics 代码 SHALL NOT 导入 `ai_base_runtime._internal` 或 AI Base 的 `app.*` 包。`ai_host` SHALL 负责嵌入资产地址、聊天会话、由 `WorkbenchPageQueryState` 构造 `ContextRef` 和 host action 声明；图表、证据、ticket 详情和 PageQueryState 模块 SHALL 在不导入运行时的情况下可用。其他模块 SHALL 通过 `ai_host` 的公共 API，或者通过自己定义、由组合根注入实现的端口使用 AI 能力。自动化导入规则测试 SHALL 强制这一点。
@@ -184,19 +249,25 @@ Metrics 与运行时之间 SHALL NOT 存在 HTTP 调用、connector 回调路由
 - **THEN** grep gate SHALL 失败
 
 ### Requirement: AI pane reports runtime readiness without blocking the workbench
-AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_configured`，即未配置模型；`not_running`，即进程不是经组合根 lifespan 启动的。非 `ready` 状态 SHALL 说明原因和下一步操作，且 SHALL NOT 影响图表、证据、设置、发布历史和诊断页面。Metrics SHALL NOT 提供启用或禁用 AI 的开关，SHALL NOT 在渲染请求时启动任何进程。
+AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_configured`，即未配置模型；`not_running`，即运行时不在运行期，原因是进程不是经 `manage.py serve` 启动的，或者服务已开始停止。"是否已配置模型"SHALL 只由构造运行时配置的同一个函数判定。非 `ready` 状态 SHALL 说明原因和下一步操作，且 SHALL NOT 影响图表、证据、设置、发布历史和诊断页面。页面视图调用运行时 SHALL 有时限和并发上限。Metrics SHALL NOT 提供启用或禁用 AI 的开关，SHALL NOT 在渲染请求时启动任何进程。
 
 #### Scenario: Model is not configured
 - **WHEN** 运行时已进入运行期，但 Metrics settings 中没有模型配置
 - **THEN** AI pane SHALL 显示 `not_configured`，并列出缺少的设置项名称，SHALL NOT 显示任何设置值
+- **AND** 此时提交的 task run SHALL 得到 `model_not_configured`
 
 #### Scenario: Process was not started by the composition root
-- **WHEN** 页面由没有经过组合根 lifespan 的进程渲染
+- **WHEN** 页面由不是经 `manage.py serve` 启动的进程渲染，例如 `runserver` 或 Django 测试客户端
 - **THEN** AI pane SHALL 显示 `not_running`，并提示使用 `manage.py serve` 启动
 
 #### Scenario: Runtime is ready
 - **WHEN** 运行时已进入运行期且模型已配置
 - **THEN** AI pane SHALL 渲染同源的嵌入聊天
+
+#### Scenario: Runtime does not answer in time
+- **WHEN** 页面渲染 AI pane 时，打开会话的调用超过时限，或者同时进行的调用已达上限
+- **THEN** AI pane SHALL 显示可重试的暂不可用状态
+- **AND** 页面 SHALL 照常返回 200，图表与证据 SHALL 正常显示
 
 ### Requirement: One host allowlist protects Django and the AI runtime
 `ALLOWED_HOSTS` SHALL 是 Django 和运行时共用的唯一 Host 白名单，经 `HostConfig.allowed_hosts` 传给运行时。未显式配置时，它 SHALL 只包含 `127.0.0.1`、`localhost` 和 `[::1]`，settings SHALL NOT 用通配符作为默认值。Host 不在白名单内的请求 SHALL 在进入任何 Django 视图或运行时路由之前得到 HTTP 400，否则 DNS rebinding 之后的页面会被浏览器当作同源。WhiteNoise 提供的静态文件公开且不含用户数据，不在此列。
@@ -214,7 +285,14 @@ AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_
 - **THEN** Django 和运行时 SHALL 都接受该 Host
 
 ### Requirement: Host conformance suite gates the composed runtime
-Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合后的宿主，覆盖：Host 校验、请求完整性、资源归属、`frame-ancestors`、审批持久化、`os.environ` 与全局 tracer 不变、Proactor 事件循环、slow callback 阈值、`RuntimeBusy`。确定性的对话测试 SHALL 使用 testkit 的脚本化模型，SHALL NOT 依赖真实模型或聊天快捷方式。升级运行时版本 SHALL 以该套件通过为门禁。
+Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合后的宿主，检查项见下方场景。确定性的对话测试 SHALL 使用 testkit 的脚本化模型，SHALL NOT 依赖真实模型或聊天快捷方式。升级运行时版本 SHALL 以该套件通过为门禁。
+
+#### Scenario: Conformance suite runs against the composed host
+- **WHEN** Metrics 测试对组合后的宿主运行宿主一致性套件
+- **THEN** 套件 SHALL 覆盖 Host 校验、请求完整性、资源归属、`frame-ancestors`、审批持久化、`os.environ` 与全局 tracer 不变、Proactor 事件循环、slow callback 阈值与 `RuntimeBusy`
+- **AND** 套件 SHALL 覆盖运行时未运行或进入第一段停止后 `/ai` 返回 503、在事件循环线程上调用 blocking 门面立即报错、门面超时抛出定义好的异常并取消循环侧协程、运行时结束事件在 1 秒内可见
+- **AND** 套件 SHALL 覆盖 WSGI 适配器逐块转发流式响应、在 WSGI 线程上从 `wsgi.input` 读取有上限的请求体、响应块交接队列有上限并形成背压、客户端断开后释放连接级资源、流与其他 `/ai` 请求分开的在途上限
+- **AND** 套件 SHALL 覆盖运行时不安装信号处理器、不注册 atexit，以及第二段停止期间宿主的信号处理器在 1 秒内执行
 
 #### Scenario: Runtime version is upgraded
 - **WHEN** 一个变更修改了固定的 `ai-base-runtime` 版本
