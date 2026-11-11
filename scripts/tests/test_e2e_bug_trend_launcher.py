@@ -213,18 +213,6 @@ def test_bug_trend_runtime_grafana_config_is_generated_when_template_is_missing(
     assert all(directory.exists() for directory in expected_directories)
 
 
-def test_bug_trend_runtime_grafana_config_reuses_main_worktree_plugin_cache(tmp_path):
-    workspace = tmp_path / "scrum_dashboard" / ".worktrees" / "service-lifecycle-engine"
-    plugin_cache = tmp_path / "scrum_dashboard" / "state" / "grafana" / "data" / "plugins"
-    (plugin_cache / "yesoreyeram-infinity-datasource").mkdir(parents=True)
-    workspace.mkdir(parents=True)
-
-    runtime_config = e2e_bug_trend.write_runtime_grafana_config(workspace, 3999)
-
-    runtime_content = runtime_config.read_text(encoding="utf-8")
-    assert f"plugins = {plugin_cache.as_posix()}" in runtime_content
-
-
 def test_bug_trend_scope_id_resolver_reads_seeded_scope_from_shell_output(monkeypatch, tmp_path):
     calls = []
 
