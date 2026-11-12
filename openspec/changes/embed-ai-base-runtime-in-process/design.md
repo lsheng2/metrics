@@ -934,24 +934,31 @@
    5 次）留足余量确定，不预设数字；`serve` 与 CLI 端口共用这个常量（决策 1、2、10），超时路径的总预算为该值加
    `stop_timeout_seconds` 1.0 秒（§3.1 `:254`）。
 6. `ModelConfig.provider` 的来源与合法取值：`ModelConfig` 必须带 `provider: str`（AIB design §11.1 `:748-749`，
-   `fc4db2f`），Metrics 现有的三项模型变量中没有对应项。推荐由 `ai_host.settings` 中的常量提供，不新增环境变量
-   （决策 6）。这依赖 AIB 冻结合法取值（冻结契约只给出类型 `str`），未知取值应在启动时报 `configuration_invalid`
-   （§11.3 `:990`）；wheel 交付后由 tasks 0.6 核对。
-7. `RuntimeLimits` 前五项的取值：`max_concurrent_runs`、`max_tool_duration_seconds`、`max_captured_output_bytes`、
-   `max_input_tokens` 与 `max_output_tokens` 必填且没有默认值（§11.1 `:711-713`、`:775-776`，§10 `:672`），Metrics
-   没有现成来源，需 owner 决定。可参考的现有取值：project run 超时 600 秒（`metrics/settings/defaults_metrics.py:217`、
-   `project_management/app/domain/run_contracts.py:33`），报告辅助的输出上限 `MAX_OUTPUT_BYTES` 65536
-   （`project_management/app/domain/report_assists.py:15`）。
+   `fc4db2f`），Metrics 现有的三项模型变量中没有对应项。owner 于 2026-11-12 决定由 `ai_host.settings` 中的常量提供，
+   不新增环境变量（决策 6）。冻结契约只给出类型 `str`，合法取值已请求上游冻结（增补 A2；A1–A5 的清单见
+   `aib2-w0-acceptance.md` 第 9 节），未知取值应在启动时报 `configuration_invalid`（§11.3 `:990`）；常量的取值在
+   上游冻结后确定，wheel 交付后由 tasks 0.6 核对。
+7. `RuntimeLimits` 前五项的取值与语义：`max_concurrent_runs`、`max_tool_duration_seconds`、`max_captured_output_bytes`、
+   `max_input_tokens` 与 `max_output_tokens` 必填且没有默认值（§11.1 `:711-713`、`:775-776`，§10 `:672`）。owner 于
+   2026-11-12 决定暂定值：`max_concurrent_runs` = 4（与 `max_streams` 相同，超出部分按默认的 `max_queued_runs` = 8
+   排队）；`max_tool_duration_seconds` = 60（Metrics 的 tool 只读本地持久数据，run 时限默认 600 秒，§10 `:671`）；
+   `max_captured_output_bytes` = 65536（与默认的 `max_output_bytes` 及报告辅助的 `MAX_OUTPUT_BYTES` 相同，
+   `project_management/app/domain/report_assists.py:15`）；`max_input_tokens` = 65536；`max_output_tokens` = 16384
+   （约等于 65536 字节）。冻结契约只给出五项的名称与类型，作用对象、token 计数方式与超限时的 code 都没有定义，注册表
+   也没有 tool 时长、捕获输出与输入 token 超限的 code；已请求上游冻结（增补 A5）。冻结后由 tasks 0.6 复核这五个值，
+   TaskProfile 可在此基础上收紧。
 8. App tool 抛出 `ToolError` 以外的异常时的 code：§11.3 要求异常链保密、failure records 只含注册 code
    （`:1076-1087`），但没有规定映射到哪个 code。建议上游定为 `tool_failed`（`:1052`），`internal_error`（`:989`）
-   留给运行时自身的故障；Metrics 不依赖这一映射（决策 4）。
-9. preview 的拒绝语义：冻结契约中 preview 只能返回内容或抛 `ToolError`，数据未就绪或 `needs_metric_recipe` 时模型
-   只能看到 `tool_failed`，看不到阻塞原因与对应的 sync 操作。建议上游在 W2.APPROVAL 冻结 `PreviewReady(content)` 与
-   `PreviewDeclined(result)`：拒绝时不创建审批、不调用 handler、记一条审计事件；`result` 按 tool 的输出 schema 校验后
-   返回模型，不带错误 code；执行前重新 preview 时被拒绝的，审批作废（`approval_invalidated`，`:1028`）并返回拒绝
-   结果。上游不采纳时的内部方案（不推荐作为终态）：chart workflow 先返回 findings 与就绪状态，publish preview 只在
-   竞态下抛 `ToolError()`。决策 8 与 `ai-dashboard-publish-authority` 的两个场景按结论落实。
-10. 恢复类别的读取方式：§11.3 自称唯一的规范注册表，要求引用而不复制（`:954-955`），但没有导出 Retry 列。建议上游
-    让每个导出异常带由注册表派生的 `retry` 属性，并在根包导出按 code 查询类别的纯函数，供 `RunSnapshot`、
-    `ToolResult` 与 `StopResult` 中的 code 使用。冻结前 Metrics 不复制注册表（决策 10）；wheel 交付后由 tasks 0.6
-    核对。
+   留给运行时自身的故障；Metrics 不依赖这一映射（决策 4）。已请求上游冻结（增补 A3）。
+9. preview 的拒绝语义：冻结契约没有规定 preview 的返回类型（§11.1 `:863-864` 把 tool 接口指向 §5–7，那里也没有
+   定义），按现有语义 preview 只能返回内容或抛 `ToolError`，数据未就绪或 `needs_metric_recipe` 时模型只能看到
+   `tool_failed`，看不到阻塞原因与对应的 sync 操作。已请求上游冻结 `PreviewReady(content)` 与 `PreviewDeclined(result)`
+   （增补 A1，名称以上游为准；类型由 W1.CORE 定义，行为由 W2.APP 与 W2.APPROVAL 实现）：拒绝时不创建审批、不调用
+   handler、记一条审计事件；`result` 按 tool 的输出 schema 校验后返回模型，不带错误 code；执行前重新 preview 时被
+   拒绝的，审批作废（`approval_invalidated`，`:1028`）并返回拒绝结果。上游不采纳时的内部方案（不推荐作为终态）：
+   chart workflow 先返回 findings 与就绪状态，publish preview 只在竞态下抛 `ToolError()`。决策 8 与
+   `ai-dashboard-publish-authority` 的两个场景按结论落实。
+10. 恢复类别的读取方式：§11.3 自称唯一的规范注册表，要求引用而不复制（`:954-955`），但没有导出 Retry 列。已请求上游
+    在 W1.CORE 冻结（增补 A4）：每个导出异常带由注册表派生的 `retry` 属性，根包导出按 code 查询类别的纯函数，供
+    `RunSnapshot`、`ToolResult` 与 `StopResult` 中的 code 使用。冻结前 Metrics 不复制注册表（决策 10）；wheel 交付后
+    由 tasks 0.6 核对。

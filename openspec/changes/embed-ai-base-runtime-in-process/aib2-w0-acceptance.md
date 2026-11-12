@@ -1,6 +1,6 @@
 # AIB-2 W0 复核与接受记录
 
-日期：2026-11-12。结论：AIB-2 W0.FREEZE 第二轮交付（r2，HEAD `fc4db2f`）**接受**，GATE.W0R 可以开放。第一轮（r1）复核提出的 F1–F5 已全部闭环；冻结的名称、签名、66 个 code 与 design 第 10 节取值在 r2 中没有变化。另有四项 P3（G1–G4），不涉及冻结契约，owner 决定并入开闸提交（第 6、7 节）。
+日期：2026-11-12。结论：AIB-2 W0.FREEZE 第二轮交付（r2，HEAD `fc4db2f`）**接受**，GATE.W0R 可以开放。第一轮（r1）复核提出的 F1–F5 已全部闭环；冻结的名称、签名、66 个 code 与 design 第 10 节取值在 r2 中没有变化。另有四项 P3（G1–G4），不涉及冻结契约，owner 决定并入开闸提交（第 6、7 节）。接受之后，Metrics 改写 MDB-2 时又发现两项 P3（G5、G6）与五处需要上游补充的契约语义（A1–A5），owner 决定一并转交（第 9 节）。
 
 本记录是 `tasks.md` 0.6"W0 复核关口"的证据。0.6 本身仍未勾选：wheel、宿主一致性套件、精确版本与摘要要等 AIB-2 交付后记录。
 
@@ -67,13 +67,13 @@ links 由 30 增至 35：回执新增 6 条指向 design 的链接；design 原�
 2. 授权实施 W1–W4 的 21 个内部节点：W1.VA、W1.CORE、W1.HOST、W1.R、W1.REPLAN、W2.VA、W2.APP、W2.APPROVAL、W2.RUN、W2.R、W2.REPLAN、W3.VA、W3.UI、W3.APPS、W3.SHELL、W3.R、W3.REPLAN、W4.VA、W4.REMOVE、W4.PACK、W4.QUAL。
    - 外部门禁 GATE.DATA、GATE.LIVE、METRICS.READY 仍要 owner 另行批准；CLOSE.R 与 DELIVERY 不在本次授权内。
    - 按 DAG 依赖，没有 GATE.DATA 时 W4.REMOVE 及其后继不能开始，所以本次实际推进到 W4.VA 为止。
-3. G1–G4 并入开闸：AI Base 先单独提交四项修复，再提交开闸记录。Metrics 在 W1 回执中复核这四项。
+3. G1–G6 并入开闸（G5、G6 见第 9 节）：AI Base 先单独提交六项修复，再提交开闸记录。Metrics 在 W1 回执中复核这六项。
 4. 环境：允许创建任务自有的 Python 3.13 venv，从 PyPI 安装 design §9 的核心依赖与测试依赖；允许测试自行启停只绑定 127.0.0.1、端口 0 的环回服务器，不使用固定端口，不留常驻服务。
 5. Linux：W1 只在 Windows 上证明端到端切片；Linux 切片延后到 W4.QUAL，由 W1.REPLAN 修改计划。W4.QUAL 的原生 Linux lane 需要 owner 提供环境，缺失时是 open gate，不能算作通过。
 6. 不变：GATE.LIVE 之前只用 scripted model，不调用真实模型；GATE.DATA 之前不删除任何数据；不 push，不合入 main。
 7. 波次之间不设 Metrics 闸门。Metrics 复核每个波次的回执；有异议时经 owner 转达，AI Base 在下一个节点边界暂停。
 
-上述决定由 owner 以 `handoff-prompt-aib2-w1-w4.md` 转交 AI Base。AI Base 的开闸记录以本提交作为 `metrics_commit`。
+上述决定与第 9 节的增补由 owner 以 `handoff-prompt-aib2-w1-w4.md` 转交 AI Base。开闸记录引用的 Metrics 提交见第 9 节末段。
 
 ## 8. 对 Metrics 的影响
 
@@ -91,3 +91,25 @@ links 由 30 增至 35：回执新增 6 条指向 design 的链接；design 原�
   - design Open Questions 3（`session_key`）：:856-861 冻结为完整匹配 `[A-Za-z0-9._:-]+`、以 `<app_id>.` 开头、不超过 200 个 ASCII 字符；`None` 新建会话，空串非法；唯一键为 `(principal.id, app_id, session_key)`；不做规范化、截断或大小写折叠。Metrics 的 app_id 为 `metrics`，`metrics.workbench.{profile_id}` 最长 178 个字符，符合要求；
   - 0.6 要求记录的配置项与默认值，唯一来源是 design §10（:651-685）：心跳间隔、结束流时限与两个在途上限是 A 类运行时默认值（2.0、2.0、4、4），与 Metrics 的取值相同；`stop_timeout_seconds` 没有默认值，由宿主提供（Metrics 为 1.0）；响应块队列的三个上限是 B 类冻结值。心跳与终止事件的 schema 见 §11.6（:1279-1297）。
 - 每个波次的 REPLAN 提供开发版 wheel（路径、SHA-256 与依赖快照）。Metrics 用它并行做 `blocking_wsgi` 消费方冒烟，不阻塞 AI Base；冒烟结果不作为 0.6 或 METRICS.READY 的证据。
+
+## 9. 接受后的增补（2026-11-12）
+
+Metrics 按冻结契约改写 MDB-2（提交 `860fbda`）时，又发现两项 P3，以及冻结契约中五处没有定义、宿主无法自行补足的语义。owner 于 2026-11-12 决定全部随本次 W1–W4 授权转交：
+
+- G5、G6 与 G1–G4 一起在开闸前修复（第 7 节第 3 条）。两处都在 design §10、§11 之外，修复只让正文与冻结契约一致。
+- A1–A5 都是新增，不改动冻结条目，按授权提示词 3.1 的新增规则处理：在引入它的节点内追加到 design §11 的对应小节，标注节点和理由；冻结时已有的条目与已有 code 的含义都不改动。名称由 AI Base 决定，语义按下表。五项都是通用能力，不为 Metrics 设专用分支（design :1065）。
+
+| 编号 | 位置 | 问题 |
+| --- | --- | --- |
+| G5 | design §7 :500-502 | admission 的拒绝顺序仍附带旧恢复词：`profile_not_declared/correct_request`、`profile_disabled/stop`、`model_not_configured/stop`、`input_schema_invalid/correct_request`。这些词不是注册表 Retry 列的取值（定义见 :982-985）；注册表（:1030-1033）中这四个 code 的 Retry 分别是 correct、repair、repair、correct |
+| G6 | design §2 :114-115 | 写 Metrics 在 "binding/starting" 之前计算 N；§11.1（:786-787）只要求在启动任何运行时、线程、锁或服务器之前计算。Metrics 的顺序是绑定端口、计算 N、启动运行时、构造 waitress |
+
+| 编号 | 冻结契约的缺口 | 请求冻结的语义 | Metrics 的依据（本 change 的 design.md） |
+| --- | --- | --- | --- |
+| A1 | preview 钩子的签名与返回类型没有定义：§11.1（:863-864）把 tool 接口指向 §5–7，那里也没有定义。数据未就绪时 preview 只能抛 `ToolError`，模型只看到 `tool_failed`，看不到阻塞原因 | preview 返回"就绪（内容）"或"拒绝（结果）"之一，就绪内容经 `canonical_json`（§6 :453-455）成为 `ToolApproval.preview`。拒绝时不创建审批、不调用 handler，留一条审计记录；拒绝结果按 tool 的输出 schema 校验，作为普通 tool 结果返回模型，不带错误 code。执行前重新 preview（§6 :468-470）被拒绝时，不调用 handler，审批作废并记 `approval_invalidated`（:1028），本次调用返回拒绝结果 | Open Questions 9 |
+| A2 | `ModelConfig.provider` 只有类型 `str`（:748-749），没有合法取值 | 以公开常量给出合法取值，写明每个取值对 `base_url`、`api_key` 的要求；未知取值在启动任何运行时资源之前以 `configuration_invalid`（:990）失败；依赖可选依赖（extras）的取值，写明缺少该依赖时的 code | Open Questions 6 |
+| A3 | App handler 或 preview 抛出 `ToolError` 以外的异常时，ToolResult 用哪个 code 没有规定；§11.3（:1076-1087）只要求异常链保密 | `ToolError` 以外的 `Exception` 子类记为 `tool_failed`（:1052），preview 失败时不调用 handler；取消与截止沿用既有 code；非 `Exception` 的 `BaseException` 不在此列；`internal_error`（:989）只用于运行时自身的故障；异常文本与异常链不进入结果与记录 | Open Questions 8 |
+| A4 | 注册表的 Retry 列（类别定义见 :982-985）没有导出，宿主只能复制注册表 | 每个导出异常带由注册表派生的恢复类别属性，取值与 Retry 列的字符串相同；根包导出按 code 查询恢复类别的纯函数，可用于 `RunSnapshot`、`ToolResult` 与 `StopResult` 中的 code；二者纳入 V01 的双向比对 | Open Questions 10 |
+| A5 | `RuntimeLimits` 前五项必填（§10 :672、§11.1 :711-713），但只有名称与类型。与限额相关的现有 code（`input_too_large` :1035、`admission_limited` :1040、`output_limit_exceeded` :1047、`deadline_exceeded` :1048）都不覆盖 tool 时长、捕获输出与输入 token | 逐项写明作用对象（每次模型调用、每个 run 或每次 tool 调用）、计数方式（token 计数不引入 design §9 以外的依赖）、执行点、超限 code（含义已覆盖的复用已有 code，其余追加到注册表末尾），与 `max_input_bytes`、`max_output_bytes`、`max_run_duration_seconds`、`max_queued_runs` 的区别，以及 TaskProfile 如何收紧 | Open Questions 7 |
+
+AI Base 开闸记录中，`w0_review` 的 `metrics_commit` 是写入本记录第 1–8 节的提交 `e3c8a8027019d2dde0e491e1ea92cad720550112`；`w1_w4_authorization` 的 `metrics_commit` 是写入本节的提交，全长 SHA 由授权提示词给出。
