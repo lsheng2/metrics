@@ -52,14 +52,14 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 #### Scenario: Port is already in use
 - **WHEN** 操作者运行 `manage.py serve`，目标地址和端口已被其他进程占用，或绑定被拒绝（`EADDRINUSE` 或 `EACCES`）
 - **THEN** 命令 SHALL 在 2 秒内输出 `serve bind failed.` 并以 1 退出
-- **AND** 命令 SHALL NOT 启动运行时，SHALL NOT 获取状态目录锁
+- **AND** 命令 SHALL NOT 在绑定之前运行 Django 系统检查或导入 AI Base 运行时，SHALL NOT 启动运行时，SHALL NOT 获取状态目录锁
 
 #### Scenario: Another process binds the serving port
 - **WHEN** `serve` 绑定 `127.0.0.1` 并正在运行，另一个进程以默认选项或设置 `SO_REUSEADDR` 后绑定同一地址和端口
 - **THEN** 该绑定 SHALL 失败，发往该地址和端口的连接 SHALL 全部由 `serve` 受理
 
 #### Scenario: Runtime cannot start
-- **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定、运行时配置无效，或启动时限到期且运行时已按时回滚
+- **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定、运行时配置无效、启动时限到期且运行时已按时回滚，或绑定之后的 Django 系统检查报告错误（code `system_check_failed`，此时不启动运行时）
 - **THEN** 服务 SHALL 以 1 退出，并只输出一行 `serve startup failed (<code>).`
 - **AND** 输出与日志 SHALL NOT 包含异常消息或 traceback
 - **AND** 服务 SHALL NOT 在没有运行时的情况下继续提供 Django 页面
@@ -205,7 +205,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **THEN** 运行时 SHALL 得到匿名的本地操作者 principal
 
 ### Requirement: Only authenticated humans decide AI approvals
-`external` tool 调用 SHALL 先由运行时创建持久化审批，审批通过之前 SHALL NOT 执行。审批 SHALL 只能由通过认证、且 Metrics 宿主的 `can_decide` 返回真的 principal 决定。匿名 principal SHALL 只在 development settings 中被允许决定审批，这项允许 SHALL NOT 能通过环境变量打开。任何 tool、host action 或模型输出 SHALL NOT 产生审批决定。
+`external` tool 调用 SHALL 先由运行时创建持久化审批，审批通过之前 SHALL NOT 执行。审批 SHALL 只能由通过认证、且 Metrics 宿主的 `can_decide` 返回真的 principal 决定。匿名 principal SHALL 只在 development settings 中被允许决定审批，这项允许经 `HostConfig.allow_anonymous_approval`（默认 `False`）传给运行时，SHALL NOT 能通过环境变量打开。任何 tool、host action 或模型输出 SHALL NOT 产生审批决定。
 
 #### Scenario: Anonymous operator tries to approve in production settings
 - **WHEN** 使用 production settings 且未配置 Basic 用户，匿名本地操作者尝试批准一个发布审批
@@ -257,7 +257,7 @@ Metrics 中 SHALL 只有 `ai_host` 模块导入 `ai_base_runtime`；组合根 SH
 - **AND** 测试 SHALL 覆盖受影响的用户工作流在 `ready` 状态和非 `ready` 状态下的行为
 
 ### Requirement: Domain services call AI task runs through a synchronous port
-project_management 的摘要分析、报告辅助和 project run worker SHALL 通过 project_management 定义的同步 task-run 端口调用 AI；端口由 `ai_host` 基于运行时的 `blocking.task_runs` 实现，由组合根注入。端口 SHALL 原样传递运行时的准入错误码及其 `recovery`。运行记录 SHALL 归 project_management 所有，只有一个 schema 版本，SHALL NOT 携带 AI 后端绑定或执行模式；其他版本的记录 SHALL 作为无效存储拒绝，SHALL NOT 兼容读取。Metrics SHALL NOT 用 `asyncio.run` 调用运行时协程，SHALL NOT 在运行时的事件循环线程上调用 blocking 门面，SHALL NOT 保留 HTTP task-run 客户端、凭据引用或 token 设置。
+project_management 的摘要分析、报告辅助和 project run worker SHALL 通过 project_management 定义的同步 task-run 端口调用 AI；端口由 `ai_host` 基于运行时句柄的同步门面 `handle.blocking.task_runs` 实现，由组合根注入。端口 SHALL 原样传递运行时的错误码及其恢复类别，类别 SHALL 按错误码取自 AI Base 的单一注册表，SHALL NOT 由旧的恢复词换算。运行记录 SHALL 归 project_management 所有，只有一个 schema 版本，SHALL NOT 携带 AI 后端绑定或执行模式；其他版本的记录 SHALL 作为无效存储拒绝，SHALL NOT 兼容读取。Metrics SHALL NOT 用 `asyncio.run` 调用运行时协程，SHALL NOT 在运行时的事件循环线程上调用 blocking 门面，SHALL NOT 保留 HTTP task-run 客户端、凭据引用或 token 设置。
 
 #### Scenario: Project run worker starts an AI run
 - **WHEN** project run worker 线程处理一个需要 AI 的运行
@@ -266,7 +266,7 @@ project_management 的摘要分析、报告辅助和 project run worker SHALL �
 
 #### Scenario: Runtime rejects admission
 - **WHEN** 运行时拒绝一次准入，例如返回 `model_not_configured`
-- **THEN** 端口 SHALL 返回同一个错误码及其 `recovery`，SHALL NOT 改写为其他错误码
+- **THEN** 端口 SHALL 返回同一个错误码及其恢复类别（`model_not_configured` 为 `repair`），SHALL NOT 改写为其他错误码
 
 #### Scenario: Run storage holds a record of another schema version
 - **WHEN** 读取到不是当前 schema 版本的准入记录，例如带有 `backend` 或 `execution_mode` 的旧记录
@@ -376,7 +376,7 @@ AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_
 - **THEN** 每个请求 SHALL 得到 401，SHALL NOT 得到 308、200 或 503
 
 ### Requirement: The server caps request bodies
-`serve` SHALL 显式把 waitress 的 `max_request_body_size` 设为 N + 1 字节，N 取运行时适配器公开的请求体上限与 Django 侧最大合法请求中的较大值。waitress 在调用应用之前读完并缓冲请求体，超过 512 KiB 时写入临时文件，因此这个 413 SHALL 是唯一的资源上限，最坏的临时文件占用约为 N 乘以连接上限；适配器的 413 只保证语义与顺序。宿主对非数字 `Content-Length` 返回 400 的分支 SHALL 作为纵深防御保留。
+`serve` SHALL 显式把 waitress 的 `max_request_body_size` 设为 N + 1 字节，N 取 `request_body_policy(settings, apps).max_request_body_bytes` 与 Django 侧最大合法请求中的较大值，SHALL 在启动任何运行时资源之前计算。waitress 在调用应用之前读完并缓冲请求体，超过 512 KiB 时写入临时文件，因此这个 413 SHALL 是唯一的资源上限，最坏的临时文件占用约为 N 乘以连接上限；适配器的 413 只保证语义与顺序。宿主对非数字 `Content-Length` 返回 400 的分支 SHALL 作为纵深防御保留。
 
 #### Scenario: Declared body exceeds the cap
 - **WHEN** 一个不带凭据的请求声明的 `Content-Length` 为 N + 1
@@ -395,15 +395,15 @@ AI pane SHALL 根据进程内运行时显示三种状态之一：`ready`；`not_
 - **THEN** waitress SHALL 返回 400，应用 SHALL NOT 被调用
 
 ### Requirement: Host conformance suite gates the composed runtime
-Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合后的宿主，检查项见下方场景。确定性的对话测试 SHALL 使用 testkit 的脚本化模型，SHALL NOT 依赖真实模型或聊天快捷方式。升级运行时版本 SHALL 以该套件通过为门禁。
+Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合后的宿主，检查项见下方场景；Metrics SHALL 在单独的一致性通道中以 ini 选项 `ai_host_modes=blocking_wsgi` 声明托管方式，SHALL NOT 在默认的 pytest 配置中加载该插件。确定性的对话测试 SHALL 使用 testkit 的脚本化模型，SHALL NOT 依赖真实模型或聊天快捷方式。升级运行时版本 SHALL 以该套件通过为门禁。
 
 #### Scenario: Conformance suite runs against the composed host
 - **WHEN** Metrics 测试对组合后的宿主运行宿主一致性套件
 - **THEN** 套件 SHALL 覆盖 Host 校验、请求完整性、资源归属、`frame-ancestors`、审批持久化、`os.environ` 与全局 tracer 不变、Proactor 事件循环、slow callback 阈值与 `RuntimeBusy`
-- **AND** 套件 SHALL 覆盖运行时未运行或进入第一段停止后 `/ai` 返回 503、第一段停止开始后所有打开的流在配置的时限（2 秒）内发送终止事件后结束、句柄停止在配置的时限内返回、在事件循环线程上调用 blocking 门面立即报错、门面超时抛出定义好的异常并取消循环侧协程、以同一个 `client_run_key` 重试只产生一次运行、运行时结束事件在 1 秒内可见
+- **AND** 套件 SHALL 覆盖运行时未运行或进入第一段停止后 `/ai` 返回 503、第一段停止开始后所有打开的流在 `HostConfig.lifecycle.http_close_timeout_seconds`（2 秒）内发送终止事件后结束、第二段停止在 `HostConfig.lifecycle.stop_timeout_seconds` 内返回、在事件循环线程上调用 blocking 门面立即抛 `RuntimeUsageError`、门面等待超时抛 `RuntimeCallTimeout` 并取消循环侧协程、以同一个 `client_run_key` 重试只产生一次运行、运行时结束信号 `handle.ended` 在 1 秒内可见
 - **AND** 套件 SHALL 覆盖 WSGI 适配器逐块转发流式响应、空闲流按心跳间隔发送心跳且断开在心跳间隔加 1 秒内被发现、在 WSGI 线程上从 `wsgi.input` 读取有上限的请求体、响应块交接队列有上限并形成背压、客户端断开后释放连接级资源、流与其他 `/ai` 请求分开的在途上限、名额在正常结束、出错、客户端中止与停止后都归还、循环被阻塞时短请求在总时限内得到 503 或 504、适配器按 Host 校验、请求完整性、认证、308、UI 资产、运行时未运行的 503、准入的顺序逐项执行且未认证请求不占名额、UI 资产不经循环与准入（循环被阻塞时仍返回 200）且 URL 跟随挂载路径、导航请求被拒时得到自动刷新的 503 页面
 - **AND** 套件 SHALL 覆盖运行时不安装信号处理器、不注册 atexit，以及第二段停止期间宿主的信号处理器在 1 秒内执行
-- **AND** 套件 SHALL 在句柄退出后立即以 `os._exit(0)` 结束运行时所在的子进程，重启后已完成的运行、会话与审批记录 SHALL 完整，状态目录锁 SHALL 可再次获取
+- **AND** 套件 SHALL 在离开 `with context as handle` 块后立即以 `os._exit(0)` 结束运行时所在的子进程，重启后已完成的运行、会话与审批记录 SHALL 完整，状态目录锁 SHALL 可再次获取
 
 #### Scenario: Runtime version is upgraded
 - **WHEN** 一个变更修改了固定的 `ai-base-runtime` 版本
@@ -426,7 +426,7 @@ Metrics 宿主 SHALL 把运行时的会话、tool 调用和审批（请求、决
 - **AND** 宿主 SHALL 输出恰好一条 `ai_auth_failed` 日志，记录路径、客户端地址与原因，SHALL NOT 包含提交的凭据
 
 ### Requirement: Runtime version is pinned and admitted explicitly
-Metrics SHALL 在 `requirements.txt` 中固定 `ai-base-runtime` 的精确版本；准入时 SHALL 校验 wheel 摘要、`pip check` 无冲突、宿主一致性套件通过。Metrics SHALL NOT 依赖 Python HTTP SDK `ai-base-application-sdk`，SHALL NOT vendor 运行时的前端资产；嵌入脚本 SHALL 使用运行时 `ui.asset_url` 返回的带内容哈希的地址。
+Metrics SHALL 在 `requirements.txt` 中固定 `ai-base-runtime` 的精确版本；准入时 SHALL 校验 wheel 摘要、`pip check` 无冲突、宿主一致性套件通过。Metrics SHALL NOT 依赖 Python HTTP SDK `ai-base-application-sdk`，SHALL NOT vendor 运行时的前端资产；嵌入脚本 SHALL 使用运行时句柄 `handle.ui.asset_url` 返回的带内容哈希的地址。
 
 #### Scenario: A new runtime wheel is admitted
 - **WHEN** 维护者把固定版本升级到新的 `ai-base-runtime` wheel
@@ -434,4 +434,4 @@ Metrics SHALL 在 `requirements.txt` 中固定 `ai-base-runtime` 的精确版本
 
 #### Scenario: Workbench loads the embed script
 - **WHEN** workbench 渲染 AI pane
-- **THEN** `embed-host.js` 的地址 SHALL 来自运行时的 `ui.asset_url`，Metrics 静态目录中 SHALL NOT 存在该脚本的副本
+- **THEN** `embed-host.js` 的地址 SHALL 来自运行时句柄的 `handle.ui.asset_url`，Metrics 静态目录中 SHALL NOT 存在该脚本的副本

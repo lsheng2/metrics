@@ -34,7 +34,7 @@ AI 生成的 render config 或 Grafana 草稿 SHALL 作为 `metrics.chart_workfl
 
 #### Scenario: Draft references a profile outside the session boundary
 - **WHEN** 草稿引用会话 `ContextRef` 边界之外的 provider 或 profile
-- **THEN** Metrics SHALL 以 `CONTEXT_BOUNDARY_VIOLATION` 和结构化 findings 拒绝该草稿
+- **THEN** Metrics SHALL 以 `ToolError("context_boundary_violation")` 拒绝该草稿（`ToolError` 只携带注册表中的 code，不附 findings），SHALL NOT 读取或写入 Metrics 数据
 - **AND** Metrics SHALL NOT 从中生成可导入的 Grafana JSON
 
 #### Scenario: Draft fails validation
@@ -143,7 +143,7 @@ Metrics SHALL own the envelope that converts a validated AI render draft into an
 
 #### Scenario: Publish envelope cannot reach Grafana
 - **WHEN** Metrics validation passes but Grafana import fails or Grafana runtime is unavailable
-- **THEN** Metrics SHALL return a structured error without hiding validation status
+- **THEN** Metrics SHALL return a typed failure result that keeps the validation status (a tool result, not a runtime error code)
 - **THEN** Metrics SHALL NOT report publication success
 
 ### Requirement: AI chart authoring is recipe-driven

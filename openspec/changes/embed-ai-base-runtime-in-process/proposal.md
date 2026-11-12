@@ -93,7 +93,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
     PASS（附条件，不需要重跑；tasks 0.5，含终测 M1–M6）；owner 同日签署 Q10，并决定请求定序表、两段式停止看门狗与
     不重跑 M3，上游提案 v2.1 定稿（`upstream-ai-base-runtime-proposal.md`）；
   - AIB-2 发布的 `ai-base-runtime` 提供 v2.1 D1–D12 中的 SPI，包括 owner 同日接受的五项补充：D4
-    `AppPackage.task_profiles`、D5 `ToolContext.context_ref`、D6 preview 摘要绑定、D7 `open_session` 的
+    `AppPackage.task_profiles`、D5 `ToolContext.context_ref`、D6 preview 摘要绑定、D7 `chat.open_session` 的
     `session_key`、D9 task-run 真实模型执行与准入错误码。
 - **前置 change 已归档**：`isolate-dashboard-runtime-instances`、`remove-legacy-ai-base-workbench-embed` 和
   `harden-ai-base-sidecar-and-connector-inputs` 已于 2026-11-10 归档。本 change 的 delta 以归档后的主 spec 为基线，

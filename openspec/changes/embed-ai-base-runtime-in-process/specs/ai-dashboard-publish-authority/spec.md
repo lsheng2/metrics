@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Approved preview digest binds publish content
-`metrics.publish_chart` 的 preview SHALL 是确定性的：相同参数和相同 Metrics 数据 SHALL 产生字节相同的 dashboard JSON。preview 摘要 SHALL 覆盖 dashboard JSON 和发布目标（Grafana 地址和 dashboard uid），并绑定到审批。运行时 SHALL 在执行已批准的调用之前重新运行 preview；摘要与审批绑定的摘要不一致时，审批 SHALL 作废，handler SHALL NOT 被调用。handler SHALL 只导入 `ctx.approval.preview` 中的内容，并在导入之前再次核对它与摘要一致。
+`metrics.publish_chart` 的 preview SHALL 是确定性的：相同参数和相同 Metrics 数据 SHALL 产生字节相同的 dashboard JSON。preview 摘要 SHALL 覆盖 dashboard JSON 和发布目标（Grafana 地址和 dashboard uid），并绑定到审批。运行时 SHALL 在执行已批准的调用之前重新运行 preview；摘要与审批绑定的摘要不一致时，审批 SHALL 作废，handler SHALL NOT 被调用。handler SHALL 只导入 `ctx.approval.preview` 中的内容，并在导入之前再次核对它与 `ctx.approval.preview_digest` 一致。
 
 #### Scenario: Preview is repeated with unchanged data
 - **WHEN** 同一组参数在 Metrics 数据不变时预览两次
@@ -16,7 +16,7 @@
 
 #### Scenario: Preview content does not match its digest
 - **WHEN** handler 收到的 `ctx.approval.preview` 内容与绑定的摘要不一致
-- **THEN** handler SHALL 拒绝导入并返回结构化错误，Grafana SHALL NOT 被调用
+- **THEN** handler SHALL 以 `ToolError("preview_digest_mismatch")` 拒绝导入，Grafana SHALL NOT 被调用
 
 ### Requirement: Approved publish creates a visible Grafana dashboard
 已批准且摘要一致的 `metrics.publish_chart` 调用 SHALL 把已批准 preview 中的 dashboard JSON 导入 Grafana，并返回 dashboard uid 和可访问的 Grafana URL。只有导入成功时，Metrics SHALL 报告发布成功并写入发布历史。数据未就绪或语义不受支持时，preview SHALL 失败，运行时 SHALL NOT 创建审批。
@@ -29,7 +29,7 @@
 
 #### Scenario: Grafana is unreachable
 - **WHEN** 导入时 Grafana 不可达或返回错误
-- **THEN** tool 结果 SHALL 是包含校验状态的结构化错误
+- **THEN** tool 结果 SHALL 是保留校验状态的类型化失败结果（tool 的返回值，不是运行时错误 code）
 - **AND** Metrics SHALL NOT 报告发布成功，SHALL NOT 写入成功的发布历史
 
 #### Scenario: Requested semantic is unsupported

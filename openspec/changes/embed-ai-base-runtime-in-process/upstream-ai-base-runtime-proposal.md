@@ -9,6 +9,9 @@
   报告与签核随定稿提交；句柄方法和配置项的最终名称以 AIB-2 的接口回执为准。增补 1（2026-11-12）：AIB-2 规划
   （`5757c9c`）已合入 AI Base main；owner 同意三项 W0 接口输入（H6 启动时限到期的处理、D9 导出异常的稳定错误码、
   D10 宿主声明托管方式与夹具签名，Q11），AIB-2 的 W0 回执经 Metrics 复核后才进入 W1。修订内容见文末修订记录。
+- 冻结后：AIB-2 W0 冻结（AIB `fc4db2f`，Metrics `e3c8a80` 接受）后本文为历史提案，不再更新；名称、签名与 code 以 AIB
+  design §10、§11 为准。文中大写的错误码标签（如 `CONTEXT_BOUNDARY_VIOLATION`）只是示意，不是 code 的别名（AIB design
+  §11.3 `:1062-1063`）。
 - 取代：v1《AI Base SDK 中立评估》。v1 以"多个 App 通过网络带外接入"为前提，这个前提已被否定，v1 撤回且未提交。
 - 配套文件：§5 接口草图在 [`upstream-ai-base-runtime-proposal-sketches.md`](upstream-ai-base-runtime-proposal-sketches.md)，章节号不变。
 - 证据基线：AI Base `3c3f8b4`（2026-11-09）。AI Base 路径默认相对于 `services/app-service/`；以 `apps/`、
@@ -719,6 +722,8 @@ uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留�
 
 ## 5. 接口草图
 
+本节为提案时的示意名称；冻结名称以 AIB design §11（`fc4db2f`）为准，本文不再更新。
+
 §5.1–§5.4（Metrics 组合根、宿主 SPI 与 tool、blocking 门面、页面视图与 CLI、嵌入页）是示意，名称在 AIB-2 和 MDB-2
 的 design 中确定。增补 1 起它们在 [`upstream-ai-base-runtime-proposal-sketches.md`](upstream-ai-base-runtime-proposal-sketches.md)，
 章节号不变，本文中的"§5.1"至"§5.4"都指该文件。
@@ -876,3 +881,4 @@ uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。宿主因此保留�
 | v2.1 草案（S0b 终测） | 2026-11-11 | 并入 S0b 终测（`s0b-spike-report.md` §3.11）：最终组合（waitress 3.0.2、`serve-http` 线程、threads 14、流与短请求上限 4 与 4、资产直出、flush 收尾、显式退出）上补测 M1–M6 全部通过；依赖补测的取值定稿（心跳 2 秒、第一段结束流 2 秒、句柄停止 1.0 秒、上限 4 与 4、`Retry-After` 2 秒）；新增 R24（句柄退出时已写完持久状态并关闭全部持久资源，即 H6 的持久状态契约）；请求体上限由 AIB-2 定有界默认值（S0b 的 16 MiB 是占位值）；状态、§1、D12、§5.1、§6、§9、Q10 同步 |
 | v2.1 定稿 | 2026-11-11 | S0b 终测 M1–M6 复签 PASS（附条件，不需要重跑；`s0b-signoff.md` 的复签与勘误）；owner 签署 Q10，并决定请求定序表、两段式停止看门狗与不重跑 M3。D3 写明 308 在认证之后，宿主可在前面做传输层检查、自己的 Host 校验与停止中的 503；D10 按 D3 的顺序逐项断言；H6 的 10 秒预算由宿主的两段式看门狗按段保证；H7 写明 308 在认证之后，请求体按路由限制并公开其最大值；§5.1 按定稿取值（排空 3.0、flush 6.5、HTTP 停止 7.5、句柄停止 1.0 秒）、两段式看门狗（9.2、659.2、1.2 秒）、L1 分派、请求体上限 N + 1、退出清点 R24-host 与退出码 1、3、130 改写；状态、§1、§9、Q10 同步；host spec 行号按新版重算 |
 | v2.1 增补 1 | 2026-11-12 | AIB-2 规划（v2.1 修订 `5757c9c`）合入 AI Base main 后，owner 同意三项 W0 接口输入（Q11）：H6 增加启动时限到期的有上限回滚、专用 code 与 `StopResult` 同形的结果；D9 增加导出异常的稳定 code 与对照表；D10 增加宿主声明托管方式（未声明的方式为不适用、不计为通过）、夹具签名在 W0 冻结与可选的认证记录；§5.1 加入 `start_timeout` 与 CLI 的映射，示例在 W0 回执复核后按冻结名称改写；状态、§5.3、§9 与共同验收同步；W0 回执经 Metrics 复核后才进入 W1。host spec 的 `:50`、`:62`、`:99-100`、`:228`、`:236` 同步改写，行号不变。§5 接口草图整节移到配套文件 `upstream-ai-base-runtime-proposal-sketches.md`，使正文不超过 1200 行的文件大小上限；移动本身不改内容，章节号不变 |
+| W0 冻结后 | 2026-11-12 | AIB-2 W0 冻结（`fc4db2f`）经 Metrics 接受（`e3c8a80`）后本文转为历史提案，不再更新：状态下新增"冻结后"说明，§5 注明冻结名称以 AIB design §11 为准；配套草图按冻结名称与 MDB-2 design 改写 |

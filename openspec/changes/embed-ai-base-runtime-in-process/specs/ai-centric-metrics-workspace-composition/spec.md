@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Session context boundary is provider and project scoped
-`metrics.workbench` context provider 解析 `ContextRef` 时 SHALL 给出会话边界：允许的 provider id、profile id、project label、range mode 和 data-block id。每个 Metrics tool SHALL 按 `ctx.context_ref` 解析出的边界校验参数，越界的调用 SHALL 返回 `CONTEXT_BOUNDARY_VIOLATION`，且 SHALL NOT 读取或写入 Metrics 数据。
+`metrics.workbench` context provider 解析 `ContextRef` 时 SHALL 给出会话边界：允许的 provider id、profile id、project label、range mode 和 data-block id。每个 Metrics tool SHALL 按 `ctx.context_ref` 解析出的边界校验参数，越界的调用 SHALL 以 `ToolError("context_boundary_violation")` 失败，且 SHALL NOT 读取或写入 Metrics 数据。
 
 #### Scenario: Context boundary is included
 - **WHEN** context provider 解析一个 `ContextRef`
@@ -11,11 +11,11 @@
 
 #### Scenario: Tool call crosses the session boundary
 - **WHEN** tool 调用的参数引用会话边界之外的 provider、profile 或 project
-- **THEN** tool SHALL 返回 `CONTEXT_BOUNDARY_VIOLATION`，SHALL NOT 读取或写入 Metrics 数据
+- **THEN** tool SHALL 以 `ToolError("context_boundary_violation")` 失败，SHALL NOT 读取或写入 Metrics 数据
 
 #### Scenario: Session has no bound context
 - **WHEN** 需要 scope 的 tool 在一个没有 `ContextRef` 的会话中被调用
-- **THEN** tool SHALL 返回结构化错误，提示从 workbench 的 scope 打开聊天
+- **THEN** tool SHALL 返回类型化的业务结果（不是运行时错误 code），提示从 workbench 的 scope 打开聊天
 - **AND** tool SHALL NOT 默认使用任何 profile
 
 ## MODIFIED Requirements

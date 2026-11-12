@@ -21,7 +21,7 @@
 #### Scenario: AI chat is embedded in the workbench
 - **WHEN** AI pane 状态是 `ready`，workbench 渲染 AI assistant pane
 - **THEN** pane SHALL 渲染一个同源 iframe，指向运行时在 `<URL 前缀>/ai` 下提供的嵌入聊天页
-- **AND** 页面 SHALL 加载 `ui.asset_url` 返回的 `embed-host.js`，并通过它把当前亮色或暗色主题同步给 iframe
+- **AND** 页面 SHALL 加载运行时句柄 `handle.ui.asset_url` 返回的 `embed-host.js`，并通过它把当前亮色或暗色主题同步给 iframe
 - **AND** 嵌入聊天 SHALL 是侧栏形态，SHALL NOT 显示完整应用导航、会话列表、会话文件面板或状态栏
 
 #### Scenario: Embedded chat is bound to the workbench context
