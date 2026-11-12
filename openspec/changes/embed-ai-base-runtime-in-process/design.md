@@ -671,6 +671,10 @@
     `record_audit` 经决策 4 的 helper 写入 `ai_host` 自有的只追加审计表，以 `event_id` 为唯一约束，同一事件再次投递时
     不新增行、不报错；不写 `BugTrendAuditEvent`；运行时交来的认证失败事件不写数据库，只输出一条结构化日志
     `ai_auth_failed`（path、客户端地址、原因，不含凭据）。
+  - `record_audit` 在有界时间内返回或抛错，这是 A6 的宿主义务，运行时不为 outbox 投递另设时限（owner 2026-11-12 确认）：
+    一次投递只做一次插入，插入冲突视为已写入并正常返回（不先查后插）；等锁不超过 SQLite busy timeout（`sqlite3` 默认
+    5 秒，`DATABASES` 未覆盖），超时抛错，由运行时退避重投。stop 时被取消的投递之后会再次投递，可能与仍在执行的上一次
+    插入并发，唯一约束保证只有一行。
   - `HostConfig.allowed_hosts` 取自 Django `ALLOWED_HOSTS`（默认只有回环，`defaults.py:21`）；挂载路径 `root_path`、
     状态目录 `state_dir`、模型 `model` 与 `network`（`NetworkPolicy`）都由 `ai_host.settings` 生成（§11.1 `:724-733`）。
     L1 对所有路径（包括静态文件）用 Django 的同一规则与 `ALLOWED_HOSTS` 校验 Host（决策 1），挂载路径下的请求再由
@@ -679,8 +683,9 @@
 - **理由**：同一请求在 Django 和运行时两侧的认证结果必须一致（见 `embedded-ai-runtime-host`）；Basic 用户设置写错时
   进程必须启动失败，而不是静默放行全站；审批权限是安全控制，不能被环境变量打开（v2 §8.5）；运行时的会话、tool 和
   审批事件与 bug_metrics 的业务审计语义不同。运行时至少投递一次，重复投递时报错会让运行时反复重试同一事件，所以按
-  `event_id` 去重并正常返回。认证失败可由未认证的请求无限触发，写入数据库会让审计表无限增长，并在
-  SQLite 上争用写锁；结构化日志足以排查。
+  `event_id` 去重并正常返回。运行时不为 outbox 投递设时限：取消只停止等待，不停止写库的工作线程，每次重试都会多占
+  一个线程；有界因此由宿主保证，与 `authenticate` 相同（AIB design §2 `:129-130`）。认证失败可由未认证的请求无限触发，
+  写入数据库会让审计表无限增长，并在 SQLite 上争用写锁；结构化日志足以排查。
 - **否决的备选**：运行时自己做认证（与 Django 不一致）；用环境变量开启匿名审批；把运行时审计写进
   `BugTrendAuditEvent`（混淆业务审计，且该表不归 `ai_host`）；认证失败写入审计表（理由见上）；静态文件豁免 Host 校验
   （Host 校验是 DNS rebinding 的防线，只比较请求头，豁免没有收益，复签 D）。
@@ -969,4 +974,5 @@
     审批事件照此投递，Metrics 的审计表会缺记录且没有任何报错。owner 于 2026-11-12 决定请求上游冻结（增补 A6）：
     `event_id`、类别表、关联 id、结果 code 与可还原的事件顺序；状态转换产生的事件经事务性 outbox 至少投递一次，停止时
     不排空、重启后继续投递；宿主按 `event_id` 幂等。Metrics 据此在审计表上加 `event_id` 唯一约束（决策 14、tasks 2.3），
-    是否提供会话事件以上游的类别表为准；wheel 交付后由 tasks 0.6 核对。
+    是否提供会话事件以上游的类别表为准；wheel 交付后由 tasks 0.6 核对。owner 于同日确认：运行时不为 outbox 投递设单事件
+    时限，`record_audit` 有界是宿主义务（决策 14）。

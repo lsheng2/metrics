@@ -414,21 +414,29 @@ Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合�
 - **THEN** 测试 SHALL 用 testkit 的脚本化模型产生确定的 tool 调用，SHALL NOT 调用真实模型
 
 ### Requirement: AI runtime audit is written to Metrics
-Metrics 宿主 SHALL 把运行时投递的会话、tool 调用和审批（请求、决定、作废、消费、过期）事件写入 `ai_host` 自有的只追加审计表，记录 `event_id`、事件类别、发生时间、principal、session id、run id、`tool_call_id`、tool 名称、审批 id、结果状态与运行时给出的事件顺序。运行时至少投递一次；同一 `event_id` 再次投递时，宿主 SHALL NOT 新增行，SHALL NOT 报错。认证失败 SHALL 只输出一条结构化日志 `ai_auth_failed`，SHALL NOT 写入数据库。Metrics 代码 SHALL 只插入审计记录，SHALL NOT 更新或删除；这些事件 SHALL NOT 写入 bug_metrics 的业务审计 `BugTrendAuditEvent`。审计记录与日志 SHALL NOT 包含模型凭据、provider token、Basic 密码或其他秘密。
+Metrics 宿主 SHALL 把运行时投递的会话、tool 调用和审批（请求、决定、作废、消费、过期）事件写入 `ai_host` 自有的只追加审计表，记录 `event_id`、事件类别、发生时间、principal、session id、run id、`tool_call_id`、tool 名称、审批 id、结果状态与运行时给出的事件顺序。认证失败 SHALL 只输出一条结构化日志 `ai_auth_failed`，SHALL NOT 写入数据库。Metrics 代码 SHALL 只插入审计记录，SHALL NOT 更新或删除；这些事件 SHALL NOT 写入 bug_metrics 的业务审计 `BugTrendAuditEvent`。审计记录与日志 SHALL NOT 包含模型凭据、provider token、Basic 密码或其他秘密。
 
 #### Scenario: Publish approval completes its lifecycle
 - **WHEN** 一次 `metrics.publish_chart` 调用经历请求审批、批准和执行
 - **THEN** `ai_host` 审计表 SHALL 依次记录审批请求、决定、消费和 tool 调用结果，顺序以运行时给出的事件顺序为准，每条都带有同一个 `tool_call_id`
+
+#### Scenario: Authentication fails
+- **WHEN** 已配置 Basic 用户，运行时路由上的一个请求认证失败
+- **THEN** `ai_host` 审计表的行数 SHALL 不变
+- **AND** 宿主 SHALL 输出恰好一条 `ai_auth_failed` 日志，记录路径、客户端地址与原因，SHALL NOT 包含提交的凭据
+
+### Requirement: AI runtime audit delivery is idempotent and bounded
+运行时至少投递一次审计事件，且不为投递设时限。同一 `event_id` 再次投递时，宿主 SHALL NOT 新增行，SHALL NOT 报错。`record_audit` SHALL 在有界时间内返回或抛错：等待数据库锁超过 SQLite busy timeout 时 SHALL 抛错，由运行时重投。
 
 #### Scenario: Audit event is delivered again
 - **WHEN** 运行时再次投递一个已写入的事件（同一 `event_id`）
 - **THEN** `ai_host` 审计表 SHALL 仍只有一行该事件
 - **AND** `record_audit` SHALL 正常返回
 
-#### Scenario: Authentication fails
-- **WHEN** 已配置 Basic 用户，运行时路由上的一个请求认证失败
-- **THEN** `ai_host` 审计表的行数 SHALL 不变
-- **AND** 宿主 SHALL 输出恰好一条 `ai_auth_failed` 日志，记录路径、客户端地址与原因，SHALL NOT 包含提交的凭据
+#### Scenario: Audit write meets a held database lock
+- **WHEN** 另一连接持有 SQLite 写锁，运行时投递一个审计事件
+- **THEN** `record_audit` SHALL 在 busy timeout 到期后抛错，SHALL NOT 挂起，审计表 SHALL NOT 新增该事件
+- **AND** 锁释放后运行时再次投递该事件，审计表 SHALL 恰好有一行该事件
 
 ### Requirement: Runtime version is pinned and admitted explicitly
 Metrics SHALL 在 `requirements.txt` 中固定 `ai-base-runtime` 的精确版本；准入时 SHALL 校验 wheel 摘要、`pip check` 无冲突、宿主一致性套件通过。Metrics SHALL NOT 依赖 Python HTTP SDK `ai-base-application-sdk`，SHALL NOT vendor 运行时的前端资产；嵌入脚本 SHALL 使用运行时句柄 `handle.ui.asset_url` 返回的带内容哈希的地址。
