@@ -249,3 +249,8 @@ run1 之后执行了 teardown；run2 前重新预检（13:38）并生成新的�
 - 同日 push 到 origin（`3c3f8b4..85f4ea9 main -> main`），`git ls-remote` 确认 origin 的 main 为 `85f4ea9`。
 - 合入的正是第 9 节重新验收的 HEAD，第 9 节的结论直接适用于 main。
 - AI Base 侧剩余收尾：AIB-0 change 的 2.3（引用本回执第 9 节）、2.4 CLOSE.R 与 change 归档，由 AI Base 按其仓库流程完成后再合入 main。收尾只改 openspec 与文档时，不需要 Metrics 重新验收；改动代码或启动脚本时，按第 8 节重新验收。
+- 2026-11-12 07:38，经 owner 授权，AI Base main 由 `85f4ea9` fast-forward 到 `5757c9c49fc7d71477aa12b5fb431eb80ec47ba0`，带入 3 个提交，没有合并提交：
+  - `44cdfa7` 是上一条的收尾：勾选 2.3 与 2.4 CLOSE.R，把 change 归档为 `openspec/changes/archive/2026-11-11-harden-standalone-app-service/`，并同步三份主 spec；
+  - `81751ef` 与 `5757c9c` 是 AIB-2 规划（v2.1 修订）。
+- 这 3 个提交共改动 39 个文件，只涉及 `docs/` 与 `openspec/`，没有代码或启动脚本，按上一条不需要 Metrics 重新验收，第 9 节的结论继续适用于 main。
+- 同日 push 到 origin（`85f4ea9..5757c9c main -> main`），`git ls-remote` 确认 origin 的 main 为 `5757c9c`。

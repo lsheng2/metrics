@@ -30,11 +30,17 @@
   函数，由适配器在 WSGI 线程上、准入之前调用，未认证的请求不占名额；UI 资产由适配器在认证之后直接返回，不经循环、
   不计名额，URL 跟随 `root_path`；短请求上限由 2 改为 4，线程数由 12 改为 14；UI 按 `Retry-After` 重试幂等 GET，
   嵌入页导航被拒时自动刷新（决策 1、14）。S0b 首轮测的是旧配置（线程 12、上限 2、资产计入名额），终测在新配置上复测。
+- owner 于 2026-11-12 把 AIB-2 规划（v2.1 修订 `5757c9c`，连同 AIB-0 收尾 `44cdfa7`）fast-forward 合入 AI Base main
+  并 push，同意上游提案增补 1 的三项 W0 接口输入（Q11）：`start_blocking` 的启动时限到期时有上限地回滚，并抛出带专用
+  code 的异常（v2.1 H6）；导出异常都带稳定的 `code`（D9）；宿主一致性套件只运行宿主声明的托管方式，Metrics 只声明
+  `blocking_wsgi`（D10）。AIB-2 的 W0 回执经 Metrics 复核后才进入 W1。本设计据此确定启动时限的处理（决策 2、3、10）
+  与一致性套件的范围（tasks 5.10）。
 - 本设计只使用上游提案 v2.1 定义的运行时 API：`start_blocking` 及其返回的句柄（`runtime.blocking` 同步门面，含
   `chat` 与 `task_runs`；第一段停止；WSGI 适配器，v2.1 H2/H6/H7）、`runtime.ui.asset_url`、
   `ai_base_runtime.spi/apps/contracts/testkit`。句柄方法与适配器配置的最终名称以 AIB-2 的接口回执为准（tasks 0.6，Q4）。
 - 发布顺序：AIB-0（AI Base 热修）→ S0 共装 spike（不通过）→ S0b（方向 1 可行，终测 M1–M6 通过，复签 PASS）→ 上游提案
-  v2.1 定稿 → AIB-2 与 MDB-2 同版本发布（v2 §9）。
+  v2.1 定稿 → AIB-2 规划合入 AI Base main（`5757c9c`）与上游增补 1 → AIB-2 W0 接口冻结并经 Metrics 复核 → AIB-2 与
+  MDB-2 同版本发布（v2 §9）。
 
 与设计相关的现状：
 
@@ -124,9 +130,9 @@
     WSGI 线程上先做 Host 校验、请求完整性与认证（决策 14），资产在认证之后直接返回，不进入循环（v2.1 D7、H7）。超过
     各自上限的 `/ai` 请求立即得到 503 和 `Retry-After`，不排队；嵌入页的导航请求被拒时得到自动刷新的 503 页面；请求
     正常结束、出错、客户端中止或停止时名额都归还（v2.1 H7，R22）；流占满自己的限额时，其他 `/ai` 请求与页面照常
-    处理。第一段停止时限 2 秒、停止各段时限（决策 2）与空闲流心跳间隔 2 秒也是该模块中的
-    常量；两个上限、心跳间隔、第一段停止时限与运行时停止时限经 AIB-2 句柄与适配器的配置项传给运行时（Open
-    Questions 4）。
+    处理。第一段停止时限 2 秒、停止各段时限（决策 2）、空闲流心跳间隔 2 秒与启动时限 `RUNTIME_START_SECONDS`（决策 2
+    第 2 步）也是该模块中的常量；两个上限、心跳间隔、第一段停止时限与运行时停止时限经 AIB-2 句柄与适配器的配置项传给
+    运行时，启动时限经 `start_blocking` 的必填参数 `start_timeout` 传入（Open Questions 4）。
   - 访问日志：waitress 没有内置访问日志，`serve` 用一个 WSGI 中间件包住分派函数，按 Django 的格式为页面与 `/ai`
     请求各写一行，不记录 `Authorization` 与 `Cookie` 请求头。
   - 导入规则测试（import-linter 或等价 gate）：只有 `ai_host` 导入 `ai_base_runtime` 与 `waitress`；任何模块不导入
@@ -193,9 +199,13 @@
      `SO_REUSEADDR`）并 bind，此时尚未加载 AI Base、未启动运行时，也未获取状态目录锁；waitress 不自己绑定。bind 失败
      （包括 `EADDRINUSE` 与 `EACCES`，Windows 为 10048 与 10013）时 2 秒内以 `serve bind failed.` 退出，退出码 1。listen 在第
      6 步由 waitress 构造 server 时执行，启动期间的连接被拒绝，不会停在 backlog 中。
-  2. `with start_blocking(build_settings(), host=MetricsHost(), apps=[METRICS_APP]) as runtime:`：运行时在自己的专用线程上
-     创建事件循环（Windows 上为 Proactor）并进入 `running()`，获取状态目录锁；`RuntimeBusy`、无效设置等启动异常传回
-     主线程（v2.1 H6）。
+  2. `with start_blocking(build_settings(), host=MetricsHost(), apps=[METRICS_APP], start_timeout=...) as runtime:`，
+     `start_timeout` 取 `RUNTIME_START_SECONDS`（决策 1）：运行时在自己的专用线程上创建事件循环（Windows 上为
+     Proactor）并进入 `running()`，获取状态目录锁；`RuntimeBusy`、无效设置等启动异常带稳定的 `code` 传回主线程
+     （v2.1 H6、D9）。启动时限到期时运行时按 v2.1 H6（增补 1）回滚，最迟在 `RUNTIME_START_SECONDS` + 1.0 秒（运行时
+     停止时限）时抛出带专用 code 的启动异常：回滚已完成时按启动失败输出，以 1 退出；回滚未按时完成时（异常附带的
+     停止结果表明未完成），先按启动失败输出，再记入清理错误码并输出清理失败，以 3 退出（决策 3），仍存活的循环线程
+     由第 7.7 步的退出清点记录，`os._exit` 不等待它。
   3. `attach(runtime)`，供 WSGI 分派、`ai_host` 视图与 AI pane 状态读取。
   4. `port = RuntimeTaskRunPort(runtime.blocking.task_runs)`。
   5. `project_runs = build_project_runtime(task_runs=port)`，`install_project_runtime(project_runs)`，`project_runs.start()`，
@@ -248,8 +258,9 @@
     渲染，不返回 500。server 的工作线程是 daemon 线程；显式退出与强制退出都不等待任何线程。
   - 第 2–6 步中任一步失败时，已完成的步骤按第 7 步的对应部分逆序清理，然后按决策 3 输出启动失败，经第 7.7 步退出。
   - `ai_host.state` 中只有一个生命周期对象，保存阶段（starting/running/stopping/stopped/failed）、启动或清理的错误码
-    （异常的 `code` 属性，取法同 `project_serve.py:95-98`）、`project_runs.wait_stopped` 返回的 `RuntimeStopResult` 与
-    运行时的停止结果。`serve` 与 AI pane 只读这个对象。
+    （异常的 `code` 属性，取法同 `project_serve.py:95-98`；AIB-2 导出的每个异常都带稳定的 `code`，v2.1 D9 增补 1，
+    `ai_host` 不解析异常消息）、`project_runs.wait_stopped` 返回的 `RuntimeStopResult` 与运行时的停止结果（包括启动
+    回滚未按时完成时异常附带的停止结果）。`serve` 与 AI pane 只读这个对象。
 - **理由**：
   - 先绑定再启动：端口冲突在 2 秒内失败，不获取状态目录锁，也不触发 project run 的恢复扫描（S0b B1：4/4 个占用用例
     0.36–0.43 秒退出，没有创建状态目录与锁）。
@@ -312,10 +323,10 @@
     `serve-http` 线程布局）；中断的运行由下次 `start()` 的恢复标记出来。
   - 输出与退出码，只输出错误码，不输出异常消息或 traceback：
     - 绑定失败：`serve bind failed.`；
-    - 运行时或 project run 启动失败：`serve startup failed (<code>).`；
+    - 运行时或 project run 启动失败，包括启动时限到期（决策 2 第 2 步）：`serve startup failed (<code>).`；
     - 运行时在运行期意外结束：`serve runtime failed (<code>).`（决策 2 第 6 步）；
     - 停止后未干净结束（`stopped` 为假或 `unresolved` 非空、运行时停止超时、有清理错误码、第 7.7 步的关闭失败或退出
-      清点不通过，或看门狗到期）：`serve cleanup failed.`，有错误码时附带；
+      清点不通过，或看门狗到期），或启动时限到期后运行时没有按时回滚：`serve cleanup failed.`，有错误码时附带；
     - 退出码：干净停止为 0；绑定、启动或运行期失败为 1；清理失败或看门狗到期为 3（与 1 同时出现时取 3）；停止期间再次
       收到信号时为 `serve forced exit.`，退出码 130。每条路径都在写出并 flush 最后一行后经 `os._exit` 结束进程（决策 2
       第 7.7 步）。
@@ -504,6 +515,13 @@
     `start_blocking`）注册为 CLI 端口工厂，project_management 经 `open_local_task_run_port()` 使用。
   - 端口原样传递运行时准入错误码与 `recovery`（`profile_not_declared`、`profile_disabled`、`model_not_configured`、
     `input_schema_invalid`）；运行时未运行或门面超时（v2.1 H5）为 `RUN_UNAVAILABLE`，`RuntimeBusy` 为 `RUN_BUSY`。
+  - CLI 的启动时限与清理（上游增补 1，Q11）：`local_task_run_port` 以 `start_timeout=RUNTIME_START_SECONDS` 调用
+    `start_blocking`，启动时限到期为 `RUN_UNAVAILABLE`。启动回滚或退出 `with` 时的句柄停止没有按时完成时（启动异常
+    附带的停止结果或句柄的停止结果表明未完成），运行时的非 daemon 循环线程可能仍然存活，解释器收尾会一直等它：端口
+    工厂以 project_management 自有的错误类型报告清理失败（带错误码），`project_run` 照常写出 JSON 结果或错误，再向
+    stderr 写 `project_run cleanup failed.`（有错误码时附带），flush stdout 与 stderr 后 `os._exit(3)`，不等待该线程；
+    与退出码 1 同时出现时取 3，与 `serve` 一致（决策 3）。句柄停止未按时完成是原有的缺口，与启动回滚的处理相同，
+    一并解决。
   - 每次 `start` 都带 `client_run_key`，取现有的 `clientRunKey`（attempt id 或 assist id，`out/ai_task_contract.py:102`、
     `services/report_assist_wire.py:21`）；运行时按 (principal, app_id, `client_run_key`) 去重（v2 D9），超时后以同一个
     键重试不会产生第二次运行。
@@ -813,4 +831,8 @@
    回执之前以 16 MiB 占位。认证前移、308 在认证之后、资产直接返回、UI 重试与导航 503 自动刷新已由 owner 决定（决策 1、
    14），回执只记录对应的方法名与配置项名。差异只影响
    `RuntimeTaskRunPort`、`ai_host.settings`、`ai_host.wiring`、`serve` 与发布 tool 内部，project_management 的端口
-   不变。
+   不变。AIB-2 规划（`5757c9c`）已定 `start_blocking` 的必填参数 `start_timeout`，并把停止时限、结束流时限与心跳
+   间隔放入 `HostConfig.lifecycle`，把两个在途上限放入 `HostConfig.http_limits`，它们不再作为 `start_blocking`、
+   句柄方法或 `wsgi_app` 的参数；W0 回执经 Metrics 复核后，决策 1、2 与上游 §5.1 中的示意名称按冻结的名称改写。
+   上游增补 1（Q11）另由 W0 冻结：启动时限到期的专用 code 与回滚结果、"异常名 → code"对照表、宿主声明托管方式的
+   机制与夹具签名。`RUNTIME_START_SECONDS` 的取值在 W0 回执之后按 tasks 5.6 实测的启动耗时留足余量确定，不预设数字。

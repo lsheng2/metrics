@@ -47,7 +47,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **THEN** `manage.py serve` SHALL 使用 `metrics.settings.production`
 
 ### Requirement: Serve starts and stops the runtime in a fixed order
-`serve` SHALL 先绑定端口，再让运行时在同一进程的专用事件循环线程上进入运行期（Windows 上为 Proactor 事件循环）并安装 project run 运行时，然后才受理第一个请求；任一步失败时 SHALL 以 1 退出，SHALL NOT 处理任何请求。停止时 `serve` SHALL 依次停止受理新请求、结束打开的 AI 流、排空在途请求并在已缓冲的输出写出后关闭连接、停止 project run，最后停止运行时；没有执行中的 project run 时，从停止触发到进程退出的预算为 10 秒，由看门狗按段保证；停止顺序结束后 `serve` SHALL 写出全部输出并立即结束进程，SHALL NOT 等待剩余线程或解释器收尾。运行期内运行时意外结束时，`serve` SHALL 按同一顺序停止并以 1 退出，SHALL NOT 在没有运行时的情况下继续服务。
+`serve` SHALL 先绑定端口，再让运行时在同一进程的专用事件循环线程上进入运行期（Windows 上为 Proactor 事件循环）并安装 project run 运行时，然后才受理第一个请求；任一步失败时 SHALL 以 1 退出（清理也失败时以 3 退出），SHALL NOT 处理任何请求。停止时 `serve` SHALL 依次停止受理新请求、结束打开的 AI 流、排空在途请求并在已缓冲的输出写出后关闭连接、停止 project run，最后停止运行时；没有执行中的 project run 时，从停止触发到进程退出的预算为 10 秒，由看门狗按段保证；停止顺序结束后 `serve` SHALL 写出全部输出并立即结束进程，SHALL NOT 等待剩余线程或解释器收尾。运行期内运行时意外结束时，`serve` SHALL 按同一顺序停止并以 1 退出，SHALL NOT 在没有运行时的情况下继续服务。
 
 #### Scenario: Port is already in use
 - **WHEN** 操作者运行 `manage.py serve`，目标地址和端口已被其他进程占用，或绑定被拒绝（`EADDRINUSE` 或 `EACCES`）
@@ -59,7 +59,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **THEN** 该绑定 SHALL 失败，发往该地址和端口的连接 SHALL 全部由 `serve` 受理
 
 #### Scenario: Runtime cannot start
-- **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定或运行时配置无效
+- **WHEN** 运行时无法进入运行期，例如状态目录已被其他进程锁定、运行时配置无效，或启动时限到期且运行时已按时回滚
 - **THEN** 服务 SHALL 以 1 退出，并只输出一行 `serve startup failed (<code>).`
 - **AND** 输出与日志 SHALL NOT 包含异常消息或 traceback
 - **AND** 服务 SHALL NOT 在没有运行时的情况下继续提供 Django 页面
@@ -96,8 +96,8 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **AND** 被中断的运行 SHALL 在下一次启动时由恢复标记为中断
 
 #### Scenario: Cleanup does not finish cleanly
-- **WHEN** 停止后在途请求在排空时限内没有结束、project run 没有全部停下、运行时停止超时，或某一步清理出错
-- **THEN** `serve` SHALL 输出 `serve cleanup failed.`（有错误码时附带）并以 3 退出
+- **WHEN** 停止后在途请求在排空时限内没有结束、project run 没有全部停下、运行时停止超时，或某一步清理出错；或者启动时限到期后运行时没有按时回滚
+- **THEN** `serve` SHALL 输出 `serve cleanup failed.`（有错误码时附带）并以 3 退出，SHALL NOT 等待未结束的线程
 
 #### Scenario: A thread outlives the stop sequence
 - **WHEN** 没有执行中的 project run，停止顺序结束时运行时的事件循环线程或 HTTP server 线程仍未结束，例如运行时停止超时
@@ -225,7 +225,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **THEN** 审批 SHALL 保持 pending，因为不存在任何能产生审批决定的 tool
 
 ### Requirement: AI runtime state has a single writer
-运行时状态 SHALL 存放在 `METRICS_STATE_DIR/ai-base`，这个路径不能单独配置。同一时间 SHALL 只有一个进程持有该目录的锁；该锁 SHALL 是 OS 级文件锁，持有进程以任何方式终止时 SHALL 由操作系统释放。服务进程持有锁时，需要运行时的 CLI（例如 `project_run --execute-local`）SHALL 立即以 `RUN_BUSY` 失败，不等待，也不改用其他目录。Metrics SHALL NOT 为多 worker 部署设计共享状态。
+运行时状态 SHALL 存放在 `METRICS_STATE_DIR/ai-base`，这个路径不能单独配置。同一时间 SHALL 只有一个进程持有该目录的锁；该锁 SHALL 是 OS 级文件锁，持有进程以任何方式终止时 SHALL 由操作系统释放。服务进程持有锁时，需要运行时的 CLI（例如 `project_run --execute-local`）SHALL 立即以 `RUN_BUSY` 失败，不等待，也不改用其他目录。CLI 在自己的进程中启动运行时时 SHALL 设启动时限，到期时 SHALL 以 `RUN_UNAVAILABLE` 失败；启动回滚或退出时的停止没有按时完成时，CLI SHALL 照常写出结果，再输出 `project_run cleanup failed.` 并以 3 退出，SHALL NOT 等待未结束的线程。Metrics SHALL NOT 为多 worker 部署设计共享状态。
 
 #### Scenario: CLI runs while the server holds the lock
 - **WHEN** 服务正在运行，操作者执行 `project_run --execute-local`
@@ -233,7 +233,7 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 
 #### Scenario: CLI runs while no server is running
 - **WHEN** 没有服务进程，操作者执行 `project_run --execute-local`
-- **THEN** 命令 SHALL 在自己的进程中启动运行时、获取锁、完成运行，并在退出时释放锁
+- **THEN** 命令 SHALL 在自己的进程中启动运行时、获取锁、完成运行，并在退出时释放锁；启动时限到期时 SHALL 以 `RUN_UNAVAILABLE` 失败，回滚或停止没有按时完成时 SHALL 在写出结果后输出 `project_run cleanup failed.` 并以 3 退出
 
 #### Scenario: Previous server was killed
 - **WHEN** 上一个服务进程被强制终止（例如 SIGKILL），没有执行停止顺序
