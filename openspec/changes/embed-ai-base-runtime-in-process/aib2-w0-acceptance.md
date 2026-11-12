@@ -1,6 +1,6 @@
 # AIB-2 W0 复核与接受记录
 
-日期：2026-11-12。结论：AIB-2 W0.FREEZE 第二轮交付（r2，HEAD `fc4db2f`）**接受**，GATE.W0R 可以开放。第一轮（r1）复核提出的 F1–F5 已全部闭环；冻结的名称、签名、66 个 code 与 design 第 10 节取值在 r2 中没有变化。另有四项 P3（G1–G4），不涉及冻结契约，owner 决定并入开闸提交（第 6、7 节）。接受之后，Metrics 改写 MDB-2 时又发现两项 P3（G5、G6）与五处需要上游补充的契约语义（A1–A5），owner 决定一并转交（第 9 节）。
+日期：2026-11-12。结论：AIB-2 W0.FREEZE 第二轮交付（r2，HEAD `fc4db2f`）**接受**，GATE.W0R 可以开放。第一轮（r1）复核提出的 F1–F5 已全部闭环；冻结的名称、签名、66 个 code 与 design 第 10 节取值在 r2 中没有变化。另有四项 P3（G1–G4），不涉及冻结契约，owner 决定并入开闸提交（第 6、7 节）。接受之后，Metrics 改写 MDB-2 时又发现两项 P3（G5、G6）与五处需要上游补充的契约语义（A1–A5），核对授权提示词时再发现一处（A6），owner 决定一并转交（第 9 节）。
 
 本记录是 `tasks.md` 0.6"W0 复核关口"的证据。0.6 本身仍未勾选：wheel、宿主一致性套件、精确版本与摘要要等 AIB-2 交付后记录。
 
@@ -94,10 +94,10 @@ links 由 30 增至 35：回执新增 6 条指向 design 的链接；design 原�
 
 ## 9. 接受后的增补（2026-11-12）
 
-Metrics 按冻结契约改写 MDB-2（提交 `860fbda`）时，又发现两项 P3，以及冻结契约中五处没有定义、宿主无法自行补足的语义。owner 于 2026-11-12 决定全部随本次 W1–W4 授权转交：
+Metrics 按冻结契约改写 MDB-2（提交 `860fbda`）时，又发现两项 P3，以及冻结契约中五处没有定义、宿主无法自行补足的语义（A1–A5）；核对授权提示词时又发现第六处（A6）。owner 于 2026-11-12 决定全部随本次 W1–W4 授权转交：
 
 - G5、G6 与 G1–G4 一起在开闸前修复（第 7 节第 3 条）。两处都在 design §10、§11 之外，修复只让正文与冻结契约一致。
-- A1–A5 都是新增，不改动冻结条目，按授权提示词 3.1 的新增规则处理：在引入它的节点内追加到 design §11 的对应小节，标注节点和理由；冻结时已有的条目与已有 code 的含义都不改动。名称由 AI Base 决定，语义按下表。五项都是通用能力，不为 Metrics 设专用分支（design :1065）。
+- A1–A6 都是新增，不改动冻结条目，按授权提示词 3.1 的新增规则处理：在引入它的节点内追加到 design §11 的对应小节，标注节点和理由；冻结时已有的条目与已有 code 的含义都不改动。名称由 AI Base 决定，语义按下表。六项都是通用能力，不为 Metrics 设专用分支（design :1065）。
 
 | 编号 | 位置 | 问题 |
 | --- | --- | --- |
@@ -106,10 +106,11 @@ Metrics 按冻结契约改写 MDB-2（提交 `860fbda`）时，又发现两项 P
 
 | 编号 | 冻结契约的缺口 | 请求冻结的语义 | Metrics 的依据（本 change 的 design.md） |
 | --- | --- | --- | --- |
-| A1 | preview 钩子的签名与返回类型没有定义：§11.1（:863-864）把 tool 接口指向 §5–7，那里也没有定义。数据未就绪时 preview 只能抛 `ToolError`，模型只看到 `tool_failed`，看不到阻塞原因 | preview 返回"就绪（内容）"或"拒绝（结果）"之一，就绪内容经 `canonical_json`（§6 :453-455）成为 `ToolApproval.preview`。拒绝时不创建审批、不调用 handler，留一条审计记录；拒绝结果按 tool 的输出 schema 校验，作为普通 tool 结果返回模型，不带错误 code。执行前重新 preview（§6 :468-470）被拒绝时，不调用 handler，审批作废并记 `approval_invalidated`（:1028），本次调用返回拒绝结果 | Open Questions 9 |
+| A1 | preview 钩子的签名与返回类型没有定义：§11.1（:863-864）把 tool 接口指向 §5–7，那里也没有定义。数据未就绪时 preview 只能抛 `ToolError`，模型只看到 `tool_failed`，看不到阻塞原因 | preview 返回"就绪（内容）"或"拒绝（结果）"之一，就绪内容经 `canonical_json`（§6 :453-455）成为 `ToolApproval.preview`。拒绝时不创建审批、不调用 handler，记一条审计事件（A6）；拒绝结果与 handler 的返回值走同一条结果路径，作为普通 tool 结果返回模型，不带错误 code，在这条路径上失败时 code 与 handler 返回值失败时相同。执行前重新 preview（§6 :468-470）被拒绝时，不调用 handler，审批作废并记 `approval_invalidated`（:1028），本次调用返回拒绝结果 | Open Questions 9 |
 | A2 | `ModelConfig.provider` 只有类型 `str`（:748-749），没有合法取值 | 以公开常量给出合法取值，写明每个取值对 `base_url`、`api_key` 的要求；未知取值在启动任何运行时资源之前以 `configuration_invalid`（:990）失败；依赖可选依赖（extras）的取值，写明缺少该依赖时的 code | Open Questions 6 |
 | A3 | App handler 或 preview 抛出 `ToolError` 以外的异常时，ToolResult 用哪个 code 没有规定；§11.3（:1076-1087）只要求异常链保密 | `ToolError` 以外的 `Exception` 子类记为 `tool_failed`（:1052），preview 失败时不调用 handler；取消与截止沿用既有 code；非 `Exception` 的 `BaseException` 不在此列；`internal_error`（:989）只用于运行时自身的故障；异常文本与异常链不进入结果与记录 | Open Questions 8 |
 | A4 | 注册表的 Retry 列（类别定义见 :982-985）没有导出，宿主只能复制注册表 | 每个导出异常带由注册表派生的恢复类别属性，取值与 Retry 列的字符串相同；根包导出按 code 查询恢复类别的纯函数，可用于 `RunSnapshot`、`ToolResult` 与 `StopResult` 中的 code；二者纳入 V01 的双向比对 | Open Questions 10 |
 | A5 | `RuntimeLimits` 前五项必填（§10 :672、§11.1 :711-713），但只有名称与类型。与限额相关的现有 code（`input_too_large` :1035、`admission_limited` :1040、`output_limit_exceeded` :1047、`deadline_exceeded` :1048）都不覆盖 tool 时长、捕获输出与输入 token | 逐项写明作用对象（每次模型调用、每个 run 或每次 tool 调用）、计数方式（token 计数不引入 design §9 以外的依赖）、执行点、超限 code（含义已覆盖的复用已有 code，其余追加到注册表末尾），与 `max_input_bytes`、`max_output_bytes`、`max_run_duration_seconds`、`max_queued_runs` 的区别，以及 TaskProfile 如何收紧 | Open Questions 7 |
+| A6 | 宿主 SPI 只给出 `record_audit(event: AuditEvent)`（§2 :125，§11.1 :761）。§6 :480 要求审计审批的请求、决定、作废、消费、过期与结果，migration-inventory :477 把审计事件契约划归运行时，但 §11 没有定义 `AuditEvent` 的字段与事件类别，也没有规定认证失败以外事件的投递方式。唯一定义了投递方式的是认证失败事件（:132-136，§10 :666）：可以丢弃，单事件时限 0.05 秒。审批事件照此投递，宿主的审计表会缺记录且没有任何报错 | `AuditEvent` 带 `event_id`（重投时不变）、`kind`（§11 中的类别表，至少覆盖 :480 列出的事件、A1 的拒绝与认证失败）、发生时间、principal，以及 app、session、run、tool 调用、审批的 id 和结果 code；同一审批、tool 调用或 run 的事件能还原发生顺序；不含秘密、异常文本、tool 参数与 preview 内容。状态转换产生的事件采用事务性 outbox：与转换在同一个持久化事务中写入，异步投递给 `record_audit`，至少一次、失败重试、不丢弃，操作结果不依赖投递；停止时不排空，重启后继续投递。只有认证失败事件保留 :132-136 的可丢弃语义，未认证的请求不触发持久化写入。宿主按 `event_id` 幂等 | Open Questions 11 |
 
-AI Base 开闸记录中，`w0_review` 的 `metrics_commit` 是写入本记录第 1–8 节的提交 `e3c8a8027019d2dde0e491e1ea92cad720550112`；`w1_w4_authorization` 的 `metrics_commit` 是写入本节的提交，全长 SHA 由授权提示词给出。
+AI Base 开闸记录中，`w0_review` 的 `metrics_commit` 是写入本记录第 1–8 节的提交 `e3c8a8027019d2dde0e491e1ea92cad720550112`；`w1_w4_authorization` 的 `metrics_commit` 是最后修改本节的提交（写入 A6 的提交），全长 SHA 由授权提示词给出。

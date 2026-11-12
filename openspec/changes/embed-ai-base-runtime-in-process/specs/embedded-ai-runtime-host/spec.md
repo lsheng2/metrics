@@ -414,11 +414,16 @@ Metrics 测试 SHALL 用运行时 testkit 的宿主一致性套件验证组合�
 - **THEN** 测试 SHALL 用 testkit 的脚本化模型产生确定的 tool 调用，SHALL NOT 调用真实模型
 
 ### Requirement: AI runtime audit is written to Metrics
-Metrics 宿主 SHALL 把运行时的会话、tool 调用和审批（请求、决定、消费、过期）事件写入 `ai_host` 自有的只追加审计表，记录 principal、session id、run id、`tool_call_id`、tool 名称、审批 id 和结果状态。认证失败 SHALL 只输出一条结构化日志 `ai_auth_failed`，SHALL NOT 写入数据库。Metrics 代码 SHALL 只插入审计记录，SHALL NOT 更新或删除；这些事件 SHALL NOT 写入 bug_metrics 的业务审计 `BugTrendAuditEvent`。审计记录与日志 SHALL NOT 包含模型凭据、provider token、Basic 密码或其他秘密。
+Metrics 宿主 SHALL 把运行时投递的会话、tool 调用和审批（请求、决定、作废、消费、过期）事件写入 `ai_host` 自有的只追加审计表，记录 `event_id`、事件类别、发生时间、principal、session id、run id、`tool_call_id`、tool 名称、审批 id、结果状态与运行时给出的事件顺序。运行时至少投递一次；同一 `event_id` 再次投递时，宿主 SHALL NOT 新增行，SHALL NOT 报错。认证失败 SHALL 只输出一条结构化日志 `ai_auth_failed`，SHALL NOT 写入数据库。Metrics 代码 SHALL 只插入审计记录，SHALL NOT 更新或删除；这些事件 SHALL NOT 写入 bug_metrics 的业务审计 `BugTrendAuditEvent`。审计记录与日志 SHALL NOT 包含模型凭据、provider token、Basic 密码或其他秘密。
 
 #### Scenario: Publish approval completes its lifecycle
 - **WHEN** 一次 `metrics.publish_chart` 调用经历请求审批、批准和执行
-- **THEN** `ai_host` 审计表 SHALL 按顺序记录审批请求、决定、消费和 tool 调用结果，每条都带有同一个 `tool_call_id`
+- **THEN** `ai_host` 审计表 SHALL 依次记录审批请求、决定、消费和 tool 调用结果，顺序以运行时给出的事件顺序为准，每条都带有同一个 `tool_call_id`
+
+#### Scenario: Audit event is delivered again
+- **WHEN** 运行时再次投递一个已写入的事件（同一 `event_id`）
+- **THEN** `ai_host` 审计表 SHALL 仍只有一行该事件
+- **AND** `record_audit` SHALL 正常返回
 
 #### Scenario: Authentication fails
 - **WHEN** 已配置 Basic 用户，运行时路由上的一个请求认证失败
