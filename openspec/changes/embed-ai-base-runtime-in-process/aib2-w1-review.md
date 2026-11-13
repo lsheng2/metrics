@@ -6,6 +6,10 @@ WSGI 线程读取请求体时受短请求总时限约束，而 Waitress 把较�
 时限内返回 504"无法实现。owner 于 2026-11-13 作出三项决定（第 3 节），W1.HOST 据此恢复。回执另有六项与决定无关的缺陷
 （第 2.4 节），须在 HOST 终审之前修复。
 
+第二轮（第 6–9 节）：AIB-2 提交决策记录 D/E 后，按决定提示词第 7 节第 1 条再次停在 W1.HOST（`069ce23`），理由是
+DiagnosticsSnapshot 没有公开的 loop lag 等观测字段。复核认定这是 W0 遗漏：W0 只冻结了类型名，字段从未定义，而 design §8、
+§4 第 7 步与三份 spec 早已要求这些观测。owner 同日作出 OD-W1-4（第 7 节）；复核另记两项缺陷 W1-F7、W1-F8（第 7.3 节）。
+
 本记录是 `tasks.md` 0.6 的进展证据，0.6 仍不勾选。之后各轮 W1 复核续写在本文件。
 
 ## 1. 被复核的提交
@@ -183,3 +187,118 @@ WSGI 线程读取请求体时受短请求总时限约束，而 Waitress 把较�
 
 上述决定由 owner 以 `handoff-prompt-aib2-w1-host-decision.md` 转交 AI Base，提示词引用的 `metrics_commit` 是写入本记录的
 提交。AI Base 先单独提交"owner 决策记录"（只改 change 目录），再恢复 W1.HOST。原授权的停止条件、回报格式与范围仍然有效。
+
+## 6. 第二轮：D/E 与再次停止（2026-11-13）
+
+- 提交：D `bcf1fc690c99416ae792e7d8e3687bba327daf4d`（记录 OD-W1-1/2/3 的规划提交）、E
+  `80c4de514702590709c3f55dc08e00567896867a`（证据提交）、停点 `069ce23432b4bc6f36d9eaf6fbeaa1917f838435`（"docs(common):
+  record W1 diagnostic contract hold"）。AI Base 回报：D 的独立复核 P0–P3 为零；E 之后全量复跑通过，含 58 个负例与 9 个额外
+  GREEN 用例。
+- Metrics 只读复核：`check-planning.ps1` 退出码 0（32 个节点、28 份文档、40 个链接、118 个 changed paths）；
+  `openspec validate --strict` 通过；复核前后 worktree 的 `git status --porcelain` 都为空；主 checkout 仍在 `main` 的
+  `5757c9c`，唯一的未跟踪内容仍是第 1 节所列 egg-info。没有在 AI Base 侧运行产品测试。
+- 节点：8 个 complete，W1.HOST 为 in_progress（停点），其余 23 个 pending。D/E 没有改产品代码，W1-F1…F6 全部 Open。
+- 停止理由：W1.HOST 须满足 OD-W1-3 的"lag 快照记录卡顿"与 V14 的观测义务，而 DiagnosticsSnapshot 没有公开的 lag 等观测
+  字段。决定提示词第 7 节第 1 条不允许用原授权 3.1 的公开新增落实三项决定，AI Base 据此停下，请 owner 指定已有观测接口或
+  授权只读诊断字段与 §11 增补。停下是正确的。
+
+## 7. OD-W1-4：诊断快照字段（owner 决定，2026-11-13）
+
+### 7.1 定性：W0 遗漏，不是修改冻结契约
+
+- W0（`fc4db2f`）冻结了观测义务与入口，没有冻结字段：
+  - design :371、:373 要求短请求 p99/max 延迟与可观测的 loop-tick/lag 快照；:584 规定 `GET /ai/api/diagnostics` 与
+    `runtime.diagnostics.snapshot(principal)` 提供 lifecycle、loop lag、在途与拒绝数、dropped-auth-audit 数，以及脱敏的
+    依赖与模型可用性；:1334 把诊断改由这两个入口提供；
+  - spec `synchronous-runtime-host` :189 要求在途数、拒绝数、短请求尾延迟与 loop lag 可观测；
+    `standalone-app-service-security` :41-43 要求 Metrics 能取得 loop lag、在途与拒绝数和 dropped-auth-audit 数；
+  - §11 中 `DiagnosticsSnapshot` 只作为 :840 的返回类型出现，没有字段声明。
+- 现有 4 个字段是 W1.CORE A6 追加的（`069ce23` design :901-904）：3 个 audit outbox 字段与 `dropped_auth_audit_count`。
+- 因此"冻结的 DiagnosticsSnapshot 只有四个审计字段"的前提不成立：字段从未冻结，而冻结的义务所需的字段缺失。补齐字段属于
+  原授权 3.1 的增补（新增公开表面，在 §11 对应小节登记，标注节点与理由），不改 §10、§11 的原有内容。owner 以本决定授权该
+  增补；决定提示词第 7 节第 1 条对本决定范围内的增补不适用，超出本决定的公开新增仍须停下。
+- Metrics 自查：W0 接受记录（`e3c8a80`、`85dfa53`、`d48943a`）没有检查只作为返回类型出现在 §11 的类型是否有字段声明，
+  漏看了这一项。之后复核冻结时，把"返回类型有字段声明或负责节点"列为检查项。
+
+### 7.2 决定内容
+
+总则：
+
+- 只增补：W1.CORE 的 4 个字段不改；不改 §10；不新增配置项或 code；不新增 lifecycle 枚举或表示 HTTP 已关闭的字段。
+- 新字段是 keyword-only、带默认值，排在 4 个字段之后。
+- §11 只保留一处 `DiagnosticsSnapshot` 声明：移到新块 `# ai_base_runtime.spi, W1.HOST OD-W1-4 additions`，列出全部
+  13 个字段，块前说明前 4 个来自 W1.CORE A6、后 9 个来自 OD-W1-4。不能保留两处：`contract_authority.py:363` 按 target
+  写入，后一处会静默覆盖前一处。用 authority 解析确认 `diagnostics_fields` 为 13 个、`additions` 包含
+  `DiagnosticsSnapshot`。
+- 回执 Additions 表（`w1-receipt.md` :151）登记这次增补；W1.R 复核，W1.REPLAN 归类。
+
+9 个新字段：
+
+| 字段 | 类型与默认值 | 语义 |
+| --- | --- | --- |
+| `running_since` | `datetime \| None = None` | 进入 RUNNING 的 UTC 时刻，取自 `HostConfig.clock.utc_now()`（与 `AuditEvent.occurred_at` 用同一个 Clock）；运行时产出的快照必须设置 |
+| `loop_lag_seconds` | `float = 0.0` | 最近一次完成的探针测得的 max(0, 实际唤醒 − 计划唤醒)，用 loop 的单调时钟；首次完成前为 0.0 |
+| `loop_lag_max_seconds` | `float = 0.0` | 自 `running_since` 起的峰值，不重置 |
+| `loop_stall_count` | `int = 0` | lag 不小于 `loop_lag_threshold_seconds` 的探针次数 |
+| `stream_in_flight_count`、`short_in_flight_count` | `int = 0` | 当前在途数 |
+| `stream_rejected_count`、`short_rejected_count` | `int = 0` | 累计值，只计 `http_admission_limited`（503 加 `Retry-After`）。准入之前的拒绝（400、401、308、资产，以及停止中或未运行的 503）不计；导航请求计入它实际所属的类别 |
+| `short_request_latency_max_seconds` | `float = 0.0` | short 类名额从取得到归还的最长时长，是响应延迟的上界；单调时钟，覆盖所有结局，可在 `AdmissionLease` 内实现 |
+
+- 校验：int 用 `type(x) is int` 且不小于 0；float 用 `type(x) is float`、有限且不小于 0；datetime 沿用 `_utc`。
+- 探针：运行时自有的 asyncio task，不新增线程；按 `loop_probe_interval_seconds` 运行，随 lifecycle 启动，纳入 R24 停止
+  清点（取消并等待）。卡顿 D 秒时，下一次探针测得的 lag 不小于 D 减 interval，所以测试的卡顿时长须不小于阈值加 interval
+  再加余量（默认值下至少 0.15 秒，建议约 0.3 秒）。
+- 可用性：快照由 `DiagnosticsFacade` 组装，只在 RUNNING 与 HTTP_CLOSED 时可用，其他状态抛 `RuntimeNotRunning`。async 门面
+  补上状态检查（现在只检查 outbox 与 store，`_internal/lifecycle_stop.py:380-381`）；blocking 门面已按同一规则执行。
+- HTTP 路由 `GET <root_path>/api/diagnostics`（design :610）：
+  - 运行时自有路由，先于 App 路由解析；按 short 类准入；遵守 D3 顺序（401 先于 503）；认证与其他运行时路由相同，不新增
+    角色模型；
+  - 响应是 JSON 对象，键恰好是全部快照字段的 camelCase；时间为 ISO 8601 UTC 或 null；不含 secret、cookie、bridge key
+    或 token；
+  - `close_http()` 之后返回 503；HTTP 投影的 `shortInFlightCount` 包含诊断请求本身。
+- 依赖与模型可用性不在本决定内：由引入依赖或模型的节点按 3.1 补齐，W1.REPLAN 指定负责节点。design §8 改为列出实际字段，
+  "lifecycle" 由 `running_since` 与上述可用性规则表达。
+- 不变式：
+  - I1：`close_http()` 以 `completed=True` 返回后，`stream_in_flight_count` 为 0。`close_http` 的完成必须包含名额归还，
+    做不到时返回 `completed=False`。第一段停止不等待短请求，I1 不覆盖 short 类。
+  - I2：所有已准入的请求结束、loop 侧清理完成后，两类在途数在有界等待内（轮询，超时即失败）回到 0；运行期间 rejected
+    计数不递减。
+- 断言方式：
+  - 只经公开门面或 HTTP 观测。lag 用保留值（`loop_stall_count` 的差值，`loop_lag_max_seconds` 不小于配置的阈值），不用
+    `loop_lag_seconds` 的瞬时值；不用私有 hook，不由 App 自行测量。
+  - `asgi`：卡顿越过截止时刻，迟到返回 504，后一次快照的 `loop_stall_count` 大于前一次，且 `loop_lag_max_seconds` 不小于
+    阈值。
+  - `blocking_wsgi`：在 `w1_wsgi_loop_lag` 中，卡顿解除后经 `handle.blocking.diagnostics.snapshot(principal, timeout=…)`
+    或 HTTP 校验同样的结果。
+  - 门面与 HTTP 一致（`test_admission_limits.py`）：键集合与 camelCase 映射完全相等，`runningSince` 相等；累计值与峰值
+    （两类 rejected、`loop_stall_count`、两个 max、`dropped_auth_audit_count`）满足"前一次门面 ≤ HTTP ≤ 后一次门面"；
+    静止时 HTTP 的 `shortInFlightCount` 不小于 1，`streamInFlightCount` 与门面相等；瞬时值（`loop_lag_seconds` 与 3 个
+    audit outbox 字段）只校验类型与范围。诊断请求本身占一个 short 名额，两次读取之间计数也可能变化，所以不要求逐项相等。
+  - V14、V15 写明观测面；validation-matrix §7.7 为新断言补适用性行。
+- 尾延迟取 max，不取 p99：p99 需要窗口大小等新的 §10 取值；S0b R20（`s0b-spike-report.md:831`）只把 p99 当作例子；max
+  足以发现卡顿与超时。design §4 第 7 步的 "short-request p99/max latency"（`069ce23` :392-393）收窄为 max，spec
+  `synchronous-runtime-host` :205 与 V14 的 "tail latency" 同步改为 max。
+
+### 7.3 新发现的缺陷
+
+| 编号 | 缺陷 | 位置与证据 | 修复要求 |
+| --- | --- | --- | --- |
+| W1-F7 | `dropped_auth_audit_count` 在快照中恒为 0 | HttpState 的真实计数（`_internal/http/state.py:79`，`_internal/http/security.py:104`、`:117`、`:127`、`:143`、`:145` 递增）没有进入快照；`_internal/observability/__init__.py:118-122` 只构造 3 个 outbox 字段 | 快照投影 HttpState 的真实计数。测试：`blocking_wsgi` 下发一次认证失败请求（WSGI 下每次认证失败都计为丢弃，符合 V04）；`asgi` 下让宿主的 `record_audit` 失败或超时，或耗尽队列容量；断言快照的差值等于丢弃次数 |
+| W1-F8 | App 路由没有命名空间：`find_route` 直接用 `route.path` 匹配相对 root 的请求路径，App 可以声明 `/api/diagnostics` 这类路径，与运行时路由冲突 | `_internal/http/requests.py:51-58`、`_internal/http/app.py:207`；design §5（:440-442，W0 `fc4db2f` :416）规定 App 的可选路由在 `/ai/apps/{app_id}/` 下；spec `embedded-agent-runtime` :146-148 要求 namespaced；Metrics 上游提案 D4（`upstream-ai-base-runtime-proposal.md:220`）相同 | App 路由只在 `<root_path>/apps/{app_id}` 加 `AppRoute.path` 下解析：`AppRoute.path` 相对 App 命名空间，由运行时挂载（与 tool 名自动加前缀同理）；运行时 `/api/...` 路由不会被 App 遮蔽。改 `find_route` 与 testkit 中 probe、baseline App 的路由请求（现为 `/api/conformance/...`、`/api/echo`），design §5 写明挂载规则。RED：App 声明 `GET /api/diagnostics` 时只能经 `/apps/<id>/api/diagnostics` 访问，`<root_path>/api/diagnostics` 仍返回运行时诊断。发现 W0 冻结了其他路由语义时停下回报 |
+
+## 8. 对 Metrics 的影响（第二轮）
+
+- 配置不变：OD-W1-4 不新增配置项；`loop_lag_threshold_seconds`（0.1）与 `loop_probe_interval_seconds`（0.05）是 B 类冻结
+  值，Metrics 不传入。
+- 5.10 中在途数、拒绝数与卡顿记录经 `handle.blocking.diagnostics.snapshot(principal, timeout=…)` 观测，并验证 I1、I2。
+  spec `embedded-ai-runtime-host` 的名额归还场景与一致性套件场景、tasks 5.10 与 0.6、design 同步门面一条已同步。
+- Metrics 生产代码不读取快照：AI pane 状态由 Metrics 的生命周期对象与设置推导（design 决策 6），快照只用于测试。
+- Metrics App 包（`app_id=metrics`）不声明 App 路由（spec `embedded-ai-runtime-host` 的 "Metrics App package declares
+  the whole AI surface"），W1-F8 不影响 Metrics。运行时诊断在 Metrics 下的路径为 `<root_path>/api/diagnostics`（默认
+  `/ai/api/diagnostics`）。
+
+## 9. 转交（第二轮）
+
+OD-W1-4、W1-F7 与 W1-F8 由 owner 以 `handoff-prompt-aib2-w1-diagnostics-decision.md` 转交 AI Base，提示词引用的
+`metrics_commit` 是写入第 6–9 节的提交。AI Base 先提交规划 D2（只改 change 目录，含 plan.json 记录与 checker 规则）与
+证据 E2，再恢复 W1.HOST。原授权与 `handoff-prompt-aib2-w1-host-decision.md` 的其他内容仍然有效。

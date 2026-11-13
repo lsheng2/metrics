@@ -922,7 +922,8 @@
      非法 timeout 在产生副作用之前抛 `RuntimeUsageError`（code `runtime_usage_invalid`）；task run 的查询与取消为
      `task_runs.get(principal, run_id, *, timeout)` 与 `task_runs.cancel(principal, run_id, *, timeout)`，没有第二套
      名称；未运行时抛 `RuntimeNotRunning`，等待超时抛 `RuntimeCallTimeout`，在循环线程上调用抛 `RuntimeUsageError`
-     （§11.1 `:826-851`）。
+     （§11.1 `:826-851`）。`diagnostics.snapshot` 返回的 `DiagnosticsSnapshot` 由 OD-W1-4 增补观测字段，Metrics 只在
+     测试（5.10）中读取（`aib2-w1-review.md` 第 7 节）。
    - 配置：停止时限、结束流时限与心跳间隔在 `HostConfig.lifecycle`（`LifecycleLimits`，`stop_timeout_seconds` 必填），
      两个在途上限在 `HostConfig.http_limits`（`HttpLimits`），都不是 `start_blocking`、句柄方法或 `wsgi_app` 的参数
      （§11.1 `:724-747`，§2 `:93-97`）；`RuntimeLimits` 的前五个字段必填（`:775-776`）。Metrics 显式传入运行时停止
