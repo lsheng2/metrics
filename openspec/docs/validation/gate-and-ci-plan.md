@@ -10,7 +10,7 @@ The gate classes below are the concrete command layer for the AI-assisted operat
 | Jira/Grafana MVP governance gate | Before claiming MVP closure or pushing governance changes. | Focused suite listed below, Grafana validator, `manage.py check`. | Yes. |
 | Browser gate | For chart, htmx, template, evidence interaction, or visual rendering changes. | `ui_web/tests/test_browser_bug_trend_dashboard.py`. | Yes when UI behavior changed. |
 | Runtime evidence gate | When claiming local C0/C1 runtime closure. | C0/C1 checker scripts after evidence docs are updated. | Yes for runtime closure claims. |
-| Full local gate | Before broad local closure claims. | Default pytest, explicit non-`pytest.ini` roots, Django check, hygiene scripts. | Yes. |
+| Full local gate | Before broad local closure claims. | Plain pytest lane, no-dotenv runner lane, Django check, hygiene scripts. | Yes. |
 | Release gate | Before merge to default branch or release branch. | Full local gate plus Grafana artifact, browser, and runtime evidence gates. | Yes. |
 | Exact-pass review gate | For architecture/governance-heavy changes or explicit user request. | `lsheng2-coding-review` gate with required clean passes. | Yes when requested or declared in plan. |
 
@@ -39,15 +39,23 @@ Current observed result on 2026-08-21: `4 passed`, C0 checker PASS, C1 checker P
 
 ## Full Local Gate
 
+Define `$reportingPython` as in the Environment section of [reporting-delivery.md](../../../docs/development/reporting-delivery.md#environment); every command below uses it.
+
 ```powershell
-& .venv\Scripts\python.exe -m pytest -q
-& .venv\Scripts\python.exe -m pytest bug_metrics\tests jira_history\tests jira_sync\tests pull_requests\tests -q
-& .venv\Scripts\python.exe manage.py check
-& .venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
-& .venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
+& $reportingPython -m pytest tasks\tests forecast\tests velocity\tests bug_metrics\tests jira_history\tests jira_sync\tests metrics\tests provider_sync\tests pull_requests\tests scripts\tests -q
+& $reportingPython -I scripts\validation\run_report_authoring_tests.py ui_web\tests project_management\tests -q --tb=short -p no:cacheprovider
+& $reportingPython manage.py check
+& $reportingPython scripts\check_file_size_limits.py --include-untracked
+& $reportingPython scripts\check_diff_whitespace.py --include-untracked
 ```
 
-The second pytest command is explicit because `pytest.ini` does not include all module-local test roots.
+The two pytest commands are the test lanes. Every module test root belongs to exactly one lane: `ui_web` and `project_management` run through the no-dotenv runner, and every other root runs in the plain lane. A change that adds a module test root adds it to the matching lane in the same change. List the current roots with:
+
+```powershell
+git ls-files '*/tests/test_*.py' | ForEach-Object { ($_ -split '/')[0] } | Sort-Object -Unique
+```
+
+Current observed result on 2026-11-13: plain lane `932 passed, 2 skipped` in 242.90s (the skips are the two env-gated `provider_sync` live smoke and performance cases); runner lane `1700 passed` in 6869.90s (1:54:29); Django check PASS; file-size and diff-whitespace gates PASS.
 
 ### File-Size Gate Semantics
 
@@ -61,18 +69,13 @@ The second pytest command is explicit because `pytest.ini` does not include all 
 
 ## Release Gate
 
-Use this before merge to the default branch, release branches, or broad release-readiness claims.
+Use this before merge to the default branch, release branches, or broad release-readiness claims. Run the complete [Full Local Gate](#full-local-gate) first, then run:
 
 ```powershell
-& .venv\Scripts\python.exe -m pytest -q
-& .venv\Scripts\python.exe -m pytest bug_metrics\tests jira_history\tests jira_sync\tests pull_requests\tests -q
 & .venv\Scripts\python.exe scripts\validate_grafana_artifacts.py --artifact-root ops\grafana --allowlist openspec/docs/current-baseline/grafana-approved-data-surfaces.json
 & .venv\Scripts\python.exe -m pytest ui_web\tests\test_browser_bug_trend_dashboard.py -q
 & .venv\Scripts\python.exe scripts\check_c0_validation_evidence.py --evidence docs\c0-validation-closure-evidence.md
 & .venv\Scripts\python.exe scripts\check_c1_evidence_link_evidence.py --evidence docs\c1-evidence-link-validation-evidence.md
-& .venv\Scripts\python.exe manage.py check
-& .venv\Scripts\python.exe scripts\check_file_size_limits.py --include-untracked
-& .venv\Scripts\python.exe scripts\check_diff_whitespace.py --include-untracked
 ```
 
 ## Proposed CI Jobs
@@ -83,12 +86,7 @@ No `.github/workflows/` files are currently present in this repository. When CI 
 
 Trigger: every PR and push to protected branches.
 
-Commands:
-
-```powershell
-& .venv\Scripts\python.exe -m pytest tasks\tests forecast\tests velocity\tests ui_web\tests -q
-& .venv\Scripts\python.exe -m pytest bug_metrics\tests jira_history\tests jira_sync\tests pull_requests\tests -q
-```
+Commands: run both test lanes of the [Full Local Gate](#full-local-gate) as written there.
 
 ### Job 2 - Django And Hygiene
 

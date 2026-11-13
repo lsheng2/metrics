@@ -8,12 +8,18 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
 
 if sys.platform == "win32":
     import ctypes
+
+# Children started here stay held until their exit is observed, so the exit code is collected and a
+# POSIX zombie is not reported as alive. Process-wide because any engine instance may stop them.
+_SPAWNED_CHILDREN: dict[int, subprocess.Popen[bytes]] = {}
+_SPAWNED_CHILDREN_LOCK = threading.Lock()
 
 
 def is_port_available(host: str, port: int) -> bool:
@@ -62,7 +68,13 @@ def start_process(
     stderr,
     creationflags: int,
 ):
-    return subprocess.Popen(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, creationflags=creationflags)
+    with _SPAWNED_CHILDREN_LOCK:
+        for pid, child in tuple(_SPAWNED_CHILDREN.items()):
+            if child.poll() is not None:
+                del _SPAWNED_CHILDREN[pid]
+        process = subprocess.Popen(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, creationflags=creationflags)
+        _SPAWNED_CHILDREN[process.pid] = process
+    return process
 
 
 def run_command(command: tuple[str, ...], cwd) -> None:
@@ -81,6 +93,9 @@ def wait_port_available(host: str, port: int, timeout_seconds: float) -> bool:
 def process_exists(pid: int) -> bool:
     if pid <= 0:
         return False
+    held_child_running = _held_child_running(pid)
+    if held_child_running is not None:
+        return held_child_running
     if sys.platform == "win32":
         return process_exists_windows(pid)
     try:
@@ -92,6 +107,21 @@ def process_exists(pid: int) -> bool:
     except OSError:
         return False
     return True
+
+
+def _held_child_running(pid: int) -> bool | None:
+    with _SPAWNED_CHILDREN_LOCK:
+        child = _SPAWNED_CHILDREN.get(pid)
+        if child is None:
+            return None
+        # An exit code collected through the caller's own handle frees the pid for reuse; only the OS can answer.
+        if child.returncode is not None:
+            del _SPAWNED_CHILDREN[pid]
+            return None
+        if child.poll() is None:
+            return True
+        del _SPAWNED_CHILDREN[pid]
+        return False
 
 
 def process_matches_command(pid: int, expected_command: tuple[str, ...]) -> bool:

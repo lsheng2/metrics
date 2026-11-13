@@ -8,6 +8,8 @@ from uuid import uuid4
 
 import pytest
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.db import connections
+from django.db.backends.base.base import BaseDatabaseWrapper
 from django.test import override_settings
 from django.urls import reverse
 
@@ -454,6 +456,7 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
         installed_preparation = runtime.worker.daily_preparation_service
         install_project_runtime(runtime)
         self.addCleanup(clear_project_runtime, runtime)
+        close_worker_connections_after_execute(runtime.worker)
         runtime.start()
         self.addCleanup(self.stop_runtime, runtime)
 
@@ -538,3 +541,18 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
         retained = fixture.draft_service.get(fixture.actor, fixture.project.id, fixture.stage.id, original_id)
         self.assertEqual(original.revision_hash, retained.revision_hash)
         self.assertEqual([], self.sdk_creations)
+
+
+def close_worker_connections_after_execute(worker):
+    execute = worker.execute
+
+    def execute_then_close(*args, **kwargs):
+        try:
+            return execute(*args, **kwargs)
+        finally:
+            # The sqlite backend ignores close() on in-memory test databases, so this worker thread's
+            # connection would otherwise wait for garbage collection and warn as an unclosed database.
+            for connection in connections.all(initialized_only=True):
+                BaseDatabaseWrapper.close(connection)
+
+    worker.execute = execute_then_close

@@ -173,14 +173,14 @@ Use precise claims:
 - `focused gate passed` means the touched owner test passed.
 - `MVP governance gate passed` means the commands in [gate-and-ci-plan.md](gate-and-ci-plan.md) passed for the Jira/Grafana scope.
 - `runtime evidence passed` means the C0/C1 evidence docs were current and their checkers passed.
-- `full local gate passed` means default pytest, explicit non-`pytest.ini` roots, Django check, and hygiene gates passed.
+- `full local gate passed` means both Full Local Gate test lanes (plain pytest and no-dotenv runner), Django check, and hygiene gates passed in the same closure window.
 - `release gate passed` means the `Release Gate` in [gate-and-ci-plan.md](gate-and-ci-plan.md) passed, including full local, artifact, browser, and runtime evidence gates.
 
-Do not say `all tests passed` unless both default pytest and explicit excluded roots were run and passed in the same closure window. Do not say `Grafana runtime validated` when only static artifact validation or evidence-document checking ran.
+Do not say `all tests passed` unless both Full Local Gate test lanes were run and passed in the same closure window. Do not say `Grafana runtime validated` when only static artifact validation or evidence-document checking ran.
 
 ## CI Evolution Path
 
-1. Add separate CI jobs for default pytest, explicit module roots, Django/hygiene, Grafana artifacts, and browser tests.
+1. Add separate CI jobs for the two Full Local Gate test lanes, Django/hygiene, Grafana artifacts, and browser tests.
 2. Keep runtime Grafana as checked evidence until a service-backed CI job can start Grafana and import the dashboard.
 3. Add an automated C0/C1 evidence regeneration script before calling Grafana runtime validation fully automated.
 4. Add a validation-matrix checker only after the contract matrix stabilizes enough to avoid noisy false positives.

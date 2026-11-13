@@ -12,7 +12,7 @@ if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
 from service_lifecycle_engine import LifecycleState, PlatformOperationSet, ServiceExitedBeforeReadyError, ServiceLifecycleEngine, ServiceSpec, is_port_available, process_exists
-from service_lifecycle_engine.platform_ops import creation_flags, kill_process, wait_process_exit
+from service_lifecycle_engine.platform_ops import creation_flags, kill_process
 
 
 def test_resolve_port_skips_occupied_port(tmp_path):
@@ -60,7 +60,7 @@ def test_waitReadyShouldAcceptHealthyEndpointWhenLauncherExitsCleanly(tmp_path):
         spec = http_server_spec(tmp_path, [port])
         lifecycle.wait_ready(spec, port, HandedOffProcess())
     finally:
-        stop_process(server.pid)
+        stop_process(server)
 
 
 def test_waitReadyShouldRejectHealthyEndpointWhenStartedProcessFails(tmp_path):
@@ -203,7 +203,7 @@ def test_prepare_startup_does_not_force_stop_unowned_ports_by_default(tmp_path):
         assert results == []
         assert process_exists(process.pid)
     finally:
-        stop_process(process.pid)
+        stop_process(process)
 
 
 def test_prepare_startup_force_stops_unowned_ports_when_requested(tmp_path):
@@ -225,7 +225,7 @@ def test_prepare_startup_force_stops_unowned_ports_when_requested(tmp_path):
         assert results[0].force_requested
         assert not process_exists(process.pid)
     finally:
-        stop_process(process.pid)
+        stop_process(process)
 
 
 def http_server_spec(tmp_path: Path, ports: list[int], listener_identity_url: str | None = None) -> ServiceSpec:
@@ -255,7 +255,7 @@ def wait_until_listening(port: int) -> None:
     raise AssertionError(f"port did not start listening: {port}")
 
 
-def stop_process(pid: int) -> None:
-    if process_exists(pid):
-        kill_process(pid)
-        wait_process_exit(pid, 2.0)
+def stop_process(process: subprocess.Popen[bytes]) -> None:
+    if process.poll() is None:
+        kill_process(process.pid)
+    process.wait(timeout=5)
