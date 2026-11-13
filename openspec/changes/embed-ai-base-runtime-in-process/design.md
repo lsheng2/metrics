@@ -110,7 +110,10 @@
     时是 `/metrics/ai`。请求按复签的定序表处理（owner 2026-11-11），任一步拒绝即返回：
     - L0，waitress 传输层，先于应用执行，宿主无法调整：请求行与头部大小、`Content-Length` 语法（400）、chunked 分帧、
       请求体上限（413，`max_request_body_size` 显式配置，决策 3）。waitress 在调用应用之前读完并缓冲请求体，超过
-      512 KiB（`inbuf_overflow`）时写入临时文件；`channel.py` 在 `request.completed` 之后才创建 task；
+      512 KiB（`inbuf_overflow`）时写入临时文件；`channel.py` 在 `request.completed` 之后才创建 task。这是 AIB-2
+      `blocking_wsgi` 的宿主前提（OD-W1-1，`aib2-w1-review.md` 第 3 节）：运行时在 WSGI 线程上按合作式时限分块读取
+      已缓冲的请求体，进行中的单次读取不被抢占；更换或升级 WSGI server 时必须保持先缓冲后派发，由宿主一致性套件的前提
+      断言验证；
     - L1 第 1 步，Host 校验：对所有路径（包括静态文件）用 `WSGIRequest(environ).get_host()` 判定，与 Django 同一规则、
       同一 `ALLOWED_HOSTS`，非法时返回固定文本的 400（决策 14）；
     - L1 第 2 步，停止中的 503：停止受理之后（决策 2 第 7.1 步），已有连接上的请求不论是否带凭据都得到固定文本的 503 与
@@ -155,7 +158,8 @@
     whitenoise 6.12.0 不变；`uvicorn`、`starlette`、`cheroot`、`a2wsgi` 不是 Metrics 的直接依赖；删除 `gunicorn`、
     `ai-base-application-sdk` 与 `requirements-ai-task.txt`。`ai_host` 使用 waitress 的内部接口（决策 3：
     `trigger.pull_trigger`、`active_channels` 与 `close_when_flushed`、`task_dispatcher` 的 `active_count` 与
-    `shutdown`），因此精确固定；升级 waitress 时重跑 S0b 的 B1、B4、B5、B9 子集。
+    `shutdown`），因此精确固定；升级 waitress 时重跑 S0b 的 B1、B4、B5、B9 子集与宿主一致性套件（含先缓冲后派发的
+    前提断言，OD-W1-1）。
 - **理由**：
   - S0 实测：Django 在 ASGI 下每个请求（包括每个静态资源）都要新建线程上下文与执行器，主要页面 p95 是线程化 WSGI
     基线的 1.82–3.23 倍，不挂运行时的 uvicorn 组合同样超标（`s0-spike-report.md` §2.4）。保持 WSGI，页面请求路径与
@@ -745,7 +749,7 @@
   `portalocker` 精确固定（决策 1）。
 - [`ai_host` 依赖 waitress 的内部接口（`trigger.pull_trigger`、channel 的 `close_when_flushed`、`task_dispatcher`）与
   传入 `sockets` 时不再绑定的行为] → `waitress==3.0.2` 精确固定；5.6 的命令测试覆盖这些调用；升级 waitress 时重跑 S0b
-  的 B1、B4、B5、B9 子集（决策 1）。
+  的 B1、B4、B5、B9 子集与宿主一致性套件（决策 1）。
 - [流式响应的未发送输出超过 waitress 的 `outbuf_high_watermark`（默认 16 MB，`adjustments.py:215`）后，写该响应的
   工作线程阻塞到客户端读取或断开（`channel.py:394-415`；一次写出的响应与 WhiteNoise 的文件响应不受影响）] → Metrics
   目前没有 Django 流式视图，聊天流的事件与心跳达不到 16 MB 的积压，S0b、补测与终测只测到约 8 MB；停止时若出现，排空用满
@@ -754,6 +758,9 @@
 - [L0 在调用应用之前读完并缓冲请求体，未认证的请求也能让进程写临时文件] → `max_request_body_size` 显式设为 N + 1
   （决策 3）；超过 512 KiB 才写临时文件，最坏占用约 N × `connection_limit`（100），N = 8388608 字节时为 838860800
   字节，约 800 MiB，位于系统临时目录。需要更紧的上限时由反向代理限制请求体。
+- [运行时按合作式时限读取已缓冲的请求体，进行中的单次读取不被抢占（OD-W1-1）] → 读取源只有本机内存或临时文件，慢客户端
+  停在 L0，不占 WSGI 线程与运行时名额；本机磁盘读卡死属于整机故障，读取返回之前占住一个 WSGI 线程与一个短请求名额，
+  停止时由两段式看门狗兜底（决策 3）。
 - [经 `serve` 的 Django 路径上，非法 Host 且不带凭据的请求由 401 变为 400] → 有意的行为变化（决策 1）：Host 校验移到
   L1 最前；Django 测试客户端不经分派，现有测试不受影响；定序矩阵（tasks 5.10）断言新行为。
 - [持有 GIL 的长 C 调用挡住看门狗线程] → 看门狗只能兜住释放 GIL 的卡顿；最终上限依靠外层强制结束：启动入口等待
