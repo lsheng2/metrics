@@ -74,6 +74,7 @@ FEATURE_SCRIPTS = (
     'js/editor-forms.js',
     'js/form-validation.js',
     'js/workbench-state.js',
+    'js/workbench-ai.js',
     'js/pane-layout.js',
     'js/workbench-evidence.js',
     'js/grafana-embeds.js',

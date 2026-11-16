@@ -61,10 +61,7 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         self.assertEqual('261px', result['ticket_detail_width'])
         self.assertEqual({'now': '261', 'min': '180', 'max': '360'}, result['ticket_splitter_aria'])
         self.assertEqual('2 selected', result['selected_count'])
-        self.assertEqual(2, result['selected_ticket_payload']['selectedTicketCount'])
-        self.assertFalse(result['selected_ticket_payload']['truncated'])
-        self.assertEqual(['STDEL-9201', 'STDEL-9202'], [ticket['issueKey'] for ticket in result['selected_ticket_payload']['tickets']])
-        self.assertNotIn('sourceUrl', result['selected_ticket_payload']['tickets'][0])
+        self.assertEqual(['STDEL-9201', 'STDEL-9202'], result['selected_ticket_ids'])
         self.assertEqual('2 selected tickets', result['bulk_detail_issue'])
         self.assertTrue(result['status_column_hidden'])
         self.assertFalse(result['columns_menu_open_after_blank_click'])
@@ -170,8 +167,7 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         self.assertEqual('nvu-ttl-hsdes', result['profile_value'])
         self.assertEqual('hsdes', result['provider_value'])
 
-    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
-    def test_shouldKeepWorkbenchUsableInStandaloneModeWhenAiIsDisabled(self):
+    def test_shouldKeepWorkbenchUsableWithoutRunningAiRuntime(self):
         # Given
         scope, run, bucket = self._seed_trend_data()
         BugTrendBucketIssue.objects.create(
@@ -199,7 +195,7 @@ class TestWorkbenchHighDensityBrowser(WorkbenchBrowserTestSupport, TestCase):
         })
 
         # When
-        result = self._exercise_workbench_standalone_ai_disabled(response)
+        result = self._exercise_workbench_without_runtime(response)
 
         # Then
         self.assertTrue(result['chart_visible'])

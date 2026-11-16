@@ -63,7 +63,7 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         self.assertIn('data-workbench-collapse="ai-assistant"', content)
         self.assertIn('class="help-tip"', content)
         self.assertIn('The query scope that drives the chart range', content)
-        self.assertIn('Embedded AI Base chat bound to the selected scope profile', content)
+        self.assertIn('data-ai-runtime-status="not_running"', content)
         self.assertNotIn('compact panel ready', content)
         self.assertNotIn('&copy; 2017', content)
 
@@ -191,7 +191,6 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
             self.assertTrue(pane.default_placement)
             self.assertIn(pane.default_placement, pane.allowed_placements)
 
-    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldRenderAiBaseUnavailableWithoutBlockingWorkbench(self):
         # When
         with tempfile.TemporaryDirectory() as state_dir:
@@ -202,18 +201,17 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('AI Base', content)
-        self.assertIn('disabled', content)
-        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
-        self.assertIn('scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort', content)
+        self.assertIn('not_running', content)
+        self.assertIn('Bind this scope to an available provider profile in Scope Library.', content)
+        self.assertIn('python manage.py serve --port', content)
         self.assertIn('Dashboard UI:', content)
         self.assertIn('data-service-status="connected"', content)
         self.assertIn('Grafana', content)
         self.assertIn('configured', content)
         self.assertIn('at ', content)
         self.assertIn('workbench-ai-binding-note', content)
-        self.assertIn('Scope Binding', content)
+        self.assertIn('Scope Library', content)
 
-    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldShowScopeBindingRepairBeforeAiWorkspaceHintWhenBindingIsMissing(self):
         # Given
         scope = JiraScopeConfig.objects.create(
@@ -245,7 +243,6 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         self.assertIn('Scope is not bound to a provider profile.', content)
         self.assertIn(reverse('ui_web:bug_trend_scope_library'), content)
 
-    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldIncludeResolvedScopeBindingInAiContext(self):
         # Given
         scope = JiraScopeConfig.objects.create(
@@ -281,17 +278,8 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         self.assertIn('"profile_id": "chiplet-2a-jira"', content)
         self.assertIn('"provider_id": "jira"', content)
 
-    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
-    def test_shouldGateAiIframeWhenScopeBindingProfileIsNotRegistryBacked(self, status_payload):
+    def test_shouldGateAiIframeWhenScopeBindingProfileIsNotRegistryBacked(self):
         # Given
-        status_payload.return_value = {
-            'enabled': True,
-            'status': 'ready',
-            'base_url': 'http://127.0.0.1:48300',
-            'profile_id': 'dashboard_query_agent',
-            'service_id': 'dashboard-query-agent-app-service',
-            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
-        }
         scope = JiraScopeConfig.objects.create(
             name='Legacy explicit scope',
             jql='project = STDEL',
@@ -321,11 +309,9 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('AI workspace needs a registry-backed profile.', content)
-        self.assertIn('Rebind this scope in Scope Library.', content)
-        self.assertNotIn('AI Base chat side window', content)
+        self.assertIn('Bind this scope to an available provider profile in Scope Library.', content)
+        self.assertNotIn('src="/ai/embed/', content)
 
-    @override_settings(METRICS_AI_SIDECAR_ENABLED=False)
     def test_shouldWarnButRenderProviderPanesForCompatibilityBinding(self):
         # Given
         scope, run, bucket = self._seed_trend_data(bind_profile=False)
@@ -353,7 +339,7 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         self.assertIn(str(bucket.id), content)
         self.assertIn('"scope_binding": {"status": "compatibility"', content)
 
-    @override_settings(METRICS_SCOPE_BINDING_POLICY='explicit_only', METRICS_AI_SIDECAR_ENABLED=False)
+    @override_settings(METRICS_SCOPE_BINDING_POLICY='explicit_only')
     def test_shouldBlockCompatibilityBindingWhenPolicyIsExplicitOnly(self):
         # Given
         scope, run, bucket = self._seed_trend_data(bind_profile=False)
@@ -453,8 +439,8 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('id="workbench-provider" value="jira" readonly data-workbench-derived-field="provider_id"', content)
-        self.assertIn('providerId=jira', content)
-        self.assertIn('sourceAppId=metrics-dashboard', content)
+        self.assertIn('"provider_id": "jira"', content)
+        self.assertNotIn('sourceAppId=', content)
 
     def test_shouldShowValidationFailureForInvalidSelectionWithoutStaleRows(self):
         # When

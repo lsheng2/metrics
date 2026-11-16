@@ -1,0 +1,63 @@
+{
+  "classification": "development-workbench-consumer-packet",
+  "date": "2026-11-16",
+  "metricsBaseCommit": "f63d1084401bb12e6b1e04222708bc06c894f89f",
+  "metricsEvidenceUsesWorkingTree": true,
+  "aibSourceCommit": "e155d4cac70dde13fbd6bdbcca08141218b883e6",
+  "aibSourceTree": "d3a1b4af55c164873bd523eaa841a5c5b4c32ff4",
+  "wheelVersion": "0.1.1.dev2",
+  "wheelSha256": "47b4d56c1164092d715792be564b883e56857c7e90baaa1498b0863f2ccbaa55",
+  "installedPython": "D:/AIGC/temp/aib2-lanes/dashboard-ui-a11y-20261116-01/venv/Scripts/python.exe",
+  "packageFilesVerified": 131,
+  "runtimeCoreMatchesPreviousCandidate": true,
+  "fullAibQualification": false,
+  "fullDashboardQualification": false,
+  "validation": {
+    "candidateAdmissionAndSummaryReportJoin": {"passed": 8, "failed": 0},
+    "workbenchUiAndDesignSystem": {"passed": 74, "failed": 0},
+    "hostContextAndBrowser": {"passed": 25, "failed": 0},
+    "contextSupplement": {"passed": 17, "failed": 0},
+    "finalRealServeBrowser": {"passed": 1, "failed": 0},
+    "npmCheck": "PASS",
+    "contrastPairs": 152,
+    "djangoCheck": "PASS",
+    "migrationDrift": "none",
+    "manifestStaticFiles": 275,
+    "browserQa": {
+      "passed": 4,
+      "failed": 0,
+      "themes": ["light", "dark"],
+      "viewports": ["1440x900", "390x844"]
+    },
+    "manualBrowser": {
+      "tool": "ego-browser",
+      "themes": ["light", "dark"],
+      "viewports": ["1440x900", "390x844"],
+      "horizontalPageOverflow": false,
+      "embeddedContentOverflow": false,
+      "realScriptedReplyVisible": true
+    }
+  },
+  "observedBehavior": [
+    "Ask AI binds selected ticket IDs through server-owned ContextRef.",
+    "A real scripted-model reply appears after exactly one model request.",
+    "Range changes, collapse and reopening retain the expected session.",
+    "Ask AI and range swaps preserve the page title; range and host-action swaps preserve the iframe.",
+    "Themes reach the iframe using the installed embed-host module.",
+    "New host actions use GET-only Workbench UI navigation.",
+    "The old host-action message and workspace-sync POST are rejected.",
+    "The successful browser fixture exits serve normally and releases its listener."
+  ],
+  "retainedFailureEvidence": [
+    "A page-only pass initially missed the ready/context-change reload loop; real-message validation reproduced it before the fix.",
+    "The old candidate failed embedded status ARIA and text contrast checks; the new source-level UI fix and wheel passed the same axe gates.",
+    "An early manual-preview stop assertion failed after the reload storm; its cause was not established and it is not normal-stop evidence.",
+    "A later preview evidence serializer rejected mappingproxy; process cleanup was separately observed as returncode 0 without force."
+  ],
+  "remaining": [
+    "Metrics catalog/chart tools and approved Grafana publication.",
+    "Remaining sidecar/HTTP/settings/launcher/fixture retirement.",
+    "Full host lifecycle, saturation and performance matrices.",
+    "Complete MDB-2 joint acceptance and formal qualification gates."
+  ]
+}

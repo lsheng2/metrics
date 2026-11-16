@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from typing import List
 
 from bug_metrics.models import BugTrendAuditEvent
@@ -113,14 +112,16 @@ class ProviderAiDashboardContextService:
             'charts': chart_contexts,
         }
 
-    def get_workspace_context_bundle(self, profile_id: str) -> dict:
+    def get_workbench_context(self, values: dict) -> dict:
+        profile_id = values['profile_id']
         readiness = self._readiness_service.get_readiness('', profile_id)
         provider_id = readiness.get('provider_id', '')
         scope_labels = readiness.get('scope_labels', {})
         mapping_hash = readiness.get('mapping_version_hash', '')
-        workspace_key = f"metrics.{provider_id}.{profile_id}"
+        if provider_id != values['provider_id'] or readiness.get('status') in {'unsupported', 'disabled'}:
+            return {'status': 'binding_unresolved'}
         boundary = {
-            'workspace_key': workspace_key,
+            'binding_key': values['binding_key'],
             'allowed_provider_ids': [provider_id] if provider_id else [],
             'allowed_profile_ids': [profile_id],
             'project_labels': scope_labels,
@@ -140,9 +141,9 @@ class ProviderAiDashboardContextService:
         canonical_field_map = self._canonical_field_map(provider_id)
         data_block_catalog = self._data_block_catalog(provider_id, profile_id, scope_labels)
         grafana_render_contract = self._grafana_render_contract()
-        metrics_help = self._metrics_workspace_help(profile_id, provider_id)
+        metrics_help = self._metrics_context_help(profile_id, provider_id)
         files = [
-            self._json_bundle_file('metrics-context/workspace-boundary.json', boundary, 'workspace_boundary', 'model_context'),
+            self._json_bundle_file('metrics-context/context-boundary.json', boundary, 'context_boundary', 'model_context'),
             self._json_bundle_file('metrics-context/provider-profile.json', provider_profile, 'provider_profile', 'model_context'),
             self._json_bundle_file('metrics-context/canonical-field-map.json', canonical_field_map, 'canonical_field_map', 'model_context'),
             self._json_bundle_file('metrics-context/data-block-catalog.json', data_block_catalog, 'data_block_catalog', 'model_context'),
@@ -156,13 +157,9 @@ class ProviderAiDashboardContextService:
             },
         ]
         return {
-            'contract_version': '0.1',
-            'bundle_type': 'metrics.workspace_context_bundle',
-            'source_app_id': 'metrics-dashboard',
+            'status': 'ready',
+            'context_ref': {'kind': 'metrics.workbench', 'values': dict(values)},
             'bundle_version': f"{profile_id}:{mapping_hash or 'unmapped'}",
-            'generated_at': datetime.now(UTC).isoformat(),
-            'workspace_key': workspace_key,
-            'workspace_name': f"Metrics {provider_id} {profile_id}",
             'boundary': boundary,
             'files': files,
         }
@@ -562,10 +559,10 @@ class ProviderAiDashboardContextService:
             'publish_policy': 'Metrics validation and approval required before Grafana import.',
         }
 
-    def _metrics_workspace_help(self, profile_id: str, provider_id: str) -> str:
+    def _metrics_context_help(self, profile_id: str, provider_id: str) -> str:
         return (
-            f"# Metrics workspace context\n\n"
-            f"This workspace is bounded to provider `{provider_id}` and profile `{profile_id}`.\n\n"
+            f"# Metrics workbench context\n\n"
+            f"This context is bounded to provider `{provider_id}` and profile `{profile_id}`.\n\n"
             "Use canonical field names from `canonical-field-map.json` and data blocks from "
             "`data-block-catalog.json`. Do not use provider-native fields in generated artifacts."
         )

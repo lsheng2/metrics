@@ -1,153 +1,47 @@
-from unittest.mock import patch
-
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from bug_metrics.models import BugTrendScopeProviderBinding, JiraScopeConfig
-from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupport
+from ai_host.state import begin_stop
+from ai_host.tests.test_workbench_pane import Chat, host
+from ui_web.tests.workbench_view_test_support import WorkbenchViewTestSupport
 
 
-class TestWorkbenchAiHostActions(WorkbenchBrowserTestSupport, TestCase):
-    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
-    def test_shouldRenderReadyAiBasePaneWithCurrentContext(self, status_payload):
-        # Given
-        scope = self._bound_scope('nvu-ttl-hsdes', 'hsdes')
-        status_payload.return_value = {
-            'status': 'ready',
-            'profile_id': 'dashboard_query_agent',
-            'service_id': 'dashboard-query-agent-app-service',
-            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
-        }
-
-        # When
-        response = self.client.get(reverse('ui_web:workbench'), {
-            'scope_id': scope.id,
-            'range_mode': 'ww',
-            'begin': '26WW32',
-            'end': '26WW35',
-            'chart_id': 'open_bug_trend',
-        })
-
-        # Then
-        content = response.content.decode()
+class TestWorkbenchAiHostActions(WorkbenchViewTestSupport, TestCase):
+    def test_bound_page_renders_same_origin_runtime_and_no_old_sync_path(self):
+        scope = self._bound_scope('chiplet-2a-jira', 'jira')
+        with host():
+            response = self.client.get(reverse('ui_web:workbench'), {'scope_id': scope.id})
         self.assertEqual(200, response.status_code)
-        self.assertIn('AI Assistant', content)
-        self.assertIn('AI Base chat side window', content)
-        self.assertIn('tabindex="-1"', content)
-        self.assertIn('ready', content)
-        self.assertIn('nvu-ttl-hsdes', content)
-        self.assertIn('open_bug_trend', content)
-
-    @override_settings(METRICS_AI_BASE_INSTANCE_TOKEN='secret-token')
-    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
-    def test_shouldRenderAppChatPaneWithoutLeakingInstanceToken(self, status_payload):
-        # Given
-        scope = self._bound_scope('nvu-ttl-hsdes', 'hsdes')
-        status_payload.return_value = {
-            'status': 'ready',
-            'profile_id': 'dashboard_query_agent',
-            'service_id': 'dashboard-query-agent-app-service',
-            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
-        }
-
-        # When
-        response = self.client.get(reverse('ui_web:workbench'), {
-            'scope_id': scope.id,
-            'range_mode': 'ww',
-            'begin': '26WW32',
-            'end': '26WW35',
-            'chart_id': 'open_bug_trend',
-        })
-
-        # Then
         content = response.content.decode()
-        self.assertEqual(200, response.status_code)
-        self.assertIn('http://127.0.0.1:48310/?embed=app-chat#/chat?', content)
-        self.assertIn('sourceAppId=metrics-dashboard', content)
-        self.assertIn('bindingKey=metrics.workbench.overview', content)
-        self.assertIn('workspaceKey=metrics.hsdes.nvu-ttl-hsdes', content)
-        self.assertIn('agentKey=metrics.dashboardQuery', content)
-        self.assertNotIn('credentialRef=', content)
+        self.assertIn('src="/ai/embed/session-1"', content)
+        self.assertIn('"embed_host_url": "/ai/assets/embed-host-hash.js"', content)
+        self.assertIn('id="workbench-ai-session-session-1"', content)
+        self.assertNotIn('sync_ai_workspace', content)
+        self.assertNotIn('workspaceKey', content)
         self.assertNotIn('credentialRef', content)
-        self.assertNotIn('hostOrigin=', content)
-        self.assertIn('binding_request', content)
-        self.assertNotIn('secret-token', content)
+        self.assertNotIn('synthetic-secret', content)
 
-    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
-    def test_shouldBlockAppChatWhenOnlyUrlProfileAndProviderAreProvided(self, status_payload):
-        # Given
-        status_payload.return_value = {
-            'status': 'ready',
-            'profile_id': 'dashboard_query_agent',
-            'service_id': 'dashboard-query-agent-app-service',
-            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
-        }
-
-        # When
-        response = self.client.get(reverse('ui_web:workbench'), {
-            'profile_id': 'nvu-ttl-hsdes',
-            'provider_id': 'hsdes',
-            'range_mode': 'ww',
-            'begin': '26WW32',
-            'end': '26WW35',
-            'chart_id': 'open_bug_trend',
-        })
-
-        # Then
-        content = response.content.decode()
+    def test_timeout_keeps_page_and_chart_available(self):
+        scope = self._bound_scope('chiplet-2a-jira', 'jira')
+        with host(Chat.timed_out()):
+            response = self.client.get(reverse('ui_web:workbench'), {'scope_id': scope.id})
         self.assertEqual(200, response.status_code)
-        self.assertIn('"status": "binding_required"', content)
-        self.assertIn('Select a saved scope with a provider profile binding.', content)
-        self.assertNotIn('workspaceKey=metrics.hsdes.nvu-ttl-hsdes', content)
-        self.assertNotIn('workbench-ai-chat-frame', content)
+        self.assertContains(response, 'temporarily_unavailable')
+        self.assertContains(response, 'data-workbench-pane="chart"')
+        self.assertNotContains(response, 'src="/ai/embed/')
 
-    @override_settings(METRICS_AI_BASE_FRONTEND_URL='http://127.0.0.1:48310')
-    @patch('ui_web.facades.bug_trend_facade.BugTrendFacade.get_ai_sidecar_status_payload')
-    def test_shouldHandleAiBaseOpenGrafanaChartHostActionInsideWorkbench(self, status_payload):
-        # Given
-        status_payload.return_value = {
-            'enabled': True,
-            'status': 'ready',
-            'profile_id': 'dashboard_query_agent',
-            'service_id': 'dashboard-query-agent-app-service',
-            'capabilities': {'dashboardQuery': True, 'metricsConnector': True},
-        }
-        response = self.client.get(reverse('ui_web:workbench'), {
-            'scope_id': '7',
-            'profile_id': 'chiplet-2a-jira',
-            'provider_id': 'jira',
-            'chart_id': 'default_bug_trend',
-        })
+    def test_shutdown_and_unconfigured_states_have_no_iframe(self):
+        scope = self._bound_scope('chiplet-2a-jira', 'jira')
+        with host() as handle:
+            with override_settings(METRICS_AI_MODEL_NAME=''):
+                unconfigured = self.client.get(reverse('ui_web:workbench'), {'scope_id': scope.id})
+            begin_stop(handle)
+            stopping = self.client.get(reverse('ui_web:workbench'), {'scope_id': scope.id})
+        self.assertContains(unconfigured, 'not_configured')
+        self.assertContains(unconfigured, 'METRICS_AI_MODEL_NAME')
+        self.assertContains(stopping, 'not_running')
+        self.assertNotContains(stopping, 'src="/ai/embed/')
 
-        # When
-        result = self._post_ai_base_open_grafana_host_action(response)
-
-        # Then
-        self.assertEqual('GET', result['htmx_call']['method'])
-        self.assertEqual('.workbench-shell', result['htmx_call']['target'])
-        self.assertNotIn('profile_id=chiplet-2a-jira', result['htmx_call']['url'])
-        self.assertNotIn('provider_id=jira', result['htmx_call']['url'])
-        self.assertIn('scope_id=7', result['htmx_call']['url'])
-        self.assertIn('chart_id=open_bug_trend', result['htmx_call']['url'])
-        self.assertEqual('handled', result['ack']['status'])
-        self.assertEqual('metrics-workbench.chart', result['ack']['result']['openedIn'])
-
-    def _bound_scope(self, profile_id, provider_id):
-        scope = JiraScopeConfig.objects.create(
-            name=f'{profile_id} scope',
-            jql='project = STDEL AND issuetype = Bug',
-            bug_type_values=['Bug'],
-            fixed_status_values=['Fixed'],
-            closed_status_values=['Closed'],
-            severity_field='priority',
-            critical_high_values=['P1-Critical'],
-            medium_low_values=['P3-Medium'],
-            bucket_granularity=JiraScopeConfig.GRANULARITY_WEEKLY,
-        )
-        BugTrendScopeProviderBinding.objects.create(
-            scope=scope,
-            profile_id=profile_id,
-            provider_id=provider_id,
-            status=BugTrendScopeProviderBinding.STATUS_EXPLICIT,
-        )
-        return scope
+    def test_removed_workspace_sync_post_is_not_accepted(self):
+        response = self.client.post(reverse('ui_web:workbench'), {'action': 'sync_ai_workspace'})
+        self.assertEqual(405, response.status_code)

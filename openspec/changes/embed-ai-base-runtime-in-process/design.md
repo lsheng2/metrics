@@ -502,9 +502,11 @@
     `[A-Za-z0-9._:-]+`、以 `<app_id>.`（即 `metrics.`）开头、不超过 200 个 ASCII 字符；`None` 新建会话，空串非法；
     运行时不做规范化、截断或大小写折叠，不合法时报 `session_key_invalid`（422，§11.3 `:1023`）。profile id 为
     `[a-z0-9][a-z0-9._-]{0,159}`，`metrics.workbench.{profile_id}` 最长 178 个字符，满足这些规则，`ai_host` 不另做编码。
-  - range、图表或 bucket 变化时，页面局部刷新得到新的 `ai_context_ref`，经 `embed-host.js` 发送 `context-changed`，
-    运行时把同一会话重新绑定（进程内等价调用为 `handle.blocking.chat.bind_context(principal, session_id, context_ref,
-    timeout=...)`，§11.1 `:830-832`），不新建会话。
+  - range、图表或 bucket 变化时，页面局部刷新由宿主先调用
+    `handle.blocking.chat.bind_context(principal, session_id, context_ref, timeout=...)`
+    绑定新的 `ai_context_ref`，再经 `embed-host.js` 的 `notifyContextChanged(session_id)`
+    通知保留的 iframe 重新读取。已安装的 `ai-base.embed/1` 通知只携带 session id；
+    按键 `open_session` 恢复原绑定，不隐式更新上下文。打开与绑定共用 1 秒总预算，不新建会话。
   - `ContextRef(kind="metrics.workbench", values=...)` 只含标识：binding key、profile id、provider、range、chart id、
     bucket/series、已选 ticket id。值只能是 str/int/bool 或它们的扁平列表，规范化后不超过
     `RuntimeLimits.max_context_ref_bytes`（4 KiB）。ticket id 最多 50 个，超出数量或字节上限时按选择顺序保留能放入的

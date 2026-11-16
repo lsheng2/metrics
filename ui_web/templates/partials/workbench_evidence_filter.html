@@ -1,5 +1,5 @@
 {# The Workbench's only evidence filter form: list filters are Workbench URL state, so it swaps the whole shell. #}
-<form class="dashboard-tool-form workbench-evidence-filter" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+<form class="dashboard-tool-form workbench-evidence-filter" method="get" aria-label="Evidence filters" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML ignoreTitle:true" hx-push-url="true">
     <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
     <input type="hidden" name="range_mode" value="{{ workbench_state.range_mode }}">
     <input type="hidden" name="begin" value="{{ workbench_state.begin }}">

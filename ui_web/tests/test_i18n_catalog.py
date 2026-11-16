@@ -13,7 +13,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils.translation import templatize
 
-from ui_web.workbench_service_status import DASHBOARD_RESTART_COMMAND, DEFAULT_FULL_STACK_LAUNCHER_COMMAND
+from ui_web.workbench_service_status import DASHBOARD_RESTART_COMMAND
 
 UI_WEB = Path(__file__).resolve().parents[1]
 CATALOG = UI_WEB / 'locale' / 'zh_Hans' / 'LC_MESSAGES' / 'django'
@@ -30,7 +30,7 @@ ENGLISH_WORD = re.compile(r'[A-Za-z][A-Za-z_]+')
 # Brand, product names, key names and acronyms stay English in every language; commands are
 # injected through placeholders and are stripped verbatim before the check.
 SHELL_VERBATIM_WORDS = frozenset({'Metrics', 'Dashboard', 'Grafana', 'AI', 'Base', 'Ctrl', 'WAF'})
-SHELL_VERBATIM_COMMANDS = (DEFAULT_FULL_STACK_LAUNCHER_COMMAND, DASHBOARD_RESTART_COMMAND)
+SHELL_VERBATIM_COMMANDS = (DASHBOARD_RESTART_COMMAND,)
 SHELL_COPY_ATTRIBUTES = frozenset({'aria-label', 'title', 'placeholder', 'alt'})
 NON_SHELL_ELEMENTS = frozenset({'head', 'main', 'script', 'style', 'kbd'})
 SHELL_BLOCK = re.compile(r'\{% block (?P<name>title|page_title|breadcrumbs|header_extra) %\}(?P<body>.*?)\{% endblock %\}', re.S)

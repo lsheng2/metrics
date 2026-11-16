@@ -1,6 +1,6 @@
 /*
  * Workbench state: remembers the last meaningful /workbench/ URL for the sidebar link,
- * refreshes the shell from toolbar and scope changes, answers AI Base host actions and
+ * refreshes the shell from toolbar and scope changes, answers
  * Grafana selection messages, and closes workbench menus on outside click or Escape.
  */
 
@@ -70,92 +70,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateWorkbenchNavigationLinks();
     }
 
-    function workbenchAiBaseOrigin() {
-        const contextNode = document.getElementById('workbench-ai-context');
-        if (!contextNode) {
-            return '';
-        }
-        try {
-            const context = JSON.parse(contextNode.textContent || '{}');
-            const frontendUrl = context.ai_base && context.ai_base.frontend_url;
-            return frontendUrl ? new URL(frontendUrl, window.location.origin).origin : '';
-        } catch (error) {
-            return '';
-        }
-    }
-
-    function workbenchUrlFromHostAction(request) {
-        const payload = request && request.payload ? request.payload : {};
-        const explicitUrl = payload.workbenchUrl || request.fallbackUrl;
-        const normalizedExplicitUrl = explicitUrl ? normalizedWorkbenchUrl(explicitUrl) : '';
-        if (normalizedExplicitUrl) {
-            return normalizedExplicitUrl;
-        }
-        const params = new URLSearchParams(window.location.search);
-        ['chartId', 'panelId', 'dashboardUid'].forEach(key => {
-            if (!payload[key]) {
-                return;
-            }
-            const queryKey = key === 'chartId'
-                ? 'chart_id'
-                : key === 'panelId'
-                    ? 'panel_id'
-                    : 'dashboard_uid';
-            params.set(queryKey, String(payload[key]));
-        });
-        return `${window.location.pathname}?${params.toString()}`;
-    }
-
-    function acknowledgeHostAction(event, request, status, result) {
-        if (!event.source || !request) {
-            return;
-        }
-        event.source.postMessage({
-            type: 'ai-base.host-action.result',
-            result: {
-                sourceAppId: request.sourceAppId,
-                bindingKey: request.bindingKey,
-                sessionId: request.sessionId,
-                requestId: request.requestId,
-                artifactId: request.artifactId || null,
-                correlationId: request.correlationId,
-                idempotencyKey: request.idempotencyKey,
-                status: status,
-                result: result,
-            },
-        }, event.origin);
-    }
-
-    function handleWorkbenchHostAction(event, payload) {
-        const aiBaseOrigin = workbenchAiBaseOrigin();
-        if (!aiBaseOrigin || event.origin !== aiBaseOrigin) {
-            return false;
-        }
-        const request = payload.request || {};
-        if (request.sourceAppId !== 'metrics-dashboard' || request.actionKind !== 'metrics.openGrafanaChart') {
-            acknowledgeHostAction(event, request, 'rejected', { reason: 'unsupported_action' });
-            return true;
-        }
-        const url = workbenchUrlFromHostAction(request);
-        if (!isMeaningfulWorkbenchUrl(url)) {
-            acknowledgeHostAction(event, request, 'failed', { reason: 'invalid_workbench_url' });
-            return true;
-        }
-        if (window.htmx) {
-            htmx.ajax('GET', url, {
-                target: '.workbench-shell',
-                select: '.workbench-shell',
-                swap: 'outerHTML'
-            });
-            window.history.pushState({}, '', url);
-            saveCurrentWorkbenchUrl();
-            acknowledgeHostAction(event, request, 'handled', { openedIn: 'metrics-workbench.chart', url: url });
-        } else {
-            window.location.assign(url);
-        }
-        return true;
-    }
-
     function workbenchToolbarUrl(form) {
         const action = form.getAttribute('hx-get') || form.getAttribute('action') || window.location.pathname;
         const url = new URL(action, window.location.origin);
@@ -170,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
             htmx.ajax('GET', url, {
                 target: '.workbench-shell',
                 select: '.workbench-shell',
-                swap: 'outerHTML'
+                swap: 'outerHTML ignoreTitle:true'
             });
             window.history.pushState({}, '', url);
             saveCurrentWorkbenchUrl();
@@ -239,10 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
         window.metricsWorkbenchMessageHandlerRegistered = true;
         window.addEventListener('message', event => {
             const payload = event.data || {};
-            if (payload.type === 'ai-base.host-action.request') {
-                handleWorkbenchHostAction(event, payload);
-                return;
-            }
             if (event.origin !== window.location.origin) {
                 return;
             }
@@ -263,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 htmx.ajax('GET', url, {
                     target: '.workbench-shell',
                     select: '.workbench-shell',
-                    swap: 'outerHTML'
+                    swap: 'outerHTML ignoreTitle:true'
                 });
             } else {
                 window.location.assign(url);

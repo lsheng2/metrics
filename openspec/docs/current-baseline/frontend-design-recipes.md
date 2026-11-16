@@ -212,6 +212,19 @@ words. "bug" and "缺陷" both find Bug Trend.
   ticket-detail splitter must work without `#workbench-grid`.
 - `initializeWorkbenchShell()` runs at load and on every `htmx:afterSwap`, guarded by `dataset.workbenchInitialized`.
   Persisted keys: `metricsWorkbench.aiWidth`, `.chartHeight`.
+- The AI iframe uses `hx-preserve` with `workbench-ai-session-<session_id>` as its
+  stable id. `workbench-ai.js` imports the installed runtime's hashed `embed-host.js`
+  and owns its listener lifecycle; never vendor a second copy. The server binds
+  context before the `context-changed(sessionId)` notification. Collapse changes
+  layout only. An unresolved binding removes the frame instead of retaining an
+  old scope. Keep the shell/pane landmark ids and splitter hooks unchanged.
+  A child `ready` event only synchronizes theme; never answer it with another
+  context notification, which would create a reload loop and disable chat input.
+  Evidence `Ask AI` refreshes the server-owned context using ordered `ticket_id`
+  values and then focuses the preserved frame. Checkbox selection and bulk
+  summaries remain local; never send ticket bodies in a private iframe message.
+  Workbench-only swaps use `ignoreTitle:true`; a fragment response has no shell
+  navigation context and must not replace the Workbench document title.
 - Required hooks: `data-dashboard-layout`, `data-dashboard-sidebar`, `data-dashboard-sidebar-splitter`,
   `data-workbench-nav-link`, `data-workbench-status-bar`, `data-workbench-job-status`.
 - `.workbench-toolbar` is a CSS container (`container: workbench-toolbar / inline-size`); `@container workbench-toolbar

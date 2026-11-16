@@ -46,7 +46,8 @@ class TestWorkbenchScopeProfileSync(TestCase):
         self.assertIn('id="workbench-provider" value="hsdes" readonly data-workbench-derived-field="provider_id"', content)
         self.assertIn('data-profile-id="nvu-ttl-hsdes"', content)
         self.assertIn('data-provider-id="hsdes"', content)
-        self.assertIn('"workspace_key": "metrics.hsdes.nvu-ttl-hsdes"', content)
+        self.assertIn('"profile_id": "nvu-ttl-hsdes"', content)
+        self.assertNotIn('workspace_key', content)
 
     def test_shouldRequireRegisteredProfileForDisplayNamedJiraScope(self):
         scope = JiraScopeConfig.objects.create(

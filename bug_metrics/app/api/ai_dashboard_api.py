@@ -1,5 +1,7 @@
 from typing import List
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from .ai_context import (
     DashboardAiArtifactValidationRequest,
     DashboardAiPublishApprovalRequest,
@@ -23,8 +25,17 @@ class BugTrendAiDashboardApiMixin:
     def get_ai_dashboard_context(self, query: ProviderAiDashboardContextQuery) -> dict:
         return self._provider_ai_context_service.get_context(query)
 
-    def get_ai_workspace_context_bundle(self, profile_id: str) -> dict:
-        return self._provider_ai_context_service.get_workspace_context_bundle(profile_id)
+    def get_ai_workbench_context(self, values: dict) -> dict:
+        try:
+            scope_id = int(values['binding_key'].removeprefix('metrics.scope.'))
+            scope = self.get_scope(scope_id)
+        except (KeyError, TypeError, ValueError, ObjectDoesNotExist):
+            return {'status': 'binding_unresolved'}
+        binding = self.resolve_scope_provider_binding(scope)
+        if (not binding.is_resolved or binding.profile_id != values.get('profile_id')
+                or binding.provider_id != values.get('provider_id')):
+            return {'status': 'binding_unresolved'}
+        return self._provider_ai_context_service.get_workbench_context(values)
 
     def explain_ai_dashboard_chart(self, request: ProviderAiChartExplanationRequest) -> dict:
         return self._provider_ai_context_service.explain_chart(request)

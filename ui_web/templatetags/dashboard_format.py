@@ -42,6 +42,9 @@ _SERVICE_STATES = {
     'stopped': pgettext_lazy('service state', 'stopped'),
     'aborted': pgettext_lazy('service state', 'aborted'),
     'unknown': pgettext_lazy('service state', 'unknown'),
+    'not running': pgettext_lazy('service state', 'not running'),
+    'not configured': pgettext_lazy('service state', 'not configured'),
+    'temporarily unavailable': pgettext_lazy('service state', 'temporarily unavailable'),
 }
 
 
@@ -150,6 +153,6 @@ def status_tone(value) -> str:
 def service_state_label(value):
     """Translate a shell service state such as `connected`; `data-service-status` keeps the machine value.
 
-    States outside the vocabulary (for example a new sidecar state) pass through unchanged.
+    States outside the vocabulary pass through unchanged.
     """
-    return _SERVICE_STATES.get(str(value or ''), value)
+    return _SERVICE_STATES.get(str(value or '').replace('_', ' '), value)

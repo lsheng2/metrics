@@ -11,15 +11,15 @@ The approved delivery order and interfaces are in
 
 The migrated `ai_host`, summary, report-assist and project-run boundaries use
 the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
-The current candidate is `ai-base-runtime==0.1.1.dev1`, built from AIB
-`4acc902b2820fd3884502223fac3a7f3339a6935`. Its wheel SHA256 is
-`4bf24df5927cdcd36f9675948967c3894a4c66e252db5b9b8dffda9223e2b6b6`.
+The current candidate is `ai-base-runtime==0.1.1.dev2`, built from AIB
+`e155d4cac70dde13fbd6bdbcca08141218b883e6`. Its wheel SHA256 is
+`47b4d56c1164092d715792be564b883e56857c7e90baaa1498b0863f2ccbaa55`.
 This is a development candidate, not full AIB or Dashboard qualification.
 
 Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-lookup-20261116-01\venv\Scripts\python.exe'
+$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-ui-a11y-20261116-01\venv\Scripts\python.exe'
 & $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
@@ -28,6 +28,32 @@ the actual import path without importing the runtime package. Missing manifests,
 editable installs and package shadowing are rejected. Do not use a retained old
 environment or an editable source install for migrated consumers. No existing
 service or user database is silently switched.
+
+### Workbench Consumer
+
+The Workbench uses this same candidate through `ai_host.pane` and the registered
+`metrics.workbench` context provider. The host authenticates the request and uses
+`metrics.workbench.<profile_id>` as the runtime session key. A keyed open restores
+the persisted context, so the host explicitly binds the newly resolved ContextRef
+within the same one-second pane budget before returning the embed path.
+The browser loads `EmbedHost` from `handle.ui.asset_url("embed-host.js")`; its
+`context-changed` message carries only the session id. htmx preserves the iframe
+by its session-specific id. Evidence selection stays local until `Ask AI`,
+which sends ordered ticket ids through a server-rendered Workbench refresh;
+the server enforces the 50-ticket/4 KiB ContextRef limit. Ticket bodies are not
+sent to the iframe by a private message. No legacy workspace-sync endpoint or
+sidecar adapter participates in this flow.
+
+Use `ai_host/tests/test_workbench_context_ref.py`,
+`ai_host/tests/test_workbench_context_provider.py`,
+`ai_host/tests/test_workbench_pane.py` and
+`ui_web/tests/test_workbench_ai_host_actions.py` for focused checks.
+`ai_host/tests/test_workbench_browser_join.py` starts the real `serve` command with
+the installed candidate, synthetic data and a scripted model endpoint; its
+temporary archive must remain outside any source checkout. The test records
+browser requests, screenshots and owned process shutdown. Run the host test lane
+separately so its file-backed SQLite fixture governs runtime callback connections.
+Publication qualification is a separate, still-open MDB-2 gate.
 
 The SDK020/HTTP sections below retain historical qualification context until
 the remaining MDB-2 test/launcher migration completes. They do not qualify the

@@ -1970,3 +1970,48 @@ msgstr "范围配置"
 
 msgid "Profile Config"
 msgstr "档案配置"
+
+msgid "AI Assistant"
+msgstr "AI 助手"
+
+msgid "Collapse"
+msgstr "收起"
+
+msgid "Binding"
+msgstr "绑定"
+
+msgid "Bind this scope to an available provider profile in Scope Library."
+msgstr "请在范围库中将此范围绑定到可用的数据提供方档案。"
+
+msgid "Publishing approval requires a Basic user."
+msgstr "发布审批需要配置 Basic 用户。"
+
+msgid "AI Base chat"
+msgstr "AI Base 对话"
+
+msgid "AI model is not configured."
+msgstr "尚未配置 AI 模型。"
+
+msgid "AI is temporarily unavailable. Retry."
+msgstr "AI 暂时不可用，请重试。"
+
+msgid "Retry"
+msgstr "重试"
+
+msgid "AI runtime is not running."
+msgstr "AI 运行时未启动。"
+
+msgid "Diagnostics"
+msgstr "诊断"
+
+msgctxt "service state"
+msgid "not running"
+msgstr "未启动"
+
+msgctxt "service state"
+msgid "not configured"
+msgstr "未配置"
+
+msgctxt "service state"
+msgid "temporarily unavailable"
+msgstr "暂时不可用"

@@ -121,7 +121,7 @@
                             data-created-label="{{ row.created_at|iso_datetime }}"
                             data-updated="{{ row.updated_at }}"
                             data-updated-label="{{ row.updated_at|iso_datetime }}">
-                            <td class="workbench-select-column"><input type="checkbox" value="{{ row.issue_key }}" aria-label="Select {{ row.issue_key }}" data-workbench-ticket-checkbox></td>
+                            <td class="workbench-select-column"><input type="checkbox" value="{{ row.issue_key }}" aria-label="Select {{ row.issue_key }}" data-workbench-ticket-checkbox {% if row.issue_key in workbench_state.selected_ticket_ids %}checked{% endif %}></td>
                             <td data-workbench-field="issue">
                                 {% if row.source_url %}
                                     <a href="{{ row.source_url }}" target="_blank" rel="noopener noreferrer">{{ row.issue_key }}</a>

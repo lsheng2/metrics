@@ -10,7 +10,7 @@
 {% block content %}
 <section class="workbench-shell" aria-label="Metrics Workbench">
     {{ workbench_ai_context|json_script:"workbench-ai-context" }}
-    <form class="dashboard-tool-form dashboard-top-toolbar workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">
+    <form class="dashboard-tool-form dashboard-top-toolbar workbench-toolbar" method="get" aria-label="Workbench state" hx-get="{% url 'ui_web:workbench' %}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML ignoreTitle:true" hx-push-url="true">
         <div class="dashboard-tool-grid workbench-control-grid">
             <div class="field dashboard-tool-field workbench-toolbar-field workbench-toolbar-field-scope">
                 <label class="label" for="workbench-scope">Scope{% include "partials/help_tip.html" with label="Scope" text="The query scope that drives the chart range, evidence tickets, provider binding, and AI workspace context." %}</label>
@@ -97,7 +97,7 @@
             <header class="workbench-pane-header">
                 <h2 class="workbench-pane-title" id="workbench-evidence-title">Ticket Evidence{% include "partials/help_tip.html" with label="Ticket Evidence" text="The normalized Jira or HSD-ES tickets behind the selected chart range, bucket, and series." %}</h2>
                 {% if workbench_state.selected_bucket_id or workbench_state.selected_series_name %}
-                    <a class="button is-small" href="{{ workbench_clear_selection_url }}" hx-get="{{ workbench_clear_selection_url }}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML" hx-push-url="true">Clear selection</a>
+                    <a class="button is-small" href="{{ workbench_clear_selection_url }}" hx-get="{{ workbench_clear_selection_url }}" hx-target=".workbench-shell" hx-select=".workbench-shell" hx-swap="outerHTML ignoreTitle:true" hx-push-url="true">Clear selection</a>
                 {% endif %}
             </header>
             <div id="bug-trend-evidence-container" class="workbench-pane-body">
@@ -123,93 +123,7 @@
         </article>
         <div class="workbench-splitter workbench-splitter-vertical" role="separator" aria-orientation="vertical" tabindex="0" data-workbench-splitter="main-ai" title="Resize main work area and AI pane"></div>
 
-        <aside class="workbench-pane workbench-pane-ai" data-workbench-pane="ai-assistant" aria-labelledby="workbench-ai-title">
-            <header class="workbench-pane-header">
-                <div class="workbench-pane-title-group">
-                    <h2 class="workbench-pane-title" id="workbench-ai-title">AI Assistant{% include "partials/help_tip.html" with label="AI Assistant" text="Embedded AI Base chat bound to the selected scope profile and synced workspace context when available." %}</h2>
-                    {{ workbench_ai_context.ai_base.status|status_tag }}
-                </div>
-                <div class="workbench-pane-actions" data-ui-action-group>
-                    {% if workbench_ai_context.ai_base.chat_ready %}
-                        <a class="button is-small" href="{{ workbench_ai_context.ai_base.chat_url }}" target="_blank" rel="noopener">Open</a>
-                    {% endif %}
-                    <button class="button is-small" type="button" data-workbench-collapse="ai-assistant" aria-expanded="true">Collapse</button>
-                </div>
-            </header>
-            <div class="workbench-pane-body workbench-ai-pane-body">
-                <div class="workbench-ai-binding-note {% if workbench_ai_context.scope_binding.status != 'explicit' %}is-warning{% endif %}">
-                    <span>Binding{% include "partials/help_tip.html" with label="Binding" text="The selected scope to provider profile link. AI chat requires a registry-backed explicit binding and synced workspace context." %}</span>
-                    <strong>{{ workbench_ai_context.scope_binding.status|default:"configuration_required" }}</strong>
-                    <span>{{ workbench_ai_context.scope_binding.provider_id|or_dash }} / {{ workbench_ai_context.scope_binding.profile_id|or_dash }}</span>
-                    {% if workbench_ai_context.scope_binding.blockers %}
-                        <span>{{ workbench_ai_context.scope_binding.blockers.0.message }}</span>
-                        <a href="{% url 'ui_web:bug_trend_scope_library' %}">Repair</a>
-                    {% endif %}
-                </div>
-                {% if workbench_ai_context.ai_base.chat_ready %}
-                    <iframe
-                        class="workbench-ai-chat-frame"
-                        src="{{ workbench_ai_context.ai_base.chat_url }}"
-                        title="AI Base chat side window"
-                        tabindex="-1"
-                        loading="lazy"
-                        referrerpolicy="no-referrer">
-                    </iframe>
-                {% else %}
-                    <div class="workbench-ai-unavailable">
-                        <div class="workbench-ai-unavailable__reason">
-                            {% if workbench_ai_context.ai_base.chat_gate.status == "registry_profile_required" %}
-                                <p class="workbench-ai-unavailable__title">AI workspace needs a registry-backed profile.</p>
-                                <p class="help">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
-                            {% elif workbench_ai_context.ai_base.chat_gate.status == "workspace_sync_required" %}
-                                <p class="workbench-ai-unavailable__title">AI workspace context is not synced for this scope.</p>
-                                <p class="help">{{ workbench_ai_context.ai_base.chat_gate.message }}</p>
-                            {% elif not workbench_ai_context.ai_base.enabled %}
-                                <p class="workbench-ai-unavailable__title">AI chat is not enabled for this Dashboard process.</p>
-                                <p class="help">Restart the unified stack to enable the embedded AI Base chat side window.</p>
-                            {% else %}
-                                <p class="workbench-ai-unavailable__title">AI chat is not ready for this scope.</p>
-                                <p class="help">{{ workbench_ai_context.ai_base.chat_gate.message|default:workbench_ai_context.ai_base.reason }}</p>
-                            {% endif %}
-                            {% if workbench_ai_workspace_error %}
-                                <p class="help is-danger">Workspace sync failed: {{ workbench_ai_workspace_error }}</p>
-                            {% endif %}
-                        </div>
-                        {% if workbench_ai_context.ai_base.chat_gate.can_sync_workspace %}
-                            <form method="post" class="dashboard-action-form">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="sync_ai_workspace">
-                                <input type="hidden" name="scope_id" value="{{ workbench_state.scope_id }}">
-                                <input type="hidden" name="range_mode" value="{{ workbench_state.range_mode }}">
-                                <input type="hidden" name="begin" value="{{ workbench_state.begin }}">
-                                <input type="hidden" name="end" value="{{ workbench_state.end }}">
-                                <input type="hidden" name="chart_id" value="{{ workbench_state.chart_id }}">
-                                <input type="hidden" name="chart_version" value="{{ workbench_state.chart_version }}">
-                                <input type="hidden" name="run" value="{{ workbench_state.calculation_run_id }}">
-                                <input type="hidden" name="snapshot" value="{{ workbench_state.fact_snapshot_id }}">
-                                <input type="hidden" name="bucket" value="{{ workbench_state.selected_bucket_id }}">
-                                <input type="hidden" name="series" value="{{ workbench_state.selected_series_name }}">
-                                <button class="button is-primary is-small" type="submit">Sync AI workspace</button>
-                            </form>
-                        {% endif %}
-                        <div class="workbench-ai-start-command">
-                            <span>Start stack</span>
-                            <code>{{ workbench_ai_context.ai_base.launcher_command }}</code>
-                        </div>
-                        <div class="buttons are-small">
-                            <a class="button" href="{% url 'ui_web:ai_dashboard_workflow' %}">Diagnostics</a>
-                            <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Binding</a>
-                            {% if workbench_ai_context.ai_base.frontend_url %}
-                                <a class="button" href="{{ workbench_ai_context.ai_base.frontend_url }}" target="_blank" rel="noopener">AI Base</a>
-                            {% endif %}
-                            {% if workbench_ai_context.ai_base.base_url %}
-                                <a class="button" href="{{ workbench_ai_context.ai_base.base_url }}/health/handshake" target="_blank" rel="noopener">Handshake</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </aside>
+        {% include "partials/workbench_ai_pane.html" with runtime=workbench_ai_context.runtime binding=workbench_ai_context.scope_binding %}
     </div>
 </section>
 {% endblock %}

@@ -164,7 +164,9 @@ class WorkbenchBrowserTestSupport:
             )
             page.locator('[data-workbench-ticket-select-all]').check()
             selected_count = page.locator('[data-workbench-ticket-selected-count]').inner_text()
-            selected_ticket_payload = page.evaluate("window.metricsWorkbenchSelectedTickets")
+            selected_ticket_ids = page.locator('[data-workbench-ticket-checkbox]:checked').evaluate_all(
+                'boxes => boxes.map(box => box.value)',
+            )
             page.locator('[data-workbench-ticket-bulk]').click()
             bulk_detail_issue = page.locator('[data-ticket-detail-issue]').inner_text()
             page.locator('summary:has-text("Columns")').click()
@@ -252,7 +254,7 @@ class WorkbenchBrowserTestSupport:
                 'ticket_splitter_aria': ticket_splitter_aria,
                 'ticket_detail_width': ticket_detail_width,
                 'selected_count': selected_count,
-                'selected_ticket_payload': selected_ticket_payload,
+                'selected_ticket_ids': selected_ticket_ids,
                 'bulk_detail_issue': bulk_detail_issue,
                 'status_column_hidden': status_column_hidden,
                 'columns_menu_open_after_blank_click': columns_menu_open_after_blank_click,
@@ -356,87 +358,6 @@ class WorkbenchBrowserTestSupport:
             browser.close()
             playwright.stop()
 
-    def _post_ai_base_open_grafana_host_action(self, response):
-        playwright = sync_playwright().start()
-        browser = playwright.chromium.launch(headless=True)
-        page = browser.new_page(viewport={'width': 1280, 'height': 900})
-        main_js = feature_scripts_source()
-        html = self._browser_html(response.content.decode()).replace('</body>', f'<script>{main_js}</script></body>')
-        child_html = """
-            <html>
-            <body>
-                <script>
-                    window.hostActionAck = null;
-                    window.addEventListener('message', event => {
-                        if (event.data && event.data.type === 'ai-base.host-action.result') {
-                            window.hostActionAck = event.data.result;
-                        }
-                    });
-                </script>
-            </body>
-            </html>
-        """
-        try:
-            page.route('http://testserver/workbench/**', lambda route: route.fulfill(
-                status=200,
-                content_type='text/html',
-                body=html,
-            ))
-            page.route('http://127.0.0.1:48310/child.html', lambda route: route.fulfill(
-                status=200,
-                content_type='text/html',
-                body=child_html,
-            ))
-            page.goto('http://testserver/workbench/?scope_id=7', wait_until='domcontentloaded')
-            page.evaluate("""
-                () => {
-                    window.htmx = {
-                        ajax(method, url, options) {
-                            window.lastHtmxCall = { method, url, target: options.target, select: options.select };
-                        }
-                    };
-                    const frame = document.createElement('iframe');
-                    frame.src = 'http://127.0.0.1:48310/child.html';
-                    document.body.appendChild(frame);
-                }
-            """)
-            page.locator('iframe[src="http://127.0.0.1:48310/child.html"]').wait_for()
-            frame = page.locator('iframe[src="http://127.0.0.1:48310/child.html"]').element_handle().content_frame()
-            frame.wait_for_load_state('domcontentloaded')
-            frame.evaluate("""
-                () => window.parent.postMessage({
-                    type: 'ai-base.host-action.request',
-                    request: {
-                        sourceAppId: 'metrics-dashboard',
-                        bindingKey: 'metrics.grafana.publish',
-                        sessionId: 'session-1',
-                        requestId: 'hostact-1',
-                        artifactId: 'artifact-1',
-                        correlationId: 'corr-1',
-                        idempotencyKey: 'artifact-1:open-chart',
-                        actionKind: 'metrics.openGrafanaChart',
-                        payload: {
-                            profileId: 'chiplet-2a-jira',
-                            providerId: 'jira',
-                            chartId: 'open_bug_trend',
-                            panelId: 1,
-                            dashboardUid: 'metrics-bug-trend-c-stock'
-                        }
-                    }
-                }, 'http://testserver')
-            """)
-            page.wait_for_function("() => window.lastHtmxCall !== undefined")
-            frame.wait_for_function("() => window.hostActionAck !== null")
-            return {
-                'htmx_call': page.evaluate("() => window.lastHtmxCall"),
-                'ack': frame.evaluate("() => window.hostActionAck"),
-                'location': page.evaluate("() => window.location.href"),
-            }
-        finally:
-            page.close()
-            browser.close()
-            playwright.stop()
-
     def _exercise_workbench_scope_sync_and_sidebar_resize(self, response, target_scope_id, target_response=None):
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
@@ -488,7 +409,7 @@ class WorkbenchBrowserTestSupport:
             browser.close()
             playwright.stop()
 
-    def _exercise_workbench_standalone_ai_disabled(self, response):
+    def _exercise_workbench_without_runtime(self, response):
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1280, 'height': 900})
@@ -503,7 +424,7 @@ class WorkbenchBrowserTestSupport:
             page.goto('http://testserver/workbench/', wait_until='domcontentloaded')
             chart_visible = page.locator('[data-workbench-pane="chart"]').is_visible()
             evidence_visible = page.locator('[data-workbench-ticket-row]').first.is_visible()
-            ai_diagnostic_visible = page.get_by_text('AI chat is not enabled for this Dashboard process.').is_visible()
+            ai_diagnostic_visible = page.get_by_text('AI runtime is not running.').is_visible()
             iframe_count = page.locator('.workbench-ai-chat-frame').count()
             page.locator('[data-workbench-collapse="ai-assistant"]').click()
             ai_collapsed = page.locator('#workbench-grid').evaluate(

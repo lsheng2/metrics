@@ -86,7 +86,7 @@ class Command(BaseCommand):
             body_limit_for_waitress,
             build_runtime_settings,
         )
-        from ai_host.state import attach, detach
+        from ai_host.state import attach, begin_stop, detach
         from ai_host.wiring import build_wsgi_application
         from project_management.app.domain.run_contracts import RunError
         from project_management.runtime import build_project_runtime, clear_project_runtime, install_project_runtime
@@ -146,6 +146,7 @@ class Command(BaseCommand):
                     server_thread.start()
                     self._wait_for_stop(stop_event, stop_file, deadline)
                 finally:
+                    begin_stop(handle)
                     outcome = stop_owned_resources(
                         handle=handle,
                         server=server,

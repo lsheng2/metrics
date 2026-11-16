@@ -5,7 +5,7 @@ import sys
 import traceback
 
 
-def main():
+def main(*, configure=None, prepare=None):
     root = Path(__file__).resolve().parents[2]
     scope = runpy.run_path(str(root / 'scripts/validation/run_report_authoring_tests.py'))
     original_settings = scope['test_settings']
@@ -35,6 +35,8 @@ def main():
             'METRICS_AI_MODEL_NAME': '',
             'METRICS_AI_MODEL_API_KEY': '',
         })
+        if configure is not None:
+            values.update(configure(temp))
         return values
 
     def serve(arguments):
@@ -52,6 +54,8 @@ def main():
 
         Command._run_bound_server = diagnosed_run
         execute_from_command_line(['manage.py', 'migrate', '--noinput', '--verbosity', '0'])
+        if prepare is not None:
+            prepare()
         execute_from_command_line([
             'manage.py', 'serve', '--host', '127.0.0.1', '--port', sys.argv[2],
             '--stop-file', sys.argv[3],

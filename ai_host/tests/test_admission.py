@@ -15,15 +15,15 @@ def test_shouldAdmitPinnedInstalledRuntimeWithoutImportingRuntimePackage(tmp_pat
     record = admit_runtime_candidate(artifact)
 
     assert record['distribution'] == 'ai-base-runtime'
-    assert record['version'] == '0.1.1.dev1'
-    assert record['wheelSha256'] == '4bf24df5927cdcd36f9675948967c3894a4c66e252db5b9b8dffda9223e2b6b6'
+    assert record['version'] == '0.1.1.dev2'
+    assert record['wheelSha256'] == '47b4d56c1164092d715792be564b883e56857c7e90baaa1498b0863f2ccbaa55'
     assert 'ai_base_runtime' not in sys.modules
 
 
 def test_shouldRejectTamperedRuntimeArtifact(tmp_path):
     artifact = tmp_path / 'runtime_artifact.json'
     text = Path('ai_host/runtime_artifact.json').read_text(encoding='utf-8')
-    artifact.write_text(text.replace('"version": "0.1.1.dev1"', '"version": "0.1.1"'), encoding='utf-8')
+    artifact.write_text(text.replace('"version": "0.1.1.dev2"', '"version": "0.1.1"'), encoding='utf-8')
 
     with pytest.raises(RuntimeCandidateError):
         admit_runtime_candidate(artifact)

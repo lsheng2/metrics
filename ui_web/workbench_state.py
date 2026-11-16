@@ -47,6 +47,7 @@ class WorkbenchPageQueryState:
     fact_snapshot_id: str = ''
     selected_bucket_id: str = ''
     selected_series_name: str = ''
+    selected_ticket_ids: tuple[str, ...] = ()
     list_filters: WorkbenchListFilters = field(default_factory=WorkbenchListFilters)
 
     @classmethod
@@ -62,6 +63,7 @@ class WorkbenchPageQueryState:
             fact_snapshot_id=str(query.get('snapshot', query.get('fact_snapshot_id', '')) or ''),
             selected_bucket_id=str(query.get('bucket', query.get('selected_bucket_id', '')) or ''),
             selected_series_name=str(query.get('series', query.get('selected_series_name', '')) or ''),
+            selected_ticket_ids=tuple(query.getlist('ticket_id')) if hasattr(query, 'getlist') else (),
             list_filters=WorkbenchListFilters.from_query(query),
         )
 
@@ -79,6 +81,7 @@ class WorkbenchPageQueryState:
         if include_selection:
             params['bucket'] = self.selected_bucket_id
             params['series'] = self.selected_series_name
+            params['ticket_id'] = self.selected_ticket_ids
         if include_list_filters:
             params.update(self.list_filters.to_query_params())
         return {key: value for key, value in params.items() if value}

@@ -94,7 +94,7 @@ Runtime 页面和页面资源 200，并以 0 退出。上述均不是实际 prov
 - [ ] 4.1 实现 `read` tool `metrics.catalog` 与 `metrics.chart_workflow`：async handler 经 `run_sync` 只调用各模块 `app/api/` 公共 API，失败按 design 决策 4 处理（只用注册表中指定的 `ToolError`，其余以类型化的业务结果返回）；工作流信封删除 gcx 与 dry-run 交接，草稿作为 tool 输入校验（`provider-ai-dashboard-composition`）。验证：用 testkit `RuntimeHarness` 与脚本化模型调用两个 tool，覆盖 Jira 与 HSD-ES profile 共用同一组合面、草稿校验失败返回带字段路径与原因的 findings（类型化结果，不是运行时错误）；参数模型含 actor、approval id、proof id 或 workspace key 字段时 App 包测试失败。
 - [ ] 4.2 实现 `external` tool `metrics.publish_chart`：`preview` 使用 3.2；handler 只反序列化 `ctx.approval.preview`，核对 `canonical_digest(...) == ctx.approval.preview_digest`（否则 `ToolError("preview_digest_mismatch")`），操作者取 `ctx.approval.decided_by`（`Principal`，身份取其 `id`），幂等键为 `ctx.tool_call_id`；发布就绪在请求审批之前判定（`provider-facts-and-sync`）。验证：harness 测试覆盖批准后导入并写入 `published` 行；审批被拒绝或过期时不调用 handler 与 Grafana，tool 结果说明原因；审批与执行之间数据变化时审批作废且不调用 handler；preview 内容与摘要不一致时拒绝导入且不调用 Grafana；数据未就绪或语义不受支持时不创建审批（拒绝的形状依赖 design Open Questions 9）；harness 重启后重放同一 `tool_call_id` 只有一行发布记录、审批只消费一次；聊天中模型声称已获批准或给出 `demo` 前缀的 approval id 时，审批保持 pending 且不调用 handler。
 - [ ] 4.3 实现 `WorkbenchContextProvider`：`validate` 检查标识对当前 principal 可见；`resolve` 把 `bug_metrics/app/api/ai_context.py` 的上下文包改为每次按 `ContextRef` 生成（字段 `context_ref`、`bundle_version`、`boundary`、`files`），不再推送到 workspace；binding 无法解析时返回 `binding_unresolved` 与 Scope Library 修复入口。tool 按 `ctx.context_ref` 解析出的边界复核参数，越界抛 `ToolError("context_boundary_violation")`。验证：单测覆盖 HSD-ES 与 Jira 两种 bundle 形状、越界调用不读写 Metrics 数据、没有 `ContextRef` 的会话调用需要 scope 的 tool 时返回提示从 workbench scope 打开聊天的类型化结果（不是运行时错误），且不默认任何 profile。
-- [ ] 4.4 由 `WorkbenchPageQueryState` 在服务端构造 `ContextRef(kind="metrics.workbench")`：只含 binding key、profile、provider、range、chart、bucket/series 与已选 ticket id；值只能是 str/int/bool 或它们的扁平列表；规范化后不超过 4 KiB；ticket id 最多 50 个，超出数量或字节上限时按选择顺序保留能放入的最长前缀，并写入 `ticket_ids_total`（int）与 `ticket_ids_truncated`（bool）。验证：单测覆盖 51 个已选 ticket 时保留前 50 个并带截断元数据；50 个 80 字符的 id 加其他字段的最大取值时，结果是不超过 4 KiB 的最长前缀且元数据正确；结果不含凭据、私有路径或查询文本。
+- [x] 4.4 由 `WorkbenchPageQueryState` 在服务端构造 `ContextRef(kind="metrics.workbench")`：只含 binding key、profile、provider、range、chart、bucket/series 与已选 ticket id；值只能是 str/int/bool 或它们的扁平列表；规范化后不超过 4 KiB；ticket id 最多 50 个，超出数量或字节上限时按选择顺序保留能放入的最长前缀，并写入 `ticket_ids_total`（int）与 `ticket_ids_truncated`（bool）。验证：单测覆盖 51 个已选 ticket 时保留前 50 个并带截断元数据；50 个 80 字符的 id 加其他字段的最大取值时，结果是不超过 4 KiB 的最长前缀且元数据正确；结果不含凭据、私有路径或查询文本。2026-11-16：17 项 context 正负样本通过；真实页面 Ask AI 经服务端绑定已选 ID，不再发送票据正文的私有 iframe 消息。
 - [ ] 4.5 声明 host action `metrics.openChart`、`metrics.openEvidence`（只做 UI 动作），并在 Metrics 测试中对 `METRICS_APP` 运行 `check_app_package`。验证：`check_app_package` 通过，含 `metrics.publish_chart` preview 两次摘要相同；注册表包含 4.1、4.2 的三个 tool、context provider `metrics.workbench` 与两个 host action。
 
 ## 5. 组合根、`serve` 与 task-run 端口切换（决策 1、2、3、9、10、11、12、15）
@@ -124,7 +124,7 @@ Runtime 页面和页面资源 200，并以 0 退出。上述均不是实际 prov
 
 - [ ] 7.1 AI pane 改为三态（`ready`、`not_configured`、`not_running`），由生命周期对象与设置推导：`ready` 时渲染同源 iframe，`embed-host.js` 取自 `handle.ui.asset_url("embed-host.js")`，会话经 `handle.blocking.chat.open_session(principal, app_id="metrics", agent=..., context_ref=..., session_key=f"metrics.workbench.{profile_id}", timeout=...)` 打开或恢复（AIB design §11.1 `:856-861`：唯一键为 `(principal.id, app_id, session_key)`；`session_key` 完整匹配 `[A-Za-z0-9._:-]+`，以 `metrics.` 开头，不超过 200 个 ASCII 字符，不做规范化、截断或大小写折叠；profile id 为 `[a-z0-9][a-z0-9._-]{0,159}`，键最长 178 个字符，`ai_host` 不做编码），以门面方法必填的 keyword-only `timeout` 设置时限并先取得非阻塞信号量（1.2 的常量），等待超时（`RuntimeCallTimeout`）或信号量已满时显示"暂时不可用，可重试"且页面返回 200，门面抛 `RuntimeNotRunning` 时显示 `not_running`；`not_configured` 只列出缺失的变量名；`not_running` 提示用 `manage.py serve` 启动；scope binding 未解析时只显示 Scope Library 修复入口；principal 为匿名且 settings 不允许匿名决定审批（`HostConfig.allow_anonymous_approval` 为 `False`）时，pane 提示发布审批需要配置 Basic 用户（`METRICS_BASIC_AUTH_USERS`），read tool 照常可用。删除 `ui_web/ai_base_workbench_adapter.py` 及其测试，以及 sidecar 状态在 UI 链路上的全部残留：`ui_web/workbench_service_status.py:35-92`、`ui_web/context_processors.py:44-67`、`ui_web/views/workbench_view.py:31,42,49-54,194-247`、`ui_web/templates/workbench.html:202-203`、`ui_web/data/data_health_data.py:12`、`ui_web/facades/data_health_facade.py:15,22`、`ui_web/templates/data_health.html:8-9,35-62`、`ui_web/facades/bug_trend_ai_facade.py:28-29`、`bug_metrics/app/api/ai_dashboard_api.py:35-36,46`、`bug_metrics/app/api/__init__.py:22,72`、`bug_metrics/app/api/ai_dashboard_composition_contracts.py:71` 的 `ai_sidecar` actor、`ui_web/templates/partials/bug_trend_scope_lifecycle_guide.html:52` 与 `ui_web/locale/zh_Hans/LC_MESSAGES/django.po:1670-1671`，同步改写 `test_workbench_views.py`、`test_data_health_views.py`、`test_workbench_chart_views.py`、`test_workbench_high_density_browser.py` 与 `bug_metrics/tests/test_ai_sidecar_contract_fixtures.py`。验证：视图测试覆盖三态、门面等待超时（`RuntimeCallTimeout`）与信号量已满时 pane 显示可重试状态且页面返回 200、binding 未解析时不渲染聊天、匿名且不允许匿名审批时显示 Basic 用户提示、160 字符且含连字符的 profile id 得到合法的 `session_key`（178 个字符）、iframe URL 与页面不含 token、credential ref 或 actor；非 `ready` 时图表、证据、设置、发布历史与诊断页面正常；Metrics 静态目录中没有 `embed-host.js` 副本。
 - [ ] 7.2 scope、range、图表或 bucket 变化时，局部刷新返回新的 `ai_context_ref`，页面经 `embed-host.js` 发送 `context-changed`，同一会话重新绑定；binding 未解析时不发送之前 scope 的 `ContextRef`；亮暗主题经 `embed-host.js` 同步给 iframe；折叠与恢复 AI pane 只切换显示，不重新加载 iframe。删除 workspace 同步的表单、视图与 JS。验证：浏览器测试覆盖切换 range 后仍是同一会话且 iframe 收到新 `ContextRef`、亮暗主题同步、binding 未解析时 iframe 不收到消息、折叠再恢复后 iframe 未重新加载且会话、待处理审批与进行中的回合都保留；AI pane 在浏览器缓存为空时首次加载与切换 range 期间，iframe 内的 UI 资产都返回 200 且不占名额，没有请求最终以 503 失败（被拒的幂等 GET 按 `Retry-After` 重试后成功）；短请求名额被占满时重新加载 iframe，显示按 `Retry-After` 自动刷新的 503 页面，名额释放后加载嵌入页；同一 principal 重新打开同一 profile 时恢复同一会话。这些浏览器测试关闭 S0b 复签发现 11 的残余（浏览器级 `/ai` 未测，短请求上限 4 小于浏览器每源约 6 个连接）；停止中 L1 返回的 503 与准入的 503 同为 `Retry-After: 2`，UI 按同一规则处理，分派层的断言见 5.10。
-- [ ] 7.3 宿主页面处理 host action `metrics.openChart`、`metrics.openEvidence`：只在 workbench 中切换视图，不改变服务端状态；`ui_web/static/js/workbench-state.js:80,114,242` 的旧 `ai-base.host-action` 消息处理改为经 `embed-host.js` 的 `ai-base.embed/1` 协议接收。验证：浏览器测试模拟 iframe 请求两个 action，页面切换到目标图表或证据，且没有发出任何写请求；`ui_web/tests/workbench_browser_test_support.py:371,408` 与 `test_workbench_ai_host_actions.py` 改用新协议，旧消息格式不再被处理。
+- [x] 7.3 宿主页面处理 host action `metrics.openChart`、`metrics.openEvidence`：只在 workbench 中切换视图，不改变服务端状态；`ui_web/static/js/workbench-state.js:80,114,242` 的旧 `ai-base.host-action` 消息处理改为经 `embed-host.js` 的 `ai-base.embed/1` 协议接收。验证：浏览器测试模拟 iframe 请求两个 action，页面切换到目标图表或证据，且没有发出任何写请求；`ui_web/tests/workbench_browser_test_support.py:371,408` 与 `test_workbench_ai_host_actions.py` 改用新协议，旧消息格式不再被处理。2026-11-16：新逻辑位于 `workbench-ai.js`，真实 `serve` 浏览器用例验证两种 action、GET-only 导航、旧消息拒绝及 iframe 保持；不包含业务数据或发布变更。
 - [ ] 7.4 `/ai-dashboard/workflow/` 页面改为显示运行时状态、工作流结果与发布就绪状态，删除 sidecar 状态卡片与 gcx、dry-run proof 文案（`ui_web/views/ai_dashboard_view.py:245`、`ui_web/templates/ai_dashboard_workflow.html:15-39`）。验证：视图测试覆盖 Jira 与 HSD-ES profile 的就绪与阻塞说明，页面不含 gcx 与 sidecar；7.1–7.4 的页面通过 `AI_CONTRACT.md` §7 的前端门禁与 `frontend-design-requirements.md` 的 Definition of Done（含亮暗模式）。
 - [ ] 7.5 改写 `docs/onboarding/metrics-dashboard-new-user-onboarding.zh.md` 中的 AI Sidecar Health、gcx precondition 与故障排查行，改为 AI pane 三态、发布就绪与审批。验证：该文档不再出现 sidecar 与 gcx，描述的页面元素与 7.1–7.4 的实现一致。
 - [x] 7.6 没有 Jira 配置时，读本地 durable 数据的页面与图表 API 可用（AIB-0 验收的 F-a）：`jira_sync` 的 `scope_metadata_api`（`jira_sync/container.py:15-16`）在每次取用时立即调用 `create_jira_client(settings)`，`ui_web` 构造 `BugTrendFacade`（`ui_web/container.py:108-114`）时因此失败，`/api/charts/data/` 返回 500（缺地址时为 `PROVIDER_ENDPOINT_INVALID`，token 为空时为 `PROVIDER_CREDENTIAL_INVALID`）；改为第一次需要 Jira scope 元数据时才创建 client，需要 Jira 的操作的错误行为不变。验证：在不读取 `.env`、没有任何 Jira 变量的 settings 下，bug trend 页面、workbench 页面与 `/api/charts/data/` 读本地数据都返回 200，且没有创建 Jira client（spec `provider-facts-and-sync` 的"Provider 未配置时渲染本地数据"）；需要 Jira scope 元数据的现有用例不变；`jira_sync` 与 `ui_web` 受影响的测试（显式路径）通过。证据（2026-11-11）：commit `d979e55`。`jira_sync/container.py` 新增 `OnDemandJiraScopeMetadataProvider`，`scope_metadata_api` 改用它，第一次请求 scope 元数据时才创建 Jira client。新增 `ui_web/tests/test_bug_trend_without_provider_settings.py`：三个 Jira 设置为 None 时，bug trend 页面、workbench 页面与 `/api/charts/data/` 都返回 200，图表 API 的 `calculation_run_id` 是本地的运行，`create_jira_client` 调用 0 次。`jira_sync/tests/test_api_scope_metadata.py` 新增 `test_shouldReportMissingJiraSettingsOnlyWhenMetadataIsRequested`：取用 API 时不创建 client，请求元数据时创建 1 次并抛出 `PROVIDER_ENDPOINT_INVALID`。把 `container.py` 换回修复前的版本后，这两个测试都因 `ConnectionError: Provider endpoint is invalid` 失败。`jira_sync/tests` 全部、`ui_web` 受影响的 15 个测试文件与 9.6 的 2 个脚本测试文件共 177 项通过。本机运行 launcher 时也验证了这三个地址（见 9.6）。
@@ -155,6 +155,44 @@ Runtime 页面和页面资源 200，并以 0 退出。上述均不是实际 prov
 - [ ] 10.4 用 AIB-2 wheel 与 `serve` 的推荐组合（`waitress==3.0.2`、threads 14、流与其他 `/ai` 请求分开限额 4 与 4、UI 资产在认证后由适配器直出且不计名额、`WHITENOISE_AUTOREFRESH = False`、flush 收尾）复测 S0b 的 B1 第二次信号、B3、B4、B5、B6、B7、B9 与终测 M5 的名额归还（S0b 与终测使用的是 spike 中的适配器，不是 AIB-2 的 WSGI 适配器），B5 的流用 AIB-2 的聊天流（5.9 的确定性假模型）；B6 另在 production settings 下（`DEBUG=False`，先运行 `collectstatic`）跑一次；浏览器缓存为空时 AI pane 首次加载，UI 资产全部返回 200 且不占名额，没有请求最终以 503 失败；循环被阻塞时资产仍返回 200。门槛与 0.5 相同，B9 另按终测 M2 的判据（hold 期间的短 `/ai` 请求全部 200 且小于 100 ms），作为本 change 的关闭条件；5.10 的定序矩阵在 AIB-2 的适配器上同样复测。复测按 S0b 复签 C 的条件隔离：`HEAVY_RUN_ACTIVE` 在第一个进程启动前写入、最后一个判定 JSON 写出后删除，其间 Metrics 侧不运行其他进程（不跑 pytest 与 python，不做 git 写操作），以开始、结束与每分钟的进程快照证明；开始与结束时记录 `git rev-parse HEAD` 与 `git status --porcelain` 的 hash，有变化即作废；驱动记录整机 CPU 采样。验证：复测报告与 `s0b-spike-report.md` 并列提交，各项全部通过；任一项不通过时不归档本 change，带证据回到 owner。
 
 ## Workflow follow-up
+
+2026-11-16 continuation packet: implementing 4.3/4.4 and 7.1-7.3 against Metrics
+`f63d1084401bb12e6b1e04222708bc06c894f89f` and the unchanged `0.1.1.dev1`
+candidate. Owner paths are `ai_host/`, the Workbench view/state/template/scripts
+and their tests, the bug_metrics public context API, and the corresponding
+current guides. The parent remains the only production writer; an isolated
+`gpt-5.5`/`xhigh` reviewer prepares the authority/consumer coverage.
+The installed embed contract accepts `context-changed(sessionId)` notifications,
+not a ContextRef payload. The server must call `chat.bind_context` before sending
+that notification: keyed `open_session` restores the old binding. Tests must
+disconfirm stale binding, unknown/disabled scope, mismatched profile/provider,
+oversized selections, principal crossover and iframe reload during htmx swaps.
+Existing architecture-review PASS covers the preceding task-run packet only.
+Publication, full legacy cleanup and section 10 remain open.
+
+Packet observations: the focused host/context set passed 56 tests. The real
+`serve` browser scenario passed with a scripted-model reply, exactly one model
+request, stable iframe/session identity across range change and collapse,
+theme propagation, same-profile restoration and UI-only `metrics.openChart` /
+`metrics.openEvidence` actions. An earlier page/asset-only pass missed a
+`ready -> context-changed -> ready` notification loop; the added real-message
+check reproduced it, and the host now notifies only after a changed context,
+never in response to child `ready`. UI view/catalog checks passed 22 tests and
+the asset/style/152-pair contrast gate passed. An early manual-preview cleanup
+assertion failed after the notification storm; its cause was not established
+and it is not counted as normal-stop evidence. Full active-flow stop coverage
+remains under 5.6/10.4. Independent review and final visual QA of this packet
+are recorded separately; no unchecked parent task is closed by this note.
+
+The final consumer candidate is now `0.1.1.dev2` from AIB
+`e155d4cac70dde13fbd6bdbcca08141218b883e6`, SHA256
+`47b4d56c1164092d715792be564b883e56857c7e90baaa1498b0863f2ccbaa55`.
+Its runtime core is byte-identical to the prior candidate; only shared UI
+accessibility assets and version metadata changed. The prior record remains in
+`evidence/runtime-artifact-4acc902.json`. The bounded packet's test and visual
+results are recorded in `evidence/workbench-packet-20261116.json`. 4.4 and 7.3
+have met their implementation checks; 4.3/4.5, 7.1/7.2, publication, full legacy
+cleanup and joint acceptance remain open wherever their wider criteria are unmet.
 
 - 与 AIB-2 同版本发布；生产切换按 `design.md` 的 Migration Plan 执行，回滚时数据库、`METRICS_STATE_DIR` 与 archive root 一起恢复，代码与镜像回到切换前的 git tag。
 - 实施完成并通过评审后归档本 change：同步 9 个 delta 到主 spec（`dashboard-ai-sidecar-integration` 与 `ai-base-connector-boundary-policy` 两个能力退役），再运行 `openspec validate --specs --strict`。

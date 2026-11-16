@@ -6,6 +6,14 @@ from ui_web.workbench_grafana import grafana_full_dashboard_url, grafana_panel_e
 
 
 class TestWorkbenchPageQueryState(SimpleTestCase):
+    def test_selected_ticket_identifiers_keep_order_and_clear_with_selection(self):
+        state = WorkbenchPageQueryState.from_query(QueryDict(
+            'scope_id=42&ticket_id=SAMPLE-2&ticket_id=SAMPLE-1',
+        ))
+        self.assertEqual(('SAMPLE-2', 'SAMPLE-1'), state.selected_ticket_ids)
+        self.assertEqual(('SAMPLE-2', 'SAMPLE-1'), state.to_query_params()['ticket_id'])
+        self.assertEqual((), state.cleared_selection().selected_ticket_ids)
+
     def test_shouldParseCanonicalWorkbenchPageQueryStateFromQueryParams(self):
         # Given
         query = QueryDict(

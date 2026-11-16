@@ -19,23 +19,22 @@ from scripts.service_lifecycle_engine import (
     resolve_lifecycle_service_launch_metadata,
 )
 
-from .ai_base_workbench_adapter import AiBaseWorkbenchAdapter
+from ai_host.pane import runtime_status
 from .workbench_registry import WorkbenchServiceStatus
 
 
-DEFAULT_FULL_STACK_LAUNCHER_COMMAND = 'powershell -ExecutionPolicy Bypass -File scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort'
-DASHBOARD_RESTART_COMMAND = 'python manage.py runserver'
+DASHBOARD_RESTART_COMMAND = 'python manage.py serve --port <port>'
 
 
 @dataclass(slots=True)
 class WorkbenchServiceStatusBuilder:
-    ai_adapter: AiBaseWorkbenchAdapter
     dashboard_home_url: str
 
-    def build(self, sidecar_status: dict) -> list[WorkbenchServiceStatus]:
-        ai_status = sidecar_status.get('status') or 'disabled'
+    def build(self) -> list[WorkbenchServiceStatus]:
+        runtime = runtime_status()
+        ai_status = runtime['status']
         grafana_base_url = str(settings.METRICS_AI_GRAFANA_BASE_URL or '').rstrip('/')
-        ai_frontend_url = self.ai_adapter.frontend_base_url(sidecar_status)
+        ai_url = runtime['root_path']
         checked_at = self._status_checked_at()
         lifecycle_services = self._dashboard_lifecycle_services()
         return [
@@ -83,14 +82,16 @@ class WorkbenchServiceStatusBuilder:
                     status=self._health_status_for_ai_base(ai_status),
                     display_status=self._display_status_for_ai_base(ai_status),
                     checked_at=checked_at,
-                    target_url=ai_frontend_url,
-                    reason=str(sidecar_status.get('reason') or ''),
-                    special_state='' if ai_status in {'ready', 'connected', 'available'} else ai_status,
-                    launch_metadata=ServiceLaunchMetadata(source='ai-sidecar-status'),
+                    target_url=ai_url,
+                    reason='',
+                    special_state='' if ai_status == 'ready' else ai_status,
+                    launch_metadata=ServiceLaunchMetadata(source='embedded-runtime'),
                 ),
-                ai_frontend_url,
-                str(sidecar_status.get('reason') or ''),
-                self.ai_adapter.next_action(ai_status),
+                ai_url,
+                '',
+                gettext('If this shell stops responding, restart %(command)s on the Dashboard port.') % {
+                    'command': DASHBOARD_RESTART_COMMAND,
+                },
             ),
         ]
 
@@ -200,12 +201,10 @@ class WorkbenchServiceStatusBuilder:
         return 'warning'
 
     def _health_status_for_ai_base(self, ai_status: str) -> ServiceHealthStatus:
-        if ai_status in {'ready', 'connected', 'available'}:
+        if ai_status == 'ready':
             return ServiceHealthStatus.READY
-        if ai_status in {'disabled', 'stopped'}:
+        if ai_status == 'not_running':
             return ServiceHealthStatus.STOPPED
-        if ai_status in {'unavailable', 'disconnected'}:
-            return ServiceHealthStatus.UNREACHABLE
         return ServiceHealthStatus.DEGRADED
 
     def _display_status_for_ai_base(self, ai_status: str) -> str:

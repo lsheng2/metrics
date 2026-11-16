@@ -218,7 +218,7 @@ class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupp
         self.assertIn('class="standalone-body is-embedded"', content)
         self.assertIn(f'href="{reverse("ui_web:workbench")}" data-grafana-selection-link', content)
 
-    @override_settings(METRICS_AI_GRAFANA_BASE_URL='', METRICS_AI_SIDECAR_ENABLED=False)
+    @override_settings(METRICS_AI_GRAFANA_BASE_URL='')
     def test_shouldShowScopedNextActionsWhenDependentServicesAreUnavailable(self):
         # When
         response = self.client.get(reverse('ui_web:workbench'))
@@ -229,8 +229,8 @@ class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupp
         self.assertIn('Grafana', content)
         self.assertIn('unavailable', content)
         self.assertIn('Set METRICS_AI_GRAFANA_BASE_URL and start the Grafana service', content)
-        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
-        self.assertIn('scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort', content)
+        self.assertIn('not_running', content)
+        self.assertIn('python manage.py serve --port', content)
 
     def test_shouldKeepLegacyFullPageUrlsReachableFromWorkbenchNavigation(self):
         # When
@@ -275,9 +275,7 @@ class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupp
         self.assertIn('/workbench/?', location_after_message)
 
     @override_settings(
-        METRICS_AI_SIDECAR_ENABLED=False,
-        METRICS_AI_BASE_INSTANCE_TOKEN='secret-token',
-        METRICS_AI_BASE_URL='http://127.0.0.1:48300',
+        METRICS_AI_MODEL_API_KEY='synthetic-secret-token',
     )
     def test_shouldExposeSafeAiPaneContextWithoutSecrets(self):
         # Given
@@ -302,7 +300,7 @@ class TestWorkbenchChartViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupp
         self.assertIn('nvu-ttl-hsdes', content)
         self.assertIn('new_critical_high', content)
         self.assertIn('Diagnostics', content)
-        self.assertIn('AI chat is not enabled for this Dashboard process.', content)
+        self.assertIn('AI runtime is not running.', content)
         self.assertNotIn('secret-token', content)
 
     def test_shouldRefreshWorkbenchEvidenceWhenReferenceChartBarIsClicked(self):

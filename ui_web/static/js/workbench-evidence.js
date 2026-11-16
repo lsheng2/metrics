@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedCount = workspace.querySelector('[data-workbench-ticket-selected-count]');
             const selectAll = workspace.querySelector('[data-workbench-ticket-select-all]');
             const ticketBoxes = Array.from(workspace.querySelectorAll('[data-workbench-ticket-checkbox]'));
+            const selectedTicketIds = new URLSearchParams(window.location.search).getAll('ticket_id')
+                .filter(id => ticketBoxes.some(box => box.checked && box.value === id));
             const detail = workspace.querySelector('[data-workbench-ticket-detail]');
             const detailEmpty = workspace.querySelector('[data-ticket-detail-empty]');
             const detailContent = workspace.querySelector('[data-ticket-detail-content]');
@@ -57,43 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         updated: row.dataset.updated || '',
                     }));
             }
-            function notifyAiSelectedTickets() {
-                const selectedTickets = selectedTicketPayloads();
-                const payload = {
-                    selectedTicketCount: selectedTickets.length,
-                    truncated: selectedTickets.length > 50,
-                    tickets: selectedTickets.slice(0, 50),
-                };
-                window.metricsWorkbenchSelectedTickets = payload;
-                document.querySelectorAll('.workbench-ai-chat-frame').forEach(frame => {
-                    if (!frame.contentWindow || !frame.src) {
-                        return;
-                    }
-                    if (frame.dataset.workbenchAiLoaded !== 'true') {
-                        return;
-                    }
-                    let targetOrigin = window.location.origin;
-                    try {
-                        targetOrigin = new URL(frame.src).origin;
-                    } catch (error) {
-                        targetOrigin = window.location.origin;
-                    }
-                    frame.contentWindow.postMessage({
-                        type: 'metrics-workbench:selected-tickets',
-                        source: 'metrics-workbench',
-                        selectedTicketCount: payload.selectedTicketCount,
-                        truncated: payload.truncated,
-                        selectedTickets: payload.tickets,
-                    }, targetOrigin);
-                });
-            }
-            document.querySelectorAll('.workbench-ai-chat-frame').forEach(frame => {
-                if (frame.dataset.workbenchTicketNotifyInitialized === 'true') {
-                    return;
-                }
-                frame.dataset.workbenchTicketNotifyInitialized = 'true';
-                frame.addEventListener('load', notifyAiSelectedTickets);
-            });
             function updateSelectedCount() {
                 const count = ticketBoxes.filter(box => box.checked).length;
                 if (selectedCount) {
@@ -103,18 +68,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectAll.checked = count > 0 && count === ticketBoxes.length;
                     selectAll.indeterminate = count > 0 && count < ticketBoxes.length;
                 }
-                notifyAiSelectedTickets();
+            }
+            function updateSelectionOrder(box) {
+                const index = selectedTicketIds.indexOf(box.value);
+                if (box.checked && index < 0) selectedTicketIds.push(box.value);
+                if (!box.checked && index >= 0) selectedTicketIds.splice(index, 1);
             }
             if (selectAll) {
                 selectAll.addEventListener('change', function() {
                     ticketBoxes.forEach(box => {
                         box.checked = this.checked;
+                        updateSelectionOrder(box);
                     });
                     updateSelectedCount();
                 });
             }
             ticketBoxes.forEach(box => {
-                box.addEventListener('change', updateSelectedCount);
+                box.addEventListener('change', () => {
+                    updateSelectionOrder(box);
+                    updateSelectedCount();
+                });
+            });
+            workspace.querySelector('[data-workbench-ticket-ask-ai]')?.addEventListener('click', event => {
+                const active = workspace.querySelector('[data-workbench-ticket-row].is-active');
+                const ids = selectedTicketIds.length ? selectedTicketIds.slice() : [active?.dataset.issueKey].filter(Boolean);
+                if (!ids.length) return;
+                // Ticket bodies stay in Metrics; the host rebinds identifiers on the server.
+                document.dispatchEvent(new CustomEvent('workbench:ask-ai', {
+                    detail: { ticketIds: ids, button: event.currentTarget },
+                }));
             });
             workspace.querySelectorAll('[data-workbench-column-toggle]').forEach(toggle => {
                 toggle.addEventListener('change', function() {

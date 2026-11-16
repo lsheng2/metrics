@@ -208,15 +208,17 @@ python manage.py runserver 8000
 
 Visit http://localhost:8000 in your browser.
 
-## Unified Metrics Workbench Demo
+## Unified Metrics Workbench
 
-The unified workbench is the preferred E2E demo entry point for the Dashboard + Grafana + optional AI Base flow. It keeps the user in one Dashboard-owned UI while preserving Grafana as a chart renderer and AI Base as an optional assistant pane.
+The Workbench uses the embedded AIB runtime in the Dashboard process. Install the
+fixed development candidate described in `docs/development/reporting-delivery.md`,
+then start the combined host:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\e2e_dashboard_ai_stack.ps1 -Action restart
+python manage.py serve --host 127.0.0.1 --port 8002
 ```
 
-The launcher starts or detects the Dashboard, Grafana, and AI Base services, suppresses the lower-level Grafana browser entry point, and opens only:
+Open the Dashboard-owned Workbench:
 
 ```text
 http://127.0.0.1:8002/workbench/
@@ -224,7 +226,14 @@ http://127.0.0.1:8002/workbench/
 
 In the workbench, the top chart pane shows the Metrics-owned reference chart and a compact Grafana single-panel preview. Clicking an evidence-backed chart bar, such as `new_critical_high`, refreshes the ticket evidence pane below with the matching Jira or HSD-ES rows. Grafana stock panel links route through `/workbench/grafana-selection/` so a Grafana click can update the workbench selection instead of moving the user to a separate Grafana workflow.
 
-Charts that do not support point-level evidence declare `range_only`, `summary_only`, or `unsupported`; the evidence pane clears stale rows and shows the scoped state. The diagnostics pane lists Dashboard, Grafana, and AI Base status with the relevant URL and next action. If the unified demo blocks, the rollback path is to keep using the legacy full-page Dashboard URLs plus the full Grafana dashboard link exposed from the workbench diagnostics/admin path.
+Charts that do not support point-level evidence declare `range_only`, `summary_only`, or `unsupported`; the evidence pane clears stale rows and shows the scoped state.
+The AI pane is `ready`, `not_configured`, or `not_running`. Configure the three
+`METRICS_AI_MODEL_*` variables to enable chat; missing settings are shown by name
+only. Unresolved scope bindings link to Scope Library. Chat uses a same-origin
+iframe and one persisted session per authenticated principal and provider profile.
+Range/chart changes bind fresh server-owned context without reloading that iframe.
+Grafana remains separately configured. Publication and the remaining launcher
+migration are still tracked by MDB-2; this candidate is not full joint acceptance.
 
 ## Configuration Guide
 
