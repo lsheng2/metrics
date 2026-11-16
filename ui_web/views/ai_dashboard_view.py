@@ -1,388 +1,76 @@
+from datetime import date, timedelta
 import json
 
 from django.http import JsonResponse
-from django.urls import reverse
-from django.utils.decorators import method_decorator
+from django.utils.translation import gettext
 from django.views import View
 from django.views.generic import TemplateView
 
-from bug_metrics.app.api import (
-    DashboardAiArtifactValidationRequest,
-    DashboardAiWorkflowRequest,
-    DashboardCompositionIntent,
-    GcxPublicationCallbackRequest,
-    GcxPublicationPreconditionRequest,
-    ProviderAiDashboardContextQuery,
-)
-
-from ..container import ui_web_container
-from .ai_dashboard_connector_endpoint import connector_endpoint
-from .bug_trend_query import validate_query_contract
+from ai_host.pane import runtime_status
+from bug_metrics.app.api.ai_publication_contracts import ChartWorkflowRequest
+from ui_web.container import ui_web_container
 
 
-AI_DASHBOARD_CATALOG_REQUIRED_PARAMS = frozenset()
-AI_DASHBOARD_CATALOG_OPTIONAL_PARAMS = frozenset({'profile_id', 'provider_id', 'workspace_key'})
-AI_DASHBOARD_CONTEXT_REQUIRED_BASE_PARAMS = frozenset({'profile_id'})
-AI_DASHBOARD_CONTEXT_OPTIONAL_PARAMS = frozenset({'provider_id', 'workspace_key', 'chart_id', 'chart_ids', 'chart_version', 'range_mode', 'begin_ww', 'end_ww', 'begin_date', 'end_date'})
-SENSITIVE_AI_CONTEXT_KEYS = frozenset({
-    'native_query_text',
-    'criteria_snapshot',
-    'exclusion_snapshot',
-    'permission_assumptions',
-    'observed_result_contract',
-    'password',
-    'token',
-    'api_key',
-    'secret',
-    'private_path',
+_FORM_FIELDS = frozenset({
+    'profile_id', 'chart_id', 'requested_series', 'range_mode', 'range_start',
+    'range_end', 'panel_title', 'visualization',
 })
-
-
-class AiDashboardCatalogApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def get(self, request, *args, **kwargs):
-        invalid_response = validate_query_contract(request, AI_DASHBOARD_CATALOG_REQUIRED_PARAMS, AI_DASHBOARD_CATALOG_OPTIONAL_PARAMS)
-        if invalid_response:
-            return invalid_response
-        profile_id = request.GET.get('profile_id', '')
-        catalog = self.bug_trend_facade.get_ai_dashboard_catalog_payload(profile_id)
-        boundary_error = ai_dashboard_boundary_error(
-            catalog,
-            profile_id,
-            request.GET.get('provider_id', ''),
-            request.GET.get('workspace_key', ''),
-        )
-        if boundary_error:
-            return JsonResponse({'error': boundary_error}, status=400)
-        return JsonResponse(catalog)
-
-
-@method_decorator(connector_endpoint, name='dispatch')
-class AiDashboardIntentValidationApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def post(self, request, *args, **kwargs):
-        try:
-            payload = json_body(request)
-            intent = DashboardCompositionIntent(
-                profile_id=payload['profile_id'],
-                dashboard_uid=payload['dashboard_uid'],
-                chart_id=payload['chart_id'],
-                requested_series=list(payload.get('requested_series', [])),
-                range_mode=payload['range_mode'],
-                range_start=payload['range_start'],
-                range_end=payload['range_end'],
-                output_type=payload['output_type'],
-                actor=payload.get('actor', 'local_operator'),
-                panel_title=payload.get('panel_title', ''),
-                visualization=payload.get('visualization', 'timeseries'),
-            )
-            return JsonResponse(self.bug_trend_facade.validate_ai_dashboard_composition_intent(intent))
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            return JsonResponse({'error': str(error)}, status=400)
-
-
-@method_decorator(connector_endpoint, name='dispatch')
-class AiDashboardRenderConfigValidationApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def post(self, request, *args, **kwargs):
-        try:
-            payload = json_body(request)
-            return JsonResponse(
-                self.bug_trend_facade.validate_ai_dashboard_render_config_draft(payload['draft_render_config'])
-            )
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            return JsonResponse({'error': str(error)}, status=400)
-
-
-@method_decorator(connector_endpoint, name='dispatch')
-class AiDashboardArtifactValidationApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def post(self, request, *args, **kwargs):
-        try:
-            payload = json_body(request)
-            validation_request = DashboardAiArtifactValidationRequest(
-                artifact_ref=payload['artifact_ref'],
-                artifact_version=int(payload['artifact_version']),
-                workspace_key=payload['workspace_key'],
-                correlation_id=payload['correlation_id'],
-                artifact=payload['artifact'],
-                actor=payload.get('actor', 'ai_sidecar'),
-            )
-            return JsonResponse(safe_ai_payload(self.bug_trend_facade.validate_ai_dashboard_workspace_artifact(validation_request)))
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            return JsonResponse({'error': str(error)}, status=400)
-
-
-@method_decorator(connector_endpoint, name='dispatch')
-class AiDashboardGcxPreconditionApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def post(self, request, *args, **kwargs):
-        try:
-            payload = json_body(request)
-            precondition_request = GcxPublicationPreconditionRequest(
-                operation=payload['operation'],
-                actor=payload.get('actor', 'local_operator'),
-                draft_render_config=payload['draft_render_config'],
-                approval_policy=payload.get('approval_policy', 'approval_required'),
-            )
-            return JsonResponse(self.bug_trend_facade.validate_ai_gcx_publication_precondition(precondition_request))
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            return JsonResponse({'error': str(error)}, status=400)
-
-
-@method_decorator(connector_endpoint, name='dispatch')
-class AiDashboardGcxPublicationCallbackApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def post(self, request, *args, **kwargs):
-        try:
-            payload = json_body(request)
-            callback_request = GcxPublicationCallbackRequest(
-                operation=payload['operation'],
-                actor=payload.get('actor', 'local_operator'),
-                dashboard_uid=payload['dashboard_uid'],
-                artifact_ref=payload.get('artifact_ref', ''),
-                mutation_status=payload['mutation_status'],
-                correlation_id=payload['correlation_id'],
-                dry_run_proof_id=payload.get('dry_run_proof_id', ''),
-            )
-            return JsonResponse(self.bug_trend_facade.record_ai_gcx_publication_callback(callback_request))
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            return JsonResponse({'error': str(error)}, status=400)
-
-
-class AiDashboardContextApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def get(self, request, *args, **kwargs):
-        invalid_response = validate_query_contract(request, ai_dashboard_context_required_params(request), AI_DASHBOARD_CONTEXT_OPTIONAL_PARAMS)
-        if invalid_response:
-            return invalid_response
-        try:
-            query = ProviderAiDashboardContextQuery(
-                provider_id=request.GET.get('provider_id', ''),
-                profile_id=request.GET.get('profile_id', ''),
-                begin_ww=request.GET.get('begin_ww', ''),
-                end_ww=request.GET.get('end_ww', ''),
-                chart_ids=chart_ids_from_query(request),
-                chart_version=chart_version_from_query(request),
-            )
-            payload = self.bug_trend_facade.get_ai_dashboard_context_payload(query)
-            boundary_error = ai_dashboard_boundary_error(
-                {'profiles': [{'profile_id': payload['query_state']['profile_id'], 'provider_id': payload['query_state']['provider_id']}]},
-                payload['query_state']['profile_id'],
-                request.GET.get('provider_id', ''),
-                request.GET.get('workspace_key', ''),
-            )
-            if boundary_error:
-                return JsonResponse({'error': boundary_error}, status=400)
-            return JsonResponse(safe_ai_payload(payload))
-        except ValueError as error:
-            return JsonResponse({'error': str(error)}, status=400)
 
 
 class AiDashboardWorkflowView(TemplateView):
     template_name = 'ai_dashboard_workflow.html'
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form_values = ai_dashboard_workflow_form_values(self.request.GET)
-        context.update(self._base_context(form_values))
+        facade = ui_web_container.bug_trend_facade
+        catalog = facade.get_ai_dashboard_catalog_payload('')
+        today = date.today()
+        defaults = {
+            'profile_id': '', 'chart_id': 'open_bug_trend', 'requested_series': 'new_critical_high',
+            'range_mode': 'date', 'range_start': (today - timedelta(days=27)).isoformat(),
+            'range_end': today.isoformat(), 'panel_title': '', 'visualization': 'timeseries',
+        }
+        values = {
+            key: str(self.request.GET.get(key, defaults[key]) or '')
+            for key in _FORM_FIELDS
+        }
+        context.update(
+            form_values=values, ai_runtime=runtime_status(),
+            profile_options=catalog.get('profiles', []),
+            chart_options=[
+                {'chart_id': chart_id, 'title': recipe.get('title', chart_id)}
+                for chart_id, recipe in sorted(catalog.get('chart_recipes', {}).items())
+            ],
+            publish_history=facade.get_ai_chart_publications(10),
+        )
         return context
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
-        form_values = ai_dashboard_workflow_form_values(request.POST)
-        context.update(self._base_context(form_values))
-        try:
-            context['workflow_result'] = safe_ai_payload(
-                self.bug_trend_facade.run_ai_dashboard_workflow(ai_dashboard_workflow_request_from_payload(form_values))
-            )
-        except (KeyError, TypeError, ValueError) as error:
-            context['workflow_error'] = str(error)
+        if set(request.POST) - _FORM_FIELDS - {'csrfmiddlewaretoken'}:
+            context['workflow_error'] = gettext('The workflow request was rejected.')
+            return self.render_to_response(context, status=400)
+        values = {key: str(request.POST.get(key, context['form_values'][key]) or '') for key in _FORM_FIELDS}
+        context['form_values'] = values
+        chart = ChartWorkflowRequest(
+            **{key: value for key, value in values.items() if key != 'requested_series'},
+            requested_series=tuple(part.strip() for part in values['requested_series'].split(',') if part.strip()),
+        )
+        result = ui_web_container.bug_trend_facade.evaluate_ai_chart_workflow(chart)
+        context['workflow_result'] = result
+        context['normalized_render_config'] = json.dumps(
+            result.get('normalized_render_config'), ensure_ascii=False, indent=2,
+        ) if result.get('normalized_render_config') is not None else ''
         return self.render_to_response(context)
 
-    def _base_context(self, form_values: dict) -> dict:
-        catalog = self.bug_trend_facade.get_ai_dashboard_catalog_payload('')
-        return {
-            'form_values': form_values,
-            'catalog': safe_ai_payload(catalog),
-            'sidecar_status': safe_ai_payload(self.bug_trend_facade.get_ai_sidecar_status_payload()),
-            'workflow_api_url': self.request.build_absolute_uri(reverse('ui_web:ai_dashboard_workflow_api')),
-            'profile_options': self._profile_options(catalog),
-            'chart_options': self._chart_options(catalog),
-            'publish_history': safe_ai_payload(self.bug_trend_facade.list_ai_grafana_publish_history(10)),
-        }
 
-    def _profile_options(self, catalog: dict) -> list[dict]:
-        return [
-            {
-                'profile_id': profile.get('profile_id', ''),
-                'provider_id': profile.get('provider_id', ''),
-                'status': profile.get('status', ''),
-            }
-            for profile in catalog.get('profiles', [])
-        ]
-
-    def _chart_options(self, catalog: dict) -> list[dict]:
-        return [
-            {
-                'chart_id': chart_id,
-                'title': recipe.get('title', chart_id),
-                'allowed_series': ', '.join(recipe.get('allowed_series', [])),
-                'support_status': recipe.get('support_status', ''),
-            }
-            for chart_id, recipe in sorted(catalog.get('chart_recipes', {}).items())
-        ]
-
-
-@method_decorator(connector_endpoint, name='dispatch')
-class AiDashboardWorkflowApiView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bug_trend_facade = ui_web_container.bug_trend_facade
-
-    def post(self, request, *args, **kwargs):
+class AiPublishHistoryApiView(View):
+    def get(self, request):
         try:
-            payload = json_body(request)
-            return JsonResponse(
-                safe_ai_payload(
-                    self.bug_trend_facade.run_ai_dashboard_workflow(ai_dashboard_workflow_request_from_payload(payload))
-                )
-            )
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-            return JsonResponse({'error': str(error)}, status=400)
-
-
-def json_body(request) -> dict:
-    if not request.body:
-        return {}
-    payload = json.loads(request.body.decode('utf-8'))
-    if not isinstance(payload, dict):
-        raise ValueError('JSON request body must be an object.')
-    return payload
-
-
-def ai_dashboard_context_required_params(request):
-    if request.GET.get('range_mode', 'ww').strip().lower() == 'date':
-        return AI_DASHBOARD_CONTEXT_REQUIRED_BASE_PARAMS | frozenset({'begin_date', 'end_date'})
-    return AI_DASHBOARD_CONTEXT_REQUIRED_BASE_PARAMS | frozenset({'begin_ww', 'end_ww'})
-
-
-def chart_ids_from_query(request) -> list[str]:
-    chart_ids = []
-    raw_values = request.GET.getlist('chart_id') + request.GET.getlist('chart_ids')
-    for raw_value in raw_values:
-        for chart_id in raw_value.split(','):
-            normalized = chart_id.strip()
-            if normalized and normalized not in chart_ids:
-                chart_ids.append(normalized)
-    return chart_ids
-
-
-def chart_version_from_query(request) -> int:
-    raw_value = request.GET.get('chart_version') or '1'
-    try:
-        return int(raw_value)
-    except ValueError:
-        raise ValueError('chart_version must be an integer.')
-
-
-def ai_dashboard_workflow_form_values(payload) -> dict:
-    return {
-        'profile_id': str(payload.get('profile_id', 'nvu-ttl-hsdes') or 'nvu-ttl-hsdes'),
-        'dashboard_uid': str(payload.get('dashboard_uid', 'ip-quality-dashboard') or 'ip-quality-dashboard'),
-        'chart_id': str(payload.get('chart_id', 'open_bug_trend') or 'open_bug_trend'),
-        'requested_series': str(payload.get('requested_series', 'new_critical_high') or 'new_critical_high'),
-        'range_mode': str(payload.get('range_mode', 'ww') or 'ww'),
-        'range_start': str(payload.get('range_start', payload.get('begin_ww', '26WW10')) or '26WW10'),
-        'range_end': str(payload.get('range_end', payload.get('end_ww', '26WW35')) or '26WW35'),
-        'operation': str(payload.get('operation', 'grafana_import') or 'grafana_import'),
-        'actor': str(payload.get('actor', 'local_operator') or 'local_operator'),
-        'panel_title': str(payload.get('panel_title', '') or ''),
-        'visualization': str(payload.get('visualization', 'timeseries') or 'timeseries'),
-    }
-
-
-def ai_dashboard_workflow_request_from_payload(payload: dict) -> DashboardAiWorkflowRequest:
-    return DashboardAiWorkflowRequest(
-        profile_id=str(payload['profile_id']),
-        dashboard_uid=str(payload.get('dashboard_uid', 'ip-quality-dashboard') or 'ip-quality-dashboard'),
-        chart_id=str(payload.get('chart_id', 'open_bug_trend') or 'open_bug_trend'),
-        requested_series=requested_series_from_payload(payload.get('requested_series', ['new_critical_high'])),
-        range_mode=str(payload.get('range_mode', 'ww') or 'ww'),
-        range_start=str(payload.get('range_start', payload.get('begin_ww', '26WW10')) or '26WW10'),
-        range_end=str(payload.get('range_end', payload.get('end_ww', '26WW35')) or '26WW35'),
-        operation=str(payload.get('operation', 'grafana_import') or 'grafana_import'),
-        actor=str(payload.get('actor', 'local_operator') or 'local_operator'),
-        panel_title=str(payload.get('panel_title', '') or ''),
-        visualization=str(payload.get('visualization', 'timeseries') or 'timeseries'),
-    )
-
-
-def ai_dashboard_boundary_error(catalog: dict, profile_id: str, provider_id: str, workspace_key: str) -> str:
-    if not provider_id and not workspace_key:
-        return ''
-    if not profile_id:
-        return 'profile_id is required when provider_id or workspace_key is provided.'
-    profile = next((item for item in catalog.get('profiles', []) if item.get('profile_id') == profile_id), None)
-    if not profile:
-        return 'profile_id is not available in the AI dashboard catalog.'
-    expected_provider_id = str(profile.get('provider_id', ''))
-    if provider_id and provider_id != expected_provider_id:
-        return 'provider_id does not match the profile boundary.'
-    expected_workspace_key = f'metrics.{expected_provider_id}.{profile_id}' if expected_provider_id else ''
-    if workspace_key and workspace_key != expected_workspace_key:
-        return 'workspace_key does not match the profile boundary.'
-    return ''
-
-
-def requested_series_from_payload(value) -> list[str]:
-    if isinstance(value, list):
-        return [str(item).strip() for item in value if str(item).strip()]
-    return [item.strip() for item in str(value).split(',') if item.strip()]
-
-
-def safe_ai_payload(value):
-    if isinstance(value, dict):
-        return {
-            key: safe_ai_payload(item)
-            for key, item in value.items()
-            if not is_sensitive_key(key)
-        }
-    if isinstance(value, list):
-        return [safe_ai_payload(item) for item in value]
-    return value
-
-
-def is_sensitive_key(key: str) -> bool:
-    normalized = key.lower()
-    compact = ''.join(character for character in normalized if character.isalnum())
-    return (
-        normalized in SENSITIVE_AI_CONTEXT_KEYS
-        or any(fragment in normalized for fragment in ('password', 'token', 'api_key', 'secret', 'private_path'))
-        or any(fragment in compact for fragment in ('apikey', 'privatepath', 'rawquery', 'providernativequery', 'nativequerytext'))
-    )
+            if set(request.GET) - {'limit'}:
+                raise ValueError()
+            limit = int(request.GET.get('limit', '25'))
+            result = ui_web_container.bug_trend_facade.get_ai_chart_publications(limit)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'invalid_history_query'}, status=400)
+        return JsonResponse(result)

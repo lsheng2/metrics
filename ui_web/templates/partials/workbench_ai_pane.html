@@ -50,5 +50,20 @@
                 <a href="{% url 'ui_web:ai_dashboard_workflow' %}">{% trans "Diagnostics" %}</a>
             </div>
         {% endif %}
+        <details class="disclosure workbench-publication-history" data-workbench-publication-history>
+            <summary class="disclosure__summary">
+                <span>{% trans "Publication history" %}</span>
+            </summary>
+            <div class="disclosure__body">
+                <div class="workbench-publication-history__toolbar">
+                    <a class="button is-small" href="{{ request.get_full_path }}"
+                       hx-get="{{ request.get_full_path }}" hx-target="[data-workbench-publication-history-region]"
+                       hx-select="[data-workbench-publication-history-region]" hx-swap="outerHTML ignoreTitle:true">{% trans "Refresh" %}</a>
+                </div>
+                <div data-workbench-publication-history-region>
+                    {% include "partials/ai_publish_history.html" %}
+                </div>
+            </div>
+        </details>
     </div>
 </aside>

@@ -1649,6 +1649,135 @@ msgstr "未知"
 msgid "If this shell stops responding, restart %(command)s on the Dashboard port."
 msgstr "如果此界面停止响应，请在仪表板端口上重启 %(command)s。"
 
+msgid "AI Dashboard Workflow"
+msgstr "AI 仪表板工作流"
+
+msgid "Run Metrics Validation"
+msgstr "运行 Metrics 校验"
+
+msgid "Workflow result"
+msgstr "工作流结果"
+
+msgid "Publish readiness"
+msgstr "发布就绪状态"
+
+msgid "Ready for approval"
+msgstr "可请求审批"
+
+msgid "Not ready"
+msgstr "未就绪"
+
+msgid "Validated render config"
+msgstr "已校验的渲染配置"
+
+msgid "Recent AI Grafana Publishes"
+msgstr "最近的 AI Grafana 发布"
+
+msgid "Publication history"
+msgstr "发布历史"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Requested series"
+msgstr "请求的序列"
+
+msgid "Chart"
+msgstr "图表"
+
+msgid "Date"
+msgstr "日期"
+
+msgid "Profile"
+msgstr "档案"
+
+msgid "Next action"
+msgstr "下一步操作"
+
+msgid "Range mode"
+msgstr "范围模式"
+
+msgid "Range start"
+msgstr "范围开始"
+
+msgid "Range end"
+msgstr "范围结束"
+
+msgid "Panel title"
+msgstr "面板标题"
+
+msgid "Visualization"
+msgstr "可视化"
+
+msgid "Time series"
+msgstr "时间序列"
+
+msgid "Bar chart"
+msgstr "柱状图"
+
+msgid "Statistic"
+msgstr "统计值"
+
+msgid "Select profile"
+msgstr "选择档案"
+
+msgid "The workflow request was rejected."
+msgstr "工作流请求已被拒绝。"
+
+msgid "AI runtime status"
+msgstr "AI 运行时状态"
+
+msgid "Runtime root"
+msgstr "运行时根路径"
+
+msgid "Missing settings"
+msgstr "缺失设置"
+
+msgid "AI pane can open runtime sessions."
+msgstr "AI 面板可以打开运行时会话。"
+
+msgid "Set the missing model settings and restart the Dashboard process."
+msgstr "请设置缺失的模型配置并重启 Dashboard 进程。"
+
+msgid "Start the Dashboard with manage.py serve to enable the embedded runtime."
+msgstr "请使用 manage.py serve 启动 Dashboard 以启用嵌入式运行时。"
+
+msgid "Scope bindings, provider sync caches, calculation runs and AI runtime readiness."
+msgstr "范围绑定、提供方同步缓存、计算运行和 AI 运行时就绪状态。"
+
+msgid "Scopes"
+msgstr "范围"
+
+msgid "Stale scopes"
+msgstr "过期范围"
+
+msgid "Failed syncs"
+msgstr "失败同步"
+
+msgid "Failed calculations"
+msgstr "失败计算"
+
+msgid "None"
+msgstr "无"
+
+msgid "Approval"
+msgstr "审批"
+
+msgid "Dashboard"
+msgstr "仪表板"
+
+msgid "Latest"
+msgstr "最新"
+
+msgid "No AI Grafana publishes recorded yet."
+msgstr "尚无 AI Grafana 发布记录。"
+
+msgid "Published"
+msgstr "发布时间"
+
+msgid "Range"
+msgstr "范围"
+
 msgid "METRICS_AI_GRAFANA_BASE_URL is empty."
 msgstr "METRICS_AI_GRAFANA_BASE_URL 为空。"
 

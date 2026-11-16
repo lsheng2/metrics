@@ -1,5 +1,7 @@
 # AI Base Chat 到 Grafana 可见图表端到端案例
 
+> 历史/已替代说明：本文保留 2026-11-16 前的 sidecar/connector/gcx/demo 发布案例证据。文中的 `workflow.run`、`publish-demo`、`dryrun_...`、`approval_chat_demo_...`、`gcx precondition`、旧 connector endpoint 和旧 host-action 协议不是当前操作说明。当前 MDB-2 单进程 runtime approval、`metrics.publish_chart`、`ToolApproval.approval_id`、`AiChartPublication` history 和 Workbench 只读历史验证，请使用 [Dashboard AI 发布联调 Runbook](../validation/dashboard-ai-e2e-runbook.zh.md)。
+
 ## 概览
 
 本案例描述 `scrum_dashboard` 与 `Report_creater_agent` 两个应用如何协作，让用户在 AI Base Chat 中用一句自然语言请求生成 dashboard chart，并在明确 approve/publish 后把 Metrics 验证过的图表发布到本地 Grafana 页面。

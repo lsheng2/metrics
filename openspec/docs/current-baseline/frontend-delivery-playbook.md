@@ -179,6 +179,7 @@ Pinned by tests (search `ui_web/tests` before changing any):
 - Back navigation reloads the full page (`historyCacheSize: 0`); verify with `history.back()`, not a re-navigation. Partial endpoints must return a fragment for `HX-Request` and a full page otherwise.
 - Never put `hx-trigger="every 2s"` on an ancestor of a status region: it re-fires for every descendant swap. Polling uses data attributes that carry the status URL and a script-owned timer.
 - Out-of-band targets are stable ids; do not rename them (the PR page targets are listed in recipes §6). Toasts render into `#notification-container` (`aria-live="polite"`) as one `.message.is-danger` built with DOM APIs (recipes §2.1).
+- A local region refresh selected from a full page uses `hx-swap="outerHTML ignoreTitle:true"`. Otherwise htmx can replace the host page title even when `hx-select` limits the visible swap. Workbench history refreshes only its history region and preserves the AI iframe, session and page title.
 
 ### 6.2 Django templates
 
@@ -188,6 +189,7 @@ Pinned by tests (search `ui_web/tests` before changing any):
 - Translations live in `ui_web/locale/zh_Hans/LC_MESSAGES/django.po` (CRLF, one line per string, no comments or flags); reuse an existing msgid before adding one. GNU gettext is not installed (no `xgettext` or `msgfmt`), so never run `makemessages`: append the entry, compile with `polib.pofile(po).save_as_mofile(mo)` (polib is a development tool, not in `requirements.txt`), commit both files and restart the server, which caches catalogs. `test_i18n_catalog.py` lists every missing translation as `path: (context, msgid)`; then probe the zh-hans pages in a real browser with the `django_language=zh-hans` cookie. Tests use the `zh-hans` language code. Orphan po entries stay: `{% trans variable %}` translates runtime values that extraction cannot see.
 - Partials must render standalone in gate fixtures: no required context beyond what the fixture hook supplies, and tolerant of missing keys.
 - Keep text inside templates short and sentence case. Keep Python helpers free of presentation strings; formatting belongs to `dashboard_format` filters (recipes §11).
+- A native `<summary>` is already interactive. Put Refresh links or other actions in the disclosure body, not inside the summary; nested interactive controls fail accessibility checks. Truncated approval identifiers retain their full value in `title` and an explicit row data attribute.
 
 ### 6.3 Cascade and specificity
 

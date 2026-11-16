@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "packet": "MDB-2 approved chart publication",
+  "date": "2026-11-17",
+  "metricsBaseCommit": "1704fc5e6d57a49e9dddb4640b637dddccc57fc7",
+  "metricsSourceFingerprintKind": "working-tree-bytes",
+  "metricsSourceFiles": {
+    "ai_host/lifecycle.py": "0fd41044725fcf9ca07d1dc81b559b44ede8b3763906a32c8799e8714387fe8c",
+    "ai_host/metrics_tool_schemas.py": "8ff1776498acae461c9bf5eb144d6a16ded595b4c28d350a78e0accec84a145c",
+    "ai_host/metrics_tools.py": "a75b76eeeb169f305e70cf29ba702da6f3b078ba30224a8ae3fe1b9ef3c400fb",
+    "ai_host/package.py": "0a50a15043357edada84a25529c1a95f58437ffc3c122982109245c3ee601f36",
+    "ai_host/runtime_artifact.json": "60378fd0dba6ce6d4338d411a99c99b7283b820247ea73391d0ee08b81090c83",
+    "ai_host/tests/publication_model_fixture.py": "d0dd65e0a7a7a36e3e6b25279db34fe0a87ff83eb7c28e41efaf60edd01c658c",
+    "ai_host/tests/publication_process_fixture.py": "b823025b86a2711702669ee26a874340137ec82461716b93027569576cee9602",
+    "ai_host/tests/publication_serve_entry.py": "c485900b9ad58e72ca66bd6cbc479f1843851e2385e9bbada088352852364893",
+    "ai_host/tests/test_admission.py": "cb6ba67f02f86461a8cd048377b1087375d68cab99d84dfd117310312926a461",
+    "ai_host/tests/test_metrics_tools.py": "abbfda3410cba5ed6d32ecdc2e76c2dacda1d9e9acdad5ab8e14f016f3d94390",
+    "ai_host/tests/test_publication_boundaries.py": "9aa84c9b05d1cbeae427e11abefbe9183eee857b191251066c440b3c43f8385a",
+    "ai_host/tests/test_publication_browser_join.py": "72926657864b83dec7b6fb566daee59d08b8d98caa66bae9a55df2d4a68955ee",
+    "ai_host/tests/test_publication_http_stop.py": "ac54fe94424a2edd273d039a00d2c52774b4f6e88e213dceca51c08e5bb43a31",
+    "ai_host/tests/test_publication_recovery.py": "aa97958e0e72f324af8ab6609d14b84daabdfee469c815946e3e29a154aa22be",
+    "ai_host/tests/test_publication_runtime_join.py": "6bc14f00aad020d2508150eafc157406606b68507b52565f10b80ee8ea59df64",
+    "bug_metrics/app/api/__init__.py": "6b4dfd3513a64fe6069c10ac5b339fb93469842007e06435f25360552f63dc72",
+    "bug_metrics/app/api/ai_chart_inputs.py": "16a9fc194a85fb2519598b39d1197730ed25dc297dedbbc64c5f7e172548b6f7",
+    "bug_metrics/app/api/ai_chart_publication.py": "cb5c443ac9ea52aa793e7c228fa82800241fc5c6bcd63935a6053b397fc00634",
+    "bug_metrics/app/api/ai_chart_workflow.py": "ce944de03666fc98fbe47b63e01bb6e980ec62c91b91e9962f76713b8f7761ff",
+    "bug_metrics/app/api/ai_context.py": "879f646773c197f842c0eb8414018f8bd8b4421844e4aae3d001c6c005917750",
+    "bug_metrics/app/api/ai_dashboard_api.py": "2e0bfb98a8c35ce4ca1e4ec57c8a9d0c8ce1d1825d8cae0c9798ee2edab39caf",
+    "bug_metrics/app/api/ai_dashboard_approval.py": null,
+    "bug_metrics/app/api/ai_dashboard_artifact_validation.py": null,
+    "bug_metrics/app/api/ai_dashboard_composition.py": null,
+    "bug_metrics/app/api/ai_dashboard_composition_contracts.py": "ad333ff7257a00453deb9467dddb4ec3f1e5f328956c8ae9de675fbd036dd4a2",
+    "bug_metrics/app/api/ai_dashboard_composition_rules.py": "d00876eba794b20d0bbb9740c02ebe6721cc4e895548c0a20c5434d3f22e5edf",
+    "bug_metrics/app/api/ai_dashboard_grafana_publish.py": "c25be0eef8141a9bb2fcb1af8b10c44503f36f910563584c7ef55421231888b8",
+    "bug_metrics/app/api/ai_dashboard_workflow.py": null,
+    "bug_metrics/app/api/ai_publication_contracts.py": "6fdd193ddfa6e554d43848e0ed29f1ba911678aa5eedbe486d716e1b5e4d6ccb",
+    "bug_metrics/app/api/ai_sidecar.py": null,
+    "bug_metrics/app/api/provider_aggregate_jira.py": "62d905082d4f48482328a82709220937f82aeada316cba8948861ca6dee6a746",
+    "bug_metrics/app/api/provider_aggregates.py": "eb55fb5a32ca374c664682fcb8f867c7247a76fda35f7f9f93dbdfd07d46e12e",
+    "bug_metrics/migrations/0017_ai_chart_publication.py": "d7867f06f26ef6dfc9f8b01d3e00dea74b8d0a4fee93808703b3fb14e21c6653",
+    "bug_metrics/models.py": "10fbea198284fe1cae3734b602043b1d3bd2aaf4b10a989bb2b0c38e0ef5d66b",
+    "bug_metrics/publication_models.py": "c1ba8a40295a64565d0c251fc2efc009eb5c95072e1d9fa134eca5896649bdc6",
+    "bug_metrics/tests/ai_publication_fixtures.py": "6b767d6d2849b64cfb80926dfb25f4ea31ca783b49b78174f067a561e42b2eff",
+    "bug_metrics/tests/test_ai_chart_preview.py": "a701e5ba79b0781a7c403c5cba10646639a2f95ab0d07ddbb71937942d5a1b14",
+    "bug_metrics/tests/test_ai_chart_publications.py": "eaeb01310be48d33d2d1cd5d319ae28742fb9cae0467e8c0b36ea1e54522e4df",
+    "bug_metrics/tests/test_ai_chart_publish.py": "ff35c47619ecf6bdc911e547fd3d5d10303f0a6faba137b7fe39fc83d8805740",
+    "bug_metrics/tests/test_ai_publication_scope.py": "d1de11c2eb18da39fb57fb0dcc1445061f7e952152accb6208a6f269db445689",
+    "bug_metrics/tests/test_ai_sidecar_contract_fixtures.py": null,
+    "bug_metrics/tests/test_api_ai_dashboard_context.py": "c3a2c3ae7d83139a3aa05a80c1ba70f273e5d2b6499ef624046e3fc4e3bc7ae9",
+    "bug_metrics/tests/test_api_ai_sidecar.py": null,
+    "bug_metrics/tests/test_grafana_render_config.py": "e998f36e0b41c7c7dbe63151486aa369373556f6fba5a1dfc520b03d0b2bb086",
+    "scripts/grafana_render_columns.py": "2a5a0b47451a1f0b15ca51fe47dd97436b53ca5da20a7b92fb65c83394a44ae5",
+    "scripts/grafana_render_config.py": "21c813c7d5d2fa2efc7ab3126d8620b08ee8b96271c83ea547f9b9c585d68e2b",
+    "ui_web/data/data_health_data.py": "e8778028b6722a392bff7bacf2d26fd440be76bbf17cd01e426ab0a6eeaee565",
+    "ui_web/facades/bug_trend_ai_facade.py": "9acd1f431f78d49c2cee559d7c5c1e38f762a9c6c6d9a6199b139811b2ba76fb",
+    "ui_web/facades/data_health_facade.py": "3d55ea6b0f378765b8fc4883f17280c3e9224e8d29d038b7136a7a7eb526c7cb",
+    "ui_web/locale/zh_Hans/LC_MESSAGES/django.mo": "f46448e8cabcbe41fa6bbbeaa7ffdec4d69006c625e18a72cff4463667dc2acc",
+    "ui_web/locale/zh_Hans/LC_MESSAGES/django.po": "fa0a38e6b508d3ff6d2ef58816de2f4cb3ef211d4b5062744a1f739598640dce",
+    "ui_web/static/css/pages/workbench-panes.css": "21fe95c53fb02a2413b3ea05e765d41991697ef0160eb293b782a8b07571b82f",
+    "ui_web/templates/ai_dashboard_workflow.html": "c3469e28c4bfc56385ee8872adf6d769914d7caa2288157810f36009d78516ff",
+    "ui_web/templates/data_health.html": "9cfe7e7e417521147220240203384b6313ab8a0f4140cf93c452bb87f8ea5265",
+    "ui_web/templates/partials/ai_publish_history.html": "2d6d197d33382238a9119d7a0898d4091c9d2d7d9dcfd240afae9a5b30b9acd0",
+    "ui_web/templates/partials/bug_trend_scope_lifecycle_guide.html": "a0405b06f9b1b5b7ed979d46794fa066937e8bd33817cc7f5e79e0af351a5722",
+    "ui_web/templates/partials/workbench_ai_pane.html": "ea9664b1e66ba0e40bdd2b44706a9128b074c1f1de44ee094fccb181c9cca0cb",
+    "ui_web/tests/ai_dashboard_publish_test_support.py": null,
+    "ui_web/tests/test_ai_dashboard_api_surface.py": null,
+    "ui_web/tests/test_ai_dashboard_publish_authority.py": null,
+    "ui_web/tests/test_data_health_views.py": "98d02e86bd1b4c120667ed325ac6a7a54d03a0cd07e8d78dc0c460145ece8153",
+    "ui_web/tests/test_embedded_chart_workflow.py": "4abb39ea321f878ce3437b54fa613bf0e9b0b6c0e71d15c5f97fe30b695e4d57",
+    "ui_web/tests/test_workbench_views.py": "867523b923e6e7ebd1027c16a0126065f97c84ae6e1d2f0e3320f00564c5f5a0",
+    "ui_web/urls.py": "4d83bff7ba84b1ff249fe201f839be74159e82e18a982235530394e9c71598b2",
+    "ui_web/views/ai_dashboard_connector_endpoint.py": null,
+    "ui_web/views/ai_dashboard_identity_view.py": null,
+    "ui_web/views/ai_dashboard_publish_view.py": null,
+    "ui_web/views/ai_dashboard_view.py": "3bc454aedb52f7326e617d38ceae6f03c02a9dba276123e3c7c4e49784c19127",
+    "ui_web/views/workbench_view.py": "0f58932d90b70eb12bde002f6ee9aa582d5edd2c263df2f562c1139aaae75b41",
+    "ui_web/workbench_registry.py": "7c52d4600cfae3832a9c613be2f49536eacda057ad31db5e5b5bcf0e8ecfd45c"
+  },
+  "runtimeCandidate": {
+    "version": "0.1.1.dev4",
+    "wheelFile": "ai_base_runtime-0.1.1.dev4-py3-none-any.whl",
+    "wheelSha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+    "sourceCommit": "d589ac8e6572a903edc3846e7d78195e85858868",
+    "sourceTree": "7d7a163bd170baead06537ecc7c667eee155842c"
+  },
+  "tests": {
+    "dev3BroadRegression": {
+      "path": "C:\\Users\\lsheng2\\orca\\workspaces\\scrum_dashboard\\moonfish\\.tmp\\mdb2-publication-review\\focused-final-r2.xml",
+      "sha256": "a4fa205b8782910f1287185ee52e538188c28270583661630efc62fb106bc1e7",
+      "tests": 450,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "dev4AffectedConsumers": {
+      "path": "C:\\Users\\lsheng2\\orca\\workspaces\\scrum_dashboard\\moonfish\\.tmp\\mdb2-publication-review\\dev4-consumers.xml",
+      "sha256": "df7192791f5e158569ba7984ba08e30a91464ecd292c84b0026f82d4110c9668",
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "dev4RuntimeProfiles": {
+      "path": "C:\\Users\\lsheng2\\orca\\workspaces\\scrum_dashboard\\moonfish\\.tmp\\mdb2-publication-review\\runtime-profiles-final.xml",
+      "sha256": "27870225845a8f92c54e6d348ac0b269a23347a0f6c37cf6671bfdddac3da6b5",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "dev4JoinedBrowser": {
+      "path": "C:\\Users\\lsheng2\\orca\\workspaces\\scrum_dashboard\\moonfish\\.tmp\\mdb2-publication-review\\browser-final-r10.xml",
+      "sha256": "7e2af4e5cc7c2854bdb83656163d34629ddfd3c71f34e09fae75933113b50e16",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "aibInstalledStreams": {
+      "path": "D:\\AIGC\\temp\\aib2-artifacts\\w3\\dashboard-stream-cleanup-20261117-01\\installed-stream-tests.xml",
+      "sha256": "e6e6d2dfe9431503cfd56a64d67f079c6c68a984821e7496c0a6103313947a58",
+      "tests": 52,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "aibInstalledApprovals": {
+      "path": "D:\\AIGC\\temp\\aib2-artifacts\\w3\\dashboard-stream-cleanup-20261117-01\\installed-approval-tests-r2.xml",
+      "sha256": "7453c7dade074358516f7f72d9a0d9a9f76ab463999d920978c3e6563fbbf13f",
+      "tests": 180,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "browserQa": {
+    "path": "C:\\Users\\lsheng2\\orca\\workspaces\\scrum_dashboard\\moonfish\\.tmp\\mdb2-publication-review\\qa-final\\report.json",
+    "sha256": "7bed9902855d970a0487db5332e0f46a17a886d01edc1eb04441ebe2318c8bff",
+    "checks": 12,
+    "failed": 0,
+    "note": "12 route/theme/viewport checks passed. Dev4 leaves shared UI assets byte-identical to dev3."
+  },
+  "joinedRun": {
+    "publicationId": "8309b2e4-4793-4537-a632-982a9cc7a359",
+    "approvalId": "60264517-0b9c-46d1-adff-ac68ae0a64b8",
+    "toolCallId": "9c141502-e47a-51ae-b32b-f3355694a32e",
+    "previewDigest": "609bb656bf4ff3e5440a628922142311509693c2043dc955d273d461e7b28e95",
+    "actor": "synthetic-publication-reviewer",
+    "profile": "chiplet-2a-jira",
+    "series": [
+      "new_critical_high"
+    ],
+    "range": [
+      "26WW32",
+      "26WW35"
+    ],
+    "grafanaVersion": "13.2.0",
+    "auditCategories": [
+      "approval_requested",
+      "approval_decided",
+      "approval_consumed",
+      "tool_result"
+    ],
+    "modelRequests": 4,
+    "dashboardStop": {
+      "pid": 97440,
+      "returncode": 0,
+      "forced": false
+    },
+    "grafanaStop": {
+      "pid": 44364,
+      "returncode": 0,
+      "forced": false
+    },
+    "evidenceDirectory": "D:\\AIGC\\temp\\mdb2-publication-join-20261117-r10\\test_real_workbench_approval_i0"
+  },
+  "reuseBoundary": "The 426-case run predates the one-file AIB transport fix, candidate replacement and Grafana import-message wording. Affected consumers were rerun on dev4; new profile cases and the final real import/browser fixture have separate results. Subsequent documentation edits do not change runtime behavior.",
+  "fullDashboardQualification": false,
+  "fullAibQualification": false,
+  "remaining": [
+    "global settings/dependency/launcher retirement",
+    "remaining lifecycle invariants",
+    "10.2",
+    "10.3",
+    "10.4"
+  ]
+}

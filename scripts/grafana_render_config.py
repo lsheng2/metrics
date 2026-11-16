@@ -9,6 +9,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from grafana_artifact_contract import Finding, GrafanaAllowlist, load_allowlist, validate_artifact
+from grafana_render_columns import columns_for_target
 from grafana_render_config_contracts import REQUIRED_CHART_TARGET_FIELDS, REQUIRED_PANEL_FIELDS, REQUIRED_READINESS_TARGET_FIELDS, REQUIRED_ROOT_FIELDS
 
 
@@ -67,16 +68,29 @@ def generate_dashboard(render_config: dict[str, Any], allowlist: GrafanaAllowlis
         messages = '; '.join(finding.message for finding in findings)
         raise ValueError(messages)
     panels = []
+    used_panel_ids: set[int] = set()
     panels.extend(generate_top_panels(render_config))
+    used_panel_ids.update(panel['id'] for panel in panels)
     for section in render_config.get('sections', []):
+        child_ids = {
+            int(panel['panel_id'])
+            for panel in section.get('panels', [])
+            if isinstance(panel, dict) and str(panel.get('panel_id', '')).isdigit()
+        }
+        row_id = _next_available_panel_id(used_panel_ids | child_ids)
         panels.append({
-            'id': int(section.get('panel_id', len(panels) + 1)),
+            'id': int(section.get('panel_id', row_id)),
             'title': section['title'],
             'type': 'row',
             'gridPos': dict(section['layout']),
         })
+        used_panel_ids.add(panels[-1]['id'])
         for panel in section.get('panels', []):
-            panels.append(generate_panel(panel, allowlist))
+            generated_panel = generate_panel(panel, allowlist)
+            if generated_panel['id'] in used_panel_ids:
+                generated_panel['id'] = _next_available_panel_id(used_panel_ids)
+            panels.append(generated_panel)
+            used_panel_ids.add(generated_panel['id'])
     return {
         'uid': render_config['dashboard_uid'],
         'title': render_config['title'],
@@ -265,25 +279,11 @@ def required_fields_for_shape(shape: str) -> list[str]:
     return ['provider_id', 'profile_id', 'calculation_run_id', 'fact_snapshot_id', 'bucket_id', 'bucket_label', 'bucket_start', 'bucket_end', 'bucket_granularity', 'mapping_version']
 
 
-def columns_for_target(target: dict[str, Any], contract: dict[str, Any]) -> list[dict[str, str]]:
-    if target.get('columns'):
-        return list(target['columns'])
-    if contract['shape'] == 'provider_series_state':
-        return [
-            {'selector': 'provider_id', 'text': 'Provider', 'type': 'string'},
-            {'selector': 'profile_id', 'text': 'Profile', 'type': 'string'},
-            {'selector': 'chart_id', 'text': 'Chart', 'type': 'string'},
-            {'selector': 'status', 'text': 'Status', 'type': 'string'},
-            {'selector': 'reason', 'text': 'Reason', 'type': 'string'},
-            {'selector': 'fact_snapshot_id', 'text': 'Snapshot', 'type': 'string'},
-        ]
-    fields = list(contract['requiredFields']) + list(contract.get('valueFields', []))
-    if contract.get('categoryField') and contract['categoryField'] not in fields:
-        fields.append(contract['categoryField'])
-    return [
-        {'selector': field, 'text': field, 'type': 'number' if field in contract.get('valueFields', []) else 'string'}
-        for field in fields
-    ]
+def _next_available_panel_id(used_ids: set[int]) -> int:
+    candidate = 1
+    while candidate in used_ids:
+        candidate += 1
+    return candidate
 
 
 def validate_required_mapping_fields(path: Path, value_path: str, value: dict[str, Any], required_fields: frozenset[str]) -> list[Finding]:

@@ -18,6 +18,21 @@
 - **WHEN** handler 收到的 `ctx.approval.preview` 内容与绑定的摘要不一致
 - **THEN** handler SHALL 以 `ToolError("preview_digest_mismatch")` 拒绝导入，Grafana SHALL NOT 被调用
 
+### Requirement: Approved preview carries stable publication provenance
+App-owned preview content SHALL include the normalized render config,
+profile/provider, chart/version, series, range and deterministic data fingerprint.
+This fingerprint SHALL participate in the preview digest with dashboard and target.
+
+#### Scenario: Data changes while published URLs stay identical
+- **WHEN** local source/run/snapshot provenance or canonical chart data changes while dashboard/API URLs stay identical
+- **THEN** the data fingerprint and preview digest SHALL change
+- **AND** transient cache ages and request timestamps SHALL NOT contribute to the fingerprint
+
+#### Scenario: Handler records runtime-issued approval identity
+- **WHEN** the approved handler writes publication history
+- **THEN** it SHALL obtain approval identity from `ctx.approval.approval_id`
+- **AND** it SHALL NOT use model arguments, audit delivery, guessed ids or private-store lookup for that identity
+
 ### Requirement: Approved publish creates a visible Grafana dashboard
 已批准且摘要一致的 `metrics.publish_chart` 调用 SHALL 把已批准 preview 中的 dashboard JSON 导入 Grafana，并返回 dashboard uid 和可访问的 Grafana URL。只有导入成功时，Metrics SHALL 报告发布成功并写入发布历史。数据未就绪或语义不受支持时，preview SHALL 失败，运行时 SHALL NOT 创建审批。
 
@@ -71,7 +86,7 @@ Dashboard SHALL NOT publish an AI-generated Grafana dashboard from independently
 - **WHEN** 已批准的 `metrics.publish_chart` 调用开始执行
 - **THEN** 运行时 SHALL 只执行 `tool_call_id` 和参数摘要都与审批一致的调用
 - **AND** pending、被拒绝、已过期或不匹配的审批 SHALL 在调用 handler 之前被拒绝
-- **AND** handler SHALL 在导入 Grafana 之前重新生成并校验 render config
+- **AND** 运行时 SHALL 在调用 handler 之前重新 preview 并核对摘要；handler SHALL 只反序列化已批准的 preview、核对摘要并导入其中的 dashboard JSON，不重新渲染另一份发布内容
 
 #### Scenario: Local demo approval prefix is supplied
 - **WHEN** 调用方在 tool 参数或聊天文本中提供带本地 demo 前缀的审批 id，或声称已经批准

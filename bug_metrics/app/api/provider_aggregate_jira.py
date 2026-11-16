@@ -5,7 +5,7 @@ from django.db.models import QuerySet
 from bug_metrics.models import BugTrendBucket, BugTrendBucketIssue, BugTrendCalculationRun, JiraScopeConfig
 from jira_history.models import JiraIssue
 
-from .provider_aggregate_contracts import FIRST_JIRA_PROFILE_ID
+from .scope_provider_binding import ScopeProviderBindingResolver
 
 
 class JiraAggregateRowsMixin:
@@ -96,13 +96,17 @@ class JiraAggregateRowsMixin:
         return rows
 
     def _jira_scope_for_profile(self, profile_id):
-        query = JiraScopeConfig.objects.filter(enabled=True)
-        scope = query.filter(name=profile_id).first()
-        if scope:
-            return scope
-        if profile_id == FIRST_JIRA_PROFILE_ID:
-            return query.filter(jql='project = "131600" AND component = "team_int_qemu"').first()
-        return query.filter(name__iexact=profile_id).first()
+        candidates = self._jira_scope_candidates(profile_id)
+        return candidates[0] if len(candidates) == 1 else None
+
+    def _jira_scope_candidates(self, profile_id):
+        resolver = ScopeProviderBindingResolver(self._registry())
+        candidates = []
+        for scope in JiraScopeConfig.objects.filter(enabled=True).select_related('provider_binding'):
+            binding = resolver.resolve(scope)
+            if binding.is_resolved and binding.profile_id == profile_id and binding.provider_id == 'jira':
+                candidates.append(scope)
+        return candidates
 
     def jira_scope_for_profile(self, profile_id):
         return self._jira_scope_for_profile(profile_id)

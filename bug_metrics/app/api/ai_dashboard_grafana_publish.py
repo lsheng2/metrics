@@ -8,14 +8,12 @@ import urllib.request
 
 from django.conf import settings
 
-from .ai_dashboard_composition_contracts import DashboardAiPublishRequest
-
 
 def import_grafana_dashboard_payload(grafana_base_url: str, dashboard: dict, username: str, password: str) -> dict:
     payload = json.dumps({
         'dashboard': dashboard,
         'overwrite': True,
-        'message': 'Approved AI Dashboard local demo publish',
+        'message': 'Approved Metrics chart publication',
     }).encode('utf-8')
     request = urllib.request.Request(f'{grafana_base_url}/api/dashboards/db', data=payload, method='POST')
     request.add_header('Content-Type', 'application/json')
@@ -39,21 +37,7 @@ def configured_grafana_base_url() -> str:
     return f'http://127.0.0.1:{grafana_port}'
 
 
-def grafana_dashboard_url(grafana_base_url: str, request: DashboardAiPublishRequest) -> str:
-    query_values = {
-        'orgId': '1',
-        'var-profile_id': request.profile_id,
-        'var-range_mode': request.range_mode,
-        'var-begin_ww': request.range_start if request.range_mode == 'ww' else '',
-        'var-end_ww': request.range_end if request.range_mode == 'ww' else '',
-        **grafana_time_range(request),
-        'timezone': 'browser',
-    }
-    query = urllib.parse.urlencode({key: value for key, value in query_values.items() if value})
-    return f'{grafana_base_url}/d/{request.dashboard_uid}/ai-draft-dashboard?{query}'
-
-
-def grafana_time_range(request: DashboardAiPublishRequest) -> dict:
+def grafana_time_range(request) -> dict:
     if request.range_mode == 'ww':
         begin, end = ww_range_to_dates(request.range_start, request.range_end)
         return {'from': f'{begin.isoformat()}T00:00:00', 'to': f'{end.isoformat()}T23:59:59'}

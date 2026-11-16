@@ -1,4 +1,9 @@
 class BugTrendAiFacadeMixin:
+    def evaluate_ai_chart_workflow(self, request):
+        return self._bug_trend_api.evaluate_ai_chart_workflow(request)
+
+    def get_ai_chart_publications(self, limit=25):
+        return self._bug_trend_api.list_ai_chart_publications(limit)
     def get_provider_chart_payload(self, provider_id: str, profile_id: str, begin_ww: str, end_ww: str,
                                    chart_id: str, chart_version: int = 1, fact_snapshot_id: str = '',
                                    range_mode: str = 'ww', begin_date: str = '', end_date: str = '') -> dict:
@@ -24,42 +29,3 @@ class BugTrendAiFacadeMixin:
 
     def get_ai_dashboard_catalog_payload(self, profile_id: str = '') -> dict:
         return self._bug_trend_api.list_ai_dashboard_composition_catalog(profile_id)
-
-    def get_ai_sidecar_status_payload(self) -> dict:
-        return self._bug_trend_api.get_ai_sidecar_status()
-
-    def validate_ai_dashboard_composition_intent(self, request) -> dict:
-        return self._bug_trend_api.validate_ai_dashboard_composition_intent(request)
-
-    def run_ai_dashboard_workflow(self, request) -> dict:
-        return self._bug_trend_api.run_ai_dashboard_workflow(request)
-
-    def validate_ai_dashboard_render_config_draft(self, draft_render_config: dict) -> dict:
-        return self._bug_trend_api.validate_ai_dashboard_render_config_draft(draft_render_config)
-
-    def validate_ai_dashboard_workspace_artifact(self, request) -> dict:
-        return self._bug_trend_api.validate_ai_dashboard_workspace_artifact(request)
-
-    def validate_ai_gcx_publication_precondition(self, request) -> dict:
-        return self._bug_trend_api.validate_ai_gcx_publication_precondition(request)
-
-    def record_ai_gcx_publication_callback(self, request) -> dict:
-        return self._bug_trend_api.record_ai_gcx_publication_callback(request)
-
-    def publish_ai_grafana_dashboard_demo(self, request, correlation_id: str) -> dict:
-        return self._bug_trend_api.publish_ai_grafana_dashboard_demo(request, correlation_id)
-
-    def request_ai_grafana_publish_approval(self, request) -> dict:
-        return self._bug_trend_api.request_ai_grafana_publish_approval(request)
-
-    def decide_ai_grafana_publish_approval(self, approval_id: str, decision: str, actor: str) -> dict:
-        return self._bug_trend_api.decide_ai_grafana_publish_approval(approval_id, decision, actor)
-
-    def get_ai_grafana_publish_approval(self, approval_id: str) -> dict:
-        return self._bug_trend_api.get_ai_grafana_publish_approval(approval_id)
-
-    def list_ai_grafana_publish_history(self, limit: int = 25) -> dict:
-        return self._bug_trend_api.list_ai_grafana_publish_history(limit)
-
-    def get_ai_dashboard_context_payload(self, query) -> dict:
-        return self._bug_trend_api.get_ai_dashboard_context(query)

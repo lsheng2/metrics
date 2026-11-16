@@ -83,7 +83,7 @@ def default_workbench_panes() -> Sequence[WorkbenchPane]:
             title='Publish And Audit',
             capability='publish_audit',
             source_type='json_api',
-            target_route='ui_web:ai_dashboard_publish_history_api',
+            target_route='ui_web:ai_publish_history_api',
             default_placement='utility',
             allowed_placements=('utility', 'right'),
         ),

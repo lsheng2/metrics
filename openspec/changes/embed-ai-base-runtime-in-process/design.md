@@ -536,6 +536,18 @@
   - preview 不能继续时（数据未就绪、`needs_metric_recipe`）的处理依赖上游冻结 preview 的拒绝语义（Open Questions 9）：
     冻结契约中 preview 只能返回内容或抛 `ToolError`。`ai-dashboard-publish-authority` 中"语义不受支持"与"Jira 数据
     未就绪"两个场景暂不改写，按 Open Questions 9 的结论落实。
+  - Publication consumer refreeze (2026-11-16): the App-owned preview envelope also
+    contains `publication`, with the validated normalized render config,
+    profile/provider/chart/version/series/range and a deterministic
+    `data_fingerprint`. Stable data values and source/run/snapshot identities
+    participate in this fingerprint; elapsed cache ages and request timestamps do
+    not. This closes the case where data changes but rendered API URLs do not.
+    `PreviewDeclined` is available in the selected SDK, so readiness failures return
+    typed business results without creating an approval.
+  - Approval identity comes unconditionally from the additive runtime-issued
+    `ToolApproval.approval_id` accessor. The AIB addition preserves the frozen
+    constructor and four existing fields. No audit polling, private-store lookup,
+    guessed approval id or older-wheel fallback is permitted.
   - uid 由 Metrics 按工作流信封与 profile 渲染配置确定，不取自模型参数；`grafana_base_url` 取自设置。
   - handler 只反序列化 `ctx.approval.preview`，复核 `canonical_digest(...) == ctx.approval.preview_digest`（否则
     `ToolError("preview_digest_mismatch")`，AIB design §11.3 `:1054`，`fc4db2f`），只导入已批准的字节；操作者取

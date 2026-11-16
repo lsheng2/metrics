@@ -254,6 +254,22 @@
     background: var(--color-surface);
 }
 
+.workbench-publication-history {
+    flex: 0 0 auto;
+    margin: 0 var(--space-3) var(--space-3);
+}
+
+.workbench-publication-history__toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--space-2);
+}
+
+.workbench-publication-history .responsive-admin-table-box {
+    max-height: 18rem;
+    overflow: auto;
+}
+
 .workbench-ai-unavailable {
     display: grid;
     align-content: start;

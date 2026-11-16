@@ -45,7 +45,7 @@ class AiDashboardCompositionRules:
                 'native_query_editing_allowed': False,
                 'direct_metrics_code_edits_allowed': False,
                 'arbitrary_sql_allowed': False,
-                'publication_requires_metrics_precondition': True,
+                'publication_requires_runtime_approval': True,
             },
         }
 

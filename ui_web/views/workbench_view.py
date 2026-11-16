@@ -39,6 +39,7 @@ class WorkbenchView(GracefulTemplateView):
             'runtime': workbench_pane(self.request, pane_state, ticket_ids=state.selected_ticket_ids),
             'scope_binding': self._scope_binding_context(state),
         }
+        context['publish_history'] = self.bug_trend_facade.get_ai_chart_publications(10)
 
     def _pane_registry(self):
         return [

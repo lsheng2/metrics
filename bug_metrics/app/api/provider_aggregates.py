@@ -118,9 +118,18 @@ class ProviderChartAggregateService(
         return self._state_result(query, 'configuration_required', 'HSD-ES quality facts require confirmed field bindings before aggregate generation.', self._hsdes_source_population(query))
 
     def _jira_aggregates(self, query, begin, end):
-        scope = self._jira_scope_for_profile(query.profile_id)
-        if scope is None:
-            return self._state_result(query, 'unavailable', 'No enabled saved Jira-backed scope is mapped to the requested provider profile.', self._jira_source_population_without_scope(query))
+        candidates = self._jira_scope_candidates(query.profile_id)
+        if len(candidates) != 1:
+            binding_status = 'ambiguous' if candidates else 'unbound'
+            reason = (
+                'Scope binding is ambiguous. Keep one enabled Jira scope for this profile in Scope Library.'
+                if candidates else 'Scope binding is unavailable. Repair the profile mapping in Scope Library.'
+            )
+            return self._state_result(
+                query, 'unavailable', reason, self._jira_source_population_without_scope(query),
+                {'binding_status': binding_status},
+            )
+        scope = candidates[0]
         run = self._latest_authoritative_run(scope, begin, end)
         if run is None:
             return self._jira_missing_run_result(query, scope, begin, end)

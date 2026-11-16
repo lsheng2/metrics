@@ -9,6 +9,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from bug_metrics.models import (
+    AiChartPublication,
     BugTrendBucket,
     BugTrendBucketIssue,
     BugTrendCalculationRun,
@@ -17,6 +18,7 @@ from bug_metrics.models import (
     BugTrendScopeProviderBinding,
     JiraScopeConfig,
 )
+from bug_metrics.tests.test_ai_chart_publications import publication_values
 from ui_web.workbench_registry import default_workbench_panes
 from ui_web.tests.workbench_browser_test_support import WorkbenchBrowserTestSupport
 
@@ -64,8 +66,34 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         self.assertIn('class="help-tip"', content)
         self.assertIn('The query scope that drives the chart range', content)
         self.assertIn('data-ai-runtime-status="not_running"', content)
+        self.assertIn('data-workbench-publication-history', content)
+        self.assertIn('Publication history', content)
         self.assertNotIn('compact panel ready', content)
         self.assertNotIn('&copy; 2017', content)
+
+    def test_shouldRenderReadOnlyPublicationHistoryInWorkbenchWithoutReplacingAiIframe(self):
+        # Given
+        publication = AiChartPublication.objects.create(**publication_values('workbench-history'))
+        scope = self._bound_scope('chiplet-2a-jira', 'jira')
+
+        # When
+        response = self.client.get(reverse('ui_web:workbench'), {'scope_id': scope.id})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('data-workbench-publication-history', content)
+        self.assertIn('data-workbench-publication-history-region', content)
+        self.assertIn('Publication history', content)
+        self.assertIn(publication.approval_id, content)
+        self.assertIn(f'data-approval-id="{publication.approval_id}"', content)
+        self.assertIn(f'<code title="{publication.approval_id}">', content)
+        self.assertIn('hx-select="[data-workbench-publication-history-region]"', content)
+        self.assertIn('hx-swap="outerHTML ignoreTitle:true"', content)
+        self.assertIn('workbench-publication-history__toolbar', content)
+        summary_markup = content.split('<summary class="disclosure__summary">', 1)[1].split('</summary>', 1)[0]
+        self.assertNotIn('href=', summary_markup)
+        self.assertNotIn('hx-target=".workbench-shell"', content.split('data-workbench-publication-history', 1)[1])
 
     def test_shouldRenderServiceStatusBarOnNonWorkbenchPages(self):
         # When
@@ -81,19 +109,18 @@ class TestWorkbenchViews(WorkbenchViewTestSupport, WorkbenchBrowserTestSupport, 
         self.assertIn('status-tone-success', content)
         self.assertNotIn('workbench-status-item is-success', content)
 
-    def test_shouldRenderGlobalStatusBarWithoutAiProbeOnNonWorkbenchPages(self):
+    def test_shouldRenderGlobalStatusBarWithoutLegacySidecarLanguageOnNonWorkbenchPages(self):
         # When
-        with patch('ui_web.context_processors.ui_web_container.bug_trend_facade.get_ai_sidecar_status_payload') as status_payload:
-            status_payload.side_effect = AssertionError('Non-Workbench pages should not run AI sidecar probes.')
-            with tempfile.TemporaryDirectory() as state_dir:
-                with override_settings(METRICS_STATE_DIR=state_dir):
-                    response = self.client.get(reverse('ui_web:homepage'))
+        with tempfile.TemporaryDirectory() as state_dir:
+            with override_settings(METRICS_STATE_DIR=state_dir):
+                response = self.client.get(reverse('ui_web:homepage'))
 
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
         self.assertIn('data-workbench-status-bar', content)
-        status_payload.assert_not_called()
+        self.assertIn('AI Base:', content)
+        self.assertNotIn('sidecar', content.lower())
 
     def test_shouldRenderLifecycleStateInWorkbenchServiceStatusBar(self):
         # Given

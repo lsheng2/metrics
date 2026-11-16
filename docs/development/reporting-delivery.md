@@ -11,15 +11,15 @@ The approved delivery order and interfaces are in
 
 The migrated `ai_host`, summary, report-assist and project-run boundaries use
 the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
-The current candidate is `ai-base-runtime==0.1.1.dev2`, built from AIB
-`e155d4cac70dde13fbd6bdbcca08141218b883e6`. Its wheel SHA256 is
-`47b4d56c1164092d715792be564b883e56857c7e90baaa1498b0863f2ccbaa55`.
+The current candidate is `ai-base-runtime==0.1.1.dev4`, built from AIB
+`d589ac8e6572a903edc3846e7d78195e85858868`. Its wheel SHA256 is
+`b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94`.
 This is a development candidate, not full AIB or Dashboard qualification.
 
 Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-ui-a11y-20261116-01\venv\Scripts\python.exe'
+$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-stream-cleanup-20261117-01\venv\Scripts\python.exe'
 & $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
@@ -28,6 +28,14 @@ the actual import path without importing the runtime package. Missing manifests,
 editable installs and package shadowing are rejected. Do not use a retained old
 environment or an editable source install for migrated consumers. No existing
 service or user database is silently switched.
+
+The publication bridge consumes the runtime-issued read-only
+`ToolApproval.approval_id`. It does not derive approval identity from model
+arguments, audit events or the runtime's private persistence. The prior dev2
+record is retained in the MDB-2 change's `evidence/runtime-artifact-e155d4c.json`.
+The dev3 record remains in `evidence/runtime-artifact-0e8b29f.json`. Dev4 corrects
+HTTP-close accounting: an already-ended client stream does not make a later
+normal stop fail, while terminal-send failures during HTTP close remain errors.
 
 ### Workbench Consumer
 
@@ -54,6 +62,40 @@ temporary archive must remain outside any source checkout. The test records
 browser requests, screenshots and owned process shutdown. Run the host test lane
 separately so its file-backed SQLite fixture governs runtime callback connections.
 Publication qualification is a separate, still-open MDB-2 gate.
+
+### Approved Chart Publication
+
+The Workbench agent uses `metrics.catalog` and `metrics.chart_workflow` to read
+the selected profile's approved recipes and validate chart intent. Both are
+read tools. `metrics.publish_chart` is an external tool requiring a runtime
+approval. Its preview binds the generated dashboard, target, normalized render
+configuration, selected range/series and a stable data fingerprint. Data
+readiness is checked before requesting approval; unsupported semantics stay
+`needs_metric_recipe` rather than being mapped to a different metric.
+
+The human decides the approval in the embedded AI pane. The runtime checks the
+preview again before execution. Dashboard then imports the approved bytes,
+without rerendering, and stores the runtime approval id, tool-call id, approver,
+digest and target in `AiChartPublication`. A repeated completed tool call reads
+the same stored result; it does not issue another import. A failed import has
+status `failed` and no success URL. A lost database acknowledgement can retry
+the same approved bytes and deterministic Grafana UID with overwrite enabled.
+
+The read-only `/api/ai-publish-history/` endpoint and Workbench publication pane
+read these records. New successful publications supersede the previous success
+for the same Grafana base URL and UID; failed attempts do not replace it.
+Historic audit records are not reconstructed into publication history.
+
+Focused checks are `ai_host/tests/test_metrics_tools.py`,
+`ai_host/tests/test_publication_boundaries.py`,
+`ai_host/tests/test_publication_runtime_join.py`,
+`ai_host/tests/test_publication_recovery.py` and the `bug_metrics/tests/test_ai_chart_*`
+tests. `ai_host/tests/test_publication_browser_join.py` uses production settings
+with synthetic Basic credentials, an isolated database, a scripted model and its
+own local Grafana instance. It verifies the actual imported chart data, not just
+the import acknowledgement. Run it on the selected candidate interpreter with
+a fresh external `--basetemp` directory. No live provider/model or existing
+Grafana instance is part of that test.
 
 The SDK020/HTTP sections below retain historical qualification context until
 the remaining MDB-2 test/launcher migration completes. They do not qualify the

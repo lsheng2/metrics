@@ -1,12 +1,16 @@
 from datetime import date, datetime, timezone
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
 from playwright.sync_api import sync_playwright
 
+from bug_metrics.container import bug_metrics_container
 from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
 from jira_sync.models import JiraSyncCursor
 from provider_sync.app.api import ProviderFreshnessStatus, ProviderSyncCacheService
+from ui_web.facades.data_health_facade import DataHealthFacade
 from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.dashboard_asset_support import inline_dashboard_assets
 
@@ -114,16 +118,63 @@ class TestDataHealthViews(TestCase):
         self.assertIn('Mapping', content)
         self.assertIn('The field normalization version that translates provider-specific facts', content)
 
-    def test_shouldRenderAiSidecarDisabledStatusWithoutCallingAiBase(self):
+    def test_facade_shouldUseRuntimeStatusInsteadOfLegacySidecarProbe(self):
+        class FakeJiraSyncApi:
+            def list_sync_health(self):
+                return []
+
+        class FakeBugTrendApi:
+            sidecar_called = False
+
+            def list_calculation_health(self):
+                return [SimpleNamespace(freshness_status='fresh', status='completed')]
+
+            def list_provider_sync_health(self):
+                return [{'status': 'ready'}]
+
+            def get_ai_sidecar_status(self):
+                self.sidecar_called = True
+                return {'status': 'disabled'}
+
+        bug_trend_api = FakeBugTrendApi()
+        expected = {
+            'status': 'not_configured',
+            'missing_settings': ['OPENAI_API_KEY'],
+            'root_path': '/ai/',
+        }
+
+        with patch('ui_web.facades.data_health_facade.runtime_status', return_value=expected, create=True):
+            data = DataHealthFacade(FakeJiraSyncApi(), bug_trend_api).get_data_health()
+
+        self.assertEqual(expected, data.ai_runtime_status)
+        self.assertFalse(bug_trend_api.sidecar_called)
+
+    def test_shouldRenderAiRuntimeStatusWithoutCallingLegacySidecarProbe(self):
         # When
-        response = self.client.get(reverse('ui_web:data_health'))
+        status = {
+            'status': 'not_running',
+            'missing_settings': [],
+            'root_path': '/ai/',
+        }
+        with (
+            patch('ui_web.facades.data_health_facade.runtime_status', return_value=status, create=True),
+            patch.object(
+                bug_metrics_container.bug_trend_api,
+                'get_ai_sidecar_status',
+                side_effect=AssertionError('Data Health must not call the retired sidecar probe.'),
+                create=True,
+            ),
+        ):
+            response = self.client.get(reverse('ui_web:data_health'))
 
         # Then
         content = response.content.decode()
         self.assertEqual(200, response.status_code)
-        self.assertIn('AI Sidecar Health', content)
-        self.assertIn('disabled', content)
-        self.assertIn('dashboard_query_agent', content)
+        self.assertIn('AI runtime status', content)
+        self.assertIn('not running', content)
+        self.assertIn('/ai/', content)
+        self.assertNotIn('AI Sidecar Health', content)
+        self.assertNotIn('sidecar', content.lower())
         self.assertNotIn('token', content.lower())
 
     def test_shouldRenderScopeBindingHealthSummaryAndRepairLinks(self):

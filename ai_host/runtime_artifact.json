@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "classification": "dashboard-candidate",
   "distribution": "ai-base-runtime",
-  "version": "0.1.1.dev2",
-  "wheelFile": "ai_base_runtime-0.1.1.dev2-py3-none-any.whl",
-  "wheelSha256": "47b4d56c1164092d715792be564b883e56857c7e90baaa1498b0863f2ccbaa55",
-  "sourceCommit": "e155d4cac70dde13fbd6bdbcca08141218b883e6",
+  "version": "0.1.1.dev4",
+  "wheelFile": "ai_base_runtime-0.1.1.dev4-py3-none-any.whl",
+  "wheelSha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+  "sourceCommit": "d589ac8e6572a903edc3846e7d78195e85858868",
   "fullAibQualification": false,
   "consumedSurfaces": [
     "blocking_wsgi",
@@ -16,19 +16,20 @@
     "host_actions",
     "task_runs",
     "hashed_ui_assets",
-    "task_runs.lookup"
+    "task_runs.lookup",
+    "ToolApproval.approval_id"
   ],
   "genericCapabilities": [],
   "packageFiles": {
     "ai_base_runtime/__init__.py": "829fc3ffc4a25552d75b351c42e23bb5fa6473fe20c9497d7bbd8fccf4f16204",
-    "ai_base_runtime/_internal/app_records.py": "a6ef22e52859aeedc2a238d0f4178de0cf59af8c940772819bcbc68d66d8e7e5",
+    "ai_base_runtime/_internal/app_records.py": "59b361d6006c08223fa7bfbf922fc50ace228ff665df1e511f9c93183e818493",
     "ai_base_runtime/_internal/app_registry.py": "83af484fc8d62a92b361d566002aca0f9cf35cc7517a41f310df2897cb90a9e8",
     "ai_base_runtime/_internal/approvals/__init__.py": "e1d0b0a87924d88942713f459fc57a08a2d3098e2504a0c44d5f1da9af040e3a",
     "ai_base_runtime/_internal/approvals/facade.py": "3892839656073c7da3d08886a1215862b18073fea7c2b078b2537b911d5988d8",
     "ai_base_runtime/_internal/approvals/outcomes.py": "ae63e9843e2dcfdf6d2c9793ce85432f403c16b316460df6c15938f7eee5332e",
     "ai_base_runtime/_internal/approvals/records.py": "39184824d27af409f822359eeb1da40768c7efd0ffb0f94694f5f12b4be18c00",
     "ai_base_runtime/_internal/approvals/recovery.py": "534f40c60b539047e20b9ba26560f23f21fb8c43143623e929cb6a6e8c54682d",
-    "ai_base_runtime/_internal/approvals/service.py": "175c808b1ecc2d1307d949c0bcc9fcdcf60f5d0dd5aec86382f7c5a4a7f6d04c",
+    "ai_base_runtime/_internal/approvals/service.py": "e0b20a5b0f76fe7244c18a4dee8b0ed9fdc7812f18f9bace6a575e74039e7b50",
     "ai_base_runtime/_internal/approvals/store_ops.py": "7680a169ce7e8c1448b9cadbaf125489e7f03dc11272c8e507a83cfd5f233e9e",
     "ai_base_runtime/_internal/audit_categories.py": "ce37004a5e94fcba44a2969a7ba459ab3eb1959bf88d5d01e4a0c219098c23e6",
     "ai_base_runtime/_internal/backends/__init__.py": "2290fc5be5a35e69bd6d070c1686ac896c39b57ac643beb6afd4c7d715042d41",
@@ -74,7 +75,7 @@
     "ai_base_runtime/_internal/http/requests.py": "79622e864aab0cb5f3507a332e0bfe5ea2b8fac293145bc09c8a47a51357c56e",
     "ai_base_runtime/_internal/http/responses.py": "c27f3fc57b2aab9b3f00c020b1269bb3de08ae62836c01d4cc41dd8ecfd4c4ca",
     "ai_base_runtime/_internal/http/security.py": "29865009288bf0fc111a355313f1e1f390c46014d5334f50c3d60c57afa9f319",
-    "ai_base_runtime/_internal/http/state.py": "ed8c99ae46b9be13975fcd2645cab7d792989b917a486a1836b0d4981f8a8ddf",
+    "ai_base_runtime/_internal/http/state.py": "d06f510bee7d3bdc5abf5e599a78f5acc7d55c7e936fd8fd3cfcad7c80d3b0b3",
     "ai_base_runtime/_internal/http/streams.py": "e561175066ec2e22c0cd844c56953b7d04fbd8b4e40ee4f075507e5db5955473",
     "ai_base_runtime/_internal/http/types.py": "a77f0469f99b69f4435004d37360c557927e5d89aeb04a053c9c625e05bbe2f8",
     "ai_base_runtime/_internal/http/ui_entries.py": "642c0d92c52c22715740cd26316e2d8d0c425b898558049a11c8463d0619c539",
@@ -152,5 +153,5 @@
     "ai_base_runtime/testkit/models.py": "2d7eb9c52d3bc600acd849f5d17161291ce6b45c21b70e032d3e3604f260ac2a",
     "ai_base_runtime/testkit/pytest_plugin.py": "fa81423cf6e6c0101634be032cd6e158a8844dc03922a3bb9549252c4b028e03"
   },
-  "sourceTree": "d3a1b4af55c164873bd523eaa841a5c5b4c32ff4"
+  "sourceTree": "7d7a163bd170baead06537ecc7c667eee155842c"
 }

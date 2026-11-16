@@ -4,45 +4,36 @@
 
 这份手册面向第一次使用 Metrics Dashboard 的用户。目标是让用户从零开始理解并完成下面的路径：
 
-1. 启动 Dashboard、Grafana 和 AI Base。
+1. 获取已配置的 Dashboard 和 Grafana 地址；AI runtime 由 Dashboard 进程托管。
 2. 在 Provider Setup 中确认可用 provider profile，并在 Scope Library 中理解已有 scope。
 3. 创建或导入一个 scope。
 4. 完成 scope validation 和 deployment。
 5. 确认 provider binding、sync/cache、calculation 和 evidence readiness。
 6. 打开 Workbench 查看图表和 ticket evidence。
-7. 使用 AI Workflow 或 AI Base Chat 生成 Grafana chart。
+7. 使用 AI Workflow 检查就绪状态，并在 Workbench 的 AI pane 中申请审批发布。
 
 示例会同时使用：
 
 - Jira 示例：`chiplet-2a-jira`
 - HSD-ES 示例：`nvu-ttl-hsdes`
 
-## 0. 启动完整本地栈
+## 0. 获取应用入口
 
-在仓库根目录运行：
+从部署维护者获取当前 Dashboard 地址。Workbench、AI Workflow 和嵌入的 AI pane
+使用同一个 Dashboard origin；不需要另开 AI 前端或后端地址。以下页面路径相对于
+这个地址，Grafana 地址以发布记录或部署配置为准。
 
-```powershell
-cd "C:\Users\lsheng2\OneDrive - Intel Corporation\Documents\my_project\scrum_dashboard"
-powershell -ExecutionPolicy Bypass -File scripts\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort
-```
-
-成功后，终端会打印类似入口：
-
-```text
-Metrics Workbench    : http://127.0.0.1:8002/workbench/?scope_id=7&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend
-Dashboard AI Workflow: http://127.0.0.1:8002/ai-dashboard/workflow/
-AI Base frontend     : http://127.0.0.1:48310/
-AI Base backend      : http://127.0.0.1:48300/
-```
-
-如果只是想快速验证已有本地数据，可以使用已有 stack。若想刷新 Jira live 数据，不要加 `-SkipJiraSync`。
+开发者需要验证安装与发布链路时，使用
+[Dashboard AI 发布联调 Runbook](../validation/dashboard-ai-e2e-runbook.zh.md)
+中的隔离命令。该流程使用合成数据，不会替用户同步真实 provider 或迁移用户数据库；
+全局启动脚本和容器迁移的未完成项也在该 runbook 中说明。
 
 ## 1. 先确认 Provider Setup 和 Scope Library 的边界
 
 Provider profile 的管理入口是：
 
 ```text
-http://127.0.0.1:8002/provider-setup/
+/provider-setup/
 ```
 
 这里负责 profile 的创建、编辑、连接测试、导入导出、归档和删除。示例 profile 包括：
@@ -55,7 +46,7 @@ Scope 的管理入口是：
 打开：
 
 ```text
-http://127.0.0.1:8002/bug-trend/scopes/
+/bug-trend/scopes/
 ```
 
 这里只列出 saved scopes。新用户先看三件事：
@@ -129,7 +120,7 @@ Dashboard 把 scope 分成几层 readiness：
 | Provider binding | Scope Library inline binding | profile/provider 可解析 | AI 和 Workbench 有 provider context |
 | Sync/cache | stack sync 或 provider sync | source facts 可用 | Data Health 不再报 sync/cache blocker |
 | Calculation | sync 后 recalculate | bucket/run/evidence 可用 | chart 和 evidence list 可用 |
-| AI/Grafana | AI Workflow / Chat | profile、chart recipe、series、range、precondition | 生成 dry-run proof 或可发布 chart |
+| AI/Grafana | AI Workflow / Chat | profile、chart recipe、series、range、发布就绪状态 | 生成可审批的发布预览或解释 blocker |
 
 如果 `Enable Scope` 失败，不要直接改 AI 或 Grafana。先回到 Scope Config 补字段，再看 Data Health。
 
@@ -208,7 +199,7 @@ DELETE <scope name>
 打开：
 
 ```text
-http://127.0.0.1:8002/data-health/
+/data-health/
 ```
 
 重点看：
@@ -219,7 +210,7 @@ http://127.0.0.1:8002/data-health/
 | Provider Sync Cache Health | provider profile 的 facts/cache 是否可用 |
 | Jira Sync Health | Jira scope 的 sync cursor 是否成功 |
 | Calculation Health | completed run 是否匹配当前 config hash |
-| AI Sidecar Health | AI Base 是否启用和可用 |
+| AI runtime status | 嵌入式 AI runtime 是否启动、模型设置是否齐全 |
 
 如果这里显示 blocker，AI 可以解释 blocker，但不应该把 chart 当成 ready 发布。
 
@@ -228,7 +219,7 @@ http://127.0.0.1:8002/data-health/
 打开启动输出里的 Workbench URL，例如：
 
 ```text
-http://127.0.0.1:8002/workbench/?scope_id=7&begin=2026-06-01&end=2026-08-09&chart_id=default_bug_trend
+/workbench/
 ```
 
 新用户确认：
@@ -240,90 +231,22 @@ http://127.0.0.1:8002/workbench/?scope_id=7&begin=2026-06-01&end=2026-08-09&char
 
 如果某个 chart 没有 ticket evidence，页面应该提示 summary-only 或 unsupported，而不是显示错的 ticket list。
 
-## 8. 用 Dashboard AI Workflow 生成 chart dry-run
+## 8. 用 AI Workflow 检查就绪状态
 
-打开：
+在当前 Dashboard 中打开 `/ai-dashboard/workflow/`，选择 scope 对应的 profile、
+chart、series 和 range，再执行 `Run Metrics Validation`。支持且输入有效的草稿
+可以达到 `draft_validated`；数据或目标未就绪时，先处理页面给出的 blocker。
+不支持的 metric 保留 `needs_metric_recipe`，不能换成另一个 metric 冒充成功。
 
-```text
-http://127.0.0.1:8002/ai-dashboard/workflow/
-```
+## 9. 在 Workbench 申请审批发布
 
-HSD-ES 稳定示例：
+从已绑定 scope 的 Workbench AI pane 发起图表请求。在 runtime 的审批界面核对
+预览并批准后，查看 `Publication history` 中的记录及其 Grafana 链接。
+Chat 中的文字表态不能代替这条审批记录。
 
-```text
-Profile: nvu-ttl-hsdes
-Chart: open_bug_trend
-Requested Series: new_critical_high
-Range Mode: WW
-Range Start: 26WW32
-Range End: 26WW35
-gcx Operation: grafana_import
-```
-
-点击 `Run Metrics Validation`。
-
-预期：
-
-- `Intent Validation`: `draft_validated`
-- `Render Preview`: `draft_validated`
-- `gcx Precondition`: `precondition_passed`
-- `Guidance Status`: `ready_for_dry_run`
-
-Jira 示例：
-
-```text
-Profile: chiplet-2a-jira
-Chart: open_bug_trend
-Requested Series: new_critical_high
-Range Mode: WW
-Range Start: 26WW32
-Range End: 26WW35
-```
-
-如果 Jira 没有 fresh aggregate，先执行完整 sync 或查看 Data Health blocker。
-
-## 9. 用 AI Base Chat 生成 Grafana chart
-
-打开：
-
-```text
-http://127.0.0.1:48310/
-```
-
-进入 Dashboard Query Agent chat。
-
-先 dry-run：
-
-```text
-Create a weekly open bug trend chart for NVU HSDES from 26WW32 to 26WW35, only new critical/high.
-```
-
-预期 AI 回复：
-
-- `Dashboard chart workflow completed.`
-- `Profile: nvu-ttl-hsdes`
-- `Provider: hsdes`
-- `Chart: open_bug_trend`
-- `Series: new_critical_high`
-- `Intent validation: draft_validated`
-- `Render validation: draft_validated`
-- `gcx precondition: precondition_passed`
-- `Dry-run proof: dryrun_...`
-
-再发布：
-
-```text
-Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 26WW35, only new critical/high.
-```
-
-预期 AI 回复：
-
-- `Dashboard chart published to Grafana.`
-- Grafana URL
-- audit recorded
-- Workbench host action 或 fallback Workbench URL
-
-注意：AI 不能绕过 Dashboard validation。unsupported series 会返回 `needs_metric_recipe`，不是自动改写成别的 series。
+发布步骤、范围变化、重复请求和失败恢复只维护在
+[Dashboard AI 发布联调 Runbook](../validation/dashboard-ai-e2e-runbook.zh.md)。
+验收依据是审批、发布历史和 Grafana 数据，不是模型回复的固定措辞。
 
 ## 10. 新用户故障排查
 
@@ -335,7 +258,7 @@ Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 2
 | AI Workflow profile 不 ready | provider binding 或 provider readiness blocker | 看 Scope Library Binding、Provider Setup 和 Data Health |
 | Chart 无数据 | sync/cache 或 calculation run 缺失/过期 | 跑 stack sync 或 recalculate |
 | Evidence tickets 不刷新 | chart 不支持 bucket/series evidence | 换支持 evidence 的 chart/series |
-| AI Base 不可用 | sidecar disabled/unreachable | 看底部 status bar 和 Data Health AI Sidecar Health |
+| AI Base 不可用 | runtime 未启动或模型设置缺失 | 看底部 status bar 和 Data Health AI runtime status |
 | Grafana URL 打不开 | Grafana 未启动或端口变化 | 看启动输出中的 Grafana port |
 
 ## 11. 新用户完成标准
@@ -347,5 +270,5 @@ Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 2
 - 该 scope 有 explicit provider binding。
 - Data Health 没有阻塞该 profile/chart 的关键 blocker。
 - Workbench 能打开 chart，并能看到或解释 evidence state。
-- AI Workflow 能返回 `draft_validated` 和 `precondition_passed`。
-- AI Base Chat 能生成 dry-run proof；在批准流程可用时，能发布到 Grafana。
+- AI Workflow 能验证支持的草稿，并明确报告数据或配置 blocker。
+- Workbench 能展示 runtime 审批；批准后的发布记录包含审批关联，并能打开对应 Grafana 图表。
