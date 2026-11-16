@@ -1,9 +1,67 @@
 # Tasks
 
 决策编号指 `design.md` 的"决策 N"；未加模块前缀的 `app/`、`services/`、`out/`、`management/` 路径位于 `project_management/` 下。
-第 1 组起的任务必须在第 0 组全部完成之后开始。例外：7.6、9.6、9.8、9.9 与 9.10 修复 AIB-0 验收中发现的 Metrics 缺陷，不依赖运行时，在 0.3 的重新验收完成之后即可实施（重新验收已于 2026-11-11 完成，见 `aib0-acceptance.md` 第 9 节）。
+第 1 组起的任务原要求在第 0 组全部完成之后开始。owner 于 2026-11-16 明确改为 Dashboard 优先：先锁定 AIB 候选 wheel、版本、SHA256 和实际消费的能力，再完成 MDB-2 迁移和双方联合验收，Dashboard 达到该里程碑后才恢复其他 App 的新增实施。该授权只调整实施顺序，不把候选 wheel 当作 0.6 的最终认证，不降低第 10 组的验收要求。7.6、9.6、9.8、9.9 与 9.10 的既有 AIB-0 修复回执保持不变。
+
+### 2026-11-16 Dashboard 优先实施边界
+
+- 本文件仍是 MDB-2 唯一任务账本，不另建一个重复的迁移计划。当前基线为 Metrics `ee7bfb0e734e1123ba5c611997fedd6052f50049`，该工作树在本次调整前干净；AIB 基线为 `1ba21d258f42d8238557622fe97cefbe286079dc`，已有未提交工作必须单独记录并保留。
+- 开始第 1 组之前，候选记录必须固定 wheel 文件名、精确版本、SHA256、构建源身份、依赖约束和 Dashboard 必需的 SPI/UI 能力。不得把旧 wheel、可变源码路径、editable 安装或同名但不同字节的包当作该候选。任何候选替换都产生新记录，不覆盖旧证据。
+- Dashboard 必需能力为 `blocking_wsgi` 宿主、唯一宿主认证与 App 绑定、同源嵌入 UI、会话及 ContextRef、tools/preview/审批/审计、host actions，以及摘要和报告辅助的 task-run 端口。SoC 专属工作流、RCA 产品页面和通用 RAG/Skills/Style 不因此变成 Dashboard 联调的前置条件；其未验收状态必须继续如实记录。
+- 先用实际候选 wheel 和真实 Django/运行时装配完成一个有界的启动、页面、同源 AI 入口与停止切片，再扩展第 2–9 组。原型桥、替代业务服务或只通过结构检查的假宿主不能作为这个切片的证据。
+- 所有持久化、迁移和发布验证使用新建的测试数据或明确受控副本；不迁移或删除用户数据，不读取真实凭据，不调用真实模型或企业 provider，不切换既有服务。Grafana 发布验证只针对该验收拥有的本地测试实例。
+- 第 10 组联合验收绑定双方提交、候选 wheel 和测试/环境指纹，覆盖页面、会话保持、上下文切换、审批后发布、重复请求、失败恢复、正常停止及无残留进程。迁移后的消费路径删除对应旧 SDK/sidecar，不保留兼容开关或 fallback。
+- 0.6、AIB `METRICS.READY`、原生 Linux/真实模型资格和正式发布仍由各自证据关闭；本次顺序调整本身不关闭任何一项。当前所有未勾选任务保持未完成。
+
+2026-11-16 实施进展：候选 `0.1.0` 已固定为 AIB 源提交 `e8e01d4` 的 wheel，
+SHA256 为 `c9101064cdae5aa74246d2a507c706e0791e1d9499b771593a91312bab429216`，
+消费端记录在 `ai_host/runtime_artifact.json`。最初宿主原型及其兼容投影未获接受。
+现已新增 project_management 自有 typed 运行值、直接使用公共 blocking 门面的端口，以及
+`metrics.project_summary@1`、`metrics.report_authoring@1` 自有档案数据；相关单测
+32 项通过，摘要 schema 转换的 46 个正负样本保持原有判定。
+
+真实 scripted-model 摘要任务经新端口完成 start/get/result，输出和摘要匹配且模型请求恰好一次。
+配置模型的五次空状态、五次含已完成运行的状态测量，加上首次真实档案运行，最大启动值为
+12.012899 秒；据此选择 `RUNTIME_START_SECONDS=20.0`，证据见
+`evidence/configured-startup-20261116.json`。配置模型的实际 `serve` smoke 已返回首页、
+Runtime 页面和页面资源 200，并以 0 退出。上述均不是实际 provider 或完整 Dashboard 验收。
+
+业务摘要/报告服务、旧 wire 校验器和持久化格式仍未迁完；旧兼容投影文件也尚待随调用方移除。
+完整审计、project runtime 接线、停止异常路径、AI pane、审批发布及第 10 组联合验收仍开放。
+本段不勾选任何尚未满足完整退出条件的任务。
+
+后续进展：摘要执行服务已改为同步 typed 端口，分析请求/观察使用新版记录与严格 reader，
+不重建旧 HTTP wire 字段。真实 Git 归档的两项测试通过，覆盖原请求保留、重载、重复接受、
+身份及源数据冲突；另有一项真实归档 + 固定运行时 + scripted-model 联合测试通过，
+同一摘要重复读取/接受不增加模型请求。当前聚焦组合 62 项通过，文件大小与空白检查通过。
+报告辅助服务、项目 worker、运行请求记录、实际工厂注入及其余旧接口仍需迁移；
+取消确认字段也须传播到剩余消费者。历史业务数据未被迁移或删除，旧 active wire 的拒绝
+不等于允许丢弃历史业务记录。上述只是摘要路径的进展，不关闭整个 5.2 或联合验收。
 
 ## 0. 前置条件与外部门禁
+
+2026-11-16 后续候选与任务边界进展：当前消费候选替换为 `0.1.1.dev1`，源提交
+`4acc902b2820fd3884502223fac3a7f3339a6935`，wheel SHA256
+`4bf24df5927cdcd36f9675948967c3894a4c66e252db5b9b8dffda9223e2b6b6`。
+旧候选记录原样保留于 `evidence/runtime-artifact-e8e01d4.json`；当前准入记录仍为
+`ai_host/runtime_artifact.json`。新候选增加只读 `task_runs.lookup`，不引入 start fallback。
+最终安装包的准入及摘要/报告归档联调共 8 项通过；本地端口重开、状态锁与线程清理
+另有 1 项通过。上述使用合成数据及 scripted model，不调用真实 provider/model。
+
+联调发现并修复了应用 UTF-8 JSON 与 SDK 转义 JSON 的哈希差异：应用保留来源哈希，
+适配器使用 SDK 公开规范化函数，观察记录同时保留来源及运行时哈希，输出保留 SDK
+原始摘要。worker 已切换同步 typed 调用；准入 schema 3、宿主主体、档案绑定、
+共享取消预算和 CLI 本地上下文已落地；任务边界的增量复核单独记录，不替代完整里程碑验收。
+旧 `project_serve` 命令及其替身测试已删除，关闭断言迁到 `ai_host/tests/test_serve_lifecycle.py`；
+`ProjectRunRuntime.stop` 别名已移除，取消在 `request_stop()` 中记录，等待以 0.5 秒分片。
+最终宿主组 23 项通过，包含真实 `serve` 的隔离数据库、页面/资产、正常停止和端口释放，
+以及启动回滚失败与强制退出；正常进程证据见 `evidence/host-process-20261116-final.json`。
+早期测试的归档目录和被动地址解析守卫失败单独保留，未改为成功证据。
+后续测试调用方同步：手工准备/日历、CLI refresh 与取消测试不再依赖旧 SDK 构造器、
+旧工厂设置或旧 task pack；共享准备回归 18 项、取消回归 21 项及两个真实浏览器场景通过。
+前端资产、CSS 与 152 组对比度检查通过。以上仍是任务边界检查点，不是完整 Dashboard 验收。
+完整 AI pane/context/tools/审批发布、旧接口和启动脚本清理、第 10 组联合验收
+尚未完成。本段不关闭 0.6、5.2 或其他尚未满足完整退出条件的任务。
 
 - [x] 0.1 owner 签署 v2 的 Q1–Q9、五项运行时补充 D4/D5/D6/D7/D9，以及 Docker 部署姿态（单进程 `manage.py serve`，非回环绑定不强制 Basic 认证）。验证：`design.md` "已定输入"与 `proposal.md` Impact 记录了 2026-11-10 的签署范围。
 - [x] 0.2 归档前置 change `isolate-dashboard-runtime-instances`、`remove-legacy-ai-base-workbench-embed`、`harden-ai-base-sidecar-and-connector-inputs`，并同步主 spec。验证：commit `3d5d224`；`openspec validate --specs --strict` 与 `openspec validate embed-ai-base-runtime-in-process --strict` 通过。

@@ -1,32 +1,49 @@
 import importlib
 import json
-from pathlib import Path
+from dataclasses import replace
 from types import SimpleNamespace
 from uuid import uuid4
 
-from ai_base_application_sdk import TaskRunClient
-import httpx
 import pytest
 
-from project_management.app.domain.capture_values import canonical_bytes, sha256_bytes
 from project_management.app.domain.report_assists import available_targets
 from project_management.app.domain.report_authoring_fragments import plain_text_fragment
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.report_authoring import AuthoredEditRequest
-from project_management.app.domain.summary_contracts import AiBackendTarget
-from project_management.out.report_ai_task import AuthoringTaskContract
-from project_management.services.report_assist_wire import wire_attempt
-from project_management.services.report_assist_wire import make_intent
+from project_management.app.api.ai_profiles import load_task_profile
+from project_management.app.domain.task_runs import TaskPrincipal, TaskRunCancellation, TaskRunError
+from project_management.services.task_contracts import AuthoringTaskContract
+from project_management.services.report_assist_records import make_intent, read_assist_attempt
 from project_management.storage.report_assists import ReportAssistStore
 from project_management.app.domain.report_assists import build_assist_input
 from project_management.tests.report_draft_fixtures import DraftArchive, StaticSourceReader, draft_selection
-from project_management.tests.summary_fixtures import PACK_ROOT, SummaryScenario
+from project_management.tests.summary_fixtures import SummaryScenario
 from project_management.app.api.reports import AuthoringTemplateSelection, ReportDraftService, ReportRenderer
 
 
 @pytest.fixture
 def assist_environment(tmp_path):
     return make_assist_environment(tmp_path)
+
+
+class AssistPort:
+    def __init__(self, handler):
+        self.handler = handler
+
+    def start(self, principal, request):
+        return self.handler('start', principal, request, None)
+
+    def lookup(self, principal, request):
+        return self.handler('lookup', principal, request, None)
+
+    def get(self, principal, request, run_id):
+        return self.handler('get', principal, request, run_id)
+
+    def result(self, principal, request, run_id):
+        return self.handler('result', principal, request, run_id)
+
+    def cancel(self, principal, run_id):
+        return self.handler('cancel', principal, None, run_id)
 
 
 def make_assist_environment(tmp_path, *, actor_subject='archive-owner', draft_service=None, draft=None):
@@ -42,19 +59,21 @@ def make_assist_environment(tmp_path, *, actor_subject='archive-owner', draft_se
         )
     else:
         archive = draft_service.archive
-    contract = AuthoringTaskContract.load(PACK_ROOT)
-    backend = AiBackendTarget('http://127.0.0.1:18888', 'metrics-dashboard', 'store-fixture',
-                              f'projects.{archive.project.id}.stages.{archive.stage.id}', 'grant-1', 'policy-1')
+    contract = AuthoringTaskContract(load_task_profile('metrics.report_authoring'))
     requests = []
-    state = {'attempt': None, 'drop_submit': False}
+    state = {'drop_submit': False, 'request_values': []}
 
-    def handler(request):
-        requests.append((request.method, request.url.path))
-        if request.method == 'POST' and request.url.path == '/api/runs':
-            state['assist_id'] = json.loads(request.content)['clientRunKey']
+    def handler(method, principal, request, run_id):
+        assert principal.subject == archive.actor.subject
+        requests.append((method, run_id))
+        state['request_values'].append((method, request))
+        if method == 'start':
+            state['assist_id'] = request.client_run_key
+        if method == 'lookup' and state.get('absent_lookup'):
+            return None
         service = state['service']
         intent = service._read_intent(archive.actor, archive.project.id, archive.stage.id, draft.draft_id, state['assist_id'])
-        attempt = wire_attempt(intent, contract)
+        attempt = read_assist_attempt(intent, contract)
         source = json.loads(attempt.prepared.input_content)
         output = {'schema_version': 1, 'targets': [{
             'target_id': row['target_id'], 'status': 'filled', 'fragment': plain_text_fragment('Review the validation result.'),
@@ -63,24 +82,23 @@ def make_assist_environment(tmp_path, *, actor_subject='archive-owner', draft_se
             'reason_code': None,
         } for row in source['targets']]}
         snapshot, result = SummaryScenario.responses(SimpleNamespace(), attempt, output)
-        if request.method == 'POST' and state['drop_submit']:
+        if method == 'start' and state['drop_submit']:
             state['drop_submit'] = False
-            raise httpx.ReadTimeout('Synthetic lost submit response', request=request)
+            raise TaskRunError('RUN_UNAVAILABLE', runtime_code='runtime_call_timeout', retry='observe')
         if state.get('response_hook'):
-            return state['response_hook'](request, snapshot, result)
-        if request.url.path.endswith('/cancel'):
-            snapshot.update(state='canceled')
-            snapshot['result'] = {'availability': 'not_produced', 'sha256': None, 'mediaType': None, 'expiresAt': None}
-            return httpx.Response(200, json={'contractVersion': 'task-run/1', 'cancelApplied': True, 'run': snapshot})
-        return httpx.Response(200, json=result if request.url.path.endswith('/result') else snapshot)
-
-    def client(target):
-        return TaskRunClient(base_url=target.base_url, source_app_id=target.source_app_id,
-                             run_store_id=target.run_store_id, credential_ref='synthetic-only', token='synthetic-only',
-                             transport=httpx.MockTransport(handler))
+            return state['response_hook'](method, snapshot, result)
+        if method == 'cancel':
+            state['canceled'] = True
+            return TaskRunCancellation(run_id=run_id, canceled=True)
+        if state.get('canceled'):
+            snapshot = replace(snapshot, status='canceled')
+        return result if method == 'result' else snapshot
 
     cls = importlib.import_module('project_management.services.report_assists').ReportAssistService
-    service = cls(draft_service, contract, backend=backend, client_factory=client)
+    principal_for = lambda actor: TaskPrincipal(
+        subject=actor.subject, runtime_subject=actor.subject, display_name='Author', anonymous=False,
+    )
+    service = cls(draft_service, contract, task_run_port=AssistPort(handler), principal_resolver=principal_for)
     state['service'] = service
     command = str(uuid4())
     state['assist_id'] = service.assist_id_for(draft.draft_id, command)
@@ -104,7 +122,7 @@ def test_shouldPersistOneCandidateAndReplayWithoutAnotherSubmit(assist_environme
     status = submit(env)
     assert status.state == 'candidate_ready'
     assert submit(env).assist_id == status.assist_id
-    assert len([item for item in env.requests if item[0] == 'POST']) == 1
+    assert len([item for item in env.requests if item[0] == 'start']) == 1
     original = env.drafts.get(env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id)
     assert original.revision == 1
     assert original.authored_edits == ()
@@ -119,8 +137,8 @@ def test_shouldRecoverUnknownSubmitByOriginalKey(assist_environment):
     assert first.state == 'unknown'
     second = env.service.observe(env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id, first.assist_id)
     assert second.state == 'candidate_ready'
-    assert [item[0] for item in env.requests] == ['POST', 'GET', 'GET']
-    assert env.requests[1][1] == '/api/runs/by-client-key'
+    assert [item[0] for item in env.requests] == ['start', 'lookup', 'result']
+    assert env.state['request_values'][0][1] == env.state['request_values'][1][1]
 
 
 def test_shouldRefuseStaleDraftBeforeAnyNetwork(assist_environment):
@@ -157,6 +175,8 @@ def test_shouldVerifyCandidateOnSaveAndRetainProvenanceAfterHumanEdit(assist_env
     assert saved.authored_edits[0].origin == 'ai_assisted'
     reference = saved.authored_edits[0].source_ai_result_ref
     assert reference['assist_id'] == ready.assist_id
+    assert reference['schema_version'] == 2
+    assert 'run_store_id' not in reference
     from dataclasses import replace
     manual = replace(edit, fragment=plain_text_fragment('Human revised the AI note.'), assist_receipt_id=None)
     revised = env.drafts.save_authored(env.archive.actor, env.archive.project.id, env.archive.stage.id,
@@ -186,7 +206,8 @@ def test_shouldRejectForgedOrCanceledReceiptOnSave(assist_environment):
 def test_shouldResumeCrashWithoutLosingOriginalDispatchDecision(assist_environment, dispatched):
     env = assist_environment
     value = build_assist_input(env.draft, (env.target.target_id,), 'Summarize the next action.')
-    intent = make_intent(env.draft, env.command, value, env.service.contract, env.service.backend, env.service.clock())
+    intent = make_intent(env.draft, env.command, value, env.service.contract,
+                         env.service.principal_resolver(env.archive.actor), env.service.clock())
     with env.archive._report_repository(env.archive.actor, env.archive.project.id, env.archive.stage.id, write=True) as repo:
         store = ReportAssistStore(repo)
         store.write(intent['assist_id'], 'intent', intent)
@@ -199,7 +220,7 @@ def test_shouldResumeCrashWithoutLosingOriginalDispatchDecision(assist_environme
     else:
         result = submit(env)
     assert result.state == 'candidate_ready'
-    assert env.requests[0][0] == ('GET' if dispatched else 'POST')
+    assert env.requests[0][0] == ('lookup' if dispatched else 'start')
     restored = env.service._read_intent(env.archive.actor, env.archive.project.id, env.archive.stage.id,
                                        env.draft.draft_id, intent['assist_id'])
     assert restored['request'] == intent['request']

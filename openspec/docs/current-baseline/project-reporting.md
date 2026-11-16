@@ -550,10 +550,11 @@ backend/grant与SDK client factory；浏览器不能提交endpoint、token或pro
 ### 内部手动运行器
 
 `project_management.app.api.project_runs`提供`ProjectRunService`和
-`ProjectRunWorker`。运行器、宿主线程、CLI和网页入口已通过专项测试及独立代码复核，
-但不能将这些服务测试当成浏览器到实际Base HTTP的验收。
+`ProjectRunWorker`。MDB-2 正在将调用方迁入进程内运行时；已有测试只证明其记录的
+切片，不代表 Dashboard 页面、AI pane 与审批发布的联合验收已完成。
 
-一次手动运行保存原请求、项目/阶段/操作者、后端身份、截止时间和采集预算。
+一次手动运行以 schema 3 保存原请求、项目/阶段/操作者、宿主主体、精确任务档案、
+截止时间和采集预算。旧 active operation 格式被拒绝，不做兼容读取或就地迁移。
 同一命令重放使用原操作，不重新分配capture/attempt或延长期限。事件日志在独立
 数据目录的`runtime/operations`中，完整准入记录hash与逐次事件链分别核验。
 状态文件缺失可只读投影，损坏记录、非法状态变化和过期推理明确拒绝。
@@ -561,13 +562,15 @@ backend/grant与SDK client factory；浏览器不能提交endpoint、token或pro
 
 Worker调用既有采集、分析和草稿服务。无变化来源复用原接受摘要；未覆盖成员保持pending，
 不因缺数据判为关闭，也不因模型unknown换新key重试。取消与分析准备/派发/接受共享
-归档写锁下的检查，远端取消使用原SDK边界和共享控制预算。恢复保留逐票的attempt及
+归档写锁下的检查，取消经同步任务端口并共享剩余控制预算。提交结果不确定时只用
+原请求 lookup，不以再次 start 代替查询。恢复保留逐票的attempt及
 已接受摘要；终态只能重放，不能继续增加修订。
 运行只产生明确版本的草稿，不自动定稿、发送邮件、push或启用定时。
 
 ### 显式宿主
 
-`project_serve --host 127.0.0.1 --port <port>`显式安装并启动一个串行worker。
+`manage.py serve --host 127.0.0.1 --port <port>`组合 Django 与单个嵌入式运行时，
+在项目运行功能启用时注入同步 task-run 端口并启动一个串行 worker。
 普通`runserver`、模块导入和页面GET都不会启动它。原生运行结束会输出结构化
 `project_runtime_stopped`记录；启动/服务/清理失败、worker未退出或有未决工作均返回非零。
 `project_run`提供status以及显式本地执行的start/cancel/resume命令，复用同一套业务服务。
@@ -579,10 +582,10 @@ Worker调用既有采集、分析和草稿服务。无变化来源复用原接�
 每次仅一个只读请求；读取失败保留最后观察值并显示不可用提示，不自动重交任务。
 原运行产出的修订链接与最新编辑器分开；较新的定稿不会把旧草稿误标为final。
 
-默认`METRICS_PROJECT_RUN_ENABLED=false`。当前a2只具备synthetic资格，
-普通设置即使开启也不能激活真实provider/model；验证环境使用显式受信
-`METRICS_PROJECT_RUNTIME_FACTORY`。不能靠改execution_mode或填写token升级资格。
-浏览历史运行不依赖AI端点可用，也不创建provider/SDK客户端。
+默认`METRICS_PROJECT_RUN_ENABLED=false`。组合根显式注入 task-run 端口与宿主主体解析器，
+不再通过旧工厂设置或 execution mode 选择后端。本地 CLI 在显式执行期间持有独立
+运行时上下文；清理失败输出错误 JSON 后以 3 退出。功能开关和凭据配置都不等于
+真实 provider/model 的验收授权。浏览历史运行不依赖 AI 可用，也不创建 provider 客户端。
 可重复的合成启动/停止命令与实际结果见本文开头的已验证演示。
 
 部署需要既有Django session表和project_management migration。本次只迁移专属合成测试库，

@@ -7,6 +7,7 @@ from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.contracts import ProjectActor, ProjectError
 from project_management.app.domain.report_contracts import ReportError, ReportSelection
 from project_management.app.domain.run_contracts import ItemRunResult, RunError, RunOperation, RunPolicy
+from project_management.app.domain.task_runs import TaskPrincipal, TaskRunBinding
 from project_management.app.domain.run_admission_values import (
     original_operation_from_record,
     validate_stored_request,
@@ -34,14 +35,15 @@ from provider_sync.app.api.access_contracts import AccessContext, CaptureLimits
 
 class ProjectRunService:
     def __init__(self, project_api, archive, capture_service, analysis_service,
-                 draft_service, backend_resolver, *, policy=None, capture_limits=None,
+                 draft_service, principal_resolver, *, task_profile=None, policy=None, capture_limits=None,
                  clock=None, notifier=None):
         self.project_api = project_api
         self.archive = archive
         self.capture_service = capture_service
         self.analysis_service = analysis_service
         self.draft_service = draft_service
-        self.backend_resolver = backend_resolver
+        self.principal_resolver = principal_resolver
+        self.task_profile = task_profile
         self.policy = validate_policy(policy)
         self.capture_limits = capture_limits or CaptureLimits()
         self.clock = clock or (lambda: datetime.now(UTC))
@@ -69,15 +71,15 @@ class ProjectRunService:
             except RunError:
                 raise
             if record is not None:
-                stored_request, stored_policy, backend, stored_hash, stored_capture_limits = validate_stored_request(record)
+                stored_request, stored_policy, binding, stored_hash, stored_capture_limits = validate_stored_request(record)
                 if stored_hash != request_hash_value:
                     raise RunError('RUN_COMMAND_CONFLICT')
                 operation = self._operation_from_record(record)
-                operation = store.submit(operation, stored_request, stored_policy, backend, stored_hash, stored_capture_limits)
+                operation = store.submit(operation, stored_request, stored_policy, binding, stored_hash, stored_capture_limits)
                 if operation.state in NONTERMINAL_STATES:
                     self._notify(actor, project_id, stage_id, operation.operation_id)
                 return operation
-            backend = self._backend_for_request(actor, project_id, stage_id, request)
+            binding = self._binding_for_request(actor, project_id, stage_id, request)
             created_at = utc_instant_millis(self.clock())
             policy = self.policy
             op_id = operation_id(stage.id, request.command_id)
@@ -102,9 +104,8 @@ class ProjectRunService:
                 snapshot_hash=None,
                 template_hash=None,
                 error_code=None,
-                execution_mode='synthetic',
             )
-            operation = store.submit(operation, request, policy, backend, request_hash_value, self.capture_limits)
+            operation = store.submit(operation, request, policy, binding, request_hash_value, self.capture_limits)
             self._notify(actor, project_id, stage_id, operation.operation_id)
             return operation
         except RunError:
@@ -170,8 +171,7 @@ class ProjectRunService:
 
     def operation_request(self, actor, project_id, stage_id, operation_id_value):
         store = self._store(actor, project_id, stage_id)
-        request, policy, backend, request_hash_value, capture_limits = store.request_record(operation_id_value)
-        return request, policy, backend, request_hash_value, capture_limits
+        return store.request_record(operation_id_value)
 
     def capture_context(self, operation):
         return AccessContext(
@@ -213,11 +213,11 @@ class ProjectRunService:
             record = store._request_record(operation_id_value)
             if record is None:
                 return None
-            stored_request, stored_policy, backend, stored_hash, stored_capture_limits = validate_stored_request(record)
+            stored_request, stored_policy, binding, stored_hash, stored_capture_limits = validate_stored_request(record)
             if stored_hash != request_hash_value:
                 raise RunError('RUN_COMMAND_CONFLICT')
             operation = self._operation_from_record(record)
-            return store.submit(operation, stored_request, stored_policy, backend, stored_hash, stored_capture_limits)
+            return store.submit(operation, stored_request, stored_policy, binding, stored_hash, stored_capture_limits)
         except RunError as error:
             if error.code in {'RUN_NOT_FOUND', 'RUN_UNAVAILABLE'}:
                 return None
@@ -232,11 +232,20 @@ class ProjectRunService:
         )
         return CaptureLimits(**values)
 
-    def _backend_for_request(self, actor, project_id, stage_id, request):
+    def _binding_for_request(self, actor, project_id, stage_id, request):
         target = getattr(request, 'target', None)
         if target is not None and target.analysis_mode == 'manual_only':
             return None
-        return self.backend_resolver(actor, project_id, stage_id)
+        if self.task_profile is None or not callable(self.principal_resolver):
+            raise RunError('RUN_UNAVAILABLE')
+        principal = self.principal_resolver(actor, project_id, stage_id)
+        if not isinstance(principal, TaskPrincipal) or principal.subject != actor.subject:
+            raise RunError('RUN_INVALID')
+        return TaskRunBinding(
+            principal=principal, profile_id=self.task_profile.id, profile_version=self.task_profile.version,
+            profile_definition_sha256=self.task_profile.definition_sha256,
+            output_schema_sha256=self.task_profile.output_schema_sha256,
+        )
 
     def _record_analysis_cancel_intents(self, actor, project_id, stage_id, operation):
         for result in operation.item_results:

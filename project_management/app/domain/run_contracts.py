@@ -104,7 +104,6 @@ class RunOperation:
     snapshot_hash: str | None
     template_hash: str | None
     error_code: str | None
-    execution_mode: Literal['synthetic']
 
 
 @dataclass(frozen=True, slots=True)

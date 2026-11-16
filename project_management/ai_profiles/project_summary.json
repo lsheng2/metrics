@@ -1,0 +1,519 @@
+{
+  "id": "metrics.project_summary",
+  "version": "1",
+  "instructions": "Summarize only the explicit input. Return raw summary JSON without input_hash. Do not confirm owners or publish.",
+  "input_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "allOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "baseline": {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_revision": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "capture_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "summary_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "summary_id",
+              "accepted_revision",
+              "capture_id",
+              "text"
+            ],
+            "type": "object"
+          },
+          "binding": {
+            "additionalProperties": false,
+            "properties": {
+              "principal_id": {
+                "maxLength": 16000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "project_id": {
+                "maxLength": 16000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "provider": {
+                "maxLength": 16000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "rule_hash": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "site": {
+                "maxLength": 16000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "stable_id": {
+                "maxLength": 16000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "stage_id": {
+                "maxLength": 16000,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "project_id",
+              "stage_id",
+              "provider",
+              "site",
+              "stable_id",
+              "rule_hash",
+              "principal_id"
+            ],
+            "type": "object"
+          },
+          "coverage": {
+            "additionalProperties": false,
+            "properties": {
+              "comments": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "unsupported"
+                ]
+              },
+              "facts": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "unsupported"
+                ]
+              },
+              "history": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "unsupported"
+                ]
+              }
+            },
+            "required": [
+              "facts",
+              "comments",
+              "history"
+            ],
+            "type": "object"
+          },
+          "delta": {
+            "additionalProperties": false,
+            "properties": {
+              "added_ids": {
+                "items": {
+                  "maxLength": 16000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "deleted_ids": {
+                "items": {
+                  "maxLength": 16000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "from_capture_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "to_capture_id": {
+                "maxLength": 16000,
+                "minLength": 1,
+                "type": "string"
+              },
+              "updated_ids": {
+                "items": {
+                  "maxLength": 16000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 64,
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "from_capture_id",
+              "to_capture_id",
+              "added_ids",
+              "updated_ids",
+              "deleted_ids"
+            ],
+            "type": "object"
+          },
+          "evidence": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "capture_id": {
+                  "maxLength": 16000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "json_pointer": {
+                  "pattern": "^/",
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "field",
+                    "comment",
+                    "history"
+                  ]
+                },
+                "ref_id": {
+                  "maxLength": 16000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "source_hash": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "source_id": {
+                  "maxLength": 16000,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "value": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "ref_id",
+                "capture_id",
+                "kind",
+                "source_id",
+                "json_pointer",
+                "source_hash",
+                "value"
+              ],
+              "type": "object"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          },
+          "fixture_version": {
+            "const": "review-1"
+          },
+          "profile_revision": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "required_parts": {
+            "items": {
+              "enum": [
+                "facts",
+                "comments",
+                "history"
+              ]
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "target_capture_id": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "fixture_version",
+          "profile_revision",
+          "binding",
+          "target_capture_id",
+          "baseline",
+          "required_parts",
+          "coverage",
+          "delta",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      {
+        "properties": {
+          "coverage": {
+            "properties": {
+              "comments": {
+                "const": "complete"
+              },
+              "facts": {
+                "const": "complete"
+              },
+              "history": {
+                "const": "complete"
+              }
+            }
+          },
+          "profile_revision": {
+            "const": "metrics.project_summary@1"
+          },
+          "required_parts": {
+            "const": [
+              "facts",
+              "comments",
+              "history"
+            ]
+          }
+        }
+      }
+    ],
+    "title": "Draft strict summary input projection"
+  },
+  "output_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "base_summary_id": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "binding": {
+        "additionalProperties": false,
+        "properties": {
+          "principal_id": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "provider": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "rule_hash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "site": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "stable_id": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "stage_id": {
+            "maxLength": 16000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "stage_id",
+          "provider",
+          "site",
+          "stable_id",
+          "rule_hash",
+          "principal_id"
+        ],
+        "type": "object"
+      },
+      "blockers": {
+        "items": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "maxItems": 64,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "current_position": {
+        "maxLength": 16000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "evidence": {
+        "allOf": [
+          {
+            "items": {
+              "maxLength": 16000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "type": "array",
+            "uniqueItems": true
+          }
+        ],
+        "minItems": 1
+      },
+      "kind": {
+        "const": "summary"
+      },
+      "limitations": {
+        "items": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "type": "string"
+        },
+        "maxItems": 64,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "next_actions": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "maxLength": 16000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "evidence": {
+              "allOf": [
+                {
+                  "items": {
+                    "maxLength": 16000,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "maxItems": 64,
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              ],
+              "minItems": 1
+            },
+            "owner_basis": {
+              "enum": [
+                "explicit",
+                "suggested",
+                "unknown"
+              ]
+            },
+            "owner_confirmed": {
+              "const": false
+            },
+            "owner_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "owner_quote": {
+              "maxLength": 16000,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "enum": [
+                "open",
+                "in_progress",
+                "blocked",
+                "done",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "owner_id",
+            "owner_basis",
+            "owner_quote",
+            "owner_confirmed",
+            "state",
+            "evidence"
+          ],
+          "type": "object"
+        },
+        "maxItems": 64,
+        "type": "array"
+      },
+      "output_language": {
+        "const": "en"
+      },
+      "profile_revision": {
+        "const": "metrics.project_summary@1"
+      },
+      "target_capture_id": {
+        "maxLength": 16000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "verification": {
+        "maxLength": 16000,
+        "minLength": 1,
+        "type": "string"
+      },
+      "what": {
+        "maxLength": 16000,
+        "minLength": 1,
+        "type": "string"
+      }
+    },
+    "required": [
+      "kind",
+      "binding",
+      "profile_revision",
+      "base_summary_id",
+      "target_capture_id",
+      "output_language",
+      "what",
+      "current_position",
+      "verification",
+      "next_actions",
+      "blockers",
+      "limitations",
+      "evidence"
+    ],
+    "title": "Draft raw model summary projection without application-derived input_hash",
+    "type": "object"
+  },
+  "limits": {
+    "max_input_bytes": 65536,
+    "max_output_bytes": 65536
+  }
+}

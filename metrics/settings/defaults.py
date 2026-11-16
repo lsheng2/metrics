@@ -35,6 +35,7 @@ DJANGO_COMM_APP = (
 )
 
 CUSTOM_APP = (
+    'ai_host',
     'tasks',
     'forecast',
     'velocity',
@@ -83,6 +84,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'metrics.wsgi.application'
+AI_HOST_ALLOW_ANONYMOUS_APPROVAL = False
 
 CACHES = {
     'default': {

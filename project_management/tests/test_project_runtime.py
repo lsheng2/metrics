@@ -2,18 +2,15 @@ from dataclasses import replace
 import importlib
 import importlib.util
 from pathlib import Path
-from types import SimpleNamespace
 import threading
 import time
 import uuid
 
-import httpx
 import portalocker
 import pytest
 from django.test import override_settings
 
 from project_management.app.api.project_runs import RunError, RunPolicy
-from project_management.app.domain.summary_contracts import AiBackendTarget
 from project_management.tests.project_run_fixtures import ManualRunEnvironment
 from project_management.tests.report_draft_fixtures import (
     DraftArchive,
@@ -154,7 +151,8 @@ def test_runtime_start_is_idempotent_and_coalesces_active_duplicate_notify(tmp_p
         assert worker.count == 1
     finally:
         worker.release.set()
-        runtime.stop(5)
+        runtime.request_stop()
+        runtime.wait_stopped(5)
 
 
 def test_runtime_stop_reports_unresolved_active_operation_until_worker_exits(tmp_path):
@@ -172,9 +170,15 @@ def test_runtime_stop_reports_unresolved_active_operation_until_worker_exits(tmp
         )
         assert worker.started.wait(5)
 
-        stopped = runtime.stop(0.01)
+        assert runtime.request_stop() is True
+        current = environment.run_service.get(
+            environment.actor, environment.project.id, environment.stage.id, operation.operation_id,
+        )
+        assert current.cancel_requested is True
+        stopped = runtime.wait_stopped(0.01)
         worker.release.set()
-        drained = runtime.stop(5)
+        runtime.request_stop()
+        drained = runtime.wait_stopped(5)
 
         assert stopped.stopped is False
         assert stopped.active_operation_id == operation.operation_id
@@ -182,7 +186,8 @@ def test_runtime_stop_reports_unresolved_active_operation_until_worker_exits(tmp
         assert drained.stopped is True
     finally:
         worker.release.set()
-        runtime.stop(5)
+        runtime.request_stop()
+        runtime.wait_stopped(5)
 
 
 def test_runtime_stop_detaches_notifier_so_later_submit_has_no_growth(tmp_path):
@@ -190,7 +195,8 @@ def test_runtime_stop_detaches_notifier_so_later_submit_has_no_growth(tmp_path):
     environment = ManualRunEnvironment(tmp_path / 'archive-root', notifier=None)
     runtime = module.ProjectRunRuntime(environment.run_service, environment.worker)
     runtime.start()
-    runtime.stop(5)
+    assert runtime.request_stop() is False
+    runtime.wait_stopped(5)
     operations = tmp_path / 'archive-root' / 'projects' / environment.project.id / 'stages' / environment.stage.id / 'runtime' / 'operations'
     before = tuple(operations.rglob('request.json')) if operations.exists() else ()
 
@@ -223,7 +229,8 @@ def test_runtime_stop_reports_cancel_failure_unresolved_even_when_worker_exits(t
     stage_lock = tmp_path / 'archive-root' / 'projects' / environment.project.id / 'stages' / environment.stage.id / 'runtime' / 'archive.lock'
     with portalocker.Lock(stage_lock, timeout=0, flags=portalocker.LOCK_EX | portalocker.LOCK_NB):
         worker.release.set()
-        stopped = runtime.stop(5)
+        runtime.request_stop()
+        stopped = runtime.wait_stopped(5)
 
     assert stopped.stopped is True
     assert operation.operation_id in stopped.unresolved
@@ -258,12 +265,37 @@ def test_worker_exception_fails_operation_and_later_queue_still_runs(tmp_path):
         assert completed.state == 'draft_ready'
         assert worker.count >= 2
     finally:
-        runtime.stop(5)
+        runtime.request_stop()
+        runtime.wait_stopped(5)
 
 
 def assert_runtime_idle(runtime):
     assert runtime._active is None
     return True
+
+
+def test_wait_stopped_uses_half_second_slices_with_one_total_deadline(monkeypatch):
+    from types import SimpleNamespace
+
+    module = runtime_module()
+    clock = [0.0]
+    waits = []
+    monkeypatch.setattr(module, 'time', SimpleNamespace(monotonic=lambda: clock[0]), raising=False)
+
+    class Thread:
+        def join(self, timeout):
+            waits.append(timeout)
+            clock[0] += timeout
+
+        def is_alive(self):
+            return True
+
+    runtime = module.ProjectRunRuntime(SimpleNamespace(notifier=None), None)
+    runtime._thread = Thread()
+    result = runtime.wait_stopped(1.2)
+    assert waits == pytest.approx([0.5, 0.5, 0.2])
+    assert clock[0] == pytest.approx(1.2)
+    assert result.stopped is False
 
 
 def test_startup_reconcile_interrupts_only_unlocked_running_operations(tmp_path):
@@ -470,9 +502,8 @@ def test_rendering_older_revision_after_later_finalization_stays_draft(tmp_path)
     assert f'Edition: final draft {draft.draft_id} rev {saved.revision}' in finalized_revision.plain_text
 
 
-def test_read_service_builds_with_invalid_ai_target_without_provider_or_sdk(monkeypatch, tmp_path):
+def test_read_service_builds_without_provider_or_runtime_principal(tmp_path):
     factories = importlib.import_module('project_management.app.api.run_factories')
-    monkeypatch.setattr(factories, 'TaskRunClient', lambda **kwargs: (_ for _ in ()).throw(AssertionError('no sdk')))
     with override_settings(METRICS_PROJECT_ARCHIVE_ROOT=str(tmp_path / 'archive-root'),
                            METRICS_PROJECT_ARCHIVE_AUTHOR_NAME='Archive Test',
                            METRICS_PROJECT_ARCHIVE_AUTHOR_EMAIL='archive@example.test',
@@ -480,9 +511,8 @@ def test_read_service_builds_with_invalid_ai_target_without_provider_or_sdk(monk
         service = factories.build_run_read_service()
 
     assert service.notifier is None
-    with pytest.raises(RunError) as error:
-        service.backend_resolver(None, str(uuid.uuid4()), str(uuid.uuid4()))
-    assert error.value.code == 'RUN_UNAVAILABLE'
+    assert service.principal_resolver is None
+    assert service.task_profile is None
 
 
 def test_ordinary_enabled_settings_fail_closed_without_fixture_factory(monkeypatch, tmp_path):
@@ -505,24 +535,12 @@ def test_ordinary_enabled_settings_fail_closed_without_fixture_factory(monkeypat
         },
     ):
         with pytest.raises(RunError) as error:
-            factories.build_project_runtime()
+            factories.build_project_runtime(task_runs=None, principal_resolver=None)
 
     assert error.value.code == 'RUN_UNAVAILABLE'
 
 
-def test_task_run_client_factory_uses_safe_transport_constructor_only(tmp_path):
+def test_private_task_run_factory_path_is_not_exported():
     factories = importlib.import_module('project_management.app.api.run_factories')
-    settings = SimpleNamespace(METRICS_PROJECT_AI_CREDENTIAL_REF='synthetic', METRICS_PROJECT_AI_TOKEN='token')
-    factory = factories._client_factory_from_settings(settings)
-    backend = AiBackendTarget(
-        'http://127.0.0.1:1',
-        'metrics-dashboard',
-        'store',
-        'projects.p.stages.s',
-        'grant',
-        'limits',
-    )
 
-    client = factory(backend)
-
-    assert client is not None
+    assert not hasattr(factories, '_client_factory_from_settings')

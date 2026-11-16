@@ -2,8 +2,6 @@ from dataclasses import replace
 from pathlib import Path
 import uuid
 
-from ai_base_application_sdk import TaskRunClient
-import httpx
 import pytest
 
 from project_management.app.api.project_runs import RunPolicy
@@ -67,12 +65,18 @@ def test_FS05_canceling_analyzing_operation_records_attempt_intent_before_return
     environment.capture_service.capture(context, cancel_requested=lambda: False)
     manifest = environment.archive.read_capture(environment.actor, environment.project.id, environment.stage.id, operation.capture_id)
     source_key = environment.archive._source_key(manifest.intent, manifest.membership.items[0])
+    _, _, binding, _, _ = environment.run_service.operation_request(
+        environment.actor,
+        environment.project.id,
+        environment.stage.id,
+        operation.operation_id,
+    )
     prepared = environment.analysis_service.prepare(
         environment.actor,
         environment.project.id,
         environment.stage.id,
         source_key,
-        backend=environment.backend(environment.actor, environment.project.id, environment.stage.id),
+        principal=binding.principal,
         deadline_at=environment.run_service.operation_deadline(operation),
     )
     from project_management.app.api.project_runs import ItemRunResult
@@ -264,7 +268,15 @@ def test_FS05b_shared_cancel_window_does_not_renew_for_second_retained_attempt(t
     manifest = environment.archive.read_capture(environment.actor, environment.project.id, environment.stage.id, operation.capture_id)
     prepared = []
     item_results = []
-    backend = environment.backend(environment.actor, environment.project.id, environment.stage.id)
+    _, _, binding, _, _ = environment.run_service.operation_request(
+        environment.actor,
+        environment.project.id,
+        environment.stage.id,
+        operation.operation_id,
+    )
+    assert binding.principal.subject == environment.actor.subject
+    assert binding.profile_id == environment.contract.profile.id
+    assert binding.profile_version == environment.contract.profile.version
     for identity in manifest.membership.items:
         source_key = environment.archive._source_key(manifest.intent, identity)
         attempt = environment.analysis_service.prepare(
@@ -272,7 +284,7 @@ def test_FS05b_shared_cancel_window_does_not_renew_for_second_retained_attempt(t
             environment.project.id,
             environment.stage.id,
             source_key,
-            backend=backend,
+            principal=binding.principal,
             deadline_at=environment.run_service.operation_deadline(operation),
         ).attempt
         environment.archive.claim_analysis_dispatch(
@@ -300,8 +312,6 @@ def test_FS05b_shared_cancel_window_does_not_renew_for_second_retained_attempt(t
         operation.operation_id,
         expected_revision=analyzing.revision,
     )
-    calls = []
-
     class FakeMonotonic:
         def __init__(self):
             self.value = 100.0
@@ -310,26 +320,14 @@ def test_FS05b_shared_cancel_window_does_not_renew_for_second_retained_attempt(t
             return self.value
 
     clock = FakeMonotonic()
+    original_lookup = environment.http.lookup
 
-    def transport(request):
-        calls.append((request.method, request.url.path, request.url.params.get('clientRunKey')))
+    def lookup_and_expire(principal, request, *, timeout=None):
+        snapshot = original_lookup(principal, request, timeout=timeout)
         clock.value = 111.0
-        return httpx.Response(404, json={
-            'contractVersion': 'task-run/1',
-            'error': {'code': 'run_not_found', 'recovery': 'stop'},
-        })
+        return snapshot
 
-    def client(target):
-        return TaskRunClient(
-            base_url=target.base_url,
-            source_app_id=target.source_app_id,
-            run_store_id=target.run_store_id,
-            credential_ref='synthetic-test',
-            token='synthetic-only',
-            transport=httpx.MockTransport(transport),
-        )
-
-    environment.analysis_service.client_factory = client
+    environment.http.lookup = lookup_and_expire
     worker = ProjectRunWorker(environment.run_service, monotonic=clock)
 
     completed = worker.execute(environment.actor, environment.project.id, environment.stage.id, operation.operation_id)
@@ -344,7 +342,10 @@ def test_FS05b_shared_cancel_window_does_not_renew_for_second_retained_attempt(t
         / operation.operation_id
     )
 
-    assert calls == [('GET', '/api/runs/by-client-key', prepared[0].attempt_id)]
+    lookup_calls = [call for call in environment.http.calls if call[0] == 'lookup']
+    assert [call[0] for call in environment.http.calls] == ['lookup']
+    assert lookup_calls[0][2].client_run_key == prepared[0].attempt_id
+    assert lookup_calls[0][2].deadline_at == prepared[0].request.deadline_at
     assert completed.state == 'partial'
     assert terminal_event_states(operation_root) == ['partial']
     assert completed.item_results[0].state == 'pending'

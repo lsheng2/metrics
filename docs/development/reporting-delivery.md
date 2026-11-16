@@ -9,25 +9,35 @@ The approved delivery order and interfaces are in
 
 ## Environment
 
-Reporting validation uses the existing separately installed interpreter:
+The migrated `ai_host`, summary, report-assist and project-run boundaries use
+the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
+The current candidate is `ai-base-runtime==0.1.1.dev1`, built from AIB
+`4acc902b2820fd3884502223fac3a7f3339a6935`. Its wheel SHA256 is
+`4bf24df5927cdcd36f9675948967c3894a4c66e252db5b9b8dffda9223e2b6b6`.
+This is a development candidate, not full AIB or Dashboard qualification.
+
+Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe'
-& $reportingPython -I -c "import sys, pywintypes, ai_base_application_sdk; from importlib.metadata import version; print(sys.executable); print(version('ai-base-application-sdk')); print(ai_base_application_sdk.__file__)"
+$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-lookup-20261116-01\venv\Scripts\python.exe'
+& $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
-Expected SDK is exactly `0.2.0a1`; its module must resolve under that selected venv.
-It uses the unchanged `task-run/1` a2 pack. Exact wheel/pack and installation identities
-remain in the [SDK contract](../../openspec/changes/add-provider-neutral-project-reporting/sdk-020-integration.md).
-The retained main `.venv` contains SDK0.1.0a2 and is not a supported shortcut for migrated
-report consumers. No current service is silently switched or upgraded.
-The import check is environment evidence only, not a business test.
+Admission checks the wheel provenance, exact package-file set and hashes, and
+the actual import path without importing the runtime package. Missing manifests,
+editable installs and package shadowing are rejected. Do not use a retained old
+environment or an editable source install for migrated consumers. No existing
+service or user database is silently switched.
+
+The SDK020/HTTP sections below retain historical qualification context until
+the remaining MDB-2 test/launcher migration completes. They do not qualify the
+new candidate or supply a compatibility path.
 
 Run every reporting, `ui_web` and `project_management` test through the existing no-dotenv
 entry with the selected interpreter in isolated mode (`-I`), naming test files or nodes explicitly:
 
 ```powershell
-& $reportingPython -I scripts/validation/run_report_authoring_tests.py <test files or nodes> -q --tb=short -p no:cacheprovider
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py <test files or nodes> -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
 ```
 
 Plain `pytest` is not equivalent: `pytest.ini` discovers only `tasks`, `forecast`, `velocity` and
@@ -44,6 +54,32 @@ Evidence runs add durations and a unique evidence filename:
 The named next-day case is the DAILY closure target; its existence alone is not a pass.
 Do not run a missing test node as evidence. The tasks ledger records its implementation
 and actual result.
+
+## Embedded Task Boundary
+
+Dashboard persists its original UTF-8 canonical request and source hash.
+The adapter uses the SDK's public `canonical_digest` and `canonical_json` for
+runtime requests and output bytes. A returned observation carries both
+`source_input_sha256` and the runtime's `input_sha256`; result content retains
+the runtime's actual `output_sha256`. Never change historical archive hashes,
+normalize old request bytes in place, or equate the two encodings for Unicode.
+
+Unknown dispatch is observed with the original request through read-only
+`lookup`, then `get`/`result`. It never becomes a second `start`. Cancellation
+shares one remaining time budget across lookup, cancel and observation;
+acknowledgement alone does not prove settled execution.
+
+New project-run admission records accept only schema 3 and persist the original
+principal and exact task-profile binding. Old active operation records are
+rejected, not silently converted. Business publications remain untouched.
+The runtime observation contract has no completion timestamp; report readers
+leave the optional summary time unset rather than reuse the retired wire field.
+
+The registered host command is `serve`; `project_serve` is removed. Project
+shutdown uses `request_stop()` followed by `wait_stopped(timeout)`, with no
+`stop` alias. Failed startup drains owned resources without replacing an
+already installed owner. Host-loopback smoke and fault-path tests do not
+replace the full stream, signal, performance, browser and publication gates.
 
 ## Validation Selection
 

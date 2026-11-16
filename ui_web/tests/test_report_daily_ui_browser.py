@@ -13,23 +13,23 @@ from django.db.backends.base.base import BaseDatabaseWrapper
 from django.test import override_settings
 from django.urls import reverse
 
-from project_management.app.api import run_factories
+from ai_host.task_runs import RuntimeTaskRunPort
+from project_management.app.api.ai_profiles import load_task_profile
 from project_management.app.api.project_runs import (
-    ProjectRunRuntime, ProjectRunWorker, build_project_runtime, clear_project_runtime, install_project_runtime,
+    clear_project_runtime, install_project_runtime,
 )
-from project_management.out.ai_task_contract import AiTaskContract
+from project_management.services.task_contracts import SummaryTaskContract
 from project_management.services.report_completion import ReportCompletionService
 from project_management.services.report_reference_receipts import ReferenceReceiptVerifier
 from project_management.services.report_sources import ReportSourceReader
 from project_management.storage.report_reference_admission import CompletionAdmissionStore
 from project_management.tests.history_persistence_fixtures import history_fixture, publication_file_bytes
-from project_management.tests.summary_fixtures import PACK_ROOT
 from project_management.tests.test_daily_reprepare_backend import refresh_manual_service
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 from ui_web.tests.report_authoring_browser_support import (
     BrowserReferenceReader, form_fields_from_request, fragment_text,
 )
-from ui_web.tests.test_report_daily_ui_views import choice, patch_default_facade, seed_retained_capture
+from ui_web.tests.test_report_daily_ui_views import choice, patch_default_facade, prepared_runtime, seed_retained_capture
 from ui_web.tests.test_report_template_browser import project_page
 from ui_web.views.report_completion import ReportDraftCompletionView
 
@@ -42,23 +42,24 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
         self.addCleanup(self.temporary.cleanup)
         self.fixture = history_fixture(Path(self.temporary.name), actor_subject='basic:alice')
         self.fixture.retained_capture_id = seed_retained_capture(self.fixture)
-        reader = ReportSourceReader(self.fixture.archive, AiTaskContract.load(PACK_ROOT))
+        reader = ReportSourceReader(self.fixture.archive, SummaryTaskContract(load_task_profile('metrics.project_summary')))
         self.fixture.source_reader = reader
         self.fixture.continuity.source_reader = reader
         self.fixture.draft_service.source_reader = reader
         self.monkeypatch = pytest.MonkeyPatch()
         self.addCleanup(self.monkeypatch.undo)
-        self.sdk_creations = []
-        self.monkeypatch.setattr(run_factories, 'TaskRunClient', self.forbid_sdk_client)
+        self.task_calls = []
+        for method in ('start', 'lookup', 'get', 'result', 'cancel'):
+            self.monkeypatch.setattr(RuntimeTaskRunPort, method, self.forbid_task_call)
         self.facade_context = patch_default_facade(self.monkeypatch, self.fixture)
         self.facade_context.__enter__()
         self.addCleanup(self.facade_context.__exit__, None, None, None)
         self.evidence = Path('.tmp/authoring-main-20261103') / f'daily-ui-browser-{uuid4()}'
         self.evidence.mkdir(parents=True)
 
-    def forbid_sdk_client(self, *args, **kwargs):
-        self.sdk_creations.append(True)
-        raise AssertionError('Manual preparation must not create an AI client')
+    def forbid_task_call(self, *args, **kwargs):
+        self.task_calls.append(True)
+        raise AssertionError('Manual preparation must not invoke an AI task')
 
     def url(self, name, **extra):
         fixture = self.fixture
@@ -149,7 +150,7 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
         )
         self.assertEqual(publication_id, after_final.baseline_ref.publication_id)
         self.assertEqual((), after_final.pending_gap_draft_ids)
-        self.assertEqual([], self.sdk_creations)
+        self.assertEqual([], self.task_calls)
         (self.evidence / 'result.json').write_text(json.dumps({
             'browser': 'Chrome',
             'draft_id': draft_id,
@@ -158,7 +159,7 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
             'note_hash': note['body_hash'],
             'before_finalize_baseline': None,
             'after_finalize_baseline': publication_id,
-            'sdk_client_creations': len(self.sdk_creations),
+            'runtime_task_calls': len(self.task_calls),
         }, sort_keys=True, indent=2), encoding='utf-8')
 
     def test_shouldCarryEditablePersistentReferenceIntoActualNextDay(self):
@@ -430,7 +431,7 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
         self.assertIn(href.encode('utf-8'), tuesday_html)
         (evidence / 'tuesday-report.html').write_bytes(tuesday_html)
         self.assertEqual(1, len(reader.calls), 'Tuesday must validate the publication association without a new lookup')
-        self.assertEqual([], self.sdk_creations)
+        self.assertEqual([], self.task_calls)
         (evidence / 'result.json').write_text(json.dumps({
             'monday_draft_id': monday_id, 'tuesday_draft_id': tuesday_id,
             'monday_revision_hash': monday_final.revision_hash,
@@ -442,7 +443,7 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
             'tuesday_html_hash': sha256(tuesday_html).hexdigest(),
             'persistent_note_id': persistent_id, 'reference_id': monday_link['reference_id'],
             'historical_association': association, 'reference_lookups': len(reader.calls),
-            'sdk_client_creations': len(self.sdk_creations),
+            'runtime_task_calls': len(self.task_calls),
         }, sort_keys=True, indent=2), encoding='utf-8')
 
     def test_shouldRefreshThroughRegisteredWorkerAndReuseSameMeetingFromVisibleControls(self):
@@ -450,9 +451,7 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
         _, service = refresh_manual_service(fixture, ({
             'stable_id': 'ALPHA-1', 'summary': 'Fresh manual capture', 'status': 'Fixed',
         },))
-        runtime = ProjectRunRuntime(service, ProjectRunWorker(service))
-        with override_settings(METRICS_PROJECT_RUNTIME_FACTORY=lambda: runtime):
-            runtime = build_project_runtime()
+        runtime = prepared_runtime(service)
         installed_preparation = runtime.worker.daily_preparation_service
         install_project_runtime(runtime)
         self.addCleanup(clear_project_runtime, runtime)
@@ -488,10 +487,11 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
 
         self.assertEqual(1, len(service.list(fixture.actor, fixture.project.id, fixture.stage.id)))
         self.assertIs(installed_preparation, runtime.worker.daily_preparation_service)
-        self.assertEqual([], self.sdk_creations)
+        self.assertEqual([], self.task_calls)
 
     def stop_runtime(self, runtime):
-        result = runtime.stop(60)
+        runtime.request_stop()
+        result = runtime.wait_stopped(60)
         self.assertTrue(result.stopped, result)
         self.assertFalse(result.unresolved, result)
 
@@ -540,7 +540,7 @@ class TestReportDailyUiBrowser(StaticLiveServerTestCase):
 
         retained = fixture.draft_service.get(fixture.actor, fixture.project.id, fixture.stage.id, original_id)
         self.assertEqual(original.revision_hash, retained.revision_hash)
-        self.assertEqual([], self.sdk_creations)
+        self.assertEqual([], self.task_calls)
 
 
 def close_worker_connections_after_execute(worker):

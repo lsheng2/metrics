@@ -1,11 +1,9 @@
 from functools import lru_cache
-from pathlib import Path
-
 from django.conf import settings
 
 from project_management.app.api.factories import build_capture_archive_service, build_project_api
-from project_management.out.ai_task_contract import AiTaskContract
-from project_management.out.report_ai_task import AuthoringTaskContract
+from project_management.app.api.ai_profiles import load_task_profile
+from project_management.services.task_contracts import AuthoringTaskContract, SummaryTaskContract
 from project_management.out.preparation_links import DjangoPreparationLinkBuilder
 from project_management.reporting.html import ReportRenderer
 from project_management.services.report_completion import ReportCompletionService
@@ -20,14 +18,6 @@ from project_management.services.project_runs import ProjectRunService
 from project_management.storage.report_reference_admission import CompletionAdmissionStore
 from provider_sync.app.api.references import create_provider_reference_reader
 from project_management.services.report_queries import ReportQueryService
-
-
-PACK_ROOT = (
-    Path(__file__).resolve().parents[2]
-    / 'ai_bundle'
-    / 'strict-summary'
-    / 'task-run-contract-0.1.0a2'
-)
 
 
 def build_report_query_service(*, archive=None, draft_service=None):
@@ -132,32 +122,32 @@ def build_report_completion_service(*, project_api=None, archive=None, contract=
 
 @lru_cache(maxsize=1)
 def _default_contract():
-    return AiTaskContract.load(PACK_ROOT)
+    return SummaryTaskContract(load_task_profile('metrics.project_summary'))
 
 
 @lru_cache(maxsize=1)
 def _authoring_contract():
-    return AuthoringTaskContract.load(PACK_ROOT)
+    return AuthoringTaskContract(load_task_profile('metrics.report_authoring'))
 
 
-def build_report_assist_service(*, draft_service=None):
-    from django.utils.module_loading import import_string
+def build_report_assist_service(*, draft_service=None, task_runs=None, principal_resolver=None):
     from project_management.services.report_assists import ReportAssistService
     from project_management.app.domain.report_contracts import ReportError
     from project_management.app.domain.summary_contracts import AnalysisError
+    from project_management.runtime import get_project_runtime
 
+    if (task_runs is None) != (principal_resolver is None):
+        raise ReportError('REPORT_AI_UNAVAILABLE')
+    if task_runs is None:
+        runtime = get_project_runtime()
+        if runtime is not None and runtime.run_service.analysis_service is not None:
+            task_runs = runtime.run_service.analysis_service.task_run_port
+            principal_resolver = lambda actor: runtime.run_service.principal_resolver(actor, None, None)
     draft_service = draft_service or build_report_service()
     try:
         contract = _authoring_contract()
     except AnalysisError:
         raise ReportError('REPORT_AI_UNAVAILABLE') from None
-    factory = getattr(settings, 'METRICS_REPORT_ASSIST_FACTORY', None)
-    if factory is None:
-        return ReportAssistService(draft_service, contract)
-    if isinstance(factory, str):
-        factory = import_string(factory)
-    service = factory(draft_service=draft_service, contract=contract)
-    if (not isinstance(service, ReportAssistService) or service.drafts is not draft_service
-            or service.contract.definition_hash != contract.definition_hash):
-        raise ReportError('REPORT_AI_UNAVAILABLE')
-    return service
+    return ReportAssistService(
+        draft_service, contract, task_run_port=task_runs, principal_resolver=principal_resolver,
+    )

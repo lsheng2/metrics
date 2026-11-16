@@ -9,7 +9,7 @@ from project_management.app.api.project_runs import RunError, RunPolicy
 from project_management.tests.project_run_fixtures import ManualRunEnvironment
 
 
-def test_FS01_same_command_replays_original_request_without_new_backend_or_capture(tmp_path):
+def test_FS01_same_command_replays_original_request_without_new_principal_or_capture(tmp_path):
     environment = ManualRunEnvironment(tmp_path / 'archive-root', policy=RunPolicy(timeout_seconds=5))
     command_id = str(uuid.uuid4())
     request = environment.request(command_id)
@@ -25,11 +25,11 @@ def test_FS01_same_command_replays_original_request_without_new_backend_or_captu
         'queued',
     )
     assert first.deadline_at.endswith('.123Z')
-    assert environment.backend_calls == 1
+    assert environment.principal_calls == 1
     assert environment.provider.open_count == 0
 
 
-def test_FS01_conflicting_payload_and_foreign_owner_have_no_capture_or_backend_side_effects(tmp_path):
+def test_FS01_conflicting_payload_and_foreign_owner_have_no_capture_or_principal_side_effects(tmp_path):
     environment = ManualRunEnvironment(tmp_path / 'archive-root')
     request = environment.request(str(uuid.uuid4()))
     environment.run_service.submit(environment.actor, environment.project.id, environment.stage.id, request)
@@ -49,7 +49,7 @@ def test_FS01_conflicting_payload_and_foreign_owner_have_no_capture_or_backend_s
             str(uuid.uuid5(uuid.UUID(environment.stage.id), f'run:{request.command_id}')),
         )
 
-    assert (conflict.value.code, foreign.value.code, environment.backend_calls, environment.provider.open_count) == (
+    assert (conflict.value.code, foreign.value.code, environment.principal_calls, environment.provider.open_count) == (
         'RUN_COMMAND_CONFLICT',
         'RUN_NOT_FOUND',
         1,
@@ -144,7 +144,7 @@ def test_FS02_actual_capture_analysis_and_report_services_create_unfinalized_dra
     assert not tuple((archive_root / 'archive').glob('report_publications/*/manifest.json'))
 
 
-def test_FS03_second_unchanged_capture_reuses_original_summary_without_another_sdk_post(tmp_path):
+def test_FS03_second_unchanged_capture_reuses_original_summary_without_another_runtime_start(tmp_path):
     environment = ManualRunEnvironment(tmp_path / 'archive-root')
     first = environment.run_service.submit(
         environment.actor,
@@ -242,7 +242,7 @@ def test_FS04_unknown_exposure_stops_later_member_dispatch(tmp_path):
         items=items,
         policy=RunPolicy(max_observations_per_attempt=1),
     )
-    environment.http.force_running = True
+    environment.http.force_unknown = True
     operation = environment.run_service.submit(
         environment.actor,
         environment.project.id,
@@ -254,4 +254,5 @@ def test_FS04_unknown_exposure_stops_later_member_dispatch(tmp_path):
 
     assert completed.state == 'partial'
     assert [item.attempt_id is not None for item in completed.item_results] == [True, False]
+    assert completed.item_results[0].error_code == 'runtime_outcome_unknown'
     assert [request[0] for request in environment.http.requests].count('POST') == 1

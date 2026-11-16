@@ -2,22 +2,20 @@ from copy import deepcopy
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-import asyncio
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 import uuid
 
-from ai_base_application_sdk import TaskRunClient
-import httpx
-
 from project_management.app.api import ProjectActor, ProjectError
-from project_management.app.api.capture_archive import MembershipInput, PartCoverage
+from project_management.app.api.capture_archive import MembershipInput
 from project_management.app.domain.capture_values import canonical_bytes, content_hash, decode_json, sha256_bytes
 from project_management.app.domain.captures import ArchiveError, ArchiveStorageConfig
 from project_management.app.domain.summary_contracts import AcceptedSummary, AnalysisError
 from project_management.app.api.summary_analysis import SummaryAnalysisService
+from project_management.app.domain.task_runs import TaskResultSummary, TaskRunCancellation
 from project_management.app.spi.archive import CommitReceipt
 from project_management.storage.paths import safe_relative_path
 from project_management.tests.capture_archive_fixtures import ProjectApiStub
@@ -25,30 +23,27 @@ from project_management.tests.report_source_memory import (
     MemoryCaptureArchiveService, MemoryRepository, MemoryRepositoryFactory,
 )
 from project_management.tests.summary_fixtures import SummaryScenario
+from project_management.tests.test_summary_analysis import MemoryJournal, RecordingPort
 
 
-class CancellationMemoryJournal:
+class CancellationMemoryJournal(MemoryJournal):
     def __init__(self, attempt):
-        self.attempt = attempt
-        self.observations = []
+        super().__init__(attempt)
         self.cancel_requests = 0
         self.dispatch_claims = 0
         self.cancel_on_claim = False
         self.cancel_on_accept = False
 
     def read_analysis_attempt(self, *args):
-        return deepcopy(self.attempt)
+        return self.attempt
 
     def request_analysis_cancel(self, *args):
         self.cancel_requests += 1
         self.attempt = replace(self.attempt, cancel_requested=True)
-        return deepcopy(self.attempt)
+        return self.attempt
 
     def read_analysis_observations(self, *args):
         return tuple(deepcopy(row) for row in self.observations)
-
-    def record_analysis_observation(self, *args, cancellation=False):
-        self.observations.append(deepcopy(args[-1]))
 
     def claim_analysis_dispatch(self, *args, cancel_requested=None):
         self.dispatch_claims += 1
@@ -66,33 +61,10 @@ class CancellationMemoryJournal:
             self.attempt = replace(self.attempt, cancel_requested=True)
         if self.attempt.cancel_requested:
             raise AnalysisError('ANALYSIS_CANCELED')
-        candidate = contract.validate_result(self.attempt, snapshot, result)
+        candidate = contract.validate_result(self.attempt.prepared, self.attempt.request, snapshot, result)
         return AcceptedSummary('summary-fixture', 1, self.attempt.prepared.target_capture_id,
                                self.attempt.prepared.source_hash, contract.definition_hash,
-                               self.attempt.prepared.input_hash, candidate, deepcopy(result))
-
-
-class SlowCancelClient:
-    def __init__(self, snapshot, response, *, delay):
-        self.snapshot = snapshot
-        self.response = response
-        self.delay = delay
-        self.calls = []
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *args):
-        return None
-
-    async def get_by_client_key(self, scope_key, client_run_key):
-        self.calls.append('lookup')
-        await asyncio.sleep(self.delay)
-        return deepcopy(self.snapshot)
-
-    async def cancel(self, scope_key, run_id):
-        self.calls.append('cancel')
-        return deepcopy(self.response)
+                               self.attempt.prepared.input_hash, candidate, decode_json(canonical_bytes(result)))
 
 
 class WritableMemoryRepository(MemoryRepository):
@@ -136,218 +108,212 @@ class WritableMemoryRepository(MemoryRepository):
         return CommitReceipt(commit, parent, 'f' * 40, record_fingerprint, 'current')
 
 
-class TestAnalysisCancellation(SummaryScenario, unittest.IsolatedAsyncioTestCase):
+class TestAnalysisCancellation(SummaryScenario, unittest.TestCase):
     def service(self, handler):
         self.value = self.attempt()
         self.journal = CancellationMemoryJournal(self.value)
-        self.requests = []
+        self.port = RecordingPort(handler)
+        return SummaryAnalysisService(self.journal, self.contract, self.port)
 
-        def transport(request):
-            self.requests.append((request.method, request.url.path, request.url.params.get('clientRunKey')))
-            return handler(request)
+    def advance(self, service):
+        return service.advance(
+            self.actor, self.project.id, self.stage.id, self.value.attempt_id,
+            principal=self.value.principal,
+        )
 
-        def client(target):
-            return TaskRunClient(
-                base_url=target.base_url, source_app_id=target.source_app_id, run_store_id=target.run_store_id,
-                credential_ref='synthetic-test', token='synthetic-only', transport=httpx.MockTransport(transport),
-            )
-
-        return SummaryAnalysisService(self.journal, self.contract, client)
-
-    async def advance(self, service):
-        return await service.advance(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                     backend=self.value.backend)
+    def cancel(self, service, *, principal=None, timeout_seconds=10):
+        return service.cancel(
+            self.actor, self.project.id, self.stage.id, self.value.attempt_id,
+            principal=principal or self.value.principal,
+            timeout_seconds=timeout_seconds,
+        )
 
     def running_snapshot(self):
         snapshot, _ = self.responses(self.value)
-        snapshot['state'] = 'running'
-        snapshot['terminalAt'] = None
-        snapshot['result'] = {'availability': 'pending', 'sha256': None, 'mediaType': None, 'expiresAt': None}
-        return snapshot
+        return replace(
+            snapshot,
+            status='running',
+            result=TaskResultSummary(output_sha256=None, output_schema_sha256=None, usage=None),
+        )
 
-    def cancel_response(self, *, run_id='run-fixture', remote_stop='confirmed', cancel_applied=True):
-        snapshot = self.running_snapshot()
-        snapshot['runId'] = run_id
-        snapshot['state'] = 'canceled'
-        snapshot['terminalAt'] = '2026-11-02T00:00:40.000Z'
-        snapshot['result'] = {'availability': 'not_produced', 'sha256': None, 'mediaType': None, 'expiresAt': None}
-        snapshot['dispatch']['remoteStop'] = remote_stop
-        return {'contractVersion': 'task-run/1', 'cancelApplied': cancel_applied, 'run': snapshot}
+    def canceled_snapshot(self, run_id='run-fixture'):
+        return replace(
+            self.running_snapshot(),
+            run_id=run_id,
+            status='canceled',
+            result=TaskResultSummary(output_sha256=None, output_schema_sha256=None, usage=None),
+        )
 
-    async def test_shouldPersistCancelIntentAndSkipSdkWhenAttemptWasNeverDispatched(self):
-        service = self.service(lambda request: self.fail('No HTTP request may occur.'))
-        result = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                      backend=self.value.backend)
-        step = await service.advance(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                     backend=self.value.backend)
-        self.assertEqual(('canceled', self.value.attempt_id, None, 'not_requested'),
-                         (result.state, result.attempt_id, result.run_id, result.remote_stop))
-        self.assertEqual(('canceled', 1, 0, []),
-                         (step.state, self.journal.cancel_requests, self.journal.dispatch_claims, self.requests))
+    def cancel_response(self, *, run_id='run-fixture', canceled=True):
+        return TaskRunCancellation(run_id=run_id, canceled=canceled)
 
-    async def test_shouldLookupOriginalKeyOnlyWhenDispatchedRunIsUnknown(self):
-        def handler(request):
-            if request.method == 'GET' and request.url.path == '/api/runs/by-client-key':
-                return httpx.Response(404, json={
-                    'contractVersion': 'task-run/1',
-                    'error': {'code': 'run_not_found', 'recovery': 'stop'},
-                })
-            self.fail(f'Unexpected request: {request.method} {request.url.path}')
+    def test_shouldPersistCancelIntentAndSkipSdkWhenAttemptWasNeverDispatched(self):
+        service = self.service(lambda *args: self.fail('No task-run port call may occur.'))
+        result = self.cancel(service)
+        step = self.advance(service)
+        self.assertEqual(('canceled', self.value.attempt_id, None, None),
+                         (result.state, result.attempt_id, result.run_id, result.acknowledged))
+        self.assertEqual(('canceled', 2, 0, []),
+                         (step.state, self.journal.cancel_requests, self.journal.dispatch_claims, self.port.calls))
+
+    def test_shouldLookupOriginalKeyOnlyWhenDispatchedRunIsUnknown(self):
+        service = self.service(lambda method, *args: None if method == 'lookup' else self.fail('Unexpected admission'))
+        self.journal.attempt = replace(self.value, dispatched=True)
+        result = self.cancel(service)
+        lookup_request = self.port.calls[0][1][1]
+        self.assertEqual(('cancel_requested', None, None, None),
+                         (result.state, result.run_id, result.acknowledged, result.error_code))
+        self.assertEqual(['lookup'], [call[0] for call in self.port.calls])
+        self.assertEqual((self.value.attempt_id, self.value.request.deadline_at),
+                         (lookup_request.client_run_key, lookup_request.deadline_at))
+        self.assertEqual('cancel_requested', self.journal.observations[-1]['state'])
+
+    def test_shouldCancelObservedRunOnceAndReplayStoredOutcome(self):
+        def handler(method, *args):
+            if method == 'cancel':
+                return self.cancel_response()
+            if method == 'get':
+                return self.canceled_snapshot()
+            self.fail(f'Unexpected port call: {method}')
 
         service = self.service(handler)
         self.journal.attempt = replace(self.value, dispatched=True)
-        result = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                      backend=self.value.backend)
-        self.assertEqual(('cancel_requested', None, 'unknown', 'run_not_found'),
-                         (result.state, result.run_id, result.remote_stop, result.error_code))
-        self.assertEqual([('GET', '/api/runs/by-client-key', self.value.attempt_id)], self.requests)
-        self.assertEqual(('cancel_requested', 'unknown'), (self.journal.observations[-1]['state'],
-                                                           self.journal.observations[-1]['remote_stop']))
+        self.journal.observations.append({'snapshot': decode_json(canonical_bytes(self.running_snapshot()))})
+        first = self.cancel(service)
+        replay = self.cancel(service)
+        self.assertEqual(('canceled', 'run-fixture', True),
+                         (first.state, first.run_id, first.acknowledged))
+        self.assertEqual((first, ['cancel', 'get']), (replay, [call[0] for call in self.port.calls]))
+        self.assertEqual(True, self.journal.observations[-1]['cancel']['canceled'])
 
-    async def test_shouldCancelObservedRunOnceAndReplayStoredOutcome(self):
-        def handler(request):
-            self.assertEqual(('POST', '/api/runs/run-fixture/cancel'), (request.method, request.url.path))
-            return httpx.Response(200, json=self.cancel_response(remote_stop='confirmed'))
-
-        service = self.service(handler)
+    def test_shouldRejectRetainedCancelWhenNestedRunIdIsCorrupted(self):
+        service = self.service(lambda method, *args: self.cancel_response() if method == 'cancel'
+                               else self.canceled_snapshot())
         self.journal.attempt = replace(self.value, dispatched=True)
-        self.journal.observations.append({'snapshot': self.running_snapshot()})
-        first = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                     backend=self.value.backend)
-        replay = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                      backend=self.value.backend)
-        self.assertEqual(('canceled', 'run-fixture', 'confirmed'),
-                         (first.state, first.run_id, first.remote_stop))
-        self.assertEqual((first, [('POST', '/api/runs/run-fixture/cancel', None)]), (replay, self.requests))
-        self.assertEqual(True, self.journal.observations[-1]['cancel']['cancelApplied'])
-
-    async def test_shouldRejectRetainedCancelWhenNestedRunIdIsCorrupted(self):
-        service = self.service(lambda request: httpx.Response(200, json=self.cancel_response()))
-        self.journal.attempt = replace(self.value, dispatched=True)
-        self.journal.observations.append({'snapshot': self.running_snapshot()})
-        await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                             backend=self.value.backend)
-        self.journal.observations[-1]['cancel']['run']['runId'] = 'another-run'
+        self.journal.observations.append({'snapshot': decode_json(canonical_bytes(self.running_snapshot()))})
+        self.cancel(service)
+        self.journal.observations[-1]['cancel']['run_id'] = 'another-run'
         with self.assertRaises(AnalysisError) as caught:
-            await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                 backend=self.value.backend)
-        self.assertEqual(('ANALYSIS_RESULT_INVALID', [('POST', '/api/runs/run-fixture/cancel', None)]),
-                         (caught.exception.code, self.requests))
+            self.cancel(service)
+        self.assertEqual(('ANALYSIS_RESULT_INVALID', ['cancel', 'get']),
+                         (caught.exception.code, [call[0] for call in self.port.calls]))
 
-    async def test_shouldReplayLookupFirstCancelFromStoredRunIdWithoutAnotherRequest(self):
-        def handler(request):
-            if request.method == 'GET':
-                return httpx.Response(200, json=self.running_snapshot())
-            if request.method == 'POST':
-                return httpx.Response(200, json=self.cancel_response(remote_stop='confirmed'))
-            self.fail(f'Unexpected request: {request.method} {request.url.path}')
+    def test_shouldReplayLookupFirstCancelFromStoredRunIdWithoutAnotherRequest(self):
+        def handler(method, *args):
+            if method == 'lookup':
+                return self.running_snapshot()
+            if method == 'cancel':
+                return self.cancel_response()
+            if method == 'get':
+                return self.canceled_snapshot()
+            self.fail(f'Unexpected port call: {method}')
 
         service = self.service(handler)
         self.journal.attempt = replace(self.value, dispatched=True)
-        first = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                     backend=self.value.backend)
-        replay = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                      backend=self.value.backend)
-        self.assertEqual(('canceled', 'run-fixture', 'confirmed'), (first.state, first.run_id, first.remote_stop))
-        self.assertEqual((first, 'run-fixture',
-                          [('GET', '/api/runs/by-client-key', self.value.attempt_id),
-                           ('POST', '/api/runs/run-fixture/cancel', None)]),
-                         (replay, self.journal.observations[-1]['run_id'], self.requests))
+        first = self.cancel(service)
+        replay = self.cancel(service)
+        self.assertEqual(('canceled', 'run-fixture', True), (first.state, first.run_id, first.acknowledged))
+        self.assertEqual((first, 'run-fixture', ['lookup', 'cancel', 'get']),
+                         (replay, self.journal.observations[-1]['run_id'], [call[0] for call in self.port.calls]))
 
-    async def test_shouldRejectWrongBackendAndInvalidCancelIdentityWithoutRecordingOutcome(self):
-        service = self.service(lambda request: self.fail('Wrong backend must not use HTTP.'))
+    def test_shouldRejectWrongPrincipalAndInvalidCancelIdentityWithoutRecordingOutcome(self):
+        service = self.service(lambda *args: self.fail('Wrong principal must not use task-run port.'))
         with self.assertRaises(AnalysisError) as caught:
-            await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                 backend=replace(self.value.backend, run_store_id='another-store'))
-        self.assertEqual(('ANALYSIS_BACKEND_MISMATCH', [], []),
-                         (caught.exception.code, self.requests, self.journal.observations))
+            self.cancel(service, principal=replace(self.value.principal, subject='other-owner'))
+        self.assertEqual(('ANALYSIS_PRINCIPAL_MISMATCH', [], []),
+                         (caught.exception.code, self.port.calls, self.journal.observations))
 
-        def handler(request):
-            return httpx.Response(200, json=self.cancel_response(run_id='another-run'))
+        def handler(method, *args):
+            if method == 'cancel':
+                return self.cancel_response(run_id='another-run')
+            if method == 'get':
+                return self.canceled_snapshot()
+            self.fail(f'Unexpected port call: {method}')
 
         service = self.service(handler)
         self.journal.attempt = replace(self.value, dispatched=True)
-        self.journal.observations.append({'snapshot': self.running_snapshot()})
+        self.journal.observations.append({'snapshot': decode_json(canonical_bytes(self.running_snapshot()))})
         with self.assertRaises(AnalysisError) as invalid:
-            await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                 backend=self.value.backend)
+            self.cancel(service)
         self.assertEqual(('ANALYSIS_RESULT_INVALID', 1),
                          (invalid.exception.code, len(self.journal.observations)))
 
-    async def test_shouldReturnCanceledWhenIntentWinsDispatchOrAcceptanceRace(self):
-        service = self.service(lambda request: self.fail('Dispatch race must not use HTTP.'))
+    def test_shouldReturnCanceledWhenIntentWinsDispatchOrAcceptanceRace(self):
+        service = self.service(lambda *args: self.fail('Dispatch race must not use task-run port.'))
         self.journal.cancel_on_claim = True
-        first = await self.advance(service)
+        first = self.advance(service)
         self.assertEqual(('canceled', 'ANALYSIS_CANCELED', []),
-                         (first.state, first.error_code, self.requests))
+                         (first.state, first.error_code, self.port.calls))
 
-        def handler(request):
+        def handler(method, *args):
             snapshot, result = self.responses(self.value)
-            return httpx.Response(200, json=result if request.url.path.endswith('/result') else snapshot)
+            return result if method == 'result' else snapshot
 
         service = self.service(handler)
         self.journal.cancel_on_accept = True
-        second = await self.advance(service)
+        second = self.advance(service)
         self.assertEqual(('canceled', 'ANALYSIS_CANCELED',
-                          [('POST', '/api/runs', None), ('GET', '/api/runs/run-fixture/result', None)]),
-                         (second.state, second.error_code, self.requests))
+                          ['start', 'result']),
+                         (second.state, second.error_code, [call[0] for call in self.port.calls]))
 
-    async def test_shouldUseOneSharedControlBudgetForLookupAndCancel(self):
-        service = self.service(lambda request: self.fail('Custom client factory is used.'))
+    def test_shouldUseOneSharedControlBudgetForLookupAndCancel(self):
+        service = self.service(lambda method, *args: self.running_snapshot() if method == 'lookup'
+                               else self.fail(f'Unexpected port call: {method}'))
         self.journal.attempt = replace(self.value, dispatched=True)
-        client = SlowCancelClient(self.running_snapshot(), self.cancel_response(), delay=0.02)
-        service.client_factory = lambda backend: client
-        service.control_timeout_seconds = 0.01
-        result = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                      backend=self.value.backend)
-        self.assertEqual(('cancel_requested', None, 'unknown', 'transport_outcome_unknown', ['lookup']),
-                         (result.state, result.run_id, result.remote_stop, result.error_code, client.calls))
+        with patch('project_management.services.summary_analysis.time.monotonic',
+                   side_effect=[100.0, 100.002, 100.012]):
+            result = self.cancel(service, timeout_seconds=0.01)
+        self.assertEqual(('cancel_requested', 'run-fixture', None, 'runtime_call_timeout', ['lookup']),
+                         (result.state, result.run_id, result.acknowledged, result.error_code,
+                          [call[0] for call in self.port.calls]))
+        self.assertAlmostEqual(0.008, self.port.timeouts[0], places=3)
 
-    async def test_shouldHonorPerCallCancellationTimeoutAtMostTenSeconds(self):
-        service = self.service(lambda request: self.fail('Custom client factory is used.'))
+    def test_shouldHonorPerCallCancellationTimeoutAndRejectInvalidValues(self):
+        def handler(method, *args):
+            if method == 'lookup':
+                return self.running_snapshot()
+            if method == 'cancel':
+                return self.cancel_response()
+            if method == 'get':
+                return self.canceled_snapshot()
+            self.fail(f'Unexpected port call: {method}')
+
+        service = self.service(handler)
         self.journal.attempt = replace(self.value, dispatched=True)
-        client = SlowCancelClient(self.running_snapshot(), self.cancel_response(), delay=0.02)
-        service.client_factory = lambda backend: client
-        result = await service.cancel(
-            self.actor,
-            self.project.id,
-            self.stage.id,
-            self.value.attempt_id,
-            backend=self.value.backend,
-            timeout_seconds=0.01,
-        )
+        with patch('project_management.services.summary_analysis.time.monotonic',
+                   side_effect=[100.0, 100.0, 100.001, 100.002]):
+            result = self.cancel(service, timeout_seconds=0.01)
         with self.assertRaises(AnalysisError):
-            await service.cancel(
-                self.actor,
-                self.project.id,
-                self.stage.id,
-                self.value.attempt_id,
-                backend=self.value.backend,
-                timeout_seconds=11,
-            )
-        self.assertEqual(('cancel_requested', 'transport_outcome_unknown', ['lookup']),
-                         (result.state, result.error_code, client.calls))
+            self.cancel(service, timeout_seconds=0)
+        self.assertEqual(('canceled', True, ['lookup', 'cancel', 'get']),
+                         (result.state, result.acknowledged, [call[0] for call in self.port.calls]))
+        self.assertEqual(3, len(self.port.timeouts))
+        self.assertAlmostEqual(0.01, self.port.timeouts[0], places=3)
+        self.assertAlmostEqual(0.009, self.port.timeouts[1], places=3)
+        self.assertAlmostEqual(0.008, self.port.timeouts[2], places=3)
 
-    async def test_shouldRequeryOriginalKeyWhenPriorUnknownCancelHasObservationRoom(self):
-        def handler(request):
-            if request.method == 'GET':
-                return httpx.Response(200, json=self.running_snapshot())
-            if request.method == 'POST':
-                return httpx.Response(200, json=self.cancel_response(remote_stop='unsupported',
-                                                                     cancel_applied=False))
-            self.fail(f'Unexpected request: {request.method} {request.url.path}')
+    def test_shouldRequeryOriginalKeyWhenPriorUnknownCancelHasObservationRoom(self):
+        def handler(method, *args):
+            if method == 'lookup':
+                return self.running_snapshot()
+            if method == 'cancel':
+                return self.cancel_response(canceled=False)
+            if method == 'get':
+                return self.canceled_snapshot()
+            self.fail(f'Unexpected port call: {method}')
 
         service = self.service(handler)
         self.journal.attempt = replace(self.value, dispatched=True)
         self.journal.observations.append({
-            'state': 'cancel_requested', 'remote_stop': 'unknown', 'code': 'run_not_found',
+            'state': 'cancel_requested', 'code': 'run_not_found',
         })
-        result = await service.cancel(self.actor, self.project.id, self.stage.id, self.value.attempt_id,
-                                      backend=self.value.backend)
-        self.assertEqual(('canceled', 'run-fixture', 'unsupported',
-                          [('GET', '/api/runs/by-client-key', self.value.attempt_id),
-                           ('POST', '/api/runs/run-fixture/cancel', None)]),
-                         (result.state, result.run_id, result.remote_stop, self.requests))
+        result = self.cancel(service)
+        lookup_request = self.port.calls[0][1][1]
+        self.assertEqual(('canceled', 'run-fixture', False, ['lookup', 'cancel', 'get']),
+                         (result.state, result.run_id, result.acknowledged,
+                          [call[0] for call in self.port.calls]))
+        self.assertEqual((self.value.attempt_id, self.value.request.deadline_at),
+                         (lookup_request.client_run_key, lookup_request.deadline_at))
 
 
 class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
@@ -359,21 +325,23 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
         input_hash = sha256_bytes(content.encode())
         prepared = replace(attempt.prepared, input_content=content, input_hash=input_hash)
         attempt_id = str(uuid.uuid5(uuid.UUID(self.stage.id), input_hash))
-        request = deepcopy(attempt.request)
-        request['clientRunKey'] = attempt_id
-        request['input'] = dict(request['input'], content=content, sha256=input_hash)
-        request['logicalInputHash'] = dict(request['logicalInputHash'], digest=input_hash)
+        request = replace(
+            attempt.request,
+            client_run_key=attempt_id,
+            input_json=content,
+            input_sha256=input_hash,
+        )
         return replace(attempt, attempt_id=attempt_id, prepared=prepared, request=request, dispatched=dispatched)
 
     def analysis_files(self, attempts):
         files = {}
         for attempt in attempts:
             stored = replace(attempt, dispatched=False, cancel_requested=False)
-            intent = {'schema_version': 1, 'kind': 'intent', 'attempt_id': attempt.attempt_id, 'payload': stored}
+            intent = {'schema_version': 2, 'kind': 'intent', 'attempt_id': attempt.attempt_id, 'payload': stored}
             files[f'analysis_attempts/{attempt.attempt_id}/intent.json'] = canonical_bytes(intent)
             if attempt.dispatched:
                 dispatch = {
-                    'schema_version': 1,
+                    'schema_version': 2,
                     'kind': 'dispatch',
                     'attempt_id': attempt.attempt_id,
                     'payload': {'intent_hash': content_hash(intent),
@@ -408,15 +376,11 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
 
     def prepare(self, archive, source_key):
         return archive.prepare_analysis(self.actor, self.project.id, self.stage.id, source_key, self.contract,
-                                        self.backend(), datetime.now(UTC) + timedelta(minutes=5)).attempt
+                                        self.principal(), datetime.now(UTC) + timedelta(minutes=5)).attempt
 
     def cancel_response(self, attempt):
         snapshot, _ = self.responses(attempt)
-        snapshot['state'] = 'canceled'
-        snapshot['terminalAt'] = '2026-11-02T00:00:40.000Z'
-        snapshot['result'] = {'availability': 'not_produced', 'sha256': None, 'mediaType': None, 'expiresAt': None}
-        snapshot['dispatch']['remoteStop'] = 'confirmed'
-        return {'contractVersion': 'task-run/1', 'cancelApplied': True, 'run': snapshot}
+        return TaskRunCancellation(run_id=snapshot.run_id, canceled=True)
 
     def test_shouldFenceDispatchAndReserveCancelObservationUsingMemoryRepository(self):
         cancel_attempt = self.attempt_variant('cancel-before-dispatch')
@@ -445,7 +409,7 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
         self.assertEqual(('ANALYSIS_CANCELED', 'ANALYSIS_OBSERVATION_LIMIT', True),
                          (dispatch_refused.exception.code, ordinary_overflow.exception.code,
                           canceled.cancel_requested))
-        self.assertEqual((17, True), (len(observations), observations[-1]['cancel']['cancelApplied']))
+        self.assertEqual((17, True), (len(observations), observations[-1]['cancel']['canceled']))
 
     def test_shouldReplayAcceptedSummaryAfterLaterCancelRequestUsingMemoryRepository(self):
         with self.memory_archive({}) as archive:
@@ -467,7 +431,7 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
         files = self.analysis_files((attempt,))
         cancel_path = f'analysis_attempts/{attempt.attempt_id}/cancel.json'
         files[cancel_path] = canonical_bytes({
-            'schema_version': 1,
+            'schema_version': 2,
             'kind': 'cancel',
             'attempt_id': attempt.attempt_id,
             'payload': {'intent_hash': '0' * 64, 'requested_at': datetime.now(UTC).isoformat()},
@@ -479,13 +443,10 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
             with self.assertRaises(AnalysisError) as read_error:
                 archive.read_analysis_attempt(self.actor, self.project.id, self.stage.id, attempt.attempt_id)
 
-            def client_factory(backend):
-                raise AssertionError('Damaged cancel intent must not construct SDK client.')
-
-            service = SummaryAnalysisService(archive, self.contract, client_factory)
+            service = SummaryAnalysisService(archive, self.contract, object())
             with self.assertRaises(AnalysisError) as cancel_error:
-                asyncio.run(service.cancel(self.actor, self.project.id, self.stage.id, attempt.attempt_id,
-                                           backend=attempt.backend))
+                service.cancel(self.actor, self.project.id, self.stage.id, attempt.attempt_id,
+                               principal=attempt.principal)
 
             self.assertEqual(('ANALYSIS_INVALID', 'ANALYSIS_INVALID', before),
                              (read_error.exception.code, cancel_error.exception.code, repository.files))
@@ -532,7 +493,7 @@ class TestAnalysisCancellationJournal(SummaryScenario, unittest.TestCase):
                     self.stage.id,
                     source_key,
                     self.contract,
-                    self.backend(),
+                    self.principal(),
                     datetime.now(UTC) + timedelta(minutes=5),
                     cancel_requested=lambda: True,
                 )

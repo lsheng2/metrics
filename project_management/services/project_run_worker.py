@@ -1,5 +1,4 @@
 from dataclasses import replace
-import asyncio
 import time
 import uuid
 
@@ -161,14 +160,14 @@ class ProjectRunWorker:
         return tuple(results)
 
     def _prepare_and_advance(self, actor, project_id, stage_id, operation, source_key, key_hash, cancel_phase):
-        _, policy, backend, _, _ = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)
+        _, policy, binding, _, _ = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)
         try:
             prepared = self.run_service.analysis_service.prepare(
                 actor,
                 project_id,
                 stage_id,
                 source_key,
-                backend=backend,
+                principal=self._analysis_principal(binding),
                 deadline_at=parse_instant(operation.deadline_at),
                 cancel_requested=lambda: self._cancel_requested(actor, project_id, stage_id, operation.operation_id),
             )
@@ -189,18 +188,18 @@ class ProjectRunWorker:
                                      cancel_phase)
 
     def _advance_attempt(self, actor, project_id, stage_id, operation, current_result, key_hash, cancel_phase):
-        _, policy, backend, _, _ = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)
+        _, policy, binding, _, _ = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)
         step = None
         for _ in range(policy.max_observations_per_attempt):
             try:
-                step = asyncio.run(self.run_service.analysis_service.advance(
+                step = self.run_service.analysis_service.advance(
                     actor,
                     project_id,
                     stage_id,
                     current_result.attempt_id,
-                    backend=backend,
+                    principal=self._analysis_principal(binding),
                     cancel_requested=lambda: self._cancel_requested(actor, project_id, stage_id, operation.operation_id),
-                ))
+                )
             except AnalysisError as error:
                 return self._record_item(actor, project_id, stage_id, operation, key_hash,
                                          ItemRunResult(key_hash, 'pending', current_result.attempt_id,
@@ -312,16 +311,17 @@ class ProjectRunWorker:
                                                         cancel_requested=True))
 
     def _cancel_attempt(self, actor, project_id, stage_id, operation, key_hash, attempt_id, cancel_phase):
-        _, _, backend, _, _ = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)
+        _, _, binding, _, _ = self.run_service.operation_request(actor, project_id, stage_id, operation.operation_id)
         remaining = self._remaining_cancel_seconds(cancel_phase)
         if remaining <= 0:
             return self._record_item(actor, project_id, stage_id, operation, key_hash,
                                      ItemRunResult(key_hash, 'pending', attempt_id,
                                                    error_code='ANALYSIS_CANCELED'))
         try:
-            result = asyncio.run(self.run_service.analysis_service.cancel(
-                actor, project_id, stage_id, attempt_id, backend=backend, timeout_seconds=remaining,
-            ))
+            result = self.run_service.analysis_service.cancel(
+                actor, project_id, stage_id, attempt_id,
+                principal=self._analysis_principal(binding), timeout_seconds=remaining,
+            )
         except AnalysisError as error:
             return self._record_item(actor, project_id, stage_id, operation, key_hash,
                                      ItemRunResult(key_hash, 'pending', attempt_id, error_code=error.code))
@@ -353,6 +353,15 @@ class ProjectRunWorker:
     def _unresolved(self, operation, key_hash):
         item = next(row for row in operation.item_results if row.source_key_hash == key_hash)
         return item.attempt_id is not None and item.state == 'pending'
+
+    def _analysis_principal(self, binding):
+        contract = self.run_service.analysis_service.contract
+        if (binding is None or binding.profile_id != contract.profile.id
+                or binding.profile_version != contract.profile.version
+                or binding.profile_definition_sha256 != contract.definition_hash
+                or binding.output_schema_sha256 != contract.output_schema_hash):
+            raise AnalysisError('ANALYSIS_CONTRACT_INVALID')
+        return binding.principal
 
     def _report_error(self, error):
         if error.code == 'REPORT_LIMIT':

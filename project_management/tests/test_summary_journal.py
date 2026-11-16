@@ -10,22 +10,9 @@ from project_management.tests.summary_fixtures import SummaryScenario
 
 
 class TestSummaryJournal(SummaryScenario, unittest.TestCase):
-    def capture_source(self, archive, snapshot=None):
-        _, initial = self.summary_source()
-        intent = replace(self.intent(), required_parts=('facts', 'comments', 'history'))
-        archive.prepare(self.actor, intent)
-        page = archive.append_page(self.actor, intent, self.page())
-        source = replace(snapshot or initial, raw_page_ids=(page.page_id,))
-        archive.append_snapshot(self.actor, intent, source)
-        complete = source.consistent and all(getattr(source.coverage, part).state == 'complete'
-                                              for part in intent.required_parts)
-        archive.finalize(self.actor, intent, MembershipInput((source.identity,), self.complete_part(), (page.page_id,)),
-                         complete=complete, failure_code=None if complete else 'SOURCE_INCOMPLETE')
-        return self.source_key(intent, source.identity)
-
     def prepare(self, archive, source_key, **kwargs):
         return archive.prepare_analysis(self.actor, self.project.id, self.stage.id, source_key,
-                                        self.contract, kwargs.get('backend', self.backend()),
+                                        self.contract, kwargs.get('principal', self.principal()),
                                         kwargs.get('deadline_at', datetime.now(UTC) + timedelta(minutes=5)))
 
     def test_shouldPersistDistinctEventsRecoverAndAcceptOnlyOneSummaryUsingRealGit(self):
@@ -33,11 +20,11 @@ class TestSummaryJournal(SummaryScenario, unittest.TestCase):
             source_key = self.capture_source(archive)
             prepared = self.prepare(archive, source_key)
             attempt = prepared.attempt
-            self.assertRegex(attempt.request['deadlineAt'], r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$')
+            self.assertEqual(timedelta(0), attempt.request.deadline_at.utcoffset())
             renewed = self.prepare(archive, source_key, deadline_at=datetime.now(UTC) + timedelta(minutes=9))
             self.assertEqual(attempt.request, renewed.attempt.request)
             with self.assertRaises(AnalysisError):
-                self.prepare(archive, source_key, backend=replace(self.backend(), run_store_id='another-store'))
+                self.prepare(archive, source_key, principal=replace(self.principal(), subject='other-owner'))
             with self.assertRaises(ProjectError):
                 archive.read_analysis_attempt(ProjectActor('other-owner'), self.project.id, self.stage.id, attempt.attempt_id)
             self.assertTrue(archive.claim_analysis_dispatch(self.actor, self.project.id, self.stage.id, attempt.attempt_id))

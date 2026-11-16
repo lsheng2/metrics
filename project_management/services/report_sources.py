@@ -218,7 +218,7 @@ class ReportSourceReader:
                 accepted.target_capture_id,
                 accepted.source_hash,
                 accepted.input_hash,
-                accepted.run_result['sha256'],
+                accepted.run_result['output_sha256'],
                 repository.commit_for_path(summary_path),
             ),
             what=candidate['what'],
@@ -228,7 +228,7 @@ class ReportSourceReader:
             blocker_refs=tuple(candidate['blockers']),
             limitation_refs=tuple(candidate['limitations']),
             evidence=evidence,
-            summary_as_of=summary_snapshot.get('terminalAt'),
+            summary_as_of=None,
             pending_reason=None,
         )
 

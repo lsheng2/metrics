@@ -1,6 +1,7 @@
 import json
 
 from .defaults import *
+from metrics.auth import load_basic_auth_users
 
 
 def metrics_list_setting(name, default=None):
@@ -54,8 +55,11 @@ DATABASES['default']['NAME'] = METRICS_SQLITE_DATABASE_PATH
 
 # Application deployment setup
 METRICS_BASE_URL = env.str('METRICS_BASE_URL', default='')
-METRICS_BASIC_AUTH_USERS = env.json('METRICS_BASIC_AUTH_USERS', default=None)
+METRICS_BASIC_AUTH_USERS = load_basic_auth_users(env.str('METRICS_BASIC_AUTH_USERS', default=None))
 METRICS_PROJECT_LOCAL_OPERATOR_USERNAME = env.str('METRICS_PROJECT_LOCAL_OPERATOR_USERNAME', default='')
+METRICS_AI_MODEL_BASE_URL = env.str('METRICS_AI_MODEL_BASE_URL', default='')
+METRICS_AI_MODEL_NAME = env.str('METRICS_AI_MODEL_NAME', default='')
+METRICS_AI_MODEL_API_KEY = env.str('METRICS_AI_MODEL_API_KEY', default='')
 
 # Task tracker
 METRICS_TASK_TRACKER = env.str('METRICS_TASK_TRACKER', default='jira')

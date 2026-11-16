@@ -21,7 +21,6 @@ from project_management.app.domain.run_contracts import (
     RunRequest,
 )
 from project_management.app.domain.run_item_values import validate_item_progress
-from project_management.app.domain.summary_contracts import AiBackendTarget
 
 
 RUN_STATES = {
@@ -164,7 +163,6 @@ def operation_from_mapping(value: Mapping) -> RunOperation:
         snapshot_hash=optional_hash(value['snapshot_hash']),
         template_hash=optional_hash(value['template_hash']),
         error_code=optional_error(value['error_code']),
-        execution_mode=literal(value['execution_mode'], 'synthetic'),
     )
     if operation.capture_id != capture_id(operation.operation_id):
         raise RunError('RUN_STORAGE_INVALID')
@@ -200,19 +198,6 @@ def policy_from_mapping(value: Mapping) -> RunPolicy:
         raise
 
 
-def backend_from_mapping(value: Mapping) -> AiBackendTarget:
-    if set(value) != {'base_url', 'source_app_id', 'run_store_id', 'scope_key', 'grant_revision', 'limit_policy_revision'}:
-        raise RunError('RUN_STORAGE_INVALID')
-    return AiBackendTarget(
-        text(value['base_url'], 2048),
-        text(value['source_app_id'], 256),
-        text(value['run_store_id'], 256),
-        text(value['scope_key'], 2048),
-        text(value['grant_revision'], 256),
-        text(value['limit_policy_revision'], 256),
-    )
-
-
 def policy_payload(policy: RunPolicy):
     return {
         'timeout_seconds': policy.timeout_seconds,
@@ -243,7 +228,6 @@ def validate_transition(current: RunOperation, candidate: RunOperation) -> None:
         'created_at',
         'deadline_at',
         'capture_id',
-        'execution_mode',
     )
     if any(getattr(current, name) != getattr(candidate, name) for name in immutable):
         raise RunError('RUN_REVISION_CONFLICT')

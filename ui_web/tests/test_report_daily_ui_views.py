@@ -1,5 +1,5 @@
 import json
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime, timedelta
 from io import StringIO
 from unittest.mock import patch
@@ -14,10 +14,12 @@ from project_management.app.api.project_runs import (
     ProjectRunRuntime,
     ProjectRunService,
     ProjectRunWorker,
-    build_project_runtime,
     clear_project_runtime,
     install_project_runtime,
 )
+from project_management.app.api.report_factories import build_report_preparation_for_run
+from project_management.app.api.task_runtime import LocalTaskRunPort
+from project_management.app.domain.task_runs import TaskPrincipal
 from project_management.app.api.capture_archive import (
     CaptureCoverage,
     CaptureIntent,
@@ -39,6 +41,12 @@ from ui_web.tests.project_fixtures import ProjectRouteTestSupport, basic_header
 
 def choice(selection):
     return f'user|{selection.template_id}|{selection.revision}|{selection.revision_hash}'
+
+
+def prepared_runtime(run_service):
+    return ProjectRunRuntime(run_service, ProjectRunWorker(
+        run_service, daily_preparation_service=build_report_preparation_for_run(run_service),
+    ))
 
 
 def preview_url(fixture):
@@ -259,11 +267,8 @@ def test_should_wire_registered_runtime_into_daily_preparation_service(tmp_path,
         lambda *args: None,
         notifier=lambda *args: None,
     )
-    runtime = ProjectRunRuntime(run_service, ProjectRunWorker(run_service))
-
-    with override_settings(METRICS_PROJECT_RUNTIME_FACTORY=lambda: runtime):
-        built = build_project_runtime()
-    preparation = built.worker.daily_preparation_service
+    runtime = prepared_runtime(run_service)
+    preparation = runtime.worker.daily_preparation_service
     assert preparation is not None
     with patch_default_facade(monkeypatch, daily_fixture, runtime):
         facade = facade_module.default_report_facade()
@@ -408,9 +413,15 @@ def test_shouldExecuteManualRefreshFromCliThroughConfiguredDailyWorker(tmp_path)
     _, run_service = refresh_manual_service(fixture, ({
         'stable_id': 'ALPHA-1', 'summary': 'Manual refresh source', 'status': 'Fixed',
     },))
-    runtime = ProjectRunRuntime(run_service, ProjectRunWorker(run_service))
+    runtime = prepared_runtime(run_service)
     output = StringIO()
-    with override_settings(METRICS_PROJECT_RUNTIME_FACTORY=lambda: runtime):
+    local = LocalTaskRunPort(object(), lambda actor, *args: TaskPrincipal(
+        subject=actor.subject, runtime_subject=actor.subject, display_name=actor.subject, anonymous=True,
+    ))
+    with patch('project_management.management.commands.project_run.open_local_task_run_port',
+               return_value=nullcontext(local)), \
+            patch('project_management.management.commands.project_run.build_project_runtime',
+                  return_value=runtime) as factory:
         call_command(
             'project_run', 'prepare', fixture.project.id, fixture.stage.id,
             '--command-id', draft_command(9440),
@@ -423,6 +434,7 @@ def test_shouldExecuteManualRefreshFromCliThroughConfiguredDailyWorker(tmp_path)
             '--source-mode', 'refresh', '--analysis-mode', 'manual_only', '--execute-local',
             stdout=output,
         )
+        factory.assert_called_once_with(task_runs=local.task_runs, principal_resolver=local.principal_resolver)
 
     result = json.loads(output.getvalue())['result']
     draft = fixture.draft_service.get(fixture.actor, fixture.project.id, fixture.stage.id, result['draft_id'])

@@ -1,7 +1,9 @@
 from collections import deque
 from dataclasses import dataclass, replace
 import importlib
+import math
 import threading
+import time
 
 from django.db import connections
 
@@ -51,10 +53,10 @@ class ProjectRunRuntime:
             )
             self._thread.start()
 
-    def stop(self, timeout_seconds):
-        if type(timeout_seconds) not in {int, float} or timeout_seconds < 0:
-            timeout_seconds = 0
+    def request_stop(self):
         with self._condition:
+            if self._stopping.is_set():
+                return self._active is not None
             self._accepting = False
             if self.run_service.notifier is self.notifier:
                 self.run_service.notifier = None
@@ -70,12 +72,25 @@ class ProjectRunRuntime:
         if active is not None:
             if not self._request_cancel(active):
                 self._unresolved.add(active.operation_id)
+        return active is not None
+
+    def wait_stopped(self, timeout_seconds):
+        if (type(timeout_seconds) not in {int, float}
+                or not math.isfinite(timeout_seconds) or timeout_seconds < 0):
+            timeout_seconds = 0
+        deadline = time.monotonic() + timeout_seconds
         thread = self._thread
         if thread is not None:
-            thread.join(timeout_seconds)
+            while thread.is_alive():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                thread.join(min(0.5, remaining))
         alive = thread is not None and thread.is_alive()
-        active_id = self._active.operation_id if alive and self._active is not None else None
-        unresolved = set(self._unresolved)
+        with self._condition:
+            active = self._active
+            unresolved = set(self._unresolved)
+        active_id = active.operation_id if alive and active is not None else None
         if active_id is not None:
             unresolved.add(active_id)
         return RuntimeStopResult(not alive, active_id, tuple(sorted(unresolved)))
@@ -200,8 +215,10 @@ def clear_project_runtime(runtime):
             _INSTALLED_RUNTIME = None
 
 
-def build_project_runtime():
-    return importlib.import_module('project_management.app.api.run_factories').build_project_runtime()
+def build_project_runtime(*, task_runs, principal_resolver):
+    return importlib.import_module('project_management.app.api.run_factories').build_project_runtime(
+        task_runs=task_runs, principal_resolver=principal_resolver,
+    )
 
 
 def build_run_read_service():

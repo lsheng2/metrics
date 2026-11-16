@@ -1,13 +1,10 @@
 from typing import Mapping
 
-from project_management.app.domain.capture_values import content_hash
+from project_management.app.domain.capture_values import content_hash, json_value
 from project_management.app.domain.run_contracts import RunError, RunOperation
 from project_management.app.domain.run_values import (
-    backend_from_mapping,
-    bool_value,
     capture_id,
     int_value,
-    literal,
     mapping_value,
     operation_id,
     parse_instant,
@@ -22,18 +19,8 @@ from project_management.app.domain.run_values import (
     validate_hash_text,
     validate_uuid_text,
 )
-from project_management.app.domain.summary_contracts import AiBackendTarget
-
-
-def backend_payload(backend: AiBackendTarget):
-    return {
-        'base_url': backend.base_url,
-        'source_app_id': backend.source_app_id,
-        'run_store_id': backend.run_store_id,
-        'scope_key': backend.scope_key,
-        'grant_revision': backend.grant_revision,
-        'limit_policy_revision': backend.limit_policy_revision,
-    }
+from project_management.app.domain.task_run_codec import binding_from_record
+from project_management.app.domain.task_runs import TaskRunBinding
 
 
 def capture_limits_payload(limits):
@@ -67,12 +54,11 @@ def capture_limits_from_mapping(value: Mapping):
     return {key: int_value(value[key]) for key in expected}
 
 
-def stored_request_payload(operation: RunOperation, request, policy, backend: AiBackendTarget,
+def stored_request_payload(operation: RunOperation, request, policy, binding: TaskRunBinding | None,
                            request_hash_value: str, capture_limits=None):
     request_body = request_payload(request)
-    schema_version = 2 if request_body.get('schema_version') == 2 else 1
     payload = {
-        'schema_version': schema_version,
+        'schema_version': 3,
         'operation_id': operation.operation_id,
         'project_id': operation.project_id,
         'stage_id': operation.stage_id,
@@ -85,12 +71,12 @@ def stored_request_payload(operation: RunOperation, request, policy, backend: Ai
         'created_at': operation.created_at,
         'deadline_at': operation.deadline_at,
         'capture_id': operation.capture_id,
-        'backend': None if backend is None else backend_payload(backend),
+        'task_binding': json_value(binding),
         'capture_limits': capture_limits_payload(capture_limits) if capture_limits is not None else None,
-        'execution_mode': operation.execution_mode,
         'stage_hash': operation.stage_hash,
     }
     payload['admission_hash'] = admission_hash(payload)
+    validate_stored_request(payload)
     return payload
 
 
@@ -109,17 +95,17 @@ def validate_stored_request(value: Mapping):
         'created_at',
         'deadline_at',
         'capture_id',
-        'backend',
+        'task_binding',
         'capture_limits',
-        'execution_mode',
         'stage_hash',
         'admission_hash',
     }
-    if set(value) != expected or value['schema_version'] not in {1, 2}:
+    if (set(value) != expected or type(value['schema_version']) is not int
+            or value['schema_version'] != 3):
         raise RunError('RUN_STORAGE_INVALID')
     request = request_from_mapping(mapping_value(value['request']))
     policy = policy_from_mapping(mapping_value(value['policy']))
-    backend = _backend_from_record(value['backend'], request)
+    binding = _binding_from_record(value['task_binding'], request, value['actor_subject'])
     capture_limits = capture_limits_from_mapping(mapping_value(value['capture_limits']))
     request_hash_value = validate_hash_text(value['request_hash'])
     admission_hash_value = validate_hash_text(value['admission_hash'])
@@ -137,24 +123,23 @@ def validate_stored_request(value: Mapping):
         raise RunError('RUN_STORAGE_INVALID')
     if validate_hash_text(value['policy_hash']) != policy_hash(policy):
         raise RunError('RUN_STORAGE_INVALID')
-    if value['schema_version'] == 1 and value['request'].get('schema_version') == 2:
-        raise RunError('RUN_STORAGE_INVALID')
-    if value['schema_version'] == 2 and value['request'].get('schema_version') != 2:
-        raise RunError('RUN_STORAGE_INVALID')
-    if backend is not None and backend.scope_key != f"projects.{value['project_id']}.stages.{value['stage_id']}":
-        raise RunError('RUN_STORAGE_INVALID')
     if parse_instant(value['deadline_at']) <= parse_instant(value['created_at']):
         raise RunError('RUN_STORAGE_INVALID')
-    return request, policy, backend, request_hash_value, capture_limits
+    return request, policy, binding, request_hash_value, capture_limits
 
 
-def _backend_from_record(value, request):
-    if value is not None:
-        return backend_from_mapping(mapping_value(value))
+def _binding_from_record(value, request, actor_subject):
     target = getattr(request, 'target', None)
-    if target is None or target.analysis_mode != 'manual_only':
-        raise RunError('RUN_STORAGE_INVALID')
-    return None
+    manual = target is not None and target.analysis_mode == 'manual_only'
+    if manual and value is None:
+        return None
+    try:
+        binding = binding_from_record(value)
+        if manual or binding.principal.subject != actor_subject:
+            raise ValueError
+        return binding
+    except (ValueError, TypeError):
+        raise RunError('RUN_STORAGE_INVALID') from None
 
 
 def admission_hash(value: Mapping):
@@ -187,5 +172,4 @@ def original_operation_from_record(value: Mapping) -> RunOperation:
         snapshot_hash=None,
         template_hash=None,
         error_code=None,
-        execution_mode=literal(value['execution_mode'], 'synthetic'),
     )
