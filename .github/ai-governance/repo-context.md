@@ -66,6 +66,18 @@ lane includes the shipped assertions and implemented Metrics boundary checks;
 the ASGI record is not applicable, not a pass. Its success does not by itself
 close the full MDB-2 5.10 lifecycle matrix or 10.4 joined qualification.
 
+The import and retirement gates run from this repository root and do not start
+services. They fail missing/empty scopes and preserve explicit Linux deferrals:
+
+```powershell
+$gateRun = Join-Path '.tmp/runtime-gates' ([guid]::NewGuid().ToString('N'))
+& $reportingPython -I scripts/check_embedded_runtime_boundaries.py --root . --output "$gateRun/boundaries.json"
+& $reportingPython -I scripts/check_retired_ai_paths.py --root . --platform windows --output "$gateRun/retirement.json"
+```
+
+The output must be new. `--platform all` also checks deferred deployment
+definitions; a Windows result never claims that broader gate passed.
+
 ## OpenSpec Authoring
 
 Rules learned with OpenSpec CLI 1.14.x. Validate the change with

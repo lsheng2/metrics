@@ -1,0 +1,1100 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-11-17",
+  "plan_commit": "8bb83d484f49871502ebf88c6e6bde70b2ac9712",
+  "scope": "Windows closure census, not final acceptance",
+  "status_authority": "tasks.md",
+  "assessment": {
+    "agent": "01a1e73f-cd21-77a3-9208-1975c4e0d0ff",
+    "model": "gpt-5.5",
+    "reasoning_effort": "xhigh",
+    "method": "Read-only source and receipt review; parent verified the packet hashes and 19 referenced artifacts.",
+    "runtime_changed_since_packet": false,
+    "future_reuse_rule": "Re-evaluate source, fixture, dependency and candidate inputs after every implementation wave. Historical proof is not final acceptance."
+  },
+  "evidence_registry": {
+    "publication": {
+      "path": "evidence/publication-packet-20261117.json",
+      "sha256": "267668edd30d5a4d255efb61d0b308d899b2bdaf97ac3fa627bd42fd43f5de88",
+      "scope": "Bounded real approval, Grafana publication, history and cleanup",
+      "referenced_artifacts_verified": 7
+    },
+    "retirement": {
+      "path": "evidence/retirement-packet-20261117.json",
+      "sha256": "452d9e34d623d23130c4ac31f6fe797dd58d8f74dece6e4110599b3da7bd59f7",
+      "scope": "Typed task/admission, host and synthetic served-join slices; not all 5.10/10.4",
+      "referenced_artifacts_verified": 12
+    },
+    "workbench": {
+      "path": "evidence/workbench-packet-20261116.json",
+      "sha256": "911fed49c3b102955025b6a015ccb34c7d3c94c1cdc85339c41579b07f789cf8",
+      "scope": "Historical bounded pane/session/context/UI slice; candidate-specific reuse requires V0 comparison"
+    },
+    "historical_decisions": {
+      "path": "tasks.md",
+      "scope": "Previously accepted original checkboxes and linked decision receipts; not new-runtime qualification"
+    }
+  },
+  "task_groups": [
+    {
+      "task_ids": [
+        "0.1",
+        "0.2",
+        "0.3",
+        "0.4",
+        "0.5"
+      ],
+      "classification": "proven",
+      "owner_node": "WIN.RECONCILE",
+      "evidence_refs": [
+        "historical_decisions"
+      ],
+      "required_check": "Retain accepted decisions; do not reinterpret S0b as current adapter qualification."
+    },
+    {
+      "task_ids": [
+        "0.6"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W1.INSTALL",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Candidate identity is proven; full AIB delivery remains external and cannot be closed by this Windows slice."
+    },
+    {
+      "task_ids": [
+        "1.1"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.INSTALL",
+      "evidence_refs": [],
+      "required_check": "Direct hashed wheel, exact dependencies, fresh offline installation, pip check and admission."
+    },
+    {
+      "task_ids": [
+        "1.2"
+      ],
+      "classification": "implement",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Verify existing model/mount/limit settings; implement all signed stop/watchdog/exit constants and missing policy."
+    },
+    {
+      "task_ids": [
+        "1.3"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Worker-thread execution, non-serialized concurrent calls and connection cleanup before/after."
+    },
+    {
+      "task_ids": [
+        "1.4"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [],
+      "required_check": "AST boundary gate with per-family negative mutations and nonzero file inventory."
+    },
+    {
+      "task_ids": [
+        "2.1",
+        "2.2"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Same principal/challenge, malformed Basic settings and exact production/development approval policy."
+    },
+    {
+      "task_ids": [
+        "2.3"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Full event fields, at-least-once insert, bounded lock/retry, append-only guards and auth log/no-row behavior."
+    },
+    {
+      "task_ids": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "4.1",
+        "4.2"
+      ],
+      "classification": "proven",
+      "owner_node": "W3.JOIN",
+      "evidence_refs": [
+        "publication"
+      ],
+      "required_check": "Preserve bounded publication proof; rerun final affected approval/publication consumers."
+    },
+    {
+      "task_ids": [
+        "4.3",
+        "4.5"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "workbench",
+        "publication"
+      ],
+      "required_check": "Exact provider/principal visibility, package validation, host-action and preview determinism negatives."
+    },
+    {
+      "task_ids": [
+        "4.4"
+      ],
+      "classification": "proven",
+      "owner_node": "W3.JOIN",
+      "evidence_refs": [
+        "workbench",
+        "publication"
+      ],
+      "required_check": "Retain bounded ContextRef proof; final session/context and size/selection boundary verification."
+    },
+    {
+      "task_ids": [
+        "5.1"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Exact App-owned task profiles and check_app_package schema validation."
+    },
+    {
+      "task_ids": [
+        "5.2",
+        "5.3",
+        "5.4"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Typed port use, original error/retry categories, CLI busy/cleanup, cancellation and no asyncio.run on AI paths."
+    },
+    {
+      "task_ids": [
+        "5.5",
+        "5.6"
+      ],
+      "classification": "implement",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Actual missing host policy, ended monitoring, absolute stop phases, watchdog, inventory and all exit paths."
+    },
+    {
+      "task_ids": [
+        "5.7",
+        "5.9"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Reconcile remaining launcher/test/doc consumers; preserve already migrated typed factories and validation composition."
+    },
+    {
+      "task_ids": [
+        "5.8"
+      ],
+      "classification": "proven",
+      "owner_node": "W3.JOIN",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Retain schema3 identity/original-byte evidence; final affected-consumer validation."
+    },
+    {
+      "task_ids": [
+        "5.10"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W2.CERTIFY",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Every expanded Windows clause below must be executed or have valid bounded reuse; existing 52-case lane alone is insufficient."
+    },
+    {
+      "task_ids": [
+        "5.11"
+      ],
+      "classification": "implement",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [],
+      "required_check": "Implement fail-closed qualifier before freeze; W3.JOIN executes it."
+    },
+    {
+      "task_ids": [
+        "5.12"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [
+        "retirement"
+      ],
+      "required_check": "Finish current installation/launcher/static-restart docs without changing historical receipts."
+    },
+    {
+      "task_ids": [
+        "6.1"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [],
+      "required_check": "Remove remaining WSGI entry/settings with isolated check and negatives."
+    },
+    {
+      "task_ids": [
+        "6.2"
+      ],
+      "classification": "deferred-with-trigger",
+      "owner_node": "WIN.ACCEPT",
+      "evidence_refs": [],
+      "required_check": "Retain unchecked Linux image requirements.",
+      "deferred_trigger": "Explicit later Linux/container authorization"
+    },
+    {
+      "task_ids": [
+        "6.3"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [],
+      "required_check": "Update and verify Windows operations; keep whole task unchecked while Linux image clauses remain unqualified."
+    },
+    {
+      "task_ids": [
+        "7.1",
+        "7.2"
+      ],
+      "classification": "verify-existing",
+      "owner_node": "W2.HOST",
+      "evidence_refs": [
+        "workbench",
+        "publication"
+      ],
+      "required_check": "Three states, same-session rebind, retry/capacity/cold assets, themes and frame preservation."
+    },
+    {
+      "task_ids": [
+        "7.3",
+        "7.4",
+        "7.5",
+        "7.6"
+      ],
+      "classification": "proven",
+      "owner_node": "W3.JOIN",
+      "evidence_refs": [
+        "workbench",
+        "publication",
+        "historical_decisions"
+      ],
+      "required_check": "Retain bounded actions/workflow/docs/local-data evidence and revalidate affected final consumers."
+    },
+    {
+      "task_ids": [
+        "8.1",
+        "8.2"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [
+        "publication",
+        "retirement"
+      ],
+      "required_check": "Finish remaining route/settings/doc consumer reconciliation; legacy endpoint 404 and full scoped absence."
+    },
+    {
+      "task_ids": [
+        "9.1",
+        "9.2",
+        "9.3",
+        "9.4",
+        "9.7"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.LAUNCH",
+      "evidence_refs": [],
+      "required_check": "Profile2, serve entrypoints, accurate audits, normal owned stop-file shutdown and foreign-process refusal."
+    },
+    {
+      "task_ids": [
+        "9.5"
+      ],
+      "classification": "implement",
+      "owner_node": "W1.RETIRE",
+      "evidence_refs": [],
+      "required_check": "Three rule families with negative mutations; Windows scope does not silently pass deferred global criteria."
+    },
+    {
+      "task_ids": [
+        "9.6",
+        "9.8",
+        "9.9",
+        "9.10"
+      ],
+      "classification": "proven",
+      "owner_node": "W1.LAUNCH",
+      "evidence_refs": [
+        "historical_decisions"
+      ],
+      "required_check": "Protect accepted plugin/provenance/port/encoding fixes while changing entrypoints."
+    },
+    {
+      "task_ids": [
+        "10.1"
+      ],
+      "classification": "proven",
+      "owner_node": "W3.JOIN",
+      "evidence_refs": [
+        "publication"
+      ],
+      "required_check": "Fresh final-candidate joined workflow, rendered chart and correlated history/audit, not another architecture prototype."
+    },
+    {
+      "task_ids": [
+        "10.2"
+      ],
+      "classification": "implement",
+      "owner_node": "W3.JOIN",
+      "evidence_refs": [],
+      "required_check": "All final required module/gate inventories and source/fixture identities, no default-discovery shortcut."
+    },
+    {
+      "task_ids": [
+        "10.3"
+      ],
+      "classification": "implement",
+      "owner_node": "W3.REHEARSE",
+      "evidence_refs": [],
+      "required_check": "Actual old/new synthetic upgrade/restore with immutable snapshot; Windows source tag in owned copy; image clause remains deferred."
+    },
+    {
+      "task_ids": [
+        "10.4"
+      ],
+      "classification": "implement",
+      "owner_node": "W2.CERTIFY",
+      "evidence_refs": [],
+      "required_check": "Fresh native Windows current-adapter qualification, exact thresholds and exclusive measurement."
+    },
+    {
+      "task_ids": [
+        "PUB.CORRELATION",
+        "PUB.REFREEZE"
+      ],
+      "classification": "proven",
+      "owner_node": "WIN.RECONCILE",
+      "evidence_refs": [
+        "publication",
+        "historical_decisions"
+      ],
+      "required_check": "Preserve accepted approval accessor/preview ownership decisions."
+    }
+  ],
+  "clause_groups": {
+    "auth": {
+      "producer_paths": [
+        "metrics/auth.py",
+        "ai_host/host.py",
+        "ai_host/settings.py"
+      ],
+      "consumer_paths": [
+        "ai_host/tests/conformance_host_cases.py",
+        "metrics/tests/test_basic_auth_config.py",
+        "ai_host/tests/test_host.py"
+      ],
+      "owner_node": "W2.HOST",
+      "validation_ids": [
+        "V3",
+        "V6"
+      ]
+    },
+    "http": {
+      "producer_paths": [
+        "ai_host/wiring.py",
+        "ai_host/management/commands/serve.py",
+        "ai_host/settings.py"
+      ],
+      "consumer_paths": [
+        "ai_host/tests/conformance_order_cases.py",
+        "ai_host/tests/conformance_http_cases.py",
+        "ai_host/tests/conformance_server.py"
+      ],
+      "owner_node": "W2.HOST",
+      "validation_ids": [
+        "V6",
+        "V7"
+      ]
+    },
+    "runtime": {
+      "producer_paths": [
+        "ai_host/task_runs.py",
+        "ai_host/package.py",
+        "ai_host/runtime_artifact.json"
+      ],
+      "consumer_paths": [
+        "ai_host/tests/conformance_fixtures.py",
+        "ai_host/tests/conformance_suite.py"
+      ],
+      "planned_consumer_paths": [
+        "ai_host/tests/conformance_runtime_cases.py",
+        "ai_host/tests/conformance_recovery_cases.py"
+      ],
+      "owner_node": "W2.HOST",
+      "validation_ids": [
+        "V7"
+      ]
+    },
+    "stop": {
+      "producer_paths": [
+        "ai_host/management/commands/serve.py",
+        "ai_host/lifecycle.py",
+        "ai_host/state.py",
+        "project_management/runtime.py"
+      ],
+      "consumer_paths": [
+        "ai_host/tests/test_lifecycle.py",
+        "ai_host/tests/test_serve_lifecycle.py"
+      ],
+      "planned_consumer_paths": [
+        "ai_host/tests/test_serve_shutdown_budget.py",
+        "ai_host/tests/test_serve_exit_inventory.py",
+        "ai_host/tests/test_serve_liveness.py"
+      ],
+      "owner_node": "W2.HOST",
+      "validation_ids": [
+        "V4",
+        "V5",
+        "V7"
+      ]
+    },
+    "business": {
+      "producer_paths": [
+        "ai_host/package.py",
+        "ai_host/context_provider.py",
+        "ai_host/host_actions.py",
+        "ui_web/static/js/workbench-ai.js"
+      ],
+      "consumer_paths": [
+        "ai_host/tests/test_workbench_package.py",
+        "ai_host/tests/test_workbench_browser_join.py",
+        "ai_host/tests/test_publication_browser_join.py",
+        "ai_host/tests/test_report_runtime_join.py"
+      ],
+      "owner_node": "W3.JOIN",
+      "validation_ids": [
+        "V6",
+        "V9"
+      ]
+    },
+    "measurement": {
+      "producer_paths": [
+        "ai_host/management/commands/serve.py",
+        "ai_host/lifecycle.py",
+        "ai_host/wiring.py"
+      ],
+      "planned_consumer_paths": [
+        "scripts/validation/windows_host_qualification.py",
+        "scripts/tests/test_windows_host_qualification.py"
+      ],
+      "owner_node": "W2.CERTIFY",
+      "validation_ids": [
+        "V8"
+      ]
+    }
+  },
+  "clauses": [
+    {
+      "task_id": "5.10",
+      "clause_id": "explicit-testkit-lane",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Plugin and five required fixtures explicit; root pytest has neither plugin nor ai_host_modes; assertion IDs/runtime/OS/Python retained."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "asgi-nonapplicability",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "ASGI is reported not applicable and never counted as a Windows host pass."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "same-principal-and-challenge",
+      "group": "auth",
+      "classification": "verify-existing",
+      "required_check": "Django/runtime return the same authenticated principal; missing/wrong credentials both401 with identical challenge."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "allowed-host-forms",
+      "group": "auth",
+      "classification": "verify-existing",
+      "cases": [
+        "127.0.0.1:8793",
+        "localhost:8793",
+        "[::1]:8793",
+        "explicit configured Host"
+      ],
+      "required_check": "All configured valid forms processed; hostile Host rejected before either view."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "host-order-matrix",
+      "group": "http",
+      "classification": "verify-existing",
+      "dimensions": {
+        "surface": [
+          "Django",
+          "/ai",
+          "UI asset"
+        ],
+        "credential": [
+          "present",
+          "absent"
+        ],
+        "host_state": [
+          "running",
+          "stopping"
+        ]
+      },
+      "required_check": "Each invalid-Host combination returns L1 fixed400 before authentication/shutdown; no view executes."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "valid-host-stopping",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "All valid-Host paths during stop return L1 503 and Retry-After2 before auth; no hop-by-hop headers."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "auth-before-redirect-assets",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Running unauthenticated bare /ai and assets return401; authenticated bare /ai returns308."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "production-anonymous-approval",
+      "group": "auth",
+      "classification": "verify-existing",
+      "required_check": "Production anonymous principal cannot decide approval; environment cannot enable the development-only policy."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "auth-log-no-audit-row",
+      "group": "auth",
+      "classification": "verify-existing",
+      "required_check": "One sanitized ai_auth_failed log for actual runtime401; runtime audit row count unchanged."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "unauth-concurrent-capacity",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Unauthenticated requests above short limit all401, occupy no slots; concurrent authenticated shorts proceed."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "auth-with-short-slots-full",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Unauthenticated request still401 when authenticated short slots are full."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "oversized-content-length",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "N=8388608; Content-Length>N yields L0 413 before sending body or authentication."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "exact-content-length",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Length exactlyN passes L0; Waitress max_request_body_size is N+1."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "chunked-overflow",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Chunked body exceedingN yields L0 413; distinguish its generated page."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "invalid-content-length",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Non-numeric length yields L0 400 with waitress generated-page provenance."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "body-before-app-admission",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Server completes bounded body receipt before app invocation/admission; incomplete input consumes no runtime slot."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "wsgi-thread-body-reader",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Request body read occurs on WSGI thread with bounded memory/disk and cooperative timeout."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "request-integrity-order",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Reject bad integrity according to D3: Host, integrity, auth,308,UI,not-running,admission."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "resource-ownership",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Session/task/approval resource reads and mutations enforce principal/App ownership."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "frame-ancestors",
+      "group": "business",
+      "classification": "verify-existing",
+      "required_check": "Embedded response enforces the frozen same-origin frame-ancestors contract."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "approval-persistence",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Persisted approvals survive reopen with original preview/decision/consume identity."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "environment-tracer-unchanged",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Embedding leaves os.environ and global tracer unchanged."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "windows-proactor",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Runtime loop is Proactor on native Windows."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "slow-callback",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Slow host callback behavior and diagnostics follow frozen bounds; no silent background work leak."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "busy-lock",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Second owner of the same runtime directory fails RuntimeBusy without stealing state."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "not-running-and-close-http",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "cases": [
+        "not started",
+        "stopping",
+        "after close_http"
+      ],
+      "required_check": "Runtime HTTP returns503 in every named non-running state."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "first-stop-terminal-delivery",
+      "group": "stop",
+      "classification": "implement",
+      "required_check": "Every required open stream gets its terminal event inside HTTP close bound before disconnection."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "final-stop-bound",
+      "group": "stop",
+      "classification": "verify-existing",
+      "required_check": "Second runtime stop finishes within stop_timeout_seconds; incomplete result never becomes normal exit."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "heartbeat",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Idle stream heartbeat arrives at the frozen2s interval."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "disconnect-bound",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Disconnect detected within heartbeat+1s; repeated20 does not accumulate owned tasks/threads."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "wsgi-block-forwarding",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Chunks forwarded incrementally, not buffered until whole response ends."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "separate-capacities",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Independent stream4 and short4 capacities preserve reserved Django workers."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "slot-return-all-paths",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "cases": [
+        "normal end",
+        "exception",
+        "client abort",
+        "stop"
+      ],
+      "required_check": "Both applicable capacity counters return ownership on every termination path."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "counter-diagnostics",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Public diagnostics expose separate in-flight and rejected counts for streams/shorts."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "all-admitted-drain-zero",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "After all admitted requests end, both in-flight counters reach0 within bounded waiting (I1)."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "close-http-zero",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "HttpCloseResult.completed implies stream in-flight0 (I2)."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "bounded-response-backpressure",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Bounded response-block queue imposes actual producer backpressure."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "facade-timeout-cancellation",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "RuntimeCallTimeout cancels loop-side coroutine; waiting does not leave unowned execution."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "loop-thread-misuse",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Calling blocking facade from its loop thread fails immediately."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "client-key-idempotency",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Same client_run_key yields one runtime run and no repeated dispatch."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "blocked-loop-request-bound",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Blocked loop short requests finish within total timeout with503/504."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "blocked-loop-observation",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "After release, loop_stall_count grows and lag maximum reaches the frozen detection threshold."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "asset-bypass-and-prefix",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Authenticated UI assets use neither loop nor admission;200 during stall, URL follows mount prefix, unlisted path404."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "navigation-retry-page",
+      "group": "http",
+      "classification": "verify-existing",
+      "required_check": "Rejected navigation gets the required automatically refreshing503 response."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "ended-visibility",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "handle.ended becomes visible within1s."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "runtime-global-handler-preservation",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Embedding does not replace host signal handlers or atexit ownership."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "host-signal-during-final-stop",
+      "group": "stop",
+      "classification": "implement",
+      "required_check": "Main host signal handler runs within1s during final runtime shutdown."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "context-exit-hard-exit-persistence",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "Immediate os._exit after context exit preserves completed run/session/approval records and releases state lock."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "stable-exported-errors",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "All exported errors carry frozen stable codes without sensitive exception material."
+    },
+    {
+      "task_id": "5.10",
+      "clause_id": "startup-timeout-rollback",
+      "group": "runtime",
+      "classification": "verify-existing",
+      "required_check": "RuntimeStartTimeout/start_timeout within startup+rollback bound with truthful loop/lock and incomplete rollback outcome."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B1-native-second-signal",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Native Windows trigger combinations cause second-signal exit130 within1s on actual current host."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B3-incremental-timing",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "100ms source spacing; first event<=200ms and inter-arrival p95<=150ms, raw samples retained."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B4-disconnect-leaks",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Disconnect deadline and repeated20 cleanup on current adapter, no tasks/threads retained."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "M5-capacity-return",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Normal/error/abort/stop release and bounded public counters0."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B5-stream-stop",
+      "group": "measurement",
+      "classification": "implement",
+      "cases": [
+        "active plus idle",
+        "slow reader",
+        "non-reader"
+      ],
+      "required_check": "Required terminal events precede close; idle-job process exits normally within10s."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B6-page-assets",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "All required page+asset p95 ratios<=1.2 using identical S0b baseline inputs and sampling."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B6-production-static",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Repeat page/static performance with production settings, DEBUG=False and collectstatic."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B7-browser-parity",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Original browser subset equivalent on current host."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "cold-and-stalled-assets",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Empty-cache AI pane assets all200, no admission or final503; stalled-loop assets still200."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "B9-saturation",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Same hold interval: excess stream503/Retry-After2, every short200 in<100ms, required page+asset p95<=1.2."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "repeat-order-matrix",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "Repeat full5.10 request order matrix against the actual current AIB WSGI adapter."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "exclusive-window",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "HEAVY_RUN_ACTIVE surrounds first process through final JSON; no other Metrics Python/tests/Git writes; beginning/end/every-minute process snapshots and CPU evidence."
+    },
+    {
+      "task_id": "10.4",
+      "clause_id": "source-and-cleanup",
+      "group": "measurement",
+      "classification": "implement",
+      "required_check": "HEAD/status hashes unchanged during measurement; complete raw samples and normal owned cleanup; failure forbids closure."
+    }
+  ],
+  "deferred_clauses": [
+    {
+      "task_id": "6.2",
+      "scope": "Linux image build/run/stop/kill/restart",
+      "trigger": "Explicit owner authorization for Linux/container work"
+    },
+    {
+      "task_id": "6.3",
+      "scope": "Linux image-specific operator verification",
+      "trigger": "Linux qualification"
+    },
+    {
+      "task_id": "10.3",
+      "scope": "Docker image restore clause only",
+      "trigger": "Linux/container qualification; Windows executable restore remains required"
+    },
+    {
+      "task_id": "0.6",
+      "scope": "Whole AIB delivery and non-Dashboard qualification",
+      "trigger": "Original AIB release gates after this Windows milestone"
+    }
+  ],
+  "acceptance_claim": false,
+  "notes": [
+    "Every clause inherits producer/consumer paths and owner node from clause_groups; planned paths are explicitly separate.",
+    "Proven task groups retain previously accepted bounded evidence, not new final-candidate acceptance.",
+    "No existing original task checkbox is changed by this census.",
+    "The original full requirement text remains authoritative; requirement text digests are generated during census validation."
+  ],
+  "source_requirement_digests": {
+    "0.1": "e269d06f0bf64e6e734797219966380d49f1f1cca46d38faf1c96964b3fe3079",
+    "0.2": "3f4003dd443b5fc993a5886bb69d3716ea77bf2dec6fbced8cb466ecae57e921",
+    "0.3": "edfd0302ef500747913bf122bf3cf27295f2482ad6e5c46bf6e48bf7dbb3dafc",
+    "0.4": "b0c6164adcf624067c17b66665f101d73f5f6e96504b4aa3aa1a0d872e96b7a9",
+    "0.5": "4c407f5519f9251561a411650ed62e745ba1ec519fb3b3920d593902a657e15f",
+    "0.6": "bcb0dadd79f39957b0ab76eb870fe78e666f10c980b21219d5dfb8f41226340b",
+    "1.1": "5f7808943561223f75016fcf374ee10bd808c3151e09eb6730a68a88436cfa3f",
+    "1.2": "5afaf8d9305a4dc41a99b031a5de6c262f54242880653034f4b241754bd278df",
+    "1.3": "7b71f9bbb403b661fcc1035558ca2df0b25f4c62f3f7fe80ee0d84ad37633ad7",
+    "1.4": "07071b6c6d302aa801da65da5cbfc3f434181760352a8b23a65164a730422361",
+    "2.1": "5b8385428d00c6299a4e40c882e61a8b3b73ec0a8a43a730fb601c6396a07b2d",
+    "2.2": "745928c04d5ed8b7d74691a748232a85ae0f5c5577f5aa96d7d96cdfa36850b0",
+    "2.3": "b1e76c1e803eca55e991270aa641c68f9f635fc2acecfb9e35271f9b08ba9f38",
+    "3.1": "60d1a6347db41188e256a504a5ea6b7feee2d0ad0a499093f55d4c4b171d3d1c",
+    "3.2": "c0bb2c8deb33d49d261b1b6b5cd999865ab9e8350d802ed8b54c72a6f9c0d275",
+    "3.3": "6f6393e687723911f06e72fac0984ddd08fef178a2e6fa51cc5fde5670882408",
+    "4.1": "8ea51e1070ed92f00d9812287591c777af894d0a9e395c5d81ff8259d71de9c0",
+    "4.2": "080fab90c1967546f93d9d5b78fc50ebe53a5f6e3d08f8cea17b202809026d97",
+    "4.3": "54c9b15c8f20b6809e01085757ef570529c7fe1942d8ed08d748919c0c686374",
+    "4.4": "0ff0c8f4ea49bda7738c0a1dd0d29532ee85fc4da33d23d17df47fa320710a34",
+    "4.5": "1eb4905185ea5de98ccdb2c9d74d43128adc191e51d26e9e0095f668e4ef6868",
+    "5.1": "c213146533729fbd83464636da007951f9b32abe567af2a18bebfdbeab7c845d",
+    "5.2": "10b2f5372019c3ede9e6719cb5515bbee387c9dea07024d488a04511ef4c9abc",
+    "5.3": "9005225957cd350eb930f19194cff1a28e121bebda92482ea87551c1ab44c6b9",
+    "5.4": "a7a1038f2559b9c96a49abaa11bddf0cfca8dc89b87a2f8f9cc7a7615ef4a5dc",
+    "5.5": "3cec5466d2dccd7e8da2c9709f49a49ef8e7f9762ac644f9168ca613d3084a0c",
+    "5.6": "db1bfddfcca64bb9ff36d6c9532607ac29b43dbe5757b461216f06c99faef85a",
+    "5.7": "faee24dff2b01b7843d5e01448d546bdc1a0f11cda9f07a47da240f818fcd148",
+    "5.8": "2e86da15e304818bfbd322e324f7b0418962b7861113a04c988254c0006ec0d9",
+    "5.9": "de782498976acd75bd0193890a5001385245630e620ce17dad146310b7a7a09a",
+    "5.10": "4fae195f9b30941f2c0298df80b32ae1caa98d033187f62f51516dc47a8972dc",
+    "5.11": "68cfa5d710982287a0b582e9bbbc2ee140dd34355a86ec45e3e64ff616e36114",
+    "5.12": "b9df070eb4e19370d1888771f71f9107b6bcf0d1806a59b082a16b0c0b9e2d46",
+    "6.1": "16ff1d88cc8d7656c742e3828a9779ac47638432f88f2f4e4de9dcbd54f5a985",
+    "6.2": "1ceeb10097780913bd7238d49526b51c116e32372a53fab2fca762331fec74f7",
+    "6.3": "a577f19bc5c1f9e86b8af4fbcbd67ddb8f257013dc8fd61dff5f8c365022b529",
+    "7.1": "a25ca173debb635f74b8879566d0a0963cc968b37a256c6681ccb6be38249312",
+    "7.2": "dff73ad5b860d63ae789b449508d6ecad2ca3976b7cdb7a95dfb3598449112c8",
+    "7.3": "b61e0e9db5e39229c274f803a789b25c0bc8185b70e1562d3c47d4b4d9d1329e",
+    "7.4": "4d5dfc860e871a939a109bafc7c5ba7cb297870256f99492b232785104ea0ecf",
+    "7.5": "09e6d187a522c228ab0938b5c4e6ff4c4832de5658152edc7eb4faa279d3da93",
+    "7.6": "a979cf91cfd1ad64aac0cbf0a95cf407477842ce8cb43d2d111265c0d989583f",
+    "8.1": "54fe68b6c38b49f6ab1fca131b957ee6284bd4ecb33d779091065e2120508179",
+    "8.2": "8b53b0bee0ac2be498d5dd70ec10d6c7dac5f55cf68243fea87b7528319c2745",
+    "9.1": "26ebeb780c3e47e259c913607c8ac628368e8cd29a77d514b12d889e77aae286",
+    "9.2": "cd1f3196de1749aad47bb59e671cd7568d96be346e41e4de7f1c4606d2e8d65f",
+    "9.3": "50914af00f1c959f8ae0629ff83494c3537ea8c7958c06a360c8dd50ea5c8d91",
+    "9.4": "c5250daf64005b93302039099a84b896e1532d8e2933fb3c6a3d5f9bf408bb0b",
+    "9.5": "effee7d6a5a79ace3154ea7cbfb32078bc29bc9955bd09725c1d0b5c37b01e8b",
+    "9.6": "41daddc4932d55c4b610cc0e8ce90924e62203dbc08e51a2ff7ae5d0b78669fe",
+    "9.7": "d61c95c8b704e10d572ab421c50fe6ee87a38dd127cfd49a27e4d781afef4d86",
+    "9.8": "3a843a9c9c70ba8e6294e65bf27c1171639773f9b6558ed1da5eff02d8417a49",
+    "9.9": "090e7550f3fdefdb556ec92d6098d7532d7ad40e57dd1f751d6ffacab4975ea1",
+    "9.10": "89b634186c8c32ae907e2d8469aa87c088036b480a8dac1d6d56085c4573ee23",
+    "10.1": "b7de9538088b460df697a263c08925ba4d01b97718ee37cb60d72cef3c254dbe",
+    "10.2": "9664e5f79fd2b068ffdd1205db9545143d94cd6fc576b2db3931d1ad9d99634e",
+    "10.3": "9413cfd629b103eab23cc6e60161410acfe9207d550e6af3f642b486089fd8c1",
+    "10.4": "aa53223c2c931a90060ef92b9b7b0425b035e0c542f9259a32b67b7eb5469aef",
+    "PUB.CORRELATION": "5a0e1dc18aaef82057974262411ef318870ba901f24e7035fa52604caf7886df",
+    "PUB.REFREEZE": "7c0758dd6b494f762731b62d49c059aeb466e76fa8a80ac56c29c213d1210ba5"
+  },
+  "requirement_digest_policy": "Original row text excluding its mutable checkbox; this is the initial census generation."
+}

@@ -14,6 +14,7 @@ from service_lifecycle_engine import (
     ProvenanceCapability,
     ServiceLifecycleEngine,
     ServiceSpec,
+    ServiceState,
     StopResult,
     StopSource,
 )
@@ -36,12 +37,95 @@ def test_shouldRepresentStopSourceSeparatelyFromKillEscalation():
     assert result.forced is False
 
 
+def test_shouldMarkTerminateProcessAsForcedWhenPlatformClassifiesItThatWay(tmp_path):
+    class ForcefulTerminateOps:
+        terminate_is_forceful = True
+
+        def __init__(self):
+            self.process_states = iter((True, True, False, False))
+
+        def process_exists(self, pid):
+            return next(self.process_states)
+
+        def process_matches_command(self, pid, command):
+            return True
+
+        def terminate_process(self, pid):
+            return None
+
+        def wait_process_exit(self, pid, timeout):
+            return True
+
+        def wait_port_available(self, host, port, timeout):
+            return True
+
+        def observe_process_exit(self, pid):
+            from contextlib import nullcontext
+            from service_lifecycle_engine import ProcessExitObservation
+            return nullcontext(ProcessExitObservation(lambda: None))
+
+    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", platform_ops=ForcefulTerminateOps())
+    lifecycle.write_state({
+        "api": {
+            "host": "127.0.0.1",
+            "port": 8100,
+            "pid": 12345,
+            "lifecycle_state": "ready",
+            "command": ["python", "api.py"],
+            "stop_command": [],
+        }
+    })
+
+    result = lifecycle.stop_service("api", graceful_timeout_seconds=0.1)
+
+    assert result.reason == "terminated"
+    assert result.forced is True
+    assert result.force_requested is False
+
+
+def test_restartServicesStopsEachPlannedServiceWithItsOwnGrace(tmp_path):
+    observed: list[tuple[str, float]] = []
+    operations = PlatformOperationSet(is_port_available=lambda host, port: True)
+    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", platform_ops=operations)
+    api = ServiceSpec.from_values("api", [8100], ["python", "api.py"], graceful_timeout_seconds=15.0)
+    worker = ServiceSpec.from_values("worker", [8200], ["python", "worker.py"], graceful_timeout_seconds=3.0)
+
+    def fake_stop_service(name, graceful_timeout_seconds=5.0):
+        observed.append((name, graceful_timeout_seconds))
+        return StopResult(name, -1, None, True, False, "stop_command")
+
+    lifecycle.read_state = lambda: {"api": {}, "worker": {}}  # type: ignore[method-assign]
+    lifecycle.stop_service = fake_stop_service  # type: ignore[method-assign]
+    lifecycle.stop_orphaned_pid_files = lambda graceful_timeout_seconds=5.0: []  # type: ignore[method-assign]
+    lifecycle.start_service = lambda spec, port=None, **kwargs: ServiceState(  # type: ignore[method-assign]
+        spec.name,
+        spec.host,
+        int(port),
+        12345,
+        tuple(spec.command),
+        "now",
+        "out",
+        "err",
+        "authority",
+        (),
+        None,
+        None,
+        None,
+        0.0,
+    )
+
+    lifecycle.restart_services((api, worker), run_id="restart-1")
+
+    assert observed == [("api", 15.0), ("worker", 3.0)]
+
+
 def test_shouldReportForceByPortSourceSeparatelyFromKillEscalation(tmp_path):
     process_states = iter((True, False))
     operations = PlatformOperationSet(
         process_exists=lambda pid: next(process_states),
         terminate_process=lambda pid: None,
         wait_process_exit=lambda pid, timeout: True,
+        terminate_is_forceful=False,
     )
     lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", platform_ops=operations)
 
@@ -129,6 +213,7 @@ def test_stopServiceShouldNotMarkStoppedWhenOwnedListenerSurvivesWrapperExit(tmp
     killed_pids = []
     operations = PlatformOperationSet(
         process_exists=lambda pid: pid == 22345,
+        process_matches_command=lambda pid, command: pid == 22345,
         get_listening_process_ids=lambda host, port: (22345,),
         terminate_process=lambda pid: terminated_pids.append(pid),
         kill_process=lambda pid: killed_pids.append(pid),
@@ -325,6 +410,78 @@ def test_stopServiceShouldRejectOwnedListenerWhenIdentityFingerprintChanges(tmp_
     assert lifecycle.read_state()["api"]["lifecycle_state"] == LifecycleState.STOPPED
 
 
+def test_stopServiceShouldRejectRegisteredPidWhenStartMarkerChanges(tmp_path):
+    terminated_pids = []
+    operations = PlatformOperationSet(
+        process_exists=lambda pid: True,
+        process_matches_command=lambda pid, command: True,
+        process_start_marker=lambda pid: "observed-start",
+        terminate_process=lambda pid: terminated_pids.append(pid),
+    )
+    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", platform_ops=operations)
+    lifecycle.write_state({
+        "api": {
+            "host": "127.0.0.1",
+            "port": 8100,
+            "pid": 12345,
+            "lifecycle_state": "ready",
+            "command": ["python", "api.py"],
+            "stop_command": [],
+            "provenance": {
+                "wrapper_pid": 12345,
+                "process_start_marker": "expected-start",
+                "capability": "registered_process",
+            },
+        }
+    })
+
+    result = lifecycle.stop_service("api", graceful_timeout_seconds=0.1)
+
+    assert result.stopped is False
+    assert result.reason == "identity_mismatch"
+    assert terminated_pids == []
+    assert lifecycle.read_state()["api"]["lifecycle_state"] == "ready"
+
+
+def test_stopServiceShouldRecheckIdentityAfterStopCommandGraceBeforeEscalating(tmp_path):
+    terminated_pids = []
+    killed_pids = []
+    markers = iter(("expected-start", "reused-start"))
+    operations = PlatformOperationSet(
+        process_exists=lambda pid: True,
+        process_matches_command=lambda pid, command: True,
+        process_start_marker=lambda pid: next(markers, "reused-start"),
+        run_command=lambda command, cwd: None,
+        wait_process_exit=lambda pid, timeout: False,
+        terminate_process=lambda pid: terminated_pids.append(pid),
+        kill_process=lambda pid: killed_pids.append(pid),
+    )
+    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", platform_ops=operations)
+    lifecycle.write_state({
+        "api": {
+            "host": "127.0.0.1",
+            "port": 8100,
+            "pid": 12345,
+            "lifecycle_state": "ready",
+            "command": ["python", "api.py"],
+            "stop_command": ["python", "stop.py"],
+            "provenance": {
+                "wrapper_pid": 12345,
+                "process_start_marker": "expected-start",
+                "capability": "registered_process",
+            },
+        }
+    })
+
+    result = lifecycle.stop_service("api", graceful_timeout_seconds=0.1)
+
+    assert result.stopped is False
+    assert result.reason == "identity_changed_after_stop_command"
+    assert terminated_pids == []
+    assert killed_pids == []
+    assert lifecycle.read_state()["api"]["lifecycle_state"] == "ready"
+
+
 def test_shouldFailClosedWhenStoppingStateWithUnknownProvenanceCapability(tmp_path):
     events = []
     process_states = iter((True, True, False))
@@ -393,3 +550,35 @@ class FakeProcess:
 
     def poll(self):
         return None
+
+
+def test_pid_reuse_during_termination_wait_prevents_followup_kill(tmp_path):
+    marker = {"value": "original"}
+    kills = []
+
+    def waited(pid, timeout):
+        marker["value"] = "reused"
+        return False
+
+    operations = PlatformOperationSet(
+        process_exists=lambda pid: True,
+        process_matches_command=lambda pid, command: True,
+        process_start_marker=lambda pid: marker["value"],
+        terminate_process=lambda pid: None,
+        terminate_is_forceful=True,
+        wait_process_exit=waited,
+        kill_process=kills.append,
+    )
+    lifecycle = ServiceLifecycleEngine("identity-proof", tmp_path, state_directory=tmp_path / "state", platform_ops=operations)
+    lifecycle.write_state({
+        "api": {
+            "host": "127.0.0.1", "port": 8100, "pid": 12345,
+            "lifecycle_state": "ready", "command": ["python", "api.py"], "stop_command": [],
+            "provenance": {"wrapper_pid": 12345, "process_start_marker": "original", "capability": "registered_process"},
+        },
+    })
+    result = lifecycle.stop_service("api", graceful_timeout_seconds=0.1)
+    assert kills == []
+    assert result.stopped is False
+    assert result.forced is True
+    assert result.reason == "identity_changed_before_kill"

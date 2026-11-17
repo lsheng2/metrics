@@ -51,23 +51,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     since_timestamp = parse_since_timestamp(args.since_utc)
     dashboard_workspace = Path(args.dashboard_workspace).resolve()
-    ai_base_workspace = Path(args.ai_base_workspace).resolve() if args.ai_base_workspace else None
     log_paths = collect_log_paths(
         dashboard_workspace=dashboard_workspace,
-        ai_base_workspace=ai_base_workspace,
         dashboard_state_path=Path(args.dashboard_state) if args.dashboard_state else default_dashboard_state_path(dashboard_workspace),
-        ai_base_state_path=Path(args.ai_base_state) if args.ai_base_state else default_ai_base_state_path(ai_base_workspace),
         stack_log_directory=Path(args.stack_log_directory) if args.stack_log_directory else None,
         explicit_log_files=tuple(Path(path) for path in args.log_file),
         since_timestamp=since_timestamp,
-        include_ai_base_logs=args.require_ai_base_state,
     )
     findings = []
     state_findings = inspect_state_files(
         dashboard_state_path=Path(args.dashboard_state) if args.dashboard_state else default_dashboard_state_path(dashboard_workspace),
-        ai_base_state_path=Path(args.ai_base_state) if args.ai_base_state else default_ai_base_state_path(ai_base_workspace),
         require_dashboard_state=args.require_dashboard_state,
-        require_ai_base_state=args.require_ai_base_state,
     )
     findings.extend(state_findings)
     for log_path in log_paths:
@@ -91,27 +85,21 @@ def main(argv: Sequence[str] | None = None) -> int:
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Audit stack boot logs for errors and warnings.")
     parser.add_argument("--dashboard-workspace", default=str(Path(__file__).resolve().parents[1]))
-    parser.add_argument("--ai-base-workspace", default="")
     parser.add_argument("--dashboard-state", default="")
-    parser.add_argument("--ai-base-state", default="")
     parser.add_argument("--stack-log-directory", default="")
     parser.add_argument("--since-utc", default="")
     parser.add_argument("--phase", default="")
     parser.add_argument("--require-dashboard-state", action="store_true")
-    parser.add_argument("--require-ai-base-state", action="store_true")
     parser.add_argument("--log-file", action="append", default=[])
     return parser.parse_args(argv)
 
 
 def collect_log_paths(
     dashboard_workspace: Path,
-    ai_base_workspace: Path | None,
     dashboard_state_path: Path,
-    ai_base_state_path: Path | None,
     stack_log_directory: Path | None,
     explicit_log_files: Sequence[Path],
     since_timestamp: float | None,
-    include_ai_base_logs: bool,
 ) -> tuple[Path, ...]:
     paths: list[Path] = []
     paths.extend(explicit_log_files)
@@ -119,42 +107,16 @@ def collect_log_paths(
     paths.extend(recent_logs(dashboard_workspace / "state" / "e2e" / "service-lifecycle-engine" / "logs", since_timestamp))
     if stack_log_directory is not None:
         paths.extend(recent_logs(stack_log_directory, since_timestamp))
-    if ai_base_workspace is not None and include_ai_base_logs:
-        paths.extend(recent_logs(ai_base_workspace / ".tmp-validation" / "runtime", since_timestamp))
-        paths.extend(recent_logs(ai_base_workspace / ".tmp-validation" / "runtime" / "logs", since_timestamp))
-    if ai_base_state_path is not None and ai_base_state_path.exists():
-        paths.append(ai_base_state_path)
     return tuple(unique_existing_paths(paths))
 
 
 def inspect_state_files(
     dashboard_state_path: Path,
-    ai_base_state_path: Path | None,
     require_dashboard_state: bool,
-    require_ai_base_state: bool,
 ) -> list[BootFinding]:
     findings: list[BootFinding] = []
     if require_dashboard_state and not dashboard_state_path.exists():
         findings.append(BootFinding("error", dashboard_state_path, 1, "Dashboard lifecycle state file is missing."))
-    if ai_base_state_path is None:
-        return findings
-    if require_ai_base_state and not ai_base_state_path.exists():
-        findings.append(BootFinding("error", ai_base_state_path, 1, "AI Base dev-stack state file is missing."))
-        return findings
-    if not ai_base_state_path.exists():
-        return findings
-    try:
-        state = json.loads(read_text(ai_base_state_path))
-    except (OSError, json.JSONDecodeError) as error:
-        findings.append(BootFinding("error", ai_base_state_path, 1, f"AI Base dev-stack state could not be read: {error}"))
-        return findings
-    startup = state.get("startup", {})
-    startup_state = str(startup.get("state") or "")
-    last_error = startup.get("lastError")
-    if startup_state.lower() == "failed":
-        findings.append(BootFinding("error", ai_base_state_path, 1, f"AI Base startup state is failed: {last_error or 'no lastError recorded'}"))
-    elif last_error:
-        findings.append(BootFinding("error", ai_base_state_path, 1, f"AI Base startup recorded lastError: {last_error}"))
     return findings
 
 
@@ -272,12 +234,6 @@ def read_text(path: Path) -> str:
 
 def default_dashboard_state_path(workspace: Path) -> Path:
     return workspace / "state" / "e2e" / "service-lifecycle-engine" / "metrics-bug-trend-default.json"
-
-
-def default_ai_base_state_path(workspace: Path | None) -> Path | None:
-    if workspace is None:
-        return None
-    return workspace / ".tmp-validation" / "runtime" / "dev-stack-state.dashboard_query_agent.json"
 
 
 def parse_since_timestamp(value: str) -> float | None:

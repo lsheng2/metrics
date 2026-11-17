@@ -62,8 +62,6 @@
      "patterns": ["ui_web/static/js/report_editor/fragment_codec.js", "ui_web/static/js/report_editor/index.js",
                   "ui_web/static/js/report_editor/template_builder.js", "ui_web/editor_build/report_milkdown.js"],
      "reason": "Owner: project reporting UI. Split plan: separate codec node families, editor bootstrap from toolbar wiring, template builder steps, and Milkdown plugin registration."},
-    {"name": "legacy-ai-stack-launcher", "max_added_lines": 0, "patterns": ["scripts/e2e_dashboard_ai_stack.ps1"],
-     "reason": "Owner: local stack tooling. Split plan: move start, stop, and health phases into dot-sourced scripts under scripts/."},
     {"name": "legacy-python-modules", "max_added_lines": 0,
      "patterns": ["bug_metrics/app/api/ai_context.py", "ui_web/facades/bug_trend_scope_config_facade.py"],
      "reason": "Owner: bug_metrics API and ui_web facades. Split plan: split AI context builders by section and the scope-config facade into read, preview, and save services."}

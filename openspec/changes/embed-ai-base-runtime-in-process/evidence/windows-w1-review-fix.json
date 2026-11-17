@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "finding_id": "W1-P1-1",
+  "state": "implemented and validated; independent re-review pending",
+  "authority": ["AUTH-LAUNCH", "AUTH-RETIRE"],
+  "changes": [
+    "VS Code stack tasks call the canonical action-based script directly.",
+    "Removed three redundant legacy stack wrappers and the force-by-port task.",
+    "Task commands select the admitted interpreter and fail on PowerShell binding errors or native failure.",
+    "Cross-worktree stop uses current code against registered target profiles, reports enumeration failure and attempts all selected targets.",
+    "The retirement inventory includes task/launch configuration without reading unrelated editor settings.",
+    "Retired entrypoint files are rejected even when their contents contain no legacy marker."
+  ],
+  "checks": [
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/w1-review-fix-final.xml",
+      "sha256": "0b50f01765a947e546f3765b96ba99dcd66fc2137cd2ab3c64e315e47b359994",
+      "passed": 44,
+      "failed": 0,
+      "scope": "Editor parameter/exit behavior, selected-workspace dispatch, failure propagation and residual checker regressions"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/editor-native-stop-final.xml",
+      "sha256": "43fc83498de0b26441b4326f17a7c033d2e6a2e37cb5be5346749d7f31f68581",
+      "passed": 1,
+      "failed": 0,
+      "scope": "Real copied stack with default smoke, followed by the actual VS Code stop command and zero service exits"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/retirement-editor-final.json",
+      "sha256": "99327aa7b01a43d1c71d3f764243cc97d56c942206789ece30cac8108bb8e0fb",
+      "checked_files": 1021,
+      "violations": 0,
+      "scope": "Windows active source and editor entrypoints; Linux definition remains explicitly deferred"
+    }
+  ],
+  "reuse": "The runtime wheel, host implementation and SLE lifecycle core were unchanged in this fix. Prior installed-runtime and native lifecycle evidence remains scoped to those unchanged producers; this receipt supplies the missing entrypoint-family checks.",
+  "preserved_failures": [
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/w1-review-fix-red.xml",
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/vscode-binding-red.xml",
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/editor-binding-propagation-red.xml",
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/retired-entry-files-red.xml"
+  ],
+  "safety": "Worktree enumeration was tested through a synthetic Git boundary and owned directories; no real all-worktree stop, user service, provider/model, Linux run, new worktree or publication action was performed."
+}

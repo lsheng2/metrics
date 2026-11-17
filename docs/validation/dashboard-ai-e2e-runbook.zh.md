@@ -6,7 +6,18 @@
 
 旧外部伴随服务、旧 HTTP business API、旧 Grafana CLI precondition、旧 proof id、旧 demo approval prefix、旧 demo publish endpoint 和旧 host-action 消息协议都不是当前操作说明。历史案例若提到这些术语，只能作为旧证据阅读。
 
-全局 launcher、Docker 部署姿态和完整 10.2-10.4 验收仍是开放项；不要把本 runbook 当作这些门禁已关闭的证明。
+Windows 入口已统一到进程内 `serve` 和 SLE 所有权管理，安装与启停证据见 MDB-2 的
+`evidence/windows-release-inputs.json`、`evidence/windows-w1-launch.json`。
+完整 10.2-10.4 验收、后续宿主资格和 Linux 部署仍是开放项；
+本 runbook 不把发布链路或 Windows 局部验收当作整个项目关闭的证明。
+
+## Windows 入口
+
+安装和解释器选择以 `docs/development/reporting-delivery.md` 为准。普通本地后端入口只启动
+Dashboard，不附带迁移、示例数据或 Grafana 导入；E2E 入口显式管理 Dashboard 与本地
+Grafana。两者都拒绝旧启动选项，不回退到另一套 Python。停止按已登记实例及进程身份进行，
+记录服务真实退出码；强制、失败和未知退出不算正常停止。完整 stack smoke 读取当前
+Workbench 和服务端 workflow form，不再要求已退役的业务 API。
 
 ## 当前契约
 
@@ -43,7 +54,7 @@ Workbench 稳定选择器：
 按 `docs/development/reporting-delivery.md` 的 no-dotenv 入口运行显式测试路径。示例从 Dashboard repo root 运行 real browser join，并使用新的临时 basetemp：
 
 ```powershell
-$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-stream-cleanup-20261117-01\venv\Scripts\python.exe'
+$reportingPython = 'D:\AIGC\artifacts\mdb2-windows-20261117\windows-venv-r4\Scripts\python.exe'
 $baseTemp = Join-Path $env:TEMP ('mdb2-publication-browser-' + [guid]::NewGuid().ToString('N'))
 & $reportingPython -I scripts/validation/run_report_authoring_tests.py ai_host/tests/test_publication_browser_join.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function --basetemp $baseTemp
 ```
@@ -82,5 +93,5 @@ openspec/changes/embed-ai-base-runtime-in-process/evidence/publication-packet-20
 
 - 不验证真实 provider/model。
 - 不验证用户数据库或既有 Grafana 服务。
-- 不关闭 global settings/launcher/docker legacy retirement。
+- 不以发布链路证明完整宿主资格或 Linux 部署通过。
 - 不声明 9.4、10.2、10.3、10.4 完成。

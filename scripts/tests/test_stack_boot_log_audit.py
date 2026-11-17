@@ -77,27 +77,6 @@ def test_shouldIgnoreKnownGrafanaClientAbortNoise(tmp_path, capsys):
     assert "abort Handler" not in output
 
 
-def test_shouldAcceptAiBaseStateWrittenWithUtf8Bom(tmp_path, capsys):
-    ai_base_workspace = tmp_path / "ai-base"
-    state_path = ai_base_workspace / ".tmp-validation" / "runtime" / "dev-stack-state.dashboard_query_agent.json"
-    state_path.parent.mkdir(parents=True)
-    state_path.write_text(json.dumps({"startup": {"state": "ready", "lastError": None}}), encoding="utf-8-sig")
-
-    exit_code = audit_stack_boot_logs.main(
-        [
-            "--dashboard-workspace",
-            str(tmp_path),
-            "--ai-base-workspace",
-            str(ai_base_workspace),
-            "--require-ai-base-state",
-        ]
-    )
-
-    output = capsys.readouterr().out
-    assert exit_code == 0
-    assert "Boot log audit passed" in output
-
-
 def test_shouldIgnoreAlreadyRunningSyncCommandErrorAsBenign(tmp_path, capsys):
     log_path = tmp_path / "jira-profile-sync.log"
     log_path.write_text(
@@ -209,31 +188,6 @@ def test_shouldStillFailUnexpectedTraceback(tmp_path, capsys):
     assert "Boot log audit failed" in output
     assert "unexpected_callback" in output
     assert "Traceback (most recent call last)" in output
-
-
-def test_shouldScanAiBaseHeadlessRuntimeLogs(tmp_path, capsys):
-    ai_base_workspace = tmp_path / "ai-base"
-    state_path = ai_base_workspace / ".tmp-validation" / "runtime" / "dev-stack-state.dashboard_query_agent.json"
-    state_path.parent.mkdir(parents=True)
-    state_path.write_text(json.dumps({"startup": {"state": "ready", "lastError": None}}), encoding="utf-8")
-    log_path = ai_base_workspace / ".tmp-validation" / "runtime" / "logs" / "backend.err.log"
-    log_path.parent.mkdir(parents=True)
-    log_path.write_text("ERROR: backend failed to bind\n", encoding="utf-8")
-
-    exit_code = audit_stack_boot_logs.main(
-        [
-            "--dashboard-workspace",
-            str(tmp_path),
-            "--ai-base-workspace",
-            str(ai_base_workspace),
-            "--require-ai-base-state",
-        ]
-    )
-
-    output = capsys.readouterr().out
-    assert exit_code == 1
-    assert "backend.err.log" in output
-    assert "backend failed to bind" in output
 
 
 def test_shouldEscapeUnencodableLogTextWhenConsoleCannotEncodeIt(tmp_path):

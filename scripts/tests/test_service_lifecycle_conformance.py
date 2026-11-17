@@ -118,6 +118,7 @@ def test_conformance_shouldKeepForceRequestSeparateFromKillEscalation(tmp_path):
         terminate_process=lambda pid: None,
         wait_process_exit=lambda pid, timeout: True,
         get_listening_process_ids=lambda host, port: (777,),
+        terminate_is_forceful=False,
     )
     lifecycle = ServiceLifecycleEngine("project", tmp_path, state_directory=tmp_path / "state", platform_ops=operations)
     spec = ServiceSpec.from_values("api", [8100], ["python", "api.py"])

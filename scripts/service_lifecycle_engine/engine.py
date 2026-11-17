@@ -242,9 +242,14 @@ class ServiceLifecycleEngine(LifecycleStartingMixin, LifecycleStoppingMixin, Lif
             return False
         registered_pid = int(pid)
         command = tuple(str(part) for part in service.get("command", ()))
-        registered_process_owned = self.platform_ops.process_exists(registered_pid) and bool(command) and self.platform_ops.process_matches_command(registered_pid, command)
+        provenance = self._provenance_from_service(service)
+        registered_process_owned = (
+            self.platform_ops.process_exists(registered_pid)
+            and bool(command)
+            and self._registered_process_matches(registered_pid, command, provenance)
+        )
         return registered_process_owned or self._running_owned_listener_pid(
-            self._provenance_from_service(service),
+            provenance,
             registered_pid,
             str(service.get("host", "127.0.0.1")),
             int(service.get("port", 0)),

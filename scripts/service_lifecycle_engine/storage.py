@@ -54,6 +54,7 @@ class LifecycleStorageMixin:
             "reason": result.reason,
             "stop_source": result.stop_source.value,
             "force_requested": result.force_requested,
+            "exit_code": result.exit_code,
         }
         if result.provenance:
             record["provenance"] = asdict(result.provenance)

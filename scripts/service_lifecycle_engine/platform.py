@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+import sys
 
 from . import platform_ops
+from .process_exit import observe_process_exit
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +26,8 @@ class PlatformOperationSet:
     wait_process_exit: Callable[[int, float], bool] = platform_ops.wait_process_exit
     wait_port_available: Callable[[str, int, float], bool] = platform_ops.wait_port_available
     creation_flags: Callable[[], int] = platform_ops.creation_flags
+    terminate_is_forceful: bool = sys.platform == "win32"
+    observe_process_exit: Callable = observe_process_exit
 
     def registered_process_is_owned(self, pid: int, command: tuple[str, ...]) -> bool:
         return self.process_exists(pid) and self.process_matches_command(pid, command)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -51,7 +52,7 @@ def test_profile_dedicated_bindings_do_not_conflict_with_each_other(tmp_path: Pa
 
     assert conflicts == ()
     assert {binding.mode for binding in profile.dedicated_bindings} == {ExternalServiceMode.DEDICATED}
-    assert {binding.service_name for binding in profile.shared_consumed_bindings} == {"ai-base-backend", "ai-base-frontend", "external-litellm"}
+    assert {binding.service_name for binding in profile.shared_consumed_bindings} == {"external-litellm"}
     assert all(not binding.stop_decision(actor=profile.identity).allowed for binding in profile.shared_consumed_bindings)
 
 
@@ -108,8 +109,12 @@ def test_worktree_runtime_env_is_projection_of_profile(tmp_path: Path) -> None:
     assert "METRICS_DJANGO_PORT=8032" in projection
     assert "METRICS_GRAFANA_PORT=3251" in projection
     assert f"METRICS_DASHBOARD_SERVICE_LIFECYCLE_STATE_DIR={profile.service_lifecycle_state_dir}" in projection
-    assert "DASHBOARD_METRICS_BASE_URL=http://127.0.0.1:8032" in projection
-    assert "METRICS_EXTERNAL_LITELLM_URL=http://127.0.0.1:4000" in projection
+    assert "DASHBOARD_METRICS_BASE_URL" not in projection
+    assert "RCA_DASHBOARD_METRICS_BASE_URL" not in projection
+    assert "METRICS_AI_MODEL_BASE_URL=http://127.0.0.1:4000" in projection
+    assert "METRICS_AI_BASE_URL" not in projection
+    assert "METRICS_AI_BASE_FRONTEND_URL" not in projection
+    assert "METRICS_EXTERNAL_LITELLM_URL" not in projection
 
 
 def test_profile_cli_writes_profile_and_projection(tmp_path: Path) -> None:
@@ -149,3 +154,66 @@ def test_profile_port_is_prioritized_without_dropping_fallbacks(tmp_path: Path) 
     ports = prioritize_profile_port((8002, 8012, 8022), profile, "django")
 
     assert ports == (8012, 8002, 8022)
+
+
+def test_explicit_port_override_is_not_replaced_by_profile_default(tmp_path: Path) -> None:
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    profile = build_dashboard_runtime_instance_profile(repo_root=workspace_root, workspace_root=workspace_root, port_profile="default")
+
+    ports = prioritize_profile_port((12345,), profile, "django")
+
+    assert ports == (12345,)
+
+
+def test_profile_schema2_contains_only_dashboard_and_model_gateway_services(tmp_path: Path) -> None:
+    profile = build_dashboard_runtime_instance_profile(
+        repo_root=tmp_path,
+        workspace_root=tmp_path,
+        port_profile="worktree-1",
+    )
+
+    assert set(profile.service_ports) == {"django", "grafana", "external-litellm"}
+    assert {item.service_name for item in profile.shared_consumed_bindings} == {"external-litellm"}
+    assert profile.as_dict()["schema_version"] == 2
+
+
+def test_profile_reader_rejects_schema1_without_conversion(tmp_path: Path) -> None:
+    profile = build_dashboard_runtime_instance_profile(repo_root=tmp_path, workspace_root=tmp_path)
+    payload = profile.as_dict()
+    payload["schema_version"] = 1
+    path = tmp_path / "profile.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    try:
+        read_dashboard_runtime_instance_profile(path)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("schema 1 profile should be rejected")
+
+
+def test_profile_cli_rejects_retired_ai_base_port_options(tmp_path: Path) -> None:
+    profile_path = tmp_path / "runtime-instance.json"
+    env_path = tmp_path / "worktree-runtime.env"
+
+    try:
+        main(
+            [
+                "write",
+                "--repo-root",
+                str(tmp_path),
+                "--workspace-root",
+                str(tmp_path),
+                "--ai-base-backend-port",
+                "48300",
+                "--profile-path",
+                str(profile_path),
+                "--env-path",
+                str(env_path),
+            ]
+        )
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("retired AI Base CLI options must fail instead of being ignored")

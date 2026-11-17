@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "node": "W1.LAUNCH",
+  "recorded_on": "2026-11-17",
+  "result": "PASS",
+  "scope": "Windows launcher implementation and V2 verification; W1.R, W2 and W3 remain open.",
+  "source_baseline": "8bb83d484f49871502ebf88c6e6bde70b2ac9712",
+  "source_kind": "working-tree; not yet wave-reviewed or committed",
+  "python": "D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r4/Scripts/python.exe",
+  "runtime_version": "0.1.1.dev4",
+  "runtime_source": "d589ac8e6572a903edc3846e7d78195e85858868",
+  "runtime_wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+  "suites": [
+    {
+      "kind": "native Windows PowerShell and SLE paths",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/coordinator-native-final-r2.xml",
+      "sha256": "1207698b339119723332c3038ffeafbe81ac119de69955b4e70515b8e3f8bbda",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "kind": "affected SLE, caller, ownership and exit-status regression",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/coordinator-sle-final-r2.xml",
+      "sha256": "3020e2c5c0d286460867ab252b742a6121460aa959c96edf9c22d82debd2b8bc",
+      "passed": 163,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "native_runs": [
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w1-launch-real-ps/local-backend-real-ps-20261117T161031-b33abe6a",
+      "flow": "actual local start, stop, start, stop",
+      "commands_sha256": "aaf5e04695599da792184e7b4c2aa8eb8a7ced9c24e81bf7bcb2123e73e76b23",
+      "service_exit_codes": [0, 0]
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w1-launch-real-ps/e2e-real-ps-20261117T161149-d014a7f7",
+      "flow": "actual E2E start and stop",
+      "commands_sha256": "078a1cae265c9483d2f20b37e9f774d7c7d5b46cb2d3225b7e671a2789212c61",
+      "service_exit_codes": [0, 0]
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w1-launch-real-ps/e2e-restart-real-ps-20261117T161512-d7bbcf44",
+      "flow": "actual E2E restart entry and stop",
+      "commands_sha256": "9b715e5aea378f85a2befcb77933d1007b55fd9d5adccd27e0b98e97e26768ba",
+      "service_exit_codes": [0, 0]
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w1-launch-real-ps/dashboard-stack-real-ps-20261117T161654-0e19d95f",
+      "flow": "actual stack start, Dashboard-only audits and stop; no provider sync or browser opening",
+      "commands_sha256": "60738a567d5cd4720833f1a408b53aabb5761c015daba4e651c3087af642e788",
+      "service_exit_codes": [0, 0]
+    }
+  ],
+  "verification": {
+    "source_fingerprint_pairs_equal": 4,
+    "source_fingerprint_files": ["source-fingerprints.before.json", "source-fingerprints.after.json"],
+    "all_normal_stops": "reason=stop_command; stopped=true; forced=false; force_requested=false; actual service exit_code=0",
+    "owned_native_processes_remaining_after_tests": 0,
+    "negative_checks": [
+      "foreign listener survives and an approved alternative port is selected",
+      "wrong command/start identity and identity reuse during waits refuse destructive escalation",
+      "missing controlled-stop identity and unsupported Windows signal fail",
+      "intentional stuck process is force-stopped only after its configured grace and is abnormal",
+      "nonzero or unknown service exit is not a normal stop",
+      "abnormal stop blocks setup/start in the same restart attempt",
+      "already-stopped no-op permits explicit recovery without rewriting prior failure",
+      "normal startup does not adopt orphan PID files",
+      "generic explicit grace override remains effective; Dashboard uses service-specific grace",
+      "source copy omits local credentials, databases and unrelated untracked files"
+    ]
+  },
+  "retained_failures": {
+    "original_worker_report": ".tmp/mdb2-windows-w1/w1-launch-report.md",
+    "superseded_worker_counts": "120 and 144 were before coordinator exit-status and ownership corrections.",
+    "coordinator_native_red": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/coordinator-native-final-r1.xml",
+    "diagnostics": [
+      "D:/AIGC/artifacts/mdb2-windows-20261117/exit-observation-fixture-661bd4e6-2c35-4d34-aff4-194732e28e38/diagnostic.json",
+      "D:/AIGC/artifacts/mdb2-windows-20261117/exit-observation-sle-18c64ab0-df13-40be-96b8-c1c57083f48d/diagnostic.json"
+    ],
+    "root_cause": "Exit status became available before the native process handle was signaled. SLE now waits on the retained handle within the original grace, rather than using one zero-time probe or fabricating zero.",
+    "early_log_gap": "Some first worker-native process logs rotated before preservation; they are unavailable and are not counted as acceptance. Later attempts retain logs from run start."
+  },
+  "boundaries": {
+    "real_user_data_modified": false,
+    "real_provider_or_model_calls": false,
+    "linux_tests_run": false,
+    "other_app_work": false,
+    "shared_branch_published": false
+  }
+}

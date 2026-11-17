@@ -36,14 +36,22 @@ class LifecycleStartingMixin:
     def prepare_startup(
         self,
         service_specs: Sequence[ServiceSpec],
-        graceful_timeout_seconds: float = 5.0,
+        graceful_timeout_seconds: float | None = None,
         force_by_port: bool = False,
         force_graceful_timeout_seconds: float = 0.5,
         port_process_resolver: Callable[[str, int], Sequence[int]] | None = None,
     ) -> list[StopResult]:
         for spec in service_specs:
             self._validate_service_name(spec.name)
-        results = self.stop_all(graceful_timeout_seconds=graceful_timeout_seconds)
+        state = self.read_state()
+        results = [
+            self.stop_service(
+                spec.name,
+                graceful_timeout_seconds=spec.graceful_timeout_seconds if graceful_timeout_seconds is None else graceful_timeout_seconds,
+            )
+            for spec in service_specs
+            if spec.name in state
+        ]
         if force_by_port:
             results.extend(self.force_stop_by_ports(service_specs, force_graceful_timeout_seconds, port_process_resolver))
         return results
@@ -51,7 +59,7 @@ class LifecycleStartingMixin:
     def restart_services(
         self,
         service_specs: Sequence[ServiceSpec],
-        graceful_timeout_seconds: float = 5.0,
+        graceful_timeout_seconds: float | None = None,
         force_by_port: bool = False,
         force_graceful_timeout_seconds: float = 0.5,
         port_process_resolver: Callable[[str, int], Sequence[int]] | None = None,

@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 import subprocess
 import sys
@@ -16,6 +17,26 @@ OWNED_ROOT = REPO_ROOT / '.tmp' / 'project-reporting-w2'
 
 
 class TestProjectUiFixtureSafety(SimpleTestCase):
+    def test_generated_windows_commands_are_literal_and_parseable(self):
+        root = self.fresh_root("command-$literal")
+        result = self.run_fixture(root)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        parser = (
+            "$code = [Console]::In.ReadToEnd(); $tokens=$null; $errors=$null; "
+            "$ast=[System.Management.Automation.Language.Parser]::ParseInput($code,[ref]$tokens,[ref]$errors); "
+            "if ($errors.Count) { $errors | ForEach-Object { $_.Message }; exit 2 }; "
+            "$expanded=@($ast.FindAll({param($n) $n -is [System.Management.Automation.Language.ExpandableStringExpressionAst] -and $n.NestedExpressions.Count -gt 0},$true)); "
+            "if ($expanded.Count) { exit 3 }; exit 0"
+        )
+        for command in payload["commands"].values():
+            self.assertNotIn("\r", command)
+            parsed = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", parser], input=command,
+                capture_output=True, text=True, timeout=15,
+            )
+            self.assertEqual(parsed.returncode, 0, parsed.stdout + parsed.stderr)
+
     def run_fixture(self, fixture_root, extra_env=None):
         env = {
             key: value

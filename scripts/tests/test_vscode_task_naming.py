@@ -39,4 +39,4 @@ def test_all_worktrees_tasks_call_all_worktree_scripts() -> None:
 
     assert "scripts\\all_worktrees_dashboard_ports_inventory.ps1" in commands["All Worktrees: Dashboard Ports Inventory"]
     assert "scripts\\all_worktrees_stop_dashboard_project_services.ps1" in commands["All Worktrees: Stop Dashboard Project Services"]
-    assert "-ForceByPort" in commands["All Worktrees: Stop Dashboard Project Services"]
+    assert "-ForceByPort" not in commands["All Worktrees: Stop Dashboard Project Services"]

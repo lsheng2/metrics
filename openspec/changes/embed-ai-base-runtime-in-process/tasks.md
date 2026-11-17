@@ -2,6 +2,13 @@
 
 ## Windows Closure Execution Frontier
 
+执行授权更新（2026-11-17）：owner 已明确确认 `8bb83d4` 的计划，并要求连续执行到最终
+check out，真实阻塞时询问。`PLAN.R` 已达到 1/1 PASS，`OWNER.RESUME` 已满足。
+`WIN.RECONCILE`、`W1.VA`、`W1.INSTALL` 已完成；W1.R 首轮发现 W1-P1-1，
+`W1.LAUNCH` 和 `W1.RETIRE` 因遗漏入口家族而重开，当前修复后复核，尚未进入 W2。
+以下原“只编写计划”说明保留为计划创建时的历史。
+发布、main 合入、push、worktree 删除及真实用户数据操作仍按计划的独立授权边界执行。
+
 2026-11-17：按 owner 要求细化 Windows 收尾计划并独立审查。本轮只编写计划，
 未授权恢复产品实施。执行前须满足独立 `PLAN.R` 和 owner 后续明确批准/恢复。
 本文件是唯一进度账本；以下节点组织原有任务，不替代或自动勾选第 0-10 组。
@@ -13,11 +20,11 @@
 JSON 只存结构，不存第二份完成状态。Windows 里程碑不等于整个 MDB-2/AIB 发布；
 Linux、其它 App、真实用户数据和未批准的发布动作保持各自门禁。
 
-- [ ] WIN.RECONCILE - 对齐原任务/验收条款、可复用证据和可执行的新旧版本材料。
-- [ ] W1.VA - 签核安装、Windows 启停所有权及残留 gate 的验证设计。
-- [ ] W1.INSTALL - 固定依赖和制品来源，完成干净 Windows 安装与 wheel 准入。
-- [ ] W1.LAUNCH - 统一正式入口、实例配置、stop-file 正常停止和进程/日志审计。
-- [ ] W1.RETIRE - 完成当前 Windows 旧入口清理、边界/残留 gate 和操作文档。
+- [x] WIN.RECONCILE - 对齐原任务/验收条款、可复用证据和可执行的新旧版本材料。证据：`evidence/windows-coverage.json` 枚举 60 个原任务及 63 条 5.10/10.4 条款；19 个既有附件哈希核对通过；`evidence/windows-release-inputs.json` 固定新 wheel 和旧源码/SDK/环境，旧版实际启动、认证读取及正常停止通过。一次 ABI 不匹配的失败原样保留；这不代表 W3 升级回滚演练已完成。
+- [x] W1.VA - 签核安装、Windows 启停所有权及残留 gate 的验证设计。独立 Validation Engineer 签核见 `evidence/windows-w1-validation.md`；包括直接 wheel 安装、pytest/asyncio 依赖对齐、新环境隔离、外部进程不误杀和三类残留 gate 反例。
+- [x] W1.INSTALL - 固定依赖和制品来源，完成干净 Windows 安装与 wheel 准入。`windows-release-inputs.json` 绑定 r4 回执、82 个 wheel 与约束哈希；全新 `windows-venv-r4` 的 27 项输入/隔离检查及 15 项准入/包/真实 serve 测试通过，正常退出 0、无 force、端口释放。缺 wheel 的离线安装被拒；源码清单及哈希前后一致。r1 代理超时、r2 缺 Windows 二进制依赖及 r3 下载缓存越界的记录保留，r3 不算最终安装验收。文件大小和空白检查通过；独立整批 review 在 W1.R。
+- [ ] W1.LAUNCH - W1-P1-1 重开：补齐 VS Code 任务、旧 Dashboard stack 包装和跨工作树停止入口。既有 `evidence/windows-w1-launch.json` 的 7 项原生及 163 项受影响检查保留为已覆盖路径的证据，不代表遗漏家族已通过。
+- [ ] W1.RETIRE - W1-P1-1 重开：残留检查须覆盖编辑器任务和整组入口参数。既有 `evidence/windows-w1-retirement.json`、58 项检查及默认 smoke 证据保留，Linux Docker 仍延期；不可据此关闭原全平台条款。
 - [ ] W1.R - 对第一批交付及受影响消费者做独立复核。
 - [ ] W1.REPLAN - 按落地结果复查 W2/W3，记录继续或修订结论。
 - [ ] W2.VA - 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计。
@@ -31,6 +38,51 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [ ] CLOSE.R - 独立核对有限验收矩阵、证据与后置边界。
 - [ ] WIN.ACCEPT - 写入四目标 Windows 里程碑回执，逐条收账而非归档整个项目。
 - [ ] DELIVERY - 仅在 owner 明确指定发布动作后执行，保留其它 WIP。
+
+W1.LAUNCH 执行分工：Implementation Engineer 已交回代码并停止写入，
+协调者接回唯一生产写入，补齐停止身份/退出码门禁后继续后续节点。
+独立 Architect Planner Reviewer 提前准备 W1.R 的审查矩阵，不提前签核未完成节点。
+本批在 W1.R 后统一提交；当前未提交是按此审查边界保留，不代表部署或发布。
+
+W1.LAUNCH 集成细化：发现三个既有 `e2e_start/stop/restart_bug_trend.ps1`
+转发入口属于同一启动接口的消费者，已补入 DAG 的 owner paths。已要求本地后端入口
+保持 backend-only，避免附带迁移/示例数据/Grafana 写入；解释器必须明确选择，缺失时
+拒绝执行，不能回退旧 `.venv` 或 PATH Python。参数转发测试不代替真实 SLE/serve
+启停、外部 listener 保护和异常清理证明。安装器针对真实旧 SDK 名称的拒绝检查
+也由同一 writer 补齐，再进入 W1.R；r4 已安装环境本身没有该旧包。
+
+W1.LAUNCH 历史一小时检查点（修复前）：实施回执记录 106 项聚焦检查和 141 项受影响回归通过，
+但原生用例直接构造 SLE spec，未穿过实际 PowerShell/生产 service JSON；
+因此本节点仍未勾选。下一步缩小为真实本地脚本的指定端口启动、停止、再启动切片，
+先验证旧 stop-file、端口优先级、真实退出码和无残留，再扩展其余 E2E 入口。
+不在每次修正后重复全量 141 项。首轮失败的原生子进程日志已被 pytest 临时目录
+轮换，无法补造；已有命令日志及最终日志保留，后续从运行开始使用持久的独立日志目录。
+剩余大于 400 行的 stack 脚本和旧审计接口须在同节点完成，不依赖历史大小豁免收尾。
+
+历史交接检查点（最终修复前）：真实入口组曾达 120 项通过，受影响组 144 项通过，并保留 JUnit 与运行日志。
+交接核对仍发现两个应在 W1.R 前修正的问题：控制停止 helper 允许空的预期身份；
+停止结果记录的是外层成功/进程消失，未保留服务实际退出码。协调者先用负例修正，
+不把这些尚缺的证据当作 W1.LAUNCH 已验收。
+
+当前结果：上述缺口已修复。保留进程句柄解决了 Grafana 退出码已就绪、句柄尚未结束时的
+过早读取；不增加配置宽限，不把未知值置为 0。真实入口最终 7/7、受影响组 163/163，
+四组源码指纹一致、原生测试拥有的进程均已退出。该结果取代上面的历史待修说明；
+W1.RETIRE 和 W1.R 仍未完成。
+
+W1.RETIRE 后续结果：当前 Windows 残留检查已通过；默认 smoke 已不再跳过，
+其实际启动、页面检查和正常停止通过。生成的 UI fixture 命令已用 PowerShell parser
+验证，保留路径中的字面字符。现进入独立 W1.R，尚未开始 W2，尚未提交或发布本批。
+
+W1.R 第一轮：独立 Architect Planner Reviewer 返回 FAIL（P1=1），门禁已记录。
+W1-P1-1 的类扩展覆盖 VS Code 任务、三个旧 stack 包装、跨工作树停止和对应检查器；
+不只修复一个参数。拟退役无独立职责的包装，让任务调用同一主入口；跨工作树工具
+只调当前代码的已登记所有权路径。完整记录在 `.tmp/mdb2-windows-w1/review-state.json`，
+W2/W3 重规划结论暂为 amend，须修复复核后再冻结。
+
+W1-P1-1 修复验证：三个冗余包装已退役，编辑器任务直连主入口并传播绑定/执行失败，
+跨工作树停止使用当前代码且不按端口取停止权限；残留 gate 纳入编辑器任务和退役文件存在性。
+44 项定向检查及真实 VS Code 停止切片通过，回执为 `evidence/windows-w1-review-fix.json`。
+当前仅是实现验证完成，等待新的独立 W1.R；未把本地验证转换成 review PASS。
 
 ## Original Requirements And Evidence
 

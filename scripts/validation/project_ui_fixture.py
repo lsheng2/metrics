@@ -125,6 +125,8 @@ def seed(fixture_root):
         name='HSD Release',
         selection=ScopeSelection('synthetic-hsd'),
     )
+    quoted_root = powershell_literal(fixture_root.resolve())
+    quoted_stop_file = powershell_literal(fixture_root.resolve() / 'runtime-state' / 'serve-8017.stop')
 
     return {
         'schema_version': 1,
@@ -142,13 +144,14 @@ def seed(fixture_root):
         },
         'commands': {
             'seed': (
-                r'.\.venv\Scripts\python.exe scripts\validation\project_ui_fixture.py '
-                f'--migrate --fixture-root "{fixture_root.resolve()}"'
+                r'& $env:METRICS_DASHBOARD_PYTHON scripts\validation\project_ui_fixture.py '
+                f'--migrate --fixture-root {quoted_root}'
             ),
-            'runserver': (
-                f'$env:METRICS_PROJECT_UI_FIXTURE_ROOT="{fixture_root.resolve()}"; '
-                f'$env:METRICS_PROJECT_UI_FIXTURE_NAME="{FIXTURE_NAME}"; '
-                r'.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8017 '
+            'serve': (
+                f'$env:METRICS_PROJECT_UI_FIXTURE_ROOT={quoted_root}; '
+                f'$env:METRICS_PROJECT_UI_FIXTURE_NAME={powershell_literal(FIXTURE_NAME)}; '
+                r'& $env:METRICS_DASHBOARD_PYTHON manage.py serve --host 127.0.0.1 --port 8017 '
+                f'--stop-file {quoted_stop_file} '
                 f'--settings {EXPECTED_SETTINGS}'
             ),
         },
@@ -163,6 +166,10 @@ def seed(fixture_root):
         'project': project_payload(project),
         'stages': [stage_payload(jira_stage), stage_payload(hsd_stage)],
     }
+
+
+def powershell_literal(value):
+    return "'" + str(value).replace("'", "''") + "'"
 
 
 def project_payload(project):

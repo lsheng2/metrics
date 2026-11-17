@@ -68,17 +68,22 @@ def start_process(
     stderr,
     creationflags: int,
 ):
+    startupinfo = None
+    if sys.platform == "win32" and creationflags & subprocess.CREATE_NO_WINDOW:
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
     with _SPAWNED_CHILDREN_LOCK:
         for pid, child in tuple(_SPAWNED_CHILDREN.items()):
             if child.poll() is not None:
                 del _SPAWNED_CHILDREN[pid]
-        process = subprocess.Popen(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, creationflags=creationflags)
+        process = subprocess.Popen(command, cwd=cwd, env=env, stdout=stdout, stderr=stderr, creationflags=creationflags, startupinfo=startupinfo)
         _SPAWNED_CHILDREN[process.pid] = process
     return process
 
 
 def run_command(command: tuple[str, ...], cwd) -> None:
-    subprocess.run(command, cwd=cwd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(command, cwd=cwd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
 
 
 def wait_port_available(host: str, port: int, timeout_seconds: float) -> bool:
@@ -205,10 +210,38 @@ def get_process_command_line(pid: int) -> str:
 
 def process_start_marker(pid: int) -> str:
     command_line = get_process_command_line(pid)
-    if not command_line:
+    created_at = get_process_created_at(pid)
+    if not command_line and not created_at:
         return ""
-    digest = hashlib.sha256(f"{int(pid)}:{command_line}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(f"{int(pid)}:{created_at or ''}:{command_line}".encode("utf-8")).hexdigest()
     return digest
+
+
+def get_process_created_at(pid: int) -> str:
+    if pid <= 0:
+        return ""
+    if sys.platform == "win32":
+        completed = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                f"(Get-CimInstance Win32_Process -Filter \"ProcessId={int(pid)}\").CreationDate",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+        return completed.stdout.strip()
+    stat_path = f"/proc/{int(pid)}/stat"
+    try:
+        raw = open(stat_path, "r", encoding="utf-8").read().strip()
+        _prefix, suffix = raw.rsplit(") ", 1)
+        fields = suffix.split()
+        return fields[19] if len(fields) > 19 else ""
+    except OSError:
+        return ""
 
 
 def process_exists_windows(pid: int) -> bool:

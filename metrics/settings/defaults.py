@@ -83,7 +83,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'metrics.wsgi.application'
 AI_HOST_ALLOW_ANONYMOUS_APPROVAL = False
 
 CACHES = {

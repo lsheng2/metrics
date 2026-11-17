@@ -127,6 +127,7 @@ class StopResult:
     stop_source: StopSource = StopSource.REGISTERED_PROCESS
     force_requested: bool = False
     provenance: ProcessProvenance | None = None
+    exit_code: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

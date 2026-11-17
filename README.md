@@ -15,7 +15,9 @@ The visual template library supports versioned blocks/slots, pinned report
 creation, manual filling and explicit finalization. Its scoped synthetic
 desktop workflow is qualified. Explicit AI filling follows the
 [Authoring V2 design](openspec/changes/add-provider-neutral-project-reporting/report-authoring-v2.md),
-with scoped installed-SDK/local-Base qualification on `main`.
+with the earlier scoped delivery recorded in the reporting ledger.
+The current embedded-runtime migration and its Windows qualification are tracked
+in [MDB-2](openspec/changes/embed-ai-base-runtime-in-process/tasks.md).
 Editor save/reopen and lifecycle scenarios passed scoped desktop Chrome tests;
 the full-week/cross-week authoring and pending-gap workflows are qualified with
 synthetic sources. [The evidence](openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
@@ -93,8 +95,10 @@ cd metrics
 
 Copy the example environment file:
 
-```bash
-cp .env.example .env
+```powershell
+if (-not (Test-Path -LiteralPath '.env')) {
+    Copy-Item -LiteralPath '.env.example' -Destination '.env'
+}
 ```
 
 Edit `.env` with your configuration (see [Configuration Guide](#configuration-guide) below).
@@ -143,16 +147,24 @@ docker run -p 8000:8000 --env-file .env metrics-dashboard
 
 Visit http://localhost:8000 in your browser.
 
-### Option 2: Python Development Setup
+### Option 2: Windows Python Development Setup
 
 #### 1. Clone and Setup
 
-```bash
+```powershell
 git clone <repository-url>
 cd metrics
-source ~/.virtualenvs/metrics/bin/activate  # or your venv
-pip install -r requirements.txt
 ```
+
+Create a **new** Python 3.13 environment using the approved Windows wheelhouse
+and the [offline installation procedure](docs/development/reporting-delivery.md#windows-offline-installation).
+Install the verified `ai-base-runtime` wheel by file path before the named
+requirements. A requirements-only installation does not establish the runtime
+provenance required by `serve`. Keep any retained legacy `.venv` unchanged;
+select the new interpreter explicitly.
+
+Linux/container definitions above are retained for later qualification. They
+are not validated installation paths for the current embedded-runtime candidate.
 
 #### 2. Configure Your Task Tracker
 
@@ -198,11 +210,18 @@ METRICS_MEMBERS={"John Doe": {"level": "senior", "member_groups": ["Team A"], "s
 
 #### 3. Run the Application
 
-```bash
-python manage.py migrate
-python manage.py check  # Verify configuration
-python manage.py runserver 8000
+```powershell
+& $reportingPython manage.py migrate
+if ($LASTEXITCODE -ne 0) { throw 'Migration failed' }
+& $reportingPython manage.py check
+if ($LASTEXITCODE -ne 0) { throw 'Configuration check failed' }
+$env:METRICS_DASHBOARD_PYTHON = $reportingPython
+.\scripts\local_start_backend.ps1 -Port 8000
 ```
+
+Stop this owned instance with `.\scripts\local_stop_backend.ps1 -Port 8000`.
+The profile and service lifecycle records determine ownership; the stop command
+does not adopt another listener by port.
 
 #### 4. Access Dashboard
 
@@ -562,27 +581,30 @@ If not set, the dashboard will be publicly accessible.
 - Use strong, unique passwords for `METRICS_BASIC_AUTH_USERS`
 - Store API tokens securely and rotate them regularly
 
-### Production Setup
+### Windows Candidate Deployment
 
-1. **Build Static Assets**
+Production qualification of the embedded host is still tracked in MDB-2.
+This is the single candidate entrypoint to validate, not a release approval.
+Linux/container definitions remain deferred and unqualified.
 
-   ```bash
-   python manage.py compress
+1. **Prepare State And Static Assets**
+
+   ```powershell
+   & $reportingPython manage.py migrate
+   & $reportingPython manage.py collectstatic --noinput
+   & $reportingPython manage.py compress
+   & $reportingPython manage.py check --deploy
    ```
-2. **Run with Production Server**
+2. **Start The Owned Host**
 
-   ```bash
-   gunicorn metrics.wsgi:application
+   ```powershell
+   $env:METRICS_DASHBOARD_PYTHON = $reportingPython
+   .\scripts\local_start_backend.ps1 -Port 8000
    ```
-3. **Database Setup**
+3. **Stop The Same Instance**
 
-   ```bash
-   python manage.py migrate
-   ```
-4. **Health Check**
-
-   ```bash
-   python manage.py check --deploy
+   ```powershell
+   .\scripts\local_stop_backend.ps1 -Port 8000
    ```
 
 ### Performance Optimization

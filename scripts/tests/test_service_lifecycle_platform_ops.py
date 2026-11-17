@@ -75,28 +75,28 @@ def test_processMatchesCommandShouldRejectSubstringOnlyArgumentMatch(monkeypatch
 
 def test_processMatchesCommandShouldAcceptExactTokenizedCommand(monkeypatch):
     python_executable = str(Path(sys.executable))
-    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: f'"{python_executable}" manage.py runserver 127.0.0.1:8002 --noreload')
+    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: f'"{python_executable}" manage.py serve --host 127.0.0.1 --port 8002 --stop-file C:/state/django.stop')
 
-    assert platform_ops.process_matches_command(12345, (python_executable, "manage.py", "runserver", "127.0.0.1:8002", "--noreload"))
+    assert platform_ops.process_matches_command(12345, (python_executable, "manage.py", "serve", "--host", "127.0.0.1", "--port", "8002", "--stop-file", "C:/state/django.stop"))
 
 
 def test_processMatchesCommandShouldRejectSameBasenameDifferentQualifiedExecutable(monkeypatch):
     expected = str(Path("C:/expected/python.exe"))
-    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: '"C:/other/python.exe" manage.py runserver 127.0.0.1:8002 --noreload')
+    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: '"C:/other/python.exe" manage.py serve --host 127.0.0.1 --port 8002 --stop-file C:/state/django.stop')
 
-    assert not platform_ops.process_matches_command(12345, (expected, "manage.py", "runserver", "127.0.0.1:8002", "--noreload"))
+    assert not platform_ops.process_matches_command(12345, (expected, "manage.py", "serve", "--host", "127.0.0.1", "--port", "8002", "--stop-file", "C:/state/django.stop"))
 
 
 def test_processMatchesCommandShouldRejectUnqualifiedActualForRelativeQualifiedExpected(monkeypatch):
-    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: "python.exe manage.py runserver 127.0.0.1:8002 --noreload")
+    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: "python.exe manage.py serve --host 127.0.0.1 --port 8002 --stop-file C:/state/django.stop")
 
-    assert not platform_ops.process_matches_command(12345, ("./python.exe", "manage.py", "runserver", "127.0.0.1:8002", "--noreload"))
+    assert not platform_ops.process_matches_command(12345, ("./python.exe", "manage.py", "serve", "--host", "127.0.0.1", "--port", "8002", "--stop-file", "C:/state/django.stop"))
 
 
 def test_processMatchesCommandShouldAllowBasenameFallbackForUnqualifiedExecutable(monkeypatch):
-    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: '"C:/other/python.exe" manage.py runserver 127.0.0.1:8002 --noreload')
+    monkeypatch.setattr(platform_ops, "get_process_command_line", lambda pid: '"C:/other/python.exe" manage.py serve --host 127.0.0.1 --port 8002 --stop-file C:/state/django.stop')
 
-    assert platform_ops.process_matches_command(12345, ("python.exe", "manage.py", "runserver", "127.0.0.1:8002", "--noreload"))
+    assert platform_ops.process_matches_command(12345, ("python.exe", "manage.py", "serve", "--host", "127.0.0.1", "--port", "8002", "--stop-file", "C:/state/django.stop"))
 
 
 def test_processExistsShouldReapExitedChildAfterCallerDropsHandle(tmp_path):

@@ -18,7 +18,7 @@ Paths labelled **new** are planned outputs, not commands claimed to exist today.
    production failure. Current test entry:
 
 ```powershell
-$python = 'D:\AIGC\temp\aib2-lanes\dashboard-stream-cleanup-20261117-01\venv\Scripts\python.exe'
+$python = 'D:\AIGC\artifacts\mdb2-windows-20261117\windows-venv-r4\Scripts\python.exe'
 & $python -I scripts/validation/run_report_authoring_tests.py ai_host/tests/test_admission.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
 ```
 
@@ -132,8 +132,10 @@ subprocess.run(
 
 ## W1.LAUNCH
 
-**Modify:** the runtime-instance profile; all four Windows launcher/stopper
-surfaces and both audit scripts listed in the DAG; `e2e_bug_trend.services.json`;
+**Modify:** the runtime-instance profile; the current Windows launcher/stopper
+surfaces and both audit scripts listed in the DAG, including the existing
+`e2e_start_bug_trend.ps1`, `e2e_stop_bug_trend.ps1` and
+`e2e_restart_bug_trend.ps1` wrappers; `e2e_bug_trend.services.json`;
 `scripts/validation/project_ui_fixture.py`.
 **Tests:** existing profile, launcher, lifecycle and audit tests; **new**
 `scripts/tests/test_windows_launchers.py` for actual entrypoint behavior.
@@ -171,6 +173,17 @@ with pytest.raises(ValueError):
 5. PowerShell entrypoints become thin callers of the existing lifecycle owner.
    Preserve practical Workspace/Port/Action inputs; remove retired AI Base
    options rather than silently ignoring them. Hidden launches stay hidden.
+   Local backend start/stop stays backend-only; it must not initialize demo
+   data, migrate the database or import Grafana content as an incidental action.
+   Use the explicitly selected runtime Python or the fresh `.venv-embedded`
+   convention; a missing interpreter fails, never falls back to retained `.venv`
+   or arbitrary PATH Python. Propagate native nonzero exit codes.
+   The editor task registry is also an entrypoint. Route its stack actions
+   directly to the canonical script; remove obsolete convenience wrappers and
+   their task references. Cross-worktree stop invokes current code against
+   registered target profiles, without executing an older target-worktree script
+   or recovering ownership from a port. Enumeration and per-target failures
+   must reach the caller; remaining registered targets are still attempted.
    Normal operations never request `force_by_port` or kill a process tree
    selected only by port. Refuse a foreign listener or safely choose another
    approved port; never adopt it.
@@ -180,6 +193,20 @@ with pytest.raises(ValueError):
    Report the actual forced PID and method without conflating `force_requested`.
    Change generic SLE code only for a proven reusable defect, with neutral tests
    and its package `AGENTS.md`; do not hardcode Metrics into SLE.
+   The actual Grafana stop path reproduced forced termination instead of a
+   cooperative stop. A **new** generic `service_lifecycle_engine/controlled_stop.py`
+   may support its existing `ServiceSpec.stop_command`, using persisted process
+   identity and a targeted Windows process-group control event. Keep windows
+   hidden, reject wrong/missing identity or undeliverable control, and never
+   broadcast into a shared console. This is a SLE primitive, not another host.
+   Standard Dashboard/Grafana stop must pass normally; deliberate stuck-process
+   scenarios separately prove abnormal escalation and nonzero caller status.
+   Preserve the actual stopped-service exit status, not only the stop helper's
+   or PowerShell wrapper's status. A **new** generic SLE `process_exit.py` can
+   retain existing child handles or a Windows process handle for this observation;
+   it owns no process registry or launcher. Unknown/nonzero service exit cannot
+   satisfy a normal-stop assertion. Record it in termination evidence and test
+   a cooperative worker that deliberately exits nonzero.
 7. Update process/boot audits to recognize `serve` and its provenance, not
    runserver or missing AI Base processes. Keep stdout encoding-safe.
 8. Exercise each real entrypoint on controlled synthetic data, then its real
@@ -193,7 +220,8 @@ services cleanly stopped after the qualification run.
 ## W1.RETIRE
 
 1. Remove `metrics/wsgi.py` and `WSGI_APPLICATION`; retain only the `serve`
-   composition. Check `metrics/asgi.py` is already absent. Do not add aliases.
+   composition. Reconciliation found `metrics/asgi.py` was still present despite
+   the older task note, so remove that standalone entry as well. Do not add aliases.
 2. Implement **new** `scripts/check_embedded_runtime_boundaries.py` and
    `scripts/check_retired_ai_paths.py`, with corresponding **new**
    `scripts/tests/test_embedded_runtime_boundaries.py` and
@@ -214,6 +242,9 @@ services cleanly stopped after the qualification run.
    task names their migration-origin filenames.
 7. Update README Windows installation/start/stop, runtime-isolation guide,
    runbook, current Grafana/AIB architecture and reporting documentation.
+   Remove unused external-runtime URL projections from the profile and stack
+   wrapper; update default stack smoke to the current server-rendered workflow
+   form. Generated fixture commands must remain parseable PowerShell literals.
    Describe existing Linux recipes as deferred/unqualified; do not delete their
    definitions or silently mark the Docker task complete.
 

@@ -30,7 +30,7 @@ The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-stream-cleanup-20261117-01\venv\Scripts\python.exe'
+$reportingPython = 'D:\AIGC\artifacts\mdb2-windows-20261117\windows-venv-r4\Scripts\python.exe'
 & $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
@@ -39,6 +39,69 @@ the actual import path without importing the runtime package. Missing manifests,
 editable installs and package shadowing are rejected. Do not use a retained old
 environment or an editable source install for migrated consumers. No existing
 service or user database is silently switched.
+
+### Windows Offline Installation
+
+The owned artifact root is `D:\AIGC\artifacts\mdb2-windows-20261117`.
+Its `wheels/` directory contains the runtime and Windows dependency wheels.
+The installation qualifier takes the release-input record, validates ownership
+and candidate files before creating anything, creates a fresh venv, acquires
+dependency wheels, then installs offline. Network acquisition alone inherits
+the existing process HTTP/HTTPS proxy; installation and tests use a private
+home with pip configuration disabled and no user-site or shared dependencies.
+Source-built dependencies must already have verified compatible wheels in the
+wheelhouse. The recorded rcssmin/rjsmin wheels match the candidate's Python 3.13
+Windows payload; their source archive identities are retained with the inputs.
+
+`scripts/validation/windows_install_smoke.py --inputs <absolute-input-json>
+--output <new-owned-receipt-json>` is a one-time qualification command, not an
+environment repair command. It refuses an existing environment or receipt.
+For another run, prepare an input record naming a fresh prefix under its marked
+artifact root. Failed receipts and environments are retained for diagnosis.
+Only a `PASS` receipt establishes the installed interpreter as usable.
+
+To install another development environment from a successful qualification,
+run from the Dashboard repository root:
+
+```powershell
+$artifacts = 'D:\AIGC\artifacts\mdb2-windows-20261117'
+$installed = Get-Content -Raw "$artifacts\evidence\install-r4.json" | ConvertFrom-Json
+if ($installed.result -ne 'PASS') { throw 'Installation qualification has not passed' }
+$wheelhouse = Join-Path $artifacts 'wheels'
+foreach ($wheel in $installed.wheels.PSObject.Properties) {
+    if ((Get-FileHash -LiteralPath (Join-Path $wheelhouse $wheel.Name)).Hash.ToLowerInvariant() -ne $wheel.Value) {
+        throw 'Wheelhouse hash mismatch'
+    }
+}
+$constraints = $installed.constraints.path
+if ((Get-FileHash -LiteralPath $constraints).Hash.ToLowerInvariant() -ne $installed.constraints.sha256) {
+    throw 'Windows constraints hash mismatch'
+}
+if ((Get-FileHash -LiteralPath 'requirements.txt').Hash.ToLowerInvariant() -ne $installed.requirements_sha256) {
+    throw 'Requirements changed; requalify this dependency set'
+}
+$newEnvironment = Join-Path (Get-Location) '.venv-embedded'
+if (Test-Path -LiteralPath $newEnvironment) { throw 'Choose a new environment path' }
+& 'C:\Python313\python.exe' -I -m venv $newEnvironment
+if ($LASTEXITCODE -ne 0) { throw 'Environment creation failed' }
+$reportingPython = Join-Path $newEnvironment 'Scripts\python.exe'
+$env:PIP_CONFIG_FILE = 'nul'
+$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev4-py3-none-any.whl'
+& $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints $runtimeWheel
+if ($LASTEXITCODE -ne 0) { throw 'Runtime installation failed' }
+& $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints -r requirements.txt
+if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
+& $reportingPython -I -m pip --isolated check
+if ($LASTEXITCODE -ne 0) { throw 'Dependency check failed' }
+& $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
+if ($LASTEXITCODE -ne 0) { throw 'Runtime admission failed' }
+```
+
+The qualifier also checks complete package files, module/distribution locations,
+disabled user-site and managed `.pth` ownership, and runs package checks and the
+real no-model `serve` page/asset/normal-stop smoke. A dependency download or
+`pip check` alone is not a successful install receipt. Linux dependency effects
+remain deferred and unqualified.
 
 The publication bridge consumes the runtime-issued read-only
 `ToolApproval.approval_id`. It does not derive approval identity from model
@@ -64,8 +127,8 @@ The browser loads `EmbedHost` from `handle.ui.asset_url("embed-host.js")`; its
 by its session-specific id. Evidence selection stays local until `Ask AI`,
 which sends ordered ticket ids through a server-rendered Workbench refresh;
 the server enforces the 50-ticket/4 KiB ContextRef limit. Ticket bodies are not
-sent to the iframe by a private message. No legacy workspace-sync endpoint or
-sidecar adapter participates in this flow.
+sent to the iframe by a private message. The context binding uses only the
+in-process public runtime port.
 
 Use `ai_host/tests/test_workbench_context_ref.py`,
 `ai_host/tests/test_workbench_context_provider.py`,
