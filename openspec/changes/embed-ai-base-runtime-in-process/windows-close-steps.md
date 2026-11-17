@@ -263,6 +263,10 @@ testing for receipt-only or wording-only updates.
 
 ## W2.VA
 
+Ordering amendment: the accepted safety/functional design remains binding.
+The accepted baseline and measurement design is preserved for PERF.KPI, not
+a W2 execution dependency. Read [phase split](windows-performance-phase.md).
+
 W1.REPLAN classifies W2 as **amend**, with W3 continuing after the amendment.
 The historical `serve_baseline.py` still calls a retired command. Before W2
 implementation, approve a test-only adaptation of the original threaded
@@ -272,16 +276,17 @@ posture and sample recipe. Do not restore a production command or SDK path.
 Record the mapping to the original source and its hashes. If that mapping
 cannot preserve the signed comparison, obtain the owner's decision first.
 
-Use `V4`-`V8`, `V10`-`V11` and the exact original 5.10/10.4 clauses. Validate the ability to
+Use `V4`-`V7`, `V10`-`V11` and the functional aspects of original 5.10/10.4. Validate the ability to
 deliver native Windows control events to an owned child, block/release a loop,
-hold streams, measure first-byte/inter-arrival timing, exercise stdout stalls
-and record whole-machine CPU/process snapshots. A helper process can be used
+hold streams, verify incremental delivery, exercise stdout stalls
+and record owned-process cleanup. A helper process can be used
 only as a test fixture, not an alternative production host.
 
-Approve exact fixtures before long runs. Establish the comparison baseline
+At PERF.KPI, before performance runs, establish the comparison baseline
 from S0b's same Django/settings/assets route set and sampling method; a different
 baseline or relaxed threshold needs owner approval, not an agent substitution.
-Unavailable native Windows measurement is a blocker, not a skip.
+Unavailable native functional safety proof blocks functional certification;
+unavailable performance measurement blocks only the later performance phase.
 Approve the migration/aggregate-checker negative fixtures here as well; their
 scripts are produced in W2.HOST so W3 runs frozen tools instead of writing them
 after the final source/fixture freeze.
@@ -294,6 +299,23 @@ stop contract if needed to meet the already approved design.
 **New:** `ai_host/serve_control.py`, host tests named in `V4`-`V7`,
 `scripts/validation/windows_host_qualification.py`, `windows_migration_rehearsal.py`,
 `qualify_ai_runtime.py` and their named checker tests under `scripts/tests/`.
+The host qualification driver owns functional/native scenarios in W2. Its
+performance branch and `windows_host_*` benchmarking helpers belong to
+PERF.PROBE. Functional certification must not import or execute that branch.
+
+W2 implementation refinement: exit inventory/process observation/final output
+are separated into `ai_host/exit_inventory.py`, `exit_processes.py` and
+`serve_exit.py` under the existing host owner. The existing validation-only
+`scripts/validation/project_full_stack_app_entry.py` must capture ownership
+before Django and observe `os._exit` for its own launch receipt: interpreter
+`finally` no longer runs. `ai_host/tests/test_validation_exit_receipt.py` proves
+actual 0/1/3/130 receipt propagation. This adds no product hook or second
+lifecycle authority; the normal service exit is still observed by SLE.
+The qualifier delegates input and evidence checks to
+`scripts/validation/windows_qualification_inputs.py` and
+`windows_qualification_evidence.py`. These are bounded validators, not another
+execution framework. Final acceptance remains unavailable until the native and
+rehearsal producers supply their actual semantic checkers.
 
 1. Implement binding policy before acquiring runtime resources: loopback
    classification per design decision 3; development anonymous-approval posture
@@ -331,6 +353,12 @@ stop contract if needed to meet the already approved design.
    under W3 below. Unit-test wrong snapshot ownership/hash, mixed source identity,
    missing mandatory rows and command failure now; do not run the final rehearsal
    or broad browser bundle yet. Tools reuse existing host/store/test runners.
+   Add mandatory `--profile functional|full`, exact clause/aspect policy and
+   the performance-only discovery boundary described in the phase document.
+   Prove that performance deferral cannot suppress stop/leak/B9 functional
+   failures, arbitrary caller classifications or missing original clauses.
+   Preserve the original census and requirement digests. A functional PASS
+   must explicitly report performance NOT_RUN and fail a full-profile consumer.
 10. Commit the complete host implementation after focused negatives/consumers
    pass, before timing measurement. No AIB wheel change unless a reproduced
    runtime defect and its separate authorization require it.
@@ -341,15 +369,19 @@ stop contract if needed to meet the already approved design.
 ## W2.CERTIFY
 
 1. Run the complete registered Windows conformance lane and all added Metrics
-   cases. Map every original required clause to actual testcase/receipt IDs.
+   functional cases. Map every required functional clause/aspect to actual
+   testcase/receipt IDs; explicitly list performance deferrals.
 2. Run the native qualification driver against actual `serve` and the pinned
-   runtime, not the S0b adapter. Follow `V8`'s exclusive interval and thresholds.
+   runtime, not the S0b adapter, with `--phase conformance`. Prove native
+   signal/terminal/cleanup safety including signed bounds under V4-V7.
+   Do not run baseline comparisons, numerical streaming KPIs or CPU benchmarks.
 3. For each scenario retain raw samples, terminal event/client observation,
    server process exit and ownership cleanup. A passed command without the
    semantic payload or missing sample is a failure.
 4. On failure preserve the run, return to the owning W2.HOST test or W1 launcher
    test, repair the class, and requalify affected scenarios. No threshold changes.
-5. Only after all mandatory Windows rows pass may W2.R accept the package.
+5. Only after all mandatory Windows functional rows pass may W2.R accept the
+   functional host package; V8 remains open for PERF.CERTIFY.
 
 ## W3.FREEZE
 
@@ -397,7 +429,8 @@ during final evidence collection.
 It calls existing admission/testkit/pytest/browser checks, not another SDK.
 
 1. Qualifier admits candidate and runs `pip check` before starting test services.
-   Execute the manifest-selected gates in `V11`; preserve exact argv/returncodes.
+   Execute the repo-selected functional gates in `V11` using `--profile
+   functional`; preserve exact argv/returncodes and explicit performance deferrals.
    Mutated candidate, missing mandatory suite, empty selection, stale fingerprint,
    inconsistent testcase inventory or any failure returns nonzero.
 2. On the frozen final environment run real Workbench session/context and
@@ -413,11 +446,22 @@ It calls existing admission/testkit/pytest/browser checks, not another SDK.
 
 ## Close And Delivery
 
-`CLOSE.R` independently verifies the finite V0-V11 coverage table, both source
-identities, code/doc agreement, all required findings and preserved deferrals.
-`WIN.ACCEPT` writes **new** `evidence/windows-acceptance.json`, containing one row
-per original Windows clause and its evidence. Close original task checkboxes
-only where every original clause is met; partial Linux/global tasks remain open.
+`FUNC.R` independently verifies all functional V0-V7/V9-V11 rows, both source
+identities, data/recovery evidence, code/doc agreement and preserved performance
+deferrals. `FUNC.ACCEPT` writes **new** `evidence/windows-functional-acceptance.json`
+with `acceptance_profile=functional`, performance NOT_RUN and every mixed
+clause's outstanding performance aspect. Original 10.4 remains unchecked.
+
+`W3.REPLAN` follows functional acceptance and freezes the remaining performance
+inputs/owners with structured refreeze evidence. Then execute PERF.KPI,
+PERF.PROBE, PERF.OPTIMIZE and PERF.CERTIFY exactly as defined in
+[windows-performance-phase.md](windows-performance-phase.md).
+
+`CLOSE.R` then verifies combined functional and performance results, including
+affected functional requalification after optimization. `WIN.ACCEPT` writes
+**new** `evidence/windows-acceptance.json`, containing one row per original
+Windows clause and all its aspects/evidence. Close original task checkboxes
+only where every original clause is met; partial Linux/global tasks stay open.
 
 Report the four-goal Windows milestone separately from whole-AIB qualification.
 `DELIVERY` waits for named owner authorization before push, merge or worktree

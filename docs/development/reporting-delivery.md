@@ -21,10 +21,13 @@ later qualification and are not prerequisites for this Windows packet.
 
 The remaining Windows work is specified in the
 [MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
-with detailed steps and a clause-to-evidence matrix. Its next sequence is
-standard installation/entrypoint retirement, remaining host lifecycle work,
-then frozen-candidate rehearsal and joint acceptance. The plan is not evidence
-that those gates passed; product execution requires an explicit owner resume.
+with detailed steps and a clause-to-evidence matrix. Installation and entrypoint
+retirement passed W1. The active sequence is remaining host functional work,
+frozen-candidate rehearsal, joint acceptance and `FUNC.ACCEPT`. Only afterward
+does the [performance phase](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md)
+freeze KPIs, collect probes, optimize and certify. Functional acceptance explicitly
+leaves performance unqualified; stop/cancel/cleanup bounds remain functional.
+The owner has resumed execution; the plan is not evidence that its gates passed.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
 Use the separately installed candidate interpreter:
@@ -223,6 +226,22 @@ shutdown uses `request_stop()` followed by `wait_stopped(timeout)`, with no
 `stop` alias. Failed startup drains owned resources without replacing an
 already installed owner. Host-loopback smoke and fault-path tests do not
 replace the full stream, signal, performance, browser and publication gates.
+
+`serve` detects an ended runtime and shuts down instead of leaving a dead AI
+pane behind. Shutdown stops listener admission, closes runtime HTTP, drains
+response iterators through `close()`, flushes connections, and closes the
+Waitress dispatcher on its server thread before stopping the project worker.
+The signed absolute deadlines and watchdog remain in the Windows validation
+matrix; their full native qualification is still open.
+
+Normal and failed exits emit `serve_exit_inventory` before explicit database
+and logging cleanup, then `serve_exit_cleanup` and the final status line.
+Unknown callbacks/resources or failed cleanup produce exit 3, overriding a
+startup/runtime exit 1; clean exit is 0 and a second stop signal is 130.
+Do not bypass an inventory failure with a compatibility launcher.
+Static auto-refresh is disabled; restart `serve` after changing static files.
+Non-loopback binding is refused when anonymous approvals are enabled;
+otherwise absent Basic users produce an address-only warning.
 
 ## Validation Selection
 

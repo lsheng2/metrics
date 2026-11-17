@@ -6,7 +6,10 @@
 check out，真实阻塞时询问。`PLAN.R` 已达到 1/1 PASS，`OWNER.RESUME` 已满足。
 W1 实现已提交为 `b3fbada10af11230a2d7ecb32995f5e14302cf42`。
 独立 W1.R 达到 1/1 clean pass，W1-P1-1 已关闭；W1.REPLAN 的文档再冻结已通过，
-当前进入 W2.VA，尚未开始 W2 产品实施。
+W2.VA 独立签核通过，进入 W2.HOST 的负例先行实施；W2.CERTIFY 尚未开始。
+Owner 最新排序决定：先关闭全部功能开口，再单独制定性能 KPI、Probe、优化及性能验收。
+新增 FUNC.ACCEPT 功能里程碑；V8 性能阶段后移，不降低停止、取消、泄漏及数据完整性门槛。
+排序修订经独立 review 后继续既有授权；原 10.4 仅在功能与性能两部分都通过后关闭。
 以下原“只编写计划”说明保留为计划创建时的历史。
 发布、main 合入、push、worktree 删除及真实用户数据操作仍按计划的独立授权边界执行。
 
@@ -17,6 +20,7 @@ W1 实现已提交为 `b3fbada10af11230a2d7ecb32995f5e14302cf42`。
 计划入口：[总览](windows-close-plan.md)、
 [逐步操作](windows-close-steps.md)、
 [验收矩阵及原任务映射](windows-close-validation.md)、
+[后置性能阶段](windows-performance-phase.md)、
 [结构 DAG](windows-close-dag.json)。
 JSON 只存结构，不存第二份完成状态。Windows 里程碑不等于整个 MDB-2/AIB 发布；
 Linux、其它 App、真实用户数据和未批准的发布动作保持各自门禁。
@@ -28,17 +32,55 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] W1.RETIRE - 当前 Windows 边界/残留 gate、58 项检查和默认 smoke 通过；编辑器任务与退役文件存在性已纳入检查。Linux 定义仍延期，不关闭原全平台条款。
 - [x] W1.R - 两次独立审查，1 个 P1 修复后达到 1/1 clean pass；范围绑定代码提交 `b3fbada`，见 `evidence/windows-w1-review.json`。
 - [x] W1.REPLAN - W2=amend、W3=continue；基线适配要求已写入 steps/validation，五项 S0b 源码哈希未变，18 节点/20 依赖及严格 OpenSpec 检查通过。结构化回执在 `evidence/windows-w1-review.json`；W2.VA 仍须独立签核。
-- [ ] W2.VA - 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计。
+- [x] W2.VA - 独立 Validation Engineer 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计；批准保留真实空闲 ProjectRunRuntime 的 S0b 测试基线适配。原始回执及授权澄清见 `evidence/windows-w2-validation.md`，无新增 owner 决策阻塞。
 - [ ] W2.HOST - 实现剩余宿主生命周期义务和冻结前所需验收工具。
-- [ ] W2.CERTIFY - 完成 Windows 宿主一致性与隔离的 10.4 测量。
-- [ ] W2.R - 独立复核宿主实现及完整 Windows 证据。
+- [ ] W2.CERTIFY - 完成 Windows 宿主功能一致性、原生安全及清理矩阵；不跑性能 KPI。
+- [ ] W2.R - 独立复核宿主实现及完整 Windows 功能证据。
 - [ ] W2.REPLAN - 复查最终候选、回滚材料及 W3 可执行性。
 - [ ] W3.FREEZE - 固定双方提交、wheel、依赖、fixture 与环境指纹。
 - [ ] W3.REHEARSE - 在合成状态副本上完成新旧版本切换及回滚。
 - [ ] W3.JOIN - 完成最终联合业务验收和必需的全量门禁。
-- [ ] CLOSE.R - 独立核对有限验收矩阵、证据与后置边界。
+- [ ] FUNC.R - 独立核对全部功能开口、联合验收和性能延期边界。
+- [ ] FUNC.ACCEPT - 固定功能验收回执及基线，明确性能尚未验收，不关闭原 10.4。
+- [ ] W3.REPLAN - 以已验收功能基线再冻结后置性能阶段。
+- [ ] PERF.KPI - 单独冻结 KPI、负载、基线、采样方法和判定规则。
+- [ ] PERF.PROBE - 完成保留的性能工具，独立采集诊断基线，不宣称正式验收。
+- [ ] PERF.OPTIMIZE - 按实测瓶颈优化；已达标则记录无需优化，改变行为须功能补验。
+- [ ] PERF.CERTIFY - 独占窗口完成正式性能验收，并确认受影响功能再次通过。
+- [ ] CLOSE.R - 独立核对功能与性能联合矩阵、证据与后置边界。
 - [ ] WIN.ACCEPT - 写入四目标 Windows 里程碑回执，逐条收账而非归档整个项目。
 - [ ] DELIVERY - 仅在 owner 明确指定发布动作后执行，保留其它 WIP。
+
+W2.HOST 检查点（未完成节点）：生命周期状态、失效运行时检测、非回环绑定规则、
+响应迭代器关闭计数、绝对停止预算、Waitress 线程内 dispatcher 收尾、两阶段 watchdog、
+退出清点与显式退出已实现。104 项定向检查通过，既有一致性组 52 passed /
+1 ASGI 不适用；真实 Windows stop-file 后第二次 CTRL_BREAK_EVENT 的受控停止场景通过。
+证据位于 `D:/AIGC/artifacts/mdb2-windows-20261117/w2-host-focused-r1.xml`、
+`w2-conformance-existing-r1.xml`、`w2-native-signal-r1.xml`。这些组有重叠，不相加。
+原生正常启动/页面/资产/停止切片为 `w2-native-host-r3`，早先两次失败原样保留。
+独立只读资源所有权分析已完成；不是 W2.R 的 counted PASS。
+联合验收包装器的 `finally` 退出回执被显式退出绕过，4 个反例复现后改为观察实际
+`os._exit`；4 项退出码回执与既有孤立 check 入口测试通过。该验证消费者已加入
+W2.HOST owner paths，不增加产品 hook。
+仍须补齐完整 V6/V7 场景、其它原生信号/流停止矩阵、功能验收工具及其负例，
+再进行 W2.CERTIFY / W2.R；未开始 V8 性能测量、W3 冻结或最终联合验收。
+本节点未勾选，当前代码尚未提交，HEAD 仍为 `1dbdd338efaa31f8df1d2f8d9a55a6218c35536e`。
+
+W2 后续检查点：新的真实 served 摘要/报告辅助切片、重复请求、重启恢复均通过，
+模型调用仍为两次，两个服务两次停止都为 normal。运行根为
+`D:/AIGC/artifacts/mdb2-windows-20261117/w2-served-join/4f770681-651d-4024-a537-a4f25dabb23a`；
+最终 stop 回执位于其 `evidence/stop/f761eaf2-516c-4958-808d-bd860d73b592/`。
+验收器初稿经协调者集成检查修复了 JUnit 假绿、App/AIB 提交混淆、fixture 摘要语义、
+全局 ROOT 污染和缺失需求摘要策略可绕过等问题。当前 26 项 qualifier 检查 +
+28 项安装器受影响检查通过；实际 60 条原始需求（含 PUB 两项）的摘要/完整 census
+重算也通过。该结果不是独立 W2.R PASS。原生/迁移回执的 producer-owned 语义校验器
+仍未实现，验收器对这些 kind 明确拒绝，不具备最终验收能力。
+实施 agent 已交回并关闭，协调者接回唯一生产写入；没有运行中的本次测试服务。
+
+排序修订检查点：已有性能 WIP 保留，不是功能收尾前置。混合 B9 条款拆为功能行为
+与性能时延两个 aspect，停止/取消/泄漏约束及原生验证不后移。原始需求及
+windows-coverage.json 的历史摘要不改写；qualifier 需实现显式 functional/full profile、
+完整 census 校验及精确测试路径分流，完成前不得声称功能验收器已经可用。
 
 W1.LAUNCH 执行分工：Implementation Engineer 已交回代码并停止写入，
 协调者接回唯一生产写入，补齐停止身份/退出码门禁后继续后续节点。

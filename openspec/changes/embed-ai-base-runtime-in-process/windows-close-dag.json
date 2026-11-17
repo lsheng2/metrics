@@ -9,11 +9,14 @@
   "profile_source": "repo-local",
   "agent_routing_mode": "multiagent-configured",
   "project_profile": ".github/skills/lsheng2-dag-based-planning/templates/project-profile.md",
-  "expected_node_count": 18,
+  "amendment_baseline": "1dbdd338efaa31f8df1d2f8d9a55a6218c35536e",
+  "amendment_dirty_inventory": "evidence/windows-functional-first-baseline.json",
+  "expected_node_count": 25,
+  "functional_milestone_node": "FUNC.ACCEPT",
   "milestone_node": "WIN.ACCEPT",
   "final_node": "DELIVERY",
   "external_gates": {
-    "PLAN.R": "Independent planning review state complete for this exact revision",
+    "PLAN.R": "Original planning review complete; functional-first amendment independently reviewed before W2 resumes",
     "OWNER.RESUME": "Subsequent explicit human approval/resume of product execution",
     "OWNER.RELEASE": "Explicit named commit/artifact/main/push/worktree actions; no implicit permission"
   },
@@ -40,6 +43,11 @@
     "scripts/tests/test_embedded_runtime_boundaries.py": "W1.RETIRE",
     "scripts/tests/test_retired_ai_paths.py": "W1.RETIRE",
     "ai_host/serve_control.py": "W2.HOST",
+    "ai_host/exit_inventory.py": "W2.HOST",
+    "ai_host/exit_processes.py": "W2.HOST",
+    "ai_host/serve_exit.py": "W2.HOST",
+    "ai_host/tests/test_wsgi_inflight.py": "W2.HOST",
+    "ai_host/tests/test_validation_exit_receipt.py": "W2.HOST",
     "ai_host/tests/test_serve_binding.py": "W2.HOST",
     "ai_host/tests/test_serve_liveness.py": "W2.HOST",
     "ai_host/tests/test_serve_shutdown_budget.py": "W2.HOST",
@@ -47,10 +55,24 @@
     "ai_host/tests/conformance_runtime_cases.py": "W2.HOST",
     "ai_host/tests/conformance_recovery_cases.py": "W2.HOST",
     "scripts/validation/windows_host_qualification.py": "W2.HOST",
-    "scripts/tests/test_windows_host_qualification.py": "W2.HOST",
+    "scripts/validation/windows_host_samples.py": "PERF.PROBE",
+    "scripts/validation/windows_host_processes.py": "PERF.PROBE",
+    "scripts/validation/windows_host_transport.py": "PERF.PROBE",
+    "scripts/validation/windows_host_benchmark.py": "PERF.PROBE",
+    "scripts/validation/windows_host_environment.py": "PERF.PROBE",
+    "scripts/tests/test_windows_host_qualification.py": "PERF.PROBE",
+    "scripts/tests/test_windows_host_conformance.py": "W2.HOST",
+    "ai_host/tests/windows_perf_fixture.py": "PERF.PROBE",
+    "ai_host/tests/windows_perf_entry.py": "PERF.PROBE",
+    "ai_host/tests/test_windows_baseline_equivalence.py": "PERF.PROBE",
+    "ai_host/tests/conformance_performance_cases.py": "W2.HOST",
+    "scripts/validation/windows_qualification_profiles.py": "W2.HOST",
+    "scripts/tests/test_windows_qualification_profiles.py": "W2.HOST",
     "scripts/validation/windows_migration_rehearsal.py": "W2.HOST",
     "scripts/tests/test_windows_migration_rehearsal.py": "W2.HOST",
     "scripts/validation/qualify_ai_runtime.py": "W2.HOST",
+    "scripts/validation/windows_qualification_evidence.py": "W2.HOST",
+    "scripts/validation/windows_qualification_inputs.py": "W2.HOST",
     "scripts/tests/test_qualify_ai_runtime.py": "W2.HOST"
   },
   "nodes": [
@@ -111,13 +133,13 @@
     {
       "id": "W2.VA", "depends_on": ["W1.REPLAN"], "kind": "validation-architecture",
       "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-3", "INV-4", "INV-5", "INV-6"],
-      "validation": ["V4", "V5", "V6", "V7", "V8", "V10", "V11"], "steps": "windows-close-steps.md#w2va",
-      "exit_criteria": "Full signed Windows assertion inventory and native measurement method approved; no missing clause hidden by existing testkit count.",
+      "validation": ["V4", "V5", "V6", "V7", "V10", "V11"], "steps": "windows-close-steps.md#w2va",
+      "exit_criteria": "Functional assertion inventory approved; previously accepted performance design preserved for PERF.KPI, not a W2 execution dependency.",
       "parallel_policy": "review-only"
     },
     {
       "id": "W2.HOST", "depends_on": ["W2.VA"], "kind": "implementation",
-      "owner_paths": ["manage.py", "ai_host/", "metrics/settings/", "metrics/tests/", "project_management/runtime.py", "project_management/tests/test_project_runtime.py", "scripts/validation/windows_host_qualification.py", "scripts/tests/test_windows_host_qualification.py", "scripts/validation/windows_migration_rehearsal.py", "scripts/tests/test_windows_migration_rehearsal.py", "scripts/validation/qualify_ai_runtime.py", "scripts/tests/test_qualify_ai_runtime.py", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/"],
+      "owner_paths": ["manage.py", "ai_host/", "metrics/settings/", "metrics/tests/", "project_management/runtime.py", "project_management/tests/test_project_runtime.py", "scripts/validation/project_full_stack_app_entry.py", "scripts/validation/windows_host_qualification.py", "scripts/tests/test_windows_host_conformance.py", "scripts/validation/windows_migration_rehearsal.py", "scripts/tests/test_windows_migration_rehearsal.py", "scripts/validation/qualify_ai_runtime.py", "scripts/validation/windows_qualification_evidence.py", "scripts/validation/windows_qualification_inputs.py", "scripts/validation/windows_qualification_profiles.py", "scripts/tests/test_qualify_ai_runtime.py", "scripts/tests/test_windows_qualification_profiles.py", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/"],
       "contracts": ["INV-3", "INV-4", "INV-5", "INV-6"], "validation": ["V4", "V5", "V6", "V7", "V10", "V11"],
       "steps": "windows-close-steps.md#w2host",
       "exit_criteria": "Missing host policy, liveness, absolute stop phases, watchdog and exit inventory implemented with discriminating focused tests.",
@@ -126,15 +148,15 @@
     {
       "id": "W2.CERTIFY", "depends_on": ["W2.HOST"], "kind": "validation",
       "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-3", "INV-4", "INV-6"],
-      "validation": ["V4", "V5", "V6", "V7", "V8"], "steps": "windows-close-steps.md#w2certify",
-      "exit_criteria": "All required Windows 5.10 and 10.4 rows pass with source/OS/runtime identity and normal cleanup; no heavy-run interference.",
-      "parallel_policy": "exclusive-heavy-run"
+      "validation": ["V4", "V5", "V6", "V7"], "steps": "windows-close-steps.md#w2certify",
+      "exit_criteria": "All Windows functional clauses/aspects pass, including native stop/disconnect/cleanup bounds; performance is explicitly deferred.",
+      "parallel_policy": "owned-functional-runs"
     },
     {
       "id": "W2.R", "depends_on": ["W2.CERTIFY"], "kind": "behavior-review",
       "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
-      "validation": ["V0", "V4", "V5", "V6", "V7", "V8"], "steps": "windows-close-steps.md#wave-review-and-replan",
-      "exit_criteria": "Independent host behavior review accepts complete Windows evidence without broad release inference.",
+      "validation": ["V0", "V4", "V5", "V6", "V7"], "steps": "windows-close-steps.md#wave-review-and-replan",
+      "exit_criteria": "Independent host review accepts complete Windows functional evidence without performance or release inference.",
       "parallel_policy": "review-only"
     },
     {
@@ -167,7 +189,57 @@
       "parallel_policy": "frozen-input-tests-only"
     },
     {
-      "id": "CLOSE.R", "depends_on": ["W3.JOIN"], "kind": "behavior-review",
+      "id": "FUNC.R", "depends_on": ["W3.JOIN"], "kind": "behavior-review",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "validation": ["V0", "V11"], "steps": "windows-close-steps.md#close-and-delivery",
+      "exit_criteria": "All functional findings closed; mixed aspects and performance deferrals explicit; independent review complete.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "FUNC.ACCEPT", "depends_on": ["FUNC.R"], "kind": "closure",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md"], "contracts": ["INV-6"],
+      "validation": ["V11"], "steps": "windows-close-steps.md#close-and-delivery",
+      "exit_criteria": "Functional receipt binds both sources/wheel/fixtures; performance NOT_RUN; original task 10.4 remains open.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "W3.REPLAN", "depends_on": ["FUNC.ACCEPT"], "kind": "replan-review",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "validation": ["V0"], "steps": "windows-close-steps.md#close-and-delivery",
+      "exit_criteria": "Remaining performance work refrozen against functional baseline with structured actions, artifacts and rerun gates.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "PERF.KPI", "depends_on": ["W3.REPLAN"], "kind": "validation-architecture",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-6"],
+      "validation": ["V8"], "steps": "windows-performance-phase.md#kpi-freeze-at-perfkpi",
+      "exit_criteria": "Independent KPI/baseline/workload/sample-method freeze accepted; signed thresholds unchanged without owner decision.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "PERF.PROBE", "depends_on": ["PERF.KPI"], "kind": "implementation",
+      "owner_paths": ["scripts/validation/windows_host_qualification.py", "scripts/validation/windows_host_samples.py", "scripts/validation/windows_host_processes.py", "scripts/validation/windows_host_transport.py", "scripts/validation/windows_host_benchmark.py", "scripts/validation/windows_host_environment.py", "scripts/tests/test_windows_host_qualification.py", "ai_host/tests/windows_perf_fixture.py", "ai_host/tests/windows_perf_entry.py", "ai_host/tests/test_windows_baseline_equivalence.py", "ai_host/tests/conformance_performance_cases.py", "openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-6"], "validation": ["V8"], "steps": "windows-performance-phase.md#bounded-execution",
+      "exit_criteria": "Preserved performance tools completed with negative tests and diagnostic samples; no premature acceptance.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "PERF.OPTIMIZE", "depends_on": ["PERF.PROBE"], "kind": "implementation",
+      "owner_paths": ["ai_host/", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-3", "INV-4", "INV-6"], "validation": ["V4", "V5", "V6", "V7", "V8", "V9"],
+      "steps": "windows-performance-phase.md#bounded-execution",
+      "exit_criteria": "Only measured owner-scoped optimization or documented no-change decision; functional regressions fixed; other owners need refreeze/authorization.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "PERF.CERTIFY", "depends_on": ["PERF.OPTIMIZE"], "kind": "validation",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-6"],
+      "validation": ["V0", "V8", "V11"], "steps": "windows-performance-phase.md#bounded-execution",
+      "exit_criteria": "Exclusive signed KPI run passes and final functional evidence matches optimized bytes; no missing samples or abnormal cleanup.",
+      "parallel_policy": "exclusive-heavy-run"
+    },
+    {
+      "id": "CLOSE.R", "depends_on": ["PERF.CERTIFY"], "kind": "behavior-review",
       "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
       "validation": ["V0", "V11"], "steps": "windows-close-steps.md#close-and-delivery",
       "exit_criteria": "Independent finite acceptance review closes all Windows findings and verifies all deferred claims remain explicit.",

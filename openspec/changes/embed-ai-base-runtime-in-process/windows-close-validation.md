@@ -4,6 +4,10 @@ This is an executable validation design, not a record of tests already run.
 Use [steps](windows-close-steps.md), the structural DAG and the original
 requirements together. `V0` expands the original long clauses into a finite
 inventory; the groups below do not authorize dropping an unnamed assertion.
+The owner's functional-first amendment is defined in
+[windows-performance-phase.md](windows-performance-phase.md). V8 numerical
+KPIs and exclusive benchmarking follow FUNC.ACCEPT. Native correctness,
+data integrity, bounded stop/cancel and resource-return proof stay in V4-V7/V9.
 
 ## V0: Coverage And Evidence Reuse
 
@@ -52,9 +56,9 @@ concrete testcase nodes, preserve both and reconcile the inventory explicitly.
 | 3.1-3.3, 4.1-4.2 | accepted publication slice; final dependency-aware revalidation | V0, V9 |
 | 4.3-4.5 | existing context/host actions; reconcile package/provider-negative checks | V3, V6, V9 |
 | 5.1-5.4, 5.8 | existing typed profiles/ports/records; exact clause verification | V1, V3, V7, V9 |
-| 5.5-5.6 | incomplete full host lifecycle/policy | W2.HOST / V4-V8 |
+| 5.5-5.6 | incomplete full host lifecycle/policy | W2.HOST / V4-V7 |
 | 5.7, 5.9 | core removal done; launcher/test/document consumers still to reconcile | W1.LAUNCH, W1.RETIRE / V2-V3 |
-| 5.10 | shipped lane is partial evidence; remaining full Windows assertions required | W2.CERTIFY / V3-V8 |
+| 5.10 | shipped lane is partial evidence; remaining full Windows functional assertions required | W2.CERTIFY / V3-V7 |
 | 5.11 | implement aggregate runtime qualification command | W3.JOIN / V11 |
 | 5.12 | current docs partly synchronized; finish install/launcher/static-restart guidance | W1.INSTALL, W1.RETIRE / V1-V3 |
 | 6.1 | remove remaining standalone WSGI entry | W1.RETIRE / V3 |
@@ -68,7 +72,7 @@ concrete testcase nodes, preserve both and reconcile the inventory explicitly.
 | 10.1 | accepted bounded browser publication; final candidate revalidation | V9 |
 | 10.2 | final required affected-module/gate bundle, no default discovery shortcut | V11 |
 | 10.3 | Windows synthetic old/new restore required; image clause deferred | V10 |
-| 10.4 | fresh native Windows timing/signal/stream/production-settings qualification | V8 |
+| 10.4 | split native functional safety/behavior from numerical performance; whole task remains open until both pass | W2/W3 V4-V7/V9; PERF.CERTIFY V8 |
 
 Any task whose non-Windows/global clause remains deferred stays unchecked as a
 whole. Windows clause rows can pass separately; do not convert partial evidence
@@ -85,10 +89,10 @@ into full-task or whole-project completion.
 | V5 | Monotonic stage budgets, non-skipped cleanup, 0/1/3/130 precedence, second signal <=1s, active-project budget extension/tightening, unknown exit inventory refusal and blocked stdout hard-exit bound | **new** `test_serve_shutdown_budget.py`, `test_serve_exit_inventory.py`; existing lifecycle/project-runtime tests |
 | V6 | L0/L1/runtime order, same principal/challenge, all valid Host forms incl IPv6/configured host, auth saturation, production anonymous approval denial, assets/navigation and context/action behavior | extend `conformance_host_cases.py`, `conformance_order_cases.py`, `conformance_http_cases.py`; existing Workbench/context tests |
 | V7 | Runtime lifetime/transport completeness: heartbeat/disconnect, admission counters/return, body reception/backpressure, facade cancellation/lag, idempotency, persisted abrupt-exit recovery, no global env/tracer/signal/atexit mutation, bounded startup rollback/stable errors | explicit shipped testkit plus **new** `ai_host/tests/conformance_runtime_cases.py`, `conformance_recovery_cases.py`; reuse current fixtures/server |
-| V8 | Native timing and concurrency thresholds below, on current runtime and real serve, under exclusive measurement; any source drift/omitted sample/missing terminal event/forced cleanup fails | **new** `windows_host_qualification.py`, `test_windows_host_qualification.py`; existing publication/process/model fixtures |
+| V8 | Deferred until FUNC.ACCEPT: numerical timing/concurrency KPIs on real serve under exclusive measurement; source drift, omitted samples or abnormal cleanup fails | PERF.PROBE/PERF.CERTIFY; `windows_host_qualification.py --phase performance`; exact KPI map in phase document |
 | V9 | Actual Workbench -> chat -> context change with same session -> approval -> rendered Grafana timestamps/values -> history/audit; repeated commands without extra side effects; reject/failed publish and task-run/assist recovery; clean stop/no residual child or listener | existing workbench/publication browser joins, publication recovery, summary/report runtime joins, served runtime join |
 | V10 | Actual isolated old-version snapshot -> new-version migrate/start/read/restart -> old-version restore/start/read; preserve original DB/state/archive bytes. Wrong owner, reparse escape, missing/mixed snapshot member, corrupt hash and old active-wire input fail | **new** migration rehearsal script/tests; native archive/path helpers and old/new host harness |
-| V11 | All required V0-V10 receipts plus explicit affected-module gates resolve on final candidate; aggregator fails wrong candidate, missing mandatory row, false pass, empty selection, command failure and stale artifact | **new** `qualify_ai_runtime.py`, `test_qualify_ai_runtime.py`; original 10.2 requirements |
+| V11 | Functional profile: V0-V7/V9-V10 plus explicit functional module gates; full profile additionally V8. Reject profile promotion, missing clauses/aspects, caller reclassification, wrong candidate, false pass, empty selection, command failure and stale artifact | `qualify_ai_runtime.py --profile functional|full`, named qualifier tests; original 10.2 requirements |
 
 ### V5: Stop Sequence And Bounds
 
@@ -156,7 +160,9 @@ non-applicability row as success:
 
 ### V8: Native Measurement Method
 
-W2.VA must sign off the baseline-fixture adaptation required by W1.REPLAN.
+This is the final performance phase, not a W2.CERTIFY prerequisite. W2.VA
+signed off the baseline-fixture adaptation required by W1.REPLAN; PERF.KPI
+rechecks that approval against the final functional baseline.
 The old baseline command name is no longer an executable current interface.
 Bind the adapted test fixture to the original threaded server/static-handler
 architecture and source hashes, while both arms use the same current
@@ -174,20 +180,23 @@ Do not invent a cheaper baseline or substitute a test double.
   Capture HEAD and status hashes before/after; any source/status drift invalidates.
 - B3: with 100ms source event spacing, first event <=200ms and inter-arrival
   p95 <=150ms. Record samples, not just a boolean.
-- B4/M5: repeated disconnects and normal/error/abort/stop release tests; bounded
+- B4/M5 functional proof is required before FUNC.ACCEPT: repeated disconnects and normal/error/abort/stop release tests; bounded
   return to zero and no leaked owned threads/tasks.
-- B5: active plus idle chat stream; also slow-reading and non-reading clients.
+- B5 functional proof is required before FUNC.ACCEPT: active plus idle chat stream; also slow-reading and non-reading clients.
   Every required terminal event is delivered before close and normal process
   exit is within10s with no running project job.
 - B6/B9: each required page+asset p95 <=1.2 times baseline. Repeat B6 with
   production settings, DEBUG=False and collectstatic output. In the **same**
   saturation interval, excess stream returns503/Retry-After2 and every short
   request succeeds200 in <100ms. Do not discard inconvenient samples.
-- B7: original browser subset equivalent. Cold AI pane starts with empty cache;
+- B7 functional proof is required before FUNC.ACCEPT: original browser subset equivalent. Cold AI pane starts with empty cache;
   assets all200, no final503; assets still200 during loop blockage.
-- B1/stop matrix: native second-signal behavior and terminal/exit evidence for
+- B1/stop functional proof is required before FUNC.ACCEPT: native second-signal behavior and terminal/exit evidence for
   supported Windows triggers. Any normal-stop claim also checks descendant and
   listening-port absence, not only parent exit.
+- Reuse unaffected functional proof through V0; rerun it after relevant
+  optimization. B9 still requires behavior and latency in the same final
+  saturation interval, even when its functional behavior already passed.
 - After final JSON, stop only owned resources and remove the guard. If cleanup
   fails, retain an explicit failed receipt, not a green performance result.
 
@@ -203,7 +212,7 @@ All paths below are in the JSON `planned_paths` inventory with a producer node.
 | `windows_install_smoke.py` | `--inputs` JSON path, `--output` new receipt path | release-inputs record; new owned Windows venv/wheelhouse, exact installation argv, pip/admission/start/stop results |
 | `windows_host_qualification.py` | `--inputs`, `--output`, `--phase conformance` or `--phase performance` | approved source/fixture/candidate/baseline records; all clause IDs for the selected phase, raw samples and cleanup; one phase cannot claim the other |
 | `windows_migration_rehearsal.py` | `--inputs`, `--output` | verified old/new executable records and owned synthetic snapshot set; per-step upgrade/restore/read/cleanup and original-file integrity |
-| `qualify_ai_runtime.py` | `--inputs`, `--output` | final frozen release-inputs plus coverage/required-check registry; aggregate V0-V11 receipt only when every required Windows row succeeds |
+| `qualify_ai_runtime.py` | `--inputs`, `--output`, required `--profile functional` or `--profile full` | final frozen inputs plus complete census and repo-owned phase policy; selected-profile receipt with explicit deferred aspects, never profile promotion |
 | `check_embedded_runtime_boundaries.py` | `--root` repository path, `--output` | AST import/asyncio inventory, checked-file count, violating references; no runtime startup |
 | `check_retired_ai_paths.py` | `--root`, `--output`, `--platform windows` or `--platform all` | original9.5 inventory plus exact scope/dispositions; windows result lists Linux deferrals and never claims the all-scope gate |
 
@@ -252,7 +261,11 @@ WIN.RECONCILE; do not substitute default pytest discovery. Run each independent
 database lane separately if its fixtures conflict. Preserve the test inventory
 and exact selected nodes so splits do not omit cases. Heavy native100-publication
 or browser cases may reuse matching earlier proof only through V0 review, never
-silently disappear through `-k`, deselect or skip.
+silently disappear through `-k`, deselect or skip. Functional-profile execution
+excludes only the exact performance-only modules in the phase document,
+records their deferral, and keeps all functional native/browser cases.
+The full profile runs them in the later performance lane, not nested inside
+an exclusive measurement interval.
 
 Planning/static gates:
 
@@ -281,6 +294,11 @@ Only independently validated gates can be chained. Never turn a failure into
 success with an output-filter or loose string match.
 
 ## Close Receipt And Remaining Gates
+
+`windows-functional-acceptance.json` records only functional acceptance,
+performance NOT_RUN and the remaining 10.4 aspects. It is not acceptable as
+a full-profile performance receipt. The final combined receipt below must
+revalidate functional evidence affected by performance changes.
 
 `windows-acceptance.json` includes: final pair of commits; wheel/dependency/
 fixture identities; every Windows clause and its result; reused versus fresh
