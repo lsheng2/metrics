@@ -4,6 +4,7 @@
 
 - Normative baseline specs: `openspec/specs/`
 - Active/future changes: `openspec/changes/`
+- Windows AIB/Dashboard closure plan: [execution plan](../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md), with detailed steps and validation matrix in the same change.
 - Supporting docs migrated from this folder: `openspec/docs/`
 - Migration inventory: `openspec/docs/baseline-docs-inventory.md`
 - Case studies and operator walkthroughs: `docs/case_study/`

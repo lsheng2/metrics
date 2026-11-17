@@ -19,6 +19,14 @@ Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
 
+The remaining Windows work is specified in the
+[MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
+with detailed steps and a clause-to-evidence matrix. Its next sequence is
+standard installation/entrypoint retirement, remaining host lifecycle work,
+then frozen-candidate rehearsal and joint acceptance. The plan is not evidence
+that those gates passed; product execution requires an explicit owner resume.
+The existing MDB-2 `tasks.md` remains the sole migration status ledger.
+
 Use the separately installed candidate interpreter:
 
 ```powershell

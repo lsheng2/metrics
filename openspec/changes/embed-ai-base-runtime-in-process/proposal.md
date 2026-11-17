@@ -1,5 +1,14 @@
 # Proposal: embed-ai-base-runtime-in-process（MDB-2）
 
+## Windows Execution Revision
+
+Owner 于 2026-11-17 要求细化 Windows 收尾计划，并交独立 subagent 审查。
+本 change 的执行细化见 [Windows 收尾计划](windows-close-plan.md)，状态仍只记在
+`tasks.md`；当前是计划编写/审查，不自动启动产品实施。
+沿用已批准的一对一、同进程架构，不新增 OpenSpec、SDK 或兼容桥。
+Linux/WSL/Linux 容器验证后移，接口与环境定义保留；Windows 里程碑不关闭
+原跨平台要求、整个 AIB W3/W4 或未批准的真实数据/发布门禁。
+
 ## Why
 
 Metrics 与 AI Base 一对一部署，运行在同一台机器、同一个 OS 用户下，却通过两个进程和三条 HTTP 通道集成：
@@ -33,7 +42,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - host actions：只做 UI 动作。
 - **BREAKING** 发布改为由运行时审批 `publish_chart` 调用：
   - Metrics 的 `preview()` 生成将要导入的确切 dashboard JSON 及其内容摘要，审批绑定这个摘要；
-  - 执行前重新生成并比较摘要，不一致就不导入；
+  - 运行时执行前重新取得 preview 并比较摘要，不一致就不执行；Metrics handler 只导入批准的字节，不另行重新渲染；
   - 以 `tool_call_id` 作为幂等键；
   - chart 草稿只存在于对话的 tool 调用中，不另建 artifact 存储；发布结果写入 Metrics 自有的新表
     `AiChartPublication`（`tool_call_id` 唯一，`supersedes` 唯一），`/api/ai-publish-history/` 只读这张表。
@@ -44,7 +53,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - `ai_base_workbench_adapter.py`；
   - workspace 同步（表单、视图、JS）；
   - `AiGrafanaPublishApprovalService`；
-  - `TaskRunClient`、`AiBackendTarget`、`execution_mode`，以及 `run_factories`、`report_factories` 中的工厂；
+  - `TaskRunClient`、`AiBackendTarget`、`execution_mode`，以及 `run_factories`、`report_factories` 中的旧 HTTP SDK 工厂；保留当前 typed 端口工厂；
   - 设置项 `METRICS_AI_SIDECAR_ENABLED`、`METRICS_AI_BASE_*`、`METRICS_PROJECT_AI_*`、`METRICS_PROJECT_RUNTIME_FACTORY`、
     `METRICS_REPORT_ASSIST_FACTORY`；
   - `requirements-ai-task.txt`；
@@ -106,7 +115,7 @@ AI Base 以可嵌入运行时 `ai-base-runtime` 的形式进入 Metrics 进程�
   - `metrics/`：`middleware.py`、`settings/*`；删除 `asgi.py` 与 `wsgi.py`；
   - 新模块 `ai_host/`：组合根装配、宿主 SPI、App 包、task-run 端口实现、审计表、`serve` 命令；
   - `project_management`：删除 `ai_bundle/` 与 `project_serve`，新增 `ai_profiles/`；`out/ai_task_contract.py` 和
-    `out/report_ai_task.py` 改写为同步端口；run_factories、report_factories、runtime、summary_analysis、
+    `out/report_ai_task.py` 旧 wire 校验器删除，同步端口使用 `app/domain/task_runs.py` 的 App 自有类型；run_factories、report_factories、runtime、summary_analysis、
     report_assists、project_run_worker、project_run 与准入记录值对象；
   - `bug_metrics`：新表 `AiChartPublication`；`app/api/` 下的 ai_sidecar、ai_dashboard_approval、ai_context、
     ai_dashboard_composition、ai_dashboard_workflow；

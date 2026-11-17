@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "change": "embed-ai-base-runtime-in-process",
+  "purpose": "Structural Windows closure plan; execution status exists only in tasks.md",
+  "baseline": "d0c395eb8649a90d2a2cae09d1f5362252bb0353",
+  "pre_existing_dashboard_changes": [],
+  "aib_candidate_source": "d589ac8e6572a903edc3846e7d78195e85858868",
+  "aib_dirty_worktree_policy": "Preserve and exclude existing other-App/generic-capability WIP; never build this candidate from the dirty checkout.",
+  "profile_source": "repo-local",
+  "agent_routing_mode": "multiagent-configured",
+  "project_profile": ".github/skills/lsheng2-dag-based-planning/templates/project-profile.md",
+  "expected_node_count": 18,
+  "milestone_node": "WIN.ACCEPT",
+  "final_node": "DELIVERY",
+  "external_gates": {
+    "PLAN.R": "Independent planning review state complete for this exact revision",
+    "OWNER.RESUME": "Subsequent explicit human approval/resume of product execution",
+    "OWNER.RELEASE": "Explicit named commit/artifact/main/push/worktree actions; no implicit permission"
+  },
+  "contracts": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6"],
+  "validation_ids": ["V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11"],
+  "planned_paths": {
+    "scripts/validation/windows_install_smoke.py": "W1.INSTALL",
+    "scripts/tests/test_windows_install_smoke.py": "W1.INSTALL",
+    "scripts/tests/test_windows_launchers.py": "W1.LAUNCH",
+    "scripts/check_embedded_runtime_boundaries.py": "W1.RETIRE",
+    "scripts/check_retired_ai_paths.py": "W1.RETIRE",
+    "scripts/tests/test_embedded_runtime_boundaries.py": "W1.RETIRE",
+    "scripts/tests/test_retired_ai_paths.py": "W1.RETIRE",
+    "ai_host/serve_control.py": "W2.HOST",
+    "ai_host/tests/test_serve_binding.py": "W2.HOST",
+    "ai_host/tests/test_serve_liveness.py": "W2.HOST",
+    "ai_host/tests/test_serve_shutdown_budget.py": "W2.HOST",
+    "ai_host/tests/test_serve_exit_inventory.py": "W2.HOST",
+    "ai_host/tests/conformance_runtime_cases.py": "W2.HOST",
+    "ai_host/tests/conformance_recovery_cases.py": "W2.HOST",
+    "scripts/validation/windows_host_qualification.py": "W2.HOST",
+    "scripts/tests/test_windows_host_qualification.py": "W2.HOST",
+    "scripts/validation/windows_migration_rehearsal.py": "W2.HOST",
+    "scripts/tests/test_windows_migration_rehearsal.py": "W2.HOST",
+    "scripts/validation/qualify_ai_runtime.py": "W2.HOST",
+    "scripts/tests/test_qualify_ai_runtime.py": "W2.HOST"
+  },
+  "nodes": [
+    {
+      "id": "WIN.RECONCILE", "depends_on": ["PLAN.R", "OWNER.RESUME"], "kind": "preflight",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-1", "INV-5", "INV-6"], "validation": ["V0"],
+      "steps": "windows-close-steps.md#winreconcile",
+      "exit_criteria": "Every original task/Windows clause classified; candidate and rollback materialization inputs verified; no implied product PASS.",
+      "parallel_policy": "isolated-prerequisite-probe"
+    },
+    {
+      "id": "W1.VA", "depends_on": ["WIN.RECONCILE"], "kind": "validation-architecture",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-1", "INV-2", "INV-6"], "validation": ["V1", "V2", "V3"],
+      "steps": "windows-close-steps.md#w1va",
+      "exit_criteria": "Positive/negative install, launcher ownership and retirement checks approved before implementation.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "W1.INSTALL", "depends_on": ["W1.VA"], "kind": "implementation",
+      "owner_paths": ["requirements.txt", "ai_host/admission.py", "ai_host/tests/test_admission.py", "scripts/validation/windows_install_smoke.py", "scripts/tests/test_windows_install_smoke.py", "README.md", "docs/development/reporting-delivery.md"],
+      "contracts": ["INV-1", "INV-6"], "validation": ["V1"],
+      "steps": "windows-close-steps.md#w1install",
+      "exit_criteria": "Fresh owned Windows venv admits direct hashed wheel, installs locked dependencies offline and passes pip check/serve smoke; wrong wheel fails before launch.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "W1.LAUNCH", "depends_on": ["W1.INSTALL"], "kind": "implementation",
+      "owner_paths": ["scripts/dashboard_runtime_instance_profile.py", "scripts/e2e_bug_trend.py", "scripts/e2e_bug_trend.services.json", "scripts/e2e_dashboard_ai_stack.ps1", "scripts/local_start_backend.ps1", "scripts/local_stop_backend.ps1", "scripts/audit_stack_process_inventory.py", "scripts/audit_stack_boot_logs.py", "scripts/service_lifecycle_engine/", "scripts/tests/", "scripts/validation/project_ui_fixture.py", "docs/architecture/local-runtime-instance-isolation.md", "docs/validation/dashboard-ai-e2e-runbook.zh.md"],
+      "contracts": ["INV-2", "INV-3", "INV-6"], "validation": ["V2"],
+      "steps": "windows-close-steps.md#w1launch",
+      "exit_criteria": "Every current Windows entrypoint uses owned serve/Grafana only; graceful stop-file wait and foreign-process refusal are proven.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "W1.RETIRE", "depends_on": ["W1.LAUNCH"], "kind": "implementation",
+      "owner_paths": ["metrics/wsgi.py", "metrics/settings/", "metrics/tests/", "ai_host/tests/", "scripts/check_embedded_runtime_boundaries.py", "scripts/check_retired_ai_paths.py", "scripts/tests/", "README.md", ".env.example", "AI_CONTRACT.md", ".github/ai-governance/repo-context.md", "docs/", "openspec/docs/current-baseline/", "openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-1", "INV-2", "INV-4", "INV-6"], "validation": ["V3"],
+      "steps": "windows-close-steps.md#w1retire",
+      "exit_criteria": "Current Windows code/config/docs have no active legacy path; boundary and absence checkers fail their mutations; exact deferred Linux scope is reported.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "W1.R", "depends_on": ["W1.RETIRE"], "kind": "behavior-review",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "validation": ["V0", "V1", "V2", "V3"], "steps": "windows-close-steps.md#wave-review-and-replan",
+      "exit_criteria": "Independent selected-packet review has no open required finding; evidence and source scope match.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "W1.REPLAN", "depends_on": ["W1.R"], "kind": "replan-review",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "validation": ["V0"], "steps": "windows-close-steps.md#wave-review-and-replan",
+      "exit_criteria": "W2/W3 continued or explicitly amended against landed installation/launcher behavior; required refreeze evidence recorded.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "W2.VA", "depends_on": ["W1.REPLAN"], "kind": "validation-architecture",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-3", "INV-4", "INV-5", "INV-6"],
+      "validation": ["V4", "V5", "V6", "V7", "V8", "V10", "V11"], "steps": "windows-close-steps.md#w2va",
+      "exit_criteria": "Full signed Windows assertion inventory and native measurement method approved; no missing clause hidden by existing testkit count.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "W2.HOST", "depends_on": ["W2.VA"], "kind": "implementation",
+      "owner_paths": ["manage.py", "ai_host/", "metrics/settings/", "metrics/tests/", "project_management/runtime.py", "project_management/tests/test_project_runtime.py", "scripts/validation/windows_host_qualification.py", "scripts/tests/test_windows_host_qualification.py", "scripts/validation/windows_migration_rehearsal.py", "scripts/tests/test_windows_migration_rehearsal.py", "scripts/validation/qualify_ai_runtime.py", "scripts/tests/test_qualify_ai_runtime.py", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-3", "INV-4", "INV-5", "INV-6"], "validation": ["V4", "V5", "V6", "V7", "V10", "V11"],
+      "steps": "windows-close-steps.md#w2host",
+      "exit_criteria": "Missing host policy, liveness, absolute stop phases, watchdog and exit inventory implemented with discriminating focused tests.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "W2.CERTIFY", "depends_on": ["W2.HOST"], "kind": "validation",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-3", "INV-4", "INV-6"],
+      "validation": ["V4", "V5", "V6", "V7", "V8"], "steps": "windows-close-steps.md#w2certify",
+      "exit_criteria": "All required Windows 5.10 and 10.4 rows pass with source/OS/runtime identity and normal cleanup; no heavy-run interference.",
+      "parallel_policy": "exclusive-heavy-run"
+    },
+    {
+      "id": "W2.R", "depends_on": ["W2.CERTIFY"], "kind": "behavior-review",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "validation": ["V0", "V4", "V5", "V6", "V7", "V8"], "steps": "windows-close-steps.md#wave-review-and-replan",
+      "exit_criteria": "Independent host behavior review accepts complete Windows evidence without broad release inference.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "W2.REPLAN", "depends_on": ["W2.R"], "kind": "replan-review",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "validation": ["V0"], "steps": "windows-close-steps.md#wave-review-and-replan",
+      "exit_criteria": "Final immutable candidate and old-version restore inputs available; W3 scope fixed or formally amended.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "W3.FREEZE", "depends_on": ["W2.REPLAN"], "kind": "preflight",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-1", "INV-6"],
+      "validation": ["V0", "V1"], "steps": "windows-close-steps.md#w3freeze",
+      "exit_criteria": "Source/test/runtime/dependency identities frozen; changed runtime code is routed back to affected earlier gates.",
+      "parallel_policy": "exclusive"
+    },
+    {
+      "id": "W3.REHEARSE", "depends_on": ["W3.FREEZE"], "kind": "validation",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-5", "INV-6"], "validation": ["V10"], "steps": "windows-close-steps.md#w3rehearse",
+      "exit_criteria": "Synthetic pre-MDB2 snapshot upgraded and restored under matched old source/environment; original files remain unchanged.",
+      "parallel_policy": "exclusive-state-copy"
+    },
+    {
+      "id": "W3.JOIN", "depends_on": ["W3.REHEARSE"], "kind": "validation",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"],
+      "contracts": ["INV-1", "INV-3", "INV-4", "INV-5", "INV-6"], "validation": ["V9", "V11"],
+      "steps": "windows-close-steps.md#w3join",
+      "exit_criteria": "Final real joined workflows, required broad gates and fail-closed evidence aggregation pass on one final candidate.",
+      "parallel_policy": "frozen-input-tests-only"
+    },
+    {
+      "id": "CLOSE.R", "depends_on": ["W3.JOIN"], "kind": "behavior-review",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "validation": ["V0", "V11"], "steps": "windows-close-steps.md#close-and-delivery",
+      "exit_criteria": "Independent finite acceptance review closes all Windows findings and verifies all deferred claims remain explicit.",
+      "parallel_policy": "review-only"
+    },
+    {
+      "id": "WIN.ACCEPT", "depends_on": ["CLOSE.R"], "kind": "closure",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md"],
+      "contracts": ["INV-6"], "validation": ["V11"], "steps": "windows-close-steps.md#close-and-delivery",
+      "exit_criteria": "Windows milestone receipt links both commits, wheel hash, clauses and evidence; no false Linux/whole-AIB closure.",
+      "parallel_policy": "single-writer"
+    },
+    {
+      "id": "DELIVERY", "depends_on": ["WIN.ACCEPT", "OWNER.RELEASE"], "kind": "closure",
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": ["INV-5", "INV-6"],
+      "validation": ["V11"], "steps": "windows-close-steps.md#close-and-delivery",
+      "exit_criteria": "Only explicitly authorized named publication/integration actions executed; preserved WIP and remote SHA verified when applicable.",
+      "parallel_policy": "exclusive"
+    }
+  ]
+}

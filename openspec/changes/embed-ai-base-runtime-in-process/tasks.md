@@ -1,5 +1,39 @@
 # Tasks
 
+## Windows Closure Execution Frontier
+
+2026-11-17：按 owner 要求细化 Windows 收尾计划并独立审查。本轮只编写计划，
+未授权恢复产品实施。执行前须满足独立 `PLAN.R` 和 owner 后续明确批准/恢复。
+本文件是唯一进度账本；以下节点组织原有任务，不替代或自动勾选第 0-10 组。
+
+计划入口：[总览](windows-close-plan.md)、
+[逐步操作](windows-close-steps.md)、
+[验收矩阵及原任务映射](windows-close-validation.md)、
+[结构 DAG](windows-close-dag.json)。
+JSON 只存结构，不存第二份完成状态。Windows 里程碑不等于整个 MDB-2/AIB 发布；
+Linux、其它 App、真实用户数据和未批准的发布动作保持各自门禁。
+
+- [ ] WIN.RECONCILE - 对齐原任务/验收条款、可复用证据和可执行的新旧版本材料。
+- [ ] W1.VA - 签核安装、Windows 启停所有权及残留 gate 的验证设计。
+- [ ] W1.INSTALL - 固定依赖和制品来源，完成干净 Windows 安装与 wheel 准入。
+- [ ] W1.LAUNCH - 统一正式入口、实例配置、stop-file 正常停止和进程/日志审计。
+- [ ] W1.RETIRE - 完成当前 Windows 旧入口清理、边界/残留 gate 和操作文档。
+- [ ] W1.R - 对第一批交付及受影响消费者做独立复核。
+- [ ] W1.REPLAN - 按落地结果复查 W2/W3，记录继续或修订结论。
+- [ ] W2.VA - 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计。
+- [ ] W2.HOST - 实现剩余宿主生命周期义务和冻结前所需验收工具。
+- [ ] W2.CERTIFY - 完成 Windows 宿主一致性与隔离的 10.4 测量。
+- [ ] W2.R - 独立复核宿主实现及完整 Windows 证据。
+- [ ] W2.REPLAN - 复查最终候选、回滚材料及 W3 可执行性。
+- [ ] W3.FREEZE - 固定双方提交、wheel、依赖、fixture 与环境指纹。
+- [ ] W3.REHEARSE - 在合成状态副本上完成新旧版本切换及回滚。
+- [ ] W3.JOIN - 完成最终联合业务验收和必需的全量门禁。
+- [ ] CLOSE.R - 独立核对有限验收矩阵、证据与后置边界。
+- [ ] WIN.ACCEPT - 写入四目标 Windows 里程碑回执，逐条收账而非归档整个项目。
+- [ ] DELIVERY - 仅在 owner 明确指定发布动作后执行，保留其它 WIP。
+
+## Original Requirements And Evidence
+
 决策编号指 `design.md` 的"决策 N"；未加模块前缀的 `app/`、`services/`、`out/`、`management/` 路径位于 `project_management/` 下。
 第 1 组起的任务原要求在第 0 组全部完成之后开始。owner 于 2026-11-16 明确改为 Dashboard 优先：先锁定 AIB 候选 wheel、版本、SHA256 和实际消费的能力，再完成 MDB-2 迁移和双方联合验收，Dashboard 达到该里程碑后才恢复其他 App 的新增实施。该授权只调整实施顺序，不把候选 wheel 当作 0.6 的最终认证，不降低第 10 组的验收要求。7.6、9.6、9.8、9.9 与 9.10 的既有 AIB-0 修复回执保持不变。
 
