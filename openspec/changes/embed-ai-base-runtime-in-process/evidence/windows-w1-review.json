@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "reviewed_code_commit": "b3fbada10af11230a2d7ecb32995f5e14302cf42",
+  "reviewed_tree": "093111980e7a16cad73e282205fbe6760c797ece",
+  "gate": "W1.R",
+  "status": "complete",
+  "coverage_mode": "planning-artifact",
+  "review_type": "authority-boundary-review",
+  "required_clean_passes": 1,
+  "clean_passes": 1,
+  "attempts": 2,
+  "pass_events": 1,
+  "fail_events": 1,
+  "unique_findings": 1,
+  "finding_events": 1,
+  "closure_events": 1,
+  "elapsed_review_time": "59m 9s",
+  "source_and_delivery_paths": 77,
+  "review_process_artifacts_reported_by_gate": 6,
+  "issue_totals": {"P0": 0, "P1": 1, "P2": 0, "P3": 0, "BLOCKER": 0},
+  "open_findings": [],
+  "state": {
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w1-review/review-state.json",
+    "sha256": "a4c496226f1ca8e8375c42e6ca244940d531be747acd71f9b054ebe8593c4281"
+  },
+  "clean_receipt": {
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w1-review/review-r2.txt",
+    "sha256": "88c7576246e11ed520ff83d052e0bc1dac893724e311971725a32ade2bf1a1ac",
+    "reviewer": "01a1e914-31c5-7dc0-80b9-7cf90c620f71",
+    "model": "gpt-5.5",
+    "reasoning": "xhigh"
+  },
+  "process_report": "D:/AIGC/artifacts/mdb2-windows-20261117/w1-review/review-process-report.md",
+  "scope_note": "This clean review binds the exact code commit/tree above. Subsequent ledger and W2 planning updates are separate metadata, not retroactively included in that code review.",
+  "w1_replan": {
+    "W2": "amend",
+    "W3": "continue",
+    "reason": "The original baseline wrapper calls a retired command. W2.VA must approve faithful adaptation while preserving original comparison architecture, settings/routes/assets/sample recipe and thresholds.",
+    "owner_decision_trigger": "Required if faithful baseline adaptation cannot preserve the signed comparison."
+  },
+  "refreeze_actions": [
+    {
+      "action": "amend",
+      "reason": "Make baseline adaptation an explicit W2.VA entry condition without bypassing validation architecture or lowering thresholds."
+    }
+  ],
+  "updated_artifacts": [
+    "openspec/changes/embed-ai-base-runtime-in-process/tasks.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-steps.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-validation.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-w1-review.json"
+  ],
+  "rerun_gates": ["PF-DAG", "OpenSpec strict", "W2.VA"],
+  "post_refreeze_preflight_result": {
+    "command": "openspec validate embed-ai-base-runtime-in-process --strict --no-interactive",
+    "result": "PASS",
+    "structural_check": "PowerShell PF-DAG verified 18 unique nodes, 20 dependencies, matching ledger IDs, acyclicity, planned-path ownership and both rolling replan edges.",
+    "baseline_inputs": "Five referenced S0b source hashes rechecked unchanged.",
+    "w2_validation_architecture": "Required next; not claimed by this preflight."
+  },
+  "release_actions": "No push, main merge, worktree retirement or other-App implementation authorized by this review."
+}

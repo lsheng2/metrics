@@ -4,8 +4,9 @@
 
 执行授权更新（2026-11-17）：owner 已明确确认 `8bb83d4` 的计划，并要求连续执行到最终
 check out，真实阻塞时询问。`PLAN.R` 已达到 1/1 PASS，`OWNER.RESUME` 已满足。
-`WIN.RECONCILE`、`W1.VA`、`W1.INSTALL` 已完成；W1.R 首轮发现 W1-P1-1，
-`W1.LAUNCH` 和 `W1.RETIRE` 因遗漏入口家族而重开，当前修复后复核，尚未进入 W2。
+W1 实现已提交为 `b3fbada10af11230a2d7ecb32995f5e14302cf42`。
+独立 W1.R 达到 1/1 clean pass，W1-P1-1 已关闭；W1.REPLAN 的文档再冻结已通过，
+当前进入 W2.VA，尚未开始 W2 产品实施。
 以下原“只编写计划”说明保留为计划创建时的历史。
 发布、main 合入、push、worktree 删除及真实用户数据操作仍按计划的独立授权边界执行。
 
@@ -23,10 +24,10 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] WIN.RECONCILE - 对齐原任务/验收条款、可复用证据和可执行的新旧版本材料。证据：`evidence/windows-coverage.json` 枚举 60 个原任务及 63 条 5.10/10.4 条款；19 个既有附件哈希核对通过；`evidence/windows-release-inputs.json` 固定新 wheel 和旧源码/SDK/环境，旧版实际启动、认证读取及正常停止通过。一次 ABI 不匹配的失败原样保留；这不代表 W3 升级回滚演练已完成。
 - [x] W1.VA - 签核安装、Windows 启停所有权及残留 gate 的验证设计。独立 Validation Engineer 签核见 `evidence/windows-w1-validation.md`；包括直接 wheel 安装、pytest/asyncio 依赖对齐、新环境隔离、外部进程不误杀和三类残留 gate 反例。
 - [x] W1.INSTALL - 固定依赖和制品来源，完成干净 Windows 安装与 wheel 准入。`windows-release-inputs.json` 绑定 r4 回执、82 个 wheel 与约束哈希；全新 `windows-venv-r4` 的 27 项输入/隔离检查及 15 项准入/包/真实 serve 测试通过，正常退出 0、无 force、端口释放。缺 wheel 的离线安装被拒；源码清单及哈希前后一致。r1 代理超时、r2 缺 Windows 二进制依赖及 r3 下载缓存越界的记录保留，r3 不算最终安装验收。文件大小和空白检查通过；独立整批 review 在 W1.R。
-- [ ] W1.LAUNCH - W1-P1-1 重开：补齐 VS Code 任务、旧 Dashboard stack 包装和跨工作树停止入口。既有 `evidence/windows-w1-launch.json` 的 7 项原生及 163 项受影响检查保留为已覆盖路径的证据，不代表遗漏家族已通过。
-- [ ] W1.RETIRE - W1-P1-1 重开：残留检查须覆盖编辑器任务和整组入口参数。既有 `evidence/windows-w1-retirement.json`、58 项检查及默认 smoke 证据保留，Linux Docker 仍延期；不可据此关闭原全平台条款。
-- [ ] W1.R - 对第一批交付及受影响消费者做独立复核。
-- [ ] W1.REPLAN - 按落地结果复查 W2/W3，记录继续或修订结论。
+- [x] W1.LAUNCH - 包含 VS Code 和跨工作树入口的实现验证完成；`evidence/windows-w1-launch.json` 与 `windows-w1-review-fix.json` 绑定原生入口、44 项家族补验和真实编辑器停止回执。
+- [x] W1.RETIRE - 当前 Windows 边界/残留 gate、58 项检查和默认 smoke 通过；编辑器任务与退役文件存在性已纳入检查。Linux 定义仍延期，不关闭原全平台条款。
+- [x] W1.R - 两次独立审查，1 个 P1 修复后达到 1/1 clean pass；范围绑定代码提交 `b3fbada`，见 `evidence/windows-w1-review.json`。
+- [x] W1.REPLAN - W2=amend、W3=continue；基线适配要求已写入 steps/validation，五项 S0b 源码哈希未变，18 节点/20 依赖及严格 OpenSpec 检查通过。结构化回执在 `evidence/windows-w1-review.json`；W2.VA 仍须独立签核。
 - [ ] W2.VA - 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计。
 - [ ] W2.HOST - 实现剩余宿主生命周期义务和冻结前所需验收工具。
 - [ ] W2.CERTIFY - 完成 Windows 宿主一致性与隔离的 10.4 测量。
@@ -83,6 +84,11 @@ W1-P1-1 修复验证：三个冗余包装已退役，编辑器任务直连主入
 跨工作树停止使用当前代码且不按端口取停止权限；残留 gate 纳入编辑器任务和退役文件存在性。
 44 项定向检查及真实 VS Code 停止切片通过，回执为 `evidence/windows-w1-review-fix.json`。
 当前仅是实现验证完成，等待新的独立 W1.R；未把本地验证转换成 review PASS。
+
+最终 W1.R：新的独立 reviewer 未发现 P0-P3，门禁记录 complete / 1 clean pass。
+W1-P1-1 的历史待复核说明由本条取代。代码按审查时的完整暂存树提交，未 push。
+W1.REPLAN 结论为 W2=amend、W3=continue：W2.VA 必须明确批准 S0b 基线的保真适配；
+不能保真则交 owner 决定，不能用降低阈值、跳过或旧接口恢复代替。
 
 ## Original Requirements And Evidence
 

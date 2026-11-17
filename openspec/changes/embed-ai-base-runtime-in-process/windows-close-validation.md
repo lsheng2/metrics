@@ -156,6 +156,14 @@ non-applicability row as success:
 
 ### V8: Native Measurement Method
 
+W2.VA must sign off the baseline-fixture adaptation required by W1.REPLAN.
+The old baseline command name is no longer an executable current interface.
+Bind the adapted test fixture to the original threaded server/static-handler
+architecture and source hashes, while both arms use the same current
+Django/settings/routes/assets/report fixtures and sampling recipe. An inability
+to preserve that comparison is an owner-decision gate, not permission to choose
+a cheaper baseline or reintroduce an old production interface.
+
 Run baseline and combined host with identical synthetic data, Django/settings,
 page/asset set, auth, machine and sampling recipe from `s0b-spike-report.md`
 and its signoff. Use the current AIB adapter only for the candidate group.

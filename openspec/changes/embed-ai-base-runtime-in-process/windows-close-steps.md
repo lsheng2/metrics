@@ -263,6 +263,15 @@ testing for receipt-only or wording-only updates.
 
 ## W2.VA
 
+W1.REPLAN classifies W2 as **amend**, with W3 continuing after the amendment.
+The historical `serve_baseline.py` still calls a retired command. Before W2
+implementation, approve a test-only adaptation of the original threaded
+`WSGIServer` + `StaticFilesHandler` baseline. Keep its same current Django
+settings, synthetic page/report fixtures, route and asset set, authentication
+posture and sample recipe. Do not restore a production command or SDK path.
+Record the mapping to the original source and its hashes. If that mapping
+cannot preserve the signed comparison, obtain the owner's decision first.
+
 Use `V4`-`V8`, `V10`-`V11` and the exact original 5.10/10.4 clauses. Validate the ability to
 deliver native Windows control events to an owned child, block/release a loop,
 hold streams, measure first-byte/inter-arrival timing, exercise stdout stalls
