@@ -7,7 +7,7 @@ from ai_host.host import MetricsHost
 from ai_host.package import METRICS_APP
 from ai_host.principals import task_principal
 from ai_host.settings import RUNTIME_START_SECONDS, build_runtime_settings
-from ai_host.task_runs import RuntimeTaskRunPort
+from ai_host.task_runs import RuntimeTaskRunPort, admission_metadata_from_host_config
 from project_management.app.api.project_runs import RunError
 from project_management.app.api.task_runtime import LocalRuntimeCleanupError, LocalTaskRunPort
 
@@ -16,14 +16,20 @@ from project_management.app.api.task_runtime import LocalRuntimeCleanupError, Lo
 def local_task_run_port():
     context = handle = None
     try:
-        admit_runtime_candidate()
+        runtime_record = admit_runtime_candidate()
         host = MetricsHost()
         host.config.state_dir.mkdir(parents=True, exist_ok=True)
         context = start_blocking(
             build_runtime_settings(), host, (METRICS_APP,), start_timeout=RUNTIME_START_SECONDS,
         )
         with context as handle:
-            yield LocalTaskRunPort(RuntimeTaskRunPort(handle.blocking.task_runs), task_principal)
+            yield LocalTaskRunPort(
+                RuntimeTaskRunPort(
+                    handle.blocking.task_runs,
+                    admission_metadata=admission_metadata_from_host_config(host.config, runtime_record['version']),
+                ),
+                task_principal,
+            )
     except RuntimeBusy:
         raise RunError('RUN_BUSY') from None
     except (RuntimeFault, RuntimeCandidateError, OSError):

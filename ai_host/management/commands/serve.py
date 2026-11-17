@@ -72,14 +72,14 @@ class Command(BaseCommand):
         from django.core.handlers.wsgi import WSGIHandler
         from waitress import create_server
         from ai_host.admission import admit_runtime_candidate
-        admit_runtime_candidate()
+        runtime_record = admit_runtime_candidate()
 
         from ai_base_runtime import start_blocking
         from ai_host.host import MetricsHost
         from ai_host.lifecycle import stop_owned_resources
         from ai_host.package import METRICS_APP
         from ai_host.principals import task_principal
-        from ai_host.task_runs import RuntimeTaskRunPort
+        from ai_host.task_runs import RuntimeTaskRunPort, admission_metadata_from_host_config
         from ai_host.settings import (
             RUNTIME_START_SECONDS,
             SERVER_THREADS,
@@ -119,7 +119,12 @@ class Command(BaseCommand):
                 try:
                     try:
                         candidate_runtime = build_project_runtime(
-                            task_runs=RuntimeTaskRunPort(handle.blocking.task_runs),
+                            task_runs=RuntimeTaskRunPort(
+                                handle.blocking.task_runs,
+                                admission_metadata=admission_metadata_from_host_config(
+                                    host.config, runtime_record['version'],
+                                ),
+                            ),
                             principal_resolver=task_principal,
                         )
                     except RunError as error:

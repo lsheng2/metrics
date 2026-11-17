@@ -2,7 +2,6 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
-from pathlib import Path
 import uuid
 
 from project_management.app.api.capture_archive import MembershipInput, PartCoverage, StoredSnapshotRef
@@ -17,13 +16,14 @@ from project_management.services.task_contracts import SummaryTaskContract
 from project_management.tests.capture_archive_fixtures import CaptureArchiveScenario
 
 
-PACK_ROOT = Path(__file__).resolve().parents[1] / 'ai_bundle' / 'strict-summary' / 'task-run-contract-0.1.0a2'
+def summary_contract():
+    return SummaryTaskContract(load_task_profile('metrics.project_summary'))
 
 
 class SummaryScenario(CaptureArchiveScenario):
     def setUp(self):
         super().setUp()
-        self.contract = SummaryTaskContract(load_task_profile('metrics.project_summary'))
+        self.contract = summary_contract()
 
     def summary_source(self):
         original = self.snapshot(('raw-1',))

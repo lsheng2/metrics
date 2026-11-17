@@ -15,6 +15,9 @@ The current candidate is `ai-base-runtime==0.1.1.dev4`, built from AIB
 `d589ac8e6572a903edc3846e7d78195e85858868`. Its wheel SHA256 is
 `b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94`.
 This is a development candidate, not full AIB or Dashboard qualification.
+Current execution priority is Windows. Linux, WSL and Linux-container validation
+are deferred; their interfaces and environment definitions remain available for
+later qualification and are not prerequisites for this Windows packet.
 
 Use the separately installed candidate interpreter:
 
@@ -36,6 +39,10 @@ record is retained in the MDB-2 change's `evidence/runtime-artifact-e155d4c.json
 The dev3 record remains in `evidence/runtime-artifact-0e8b29f.json`. Dev4 corrects
 HTTP-close accounting: an already-ended client stream does not make a later
 normal stop fail, while terminal-send failures during HTTP close remain errors.
+Authentication failures are Metrics-owned observability: `MetricsHost.record_audit`
+and the runtime-mounted WSGI branch both emit a single sanitized `ai_auth_failed`
+log with path, client address and reason, and never write `RuntimeAuditEvent` rows
+for that category. This is host behavior, not an AI Base SPI change.
 
 ### Workbench Consumer
 
@@ -61,7 +68,8 @@ the installed candidate, synthetic data and a scripted model endpoint; its
 temporary archive must remain outside any source checkout. The test records
 browser requests, screenshots and owned process shutdown. Run the host test lane
 separately so its file-backed SQLite fixture governs runtime callback connections.
-Publication qualification is a separate, still-open MDB-2 gate.
+The bounded approved-publication join is recorded separately under MDB-2 task
+10.1. Full lifecycle, deployment and final release qualification remain open.
 
 ### Approved Chart Publication
 
@@ -97,10 +105,6 @@ the import acknowledgement. Run it on the selected candidate interpreter with
 a fresh external `--basetemp` directory. No live provider/model or existing
 Grafana instance is part of that test.
 
-The SDK020/HTTP sections below retain historical qualification context until
-the remaining MDB-2 test/launcher migration completes. They do not qualify the
-new candidate or supply a compatibility path.
-
 Run every reporting, `ui_web` and `project_management` test through the existing no-dotenv
 entry with the selected interpreter in isolated mode (`-I`), naming test files or nodes explicitly:
 
@@ -126,7 +130,7 @@ and actual result.
 ## Embedded Task Boundary
 
 Dashboard persists its original UTF-8 canonical request and source hash.
-The adapter uses the SDK's public `canonical_digest` and `canonical_json` for
+The adapter uses the runtime's public `canonical_digest` and `canonical_json` for
 runtime requests and output bytes. A returned observation carries both
 `source_input_sha256` and the runtime's `input_sha256`; result content retains
 the runtime's actual `output_sha256`. Never change historical archive hashes,
@@ -143,7 +147,7 @@ rejected, not silently converted. Business publications remain untouched.
 The runtime observation contract has no completion timestamp; report readers
 leave the optional summary time unset rather than reuse the retired wire field.
 
-The registered host command is `serve`; `project_serve` is removed. Project
+The registered host command is `serve`. Project
 shutdown uses `request_stop()` followed by `wait_stopped(timeout)`, with no
 `stop` alias. Failed startup drains owned resources without replacing an
 already installed owner. Host-loopback smoke and fault-path tests do not
@@ -153,11 +157,11 @@ replace the full stream, signal, performance, browser and publication gates.
 
 | Layer | Proof | Fixture boundary |
 | --- | --- | --- |
-| L0 | schema, null/empty, dates, sort, fragments, delta, hashes | Pure values; no Git, database, browser or Base |
+| L0 | schema, null/empty, dates, sort, fragments, delta, hashes | Pure values; no Git, database, browser or runtime |
 | L1 | durable command, CAS, recovery, source/summary/editorial preservation | Real isolated store only for the transaction being proved |
 | L2 | auth, CSRF, forms/JSON, error codes, nullable serialization | Cheap boundary fixtures plus a small real-service wiring subset |
 | L3 | real Milkdown editing, paint, keyboard, popup, Save/reopen | Mounted editor and real local HTTP/storage; synthetic upstream |
-| L4 | matched application/SDK/Base/publication and complete week | Stable candidate, owned services/data, explicit normal cleanup |
+| L4 | matched application/runtime/publication and complete week | Stable candidate, owned services/data, explicit normal cleanup |
 | External qualification | actual provider/model/Outlook/deployment/scheduling | Separate authorization and evidence; never inferred from local JOIN |
 
 Reuse immutable input/profile/source fixtures. Do not share mutable command, draft, archive
@@ -180,9 +184,9 @@ After two equivalent failures without new evidence, change the hypothesis/diagno
 Review cost at packet boundaries and after 60 minutes on the same user problem.
 
 Record runtime source, fixture/test and environment fingerprints separately.
-For the SDK020 proof, the final strengthened test assertion did not change the runtime;
-the delivery receipt explicitly preserves this distinction.
-Do not extend that example to assume all test files are irrelevant: some are native fixture dependencies.
+Test files can be native fixture dependencies. A validator-only edit and a
+changed application fixture have different effects on retained qualification
+evidence; compare their recorded fingerprints before reusing results.
 
 Stage only approved paths. The retained authoring WIP is not all another owner's work:
 publish its verified closure separately from unrelated Scope/config/style edits.
@@ -215,25 +219,57 @@ limitations, not implied fixes.
 
 The [ASSIST packet](../../openspec/changes/add-provider-neutral-project-reporting/assist-execution.md)
 specifies the current profile, API, local receipt and editor contracts. Its task/qualification
-state remains in the single ledger. Use the selected SDK interpreter, not the legacy venv.
+state remains in the single ledger. Use the selected runtime interpreter, not the legacy venv.
 
 Run pure profile/target tests and `test_report_assist_service.py` /
 `test_report_assist_recovery.py` before `ui_web/tests/test_report_assist_browser.py`.
 The browser cases mount the actual editor and save via real local HTTP; only the upstream
-SDK transport is synthetic at this layer. They cover receipt retirement and same-text
+task-run port is synthetic at this layer. They cover receipt retirement and same-text
 acceptance as well as text/paint/cancel/unavailable states and mobile contrast/hit targets.
 
-`project_management/tests/test_report_assist_http.py` separately uses the installed SDK,
-the fixed Base source, a distinct registered authoring profile, and real data Git.
-It verifies Save, subsequent human paint/provenance, publication and next-day inheritance.
-Its source record is synthetic and it does not call a real provider or model.
-The existing Base fixture accepts an explicit hash-matched profile; its default summary
-profile/pack remains unchanged. Base-only dependencies are loaded in the Base process.
+`ai_host/tests/test_report_runtime_join.py` separately uses the installed runtime,
+the App-owned authoring profile and real data Git. It verifies recovery after a
+lost admission reply, Save, human paint/provenance, publication and next-day
+inheritance. Its model endpoint and source records are synthetic. The paired
+`ai_host/tests/test_summary_runtime_join.py` checks summary recovery and original
+archive identity without a second task submission.
 
 Evidence is retained under `.tmp/dashboard-assist-20261106/`, with unique XML and native
 run directories. Do not count initial RED or an earlier happy-path source as final closure.
 The export/clipboard sample and original five-day/cross-week chain now have separate
-delivery receipts. This single-target Base proof retains its own bounded scope.
+delivery receipts. Those historical receipts qualify only their recorded source
+and environment.
+
+### Served Runtime Join
+
+`project_full_stack.py` starts one real `serve` process with its embedded runtime
+and one bounded loopback model fixture. `ProjectRunFixtureAppConfig` supplies
+synthetic Jira data only to this controlled validation composition. The general
+UI fixture does not replace provider access. Use a fresh external data root:
+
+```powershell
+$prepared = & $reportingPython -I scripts/validation/project_full_stack.py prepare --data-root D:\AIGC\scrum_dashboard_validation\mdb2-runtime-join | ConvertFrom-Json
+$run = $prepared.run_dir
+try {
+    & $reportingPython -I scripts/validation/project_full_stack.py start --run-dir $run --lifetime-seconds 600
+    if ($LASTEXITCODE -ne 0) { throw 'Start failed' }
+    & $reportingPython -I scripts/validation/project_runtime_join.py run --run-dir $run
+    if ($LASTEXITCODE -ne 0) { throw 'Runtime join failed' }
+    & $reportingPython -I scripts/validation/project_full_stack.py restart-app --run-dir $run
+    if ($LASTEXITCODE -ne 0) { throw 'Restart failed' }
+    & $reportingPython -I scripts/validation/project_runtime_join.py reopen --run-dir $run
+    if ($LASTEXITCODE -ne 0) { throw 'Recovery failed' }
+} finally {
+    & $reportingPython -I scripts/validation/project_full_stack.py stop --run-dir $run
+}
+```
+
+`run` exercises the actual HTTP project-run and report-assist consumers, schema-3
+admission, duplicate commands and exactly two model dispatches. It is once-only
+for a given run. `reopen` is read-only and may repeat; each invocation writes a
+unique receipt under `evidence/runtime-reopen-<uuid>/`. Failed evidence is retained
+separately, not overwritten. The stop receipt must report normal cleanup; a
+successful business operation alone does not prove successful service shutdown.
 
 ## Derived Export Validation
 
@@ -260,12 +296,17 @@ The original full-week/cross-week scenario has its own retained qualification re
 Use the existing owned launcher and the
 [week packet](../../openspec/changes/add-provider-neutral-project-reporting/week-qualification.md).
 The fixed `full-week` scenario uses three synthetic Jira records and the installed
-SDK/local Base, with actual source capture and accepted summaries on the first day.
+embedded runtime and loopback model, with actual source capture and accepted summaries on the first day.
 Later unchanged captures reuse those summaries. The browser driver performs the
 six meeting dates through the actual templates, editor, Save and Finalize routes.
+The dedicated fixture also supplies the bounded reference reader for `#ALPHA-101`
+completion through the normal report factory; it does not create another project
+runtime or replace the completion view. The `single` and general UI scenarios
+do not enable that reader. Dispatch counts read the model fixture's
+`model/executor-observations.jsonl`.
 
 ```powershell
-& $reportingPython -I scripts/validation/project_full_stack.py prepare --work-root .tmp/sdk-020-join-20261105 --scenario full-week
+& $reportingPython -I scripts/validation/project_full_stack.py prepare --data-root D:\AIGC\scrum_dashboard_validation\mdb2-full-week --scenario full-week
 ```
 
 Use the exact owned `run_dir` returned by `prepare` for `start`, `status` and
@@ -294,10 +335,11 @@ formats retain their existing hash definitions. The shared producer/consumer rul
 is covered by `test_report_preparation_publication_guard.py`; stale, superseded,
 missing and downgraded bindings must continue to refuse publication.
 
-The [qualified week receipt](../../openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
+The historical [qualified week receipt](../../openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
 binds six daily publications, a weekly view, explicit empty-note/gap handling and
 42 original-file rechecks. It is an operation/continuity qualification, not a
-performance qualification. Concise business output and separate audit downloads
+performance qualification and does not qualify the new embedded composition.
+Concise business output and separate audit downloads
 are covered by the later presentation receipt below, without rewriting that week.
 Profile the recorded long prepare/view waits before choosing an optimization;
 do not use more week runs to locate a read-path problem. The later Report Read
@@ -315,8 +357,8 @@ Run the pure `test_report_standup.py` / `test_report_audit.py`, then the focused
 `test_report_presentation_guards.py` attacks an internally rehashed unknown
 renderer through actual draft consumers. HTTP tests are
 `ui_web/tests/test_report_standup_views.py`; the mounted sample is
-`test_report_standup_browser.py`. Use the same selected SDK/no-dotenv entry.
-No extra full week or Base dispatch is needed for this presentation boundary.
+`test_report_standup_browser.py`. Use the same selected runtime/no-dotenv entry.
+No extra full week or model dispatch is needed for this presentation boundary.
 
 Audit export reads all six original files in one owner-checked, verified
 publication pass. The deterministic ZIP has a separate generator revision and
@@ -330,7 +372,7 @@ Evidence: `.tmp/dashboard-presentation-20261106/` and
 ## Skipped Meetings
 
 The [skip packet](../../openspec/changes/add-provider-neutral-project-reporting/meeting-skips.md)
-adds a local append-only Django calendar chain. It does not change the SDK/profile
+adds a local append-only Django calendar chain. It does not change the runtime/profile
 or start providers, scheduling or model work. Apply migration `0004` only in an
 authorized deployment; tests use the isolated runner database.
 
@@ -382,8 +424,8 @@ page overflow and observation contrast.
 
 Evidence stays under `.tmp/dashboard-source-observation-20261107/`.
 Keep failed runs separately; a test-fixture error is not a product regression.
-No full-week, S1, Base dispatch or real enterprise-source run is needed for this
-boundary. The installed SDK environment and no-dotenv entry above still apply.
+No full-week, S1, model dispatch or real enterprise-source run is needed for this
+boundary. The selected runtime environment and no-dotenv entry above still apply.
 Changing UI labels requires regenerating the checked-in zh-Hans `.mo` from its
 `.po` with the existing `polib` compiler before bilingual validation.
 
@@ -406,7 +448,7 @@ for recovery checkpoint writes or the new controls.
 `scripts/validation/profile_report_reads.py`对已有owned synthetic实例运行真实Django HTTP；
 `--scenario workbench|baseline|preparation|editor --samples 20`保留首请求与所有稳态样本，
 `--dataset s1`选择页20/5秒规模门槛。输出目录只能在该run的evidence下，出站网络被禁止。
-结果包含代码、运行数据、SDK/Django路径和前后指纹；`passed`只代表对应场景，不能替代
+结果包含代码、运行数据、runtime/Django路径和前后指纹；`passed`只代表对应场景，不能替代
 实际点击到最终列表可用的浏览器证据。首次超过10秒时停止扩样定位，不能提高期限。
 
 S1使用`prepare_report_scale.py --manifest-from <owned-synthetic-run>`构建一次持久数据，

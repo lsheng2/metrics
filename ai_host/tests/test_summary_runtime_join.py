@@ -12,6 +12,7 @@ from ai_base_runtime.testkit import InMemoryHost, scripted_model_endpoint
 from ai_host.package import METRICS_APP
 from ai_host.settings import RUNTIME_START_SECONDS, build_runtime_settings
 from ai_host.task_runs import RuntimeTaskRunPort
+from project_management.app.domain.task_runs import TaskRunAdmissionMetadata
 from project_management.services.summary_analysis import SummaryAnalysisService
 from project_management.tests.summary_fixtures import SummaryScenario
 
@@ -25,6 +26,12 @@ def completion(content):
         }],
         'usage': {'prompt_tokens': 101, 'completion_tokens': 37, 'total_tokens': 138},
     }
+
+
+ADMISSION = TaskRunAdmissionMetadata(
+    model_identity={'provider': 'openai-compatible', 'model': 'scripted'},
+    runtime_version='0.1.0-test',
+)
 
 
 class TestSummaryRuntimeJoin(SummaryScenario, unittest.TestCase):
@@ -52,7 +59,8 @@ class TestSummaryRuntimeJoin(SummaryScenario, unittest.TestCase):
                 )
                 with context as handle:
                     service = SummaryAnalysisService(
-                        archive, self.contract, RuntimeTaskRunPort(handle.blocking.task_runs),
+                        archive, self.contract,
+                        RuntimeTaskRunPort(handle.blocking.task_runs, admission_metadata=ADMISSION),
                     )
                     deadline = time.monotonic() + 60
                     while True:

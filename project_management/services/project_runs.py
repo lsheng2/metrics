@@ -7,7 +7,9 @@ from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.contracts import ProjectActor, ProjectError
 from project_management.app.domain.report_contracts import ReportError, ReportSelection
 from project_management.app.domain.run_contracts import ItemRunResult, RunError, RunOperation, RunPolicy
-from project_management.app.domain.task_runs import TaskPrincipal, TaskRunBinding
+from project_management.app.domain.task_runs import (
+    TaskPrincipal, TaskRunAdmissionMetadata, TaskRunBinding, TaskRunError,
+)
 from project_management.app.domain.run_admission_values import (
     original_operation_from_record,
     validate_stored_request,
@@ -245,7 +247,20 @@ class ProjectRunService:
             principal=principal, profile_id=self.task_profile.id, profile_version=self.task_profile.version,
             profile_definition_sha256=self.task_profile.definition_sha256,
             output_schema_sha256=self.task_profile.output_schema_sha256,
+            **self._task_run_binding_metadata(),
         )
+
+    def _task_run_binding_metadata(self):
+        try:
+            value = self.analysis_service.task_run_port.admission_metadata()
+            if not isinstance(value, TaskRunAdmissionMetadata):
+                raise TypeError
+            return {
+                'model_identity': value.model_identity,
+                'runtime_version': value.runtime_version,
+            }
+        except (AttributeError, TypeError, ValueError, TaskRunError):
+            raise RunError('RUN_UNAVAILABLE') from None
 
     def _record_analysis_cancel_intents(self, actor, project_id, stage_id, operation):
         for result in operation.item_results:

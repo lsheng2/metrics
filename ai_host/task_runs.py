@@ -10,7 +10,7 @@ from ai_base_runtime.spi import Principal
 from project_management.app.domain.capture_values import decode_json, sha256_bytes
 from project_management.app.domain.task_runs import (
     TaskDispatch, TaskPrincipal, TaskResultSummary, TaskRunCancellation,
-    TaskRunError, TaskRunRequest, TaskRunResult, TaskRunSnapshot, TaskUsage,
+    TaskRunAdmissionMetadata, TaskRunError, TaskRunRequest, TaskRunResult, TaskRunSnapshot, TaskUsage,
 )
 
 
@@ -121,8 +121,16 @@ def _result(request, value, run_id):
 
 
 class RuntimeTaskRunPort:
-    def __init__(self, task_runs):
+    def __init__(self, task_runs, *, admission_metadata):
         self._task_runs = task_runs
+        if admission_metadata is not None and not isinstance(admission_metadata, TaskRunAdmissionMetadata):
+            raise TypeError('TaskRunAdmissionMetadata is required')
+        self._admission_metadata = admission_metadata
+
+    def admission_metadata(self):
+        if self._admission_metadata is None:
+            raise TaskRunError('RUN_UNAVAILABLE', retry='repair', runtime_code='model_not_configured')
+        return self._admission_metadata
 
     def _call(self, method, principal, argument, *, timeout=CALL_TIMEOUT_SECONDS):
         try:
@@ -154,3 +162,13 @@ class RuntimeTaskRunPort:
         if not isinstance(value, RunCancelResponse) or value.run_id != run_id:
             raise _invalid()
         return TaskRunCancellation(run_id=value.run_id, canceled=value.canceled)
+
+
+def admission_metadata_from_host_config(config, runtime_version):
+    model = getattr(config, 'model', None)
+    if model is None:
+        return None
+    return TaskRunAdmissionMetadata(
+        model_identity={'provider': model.provider, 'model': model.name},
+        runtime_version=runtime_version,
+    )

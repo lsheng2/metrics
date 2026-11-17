@@ -1,6 +1,7 @@
 from dataclasses import asdict
 from datetime import UTC, datetime
 import json
+import logging
 import sqlite3
 
 from django.conf import settings as django_settings
@@ -11,6 +12,9 @@ from ai_base_runtime.spi import Principal
 from ai_host.run_sync import run_sync
 from ai_host.settings import build_host_config
 from metrics.auth import check_basic_authorization
+
+
+logger = logging.getLogger(__name__)
 
 
 class MetricsHost:
@@ -37,7 +41,21 @@ class MetricsHost:
         return not principal.anonymous or self.config.allow_anonymous_approval
 
     async def record_audit(self, event):
+        if event.category == 'authentication_failed':
+            log_auth_failed(event.path, event.client_addr, event.reason)
+            return
         await run_sync(_insert_audit_event, event)
+
+
+def log_auth_failed(path, client_addr, reason):
+    logger.warning(
+        'ai_auth_failed',
+        extra={
+            'path': path,
+            'client_addr': client_addr,
+            'reason': reason,
+        },
+    )
 
 
 def _insert_audit_event(event):

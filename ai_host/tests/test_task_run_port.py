@@ -14,13 +14,21 @@ from ai_base_runtime.contracts import canonical_digest, canonical_json
 from ai_host.task_runs import RuntimeTaskRunPort
 from project_management.app.domain.capture_values import canonical_bytes, content_hash
 from project_management.app.domain.task_runs import (
-    TaskPrincipal, TaskRunError, TaskRunRequest, TaskRunResult, TaskRunSnapshot,
+    TaskPrincipal, TaskRunAdmissionMetadata, TaskRunError, TaskRunRequest, TaskRunResult, TaskRunSnapshot,
 )
 
 
 DEFINITION = 'a' * 64
 OUTPUT_SCHEMA = 'b' * 64
 PRINCIPAL = TaskPrincipal(subject='basic:alice', runtime_subject='alice', display_name='Alice', anonymous=False)
+ADMISSION = TaskRunAdmissionMetadata(
+    model_identity={'provider': 'openai-compatible', 'model': 'scripted'},
+    runtime_version='0.1.0',
+)
+
+
+def port(facade):
+    return RuntimeTaskRunPort(facade, admission_metadata=ADMISSION)
 
 
 def request():
@@ -80,9 +88,9 @@ class RecordingFacade:
 def test_start_preserves_request_identity_without_legacy_wire():
     task = request()
     facade = RecordingFacade(snapshot(task))
-    port = RuntimeTaskRunPort(facade)
-    first = port.start(PRINCIPAL, task)
-    second = port.start(PRINCIPAL, task)
+    runtime_port = port(facade)
+    first = runtime_port.start(PRINCIPAL, task)
+    second = runtime_port.start(PRINCIPAL, task)
     assert isinstance(first, TaskRunSnapshot)
     assert first == second
     assert first.dispatch.uncertainty == 'unknown'
@@ -92,7 +100,7 @@ def test_start_preserves_request_identity_without_legacy_wire():
         'run_id', 'profile_id', 'profile_version', 'status', 'source_input_sha256', 'input_sha256',
         'effective_input_sha256', 'dispatch', 'result', 'error_code', 'retry',
     }
-    assert not hasattr(port, 'get_by_client_key')
+    assert not hasattr(runtime_port, 'get_by_client_key')
     for method, principal, sent, timeout in facade.calls:
         assert method == 'start' and timeout == 30
         assert (principal.id, principal.display_name, principal.anonymous) == (
@@ -104,6 +112,28 @@ def test_start_preserves_request_identity_without_legacy_wire():
         assert sent.input == {'source': 'synthetic input'}
         assert sent.input_sha256 == task.input_sha256
         assert sent.correlation_id == task.correlation_id
+
+
+def test_admission_metadata_must_be_explicit():
+    with pytest.raises(TypeError):
+        RuntimeTaskRunPort(RecordingFacade(None))
+
+
+def test_admission_metadata_preserves_configured_model_identity():
+    assert port(RecordingFacade(None)).admission_metadata() == ADMISSION
+
+
+def test_not_configured_runtime_observes_without_inventing_admission_identity():
+    task = request()
+    runtime_port = RuntimeTaskRunPort(RecordingFacade(None), admission_metadata=None)
+
+    with pytest.raises(TaskRunError) as error:
+        runtime_port.admission_metadata()
+
+    assert (error.value.code, error.value.runtime_code, error.value.retry) == (
+        'RUN_UNAVAILABLE', 'model_not_configured', 'repair',
+    )
+    assert runtime_port.lookup(PRINCIPAL, task) is None
 
 
 @pytest.mark.parametrize('changes', [
@@ -118,7 +148,7 @@ def test_start_preserves_request_identity_without_legacy_wire():
 ])
 def test_snapshot_mismatched_binding_is_rejected(changes):
     task = request()
-    port = RuntimeTaskRunPort(RecordingFacade(snapshot(task, **changes)))
+    port = RuntimeTaskRunPort(RecordingFacade(snapshot(task, **changes)), admission_metadata=ADMISSION)
     with pytest.raises(TaskRunError, match='RUN_INVALID'):
         port.start(PRINCIPAL, task)
 
@@ -126,7 +156,7 @@ def test_snapshot_mismatched_binding_is_rejected(changes):
 def test_get_does_not_turn_observation_into_admission():
     task = request()
     facade = RecordingFacade(snapshot(task))
-    value = RuntimeTaskRunPort(facade).get(PRINCIPAL, task, 'run-fixed')
+    value = port(facade).get(PRINCIPAL, task, 'run-fixed')
     assert value.run_id == 'run-fixed'
     assert [(call[0], call[2], call[3]) for call in facade.calls] == [('get', 'run-fixed', 30)]
 
@@ -135,7 +165,7 @@ def test_get_does_not_turn_observation_into_admission():
 def test_lookup_observes_original_request_without_admitting(found):
     task = request()
     facade = RecordingFacade(snapshot(task) if found else None)
-    value = RuntimeTaskRunPort(facade).lookup(PRINCIPAL, task)
+    value = port(facade).lookup(PRINCIPAL, task)
     assert (value is not None) is found
     if found:
         assert value.run_id == 'run-fixed'
@@ -154,7 +184,7 @@ def test_lookup_observes_original_request_without_admitting(found):
 ])
 def test_failure_preserves_registered_retry_class(error, code, runtime_code, retry):
     task = request()
-    port = RuntimeTaskRunPort(RecordingFacade(error))
+    port = RuntimeTaskRunPort(RecordingFacade(error), admission_metadata=ADMISSION)
     with pytest.raises(TaskRunError) as caught:
         port.start(PRINCIPAL, task)
     assert (caught.value.code, caught.value.runtime_code, caught.value.retry) == (
@@ -185,7 +215,7 @@ def result(task, **changes):
 def test_result_contains_only_observed_content_and_usage():
     task = request()
     actual = result(task)
-    value = RuntimeTaskRunPort(RecordingFacade(actual)).result(PRINCIPAL, task, 'run-fixed')
+    value = port(RecordingFacade(actual)).result(PRINCIPAL, task, 'run-fixed')
     assert isinstance(value, TaskRunResult)
     assert value.content_json == canonical_bytes(actual.content).decode('utf-8')
     assert value.output_sha256 == actual.output_sha256
@@ -205,14 +235,14 @@ def test_result_contains_only_observed_content_and_usage():
 ])
 def test_result_binding_and_content_digest_are_not_reconstructed(changes):
     task = request()
-    port = RuntimeTaskRunPort(RecordingFacade(result(task, **changes)))
+    port = RuntimeTaskRunPort(RecordingFacade(result(task, **changes)), admission_metadata=ADMISSION)
     with pytest.raises(TaskRunError, match='RUN_INVALID'):
         port.result(PRINCIPAL, task, 'run-fixed')
 
 
 def test_cancel_preserves_ack_without_inventing_remote_stop_or_terminal_state():
     facade = RecordingFacade(RunCancelResponse(run_id='run-fixed', canceled=False))
-    value = RuntimeTaskRunPort(facade).cancel(PRINCIPAL, 'run-fixed')
+    value = port(facade).cancel(PRINCIPAL, 'run-fixed')
     assert value.run_id == 'run-fixed' and value.canceled is False
     assert [(call[0], call[2], call[3]) for call in facade.calls] == [('cancel', 'run-fixed', 30)]
     assert {field.name for field in fields(value)} == {'run_id', 'canceled'}
@@ -220,14 +250,14 @@ def test_cancel_preserves_ack_without_inventing_remote_stop_or_terminal_state():
 
 def test_principal_is_not_coerced_from_arbitrary_objects():
     task = request()
-    port = RuntimeTaskRunPort(RecordingFacade(snapshot(task)))
+    runtime_port = port(RecordingFacade(snapshot(task)))
     with pytest.raises(TypeError):
-        port.start(SimpleNamespace(subject='basic:alice'), task)
+        runtime_port.start(SimpleNamespace(subject='basic:alice'), task)
 
 
 def test_failed_run_uses_code_registry_not_nonexistent_error_retry_attribute():
     task = request()
-    value = RuntimeTaskRunPort(RecordingFacade(snapshot(
+    value = port(RecordingFacade(snapshot(
         task, status='failed', error=ErrorInfo(code='backend_failed'),
     ))).start(PRINCIPAL, task)
     assert value.error_code == 'backend_failed'
@@ -252,7 +282,7 @@ def test_runtime_principal_is_explicit_and_does_not_replace_archive_owner():
     principal = TaskPrincipal(
         subject='basic:alice', runtime_subject='alice', display_name='Alice', anonymous=False,
     )
-    RuntimeTaskRunPort(facade).start(principal, task)
+    port(facade).start(principal, task)
     sent = facade.calls[0][1]
     assert (sent.id, sent.display_name, sent.anonymous) == ('alice', 'Alice', False)
     assert principal.subject == 'basic:alice'
@@ -264,7 +294,7 @@ def test_unicode_request_preserves_source_hash_and_uses_runtime_canonical_hash()
     runtime_hash = canonical_digest(content)
     assert runtime_hash != task.input_sha256
     facade = RecordingFacade(snapshot(task, input_sha256=runtime_hash))
-    value = RuntimeTaskRunPort(facade).start(PRINCIPAL, task)
+    value = port(facade).start(PRINCIPAL, task)
     assert facade.calls[0][2].input_sha256 == runtime_hash
     assert value.input_sha256 == runtime_hash
     assert value.source_input_sha256 == task.input_sha256
@@ -274,7 +304,7 @@ def test_unicode_result_retains_the_actual_runtime_output_digest():
     task = request()
     content = {'summary': '\u4e2d\u6587 \u2014 caf\u00e9'}
     actual = result(task, content=content, output_sha256=canonical_digest(content))
-    value = RuntimeTaskRunPort(RecordingFacade(actual)).result(PRINCIPAL, task, 'run-fixed')
+    value = port(RecordingFacade(actual)).result(PRINCIPAL, task, 'run-fixed')
     assert value.content_json == canonical_json(content).decode('utf-8')
     assert value.output_sha256 == actual.output_sha256
     assert value.source_input_sha256 == task.input_sha256

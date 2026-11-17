@@ -26,6 +26,7 @@ from project_management.app.domain.source_resolution import SourceResolutionInpu
 from project_management.app.domain.task_runs import (
     TaskDispatch,
     TaskPrincipal,
+    TaskRunAdmissionMetadata,
     TaskResultSummary,
     TaskRunCancellation,
     TaskRunError,
@@ -40,6 +41,7 @@ from project_management.services.report_sources import ReportSourceReader
 from project_management.services.task_contracts import SummaryTaskContract
 from project_management.storage.paths import safe_relative_path
 from project_management.tests.capture_archive_fixtures import ProjectApiStub
+from project_management.tests.project_run_data import default_item, second_item
 from project_management.tests.report_render_fixtures import daily_template
 from provider_sync.app.api.access_contracts import ItemObservation, MembershipObservation, RequestUsage, WorkItemMarker
 
@@ -53,36 +55,6 @@ class FixedRunClock:
 
     def advance(self, seconds):
         self.current = self.current + timedelta(seconds=seconds)
-
-
-def default_item():
-    return {
-        'stable_id': 'ALPHA-1',
-        'summary': 'Intermittent validation failure',
-        'status': 'Fixed',
-        'assignee': {'key': 'dev-a', 'displayName': 'Alice'},
-        'reporter': {'key': 'qa-b', 'displayName': 'Bob'},
-        'comments': {
-            '201': {'id': '201', 'body': 'Failure observed.', 'author': {'key': 'dev-a'}},
-            '202': {'id': '202', 'body': 'Logs attached. Failure reproduced on build r7.'},
-            '203': {'id': '203', 'body': 'Bob (qa-b), please rerun validation on build r8.'},
-        },
-    }
-
-
-def second_item():
-    return {
-        'stable_id': 'ALPHA-2',
-        'summary': 'Second item',
-        'status': 'Open',
-        'assignee': {'key': 'dev-b', 'displayName': 'Bob'},
-        'reporter': {'key': 'qa-b', 'displayName': 'Bob'},
-        'comments': {
-            '401': {'id': '401', 'body': 'Failure observed.', 'author': {'key': 'dev-b'}},
-            '402': {'id': '402', 'body': 'Logs attached. Failure reproduced on build r7.'},
-            '403': {'id': '403', 'body': 'Bob (qa-b), please rerun validation on build r8.'},
-        },
-    }
 
 
 class ProviderLeaseDouble:
@@ -229,6 +201,12 @@ class ProjectRunPort:
         self.force_unknown = False
         self.force_error = None
         self.on_result = None
+
+    def admission_metadata(self):
+        return TaskRunAdmissionMetadata(
+            model_identity={'provider': 'typed-test-port', 'model': 'scripted'},
+            runtime_version='0.1.0-test',
+        )
 
     def start(self, principal, request):
         self._record('start', principal, request)

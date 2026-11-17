@@ -1,6 +1,5 @@
 import base64
 import asyncio
-
 import pytest
 from django.test import override_settings
 
@@ -53,7 +52,7 @@ async def test_shouldNotAllowAnonymousApprovalInProductionHost():
     assert await MetricsHost().can_decide(MetricsHost().authenticate(RawRequest(None)), object()) is False
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_shouldPersistAuditEventIdempotently():
     event = AuditEvent(
         event_id='event-1',
@@ -81,3 +80,29 @@ def test_shouldPersistAuditEventIdempotently():
     assert rows[0].category == 'tool_result'
     assert rows[0].sequence == 7
     assert rows[0].payload['tool_call_id'] == 'tool-call-1'
+
+
+@pytest.mark.django_db
+def test_shouldLogAuthenticationFailureAuditWithoutPersistingOrLeakingCredentials(caplog):
+    event = AuditEvent(
+        event_id='auth-failed-1',
+        category='authentication_failed',
+        occurred_at=datetime(2026, 11, 16, 1, 5, tzinfo=UTC),
+        sequence=8,
+        runtime_id='runtime-1',
+        path='/ai/apps/probe/api/identity',
+        client_addr='127.0.0.1',
+        reason='bad-basic',
+    )
+    host = MetricsHost()
+
+    before = RuntimeAuditEvent.objects.count()
+    asyncio.run(host.record_audit(event))
+
+    assert RuntimeAuditEvent.objects.count() == before
+    records = [record for record in caplog.records if record.getMessage() == 'ai_auth_failed']
+    assert len(records) == 1
+    assert (records[0].path, records[0].client_addr, records[0].reason) == (
+        event.path, event.client_addr, event.reason,
+    )
+    assert 'Basic ' not in repr(records)

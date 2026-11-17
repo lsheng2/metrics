@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 
 from scripts.validation import project_full_stack
 from scripts.validation.project_full_stack_support import base_environment, json_lines, read_json, require_owned_run_dir, write_json
-from scripts.validation.project_sdk_join import source_identity
+from scripts.validation.project_validation_identity import source_identity
 from scripts.validation.project_week_assertions import text_of, verify_checkpoint, verify_files
 from scripts.validation.project_week_data import WEEK_COLORS, WEEK_DAYS
 from scripts.validation.project_week_ui import WeekUi
@@ -38,7 +38,7 @@ def read_checkpoint(run_dir, draft_id, label, publication_id=None):
 
 
 def dispatch_count(run_dir):
-    return len(json_lines(run_dir / 'base/store/executor-observations.jsonl'))
+    return len(json_lines(run_dir / 'model/executor-observations.jsonl'))
 
 
 def edit_day(ui, index):

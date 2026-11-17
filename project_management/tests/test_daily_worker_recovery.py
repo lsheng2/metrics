@@ -3,17 +3,16 @@ import pytest
 from project_management.app.api import reports as report_api
 from project_management.app.api.project_runs import ProjectRunService, ProjectRunWorker
 from project_management.app.domain.capture_values import decode_json
-from project_management.out.ai_task_contract import AiTaskContract
 from project_management.services.capture import ProjectCaptureService
 from project_management.services.report_sources import ReportSourceReader
 from project_management.tests.history_persistence_fixtures import history_fixture
 from project_management.tests.project_run_fixtures import ProviderAccessDouble
 from project_management.tests.report_draft_fixtures import draft_command
-from project_management.tests.summary_fixtures import PACK_ROOT
+from project_management.tests.summary_fixtures import summary_contract
 
 
 def refresh_manual_services(fixture, provider_items=None):
-    source_reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+    source_reader = ReportSourceReader(fixture.archive, summary_contract())
     fixture.continuity.source_reader = source_reader
     fixture.draft_service.source_reader = source_reader
     provider = ProviderAccessDouble(fixture.stage, tuple(provider_items or ({

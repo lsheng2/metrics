@@ -7,6 +7,7 @@ from project_management.app.domain.capture_values import canonical_bytes
 from project_management.app.domain.task_runs import (
     TaskDispatch,
     TaskPrincipal,
+    TaskRunAdmissionMetadata,
     TaskResultSummary,
     TaskRunCancellation,
     TaskRunRequest,
@@ -24,6 +25,12 @@ class TypedTaskRunPort:
         self.calls = []
         self.snapshots = {}
         self.canceled_run_ids = set()
+
+    def admission_metadata(self):
+        return TaskRunAdmissionMetadata(
+            model_identity={'provider': 'typed-test-port', 'model': 'scripted'},
+            runtime_version='0.1.0-test',
+        )
 
     def start(self, principal, request):
         self._record('start', principal, request)

@@ -1,5 +1,4 @@
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,7 +11,7 @@ from project_management.app.domain.summary_input import build_initial_input
 from provider_sync.tests.capture_gateway_fixtures import comment, issue
 from scripts.validation.project_full_stack_fixture import (
     ACTOR_SUBJECT, CAPTURE_PLACEHOLDER, ENDPOINT, PROFILE_REVISION, StrictJiraHttpAdapter,
-    _current_ids, build_runtime_environment, expected_output, synthetic_profile_records,
+    _current_ids, expected_output,
 )
 from scripts.validation.project_week_data import WEEK_ITEMS, WEEK_QUERY
 
@@ -21,29 +20,6 @@ def prepare_catalog(run_dir):
     from scripts.validation.project_full_stack_fixture import prepare_catalog as original
 
     return original(run_dir, query=WEEK_QUERY, vector_builder=build_week_vector)
-
-
-def build_week_runtime(connection, run_dir):
-    from django.conf import settings
-    from project_management.services.report_completion import ReportCompletionService
-    from project_management.services.report_reference_receipts import ReferenceReceiptVerifier
-    from project_management.storage.report_reference_admission import CompletionAdmissionStore
-    from ui_web.views.report_completion import ReportDraftCompletionView
-
-    runtime = build_runtime_environment(
-        connection, records=synthetic_profile_records(WEEK_QUERY),
-        provider_factory=lambda api, archive: create_week_provider(api, archive, run_dir),
-    )
-    service = runtime.run_service
-    verifier = ReferenceReceiptVerifier(settings.SECRET_KEY)
-    completion = ReportCompletionService(
-        service.draft_service, service.draft_service.source_reader,
-        WeekReferenceReader(Path(run_dir) / 'evidence/reference-requests.jsonl'),
-        verifier, CompletionAdmissionStore(service.archive.config.root),
-    )
-    ReportDraftCompletionView.completion_factory = staticmethod(lambda: completion)
-    ReportDraftCompletionView.project_api_factory = staticmethod(lambda: service.project_api)
-    return runtime
 
 
 def create_week_provider(project_api, archive, run_dir):
@@ -94,33 +70,6 @@ class WeekJiraHttpAdapter(StrictJiraHttpAdapter):
             if path == f'/jira/rest/api/2/issue/{identifier}/comment':
                 return params in ({'startAt': '0', 'maxResults': '2'}, {'startAt': '2', 'maxResults': '2'})
         return False
-
-
-class WeekReferenceReader:
-    def __init__(self, transcript):
-        self.path = transcript
-
-    def supports(self, stage, principal_id):
-        return stage.descriptor.query == WEEK_QUERY and principal_id == 'principal-1'
-
-    def read(self, context, member):
-        from project_management.app.domain.report_completion import ReferenceObservation
-
-        row = next((item for item in week_issues() if item['id'] == member.stable_id), None)
-        if row is None:
-            raise AssertionError('Reference is not in the fixed qualification population.')
-        with self.path.open('a', encoding='utf-8') as stream:
-            stream.write(json.dumps({'stable_id': member.stable_id, 'scope_hash': context['membership_proof_hash']}) + '\n')
-        return ReferenceObservation(
-            identity={'provider_id': member.provider_id, 'endpoint_id': member.endpoint_id,
-                      'stable_id': member.stable_id, 'display_key': member.display_key},
-            requested_key=member.display_key, current_key=member.display_key,
-            canonical_url=f'{ENDPOINT}/browse/{row["key"]}', title=row['fields']['summary'],
-            assignee={'id': row['fields']['assignee']['key'], 'display_name': row['fields']['assignee']['displayName']},
-            assignee_state='assigned', observed_at=datetime.now(UTC).isoformat(),
-            source_updated_at='2026-11-01T01:00:00+00:00', lookup_kind='live',
-            scope_snapshot_hash=context['membership_proof_hash'],
-        )
 
 
 def week_issues():

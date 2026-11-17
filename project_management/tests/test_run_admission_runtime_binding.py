@@ -29,6 +29,8 @@ def test_admission_records_the_host_principal_and_exact_profile_without_legacy_b
     assert binding.profile_version == environment.contract.profile.version
     assert binding.profile_definition_sha256 == environment.contract.definition_hash
     assert binding.output_schema_sha256 == environment.contract.output_schema_hash
+    assert binding.model_identity == {'provider': 'typed-test-port', 'model': 'scripted'}
+    assert binding.runtime_version == '0.1.0-test'
 
 
 @pytest.mark.parametrize('version', [1, 2, True])
@@ -47,3 +49,52 @@ def test_admission_principal_cannot_be_replaced_by_another_archive_owner(tmp_pat
     changed['admission_hash'] = admission_hash(changed)
     with pytest.raises(RunError, match='Run storage is invalid'):
         validate_stored_request(changed)
+
+
+class MissingAdmissionIdentityPort(TypedTaskRunPort):
+    def admission_metadata(self):
+        raise AttributeError('admission identity unavailable')
+
+
+def test_missing_admission_identity_cannot_write_request_record(tmp_path):
+    environment = ManualRunEnvironment(tmp_path / 'archive')
+    environment.install_summary_service(MissingAdmissionIdentityPort(environment))
+
+    with pytest.raises(RunError) as error:
+        submit_run(environment)
+
+    operations = (
+        tmp_path / 'archive' / 'projects' / environment.project.id / 'stages' / environment.stage.id
+        / 'runtime' / 'operations'
+    )
+    assert error.value.code == 'RUN_UNAVAILABLE'
+    assert not tuple(operations.rglob('request.json')) if operations.exists() else True
+
+
+def test_real_unconfigured_runtime_port_reports_project_unavailable_without_persisting_request(tmp_path):
+    from ai_host.task_runs import RuntimeTaskRunPort
+
+    environment = ManualRunEnvironment(tmp_path / 'archive')
+    environment.install_summary_service(RuntimeTaskRunPort(object(), admission_metadata=None))
+
+    with pytest.raises(RunError) as error:
+        submit_run(environment)
+
+    operations = (
+        tmp_path / 'archive' / 'projects' / environment.project.id / 'stages' / environment.stage.id
+        / 'runtime' / 'operations'
+    )
+    assert error.value.code == 'RUN_UNAVAILABLE'
+    assert not tuple(operations.rglob('request.json')) if operations.exists() else True
+
+
+@pytest.mark.parametrize('field,value', [
+    ('backend', {'scope_key': 'legacy'}),
+    ('execution_mode', 'synthetic'),
+])
+def test_schema3_admission_rejects_retired_active_wire_fields(tmp_path, field, value):
+    _, _, record = admitted(tmp_path)
+    record[field] = value
+    record['admission_hash'] = admission_hash(record)
+    with pytest.raises(RunError, match='Run storage is invalid'):
+        validate_stored_request(record)

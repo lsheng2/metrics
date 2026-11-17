@@ -18,13 +18,19 @@ from project_management.app.domain.capture_values import canonical_bytes
 from project_management.app.domain.report_assists import available_targets, build_assist_input
 from project_management.app.domain.report_authoring import AuthoredEditRequest
 from project_management.app.domain.report_authoring_fragments import plain_text_fragment
-from project_management.app.domain.task_runs import TaskPrincipal, TaskRunError
+from project_management.app.domain.task_runs import TaskPrincipal, TaskRunAdmissionMetadata, TaskRunError
 from project_management.services.report_assist_receipts import ReportAssistReceiptVerifier
 from project_management.services.report_assists import ReportAssistService
 from project_management.services.task_contracts import AuthoringTaskContract
 from project_management.storage.report_assists import ReportAssistStore
 from project_management.tests.history_persistence_fixtures import (
     git_head, history_fixture, note_by_id, prepare_daily, publication_file_bytes, ref_for,
+)
+
+
+ADMISSION = TaskRunAdmissionMetadata(
+    model_identity={'provider': 'openai-compatible', 'model': 'scripted'},
+    runtime_version='0.1.0-test',
 )
 
 
@@ -65,7 +71,7 @@ def test_installed_runtime_recovers_authoring_and_preserves_native_archive_prove
             build_runtime_settings(), host, (METRICS_APP,), start_timeout=RUNTIME_START_SECONDS,
         )
         with context as handle:
-            port = RuntimeTaskRunPort(handle.blocking.task_runs)
+            port = RuntimeTaskRunPort(handle.blocking.task_runs, admission_metadata=ADMISSION)
             actual_start = port.start
             admitted = []
 

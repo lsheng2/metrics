@@ -55,18 +55,19 @@ It does not grant permissions beyond the current user request or higher-level in
 
 - Runtime AI receives only its versioned task profile, bounded explicit input and output schema.
   It must not load development instructions, planning skills or repository-wide authority.
-- AI Base owns execution facts and public SDK/API contracts. Dashboard owns source eligibility,
+- AI Base owns execution facts and public embedded-runtime/API contracts. Dashboard owns source eligibility,
   evidence validation, candidate acceptance, human acceptance and report publication.
-- Reuse the installed SDK. Do not build a second SDK journal, process manager or persistent task engine.
+- Reuse the admitted `ai-base-runtime` package and its public task-run interfaces.
+  Do not build a second runtime journal, process manager or persistent task engine.
   Summary and authoring have separate business profiles and acceptance rules.
 - Persist the exact request/key/store/profile/deadline before dispatch. Unknown submit is observed
   by its original key; it is not permission for another POST, new deadline or refunded budget.
 - Schema/hash validity is not business acceptance. AI Apply only changes local dirty content;
   Save verifies the server-owned candidate receipt under the existing revision/CAS boundary.
-- Changes to SDK/profile/pack/runtime compatibility require explicit selection and consumer checks.
+- Changes to runtime/profile contracts require explicit candidate selection and consumer checks.
   Never patch immutable released artifacts, old request bytes or historical receipts in place.
 - The repository is early-stage and keeps no backward compatibility: when a consumer migrates to the
-  SDK or embedded runtime, delete the legacy path with its settings, scripts, fixtures and tests in
+  embedded runtime, delete the legacy path with its settings, scripts, fixtures and tests in
   the same change and drop it from current docs; do not keep a fallback, mode switch or shim (for
   example the retired `embed=workbench` / `METRICS_AI_BASE_EMBED_MODE` path). User data, released
   artifacts and historical receipts are not legacy paths; the rule above still applies to them.
@@ -86,7 +87,7 @@ It does not grant permissions beyond the current user request or higher-level in
   database, browser or Base fixture. Mutable state remains isolated between scenarios.
 - Use explicit test paths: default pytest discovery does not cover all modules, including
   `project_management` and `provider_sync`. Collection, empty selections and skips are not acceptance.
-- Reporting, `ui_web` and `project_management` tests run with the selected SDK interpreter through
+- Reporting, `ui_web` and `project_management` tests run with the selected runtime interpreter through
   the isolated no-dotenv entry in [development and validation](docs/development/reporting-delivery.md).
   Do not accidentally run migrated consumers in the retained legacy `.venv` or test against the
   existing 8017 service.

@@ -3,6 +3,7 @@ from copy import copy
 from django.core.exceptions import DisallowedHost
 from django.core.handlers.wsgi import WSGIRequest
 
+from ai_host.host import log_auth_failed
 from ai_host.settings import runtime_mount_path
 
 
@@ -22,7 +23,8 @@ def build_wsgi_application(django_app, runtime_app, *, is_accepting_requests=Non
         mount_path = runtime_mount_path()
         path_info = environ.get('PATH_INFO') or ''
         if path_info == mount_path or path_info.startswith(mount_path + '/'):
-            return runtime_app(_mounted_environ(environ, mount_path), start_response)
+            mounted = _mounted_environ(environ, mount_path)
+            return runtime_app(mounted, _auth_logging_start_response(mounted, start_response))
         return django_app(environ, start_response)
 
     return application
@@ -50,3 +52,22 @@ def _fixed_response(start_response, status, body, *, headers=()):
     response_headers.extend(headers)
     start_response(status, response_headers)
     return [body]
+
+
+def _auth_logging_start_response(environ, start_response):
+    logged = False
+
+    def wrapper(status, headers, exc_info=None):
+        nonlocal logged
+        if not logged and str(status).startswith('401 '):
+            logged = True
+            log_auth_failed(
+                f"{environ.get('SCRIPT_NAME', '')}{environ.get('PATH_INFO', '')}",
+                environ.get('REMOTE_ADDR'),
+                'authentication_required',
+            )
+        if exc_info is None:
+            return start_response(status, headers)
+        return start_response(status, headers, exc_info)
+
+    return wrapper

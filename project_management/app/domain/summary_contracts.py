@@ -36,16 +36,6 @@ class AnalysisError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
-class AiBackendTarget:
-    base_url: str
-    source_app_id: str
-    run_store_id: str
-    scope_key: str
-    grant_revision: str
-    limit_policy_revision: str
-
-
-@dataclass(frozen=True, slots=True)
 class PreparedAnalysis:
     source_key: SourceChainKey
     target_capture_id: str

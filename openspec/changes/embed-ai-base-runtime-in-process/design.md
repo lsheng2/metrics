@@ -48,7 +48,8 @@
   v2.1 定稿 → AIB-2 规划合入 AI Base main（`5757c9c`）与上游增补 1 → AIB-2 W0 接口冻结（`fc4db2f`）并经 Metrics 复核
   接受（`e3c8a80`）→ AIB-2 W1–W4（已授权）→ AIB-2 与 MDB-2 同版本发布（v2 §9）。
 
-与设计相关的现状：
+与设计相关的迁移前基线（以下文件、行号和旧接口描述记录本 change 启动时的状态，
+用于解释替换目标，不是当前实现清单；当前进展以 `tasks.md`、源码与验证回执为准）：
 
 - 服务：`project_serve` 是多线程 WSGI 服务（`management/commands/project_serve.py:100-115`，`daemon_threads`），先
   `build_project_runtime()` 与 `start()`，再托管 `StaticFilesHandler(get_internal_wsgi_application())`（`:50`）；停止时
@@ -542,7 +543,7 @@
     `data_fingerprint`. Stable data values and source/run/snapshot identities
     participate in this fingerprint; elapsed cache ages and request timestamps do
     not. This closes the case where data changes but rendered API URLs do not.
-    `PreviewDeclined` is available in the selected SDK, so readiness failures return
+    `PreviewDeclined` is available in the selected embedded runtime, so readiness failures return
     typed business results without creating an approval.
   - Approval identity comes unconditionally from the additive runtime-issued
     `ToolApproval.approval_id` accessor. The AIB addition preserves the frozen
@@ -688,7 +689,10 @@
   - 审计分两处：运行时把会话、tool 调用与审批事件经事务性 outbox 至少投递一次（增补 A6，Open Questions 11），
     `record_audit` 经决策 4 的 helper 写入 `ai_host` 自有的只追加审计表，以 `event_id` 为唯一约束，同一事件再次投递时
     不新增行、不报错；不写 `BugTrendAuditEvent`；运行时交来的认证失败事件不写数据库，只输出一条结构化日志
-    `ai_auth_failed`（path、客户端地址、原因，不含凭据）。
+    `ai_auth_failed`（path、客户端地址、原因，不含凭据）。如果运行时 WSGI 适配器在调用 `record_audit` 前已经返回
+    401，Metrics 的组合层只在 `/ai` 挂载分支按实际 `start_response` 状态记录同一条 `ai_auth_failed`，path 为
+    `SCRIPT_NAME + PATH_INFO`（不含 query），client_addr 为 `REMOTE_ADDR`，reason 为 `authentication_required`；不解析
+    Authorization、不读取 body、不写数据库，且不改变 2/3 参数 `start_response` 的 write callable 语义。
   - `record_audit` 在有界时间内返回或抛错，这是 A6 的宿主义务，运行时不为 outbox 投递另设时限（owner 2026-11-12 确认）：
     一次投递只做一次插入，插入冲突视为已写入并正常返回（不先查后插）；等锁不超过 SQLite busy timeout（`sqlite3` 默认
     5 秒，`DATABASES` 未覆盖），超时抛错，由运行时退避重投。stop 时被取消的投递之后会再次投递，可能与仍在执行的上一次
@@ -711,12 +715,14 @@
 ### 决策 15：验证只替换外部系统，不替换组合
 
 - **决定**：
-  - 全栈验证 = `manage.py serve` + 确定性的 OpenAI 兼容假模型服务，后者复用 `scripts/validation/project_full_stack_base.py`
-    中 `ExactDynamicVectorExecutor`（`:134`）的向量匹配。
+  - 全栈验证 = `manage.py serve` + `scripts/validation/project_model_fixture.py` 提供的
+    确定性 OpenAI 兼容假模型服务；向量匹配由 `scripts/validation/project_vector_matching.py`
+    提供，沿用原验证向量的语义，不再依赖已删除的运行时组合。
   - Jira 由一个只用于验证的 AppConfig 安装进程内 fixture transport（沿用 `scripts/validation/project_ui_fixture_app.py`
     的模式）：provider 端点必须是 https（`bug_metrics/provider_connections/normalization.py:103-104`），回环 http 假 Jira
-    不可行。该 AppConfig 不得导入 `ai_host` 或 `project_management.runtime`；周完成视图的假对象
-    （`scripts/validation/project_week_fixture.py:44-45`）移入其中。
+    不可行。该 AppConfig 不得导入 `ai_host` 或 `project_management.runtime`。
+    `ProjectRunFixtureAppConfig` 安装 provider fixture；仅 `full-week` 场景安装同模块中的
+    `WeekReferenceReader`，经正常报告工厂提供补全，不替换 completion view 或项目运行时。
   - 删除并行组合：`scripts/validation/project_full_stack_settings.py:76-80`、`project_week_settings.py:12-16`、
     `project_full_stack_fixture.py:108-148`；同步改写 `project_sdk_join*.py`、`profile_report_*.py`、
     `prepare_report_scale.py`、`project_management/tests/test_project_full_stack_*.py` 与 `test_project_week_fixture.py`；
@@ -993,6 +999,7 @@
     由 tasks 0.6 核对。
 11. 审计事件的结构与投递：宿主 SPI 只有 `record_audit(event: AuditEvent)`（AIB design §2 `:125`），`AuditEvent` 的字段、
     事件类别与认证失败以外事件的投递方式都没有定义；唯一定义的是认证失败事件，可以丢弃（`:132-136`，§10 `:666`）。
+    Metrics 因此把认证失败归为宿主观测日志，不要求 AIB 回补一个固定回调，也不引入未来兼容去重层。
     审批事件照此投递，Metrics 的审计表会缺记录且没有任何报错。owner 于 2026-11-12 决定请求上游冻结（增补 A6）：
     `event_id`、类别表、关联 id、结果 code 与可还原的事件顺序；状态转换产生的事件经事务性 outbox 至少投递一次，停止时
     不排空、重启后继续投递；宿主按 `event_id` 幂等。Metrics 据此在审计表上加 `event_id` 唯一约束（决策 14、tasks 2.3），

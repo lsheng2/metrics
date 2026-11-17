@@ -7,10 +7,9 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import override_settings
 from django.urls import reverse
 
-from project_management.out.ai_task_contract import AiTaskContract
 from project_management.services.report_sources import ReportSourceReader
 from project_management.tests.history_persistence_fixtures import history_fixture
-from project_management.tests.summary_fixtures import PACK_ROOT
+from project_management.tests.summary_fixtures import summary_contract
 from ui_web.facades.project_reports import ProjectReportFacade
 from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
@@ -25,7 +24,7 @@ class TestReportQueryBrowser(StaticLiveServerTestCase):
         with TemporaryDirectory() as temporary, pytest.MonkeyPatch.context() as monkeypatch:
             fixture = history_fixture(Path(temporary), actor_subject='basic:alice')
             capture = seed_retained_capture(fixture)
-            reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+            reader = ReportSourceReader(fixture.archive, summary_contract())
             fixture.draft_service.source_reader = reader
             fixture.continuity.source_reader = reader
             evidence = Path('.tmp/dashboard-read-performance-20261106') / f'mounted-{uuid4()}'

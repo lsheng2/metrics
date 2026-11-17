@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 import math
 import re
 from types import MappingProxyType
+from typing import Protocol
 
 from .capture_values import canonical_bytes, decode_json, sha256_bytes
 
@@ -68,16 +69,60 @@ class TaskRunBinding:
     profile_version: str
     profile_definition_sha256: str
     output_schema_sha256: str
+    model_identity: Mapping[str, str]
+    runtime_version: str
 
     def __post_init__(self):
         if not isinstance(self.principal, TaskPrincipal):
             raise ValueError('Invalid task principal')
         _text(self.profile_id)
         _text(self.profile_version)
+        _text(self.runtime_version)
         if not self.profile_id.startswith('metrics.') or self.profile_version == 'latest':
             raise ValueError('An exact Metrics task profile is required')
         _digest(self.profile_definition_sha256)
         _digest(self.output_schema_sha256)
+        if not isinstance(self.model_identity, Mapping) or set(self.model_identity) != {'provider', 'model'}:
+            raise ValueError('Invalid model identity')
+        model_identity = dict(self.model_identity)
+        _text(model_identity['provider'])
+        _text(model_identity['model'])
+        object.__setattr__(self, 'model_identity', MappingProxyType(model_identity))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TaskRunAdmissionMetadata:
+    model_identity: Mapping[str, str]
+    runtime_version: str
+
+    def __post_init__(self):
+        _text(self.runtime_version)
+        if not isinstance(self.model_identity, Mapping) or set(self.model_identity) != {'provider', 'model'}:
+            raise ValueError('Invalid model identity')
+        model_identity = dict(self.model_identity)
+        _text(model_identity['provider'])
+        _text(model_identity['model'])
+        object.__setattr__(self, 'model_identity', MappingProxyType(model_identity))
+
+
+class TaskRunPort(Protocol):
+    def admission_metadata(self) -> TaskRunAdmissionMetadata:
+        ...
+
+    def start(self, principal: TaskPrincipal, request: 'TaskRunRequest'):
+        ...
+
+    def lookup(self, principal: TaskPrincipal, request: 'TaskRunRequest', *, timeout=None):
+        ...
+
+    def get(self, principal: TaskPrincipal, request: 'TaskRunRequest', run_id: str, *, timeout=None):
+        ...
+
+    def result(self, principal: TaskPrincipal, request: 'TaskRunRequest', run_id: str):
+        ...
+
+    def cancel(self, principal: TaskPrincipal, run_id: str, *, timeout=None):
+        ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

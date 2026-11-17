@@ -53,21 +53,30 @@ def test_workbench_read_outage_is_retryable_not_invalid_input(daily_fixture, mon
 def test_workbench_shares_archive_identity_with_local_operation_list(daily_fixture, monkeypatch):
     from copy import copy
     from dataclasses import replace
+    from types import SimpleNamespace
     from project_management.app.api.project_runs import ProjectRunRuntime, ProjectRunService, ProjectRunWorker, RunRequest
     from project_management.app.api.report_queries import ReportOperationsRead
     from project_management.app.api.reports import ReportDraftService
-    from project_management.app.api.summary_analysis import AiBackendTarget
+    from project_management.app.domain.task_runs import TaskPrincipal
     from project_management.services.capture_archive import CaptureArchiveService
+    from project_management.tests.project_run_fixtures import ProjectRunPort
+    from project_management.tests.summary_fixtures import summary_contract
     from project_management.tests.report_render_fixtures import daily_template
     from project_management.tests.report_draft_fixtures import draft_command
     from ui_web.facades.project_runs import ProjectRunFacade
 
     fixture = daily_fixture
-    backend = AiBackendTarget('http://127.0.0.1:18888', 'metrics-dashboard', 'store-fixture',
-                              f'projects.{fixture.project.id}.stages.{fixture.stage.id}',
-                              'dashboard-join-1', 'base-b-cancel-synthetic-1')
-    service = ProjectRunService(fixture.archive.project_api, fixture.archive, None, None,
-                                fixture.draft_service, lambda *args: backend, notifier=lambda *args: None)
+    contract = summary_contract()
+    service = ProjectRunService(fixture.archive.project_api, fixture.archive, None,
+                                SimpleNamespace(task_run_port=ProjectRunPort(contract)),
+                                fixture.draft_service,
+                                lambda actor, *_: TaskPrincipal(
+                                    subject=actor.subject,
+                                    runtime_subject=actor.subject,
+                                    display_name=actor.subject,
+                                    anonymous=False,
+                                ),
+                                task_profile=contract.profile, notifier=lambda *args: None)
     runtime = ProjectRunRuntime(service, ProjectRunWorker(service))
     operation = service.submit(fixture.actor, fixture.project.id, fixture.stage.id, RunRequest(
         draft_command(17700), fixture.stage.definition_hash, daily_template(), 'Asia/Shanghai',

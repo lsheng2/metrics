@@ -29,12 +29,14 @@ def preflight_run_manifest(run_dir: Path):
     if not manifest_path.is_file():
         raise ValueError('Run manifest is missing.')
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-    if manifest.get('execution_mode') != 'synthetic':
-        raise ValueError('Report read profiling requires a synthetic run manifest.')
+    if type(manifest.get('schema_version')) is not int or manifest['schema_version'] != 2:
+        raise ValueError('Report read profiling requires a current runtime manifest.')
     if Path(manifest.get('repository', '')).resolve(strict=False) != ROOT.resolve(strict=True):
         raise ValueError('Run manifest repository does not match this checkout.')
     if Path(manifest.get('run_dir', '')).resolve(strict=False) != run_dir.resolve(strict=True):
         raise ValueError('Run manifest does not describe the selected run directory.')
+    if Path(manifest.get('app_python', '')).resolve() != Path(sys.executable).resolve():
+        raise ValueError('Run manifest interpreter does not match the current runtime environment.')
     catalog = manifest.get('catalog')
     if not isinstance(catalog, dict) or catalog.get('actor') != 'basic:SYNTHETIC_ALICE':
         raise ValueError('Run manifest actor does not match synthetic Alice.')
@@ -175,9 +177,11 @@ def fixture_identity(run_dir: Path, target, manifest: dict):
 
 def environment_identity(output_dir: Path, manifest: dict):
     import django
-    import ai_base_application_sdk
-    from importlib.metadata import version
+    from importlib.metadata import distribution
+    from ai_host.admission import admit_runtime_candidate
 
+    runtime = admit_runtime_candidate()
+    installed = distribution('ai-base-runtime')
     safe_environment = base_environment(output_dir / 'environment-digest')
     return {
         'python': sys.executable,
@@ -185,10 +189,10 @@ def environment_identity(output_dir: Path, manifest: dict):
         'sys_path': sys.path,
         'django_version': django.get_version(),
         'django_module_file': getattr(django, '__file__', ''),
-        'sdk_version': version('ai-base-application-sdk'),
-        'sdk_module_file': ai_base_application_sdk.__file__,
-        'manifest_sdk_version': manifest.get('sdk_version'),
-        'manifest_sdk_wheel_sha256': manifest.get('sdk_wheel_sha256'),
+        'runtime_version': runtime['version'],
+        'runtime_module_file': str(installed.locate_file('ai_base_runtime/__init__.py').resolve()),
+        'runtime_wheel_sha256': runtime['wheelSha256'],
+        'runtime_source_commit': runtime['sourceCommit'],
         'manifest_app_python': manifest.get('app_python'),
         'django_settings_module': os.environ.get('DJANGO_SETTINGS_MODULE', ''),
         'git_version': _git_text('version'),

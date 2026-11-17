@@ -1,52 +1,20 @@
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
-import json
-from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
-from project_management.app.api.ai_profiles import load_task_profile
 from project_management.app.domain.capture_values import canonical_bytes, content_hash
 from project_management.app.domain.summary_contracts import AnalysisError
-from project_management.app.domain.task_runs import (
-    TaskDispatch, TaskResultSummary, TaskRunResult, TaskRunSnapshot,
-)
-from project_management.services.task_contracts import SummaryTaskContract
+from project_management.tests.summary_fixtures import SummaryScenario
 
 
 def values():
-    root = Path(__file__).resolve().parents[1] / 'ai_bundle/strict-summary/task-run-contract-0.1.0a2'
-    source = json.loads((root / 'profiles/project-summary/input.json').read_text(encoding='utf-8'))
-    output = json.loads((root / 'fixtures/project-summary/strict-summary-output-golden.json').read_text(encoding='utf-8'))
-    source['profile_revision'] = output['profile_revision'] = 'metrics.project_summary@1'
-    prepared = SimpleNamespace(
-        input_content=canonical_bytes(source).decode('utf-8'), input_hash=content_hash(source),
-    )
-    contract = SummaryTaskContract(load_task_profile('metrics.project_summary'))
-    request = contract.make_request(prepared, 'attempt-key', datetime.now(UTC) + timedelta(minutes=1))
-    dispatch = TaskDispatch(
-        provider='openai-compatible', model='scripted', runtime_version='0.1.0',
-        profile_definition_sha256=contract.definition_hash, tool_definition_sha256=None,
-        dispatched=True, uncertainty='dispatched', usage=None,
-    )
-    snapshot = TaskRunSnapshot(
-        run_id='run-1', profile_id=request.profile_id, profile_version=request.profile_version,
-        status='succeeded', input_sha256=request.input_sha256, effective_input_sha256=request.input_sha256,
-        source_input_sha256=request.input_sha256,
-        dispatch=dispatch, result=TaskResultSummary(
-            output_sha256=content_hash(output), output_schema_sha256=contract.output_schema_hash, usage=None,
-        ), error_code=None, retry=None,
-    )
-    result = TaskRunResult(
-        run_id='run-1', profile_id=request.profile_id, profile_version=request.profile_version,
-        status='succeeded', input_sha256=request.input_sha256, effective_input_sha256=request.input_sha256,
-        source_input_sha256=request.input_sha256,
-        output_schema_sha256=contract.output_schema_hash, output_sha256=content_hash(output),
-        content_json=canonical_bytes(output).decode('utf-8'), dispatch=dispatch, usage=None,
-        error_code=None, retry=None,
-    )
-    return contract, request, snapshot, result, output
+    scenario = SummaryScenario()
+    scenario.setUp()
+    prepared = scenario.prepared()
+    attempt = scenario.attempt(prepared)
+    output = scenario.output(prepared)
+    snapshot, result = scenario.responses(attempt, output)
+    return scenario.contract, attempt.request, snapshot, result, output
 
 
 def test_contract_validates_new_owned_records_without_http_sdk_pack():

@@ -53,6 +53,19 @@ python scripts/check_diff_whitespace.py --include-untracked
 npm --prefix ui_web/frontend run check   # UI changes: token/vendor drift, Stylelint, WCAG contrast
 ```
 
+Reporting and embedded-host tests use the selected runtime interpreter and the
+no-dotenv runner in [reporting validation](../../docs/development/reporting-delivery.md),
+not plain pytest. The explicit consumer conformance lane is:
+
+```powershell
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py ai_host/tests/conformance_suite.py ai_host/tests/conformance_host_cases.py ai_host/tests/conformance_http_cases.py ai_host/tests/conformance_order_cases.py ai_host/tests/conformance_process_cases.py -p ai_base_runtime.testkit.pytest_plugin -p ai_host.tests.conformance_fixtures -o ai_host_modes=blocking_wsgi -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
+```
+
+The root pytest configuration does not register that plugin or mode. The explicit
+lane includes the shipped assertions and implemented Metrics boundary checks;
+the ASGI record is not applicable, not a pass. Its success does not by itself
+close the full MDB-2 5.10 lifecycle matrix or 10.4 joined qualification.
+
 ## OpenSpec Authoring
 
 Rules learned with OpenSpec CLI 1.14.x. Validate the change with
@@ -67,10 +80,11 @@ Rules learned with OpenSpec CLI 1.14.x. Validate the change with
 
 1. Default pytest paths omit `pull_requests`, `project_management` and `provider_sync`, and plain `pytest` loads `.env`.
    Select affected paths explicitly; reporting, `ui_web` and `project_management` tests use the isolated no-dotenv runner,
-   selected SDK interpreter and real `ReportDraftService` doubles in `docs/development/reporting-delivery.md`; present but
+   selected runtime interpreter and real `ReportDraftService` doubles in `docs/development/reporting-delivery.md`; present but
    invalid stage archives are `REPORT_ARTIFACT_INVALID` (`openspec/docs/current-baseline/project-reporting.md`).
 2. Follow the task's owned runtime/port. Do not reuse the unrelated 8017 service or silently upgrade
-   the retained legacy `.venv`; current reporting validation uses SDK 0.2.0a1 with the original a2 pack.
+   the retained legacy `.venv`; current reporting validation uses the candidate
+   pinned in `ai_host/runtime_artifact.json`, with App-owned task profiles.
 3. Azure PR list pagination can return short or overlapping pages. Keep fixed-stride paging and de-duplication in the repository adapter.
 4. Intel Jira MVP setup/current-state notes live under `openspec/docs/historical/`, architecture details live under `openspec/docs/current-baseline/`, and normative requirements live under `openspec/specs/`; link to those docs instead of copying their content into AI guidance.
 5. If a Jira token, PAT, cookie, or Authorization header appears in chat or logs, treat it as exposed and recommend rotation.

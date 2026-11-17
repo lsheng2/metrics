@@ -502,12 +502,16 @@ def test_rendering_older_revision_after_later_finalization_stays_draft(tmp_path)
     assert f'Edition: final draft {draft.draft_id} rev {saved.revision}' in finalized_revision.plain_text
 
 
-def test_read_service_builds_without_provider_or_runtime_principal(tmp_path):
+def test_read_service_builds_without_provider_or_runtime_principal(tmp_path, monkeypatch):
     factories = importlib.import_module('project_management.app.api.run_factories')
+
+    def forbidden_provider():
+        raise AssertionError('Read-only service must not create provider access')
+
+    monkeypatch.setattr(factories, 'create_provider_access_service', forbidden_provider)
     with override_settings(METRICS_PROJECT_ARCHIVE_ROOT=str(tmp_path / 'archive-root'),
                            METRICS_PROJECT_ARCHIVE_AUTHOR_NAME='Archive Test',
-                           METRICS_PROJECT_ARCHIVE_AUTHOR_EMAIL='archive@example.test',
-                           METRICS_PROJECT_AI_TARGET='invalid-live-target'):
+                           METRICS_PROJECT_ARCHIVE_AUTHOR_EMAIL='archive@example.test'):
         service = factories.build_run_read_service()
 
     assert service.notifier is None
@@ -515,24 +519,15 @@ def test_read_service_builds_without_provider_or_runtime_principal(tmp_path):
     assert service.task_profile is None
 
 
-def test_ordinary_enabled_settings_fail_closed_without_fixture_factory(monkeypatch, tmp_path):
+def test_enabled_settings_fail_closed_without_a_task_port(monkeypatch, tmp_path):
     factories = importlib.import_module('project_management.app.api.run_factories')
     monkeypatch.setattr(factories, 'build_capture_archive_service',
                         lambda **kwargs: (_ for _ in ()).throw(AssertionError('no archive')))
     with override_settings(
         METRICS_PROJECT_RUN_ENABLED=True,
-        METRICS_PROJECT_RUNTIME_FACTORY=None,
         METRICS_PROJECT_ARCHIVE_ROOT=str(tmp_path / 'archive-root'),
         METRICS_PROJECT_ARCHIVE_AUTHOR_NAME='Archive Test',
         METRICS_PROJECT_ARCHIVE_AUTHOR_EMAIL='archive@example.test',
-        METRICS_PROJECT_AI_TARGET={
-            'execution_mode': 'synthetic',
-            'base_url': 'http://127.0.0.1:48300',
-            'source_app_id': 'metrics-dashboard',
-            'run_store_id': 'store',
-            'grant_revision': 'grant',
-            'limit_policy_revision': 'limits',
-        },
     ):
         with pytest.raises(RunError) as error:
             factories.build_project_runtime(task_runs=None, principal_resolver=None)

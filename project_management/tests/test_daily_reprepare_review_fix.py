@@ -7,7 +7,6 @@ from project_management.app.api import reports as report_api
 from project_management.app.api.project_runs import ProjectRunService, ProjectRunWorker
 from project_management.app.domain.capture_values import canonical_bytes, decode_json
 from project_management.app.domain.run_contracts import RunRequest
-from project_management.out.ai_task_contract import AiTaskContract
 from project_management.services.capture import ProjectCaptureService
 import project_management.services.report_preparation_worker as worker_module
 from project_management.services.report_reprepare_parent_cas import verify_parent_cas
@@ -23,11 +22,11 @@ from project_management.tests.project_run_fixtures import ProviderAccessDouble
 from project_management.tests.project_run_fixtures import ManualRunEnvironment
 from project_management.tests.report_draft_fixtures import draft_command
 from project_management.tests.report_render_fixtures import daily_template
-from project_management.tests.summary_fixtures import PACK_ROOT
+from project_management.tests.summary_fixtures import summary_contract
 
 
 def _refresh_parent_service(fixture, provider_items):
-    source_reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+    source_reader = ReportSourceReader(fixture.archive, summary_contract())
     fixture.continuity.source_reader = source_reader
     fixture.draft_service.source_reader = source_reader
     run_service = ProjectRunService(

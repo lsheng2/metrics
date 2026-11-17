@@ -1,3 +1,0 @@
-ai-base-application-sdk==0.2.0a1
-httpx==0.28.1
-jsonschema==4.26.0

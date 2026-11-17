@@ -1,8 +1,6 @@
 from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime
-import re
-from urllib.parse import urlsplit
 import uuid
 
 from project_management.app.domain.capture_values import (
@@ -10,7 +8,7 @@ from project_management.app.domain.capture_values import (
 )
 from project_management.app.domain.captures import SourceChainKey
 from project_management.app.domain.summary_contracts import (
-    AcceptedSummary, AiBackendTarget, AnalysisAttempt, AnalysisError, PreparedAnalysis,
+    AcceptedSummary, AnalysisAttempt, AnalysisError, PreparedAnalysis,
 )
 from project_management.app.domain.summary_input import MAX_CHAIN, complete_source
 from project_management.storage.paths import validate_uuid
@@ -21,22 +19,6 @@ from project_management.app.domain.task_runs import TaskPrincipal
 def validate_principal(principal, owner_subject):
     if not isinstance(principal, TaskPrincipal) or principal.subject != owner_subject:
         raise AnalysisError('ANALYSIS_PRINCIPAL_MISMATCH')
-
-
-def validate_backend(backend, project_id, stage_id):
-    try:
-        parsed = urlsplit(backend.base_url)
-        if (not isinstance(backend, AiBackendTarget) or parsed.scheme != 'http'
-                or parsed.hostname != '127.0.0.1' or parsed.port is None
-                or parsed.username or parsed.password or parsed.query or parsed.fragment
-                or parsed.path not in ('', '/')
-                or backend.source_app_id != 'metrics-dashboard'
-                or backend.scope_key != f'projects.{project_id}.stages.{stage_id}'
-                or any(not isinstance(value, str) or not re.fullmatch('[A-Za-z0-9._:-]{1,160}', value)
-                       for value in (backend.run_store_id, backend.grant_revision, backend.limit_policy_revision))):
-            raise ValueError
-    except (ValueError, TypeError, AttributeError):
-        raise AnalysisError('ANALYSIS_BACKEND_MISMATCH') from None
 
 
 class SummaryJournalReads:
