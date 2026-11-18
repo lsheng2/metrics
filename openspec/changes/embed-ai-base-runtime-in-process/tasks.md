@@ -2,6 +2,19 @@
 
 ## Windows Closure Execution Frontier
 
+**当前阻塞（2026-11-18）**：代码基线 `c9bb950` 的分进程映射检查完整通过 120 项，
+但最新原生 B5 为 11 passed / 1 failed，不能关闭 Windows 功能验收。
+`CTRL_BREAK_EVENT` 非读取客户端用例在收尾时返回 3；HTTP close 已完成，但
+server close/join 超时，随后 SDK stop 未在 1.0s 内完成；诊断栈分别停在
+Waitress 输出临时文件 close 与 SQLite connection.close，尚不足以确定根因。
+停止结果报告 `runtime_store/state_lock` 未关闭及持久化收尾未确认。
+诊断栈和原始失败保存在 `evidence/windows-w2-resume.json` 的 `current_stop_blocker`。
+未归因为磁盘、杀软或外部负载，也未把较早的未知 watchdog 失败归为同一根因。
+本次相关进程已退出；未改 wheel、阶段预算、10s 总停止上限或持久化要求。
+需 owner 批准受限的 Windows 停止路径重规划，或在原约束内给出可靠修复和重新验收；
+不得以映射/浏览器用例通过替代失败的原生证明。最终全量 qualifier、FUNC.R、
+FUNC.ACCEPT、性能和发布均未完成。下方成功记录保留其原始源码范围。
+
 当前执行更新（2026-11-18）：owner 已批准 B5 拆成两项证明并要求继续。
 `B5-r1` 要求真实 AIB 聊天关闭/身份证明与同一安装版适配器、实际 serve 的
 active/idle/约 8 MiB 慢读及不读背压证明同时通过；原时限、配额和清理门槛不变。
@@ -110,9 +123,9 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] W1.REPLAN - W2=amend、W3=continue；基线适配要求已写入 steps/validation，五项 S0b 源码哈希未变，18 节点/20 依赖及严格 OpenSpec 检查通过。结构化回执在 `evidence/windows-w1-review.json`；W2.VA 仍须独立签核。
 - [x] W2.VA - 独立 Validation Engineer 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计；批准保留真实空闲 ProjectRunRuntime 的 S0b 测试基线适配。原始回执及授权澄清见 `evidence/windows-w2-validation.md`，无新增 owner 决策阻塞。
 - [x] W2.HOST - 生命周期实现、原生证明夹具、迁移及原生验收工具已完成定向集成验证；恢复后的 143 项回归、4 项原生故障复测及实际边界/退役 gate 通过。见 `evidence/windows-w2-resume.json`。原生冻结版本执行与独立签核仍属后续节点。
-- [x] W2.CERTIFY - `3223191` 原生 56 项、B1/B4/B5 语义回执及真实汇总消费通过；70 项一致性按未变依赖范围复用。不含性能 KPI。
-- [x] W2.R - `3223191` 整批 92 路径独立复核达到 1/1 clean pass；W2-P1-1 已以 RED/GREEN 和真实回执消费关闭。
-- [x] W2.REPLAN - 独立结论 continue；W3 首轮冻结/迁移成功，后续测试入口修复及最终资格输入须按上方检查点再冻结。
+- [ ] W2.CERTIFY - 已重开：历史 `3223191` 原生 56 项及后续成功记录保留；当前 `c9bb950` 原生 I/O 收尾失败，须解决后重新签核。
+- [ ] W2.R - 已重开：历史 `3223191` 92 路径 1/1 clean pass 与已关闭 W2-P1-1 不变；当前停止路径阻塞需新的完整有效原生证据及复核。
+- [ ] W2.REPLAN - 已重开：此前 continue 仅适用于当时证据；现等待受限 Windows 停止路径设计决定，不自行改预算或 wheel。
 - [ ] W3.FREEZE - 固定双方提交、wheel、依赖、fixture 与环境指纹。
 - [ ] W3.REHEARSE - 在合成状态副本上完成新旧版本切换及回滚。
 - [ ] W3.JOIN - 完成最终联合业务验收和必需的全量门禁。

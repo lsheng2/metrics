@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "date": "2026-11-18",
-  "status": "implementation-integrated-native-certification-pending",
+  "status": "blocked-native-stop-owner-replan-required",
   "baseline_head": "4192656560b8c945422ea30649708c37388c2b04",
   "storage": {
     "owner_direction": "Continue using D after owner freed space",
@@ -98,6 +98,58 @@
       "command": "openspec validate embed-ai-base-runtime-in-process --strict --no-interactive",
       "result": "PASS"
     }
+  },
+  "current_stop_blocker": {
+    "date": "2026-11-18",
+    "source_commit": "c9bb9508ad04e8c4b7c139bccfe8fa3e151a0992",
+    "run_id": "2f2f5391-9102-4255-a0d7-aba8aa6dc8a4",
+    "case": "test_non_reader_cannot_block_bounded_normal_exit[CTRL_BREAK_EVENT]",
+    "native_b5_result": {"passed": 11, "failed": 1},
+    "exit_code": 3,
+    "parent_forced_cleanup": false,
+    "http_close_completed": true,
+    "host_cleanup_errors": ["server_close_failed", "server_thread_alive"],
+    "runtime_stop": {
+      "completed": false,
+      "timed_out": true,
+      "persistent_state_flushed": false,
+      "unclosed_resources": ["runtime_store", "state_lock"],
+      "elapsed_seconds": 1.012677700000495
+    },
+    "observed_blocking_stacks": [
+      "Waitress channel output buffer -> tempfile.close",
+      "RuntimeStore.close_until -> sqlite connection.close"
+    ],
+    "cause_not_established": [
+      "Disk latency, antivirus and external load were not measured or attributed",
+      "The earlier pre-reboot watchdog incident is not retroactively explained",
+      "Unconfirmed persistence completion is not a demonstrated data-loss finding"
+    ],
+    "evidence": [
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/conformance-runs/2f2f5391-9102-4255-a0d7-aba8aa6dc8a4/logs/native-b5.stdout.txt",
+        "sha256": "27b2111d4fe8d35efb9b764998c332c42950fa87936c9e37255db2f79661f0b8"
+      },
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/conformance-runs/2f2f5391-9102-4255-a0d7-aba8aa6dc8a4/junit/b5.xml",
+        "sha256": "30adb8ec7f0c9f2915de6d7336c553c3f9bff0fe015bf00a6ffee8367e28cfeb"
+      },
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/conformance-runs/2f2f5391-9102-4255-a0d7-aba8aa6dc8a4/artifacts/b5/test_non_reader_cannot_block_b1/serve.log",
+        "sha256": "57f12f49b94172b339bbd9452bf4f36badca2624f166f6812c3e97d5cff395e3"
+      }
+    ],
+    "positive_evidence_not_substituted_for_native_acceptance": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/mapped-proof-runs/d089cf8a-ead6-4693-998f-f6e78021565a/proof.json",
+      "sha256": "08816bf03649726e09a3f983edac8ff777c1da9c0c320463d712cc1b9f35f91b",
+      "passed": 120
+    },
+    "owned_process_audit": "No remaining process command line matched this native run or the mapped-proof run after completion",
+    "budgets_and_wheel_changed": false,
+    "blocked_gates": ["W2.CERTIFY", "W2.R", "W2.REPLAN", "W3.JOIN", "FUNC.R", "FUNC.ACCEPT"],
+    "owner_decision": "Approve a bounded Windows shutdown design replan before changing the frozen SDK wheel or lifecycle budgets; preserve the outer 10-second stop and persistence requirements",
+    "docs_impact": "none",
+    "docs_impact_reason": "Evidence-only checkpoint reopens acceptance gates; no runtime behavior, API, configuration or operator procedure is changed, and no functional completion is claimed"
   },
   "test_counts_overlap": true
 }
