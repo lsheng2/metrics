@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "date": "2026-11-18",
-  "status": "blocked-native-stop-owner-replan-required",
+  "status": "native-stop-root-cause-investigation",
   "baseline_head": "4192656560b8c945422ea30649708c37388c2b04",
   "storage": {
     "owner_direction": "Continue using D after owner freed space",
@@ -147,7 +147,9 @@
     "owned_process_audit": "No remaining process command line matched this native run or the mapped-proof run after completion",
     "budgets_and_wheel_changed": false,
     "blocked_gates": ["W2.CERTIFY", "W2.R", "W2.REPLAN", "W3.JOIN", "FUNC.R", "FUNC.ACCEPT"],
-    "owner_decision": "Approve a bounded Windows shutdown design replan before changing the frozen SDK wheel or lifecycle budgets; preserve the outer 10-second stop and persistence requirements",
+    "previous_owner_request": "Approve a bounded Windows shutdown design replan before changing the frozen SDK wheel or lifecycle budgets; preserve the outer 10-second stop and persistence requirements",
+    "owner_decision": "Investigate the true root cause first, assess observed latency next, and decide KPI changes last; time-budget replan approval is not a prerequisite for diagnosis",
+    "followup_diagnostics": "windows-root-cause-diagnostics.md",
     "docs_impact": "none",
     "docs_impact_reason": "Evidence-only checkpoint reopens acceptance gates; no runtime behavior, API, configuration or operator procedure is changed, and no functional completion is claimed"
   },
