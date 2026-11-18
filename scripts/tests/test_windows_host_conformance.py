@@ -183,7 +183,7 @@ def _signals(root: Path) -> list[Path]:
     for trigger in TRIGGERS:
         path = _write_json(root / f"normal-{trigger}" / "signal.json", {
             "trigger": trigger, "phase": "normal", "returncode": 0, "elapsed": 0.3,
-            "forced_cleanup": False, "descendant_exit_codes": {"456": 0},
+            "forced_cleanup": False, "descendants": [[456, 1.0]], "descendant_exit_codes": {"456": 0},
         })
         paths.append(path)
         path.with_name("serve.log").write_text(
@@ -192,13 +192,15 @@ def _signals(root: Path) -> list[Path]:
         for phase in ("drain", "flush"):
             path = _write_json(root / f"{phase}-{trigger}" / "signal.json", {
                 "trigger": trigger, "phase": phase, "returncode": 130, "elapsed": 0.3,
-                "forced_cleanup": False, "descendant_exit_codes": {"456": 130}, "event": {"sent": True},
+                "forced_cleanup": False, "descendants": [[456, 1.0]],
+                "descendant_exit_codes": {"456": 130}, "event": {"sent": True},
             })
             paths.append(path)
             path.with_name("serve.log").write_text("serve forced exit.\n", encoding="utf-8")
     path = _write_json(root / "final-stop-file" / "signal.json", {
         "trigger": "stop-file", "phase": "final", "returncode": 130, "elapsed": 0.3,
-        "forced_cleanup": False, "descendant_exit_codes": {"456": 130}, "event": {"sent": True},
+        "forced_cleanup": False, "descendants": [[456, 1.0]],
+        "descendant_exit_codes": {"456": 130}, "event": {"sent": True},
     })
     paths.append(path)
     path.with_name("serve.log").write_text("serve forced exit.\n", encoding="utf-8")

@@ -6,7 +6,9 @@ from pathlib import Path
 from uuid import UUID
 
 from scripts.validation.project_full_stack_support import read_json
-from scripts.validation.windows_host_conformance_records import require_matching_server_log, server_log
+from scripts.validation.windows_host_conformance_records import (
+    require_matching_server_log, require_terminal_exits, server_log, validate_descendant_exits,
+)
 from scripts.validation.windows_host_conformance_contract import (
     B1_KEY, B4_KEY, B5_KEY, KIND, NATIVE_KEYS, TRIGGERS, NATIVE_BREAKS, LIMITS,
     EXPECTED_JUNIT_CASES, BASE_ARGS, LANE_TARGETS,
@@ -124,8 +126,9 @@ def _process(path: Path, request: dict, trigger: str) -> dict:
     descendants = value.get("descendants")
     if not isinstance(descendants, list) or set(map(str, exits)) != {str(row.get("pid")) for row in descendants}:
         raise QualificationError("native descendant inventory mismatch")
-    if any(code != 0 for code in exits.values()) or any(row.get("parent_pid") != value["pid"] for row in descendants):
-        raise QualificationError("native descendant process did not exit cleanly")
+    require_terminal_exits({str(row["pid"]) for row in descendants}, exits)
+    if any(row.get("parent_pid") != value["pid"] for row in descendants):
+        raise QualificationError("native descendant process identity mismatch")
     return value
 
 def _server(payload: dict) -> float:
@@ -295,9 +298,9 @@ def _validate_signals(refs: list[dict], root: Path) -> dict:
         expected = 0 if phase == "normal" else 130
         bound = 10 if phase == "normal" else 1
         if (trigger not in TRIGGERS or payload.get("returncode") != expected
-                or _num(payload.get("elapsed"), "signal elapsed") > bound or payload.get("forced_cleanup") is not False
-                or any(code != expected for code in (payload.get("descendant_exit_codes") or {}).values())):
+                or _num(payload.get("elapsed"), "signal elapsed") > bound or payload.get("forced_cleanup") is not False):
             raise QualificationError("native signal proof mismatch")
+        validate_descendant_exits(payload)
         if (trigger, phase) in matrix:
             raise QualificationError("duplicate native signal proof")
         if phase == "normal":
