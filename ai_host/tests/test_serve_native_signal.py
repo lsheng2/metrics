@@ -15,6 +15,29 @@ from scripts.service_lifecycle_engine.process_exit import observe_process_exit
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def phase_reached(marker, phase):
+    try:
+        return marker.read_text(encoding='utf-8') == phase
+    except FileNotFoundError:
+        return False
+
+
+def wait_until_ready(process, opener, port, log_file, marker, trigger, phase):
+    deadline = time.monotonic() + 40
+    while True:
+        assert process.poll() is None, log_file.read_text(encoding='utf-8')
+        # A lifetime stop can close the listener before the parent's first probe.
+        if trigger == 'lifetime' and phase != 'normal' and phase_reached(marker, phase):
+            return
+        try:
+            with opener.open(f'http://127.0.0.1:{port}/', timeout=1) as response:
+                assert response.status == 200
+                return
+        except (URLError, TimeoutError):
+            assert time.monotonic() < deadline
+            time.sleep(0.1)
+
+
 def send_native_break(process):
     script = """
 import json, sys, time
@@ -55,16 +78,7 @@ def native_stop_case(tmp_path, *, trigger, phase):
         )
         try:
             opener = build_opener(ProxyHandler({}))
-            deadline = time.monotonic() + 40
-            while True:
-                assert process.poll() is None, log_file.read_text(encoding='utf-8')
-                try:
-                    with opener.open(f'http://127.0.0.1:{port}/', timeout=1) as response:
-                        assert response.status == 200
-                        break
-                except (URLError, TimeoutError):
-                    assert time.monotonic() < deadline
-                    time.sleep(0.1)
+            wait_until_ready(process, opener, port, log_file, marker, trigger, phase)
             inventory = living_children()
             family = {process.pid}
             for _ in inventory:
@@ -82,11 +96,10 @@ def native_stop_case(tmp_path, *, trigger, phase):
             sent = None
             if phase != 'normal':
                 deadline = time.monotonic() + 8
-                while not marker.exists():
+                while not phase_reached(marker, phase):
                     assert process.poll() is None, log_file.read_text(encoding='utf-8')
                     assert time.monotonic() < deadline
                     time.sleep(0.02)
-                assert marker.read_text(encoding='utf-8') == phase
                 sent = send_native_break(process)
                 triggered_at = sent['sent_at']
             expected = 0 if phase == 'normal' else 130

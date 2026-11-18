@@ -41,6 +41,14 @@ Dashboard/Grafana 均退出 0、无 force。实际仓库静态 gate 的 JUnit �
 本次仅测试/验收文档改动；仍需修复后输入再冻结、全量模块门禁、精确的 114 条
 functional 证据绑定及 FUNC.R。W3 首轮回执保留，不把它冒充后续修订的最终回执。
 
+`edc59c3` 上四项联合用例已整体通过，核心合同 115 项、静态见证 46 项通过。
+正式原生刷新在 signal 组出现 14 passed / 2 failed，其它已执行组通过；
+未生成完整 PASS 回执。原始目录为 `conformance-runs/527ed8d4-bbaf-4b64-a3de-3e8d7a9686fc`。
+两个观测缺陷分别是 lifetime 已进入 flush 后仍等 HTTP，以及 phase 文件存在但内容未写完。
+保持旧逻辑抽取后，确定性 RED 为 5 failed / 5 passed；修复后 11 项 GREEN、
+原始两个 Windows 失败用例均通过。仅调整测试观测，所有实际停止/信号时限不变，
+正常 lifetime 和其它首个停止触发仍要求 HTTP 就绪；独立复核与最终刷新继续。
+
 此前阻塞记录：B5 12 项、20 次断开、70 项组合一致性和 103 项宿主回归已通过。
 原生验收器正在集成；补出的退出码/非有限时长反例已修复，但最新 61 项回归有
 59 passed、2 项在写合成夹具时发生 `OSError: [Errno 28] No space left on device`。

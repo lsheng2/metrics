@@ -70,6 +70,12 @@ Test entry preludes must leave callback-registering imports, including
 `unittest.mock`, until the shared serve bootstrap installs exit capture.
 Load such helpers inside `configure`/`prepare`; an unobserved callback is an
 exit failure, not a reason to relax the inventory.
+Native signal tests wait for the complete expected cleanup-phase value, not
+file existence. An implicit lifetime stop may already have closed HTTP before
+the parent observes readiness; only a live process in its expected controlled
+cleanup phase can satisfy that test's initial observation. Normal lifetime
+and explicit first-stop cases still require HTTP readiness. Stop/signal
+deadlines remain unchanged.
 
 The actual-repository pytest witnesses
 `scripts/tests/test_embedded_runtime_boundaries.py::test_current_repository_obeys_embedded_runtime_boundaries`
