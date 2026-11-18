@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 
 import pytest
 
@@ -6,7 +7,54 @@ from scripts.tests.test_windows_host_conformance import (
     _case, _command_record, _process, _server_records, _signals, _sha, _write_json,
 )
 from scripts.validation import windows_host_conformance_evidence as evidence
+from scripts.validation import windows_host_conformance_records as records
+from scripts.validation import windows_qualification_inputs as inputs
 from scripts.validation.windows_qualification_inputs import QualificationError
+
+
+@pytest.mark.parametrize("field", [
+    "source", "candidate", "owned_root", "fixtures", "native_conformance",
+    "python.candidate", "python.environments.candidate", "acceptance_profile", "schema_version",
+])
+def test_native_producer_input_rejects_changed_execution_identity(tmp_path, monkeypatch, field):
+    case = _case(tmp_path, monkeypatch)
+    request = inputs.load_request(case["inputs"], case["output"], profile="functional")
+    producer = deepcopy(case["manifest"])
+    target = producer
+    parts = field.split(".")
+    for part in parts[:-1]:
+        target = target[part]
+    target[parts[-1]] = "changed"
+    _write_json(case["inputs"], producer)
+    reference = {"path": str(case["inputs"]), "sha256": _sha(case["inputs"])}
+    with pytest.raises(QualificationError, match="producer input"):
+        records.require_matching_producer_input(reference, request)
+
+
+def test_native_producer_input_keeps_candidate_binding_when_aggregate_adds_old_environments(tmp_path, monkeypatch):
+    case = _case(tmp_path, monkeypatch)
+    request = inputs.load_request(case["inputs"], case["output"], profile="functional")
+    request["python"]["environments"]["old_app"] = {"path": "not-a-candidate", "sha256": "old"}
+    reference = {"path": str(case["inputs"]), "sha256": _sha(case["inputs"])}
+    records.require_matching_producer_input(reference, request)
+
+
+@pytest.mark.parametrize("mutation", ["hash", "foreign_root", "missing_environment", "boolean_schema"])
+def test_native_producer_input_rejects_untrusted_reference(tmp_path, monkeypatch, mutation):
+    case = _case(tmp_path, monkeypatch)
+    request = inputs.load_request(case["inputs"], case["output"], profile="functional")
+    producer = deepcopy(case["manifest"])
+    path = case["inputs"]
+    if mutation == "foreign_root":
+        path = tmp_path / "foreign-input.json"
+    elif mutation == "missing_environment":
+        del producer["python"]["environments"]["candidate"]
+    elif mutation == "boolean_schema":
+        producer["schema_version"] = True
+    _write_json(path, producer)
+    reference = {"path": str(path), "sha256": "0" * 64 if mutation == "hash" else _sha(path)}
+    with pytest.raises(QualificationError, match="producer input"):
+        records.require_matching_producer_input(reference, request)
 
 
 @pytest.mark.parametrize("code,expected", [(1, 0), (1, 1), (0, 1), (False, 0)])

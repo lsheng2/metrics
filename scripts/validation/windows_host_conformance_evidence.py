@@ -7,7 +7,8 @@ from uuid import UUID
 
 from scripts.validation.project_full_stack_support import read_json
 from scripts.validation.windows_host_conformance_records import (
-    require_matching_server_log, require_terminal_exits, server_log, validate_descendant_exits,
+    require_matching_producer_input, require_matching_server_log,
+    require_terminal_exits, server_log, validate_descendant_exits,
 )
 from scripts.validation.windows_host_conformance_contract import (
     B1_KEY, B4_KEY, B5_KEY, KIND, NATIVE_KEYS, TRIGGERS, NATIVE_BREAKS, LIMITS,
@@ -333,10 +334,7 @@ def validate_result(receipt: dict, request: dict) -> dict:
             or type(receipt.get("schema_version")) is not int or receipt["schema_version"] != 1
             or receipt.get("scope") != "windows-functional-native"):
         raise QualificationError("native conformance receipt scope mismatch")
-    inputs_ref = receipt.get("inputs") or {}
-    if canonical(inputs_ref.get("path", ""), must_exist=True) != request["_paths"]["inputs"]:
-        raise QualificationError("native conformance input reference mismatch")
-    require_hash(request["_paths"]["inputs"], inputs_ref.get("sha256", ""), "native conformance inputs")
+    require_matching_producer_input(receipt.get("inputs"), request)
     validate_frozen_hashes(ROOT.resolve(), request["source"], request["fixtures"], (ROOT.resolve(), request["_paths"]["owned_root"]))
     if receipt.get("source_before") != {"commit": request["source"]["commit"], "status": ""}:
         raise QualificationError("native conformance source-before mismatch")

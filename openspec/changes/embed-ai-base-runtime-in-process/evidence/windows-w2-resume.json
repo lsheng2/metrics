@@ -67,5 +67,37 @@
     "W3 migration rehearsal or joint acceptance",
     "FUNC.ACCEPT, performance, Linux, other Apps or release"
   ],
+  "review_repair": {
+    "finding": "W2-P1-1",
+    "authority": "INV-6",
+    "status": "focused-validation-passed-refreeze-pending",
+    "production_runtime_changed": false,
+    "refreeze_actions": [
+      {
+        "action": "Resolve and hash the immutable producer input, then compare execution bindings with the aggregate input",
+        "reason": "Requiring one input file creates a cycle when aggregate inputs contain hashes of already-generated receipts"
+      }
+    ],
+    "updated_artifacts": [
+      "scripts/validation/windows_host_conformance_records.py",
+      "scripts/validation/windows_host_conformance_evidence.py",
+      "scripts/tests/test_windows_host_conformance.py",
+      "scripts/tests/test_windows_host_conformance_records.py",
+      "docs/development/reporting-delivery.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-steps.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md"
+    ],
+    "red_evidence": "D:/AIGC/artifacts/mdb2-windows-20261117/aggregate-binding-red1.xml",
+    "green_evidence": "D:/AIGC/artifacts/mdb2-windows-20261117/aggregate-binding-green2.xml",
+    "green_tests": 124,
+    "rerun_gates": [
+      "W2.CERTIFY",
+      "W2.R"
+    ],
+    "post_refreeze_preflight_result": {
+      "command": "openspec validate embed-ai-base-runtime-in-process --strict --no-interactive",
+      "result": "PASS"
+    }
+  },
   "test_counts_overlap": true
 }

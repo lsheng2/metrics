@@ -52,6 +52,11 @@ It requires a clean source commit, the B5-r1 amendment path/hash and
 before and after execution. Its `windows-host-conformance` receipt validates
 the functional B1/B4/B5 keys, including actual commands, exact test inventories
 and stream/process outcomes. A plain JUnit cannot replace that receipt.
+Producer and aggregate input files are separate immutable documents. The native
+checker resolves and hashes the receipt's producer input, then requires matching
+source, candidate, fixture, owner root, amendment and candidate interpreter/
+environment bindings. The aggregate may add receipt references and historical
+interpreter roles; neither can replace the selected candidate binding.
 `--phase performance` remains deferred. Command availability is not evidence
 that W2.CERTIFY or final joint acceptance has passed.
 

@@ -428,6 +428,13 @@ as an archive-data failure or silently modify preserved business bytes.
 3. For each scenario retain raw samples, terminal event/client observation,
    server process exit and ownership cleanup. A passed command without the
    semantic payload or missing sample is a failure.
+   Producer and aggregate manifests are separate immutable files: the latter
+   adds hashes of already-produced receipts. Resolve/hash each receipt's own
+   producer input and compare execution bindings, not input filenames. Native
+   source, candidate, fixtures, owner root, amendment and candidate Python/
+   environment must match. Extra old-environment roles belong to migration;
+   they cannot substitute for the candidate. Exercise this producer-to-consumer
+   boundary with a real receipt before W3, and reject changed bindings.
 4. On failure preserve the run, return to the owning W2.HOST test or W1 launcher
    test, repair the class, and requalify affected scenarios. No threshold changes.
 5. Only after all mandatory Windows functional rows pass may W2.R accept the

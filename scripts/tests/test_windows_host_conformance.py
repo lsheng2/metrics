@@ -516,7 +516,6 @@ def test_qualifier_accepts_owned_native_conformance_receipt_for_b5_key(tmp_path,
     from scripts.validation import windows_qualification_evidence as qualifier_evidence
 
     case = _case(tmp_path, monkeypatch)
-    request = input_validator.load_request(case["inputs"], case["output"], profile="functional")
     receipt, _ = _valid_receipt(case)
     receipt_path = _write_json(case["owned"] / "native-receipt.json", receipt)
     binding = {
@@ -526,6 +525,10 @@ def test_qualifier_accepts_owned_native_conformance_receipt_for_b5_key(tmp_path,
         "fixture_vector_sha256": case["manifest"]["fixtures"]["fixture_vector_sha256"],
         "covers": ["clause:10.4:B5-stream-stop:functional"], "fresh": True,
     }
+    aggregate = deepcopy(case["manifest"])
+    aggregate["checks"].setdefault("evidence_bindings", {})["clause:10.4:B5-stream-stop:functional"] = binding
+    aggregate_path = _write_json(case["owned"] / "aggregate-inputs.json", aggregate)
+    request = input_validator.load_request(aggregate_path, case["output"], profile="functional")
     result = qualifier_evidence.validate_binding(
         "clause:10.4:B5-stream-stop:functional", binding, request, (case["root"], case["owned"]),
     )

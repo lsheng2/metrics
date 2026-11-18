@@ -1,8 +1,35 @@
 """Read native child logs without substituting a different run's output."""
 import json
 
+from scripts.validation.project_full_stack_support import read_json
 from scripts.validation import windows_qualification_inputs as inputs
 from scripts.validation.windows_qualification_inputs import QualificationError
+
+
+def require_matching_producer_input(reference, request):
+    if not isinstance(reference, dict):
+        raise QualificationError("native conformance producer input reference is missing")
+    path = inputs.canonical(reference.get("path", ""), must_exist=True)
+    roots = (inputs.canonical(request["source"]["repository"]), request["_paths"]["owned_root"])
+    if not inputs.path_in_allowed_roots(path, roots):
+        raise QualificationError("native conformance producer input is outside allowed roots")
+    inputs.require_hash(path, reference.get("sha256", ""), "native conformance producer input")
+    producer = read_json(path)
+    if (not isinstance(producer, dict) or type(producer.get("schema_version")) is not int
+            or producer["schema_version"] != 1 or producer.get("acceptance_profile") != "functional"):
+        raise QualificationError("native conformance producer input schema or profile mismatch")
+    # Producer inputs predate receipts; aggregate inputs bind those receipt hashes.
+    for key in ("source", "candidate", "owned_root", "fixtures", "native_conformance"):
+        if key not in producer or producer[key] != request.get(key):
+            raise QualificationError(f"native conformance producer input differs: {key}")
+    python = producer.get("python")
+    if not isinstance(python, dict) or python.get("candidate") != request["python"]["candidate"]:
+        raise QualificationError("native conformance producer input differs: candidate interpreter")
+    environments = python.get("environments")
+    expected = request["python"].get("environments", {}).get("candidate")
+    if (not isinstance(environments, dict) or not environments.get("candidate")
+            or environments["candidate"] != expected):
+        raise QualificationError("native conformance producer input differs: candidate environment")
 
 
 def server_log(reference, root, case_directory):
