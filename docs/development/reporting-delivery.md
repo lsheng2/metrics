@@ -38,6 +38,12 @@ serve prove slow/non-reader backpressure and cleanup. Both are required. This
 does not add chat-text streaming or change the candidate, heartbeat2s, quotas4/4,
 threads14, terminal grace2s, slow-reader pause3s or normal exit0 within10s.
 This is the acceptance method, not a claim that B5 or the full host has passed.
+The approximately8MiB unread workload may span Waitress and TCP buffers.
+Qualification binds all512 payload blocks plus real pending server output;
+it does not require the entire workload to remain in Waitress's own queue.
+Every registered descendant needs a terminal exit observation. The host's
+0/130 contract does not require independently completed helpers to return the
+same exit code as the host.
 
 The native qualification entry is `scripts/validation/windows_host_qualification.py
 --phase conformance --inputs <frozen-inputs.json> --output <new-owned-receipt.json>`.

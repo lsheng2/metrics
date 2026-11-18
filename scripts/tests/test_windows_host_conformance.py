@@ -388,6 +388,17 @@ def _mutate_receipt(receipt, mutation, load):
         load(path, json_value=False)
         path.write_text('{"event":"different-run"}\n', encoding="utf-8")
         ref["sha256"] = _sha(path)
+    elif mutation in {"no_socket_backlog", "never_workload"}:
+        index = len(TRIGGERS) if mutation == "no_socket_backlog" else 2 * len(TRIGGERS)
+        ref = receipt["artifacts"]["b5"][index]["streams"]
+        path = Path(ref["path"])
+        payload = load(path)
+        if mutation == "no_socket_backlog":
+            payload["before"]["pending_bytes"] = 0
+        else:
+            payload["before"]["counts"].pop("backlog_blocks")
+        _write_json(path, payload)
+        ref["sha256"] = _sha(path)
     elif mutation == "missing_chat":
         receipt["artifacts"]["b5"] = receipt["artifacts"]["b5"][1:]
     elif mutation == "command_replay":
@@ -455,7 +466,7 @@ def test_native_receipt_rejects_missing_or_weakened_semantics(tmp_path, monkeypa
     for mutation in (
         "missing_chat", "timing", "identity", "process", "backpressure", "server_cleanup",
         "disconnect_cycle", "command_replay", "junit_skip", "nan_terminal",
-        "scope", "schema", "raw_log",
+        "scope", "schema", "raw_log", "no_socket_backlog", "never_workload",
     ):
         with _changed_receipt(original, mutation) as receipt:
             with pytest.raises(QualificationError):
@@ -463,6 +474,22 @@ def test_native_receipt_rejects_missing_or_weakened_semantics(tmp_path, monkeypa
         rejected.append(mutation)
     _write_json(tmp_path / "rejected-mutations.json", rejected)
     assert native_evidence.validate_result(original, request)["kind"] == "windows-host-conformance"
+
+
+def test_unread_workload_can_span_waitress_and_tcp_buffers(tmp_path, monkeypatch):
+    from scripts.validation import windows_host_conformance_evidence as native_evidence
+
+    case = _case(tmp_path, monkeypatch)
+    request = input_validator.load_request(case["inputs"], case["output"], profile="functional")
+    receipt, _ = _valid_receipt(case)
+    for index in (len(TRIGGERS), 2 * len(TRIGGERS)):
+        ref = receipt["artifacts"]["b5"][index]["streams"]
+        path = Path(ref["path"])
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["before"]["pending_bytes"] = 7_978_226
+        _write_json(path, payload)
+        ref["sha256"] = _sha(path)
+    assert native_evidence.validate_result(receipt, request)["kind"] == "windows-host-conformance"
 
 
 def test_qualifier_rejects_generic_junit_for_native_b5_key(tmp_path, monkeypatch):

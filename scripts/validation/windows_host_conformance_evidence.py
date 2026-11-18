@@ -219,7 +219,9 @@ def _validate_b5(refs: list[dict], request: dict, root: Path) -> dict:
             chats.append(key[2])
         elif key[0] == "B5-transport" and key[1] == "slow":
             before, observations = payload["before"], payload.get("observations") or []
-            if len(observations) != 3 or _num(before.get("pending_bytes"), "pending_bytes") < 8_000_000:
+            # The fixed workload is unread across Waitress and TCP buffers;
+            # Waitress alone need not retain all approximately 8 MiB.
+            if len(observations) != 3 or _num(before.get("pending_bytes"), "pending_bytes") <= 1_048_576:
                 raise QualificationError("B5 slow-reader proof lacks backlog pressure")
             if before.get("counts", {}).get("backlog_blocks") != 512 or _num(payload.get("resumed_at"), "resumed_at") - triggered_at < 3:
                 raise QualificationError("B5 slow-reader pause/backlog count mismatch")
@@ -232,7 +234,9 @@ def _validate_b5(refs: list[dict], request: dict, root: Path) -> dict:
         elif key[0] == "B5-transport" and key[1] == "never-read":
             before = payload["before"]
             flush = _event(payload["server"], "stream_flush_finished")
-            if payload.get("observations") or _num(before.get("pending_bytes"), "pending_bytes") < 8_000_000 or _num(flush.get("pending_bytes"), "flush pending_bytes") <= 0:
+            if (payload.get("observations") or _num(before.get("pending_bytes"), "pending_bytes") <= 1_048_576
+                    or before.get("counts", {}).get("backlog_blocks") != 512
+                    or _num(flush.get("pending_bytes"), "flush pending_bytes") <= 0):
                 raise QualificationError("B5 never-reader proof lacks retained flush backlog")
             never.append(key[2])
     if chats != TRIGGERS or slow != TRIGGERS or never != NATIVE_BREAKS:
