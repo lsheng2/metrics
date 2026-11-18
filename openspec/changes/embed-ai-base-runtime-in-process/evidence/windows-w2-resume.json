@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-18",
+  "status": "implementation-integrated-native-certification-pending",
+  "baseline_head": "4192656560b8c945422ea30649708c37388c2b04",
+  "storage": {
+    "owner_direction": "Continue using D after owner freed space",
+    "archive_or_deletion_performed": false,
+    "failed_run_preserved": "D:/AIGC/artifacts/mdb2-windows-20261117/nv-green1",
+    "resumed_run": "D:/AIGC/artifacts/mdb2-windows-20261117/nv-resume-r1",
+    "resumed_file_bytes": 127384558,
+    "fixture_change": "Restore mutated bytes and reuse one full fixture across negative cases; actual native B5 workload unchanged"
+  },
+  "validation": [
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-records-resume-r1.xml",
+      "sha256": "7259cc6e1bc726b8d8f16444a65bbcab91d08771a39d83f8350754b3aa1c0287",
+      "passed": 52,
+      "scope": "Previously disk-interrupted regression; all ten original rejection mutations retained in one isolated fixture"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-integration-r5.xml",
+      "sha256": "e11a67ddfb13b094265916bbf7bfed165ff885829f7977e9f9109d7e10ad9b6e",
+      "passed": 143,
+      "scope": "Native environment, semantic receipt, qualifier/profile, migration consumers and import/retirement checker tests; includes added schema/scope/raw-log rejection mutations"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-public-fault-r1.xml",
+      "sha256": "707de3f88cb829a036f43d23fe3f564704ad765c91f0484d851488b6f31fbdea",
+      "passed": 4,
+      "scope": "Native startup/rollback and ended/internal-fault proof after switching to the public AgentRuntime export"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/resume-gates-r2/boundaries.json",
+      "sha256": "3680b5e8fb341e684b91b986fccaf272067668f0a54ee3e4f90cc555b54b213d",
+      "checked_files": 1267,
+      "violations": 0
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/resume-gates-r2/retirement.json",
+      "sha256": "413f66bfa8adcae86a3de55ffc119bf88e6a357a781ee288ea5e068c38ed6e68",
+      "checked_files": 1045,
+      "violations": 0,
+      "scope": "Windows only; original Linux definition remains deferred"
+    }
+  ],
+  "environment": {
+    "package_count": 83,
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117/native-environment-probe-r1/environment.stdout.txt",
+    "sha256": "338385b5e2f07f20bd8f4d119db6b47d57a0f541a0683efc07678888bb0a32c7",
+    "result": "Exact match to frozen candidate environment",
+    "probe_program_sha256": "107e2ee25244e48ecff9da3d7cb410ed01f4893b0e0feccb078f929ea0b271d8",
+    "probe_program_unchanged_after_canonical_detector_reuse": true
+  },
+  "integration_fixes": [
+    "Reject nonzero or Boolean command exits and non-finite/negative HTTP-close durations",
+    "Bind before/after candidate environment and its actual probe commands",
+    "Retain the input-manifest digest from before native execution",
+    "Reject wrong receipt schema and non-functional scope",
+    "Bind B5/disconnect/signal child logs and process records; reject mixed runs",
+    "Share native lane and assertion inventory between driver and validator",
+    "Use the SDK public AgentRuntime export and the installer's existing retired-module detector registry; no checker relaxation"
+  ],
+  "not_claimed": [
+    "Frozen native CLI certification",
+    "Independent W2.R signoff",
+    "W3 migration rehearsal or joint acceptance",
+    "FUNC.ACCEPT, performance, Linux, other Apps or release"
+  ],
+  "test_counts_overlap": true
+}

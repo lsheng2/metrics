@@ -5,8 +5,11 @@ import sys
 import traceback
 
 
-def main(*, configure=None, prepare=None):
+def main(*, configure=None, prepare=None, diagnose_errors=True):
     root = Path(__file__).resolve().parents[2]
+    sys.path.insert(0, str(root))
+    from ai_host.exit_inventory import install_exit_capture
+    install_exit_capture()
     scope = runpy.run_path(str(root / 'scripts/validation/run_report_authoring_tests.py'))
     original_settings = scope['test_settings']
     regular_getaddrinfo = scope['guarded_getaddrinfo']
@@ -52,7 +55,8 @@ def main(*, configure=None, prepare=None):
                 traceback.print_exc()
                 raise
 
-        Command._run_bound_server = diagnosed_run
+        if diagnose_errors:
+            Command._run_bound_server = diagnosed_run
         execute_from_command_line(['manage.py', 'migrate', '--noinput', '--verbosity', '0'])
         if prepare is not None:
             prepare()

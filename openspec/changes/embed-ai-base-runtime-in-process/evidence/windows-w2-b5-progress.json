@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "status": "development-functional-proof",
+  "date": "2026-11-18",
+  "source_head": "4192656560b8c945422ea30649708c37388c2b04",
+  "source_state": "uncommitted W2 implementation; not a frozen qualification receipt",
+  "candidate": {
+    "version": "0.1.1.dev4",
+    "aib_commit": "d589ac8e6572a903edc3846e7d78195e85858868",
+    "wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+    "python": "D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r4/Scripts/python.exe"
+  },
+  "amendment": {
+    "id": "B5-r1",
+    "path": "evidence/windows-b5-owner-decision.md",
+    "sha256": "425d148d03533b8e995cd5ebedcc1155f0fdda745bf951fd699f48ecdfd8424b",
+    "owner_approved": true,
+    "original_census_and_task_digests": "unchanged"
+  },
+  "source_files": {
+    "ai_host/tests/serve_stream_entry.py": "705b64c8d0a85af6f53daca33830628137fb7b91549d7c70973e433f5b32eaca",
+    "ai_host/tests/native_stream_support.py": "d0b3de382c54fa1adef6c2edc366efbcd5782f64285beb26e4f8832c886c0620",
+    "ai_host/tests/test_serve_native_streams.py": "ac4c2f3270b666bfad7099f2a0b938956e18f833275c9b905a2fdaf2921b1b41",
+    "ai_host/tests/conformance_runtime_probe.py": "e7489e661b3c8c7e5347df6b45340917753b3c28915dabdc6010bf729770aa38",
+    "ai_host/tests/conformance_backpressure_cases.py": "0459655f15181ec73e1ef737e99b3ceca0f4e48b31d85f008e2c177761bc167b",
+    "ai_host/tests/serve_failure_entry.py": "f205e1285614c47a5f6b05dae5550354f744620bd7fd6cdda0f94dc546f7c690",
+    "ai_host/tests/test_serve_native_failure.py": "e48bf800af01d07ce3279303d24af214b74e0a1647b36d51b5702ec3e728185a",
+    "ai_host/tests/test_serve_native_disconnect.py": "b4e5cc9adacb72691c5eb50816d00c13b35834443f631a294420c4ed9c637455"
+  },
+  "b5": {
+    "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-b5-r3.xml",
+    "sha256": "131007dc522da3546b4193390f84ae76c86d6958f6eae82c69c9664cf51e614e",
+    "passed": 12,
+    "raw_root": "D:/AIGC/artifacts/mdb2-windows-20261117/b5-r3",
+    "target": "ai_host/tests/test_serve_native_streams.py",
+    "chat_triggers": ["stop-file", "SIGINT", "SIGTERM", "CTRL_BREAK_EVENT", "lifetime"],
+    "slow_reader_triggers": ["stop-file", "SIGINT", "SIGTERM", "CTRL_BREAK_EVENT", "lifetime"],
+    "never_reader_triggers": ["stop-file", "CTRL_BREAK_EVENT"],
+    "backlog_pending_bytes_before_stop": 8141716,
+    "generated_payload_bytes": 8345600,
+    "observed_exit_seconds_rounded": {
+      "chat_range": [0.17, 0.32],
+      "slow_reader_range": [3.20, 3.24],
+      "never_reader_range": [6.67, 6.87]
+    },
+    "cleanup": "all exit0, no emergency force, required terminal before EOF, child/listener/exit-inventory checks passed",
+    "failed_attempts_preserved": [
+      {
+        "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-b5-r1.xml",
+        "sha256": "67096f828d7bb8110bc3d686c1e2ea76632b16b3d1cae43fc67178340540271b",
+        "result": "1 passed, 2 fixture-observation failures: async_generator_asend lacks __qualname__"
+      }
+    ],
+    "focused_repair": {
+      "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-b5-r2.xml",
+      "sha256": "4b5fa64dd02afb06934559483c44e7d6db67b77507a0bc997f2144cc86f1fc61",
+      "result": "2 passed; superseded by full r3 matrix"
+    }
+  },
+  "bounded_queue": {
+    "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-backpressure-r1.xml",
+    "sha256": "26456ef194f97099d7a62c78d80aa7e8087196fc5b088736a3f7c907eda2479b",
+    "passed": 22,
+    "scope": "one explicit bounded-producer test plus 21 injected SDK assertions; not 22 new requirements",
+    "raw_root": "D:/AIGC/artifacts/mdb2-windows-20261117/bp-r1",
+    "target": "ai_host/tests/conformance_backpressure_cases.py",
+    "payload": "installed WSGI queue suspends producer at 16 blocks; consuming resumes production; close reclaims generator and both runtime/host stream ownership"
+  },
+  "internal_loop_fault": {
+    "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-internal-fault-r2.xml",
+    "sha256": "76e5dce3c281663af317582d660ea264485c4f03ecae8876ffc610a9a5aea937",
+    "passed": 4,
+    "target": "ai_host/tests/test_serve_native_failure.py",
+    "payload": "new internal loop.stop fault is distinct from public handle.stop; runtime_failed observed within1s, exit1, cleaned inventory, listener release and state-lock reopen"
+  },
+  "repeated_disconnect": {
+    "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-disconnect-r2.xml",
+    "sha256": "a5c4ddf8ae3868982c7728ea1c7dd3d09761f3ef4498dbf52423bbf71e1c79bd",
+    "passed": 1,
+    "target": "ai_host/tests/test_serve_native_disconnect.py",
+    "raw_root": "D:/AIGC/artifacts/mdb2-windows-20261117/disc-r2",
+    "cycles": 20,
+    "maximum_reclaim_seconds": 2.0379571999656036,
+    "payload": "each cycle returns stream slots to0 and tasks/threads to baseline; streams_done20; normal exit0, no force or remaining owned child"
+  },
+  "combined_conformance": {
+    "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-functional-conformance-r5.xml",
+    "sha256": "5750a6dfb3ffe257d5fda97da15e096e6e372def848c8222700663e91ae7a4b2",
+    "passed": 70,
+    "raw_root": "D:/AIGC/artifacts/mdb2-windows-20261117/cf-r5",
+    "targets": [
+      "ai_host/tests/conformance_host_cases.py",
+      "ai_host/tests/conformance_http_cases.py",
+      "ai_host/tests/conformance_order_cases.py",
+      "ai_host/tests/conformance_process_cases.py",
+      "ai_host/tests/conformance_runtime_cases.py",
+      "ai_host/tests/conformance_backpressure_cases.py",
+      "ai_host/tests/conformance_recovery_cases.py"
+    ],
+    "scope": "49 concrete Metrics cases and 21 SDK-injected assertions; ASGI non-applicability is not counted or declared applicable"
+  },
+  "host_regression": {
+    "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-host-regression-r6.xml",
+    "sha256": "835b2605a526332544e7b6def9afc9044beb4a731aace2d8916b46bd7b4e4905",
+    "passed": 103,
+    "scope": "explicit host settings/serve/lifecycle/exit/inflight/project-runtime tests, including isolated Django checks"
+  },
+  "native_validator_integration": {
+    "state": "storage-blocker-cleared-see-windows-w2-resume.json",
+    "red": {
+      "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-records-red1.xml",
+      "sha256": "25b62ad06a6c72aa5e1c711080db7d1065941700b66ce6a6c0066d864d69afdc",
+      "result": "6 expected failures reproduced nonzero/chained-comparison and invalid-duration acceptance"
+    },
+    "disk_failure_regression": {
+      "junit": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-records-green1.xml",
+      "sha256": "812f53370b22e7ef399520d88a8d1fe7488aa86f84b1e357223d50670a92c92c",
+      "result": "59 passed, 2 failed; NOT a green result despite the filename",
+      "failure": "OSError: [Errno 28] No space left on device while writing repeated synthetic backlog fixtures"
+    },
+    "owned_temporary_directory": "D:/AIGC/artifacts/mdb2-windows-20261117/nv-green1",
+    "observed_file_bytes": 456928257,
+    "proposed_next_action": "Owner freed space and directed continued D usage; no archive/deletion was performed. Resumed results are in windows-w2-resume.json",
+    "cleanup_or_deletion_performed": false,
+    "remaining_work_at_the_blocker": [
+      "complete environment binding and semantic integration review",
+      "formal frozen-source native CLI positive run",
+      "independent W2 review and W3 rehearsal/joint acceptance"
+    ]
+  },
+  "execution": {
+    "cwd": "C:/Users/lsheng2/orca/workspaces/scrum_dashboard/moonfish",
+    "runner": "-I scripts/validation/run_report_authoring_tests.py",
+    "common_args": ["-q", "--tb=short", "-p", "no:cacheprovider", "-o", "asyncio_default_fixture_loop_scope=function"],
+    "bounded_queue_extra_args": ["-p", "ai_base_runtime.testkit.pytest_plugin", "-p", "ai_host.tests.conformance_fixtures", "-o", "ai_host_modes=blocking_wsgi"],
+    "counts_are_not_additive_across_overlapping_runs": true
+  },
+  "not_claimed": [
+    "W2.CERTIFY or independent W2.R",
+    "frozen native semantic receipt or final migration CLI positive qualification",
+    "W3 joint acceptance or FUNC.ACCEPT",
+    "performance qualification, Linux, other Apps or release authority"
+  ]
+}

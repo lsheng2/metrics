@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "kind": "migration-cli-implementation-progress-not-final-acceptance",
+  "dashboard_baseline_commit": "4192656560b8c945422ea30649708c37388c2b04",
+  "source_kind": "working-tree",
+  "source_files": [
+    {
+      "sha256": "3391e3c4d8782f8863d550bdf811fd7cade1df4ce20170c6b6cc18d8e1b46e93",
+      "path": "scripts/validation/windows_migration_admission.py"
+    },
+    {
+      "sha256": "f769019a21950d90a207bdf617b35ef24a1efdd7e17f10703e11d8d3654b0cab",
+      "path": "scripts/validation/windows_migration_driver.py"
+    },
+    {
+      "sha256": "a1c8c93bb12639ff46dd4994f0e42e860cac3447be3f4c5f02fab3f769b360e2",
+      "path": "scripts/validation/windows_migration_evidence.py"
+    },
+    {
+      "sha256": "a288fb52238d580815907ebf784c0bfaac1231e3c852162359d9b5774fd2139d",
+      "path": "scripts/validation/windows_migration_inventory.py"
+    },
+    {
+      "sha256": "d5d11d7ddff55d3eacb6c87a1d7cc6e432f416660da951f864fc19e5108528da",
+      "path": "scripts/validation/windows_migration_rehearsal.py"
+    },
+    {
+      "sha256": "5b9708eabd75b03a9cc3638d4a2dde6a5ad7aef105b69b16933b5cf81018cd78",
+      "path": "scripts/validation/qualify_ai_runtime.py"
+    },
+    {
+      "sha256": "afe0b41abdd063a1e1e1dfc3f8d8f2979134b2e1fa0debbfb104573538a33286",
+      "path": "scripts/validation/windows_qualification_evidence.py"
+    },
+    {
+      "sha256": "cd238ff6ab46d8c63998952f21114c093848276cc45bab2a1633bb3131538583",
+      "path": "scripts/tests/test_windows_migration_admission.py"
+    },
+    {
+      "sha256": "474e593b1ced1b286a9916c62dcce47083b21e67698ebb9f71b50766528a9fa8",
+      "path": "scripts/tests/test_windows_migration_driver.py"
+    },
+    {
+      "sha256": "f01f8381188f85565e5b51175a76eafb1030edb9ca139a387c65843a49ed71aa",
+      "path": "scripts/tests/test_windows_migration_rehearsal.py"
+    }
+  ],
+  "evidence": [
+    {
+      "sha256": "9157616277b770d3399d00d9e6535a5d4bf1141b4a275236504a9c29926fc526",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-migration-cli-focused-r4.xml"
+    },
+    {
+      "sha256": "3971dd46a1a65220d0203f9043555d7e5cc1de4e4d16660c338e1e8d5fb79c33",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-runs/c35ce404-b3e9-4943-91cc-e2630aac9626/development-receipt.json"
+    },
+    {
+      "sha256": "2a38549217d395a54204f2789304b3d0fa62cbfaebd0ca905aa65df99f95ef8c",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-cli-negative/246a7cb6-df9d-455f-a46a-acc49ab1e089/negative-receipt.json"
+    },
+    {
+      "sha256": "00b92061de6e8abbe19944e80be12289bc56c5fab36a553f79f592a2345abf91",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/inputs/cli-environments-20261118/0cbc18fa-291c-4b3b-9753-588f74a2e968/environment-references.json"
+    },
+    {
+      "sha256": "1b1d0a7b1158d2ee98e7151daa37ab8456c0ee9101735a7aea3c8227db368fb6",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/inputs/cli-environments-20261118/0cbc18fa-291c-4b3b-9753-588f74a2e968/old-base-pip-diagnostic.json"
+    }
+  ],
+  "focused_tests_passed": 133,
+  "real_cli_dirty_source_refused": true,
+  "real_development_new_host_flow": "session create/read/reopen across restart, retained report read, RUN_BUSY, and semantic normal-stop verification passed",
+  "environment_policy": "Candidate clean-install and no-legacy remain mandatory; historical identities include selected/shadowed distributions and original dependency diagnostics, not general legacy-provider qualification",
+  "retained_failure": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-cli-development/0e9ab7d2-b8eb-4d75-9488-21137edea3f2/development-receipt.json",
+  "failure_diagnosis": "Extra development-only nesting produced a 264-character Git HEAD path; the formal migration-runs layout produced 253 and passed. No business code or preserved bytes changed to pass.",
+  "remaining": [
+    "Frozen full CLI positive run and independent W2.R are not yet complete",
+    "Native conformance driver plus five remaining functional proof groups",
+    "Performance phase NOT_RUN"
+  ]
+}

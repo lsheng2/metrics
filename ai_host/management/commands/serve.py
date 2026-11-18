@@ -1,7 +1,6 @@
-import errno
+import ipaddress
 import json
 import math
-import os
 import signal
 import socket
 import sys
@@ -9,7 +8,9 @@ import threading
 import time
 from pathlib import Path
 
+from django.conf import settings as django_settings
 from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
 from django.core.management.base import SystemCheckError
 from project_management.app.api.task_runtime import LocalRuntimeCleanupError
 
@@ -25,34 +26,51 @@ class Command(BaseCommand):
         parser.add_argument('--lifetime-seconds', type=float)
 
     def handle(self, *args, **options):
+        self._stop_event = threading.Event()
+        self._startup_failure_code = None
+        self._install_signal_handlers(self._stop_event)
         try:
             options = dict(options)
             options['stop_file'] = self._stop_file(options.get('stop_file'))
             options['lifetime_seconds'] = self._lifetime(options.get('lifetime_seconds'))
-        except ValueError as error:
-            raise SystemExit(str(error)) from None
+        except ValueError:
+            self._exit(1, message='serve startup failed (configuration_invalid).')
+            return
         try:
             listener = self._bind_listener(options['host'], options['port'])
         except OSError:
-            self.stdout.write('serve bind failed.')
-            self._exit(1)
+            self._exit(1, message='serve bind failed.')
+            return
+        except CommandError:
+            self._exit(1, message='serve startup failed (configuration_invalid).')
             return
         try:
             code = self._run_bound_server(listener, options)
         except SystemCheckError:
             listener.close()
-            self.stdout.write('serve startup failed (system_check_failed).')
-            self._exit(1)
+            self._exit(1, message='serve startup failed (system_check_failed).')
             return
         except Exception as error:
             listener.close()
-            self.stdout.write(f'serve startup failed ({self._error_code(error)}).')
-            self._exit(3 if isinstance(error, LocalRuntimeCleanupError) else 1)
+            self._exit(
+                3 if isinstance(error, LocalRuntimeCleanupError) else 1,
+                message=f'serve startup failed ({self._startup_failure_code or self._error_code(error)}).',
+            )
             return
         self._exit(code)
 
     def _bind_listener(self, host, port):
-        family = socket.AF_INET6 if host == '::1' else socket.AF_INET
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError:
+            address = None
+        loopback = host == 'localhost' or (address is not None and address.is_loopback)
+        if not loopback:
+            if getattr(django_settings, 'AI_HOST_ALLOW_ANONYMOUS_APPROVAL', False):
+                raise CommandError('Non-loopback binding with anonymous approval is prohibited.')
+            if django_settings.METRICS_BASIC_AUTH_USERS is None:
+                self.stdout.write(json.dumps({'event': 'serve_anonymous_network_bind', 'host': host}))
+        family = socket.AF_INET6 if address is not None and address.version == 6 else socket.AF_INET
         listener = socket.socket(family, socket.SOCK_STREAM)
         try:
             if sys.platform.startswith('win') and hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
@@ -67,6 +85,8 @@ class Command(BaseCommand):
             raise
 
     def _run_bound_server(self, listener, options):
+        from ai_host.state import begin_start
+        begin_start()
         self.check()
 
         from django.core.handlers.wsgi import WSGIHandler
@@ -76,7 +96,8 @@ class Command(BaseCommand):
 
         from ai_base_runtime import start_blocking
         from ai_host.host import MetricsHost
-        from ai_host.lifecycle import stop_owned_resources
+        from ai_host.lifecycle import run_http_server, stop_owned_resources
+        from ai_host.serve_control import start_stop_monitor
         from ai_host.package import METRICS_APP
         from ai_host.principals import task_principal
         from ai_host.task_runs import RuntimeTaskRunPort, admission_metadata_from_host_config
@@ -86,19 +107,19 @@ class Command(BaseCommand):
             body_limit_for_waitress,
             build_runtime_settings,
         )
-        from ai_host.state import attach, begin_stop, detach
+        from ai_host.state import attach, begin_stop, detach, record_startup_failure, record_stop
         from ai_host.wiring import build_wsgi_application
         from project_management.app.domain.run_contracts import RunError
         from project_management.runtime import build_project_runtime, clear_project_runtime, install_project_runtime
 
-        stop_event = threading.Event()
+        stop_event = getattr(self, '_stop_event', None) or threading.Event()
         stop_file = options.get('stop_file')
         lifetime_seconds = options.get('lifetime_seconds')
         deadline = None if lifetime_seconds is None else time.monotonic() + lifetime_seconds
         runtime_settings = build_runtime_settings()
         host = MetricsHost()
         host.config.state_dir.mkdir(parents=True, exist_ok=True)
-        max_request_body_size = body_limit_for_waitress((METRICS_APP,))
+        max_request_body_size = body_limit_for_waitress(runtime_settings, (METRICS_APP,))
         context = start_blocking(
             runtime_settings,
             host,
@@ -107,13 +128,16 @@ class Command(BaseCommand):
         )
         server = None
         server_thread = None
+        server_errors = []
+        app = None
         handle = None
         project_runtime = None
         installed_project_runtime = False
         outcome = None
-        old_handlers = {}
+        runtime_failure = None
         try:
-            old_handlers = self._install_signal_handlers(stop_event)
+            self._install_signal_handlers(stop_event)
+            start_stop_monitor(stop_event, stop_file, deadline)
             with context as handle:
                 attach(handle)
                 try:
@@ -147,21 +171,46 @@ class Command(BaseCommand):
                         channel_request_lookahead=1,
                         max_request_body_size=max_request_body_size,
                     )
-                    server_thread = threading.Thread(target=server.run, name='serve-http', daemon=False)
+                    server_thread = threading.Thread(
+                        target=run_http_server, args=(server, server_errors), name='serve-http', daemon=False,
+                    )
                     server_thread.start()
-                    self._wait_for_stop(stop_event, stop_file, deadline)
+                    runtime_failure = self._wait_for_stop(stop_event, stop_file, deadline, handle)
                 finally:
+                    stop_event.set()
+                    budget = self._begin_stop_budget()
                     begin_stop(handle)
                     outcome = stop_owned_resources(
                         handle=handle,
                         server=server,
                         server_thread=server_thread,
                         project_runtime=project_runtime if installed_project_runtime else None,
+                        budget=budget,
+                        requests=None if app is None else app.requests,
                     )
+                    self._write_stop_event(outcome.project_result)
+                    if installed_project_runtime and project_runtime is not None:
+                        clear_project_runtime(project_runtime)
+                        installed_project_runtime = False
+                    detach(handle)
             outcome = self._with_runtime_stop_result(outcome, handle.stop_result)
-            return outcome.exit_code
-        except BaseException:
+            if server_errors:
+                from dataclasses import replace
+                outcome = replace(
+                    outcome, exit_code=3, cleanup_errors=outcome.cleanup_errors + tuple(server_errors),
+                )
+            record_stop(outcome)
+            return outcome.exit_code or (1 if runtime_failure is not None else 0)
+        except BaseException as error:
+            self._startup_failure_code = self._error_code(error)
             failure = context.startup_failure
+            if outcome is not None and handle is not None:
+                outcome = self._with_runtime_stop_result(outcome, handle.stop_result)
+                record_stop(outcome)
+            record_startup_failure(
+                self._error_code(error),
+                failure.rollback_result if failure is not None else getattr(handle, 'stop_result', None),
+            )
             if failure is not None and not failure.rollback_result.completed:
                 raise LocalRuntimeCleanupError() from None
             if outcome is not None and handle is not None:
@@ -174,12 +223,18 @@ class Command(BaseCommand):
                 clear_project_runtime(project_runtime)
             if handle is not None:
                 detach(handle)
-            self._restore_signal_handlers(old_handlers)
-            if outcome is not None:
-                self._write_stop_event(outcome.project_result)
+            stop_event.set()
 
-    def _wait_for_stop(self, stop_event, stop_file, deadline):
+    def _wait_for_stop(self, stop_event, stop_file, deadline, handle):
         while not stop_event.is_set():
+            if handle.ended.is_set():
+                from ai_host.state import mark_failed
+                code = handle.end_code or 'runtime_not_running'
+                mark_failed(code)
+                self._runtime_failure_message = f'serve runtime failed ({code}).'
+                self.stdout.write(self._runtime_failure_message)
+                stop_event.set()
+                return code
             if stop_file is not None and stop_file.exists():
                 stop_event.set()
                 return
@@ -205,7 +260,8 @@ class Command(BaseCommand):
 
     def _with_runtime_stop_result(self, outcome, stop_result):
         if stop_result is not None and stop_result.completed:
-            return outcome
+            from dataclasses import replace
+            return replace(outcome, runtime_result=stop_result)
         from ai_host.lifecycle import StopOutcome
         errors = tuple(dict.fromkeys(outcome.cleanup_errors + ('runtime_stop_incomplete',)))
         return StopOutcome(
@@ -221,8 +277,8 @@ class Command(BaseCommand):
 
         def handler(signum, frame):
             if stop_event.is_set():
-                self.stdout.write('serve forced exit.')
-                self._exit(130)
+                from ai_host.serve_control import bounded_output_exit
+                bounded_output_exit(130, lambda: self._write_exit_line('serve forced exit.'))
             stop_event.set()
 
         for signum in self._signal_numbers():
@@ -233,12 +289,21 @@ class Command(BaseCommand):
                 continue
         return handlers
 
-    def _restore_signal_handlers(self, handlers):
-        for signum, handler in handlers.items():
-            try:
-                signal.signal(signum, handler)
-            except (OSError, ValueError):
-                continue
+    def _begin_stop_budget(self):
+        from ai_host.serve_control import StopBudget, start_watchdog
+
+        if getattr(self, '_stop_budget', None) is None:
+            self._stop_budget = StopBudget()
+            start_watchdog(
+                self._stop_budget,
+                write_output=lambda: self._write_exit_line('serve cleanup failed.'),
+            )
+        return self._stop_budget
+
+    def _write_exit_line(self, text):
+        self.stdout.write(text)
+        self.stdout.flush()
+        self.stderr.flush()
 
     def _signal_numbers(self):
         numbers = [signal.SIGINT, signal.SIGTERM]
@@ -268,9 +333,18 @@ class Command(BaseCommand):
             return code
         return error.__class__.__name__.lower()
 
-    def _exit(self, code):
-        if code in {3, 130}:
-            self.stdout.flush()
-            self.stderr.flush()
-            os._exit(code)
-        raise SystemExit(code)
+    def _exit(self, code, *, message=None):
+        if code == 130:
+            from ai_host.serve_control import bounded_output_exit
+            bounded_output_exit(130, lambda: self._write_exit_line(message or 'serve forced exit.'))
+            return
+        from ai_host.serve_exit import explicit_exit
+
+        stop_event = getattr(self, '_stop_event', None)
+        if stop_event is not None:
+            stop_event.set()
+        self._begin_stop_budget()
+        explicit_exit(
+            code, self.stdout, self.stderr,
+            message=message or getattr(self, '_runtime_failure_message', None),
+        )

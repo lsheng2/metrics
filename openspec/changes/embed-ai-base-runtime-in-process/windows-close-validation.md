@@ -8,6 +8,10 @@ The owner's functional-first amendment is defined in
 [windows-performance-phase.md](windows-performance-phase.md). V8 numerical
 KPIs and exclusive benchmarking follow FUNC.ACCEPT. Native correctness,
 data integrity, bounded stop/cancel and resource-return proof stay in V4-V7/V9.
+The approved [B5-r1 amendment](evidence/windows-b5-owner-decision.md) changes
+only the source of the backlog workload, not its safety bounds. Preserve V0's
+historical census/digests; native receipts bind the amendment hash and both
+`B5-chat` and `B5-transport`. Neither proof alone closes `B5-stream-stop`.
 
 ## V0: Coverage And Evidence Reuse
 
@@ -182,9 +186,19 @@ Do not invent a cheaper baseline or substitute a test double.
   p95 <=150ms. Record samples, not just a boolean.
 - B4/M5 functional proof is required before FUNC.ACCEPT: repeated disconnects and normal/error/abort/stop release tests; bounded
   return to zero and no leaked owned threads/tasks.
-- B5 functional proof is required before FUNC.ACCEPT: active plus idle chat stream; also slow-reading and non-reading clients.
-  Every required terminal event is delivered before close and normal process
-  exit is within10s with no running project job.
+- B5 functional proof is required before FUNC.ACCEPT as two complementary
+  groups under B5-r1: actual public chat subscriptions with a deterministic
+  local model prove terminal ordering and session/run identity; controlled
+  active/idle/approximately8MiB slow/non-reader streams through the same
+  installed adapter and actual serve prove backpressure and cleanup.
+  Heartbeat2s, quotas4/4, threads14 and terminal grace2s are unchanged.
+  Slow readers resume after3s and receive terminal before EOF; never-readers
+  may lose output at the signed flush deadline. Each normal process exits0
+  within10s, no running project job or residual owned resource. Native stop
+  triggers remain required; no padded chat data or substituted wheel.
+  This socket backlog is not the bounded runtime response-queue proof:
+  `conformance_backpressure_cases.py` pauses the installed WSGI iterator,
+  checks producer suspension/resumption and verifies generator/capacity cleanup.
 - B6/B9: each required page+asset p95 <=1.2 times baseline. Repeat B6 with
   production settings, DEBUG=False and collectstatic output. In the **same**
   saturation interval, excess stream returns503/Retry-After2 and every short

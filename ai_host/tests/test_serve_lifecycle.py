@@ -59,6 +59,8 @@ def configured_command(monkeypatch, runtime, *, startup_failure=None):
     command = Command(stdout=io.StringIO())
     monkeypatch.setattr(command, 'check', lambda: None)
     monkeypatch.setattr(command, '_install_signal_handlers', lambda event: {})
+    from ai_host.serve_control import StopBudget
+    monkeypatch.setattr(command, '_begin_stop_budget', StopBudget)
     monkeypatch.setattr(command, '_wait_for_stop', lambda *args: None)
     return command, handle, server
 
@@ -133,9 +135,22 @@ def test_install_conflict_does_not_stop_or_replace_existing_owners(monkeypatch):
         detach(existing_handle)
 
 
+def test_successful_runtime_stop_is_retained_in_the_lifecycle_snapshot(monkeypatch):
+    from ai_host.state import get_lifecycle
+
+    runtime = ControlledRuntime(RuntimeStopResult(True, None, ()))
+    command, handle, _ = configured_command(monkeypatch, runtime)
+    assert run_bound(command) == 0
+    snapshot = get_lifecycle()
+    assert snapshot.phase == 'stopped'
+    assert snapshot.handle is None
+    assert snapshot.runtime_result is handle.stop_result
+
+
 @pytest.mark.parametrize('completed', [False, True])
 def test_startup_rollback_outcome_controls_cleanup_failure(monkeypatch, completed):
     from project_management.app.api.task_runtime import LocalRuntimeCleanupError
+    from ai_host.state import get_lifecycle
 
     rollback = ai_base_runtime.StopResult(
         completed, not completed, completed, (),
@@ -152,6 +167,8 @@ def test_startup_rollback_outcome_controls_cleanup_failure(monkeypatch, complete
         run_bound(command)
     assert not runtime.started
     assert get_project_runtime() is None and get_handle() is None
+    assert get_lifecycle().phase == 'failed'
+    assert get_lifecycle().runtime_result is rollback
 
 
 @pytest.mark.parametrize('code', [3, 130])

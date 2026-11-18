@@ -5,6 +5,9 @@
 - Normative baseline specs: `openspec/specs/`
 - Active/future changes: `openspec/changes/`
 - Windows AIB/Dashboard closure plan: [execution plan](../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md), functional acceptance first, followed by the separate [performance phase](../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md); one task ledger.
+- Current B5 fixture decision: [approved B5-r1](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md); both real-chat and same-adapter backpressure proofs are required, with unchanged safety bounds.
+- Windows native functional proof progress: [B5, queue bounds and disconnect evidence](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-w2-b5-progress.json); development evidence, not frozen W2/W3 acceptance.
+- Windows resumed validation: [storage recovery and W2 integration](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-w2-resume.json); frozen native certification and joint acceptance remain separate.
 - Supporting docs migrated from this folder: `openspec/docs/`
 - Migration inventory: `openspec/docs/baseline-docs-inventory.md`
 - Case studies and operator walkthroughs: `docs/case_study/`

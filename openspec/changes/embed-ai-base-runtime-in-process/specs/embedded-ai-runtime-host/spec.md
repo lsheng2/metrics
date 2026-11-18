@@ -77,12 +77,19 @@ Django 与运行时共用一个 Host 白名单；宿主一致性套件和版本�
 - **AND** 响应 SHALL NOT 带 hop-by-hop 头
 
 #### Scenario: Server stops while chat streams are open
-- **WHEN** 没有执行中的 project run，一条聊天流正在输出、一条处于空闲、另一条的客户端积压了未读的输出并暂停读取时，`serve` 收到停止信号或 `--stop-file` 指定的文件出现
-- **THEN** 正在输出与空闲的流 SHALL 在第一段停止开始后 2 秒内发送终止事件后结束
-- **AND** 三个客户端 SHALL 都在连接关闭之前收到终止事件，进程 SHALL 在停止触发后 10 秒内以 0 退出
+- **WHEN** 没有执行中的 project run，确定性本地模型下的真实 AIB 公共聊天订阅仍打开时，`serve` 收到停止信号或 `--stop-file` 指定的文件出现
+- **THEN** 聊天订阅 SHALL 保留真实 session/run 身份与 `chat.state` 语义，并在第一段停止开始后 2 秒内发送终止事件后结束
+- **AND** 正常读取的客户端 SHALL 在连接关闭之前收到终止事件，进程 SHALL 在停止触发后 10 秒内以 0 退出且无残留的自有资源
+- **AND** 按 owner 批准的 `B5-r1`，本项 SHALL 与下一项传输背压证明同时通过；SHALL NOT 用填充聊天事件模拟模型文本或大积压
+
+#### Scenario: Controlled streams prove host shutdown backpressure
+- **WHEN** 通过同一安装版 AIB WSGI 适配器与实际 `serve` 打开受控 active、idle 及约 8 MiB 积压流，积压流客户端在停止触发后暂停读取 3 秒，且没有执行中的 project run
+- **THEN** active 与 idle 流 SHALL 在第一段停止开始后 2 秒内发送终止事件，三个读取客户端 SHALL 均在 EOF 之前收到终止事件
+- **AND** 进程 SHALL 在停止触发后 10 秒内以 0 退出且无残留的自有资源
+- **AND** 心跳 SHALL 为 2 秒，stream/short 配额 SHALL 为 4/4，Waitress 线程数 SHALL 为 14，SHALL NOT 修改候选 wheel 或放宽停止预算
 
 #### Scenario: A client never reads during shutdown
-- **WHEN** 没有执行中的 project run，一个流的客户端一直不读取，`serve` 收到停止信号
+- **WHEN** 没有执行中的 project run，B5-r1 受控约 8 MiB 流的客户端一直不读取，`serve` 收到停止信号
 - **THEN** `serve` SHALL 在关闭连接的时限到期后关闭该连接，进程 SHALL 在停止触发后 10 秒内以 0 退出
 
 #### Scenario: Runtime stops unexpectedly

@@ -303,6 +303,32 @@ The host qualification driver owns functional/native scenarios in W2. Its
 performance branch and `windows_host_*` benchmarking helpers belong to
 PERF.PROBE. Functional certification must not import or execute that branch.
 
+Owner amendment `B5-r1` (2026-11-18) is approved in
+`evidence/windows-b5-owner-decision.md`. Implement two mandatory proof groups:
+real public chat subscriptions with deterministic local model responses
+(`B5-chat`), and controlled active/idle/approximately8MiB slow/non-reader
+streams (`B5-transport`) through the same installed adapter and actual serve.
+Keep heartbeat2s, quotas4/4, threads14, terminal grace2s, slow-reader pause3s,
+normal stop<=10s/exit0 and cleanup. Record identity/events, backlog bytes and
+producer progress, client terminal/EOF, process exit and owned-resource release.
+Bind both IDs plus the amendment hash in the native semantic receipt.
+The original 5.6/10.4 paragraphs and census/digests stay historical and unchanged;
+their backlog-source clause is superseded only by this approved amendment.
+The native driver is split into `windows_host_qualification.py` (phase entry),
+`windows_host_conformance.py` (registered execution),
+`windows_host_conformance_evidence.py` (semantic replay) and
+`windows_host_conformance_environment.py` (candidate environment binding).
+`windows_host_conformance_records.py` binds child log bytes to observations;
+`windows_host_conformance_contract.py` is the shared lane/argument/assertion
+inventory for the producer and validator.
+The latter reuses the existing migration environment capture, not the deferred
+performance helpers. Input `python.environments.candidate` binds the expected
+fingerprint; before/after captures, their commands and raw hashes must match.
+The native receipt kind currently owns only the functional B1/B4/B5 clause
+keys, not all of task 5.10 or 10.4. The actual WSGI queue proof remains separate
+from socket backlog proof. Native tests retain their original large workload;
+unit rejection cases reuse and restore one fixture to avoid repeated padding.
+
 W2 implementation refinement: exit inventory/process observation/final output
 are separated into `ai_host/exit_inventory.py`, `exit_processes.py` and
 `serve_exit.py` under the existing host owner. The existing validation-only
@@ -316,6 +342,30 @@ The qualifier delegates input and evidence checks to
 `windows_qualification_evidence.py`. These are bounded validators, not another
 execution framework. Final acceptance remains unavailable until the native and
 rehearsal producers supply their actual semantic checkers.
+Migration refinement: `windows_migration_inventory.py` owns stopped-writer,
+source-owner and complete snapshot inventory checks; `windows_migration_rehearsal.py`
+owns copied-state rebinding/orchestration. Both reuse existing SLE and archive
+helpers; neither becomes a new lifecycle or archive authority.
+The CLI dispatches to `windows_migration_driver.py`; frozen inputs and live
+interpreter metadata checks belong to `windows_migration_admission.py`, and
+semantic output replay belongs to `windows_migration_evidence.py`. This is a
+file-size/cohesion split within W2.HOST, not another execution ledger or manager.
+The migration input adds `migration.snapshot` and `migration.seed` path/SHA256
+references, plus `python.environments` references for `candidate`, `old_app`
+and `old_base`. Each environment record binds the executable, Python version,
+import search order, selected module origins, selected distribution records
+and any shadowed candidates in resolution order. Fingerprint each distribution's
+own top-level RECORD, not a vendored dependency's RECORD. Capture fresh
+records for the selected interpreters; an earlier interpreter's record is not
+the r4 environment. Preflight and postflight compare actual captures and
+package admission; the new candidate's pip check must pass. Historical restore
+environments are pinned and exercised, not upgraded to satisfy a new clean-install
+rule. The old Base's already-recorded optional telemetry dependency conflicts
+are diagnostics, not a claim of full legacy-provider qualification.
+Use the same `migration-runs/<id>` layout for development and formal runs.
+An extra development-only directory layer can exceed Windows Git repository
+discovery limits even with `core.longpaths`; never treat such a failed probe
+as an archive-data failure or silently modify preserved business bytes.
 
 1. Implement binding policy before acquiring runtime resources: loopback
    classification per design decision 3; development anonymous-approval posture
@@ -409,10 +459,24 @@ during final evidence collection.
 2. Copy that set to a different owned destination. Reject wrong/missing markers,
    reparse escapes, mixed timestamps, mismatched source/env and changed hashes
    before touching it. Never operate on source originals or real user data.
+   Include present SQLite sidecars and every member of the declared durable
+   scope, not interpreter caches. Revalidate actual writer liveness and the
+   complete member set immediately before and after copying; a stored
+   `stopped` label cannot override an observed live process.
+   Both destination copies rebind copied `archive/archive-root.json`'s
+   `canonical_root` and each archive Git configuration's absolute hooks path
+   through existing `git_safety` validation/writing helpers. Preserve root ID,
+   author/branch identity and all versioned publication/object bytes. The
+   original marker/configuration is never changed. Old restore retains the
+   old Base store but quarantines stale launch/connection/log metadata.
 3. Install the new frozen environment, run migrations against the copy, retire
    only copied `runtime/operations/`, update copied profile/config and start
    actual serve. Verify health, pane, session persistence across a new-host
    restart, retained publication data, `RUN_BUSY` and old active-wire refusal.
+   Invoke migrations through `project_full_stack_app_entry.py` with an owned
+   launch ID/exit receipt and the isolated fixture settings. Bare `-I manage.py`
+   does not bootstrap the repository import path; do not fall back to the
+   retained environment to mask this invocation error.
 4. Legacy AI chat/approval/skills state is not imported into the new runtime
    (original Q8). Preserve its backup; do not claim old conversations migrate.
 5. Stop the new host. Restore the complete old snapshot into another owned

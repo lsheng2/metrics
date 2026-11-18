@@ -30,6 +30,35 @@ leaves performance unqualified; stop/cancel/cleanup bounds remain functional.
 The owner has resumed execution; the plan is not evidence that its gates passed.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
+Windows B5 shutdown qualification requires two complementary proofs under the
+approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):
+real AIB chat subscriptions prove session/run identity and termination; controlled
+active/idle/approximately8MiB streams through the same installed adapter and actual
+serve prove slow/non-reader backpressure and cleanup. Both are required. This
+does not add chat-text streaming or change the candidate, heartbeat2s, quotas4/4,
+threads14, terminal grace2s, slow-reader pause3s or normal exit0 within10s.
+This is the acceptance method, not a claim that B5 or the full host has passed.
+
+The native qualification entry is `scripts/validation/windows_host_qualification.py
+--phase conformance --inputs <frozen-inputs.json> --output <new-owned-receipt.json>`.
+It requires a clean source commit, the B5-r1 amendment path/hash and
+`python.environments.candidate`; actual dependency fingerprints are compared
+before and after execution. Its `windows-host-conformance` receipt validates
+the functional B1/B4/B5 keys, including actual commands, exact test inventories
+and stream/process outcomes. A plain JUnit cannot replace that receipt.
+`--phase performance` remains deferred. Command availability is not evidence
+that W2.CERTIFY or final joint acceptance has passed.
+
+The migration qualification entry is `scripts/validation/windows_migration_rehearsal.py
+--inputs <frozen-inputs.json> --output <new-owned-receipt.json>`. It refuses dirty
+source for formal qualification. Inputs include hashed snapshot/retained-publication
+records and exact `candidate`, `old_app`, `old_base` interpreter fingerprints.
+Only the new candidate carries the clean-install/no-legacy-SDK gate; the old
+environment is used solely for the isolated, pinned restore. The qualifier
+accepts its `windows-migration-rehearsal` receipt kind only for the Windows
+portion of task 10.3, after semantic replay. This command's presence does not
+mean final migration or joint acceptance has passed.
+
 Use the separately installed candidate interpreter:
 
 ```powershell
@@ -228,7 +257,9 @@ already installed owner. Host-loopback smoke and fault-path tests do not
 replace the full stream, signal, performance, browser and publication gates.
 
 `serve` detects an ended runtime and shuts down instead of leaving a dead AI
-pane behind. Shutdown stops listener admission, closes runtime HTTP, drains
+pane behind. An already ended loop is not given another HTTP-close coroutine;
+the runtime context's final stop still determines cleanup success.
+Shutdown stops listener admission, closes runtime HTTP, drains
 response iterators through `close()`, flushes connections, and closes the
 Waitress dispatcher on its server thread before stopping the project worker.
 The signed absolute deadlines and watchdog remain in the Windows validation
@@ -238,6 +269,8 @@ Normal and failed exits emit `serve_exit_inventory` before explicit database
 and logging cleanup, then `serve_exit_cleanup` and the final status line.
 Unknown callbacks/resources or failed cleanup produce exit 3, overriding a
 startup/runtime exit 1; clean exit is 0 and a second stop signal is 130.
+The original startup failure code is retained and printed even when cleanup
+also fails, so a startup timeout is not hidden behind the exit3 diagnostic.
 Do not bypass an inventory failure with a compatibility launcher.
 Static auto-refresh is disabled; restart `serve` after changing static files.
 Non-loopback binding is refused when anonymous approvals are enabled;

@@ -1,5 +1,12 @@
 # Design
 
+Current Windows B5 acceptance uses owner-approved
+[B5-r1](evidence/windows-b5-owner-decision.md) (2026-11-18): real public chat
+termination/identity plus controlled same-adapter/actual-serve backlog proof.
+It supersedes only the chat-origin requirement for the approximately 8 MiB
+load in the original 5.6/10.4 evidence path. All signed safety bounds remain.
+Historical S0b measurements below are not new-candidate qualification.
+
 ## Context
 
 动机与范围见 `proposal.md`（Why / What Changes），行为要求见本变更的 9 个 delta spec；本文只写"怎么做"，按 capability

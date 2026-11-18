@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "w2-functional-scope-progress-not-acceptance",
+  "source": {
+    "kind": "working-tree",
+    "base_commit": "4192656560b8c945422ea30649708c37388c2b04",
+    "files": [
+      {
+        "path": "scripts/validation/qualify_ai_runtime.py",
+        "sha256": "fdc6dd9d38514e3bf0e6222e5d17a293e44f2b6f1bde696f06214b5db9aaa1a4"
+      },
+      {
+        "path": "scripts/validation/windows_qualification_inputs.py",
+        "sha256": "77536407377ae5db78927c87c14c194360dcad402e116fe61da9116853384766"
+      },
+      {
+        "path": "scripts/validation/windows_qualification_evidence.py",
+        "sha256": "49e1939cac30e8fd61e8c26fc0620ca47acd3353dd6fc395f8ec2f42379ae40d"
+      },
+      {
+        "path": "scripts/validation/windows_qualification_profiles.py",
+        "sha256": "550a9fa6a356819dd79347a2278913a9d062ec7b18356cf83abc2ecda6a94568"
+      },
+      {
+        "path": "scripts/tests/test_qualify_ai_runtime.py",
+        "sha256": "08e43742e2c02e6ede3ba84d66578e009e36dc06eabfa38ebcecf31ac14e316e"
+      },
+      {
+        "path": "scripts/tests/test_windows_qualification_profiles.py",
+        "sha256": "506fd39c9fb2b0a31910977baafd942228e9ed7623ec2fa808e477b30880a254"
+      },
+      {
+        "path": "ai_host/tests/conformance_runtime_cases.py",
+        "sha256": "75931d6f93734c3b7de2dcd2c2e1022e46382fd5d2374c49721bfc9b58d8ac61"
+      },
+      {
+        "path": "ai_host/tests/conformance_performance_cases.py",
+        "sha256": "dd029d62c95c9d5680ba2003dc39d7d2f5ecddd7fe15234f44fd28c731e5fbdc"
+      }
+    ]
+  },
+  "candidate": {
+    "version": "0.1.1.dev4",
+    "source_commit": "d589ac8e6572a903edc3846e7d78195e85858868",
+    "wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94"
+  },
+  "plan_review": {
+    "scope": "Windows functional-first closure DAG amendment",
+    "clean_passes": 1,
+    "status": "complete",
+    "reviewer_model": "gpt-5.5",
+    "reasoning_effort": "xhigh",
+    "transcript_sha256": "97458fbdaed9a057dc05f4d42a22294538ca7eb8fdde1d3e521d2dd10b8cad8d",
+    "run_id": "01a1e9ed-b31f-70c2-8481-6fb978c6a428"
+  },
+  "changes": [
+    "Required functional/full profile with matching input; profile-labelled output",
+    "Canonical census checked before phase projection; mixed B9 safety retained",
+    "Ordinary JUnit cannot certify native numerical performance",
+    "Performance-only tests preserved in explicit deferred lane"
+  ],
+  "tests": [
+    {
+      "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\w2-functional-profile-green-r2.xml",
+      "sha256": "cfe3b99dfcb20c0099cafa4e827fe8c4b20e5365d12532d90aecbd960a7af54f",
+      "passed": 66,
+      "failures_errors_skips": 0
+    },
+    {
+      "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\w2-functional-conformance-r1.xml",
+      "sha256": "4bfd3b41ec56cc359843b866ef2ac277b0c4f09b99e7ba987e61ca7c049561d4",
+      "passed": 35,
+      "failures_errors_skips": 0
+    }
+  ],
+  "red_evidence": [
+    "w2-functional-profile-red-r1.xml",
+    "w2-functional-profile-red-native.xml"
+  ],
+  "performance_qualification": "NOT_RUN",
+  "functional_acceptance": "NOT_YET_ACCEPTED",
+  "limitations": [
+    "W2.HOST and independent W2.R remain open",
+    "Native and migration producer-owned semantic validators not yet implemented",
+    "No V8 benchmark, migration rehearsal, final joint acceptance, push or merge in this packet"
+  ]
+}

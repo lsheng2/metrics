@@ -2,6 +2,27 @@
 
 ## Windows Closure Execution Frontier
 
+当前执行更新（2026-11-18）：owner 已批准 B5 拆成两项证明并要求继续。
+`B5-r1` 要求真实 AIB 聊天关闭/身份证明与同一安装版适配器、实际 serve 的
+active/idle/约 8 MiB 慢读及不读背压证明同时通过；原时限、配额和清理门槛不变。
+批准记录见 `evidence/windows-b5-owner-decision.md`。原任务正文及历史 census/摘要保留，
+5.6/10.4 的聊天积压来源要求以 B5-r1 为准；批准不等于测试通过。
+
+执行恢复（2026-11-18）：owner 告知已释放磁盘空间，要求继续使用 D 盘并恢复被中断的测试。
+不再搬移到 C 盘，不删除原失败目录；先减少单测夹具重复写入，再在新的 D 盘运行目录重跑。
+恢复结果：原中断回归已完整通过 52 项，全部 10 种拒绝场景仍执行，大夹具仅生成一次并
+逐次恢复原字节；新运行目录总文件量 127,384,558 字节。随后加入候选环境前后指纹及
+命令绑定，含迁移相邻消费者的 100 项回归通过；实际 83 包环境与冻结指纹一致。
+B5/断开原始记录的语义回放通过。仍待冻结源码的完整原生 CLI、W2.R 与 W3 联合验收。
+
+此前阻塞记录：B5 12 项、20 次断开、70 项组合一致性和 103 项宿主回归已通过。
+原生验收器正在集成；补出的退出码/非有限时长反例已修复，但最新 61 项回归有
+59 passed、2 项在写合成夹具时发生 `OSError: [Errno 28] No space left on device`。
+`D:/AIGC/artifacts/mdb2-windows-20261117/nv-green1` 是本轮新建的重复合成单测目录，
+实测 456,928,257 字节；未删除其中任何证据。原压缩清理提议已由上方“D 盘继续使用”
+决定替代，同时改进单测的大数据重复生成，再重跑。阻塞时没有存活的本轮原生测试进程或
+运行中的 subagent；尚未提交、冻结、签核 W2.R 或进入 W3。未做磁盘空闲量准入检查。
+
 执行授权更新（2026-11-17）：owner 已明确确认 `8bb83d4` 的计划，并要求连续执行到最终
 check out，真实阻塞时询问。`PLAN.R` 已达到 1/1 PASS，`OWNER.RESUME` 已满足。
 W1 实现已提交为 `b3fbada10af11230a2d7ecb32995f5e14302cf42`。
@@ -33,7 +54,7 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] W1.R - 两次独立审查，1 个 P1 修复后达到 1/1 clean pass；范围绑定代码提交 `b3fbada`，见 `evidence/windows-w1-review.json`。
 - [x] W1.REPLAN - W2=amend、W3=continue；基线适配要求已写入 steps/validation，五项 S0b 源码哈希未变，18 节点/20 依赖及严格 OpenSpec 检查通过。结构化回执在 `evidence/windows-w1-review.json`；W2.VA 仍须独立签核。
 - [x] W2.VA - 独立 Validation Engineer 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计；批准保留真实空闲 ProjectRunRuntime 的 S0b 测试基线适配。原始回执及授权澄清见 `evidence/windows-w2-validation.md`，无新增 owner 决策阻塞。
-- [ ] W2.HOST - 实现剩余宿主生命周期义务和冻结前所需验收工具。
+- [x] W2.HOST - 生命周期实现、原生证明夹具、迁移及原生验收工具已完成定向集成验证；恢复后的 143 项回归、4 项原生故障复测及实际边界/退役 gate 通过。见 `evidence/windows-w2-resume.json`。原生冻结版本执行与独立签核仍属后续节点。
 - [ ] W2.CERTIFY - 完成 Windows 宿主功能一致性、原生安全及清理矩阵；不跑性能 KPI。
 - [ ] W2.R - 独立复核宿主实现及完整 Windows 功能证据。
 - [ ] W2.REPLAN - 复查最终候选、回滚材料及 W3 可执行性。
@@ -81,6 +102,46 @@ W2 后续检查点：新的真实 served 摘要/报告辅助切片、重复请�
 与性能时延两个 aspect，停止/取消/泄漏约束及原生验证不后移。原始需求及
 windows-coverage.json 的历史摘要不改写；qualifier 需实现显式 functional/full profile、
 完整 census 校验及精确测试路径分流，完成前不得声称功能验收器已经可用。
+
+W2 功能推进：排序修订已提交 `4192656`。functional/full 分流、canonical census 校验、
+性能 JUnit 冒充原生测量的拒绝、精确测试分流已实现，66 项定向检查和 35 项功能一致性
+检查通过（`evidence/windows-functional-first-progress.json`）；原生/迁移语义验收器仍未完备。
+新增原生正常停止及 drain/flush 第二信号矩阵 16 项通过。旧版夹具已补出包含两次修订的
+真实落盘报告，实际旧版 HTTP 页面返回 200 且发布记录可见，随后正常停止、模型调用为 0；
+见 `evidence/windows-w2-functional-native.json`。初次夹具作者配置不一致和原生测试观察方式
+错误的失败样本均保留。迁移工具须验证完整成员集、实际写入进程已停止，并重绑定复制件的
+归档根标记与 Git hooks 路径；当前仍在 W2.HOST，未进行 W3 最终演练或 V8 性能验收。
+迁移基础已补齐上述保护及快照 ID/目标根防越界，23 项迁移检查与 38 项验收器检查通过。
+开发级往返探测已完成：旧版保留数据生成 94 文件快照，新副本迁移/启动/读回/重启/再次读回/
+正常停止，独立旧版恢复副本启动/读回/正常停止；两份副本各 6 个发布文件摘要与原件一致，
+原快照 94 文件未改动。见 `evidence/windows-w2-migration-development.json`。这不是冻结版本的
+W3 回执；仍须完成 CLI 编排、冻结输入准入、producer-owned 语义校验器及剩余宿主功能场景，
+再进入 W2.CERTIFY/R。代码保持未提交，未执行性能基准或发布动作。
+迁移 CLI 及其语义回放已接入总验收器，仅可覆盖 Windows 的 10.3；当前 133 项定向检查
+通过，真实 CLI 对脏源码按预期拒绝且不生成验收输出。三个实际解释器的有序包/导入指纹已
+采集，旧 SDK 遮蔽及旧 Base 既有遥测依赖冲突被如实记录，新候选清洁安装门槛未放宽。
+按正式目录布局的开发验证完成会话创建/重启保持/同键重开、保留报告读取、RUN_BUSY 与
+正常停止；额外嵌套开发路径导致 Git 无法识别仓库的失败样本保留。仍未运行冻结源码的
+完整 CLI 正向验收，W2.R 尚未签核；余下五组宿主证明见 `.tmp/mdb2-windows-w2/functional-coverage-reconciliation.md`。
+本轮回执：`evidence/windows-w2-migration-cli.json`；正式源码冻结及联合验收状态仍未勾选。
+后续功能检查点：实际适配器/服务请求顺序矩阵已补齐，组合一致性组 58 passed；
+修复已结束循环被重复提交 HTTP 清理及启动超时信息被清理失败覆盖两项缺陷，原生故障/
+相邻清理组 40 passed。上下文退出后立即 os._exit 的跨进程恢复通过：任务结果、会话、
+审批及历史均保留，重新开锁且没有重复模型调用。对应 XML 为
+`w2-order-runtime-combined-r4.xml`、`w2-native-failures-green-r3.xml`、
+`w2-hard-exit-recovery-r2.xml`，均在现有外部 artifact root。真实内部循环故障的额外
+子场景、20 次断开、B5 与 conformance driver/最终签核仍未关闭；B5-r1 已获批准，继续实施。
+该检查点源码和测试摘要见 `evidence/windows-w2-native-faults.json`，不作为整个宿主或 W3 通过回执。
+
+B5-r1 批准后的开发证明：真实聊天 5 种停止触发、受控 active/idle/约 8 MiB 慢读
+5 种触发及不读 2 种触发，共 12 项通过，均正常退出且清理完成；停止耗时分别约
+0.17–0.32 秒、3.20–3.24 秒、6.67–6.87 秒。另补独立的 WSGI 队列生产者背压证明，
+该测试与 21 项注入 SDK 断言共 22 passed。真实内部循环故障已与公开 stop 场景分开，
+原生故障文件 4 passed。证据与失败夹具修复记录见 `evidence/windows-w2-b5-progress.json`。
+20 次原生断开证明也已通过：最慢回收 2.04 秒，流名额归零，任务和线程回到基线，
+正常退出且未 force。7 个显式一致性文件与 SDK 注入断言合跑 70 passed，未把 ASGI
+不适用行当作通过。60 个原任务摘要和 63 条 canonical census 校验仍通过。
+这些是脏源码上的定向证明，不是冻结验收；原生语义验收器、W2.CERTIFY/R 和 W3 仍开放。
 
 W1.LAUNCH 执行分工：Implementation Engineer 已交回代码并停止写入，
 协调者接回唯一生产写入，补齐停止身份/退出码门禁后继续后续节点。

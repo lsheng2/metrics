@@ -1,7 +1,11 @@
 from types import SimpleNamespace
+import threading
+
+import pytest
 
 from ai_base_runtime import StopResult, HttpCloseResult
 from ai_host.lifecycle import StopOutcome, stop_owned_resources
+from ai_host.serve_control import StopBudget
 from project_management.app.domain.run_contracts import RuntimeStopResult
 
 
@@ -19,7 +23,14 @@ class FakeHandle:
 class FakeServer:
     def __init__(self):
         self.closed = False
-        self.task_dispatcher = SimpleNamespace(shutdown=lambda cancel_pending, timeout: True)
+        self.task_dispatcher = SimpleNamespace(
+            active_count=0, threads=set(), shutdown=lambda cancel_pending, timeout: True,
+        )
+        self.trigger = SimpleNamespace(pull_trigger=lambda callback: callback())
+        self.socket = None
+
+    def del_channel(self):
+        return None
 
     def close(self):
         self.closed = True
@@ -62,6 +73,7 @@ def test_shouldDeriveStopOutcomeFromActualOwners():
         server=server,
         server_thread=FakeThread(),
         project_runtime=project_runtime,
+        budget=StopBudget(),
     )
 
     assert outcome == StopOutcome(
@@ -85,6 +97,7 @@ def test_shouldReportAbsentProjectRuntimeWithoutInventingStoppedEvent():
         server=FakeServer(),
         server_thread=FakeThread(),
         project_runtime=None,
+        budget=StopBudget(),
     )
 
     assert outcome.exit_code == 0
@@ -100,8 +113,31 @@ def test_shouldFailCleanupWhenPublicRuntimeStopResultIsIncomplete():
         server=FakeServer(),
         server_thread=FakeThread(),
         project_runtime=None,
+        budget=StopBudget(),
     )
 
     assert outcome.exit_code == 3
     assert outcome.runtime_result == stop_result
     assert 'runtime_stop_incomplete' in outcome.cleanup_errors
+
+
+@pytest.mark.parametrize("completed", [True, False])
+def test_ended_runtime_does_not_schedule_http_on_a_closed_loop(completed):
+    handle = FakeHandle(stop_result=StopResult(completed, not completed, completed, (), (), (), 0.01))
+    handle.ended = threading.Event()
+    handle.ended.set()
+
+    def unavailable_http():
+        raise AssertionError("closed runtime loop must not receive another coroutine")
+
+    handle.close_http = unavailable_http
+    runtime = FakeRuntime(RuntimeStopResult(True, None, ()))
+    server = FakeServer()
+    outcome = stop_owned_resources(
+        handle=handle, server=server, server_thread=FakeThread(),
+        project_runtime=runtime, budget=StopBudget(),
+    )
+    assert server.closed and runtime.requested and runtime.waited
+    assert outcome.http_result is None
+    assert outcome.exit_code == (0 if completed else 3)
+    assert "http_close_failed" not in outcome.cleanup_errors

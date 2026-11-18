@@ -3,7 +3,8 @@ import threading
 
 from waitress import create_server
 
-from ai_host.lifecycle import stop_owned_resources
+from ai_host.lifecycle import run_http_server, stop_owned_resources
+from ai_host.serve_control import StopBudget
 from ai_host.tests.test_lifecycle import FakeHandle
 
 
@@ -13,7 +14,8 @@ def test_stop_closes_an_idle_keepalive_channel_and_joins_the_real_waitress_threa
         return [b'ok']
 
     server = create_server(application, host='127.0.0.1', port=0, threads=1, asyncore_loop_timeout=0.05)
-    thread = threading.Thread(target=server.run, name='publication-stop-probe')
+    server_errors = []
+    thread = threading.Thread(target=run_http_server, args=(server, server_errors), name='publication-stop-probe')
     connection = HTTPConnection('127.0.0.1', int(server.effective_port), timeout=5)
     thread.start()
     try:
@@ -24,10 +26,12 @@ def test_stop_closes_an_idle_keepalive_channel_and_joins_the_real_waitress_threa
         assert server.active_channels
         result = stop_owned_resources(
             handle=FakeHandle(), server=server, server_thread=thread, project_runtime=None,
+            budget=StopBudget(),
         )
         assert result.exit_code == 0, result
         assert not thread.is_alive()
         assert not server.active_channels
+        assert not server_errors
     finally:
         connection.close()
         for channel in tuple(server.active_channels.values()):

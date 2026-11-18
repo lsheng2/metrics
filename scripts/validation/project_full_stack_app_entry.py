@@ -9,10 +9,6 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from django.core.management import execute_from_command_line
-from scripts.validation.project_full_stack_identity import write_exit_receipt
-
-
 def wrapper_arguments(values):
     remaining = list(values)
     launch_id = take_option(remaining, '--qualify-launch-id')
@@ -32,6 +28,24 @@ def take_option(values, name):
 
 def main():
     launch_id, exit_file, command = wrapper_arguments(sys.argv[1:])
+    if command and command[0] == 'serve':
+        from ai_host.exit_inventory import install_exit_capture
+        install_exit_capture()
+    from django.core.management import execute_from_command_line
+    from scripts.validation.project_full_stack_identity import write_exit_receipt
+
+    original_exit = os._exit
+
+    def observed_exit(exit_code):
+        try:
+            write_exit_receipt(
+                exit_file, service='project-app', launch_id=launch_id, pid=os.getpid(), exit_code=exit_code,
+            )
+        finally:
+            original_exit(exit_code)
+
+    if command and command[0] == 'serve':
+        os._exit = observed_exit
     code = 0
     try:
         execute_from_command_line([str(ROOT / 'manage.py'), *command])
@@ -41,6 +55,7 @@ def main():
         code = 1
         raise
     finally:
+        os._exit = original_exit
         write_exit_receipt(exit_file, service='project-app', launch_id=launch_id, pid=os.getpid(), exit_code=code)
     return code
 

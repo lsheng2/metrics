@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "w2-migration-development-progress-not-final-acceptance",
+  "dashboard_baseline_commit": "4192656560b8c945422ea30649708c37388c2b04",
+  "dashboard_source_kind": "working-tree",
+  "old_dashboard_commit": "ee7bfb0e734e1123ba5c611997fedd6052f50049",
+  "candidate_version": "0.1.1.dev4",
+  "candidate_wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+  "source_files": [
+    {
+      "path": "scripts/validation/windows_migration_rehearsal.py",
+      "sha256": "40ed98f2de46f4ebbefe5913f23f6556ddf6ad24c446fd528c2df67a8f00f9c7"
+    },
+    {
+      "path": "scripts/validation/windows_migration_inventory.py",
+      "sha256": "79f5c8408da5904e9daa68557de60eff6b30541f89944cf8b580ad32bdb8cc1d"
+    },
+    {
+      "path": "scripts/tests/test_windows_migration_rehearsal.py",
+      "sha256": "fdb5c4af029ea6ecc647956b0f3ef3a06d8fc353a45624dbf162ca3f7fe104bf"
+    }
+  ],
+  "tests": {
+    "qualifier_profile_tests": 38,
+    "sha256": "bd3f4d1798f856a71705b4ddc191663c7e02bde4e5c9a7536c48ac7509f23de4",
+    "passed": 61,
+    "migration_tests": 23,
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-functional-migration-controls-r2.xml"
+  },
+  "artifacts": [
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-copy-probe-r1/snapshot.json",
+      "sha256": "197401bd250a34f731d0e6e4673d038d8a3c9392cd4d250902b3755bfee3ecb2"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-copy-probe-r1/copy-maps.json",
+      "sha256": "4480f3bca2c45190d3392d92d200392d2eb09165d7f8cd79b4e3d5830ae4a7ad"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-copy-probe-r1/new-development-receipt.json",
+      "sha256": "0e9cd6b7fa0a96da980ecc1e989aadb23f7143800e7b6f15383e389f57b567cd"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-copy-probe-r1/old-development-receipt.json",
+      "sha256": "990233fb48c99729b3979ff21108cad96c6469de4910219811b97acab19017de"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-copy-probe-r1/publication-preservation.json",
+      "sha256": "298e04fb69d2da5c4d52ab66f1743ad1bdc78ec9d5b00453b8228157aadba717"
+    }
+  ],
+  "observed": {
+    "original_snapshot_files_unchanged": 94,
+    "normal_stops": true,
+    "copied_inventory_files": 94,
+    "old_restore_start_read_stop": "passed",
+    "publication_files_preserved_per_copy": 6,
+    "new_migrate_start_read_restart_read_stop": "passed"
+  },
+  "limitations": [
+    "No frozen W3 source acceptance",
+    "CLI orchestration and producer-owned semantic receipt validators remain to implement",
+    "Existing bounded scripts exercised manually through fixed recorded argv",
+    "No performance qualification or Linux execution",
+    "W2.HOST and independent W2.R remain open"
+  ]
+}

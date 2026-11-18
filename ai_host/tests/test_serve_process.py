@@ -14,6 +14,8 @@ def test_real_serve_stops_project_and_runtime_without_leaving_its_listener(tmp_p
     root = Path(__file__).resolve().parents[2]
     source_paths = (
         'ai_host/management/commands/serve.py', 'ai_host/lifecycle.py', 'ai_host/state.py',
+        'ai_host/settings.py', 'ai_host/serve_control.py', 'ai_host/serve_exit.py',
+        'ai_host/exit_inventory.py', 'ai_host/exit_processes.py', 'ai_host/wiring.py',
         'ai_host/runtime_artifact.json', 'project_management/runtime.py',
         'project_management/app/api/run_factories.py', 'ai_host/tests/serve_test_entry.py',
         'ai_host/tests/test_serve_process.py', 'scripts/validation/run_report_authoring_tests.py',

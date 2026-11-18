@@ -29,6 +29,12 @@ def test_shouldReportBindFailureBeforeRuntimeStartup(monkeypatch):
     port = occupied.getsockname()[1]
     called = {'runtime': False}
     monkeypatch.setattr(command, '_run_bound_server', lambda listener, options: called.update(runtime=True))
+    monkeypatch.setattr(command, '_install_signal_handlers', lambda event: {})
+
+    def observe_exit(code, **kwargs):
+        raise SystemExit(code)
+
+    monkeypatch.setattr(command, '_exit', observe_exit)
 
     try:
         with pytest.raises(SystemExit) as raised:

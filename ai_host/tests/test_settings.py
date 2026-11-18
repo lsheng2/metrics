@@ -1,5 +1,8 @@
 from pathlib import Path
 import json
+from types import SimpleNamespace
+
+import pytest
 
 from django.test import SimpleTestCase, override_settings
 
@@ -16,6 +19,23 @@ from ai_host.settings import (
     runtime_mount_path,
 )
 from ai_host.package import METRICS_APP
+
+
+@pytest.mark.parametrize(('runtime_cap', 'expected'), [(512, 1_048_577), (16_777_216, 16_777_217)])
+def test_body_cap_uses_the_selected_settings_and_keeps_the_larger_app_limit(monkeypatch, runtime_cap, expected):
+    selected = build_runtime_settings()
+
+    def policy(settings, apps):
+        assert settings is selected
+        assert apps == (METRICS_APP,)
+        return SimpleNamespace(max_request_body_bytes=runtime_cap)
+
+    def unexpected_rebuild():
+        pytest.fail('body policy must use the same settings passed to start_blocking')
+
+    monkeypatch.setattr('ai_base_runtime.request_body_policy', policy)
+    monkeypatch.setattr('ai_host.settings.build_runtime_settings', unexpected_rebuild)
+    assert body_limit_for_waitress(selected, (METRICS_APP,)) == expected
 
 
 class TestAiHostSettings(SimpleTestCase):
@@ -44,7 +64,7 @@ class TestAiHostSettings(SimpleTestCase):
             runtime_settings.limits.max_output_tokens,
         ) == RUNTIME_LIMIT_VALUES
         assert runtime_settings.request_body_limits.default == 1_048_576
-        assert body_limit_for_waitress((METRICS_APP,)) == 8_388_609
+        assert body_limit_for_waitress(runtime_settings, (METRICS_APP,)) == 8_388_609
 
     @override_settings(METRICS_BASE_URL='', METRICS_STATE_DIR=Path('C:/tmp/metrics-state'))
     def test_shouldMountRuntimeAtAiWhenBaseUrlIsEmpty(self):

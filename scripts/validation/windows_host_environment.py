@@ -1,0 +1,148 @@
+"""Exclusive measurement window with native Windows CPU/process observations."""
+import ctypes
+from ctypes import wintypes
+from datetime import UTC, datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import threading
+import time
+import uuid
+
+from scripts.validation.project_full_stack_support import read_json, write_json
+
+
+def source_snapshot(root):
+    def git(*args):
+        result = subprocess.run(['git', *args], cwd=root, capture_output=True, text=True, timeout=30, check=True)
+        return result.stdout.strip()
+
+    status = git('status', '--porcelain=v1', '--untracked-files=all')
+    if status:
+        raise ValueError('Measurement source must be committed and clean')
+    return {'head': git('rev-parse', 'HEAD'), 'status_sha256': hashlib.sha256(status.encode()).hexdigest()}
+
+
+def machine_snapshot():
+    if sys.platform != 'win32':
+        raise ValueError('Only Windows qualification is authorized')
+    from ai_host.exit_processes import ProcessEntry, _windows_api
+
+    api = _windows_api()
+    api.GetSystemTimes.argtypes = [ctypes.POINTER(wintypes.FILETIME)] * 3
+    api.GetSystemTimes.restype = wintypes.BOOL
+    values = [wintypes.FILETIME() for _ in range(3)]
+    if not api.GetSystemTimes(*(ctypes.byref(value) for value in values)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    cpu = {name: (value.dwHighDateTime << 32) | value.dwLowDateTime
+           for name, value in zip(('idle', 'kernel', 'user'), values)}
+    snapshot = api.CreateToolhelp32Snapshot(0x2, 0)
+    if snapshot == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    processes = []
+    try:
+        entry = ProcessEntry()
+        entry.dwSize = ctypes.sizeof(entry)
+        present = api.Process32FirstW(snapshot, ctypes.byref(entry))
+        while present:
+            processes.append({'pid': entry.th32ProcessID, 'parent_pid': entry.th32ParentProcessID,
+                              'name': entry.szExeFile, 'threads': entry.cntThreads})
+            present = api.Process32NextW(snapshot, ctypes.byref(entry))
+        if ctypes.get_last_error() != 18:
+            raise ctypes.WinError(ctypes.get_last_error())
+    finally:
+        api.CloseHandle(snapshot)
+    return {'cpu': cpu, 'processes': processes}
+
+
+class MeasurementWindow:
+    def __init__(self, owned_root, run_root, source_root):
+        self.guard = Path(owned_root) / 'HEAVY_RUN_ACTIVE'
+        self.run_root, self.source_root = Path(run_root), Path(source_root)
+        self.identity = str(uuid.uuid4())
+        self.record = {'id': self.identity, 'pid': os.getpid(), 'snapshots': [], 'errors': []}
+        self._stop = threading.Event()
+        self._thread = None
+        self._stream = None
+
+    def __enter__(self):
+        if (self.run_root / 'measurement-window.json').exists():
+            raise FileExistsError('Measurement receipt already exists')
+        write_json(self.guard, {'id': self.identity, 'pid': os.getpid(), 'run_root': str(self.run_root)})
+        try:
+            self.record['started_at'] = datetime.now(UTC).isoformat()
+            self.record['started_monotonic'] = time.monotonic()
+            self.record['source_before'] = source_snapshot(self.source_root)
+            self._stream = (self.run_root / 'machine.jsonl').open('x', encoding='utf-8')
+            self._collect()
+            self._thread = threading.Thread(target=self._monitor, name='qualification-cpu-snapshot', daemon=True)
+            self._thread.start()
+            return self
+        except BaseException:
+            if self._stream is not None:
+                self._stream.close()
+            self._remove_own_guard()
+            raise
+
+    def _collect(self):
+        row = {'utc': datetime.now(UTC).isoformat(), 'monotonic': time.monotonic(), **machine_snapshot()}
+        previous = self.record['snapshots']
+        if previous:
+            old = previous[-1]['cpu']
+            total = row['cpu']['kernel'] - old['kernel'] + row['cpu']['user'] - old['user']
+            idle = row['cpu']['idle'] - old['idle']
+            row['cpu_busy_percent'] = None if total <= 0 else 100 * (total - idle) / total
+        self.record['snapshots'].append(row)
+        self._stream.write(json.dumps(row, allow_nan=False) + '\n')
+        self._stream.flush()
+
+    def _monitor(self):
+        while not self._stop.wait(60):
+            try:
+                self._collect()
+            except Exception as error:
+                self.record['errors'].append(type(error).__name__)
+                return
+
+    def check(self):
+        if self.record['errors']:
+            raise ValueError('Measurement environment observation failed')
+        if read_json(self.guard).get('id') != self.identity:
+            raise ValueError('Measurement guard changed')
+
+    def _remove_own_guard(self):
+        if read_json(self.guard).get('id') != self.identity:
+            raise ValueError('Measurement guard changed; refusing to remove it')
+        self.guard.unlink()
+
+    def __exit__(self, exc_type, exc, traceback):
+        self._stop.set()
+        self._thread.join(2)
+        try:
+            if self._thread.is_alive():
+                raise ValueError('Measurement observer did not stop')
+            self._collect()
+            self.record['source_after'] = source_snapshot(self.source_root)
+            if self.record['source_before'] != self.record['source_after']:
+                raise ValueError('Measurement source changed')
+            self.check()
+        except Exception as error:
+            self.record['errors'].append(str(error))
+        finally:
+            self._stream.close()
+            self.record['ended_at'] = datetime.now(UTC).isoformat()
+            self.record['ended_monotonic'] = time.monotonic()
+            self.record['result'] = 'PASS' if exc_type is None and not self.record['errors'] else 'FAIL'
+            write_json(self.run_root / 'measurement-window.json', self.record)
+            try:
+                self._remove_own_guard()
+            except Exception as error:
+                self.record['result'] = 'FAIL'
+                self.record['errors'].append(str(error))
+                write_json(self.run_root / 'measurement-window.json', self.record, replace=True)
+        if self.record['errors']:
+            raise ValueError('; '.join(self.record['errors']))
+        return False
