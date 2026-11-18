@@ -55,6 +55,13 @@ and stream/process outcomes. A plain JUnit cannot replace that receipt.
 `--phase performance` remains deferred. Command availability is not evidence
 that W2.CERTIFY or final joint acceptance has passed.
 
+For a native stream shutdown failure, retain the original run and inspect
+`serve.log` before repeating the full matrix. The test entry records the runtime
+stop result and explicit-exit/inventory boundaries; a stalled final stage also
+dumps thread stacks before the unchanged watchdog deadline. These observations
+do not replace cleanup assertions or explain an earlier failure merely because
+a later run passes. They are test diagnostics, not production API fields.
+
 The migration qualification entry is `scripts/validation/windows_migration_rehearsal.py
 --inputs <frozen-inputs.json> --output <new-owned-receipt.json>`. It refuses dirty
 source for formal qualification. Inputs include hashed snapshot/retained-publication

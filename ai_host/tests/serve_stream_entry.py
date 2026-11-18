@@ -10,6 +10,7 @@ from ai_host.exit_inventory import install_exit_capture
 install_exit_capture()
 
 from dataclasses import asdict
+import faulthandler
 import json
 import signal
 import threading
@@ -37,7 +38,7 @@ def configure(temp):
 
 def prepare():
     import waitress
-    from ai_host import lifecycle, package
+    from ai_host import exit_inventory, lifecycle, package
     from ai_host.management.commands.serve import Command
     from ai_host.tests.conformance_runtime_probe import RuntimeProbe
 
@@ -48,6 +49,8 @@ def prepare():
     original_wait = Command._wait_for_stop
     original_stop = lifecycle.stop_owned_resources
     original_flush = lifecycle._flush_waitress_channels
+    original_exit = Command._exit
+    original_inventory = exit_inventory.collect_exit_inventory
 
     def observed_server(*args, **kwargs):
         server = original_server(*args, **kwargs)
@@ -76,13 +79,28 @@ def prepare():
     def observed_run(command, listener, options):
         if sys.argv[5] == "lifetime":
             options = {**options, "lifetime_seconds": 10.0}
-        return original_run(command, listener, options)
+        result = original_run(command, listener, options)
+        stopped = getattr(probe.handle, "stop_result", None)
+        emit("stream_runtime_stopped", result=None if stopped is None else asdict(stopped))
+        return result
 
     def observed_stop(**kwargs):
         emit("stream_stop_started", started_at=kwargs["budget"].started_at)
         outcome = original_stop(**kwargs)
         emit("stream_stop_finished", outcome=asdict(outcome), counts=dict(probe._counts))
+        # Capture a stalled final stage before the unchanged 1.2s watchdog exits.
+        faulthandler.dump_traceback_later(0.9, file=sys.stderr)
         return outcome
+
+    def observed_exit(command, code, *, message=None):
+        emit("stream_explicit_exit_started", code=code)
+        return original_exit(command, code, message=message)
+
+    def observed_inventory():
+        emit("stream_exit_inventory_started")
+        inventory = original_inventory()
+        emit("stream_exit_inventory_finished", errors=inventory.errors)
+        return inventory
 
     def observed_flush(server, deadline):
         def backlog():
@@ -96,6 +114,8 @@ def prepare():
     waitress.create_server = observed_server
     Command._run_bound_server = observed_run
     Command._wait_for_stop = observed_wait
+    Command._exit = observed_exit
+    exit_inventory.collect_exit_inventory = observed_inventory
     lifecycle.stop_owned_resources = observed_stop
     lifecycle._flush_waitress_channels = observed_flush
 

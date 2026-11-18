@@ -37,6 +37,30 @@ def test_idle_project_return_can_never_add_to_the_initial_deadline():
     assert budget.watchdog_deadline == 19.2
 
 
+def test_idle_project_final_stage_cannot_outlive_watchdog():
+    script = """
+import sys, threading
+sys.path.insert(0, sys.argv[1])
+from ai_host.serve_control import StopBudget, start_watchdog
+budget = StopBudget()
+budget.project_requested(active=False)
+budget.project_returned()
+start_watchdog(budget, write_output=lambda: print('serve cleanup failed.', flush=True))
+print('project_runtime_stopped', flush=True)
+threading.Event().wait(5)
+print('serve_exit_inventory', flush=True)
+raise SystemExit(99)
+"""
+    result = subprocess.run(
+        [sys.executable, '-I', '-c', script, str(Path(__file__).resolve().parents[2])],
+        capture_output=True, text=True, timeout=8,
+    )
+    assert result.returncode == 3, result.stderr
+    assert 'project_runtime_stopped' in result.stdout
+    assert 'serve cleanup failed.' in result.stdout
+    assert 'serve_exit_inventory' not in result.stdout
+
+
 @pytest.mark.parametrize('failed_stage', [None, 'listener', 'http', 'drain', 'flush', 'server'])
 def test_cleanup_uses_shared_deadlines_and_attempts_later_owners_after_each_failure(monkeypatch, failed_stage):
     from ai_host import lifecycle
