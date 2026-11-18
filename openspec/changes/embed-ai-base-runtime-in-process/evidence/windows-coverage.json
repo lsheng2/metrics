@@ -728,7 +728,7 @@
       "group": "runtime",
       "classification": "verify-existing",
       "cases": [
-        "not started",
+        "not running (retained WSGI callable after final stop)",
         "stopping",
         "after close_http"
       ],
@@ -1032,7 +1032,8 @@
     "Every clause inherits producer/consumer paths and owner node from clause_groups; planned paths are explicitly separate.",
     "Proven task groups retain previously accepted bounded evidence, not new final-candidate acceptance.",
     "No existing original task checkbox is changed by this census.",
-    "The original full requirement text remains authoritative; requirement text digests are generated during census validation."
+    "The original full requirement text remains authoritative; requirement text digests are generated during census validation.",
+    "2026-11-18 clarification: original 5.10 not-running behavior uses the retained public WSGI callable after final stop; no pre-start Metrics WSGI handle or ASGI host qualification is implied. Original requirement text and all functional evidence keys remain unchanged."
   ],
   "source_requirement_digests": {
     "0.1": "e269d06f0bf64e6e734797219966380d49f1f1cca46d38faf1c96964b3fe3079",

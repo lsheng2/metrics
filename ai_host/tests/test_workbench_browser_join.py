@@ -80,8 +80,15 @@ def test_real_workbench_preserves_session_frame_and_uses_installed_embed_protoco
             page.set_default_timeout(10000)
             errors = []
             requests = []
+            asset_responses, asset_failures, cold_assets, cold_asset_requests = [], [], [], []
+            asset_prefix = base + '/ai/assets/'
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.on('request', lambda request: requests.append((request.method, request.url)))
+            page.on('response', lambda response: asset_responses.append({
+                'url': response.url, 'status': response.status,
+            }) if response.url.startswith(asset_prefix) else None)
+            page.on('requestfailed', lambda request: asset_failures.append(request.url)
+                    if request.url.startswith(asset_prefix) else None)
             url = f'{base}/workbench/?scope_id={scopes["scope"]}&begin=2026-08-03&end=2026-08-09'
             try:
                 assert page.goto(url).status == 200
@@ -106,6 +113,13 @@ def test_real_workbench_preserves_session_frame_and_uses_installed_embed_protoco
                     document.querySelector('.workbench-ai-chat-frame').contentDocument.body.innerText
                         .includes('Synthetic workbench reply.')""")
                 assert len(endpoint.requests) == 1
+                frame.wait_for_load_state('load')
+                frame.evaluate('() => document.fonts.ready.then(() => true)')
+                cold_assets = list(asset_responses)
+                cold_asset_requests = sorted({target for _, target in requests if target.startswith(asset_prefix)})
+                assert cold_asset_requests and not asset_failures
+                assert {item['url'] for item in cold_assets} == set(cold_asset_requests)
+                assert all(item['status'] == 200 for item in cold_assets), cold_assets
                 frame.evaluate("""() => {
                     window.contextNotices = [];
                     addEventListener('message', event => {
@@ -166,5 +180,6 @@ def test_real_workbench_preserves_session_frame_and_uses_installed_embed_protoco
             finally:
                 (tmp_path / 'browser-observations.json').write_text(json.dumps({
                     'page_errors': errors, 'requests': requests,
+                    'cold_assets': cold_assets, 'cold_asset_requests': cold_asset_requests,
                 }, indent=2), encoding='utf-8')
                 browser.close()

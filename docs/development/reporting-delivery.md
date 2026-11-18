@@ -83,6 +83,23 @@ and `scripts/tests/test_retired_ai_paths.py::test_current_repository_has_no_reti
 run the existing checkers against this checkout and require nonzero coverage
 with no violations. Their JUnit evidence is usable by the final qualifier;
 raw checker JSON alone is not a supported evidence binding.
+The Windows host's non-running HTTP proof retains the public WSGI callable
+after final stop, separately checks `close_http`, and uses the real Waitress
+stopping matrix. `start_blocking` exposes no pre-start WSGI handle. Do not
+substitute an ASGI request or an async authentication shim for this synchronous
+host; ASGI host qualification remains not applicable.
+`conformance_boundary_cases.py` verifies full-short-capacity authentication,
+real same-origin navigation retry, embedded CSP and closed/stopped HTTP.
+`conformance_environment_cases.py` observes the actual Windows loop,
+process-state ownership and a deliberately slow callback diagnostic.
+The Workbench browser witness records cold asset requests and their 200
+responses; these are functional checks, not startup/latency KPIs.
+
+An aggregate JUnit may copy whole already-green input suites with a hashed
+provenance list. Reject failed/skipped inputs and duplicate testcase IDs,
+preserve every input case, and validate the output inventory with the existing
+JUnit checker. This is report aggregation, not another test execution, and
+cannot replace the producer-owned native or migration receipts.
 
 The migration qualification entry is `scripts/validation/windows_migration_rehearsal.py
 --inputs <frozen-inputs.json> --output <new-owned-receipt.json>`. It refuses dirty
