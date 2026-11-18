@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from http.client import HTTPException
 import os
 import re
 import shlex
@@ -42,7 +43,7 @@ def http_status_ok(url: str) -> bool:
         with urllib.request.urlopen(url, timeout=1.0) as response:
             response.read(2048)
             return 200 <= response.status < 300
-    except (OSError, urllib.error.URLError):
+    except (OSError, urllib.error.URLError, HTTPException):
         return False
 
 
@@ -56,7 +57,7 @@ def http_probe(url: str, timeout: float = 1.0, body_limit: int = 2048) -> dict[s
                 "body_sha256": hashlib.sha256(body).hexdigest(),
                 "body_preview": body.decode("utf-8", errors="replace")[:200],
             }
-    except (OSError, urllib.error.URLError) as error:
+    except (OSError, urllib.error.URLError, HTTPException) as error:
         return {"reachable": False, "error": type(error).__name__}
 
 

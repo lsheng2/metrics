@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import gc
+from contextlib import nullcontext
+from http.client import BadStatusLine, IncompleteRead, RemoteDisconnected
 import os
 import subprocess
 import sys
 import time
 import weakref
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "scripts") not in sys.path:
@@ -14,6 +19,34 @@ if str(ROOT / "scripts") not in sys.path:
 
 from service_lifecycle_engine import PlatformOperationSet
 from service_lifecycle_engine import platform_ops
+
+
+@pytest.mark.parametrize('failure', [
+    lambda: BadStatusLine('GET /health HTTP/1.1\r\n'),
+    lambda: RemoteDisconnected('not ready'),
+    lambda: IncompleteRead(b'partial', 10),
+])
+@pytest.mark.parametrize('probe', ['status', 'detail'])
+def test_http_protocol_errors_are_unreachable_not_probe_exceptions(monkeypatch, failure, probe):
+    def invalid(*args, **kwargs):
+        raise failure()
+
+    monkeypatch.setattr(platform_ops.urllib.request, 'urlopen', invalid)
+    if probe == 'status':
+        assert platform_ops.http_status_ok('http://127.0.0.1:12345/health') is False
+    else:
+        assert platform_ops.http_probe('http://127.0.0.1:12345/health') == {
+            'reachable': False, 'error': type(failure()).__name__,
+        }
+
+
+def test_successful_http_probe_remains_reachable(monkeypatch):
+    monkeypatch.setattr(
+        platform_ops.urllib.request, 'urlopen',
+        lambda *args, **kwargs: nullcontext(SimpleNamespace(status=204, read=lambda size: b'up')),
+    )
+    assert platform_ops.http_status_ok('http://127.0.0.1:12345/health') is True
+    assert platform_ops.http_probe('http://127.0.0.1:12345/health')['reachable'] is True
 
 LAUNCHER_SCRIPT = """
 import os, subprocess, sys

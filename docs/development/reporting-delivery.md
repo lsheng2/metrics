@@ -100,6 +100,14 @@ provenance list. Reject failed/skipped inputs and duplicate testcase IDs,
 preserve every input case, and validate the output inventory with the existing
 JUnit checker. This is report aggregation, not another test execution, and
 cannot replace the producer-owned native or migration receipts.
+Run the explicit conformance/testkit lane in a separate process from ordinary
+GUI/business tests. Resource baselines are process-scoped; a mixed-process
+observer failure is not a measured leak or a reason to loosen its thresholds.
+All selected cases must still execute, and only whole green reports may merge.
+Startup readiness polls treat malformed/truncated HTTP like other transient
+transport failures, while retaining the original absolute deadline and owned
+process check. SLE reports such probes as unreachable; normal API reads remain
+strict and failed probes never establish readiness or endpoint ownership.
 
 The migration qualification entry is `scripts/validation/windows_migration_rehearsal.py
 --inputs <frozen-inputs.json> --output <new-owned-receipt.json>`. It refuses dirty

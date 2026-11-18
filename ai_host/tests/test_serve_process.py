@@ -1,4 +1,5 @@
 import hashlib
+from http.client import HTTPException
 import json
 from pathlib import Path
 import re
@@ -50,7 +51,7 @@ def test_real_serve_stops_project_and_runtime_without_leaving_its_listener(tmp_p
                         assert response.status == 200
                         evidence['responses']['/'] = response.status
                         break
-                except (urllib.error.URLError, TimeoutError):
+                except (urllib.error.URLError, TimeoutError, HTTPException):
                     assert time.monotonic() < deadline, log_file.read_text(encoding='utf-8', errors='replace')
                     time.sleep(0.1)
             with opener.open(f'http://127.0.0.1:{port}/ai/', timeout=3) as response:

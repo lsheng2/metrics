@@ -1,5 +1,6 @@
 from contextlib import ExitStack
 import json
+from http.client import HTTPException
 from pathlib import Path
 import socket
 import subprocess
@@ -33,7 +34,7 @@ def wait_until_ready(process, opener, port, log_file, marker, trigger, phase):
             with opener.open(f'http://127.0.0.1:{port}/', timeout=1) as response:
                 assert response.status == 200
                 return
-        except (URLError, TimeoutError):
+        except (URLError, TimeoutError, HTTPException):
             assert time.monotonic() < deadline
             time.sleep(0.1)
 

@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import json
+from http.client import HTTPException
 from pathlib import Path
 import socket
 import subprocess
@@ -39,7 +40,7 @@ def running_workbench(tmp_path, endpoint):
                     with opener.open(base + '/', timeout=2) as response:
                         assert response.status == 200
                         break
-                except (urllib.error.URLError, TimeoutError):
+                except (urllib.error.URLError, TimeoutError, HTTPException):
                     assert time.monotonic() < deadline, log_path.read_text(encoding='utf-8', errors='replace')
                     time.sleep(0.1)
             events = [json.loads(line) for line in log_path.read_text(encoding='utf-8').splitlines()

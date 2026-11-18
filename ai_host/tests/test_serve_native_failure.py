@@ -1,4 +1,5 @@
 import json
+from http.client import HTTPException
 from pathlib import Path
 import socket
 import subprocess
@@ -29,7 +30,7 @@ def wait_ready(process, port, log):
             with opener.open(f"http://127.0.0.1:{port}/ai/", timeout=1) as response:
                 assert response.status == 200
                 return
-        except (URLError, TimeoutError):
+        except (URLError, TimeoutError, HTTPException):
             time.sleep(0.05)
     pytest.fail("owned native fault host did not become ready")
 

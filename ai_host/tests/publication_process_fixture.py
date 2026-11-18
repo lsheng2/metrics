@@ -1,6 +1,7 @@
 import base64
 import configparser
 from contextlib import contextmanager
+from http.client import HTTPException
 import json
 import os
 from pathlib import Path
@@ -43,7 +44,7 @@ def await_ready(process, url, credentials, log_path, *, timeout=60):
         assert process.poll() is None, log_path.read_text(encoding='utf-8', errors='replace')
         try:
             return request_json(url, credentials=credentials)
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, HTTPException):
             assert time.monotonic() < deadline, log_path.read_text(encoding='utf-8', errors='replace')
             time.sleep(0.1)
 

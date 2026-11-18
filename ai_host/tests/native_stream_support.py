@@ -1,5 +1,5 @@
 from contextlib import contextmanager, ExitStack
-from http.client import HTTPConnection
+from http.client import HTTPConnection, HTTPException
 import json
 from pathlib import Path
 import socket
@@ -116,7 +116,7 @@ def native_stream_host(root, *, endpoint="-", trigger="stop-file"):
                 try:
                     host.request("GET", "/ai/api/apps")
                     break
-                except OSError:
+                except (OSError, HTTPException):
                     assert time.monotonic() < deadline
                     time.sleep(0.05)
             inventory, family = living_children(), {process.pid}
