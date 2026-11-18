@@ -5,6 +5,8 @@ from contextlib import contextmanager
 import hashlib
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -527,3 +529,16 @@ def test_conformance_rejects_dirty_source_before_running_native_lanes(tmp_path, 
     assert host_qualification.main(["--phase", "conformance", "--inputs", str(case["inputs"]), "--output", str(case["output"])]) == 1
     assert commands == []
     assert not case["output"].exists()
+
+
+def test_isolated_native_cli_reaches_validation_without_import_failure(tmp_path):
+    root = Path(__file__).resolve().parents[2]
+    output = tmp_path / "receipt.json"
+    result = subprocess.run([
+        sys.executable, "-I", str(root / "scripts/validation/windows_host_qualification.py"),
+        "--phase", "conformance", "--inputs", str(tmp_path / "missing.json"), "--output", str(output),
+    ], cwd=tmp_path, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 1
+    assert "windows_host_conformance:" in result.stderr, result.stderr
+    assert "Traceback" not in result.stderr, result.stderr
+    assert not output.exists()
