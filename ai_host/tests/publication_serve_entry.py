@@ -3,7 +3,6 @@ import json
 import os
 from pathlib import Path
 import sys
-from unittest.mock import patch
 from urllib.parse import urlsplit
 
 
@@ -13,6 +12,8 @@ from ai_host.tests.serve_test_entry import main
 
 
 def configure(temp):
+    from unittest.mock import patch
+
     config = json.loads(Path(sys.argv[4]).read_text(encoding='utf-8'))
     for field in ('model_url', 'grafana_url'):
         if urlsplit(config[field]).hostname != '127.0.0.1':

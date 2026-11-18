@@ -12,6 +12,12 @@ def check(root, platform="windows"):
     return importlib.import_module("scripts.check_retired_ai_paths").check(root, platform=platform)
 
 
+def test_current_repository_has_no_retired_windows_paths():
+    result = check(Path(__file__).resolve().parents[2], platform="windows")
+    assert result["checked_files"] > 0
+    assert result["passed"] and not result["violations"], result
+
+
 @pytest.mark.parametrize("path,text", [
     ("metrics/settings.py", "METRICS_AI_SIDECAR_ENABLED = True"),
     ("ui_web/routes.py", "route = '/api/ai-dashboard/workflow/'"),

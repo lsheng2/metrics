@@ -66,6 +66,17 @@ stop result and explicit-exit/inventory boundaries; a stalled final stage also
 dumps thread stacks before the unchanged watchdog deadline. These observations
 do not replace cleanup assertions or explain an earlier failure merely because
 a later run passes. They are test diagnostics, not production API fields.
+Test entry preludes must leave callback-registering imports, including
+`unittest.mock`, until the shared serve bootstrap installs exit capture.
+Load such helpers inside `configure`/`prepare`; an unobserved callback is an
+exit failure, not a reason to relax the inventory.
+
+The actual-repository pytest witnesses
+`scripts/tests/test_embedded_runtime_boundaries.py::test_current_repository_obeys_embedded_runtime_boundaries`
+and `scripts/tests/test_retired_ai_paths.py::test_current_repository_has_no_retired_windows_paths`
+run the existing checkers against this checkout and require nonzero coverage
+with no violations. Their JUnit evidence is usable by the final qualifier;
+raw checker JSON alone is not a supported evidence binding.
 
 The migration qualification entry is `scripts/validation/windows_migration_rehearsal.py
 --inputs <frozen-inputs.json> --output <new-owned-receipt.json>`. It refuses dirty

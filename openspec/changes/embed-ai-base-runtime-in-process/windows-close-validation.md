@@ -259,14 +259,15 @@ execution commands, not commands run by this planning revision.
 ```powershell
 & $python -I scripts/validation/run_report_authoring_tests.py scripts/tests/test_dashboard_runtime_instance_profile.py scripts/tests/test_service_lifecycle_stopping.py scripts/tests/test_service_lifecycle_provenance.py scripts/tests/test_stack_process_inventory_audit.py scripts/tests/test_stack_boot_log_audit.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
 & $python -I scripts/validation/run_report_authoring_tests.py ai_host/tests/test_settings.py ai_host/tests/test_serve_lifecycle.py ai_host/tests/test_lifecycle.py project_management/tests/test_project_runtime.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
-& $python -I scripts/validation/run_report_authoring_tests.py ai_host/tests/conformance_suite.py ai_host/tests/conformance_host_cases.py ai_host/tests/conformance_http_cases.py ai_host/tests/conformance_order_cases.py ai_host/tests/conformance_process_cases.py -p ai_base_runtime.testkit.pytest_plugin -p ai_host.tests.conformance_fixtures -o ai_host_modes=blocking_wsgi -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
+& $python -I scripts/validation/run_report_authoring_tests.py ai_host/tests/conformance_host_cases.py ai_host/tests/conformance_http_cases.py ai_host/tests/conformance_order_cases.py ai_host/tests/conformance_process_cases.py ai_host/tests/conformance_runtime_cases.py ai_host/tests/conformance_recovery_cases.py ai_host/tests/conformance_backpressure_cases.py -p ai_base_runtime.testkit.pytest_plugin -p ai_host.tests.conformance_fixtures -o ai_host_modes=blocking_wsgi -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
 & $python -I scripts/validation/run_report_authoring_tests.py ai_host/tests/test_workbench_browser_join.py ai_host/tests/test_publication_browser_join.py ai_host/tests/test_summary_runtime_join.py ai_host/tests/test_report_runtime_join.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
 ```
 
 Add the exact newly produced test paths from V1-V11 when their owning node
-implements them. W2.VA records the full conformance argv, including new explicit
-`conformance_runtime_cases.py`/`conformance_recovery_cases.py`; the existing
-command above alone is not full 5.10 proof.
+implements them. The supported Windows conformance command includes runtime,
+recovery and backpressure cases. The ASGI non-applicability placeholder in
+`conformance_suite.py` is recorded separately, not selected into accepted JUnit.
+Native signal/stream receipts remain separate mandatory proof.
 
 Final original10.2 module bundle uses explicit paths `ai_host/tests`,
 `metrics/tests`, `bug_metrics/tests`, `jira_sync/tests`, `ui_web/tests`,

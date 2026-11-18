@@ -9,6 +9,37 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.mark.parametrize('entry', [
+    'workbench_serve_entry', 'publication_serve_entry', 'serve_signal_entry',
+    'serve_stream_entry', 'serve_failure_entry', 'runtime_recovery_entry',
+])
+def test_serve_fixture_preludes_do_not_register_cleanup_before_capture(entry):
+    script = """
+import json, runpy, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from ai_host.tests import serve_test_entry
+def at_bootstrap(**kwargs):
+    from ai_host.exit_inventory import install_exit_capture
+    capture = install_exit_capture()
+    print(json.dumps({
+        'preexisting_callbacks': capture.preexisting_callbacks,
+        'preexisting_thread_callbacks': len(capture.preexisting_thread_callbacks),
+    }))
+    return 0
+serve_test_entry.main = at_bootstrap
+runpy.run_path(str(Path(sys.argv[1]) / 'ai_host/tests' / (sys.argv[2] + '.py')), run_name='__main__')
+"""
+    result = subprocess.run(
+        [sys.executable, '-I', '-c', script, str(ROOT), entry],
+        capture_output=True, text=True, timeout=12,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {
+        'preexisting_callbacks': 0, 'preexisting_thread_callbacks': 0,
+    }
+
+
 def probe(body, *args):
     script = """
 import sys

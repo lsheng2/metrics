@@ -30,6 +30,17 @@ B5/断开原始记录的语义回放通过。仍待冻结源码的完整原生 C
 124 项定向 GREEN 通过。宿主、wheel 和时限未改。原始失败与所有运行目录仍保留；
 修复后的冻结原生回执、真实汇总消费和独立复核尚待完成，W2.R 不计 PASS。
 
+最新检查点（2026-11-18）：`3223191` 已完成修复后原生 56 项及 B1/B4/B5
+真实汇总消费；独立 W2.R 达到 1/1 clean pass（2 次复核，1 个 P1 已关闭），
+W2.REPLAN 为 continue。W3 首轮冻结及合成迁移/回滚均在此 SHA 通过：
+9 个 HTTP 检查为 200，新旧版本各保留 1 份发布，原始 94 个文件哈希不变，正常停止。
+联合用例首轮 3 passed / 1 failed；发布的业务及 Grafana 断言均通过，但测试入口
+在退出观测前导入 `unittest.mock`，导致 `exit_capture_incomplete`。
+6 个入口的轻量 RED 仅此入口失败；延后该导入后 21 项退出回归及真实发布复测通过，
+Dashboard/Grafana 均退出 0、无 force。实际仓库静态 gate 的 JUnit 见证及反例共 46 项通过。
+本次仅测试/验收文档改动；仍需修复后输入再冻结、全量模块门禁、精确的 114 条
+functional 证据绑定及 FUNC.R。W3 首轮回执保留，不把它冒充后续修订的最终回执。
+
 此前阻塞记录：B5 12 项、20 次断开、70 项组合一致性和 103 项宿主回归已通过。
 原生验收器正在集成；补出的退出码/非有限时长反例已修复，但最新 61 项回归有
 59 passed、2 项在写合成夹具时发生 `OSError: [Errno 28] No space left on device`。
@@ -70,9 +81,9 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] W1.REPLAN - W2=amend、W3=continue；基线适配要求已写入 steps/validation，五项 S0b 源码哈希未变，18 节点/20 依赖及严格 OpenSpec 检查通过。结构化回执在 `evidence/windows-w1-review.json`；W2.VA 仍须独立签核。
 - [x] W2.VA - 独立 Validation Engineer 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计；批准保留真实空闲 ProjectRunRuntime 的 S0b 测试基线适配。原始回执及授权澄清见 `evidence/windows-w2-validation.md`，无新增 owner 决策阻塞。
 - [x] W2.HOST - 生命周期实现、原生证明夹具、迁移及原生验收工具已完成定向集成验证；恢复后的 143 项回归、4 项原生故障复测及实际边界/退役 gate 通过。见 `evidence/windows-w2-resume.json`。原生冻结版本执行与独立签核仍属后续节点。
-- [ ] W2.CERTIFY - 完成 Windows 宿主功能一致性、原生安全及清理矩阵；不跑性能 KPI。
-- [ ] W2.R - 独立复核宿主实现及完整 Windows 功能证据。
-- [ ] W2.REPLAN - 复查最终候选、回滚材料及 W3 可执行性。
+- [x] W2.CERTIFY - `3223191` 原生 56 项、B1/B4/B5 语义回执及真实汇总消费通过；70 项一致性按未变依赖范围复用。不含性能 KPI。
+- [x] W2.R - `3223191` 整批 92 路径独立复核达到 1/1 clean pass；W2-P1-1 已以 RED/GREEN 和真实回执消费关闭。
+- [x] W2.REPLAN - 独立结论 continue；W3 首轮冻结/迁移成功，后续测试入口修复及最终资格输入须按上方检查点再冻结。
 - [ ] W3.FREEZE - 固定双方提交、wheel、依赖、fixture 与环境指纹。
 - [ ] W3.REHEARSE - 在合成状态副本上完成新旧版本切换及回滚。
 - [ ] W3.JOIN - 完成最终联合业务验收和必需的全量门禁。

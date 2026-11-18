@@ -18,6 +18,12 @@ def check(root):
     return importlib.import_module("scripts.check_embedded_runtime_boundaries").check(root)
 
 
+def test_current_repository_obeys_embedded_runtime_boundaries():
+    result = check(Path(__file__).resolve().parents[2])
+    assert result["checked_files"] > 0
+    assert result["passed"] and not result["violations"], result
+
+
 @pytest.mark.parametrize("path,source,rule", [
     ("ui_web/view.py", "import ai_base_runtime", "runtime_owner"),
     ("scripts/launch.py", "from waitress import create_server", "runtime_owner"),
