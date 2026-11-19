@@ -13,6 +13,7 @@ from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from importlib import metadata
 import hashlib
+import inspect
 import json
 import threading
 import time
@@ -49,10 +50,10 @@ def configure(temp):
     }
 
 
-def runtime_identity():
-    import ai_base_runtime._internal.resources as resources
-
-    resources_path = Path(resources.__file__).resolve()
+def runtime_identity(handle):
+    store = handle._runtime._store
+    assert store is not None, "runtime store is not open"
+    resources_path = Path(inspect.getfile(type(store))).resolve()
     return {
         "runtime_version": metadata.version("ai-base-runtime"),
         "resources_path": str(resources_path),
@@ -237,7 +238,7 @@ def prepare():
     original_with_runtime_stop_result = Command._with_runtime_stop_result
 
     def observed_wait(command, stop_event, stop_file, deadline, handle):
-        write_observation(mode=mode, identity=runtime_identity())
+        write_observation(mode=mode, identity=runtime_identity(handle))
         if mode.startswith("write-"):
             proof = seed_public_state(handle, state)
             write_observation(seed={"proof": proof, "state_counts": dict(state)})

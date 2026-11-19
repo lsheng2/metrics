@@ -156,6 +156,18 @@ This validation-tool change requires the next clean input freeze.
 
 ## Remaining Gates
 
+The d1f8448 refresh passed native56, complete74, recovery39, W2.R and
+migration/rollback. Its mapped run
+`mapped-proof-runs/b4c6da8c-aa8f-4c58-86ac-3aaa1341ea83/` then passed 40
+cases before the actual repository boundary checker rejected a private import
+in the failed-shutdown test entry. That import was used only for source-file
+identity. The entry now inspects the actual store object's class to record its
+source path/hash without importing a private module. Fault injection and
+production behavior are unchanged; the boundary/retirement/recovery group
+passed 54 cases in `functional-closeout-20261119/store-identity-green.xml`.
+The failed run and `boundary-failure-d1f8448.json` are retained. Static
+repository witnesses must pass before another long frozen packet.
+
 At `244c027c5fc8715d780fbc9dec80e18d51a99f7a`, native56, complete
 conformance74, recovery/observation39, native producer/consumer composition,
 independent W2.R and same-source migration/rollback passed. Their immutable
