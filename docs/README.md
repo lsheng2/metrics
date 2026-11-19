@@ -8,6 +8,7 @@
 - Current B5 fixture decision: [approved B5-r1](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md); both real-chat and same-adapter backpressure proofs are required, with unchanged safety bounds.
 - Windows native functional proof progress: [B5, queue bounds and disconnect evidence](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-w2-b5-progress.json); development evidence, not frozen W2/W3 acceptance.
 - Windows resumed validation: [storage recovery and W2 integration](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-w2-resume.json); frozen native certification and joint acceptance remain separate.
+- Windows functional closeout: [current evidence and limits](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-closeout.md), including the controlled failed-shutdown recovery proof; final acceptance is recorded separately.
 - Supporting docs migrated from this folder: `openspec/docs/`
 - Migration inventory: `openspec/docs/baseline-docs-inventory.md`
 - Case studies and operator walkthroughs: `docs/case_study/`

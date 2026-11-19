@@ -70,6 +70,13 @@ Test entry preludes must leave callback-registering imports, including
 `unittest.mock`, until the shared serve bootstrap installs exit capture.
 Load such helpers inside `configure`/`prepare`; an unobserved callback is an
 exit failure, not a reason to relax the inventory.
+`ai_host/tests/test_failed_shutdown_recovery.py` adds a separate safety proof:
+after acknowledged public runtime writes, controlled pending store work
+causes a real incomplete stop and serve exit3; a fresh child must recover the
+same task/session/approval/history state without duplicate effects. Its clean
+control and identity negative prevent that proof from silently becoming a
+normal-stop or lock-only smoke. This does not explain a historical OS stall
+or guarantee unacknowledged work survives. Keep all production budgets intact.
 Native signal tests wait for the complete expected cleanup-phase value, not
 file existence. An implicit lifetime stop may already have closed HTTP before
 the parent observes readiness; only a live process in its expected controlled
