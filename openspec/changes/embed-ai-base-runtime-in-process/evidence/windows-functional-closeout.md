@@ -11,7 +11,8 @@ On 2026-11-19 the owner approved returning the main effort to functional
 acceptance and continuing until the scoped functionality is verified.
 The existing 114 functional evidence keys and signed stop/cleanup bounds remain.
 No candidate wheel, production timeout, runtime API or business implementation
-has been changed by this packet.
+has been changed by this packet. The host observation/exit-loading corrections
+are described below and require fresh source-bound qualification.
 
 Use a frozen source commit for formal native, migration, mapped and final
 qualifier runs. Earlier successes are retained under their actual source and
@@ -154,6 +155,31 @@ and `qualifier-actual-lane-smoke` in the closeout artifact directory.
 This validation-tool change requires the next clean input freeze.
 
 ## Remaining Gates
+
+At `244c027c5fc8715d780fbc9dec80e18d51a99f7a`, native56, complete
+conformance74, recovery/observation39, native producer/consumer composition,
+independent W2.R and same-source migration/rollback passed. Their immutable
+receipts remain under the closeout artifact root and
+`inputs/windows-native-w2/31f43c71-5369-4f65-96ed-95b90280bcae/`,
+`inputs/windows-w3/c1b96aa7-4d7e-4f60-9ac8-97d85830b759/`.
+They do not qualify subsequent changed source.
+
+The following mapped run `mapped-proof-runs/883e0385-f83a-4e0d-a81a-6fc3c20a27cc/`
+failed after 24 passing cases. Creating a chat session returned 504; cleanup
+completed SDK stop, but the host then stalled while first importing
+`ai_host.serve_exit` and exited 3 under the unchanged watchdog. These are
+separate observations, not an established shared OS cause. The exact-case
+profiled diagnostic in `root-cause-runs/9cdc41bd-071e-44e8-b0ce-8cf367979292/`
+passed and is not qualification.
+
+The command now loads its exit module before serving, so first-time discovery
+of that module is not paid inside the stop budget. A deterministic subprocess
+finder rejects late module discovery: three cases failed before the change,
+then all 75 focused exit/lifecycle/budget/binding/admission cases passed.
+Evidence: `exit-import-red-r2.xml` and `exit-import-green.xml` under
+`functional-closeout-20261119/`. Exit codes and all cleanup/deadline requirements
+are unchanged. This fixes that lazy-import exposure, not arbitrary filesystem
+latency or the earlier 504.
 
 The added test snapshot still requires independent review and a final frozen
 source. Then complete native receipt refresh, same-source migration/rollback,

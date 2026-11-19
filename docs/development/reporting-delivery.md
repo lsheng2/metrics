@@ -88,6 +88,11 @@ the parent observes readiness; only a live process in its expected controlled
 cleanup phase can satisfy that test's initial observation. Normal lifetime
 and explicit first-stop cases still require HTTP readiness. Stop/signal
 deadlines remain unchanged.
+The serve command loads its explicit-exit module before serving. First-time
+module discovery must not consume the bounded shutdown window; the native
+exit checks still require the actual inventory and cleanup, not just a zero
+process code. This does not remove filesystem I/O from cleanup or change
+its deadline.
 
 The actual-repository pytest witnesses
 `scripts/tests/test_embedded_runtime_boundaries.py::test_current_repository_obeys_embedded_runtime_boundaries`

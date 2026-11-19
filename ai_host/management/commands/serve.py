@@ -13,6 +13,7 @@ from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.core.management.base import SystemCheckError
 from project_management.app.api.task_runtime import LocalRuntimeCleanupError
+from ai_host import serve_exit
 
 
 class Command(BaseCommand):
@@ -338,13 +339,11 @@ class Command(BaseCommand):
             from ai_host.serve_control import bounded_output_exit
             bounded_output_exit(130, lambda: self._write_exit_line(message or 'serve forced exit.'))
             return
-        from ai_host.serve_exit import explicit_exit
-
         stop_event = getattr(self, '_stop_event', None)
         if stop_event is not None:
             stop_event.set()
         self._begin_stop_budget()
-        explicit_exit(
+        serve_exit.explicit_exit(
             code, self.stdout, self.stderr,
             message=message or getattr(self, '_runtime_failure_message', None),
         )
