@@ -28,7 +28,9 @@ decision about resuming other Apps. This is not full AIB repository release.
   MDB-2 requirements. Whole-change archival needs their actual completion or a
   separately approved specification amendment.
 - `FUNC.ACCEPT` is the earlier Windows functional milestone, explicitly
-  **performance not qualified**. It cannot close original task 10.4 or imply
+  **performance not qualified**. It passed at ff09d6f on 2026-11-20; the
+  [functional receipt](evidence/windows-functional-acceptance.json) binds its scope.
+  It cannot close original task 10.4 or imply
   final Windows acceptance. Performance work starts only after this milestone
   and `W3.REPLAN`; no other-App expansion precedes functional closure.
 
@@ -38,6 +40,7 @@ decision about resuming other Apps. This is not full AIB repository release.
 | --- | --- |
 | Dashboard source | `d0c395eb8649a90d2a2cae09d1f5362252bb0353`; clean at plan creation |
 | Amendment baseline | `1dbdd338efaa31f8df1d2f8d9a55a6218c35536e`; existing W2 dirty paths recorded in `evidence/windows-functional-first-baseline.json` |
+| Accepted functional source | `ff09d6ff97dd62e56fb3bfc44914c5c08582a144`; all 114 functional keys and 7 module lanes accepted, performance NOT_RUN |
 | AIB candidate source | `d589ac8e6572a903edc3846e7d78195e85858868` |
 | Runtime | `ai-base-runtime==0.1.1.dev4` |
 | Wheel SHA256 | `b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94` |
@@ -61,7 +64,9 @@ manager, bootstrap authority, sidecar fallback or provider abstraction.
 
 Tech stack stays Python 3.13, Django 6.0.7, WhiteNoise 6.12.0, Waitress 3.0.2,
 portalocker 4.4.2, the pinned runtime, existing htmx/Meridian UI and local Grafana.
-W1 installed and verified this dependency set. W2 remains uncommitted work.
+W1 installed and verified this dependency set. W2 and the Windows functional
+W3/FUNC gates passed at the accepted source; later documentation-only closeout
+does not change those tested product bytes.
 
 ### Original Planning Gaps And Current Frontier
 
@@ -71,13 +76,14 @@ W1 installed and verified this dependency set. W2 remains uncommitted work.
   substitute for direct installation of the pinned wheel.
 - W1 replaced legacy runtime bindings/launchers through SLE and tested foreign
   process refusal. Do not reimplement completed W1 children.
-- `serve`/`stop_owned_resources` implement the working slice, not all signed
-  lifecycle requirements: absolute shutdown stages, watchdogs, runtime-ended
-  monitoring, full exit inventory and some binding policy need implementation.
-  W2 has implemented these changes in the dirty tree; complete functional
-  evidence, migration tooling and independent packet review remain open.
-- Existing publication and retirement packets prove real bounded paths.
-  They are candidates for reuse, not proof that every unchecked task is done.
+- The former lifecycle gaps in `serve`/`stop_owned_resources` are implemented
+  and covered by the accepted native, recovery and module evidence. Absolute
+  shutdown stages, watchdogs, runtime-ended monitoring and exit inventory
+  retained their signed bounds.
+- Publication, Windows retirement and migration proof now participate in final
+  functional acceptance. Original mixed-scope tasks 0.6, 6.2, 6.3, 9.5, 10.2,
+  10.3, 10.4 remain open. Current work proceeds to W3.REPLAN and performance;
+  Linux/image, all-platform and AIB-wide obligations are not implicitly passed.
 
 ## Contract Registry And Propagation
 

@@ -19,15 +19,18 @@ Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
 
-The remaining Windows work is specified in the
+The Windows delivery sequence is specified in the
 [MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
 with detailed steps and a clause-to-evidence matrix. Installation and entrypoint
-retirement passed W1. The active sequence is remaining host functional work,
-frozen-candidate rehearsal, joint acceptance and `FUNC.ACCEPT`. Only afterward
-does the [performance phase](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md)
-freeze KPIs, collect probes, optimize and certify. Functional acceptance explicitly
-leaves performance unqualified; stop/cancel/cleanup bounds remain functional.
-The owner has resumed execution; the plan is not evidence that its gates passed.
+retirement passed W1. Windows synthetic-data `FUNC.ACCEPT` is now complete at
+source `ff09d6ff97dd62e56fb3bfc44914c5c08582a144`: the
+[formal receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json)
+binds 114/114 functional keys, all seven module gates and independent review.
+Next is W3.REPLAN, followed by the
+[performance phase](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md)
+to freeze KPIs, collect probes, optimize and certify. Performance remains NOT_RUN;
+stop/cancel/cleanup bounds remain functional and were not relaxed.
+The receipt covers the tested source, not subsequent product changes or full AIB release.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
 Windows B5 shutdown qualification requires two complementary proofs under the
@@ -37,7 +40,8 @@ active/idle/approximately8MiB streams through the same installed adapter and act
 serve prove slow/non-reader backpressure and cleanup. Both are required. This
 does not add chat-text streaming or change the candidate, heartbeat2s, quotas4/4,
 threads14, terminal grace2s, slow-reader pause3s or normal exit0 within10s.
-This is the acceptance method, not a claim that B5 or the full host has passed.
+Both B5 proofs and the Windows host functional matrix are accepted by the linked
+receipt; performance/KPI qualification remains separate.
 The approximately8MiB unread workload may span Waitress and TCP buffers.
 Qualification binds all512 payload blocks plus real pending server output;
 it does not require the entire workload to remain in Waitress's own queue.
@@ -150,8 +154,10 @@ records and exact `candidate`, `old_app`, `old_base` interpreter fingerprints.
 Only the new candidate carries the clean-install/no-legacy-SDK gate; the old
 environment is used solely for the isolated, pinned restore. The qualifier
 accepts its `windows-migration-rehearsal` receipt kind only for the Windows
-portion of task 10.3, after semantic replay. This command's presence does not
-mean final migration or joint acceptance has passed.
+portion of task 10.3, after semantic replay. The accepted Windows migration
+receipt is bound by the functional acceptance above; original task 10.3 remains
+open for deferred image-specific obligations. Command availability alone
+never proves a migration or joint acceptance.
 
 Use the separately installed candidate interpreter:
 
@@ -363,7 +369,7 @@ Shutdown stops listener admission, closes runtime HTTP, drains
 response iterators through `close()`, flushes connections, and closes the
 Waitress dispatcher on its server thread before stopping the project worker.
 The signed absolute deadlines and watchdog remain in the Windows validation
-matrix; their full native qualification is still open.
+matrix and passed the accepted native functional qualification at ff09d6f.
 
 Normal and failed exits emit `serve_exit_inventory` before explicit database
 and logging cleanup, then `serve_exit_cleanup` and the final status line.

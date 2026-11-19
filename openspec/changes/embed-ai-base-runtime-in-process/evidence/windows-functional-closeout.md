@@ -1,18 +1,66 @@
 # Windows Functional Closeout
 
-Status: in progress. This is not yet FUNC.ACCEPT.
+Status: FUNC.ACCEPT passed on 2026-11-20 for the scope below.
 Scope: Windows Dashboard MDB-2 functional acceptance only. Performance,
-Linux, other Apps, publication and main integration remain outside this packet.
+Linux, other Apps, remote push and main integration remain outside this packet.
 The sole task ledger remains the parent `tasks.md`.
+
+## Accepted Baseline
+
+The generated [functional acceptance receipt](windows-functional-acceptance.json)
+has SHA256 `a6992f45482ff4b01c498e0df725c6131a78356a9f2d2d898d6ce8032ccaa670`.
+It accepts all 114 functional evidence keys at clean Dashboard source
+`ff09d6ff97dd62e56fb3bfc44914c5c08582a144`, paired with AIB source
+`d589ac8e6572a903edc3846e7d78195e85858868` and `ai-base-runtime==0.1.1.dev4`.
+The wheel SHA256 remains
+`b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94`.
+
+| Complete module lane | Passed primary cases | Execution |
+| --- | ---: | --- |
+| ai_host | 262 | Reused complete original lane |
+| metrics | 19 | Reused complete original lane |
+| bug_metrics | 250 | Reused complete original lane |
+| jira_sync | 32 | Reused complete original lane |
+| ui_web | 759 | Reused complete original lane |
+| project_management | 971 | Complete new execution |
+| scripts | 548 | Complete new execution |
+
+All seven lanes have zero failures/errors/skips and exact execution inventory
+reconciliation. Native 56, complete conformance 74/recovery 39, mapped 49 business
+proof, migration/rollback and both independent review gates are bound through
+the receipt. Counts overlap between producers; they are not added together.
+The accepted workflow includes the actual Windows host/browser, session/context,
+approval/publication, task-run, recovery and stop paths with synthetic inputs.
+It does not qualify real providers/models/data or all unrelated Dashboard plans.
+
+The original final run `135bef80-bdec-45b5-af7b-00fdc0a1c5fc` remains a failed
+execution: its project lane reached the 3600-second outer suite cap.
+Reviewed resumption `f22ee8cf-e452-494e-a1de-9d210874a3e4` reused only its five
+complete green lanes and reran admission/pip plus the entire final two lanes.
+The project lane took 3724.16s under a 7200-second outer suite cap. Individual
+tests, selections, application stop deadlines and assertions were unchanged.
+The new qualification SHA256 is
+`a3a95c4ea86845bb30a66118387721fd8e02ac3708ae22da44464e9a7b009752`.
+Its owning read-only validator replays all provenance, not just the PASS label.
+
+W2.R and FUNC.R each reached 1/1 clean pass. FUNC.R closed its one counted P1
+scope-substitution finding; final P0-P3 counts are zero. The code-tested source
+above precedes the documentation-only closeout commit, reported separately.
+Performance remains `NOT_RUN`. Original tasks 0.6, 6.2, 6.3, 9.5, 10.2, 10.3, 10.4
+remain open for their AIB-wide, Linux/image, all-platform or performance parts.
+Next is W3.REPLAN and the separate performance phase, not whole-change archive.
+
+The following sections preserve historical attempts under their actual source
+identities. Their former pending statements do not override this accepted baseline.
 
 ## Authorization And Method
 
 On 2026-11-19 the owner approved returning the main effort to functional
 acceptance and continuing until the scoped functionality is verified.
 The existing 114 functional evidence keys and signed stop/cleanup bounds remain.
-No candidate wheel, production timeout, runtime API or business implementation
-has been changed by this packet. The host observation/exit-loading corrections
-are described below and require fresh source-bound qualification.
+Candidate wheel, production timeouts and runtime APIs were not changed.
+Host observation/exit-loading, publication transaction and validation corrections
+are described below and are included in the accepted source-bound qualification.
 
 Use a frozen source commit for formal native, migration, mapped and final
 qualifier runs. Earlier successes are retained under their actual source and
@@ -154,7 +202,7 @@ smoke passed. Evidence is under `qualifier-path-red`, `qualifier-path-green`,
 and `qualifier-actual-lane-smoke` in the closeout artifact directory.
 This validation-tool change requires the next clean input freeze.
 
-## Remaining Gates
+## Historical Qualification Attempts
 
 ### Broad Module Convergence
 
@@ -286,17 +334,16 @@ Evidence: `exit-import-red-r2.xml` and `exit-import-green.xml` under
 are unchanged. This fixes that lazy-import exposure, not arbitrary filesystem
 latency or the earlier 504.
 
-The added test snapshot still requires independent review and a final frozen
-source. Then complete native receipt refresh, same-source migration/rollback,
-complete evidence binding and explicit module lanes through
-`qualify_ai_runtime.py --profile functional`.
-Only resolved evidence plus independent FUNC.R permits the new
-`windows-functional-acceptance.json` receipt. Performance must remain NOT_RUN.
+The final ff09d6f freeze completed native refresh, same-source migration/rollback,
+business proof and all explicit functional module lanes through the reviewed
+same-source resumption above. Resolved evidence and independent FUNC.R now
+support `windows-functional-acceptance.json`; performance remains NOT_RUN.
 
 During the frozen qualification packet, node results are retained in immutable
 producer and review receipts. The sole ledger is reconciled after the packet,
 because editing it mid-run would invalidate the required clean-source identity.
 
-Docs impact: validation only. Product architecture, public interfaces and
-operator lifecycle semantics are unchanged; the development guide names the
-new test proof and its limited claim.
+Docs impact: validation/status. Current guides and the sole ledger now distinguish
+accepted Windows functionality from deferred performance/global requirements.
+Product architecture, public interfaces and operator lifecycle semantics did
+not change in the documentation-only closeout.
