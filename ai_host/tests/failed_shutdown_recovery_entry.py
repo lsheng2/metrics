@@ -19,6 +19,7 @@ import time
 from urllib.parse import urlsplit
 
 from ai_host.tests.runtime_recovery_entry import terminal, wire
+from ai_host.tests.failed_shutdown_observations import ObservationSnapshots
 from ai_host.tests.serve_test_entry import main
 
 
@@ -27,19 +28,11 @@ CLIENT_MESSAGE_KEY = "failed-stop-chat"
 SESSION_KEY = "conformance.failed-stop"
 PRINCIPAL_ID = "failed-stop-owner"
 PROOF_FILE = "failed-shutdown-state.json"
-_OBSERVATION_LOCK = threading.Lock()
+_OBSERVATIONS = None
 
 
 def write_observation(**values):
-    path = Path(sys.argv[5])
-    with _OBSERVATION_LOCK:
-        current = {}
-        if path.exists():
-            current = json.loads(path.read_text(encoding="utf-8"))
-        current.update(values)
-        temporary = path.with_suffix(path.suffix + ".tmp")
-        temporary.write_text(json.dumps(current, sort_keys=True, indent=2), encoding="utf-8")
-        temporary.replace(path)
+    _OBSERVATIONS.publish(**values)
 
 
 def configure(temp):
@@ -229,6 +222,7 @@ def observe_store_close_until(handle):
 
 
 def prepare():
+    global _OBSERVATIONS
     from ai_base_runtime.testkit.host_support._domain_assertions import _package
     from ai_host import package
     from ai_host.management.commands.serve import Command
@@ -236,6 +230,7 @@ def prepare():
     mode = sys.argv[4]
     if mode not in {"write-failed", "write-clean-control", "read-normal", "read-mutated-identity"}:
         raise ValueError("unregistered failed-shutdown recovery mode")
+    _OBSERVATIONS = ObservationSnapshots(Path(sys.argv[5]))
     state = {"effects": 0, "resolves": 0}
     package.METRICS_APP = _package(state, approval=True)
     original_wait = Command._wait_for_stop

@@ -80,6 +80,49 @@ This establishes a controlled failure safety property for acknowledged public
 runtime state. It does not simulate the historical Windows I/O mechanism,
 promise persistence of unacknowledged work, or qualify other Apps.
 
+## Windows Observation Corrections
+
+The next frozen attempt at `30faf9e9493e8f34b5db2666a1e2b8eef1cd3f1a`
+retained passing B5/backpressure/disconnect groups but failed one signal case:
+`drain-stop-file` raised `WinError 5` in process inventory before its first
+stop trigger. Raw evidence is
+`conformance-runs/0998aecf-fa01-476c-8704-1d16bd7f504c/`.
+That attempt is not a complete native PASS.
+
+The inventory API now accepts an explicit root PID. Native test callers query
+their owned host subtree before creation-time inspection, rather than querying
+all test-runner descendants and filtering afterward. The ordinary host exit
+inventory still defaults to its own process. Unreadable in-scope processes
+remain errors; missing roots do not become a clean empty inventory. Creation
+time guards remain in place, and failures retain PID/root/image context.
+The original exception did not record the inaccessible PID, so do not claim
+its exact process identity was established retrospectively.
+
+`process-scope-red/junit.xml` records the missing root-scope/error-context
+checks before implementation; `process-scope-green/junit.xml` records 43
+passing scope/readiness/exit-inventory checks. The original failing signal
+case also passed in the targeted native follow-up.
+
+A separate clean-control attempt reported SDK completion and confirmed flush
+in about 32 ms, but failed later in exit cleanup. Diagnostic observations also
+showed a test-entry `permissionerror` before readiness. These are retained as
+distinct observations, not attributed to the earlier SDK close/commit failures.
+
+The test observation protocol had a deterministic Windows sharing defect:
+holding a reader on the current JSON file caused its writer's `Path.replace`
+to fail with `WinError 5`. `observation-sharing-repro/result.json` records that
+counterexample. The protocol now writes exclusive, immutable numbered snapshots.
+Readers require the newest snapshot to parse completely; they never silently
+fall back to an older successful snapshot. No older snapshot is replaced.
+This is test IPC, not another runtime state store or a legacy compatibility path.
+
+The new snapshot/scope unit group passed 15 checks, and the native failed-stop
+recovery file passed both cases in `observation-snapshots-native/`. Five
+bounded clean-control diagnostics then passed in
+`exit-phase-diagnostics/a09f188c-1240-4bfa-8b74-670ea8a7ef47/`.
+Those diagnostics do not substitute for final qualification. Product shutdown
+budgets and the installed wheel remain unchanged.
+
 ## Remaining Gates
 
 The added test snapshot still requires independent review and a final frozen

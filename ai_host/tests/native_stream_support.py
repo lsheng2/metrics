@@ -119,7 +119,7 @@ def native_stream_host(root, *, endpoint="-", trigger="stop-file"):
                 except (OSError, HTTPException):
                     assert time.monotonic() < deadline
                     time.sleep(0.05)
-            inventory, family = living_children(), {process.pid}
+            inventory, family = living_children(root_pid=process.pid), {process.pid}
             for _ in inventory:
                 family.update(row["pid"] for row in inventory if row["parent_pid"] in family)
             descendants = [row for row in inventory if row["pid"] in family - {process.pid}]

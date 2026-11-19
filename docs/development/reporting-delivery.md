@@ -77,6 +77,11 @@ same task/session/approval/history state without duplicate effects. Its clean
 control and identity negative prevent that proof from silently becoming a
 normal-stop or lock-only smoke. This does not explain a historical OS stall
 or guarantee unacknowledged work survives. Keep all production budgets intact.
+Native test process inventory uses the known host PID as its root; permission
+errors inside that subtree remain failures. Test observation writers publish
+immutable numbered snapshots, avoiding replacement of a file concurrently held
+by a Windows reader. Readers reject an incomplete latest snapshot rather than
+using stale success. These are test-observation rules, not runtime storage APIs.
 Native signal tests wait for the complete expected cleanup-phase value, not
 file existence. An implicit lifetime stop may already have closed HTTP before
 the parent observes readiness; only a live process in its expected controlled

@@ -31,42 +31,65 @@ def _windows_api():
     return api
 
 
+def _process_query_error(pid):
+    error = ctypes.WinError(ctypes.get_last_error())
+    error.add_note(f'Process creation-time query failed for PID {pid}')
+    return error
+
+
 def _created_at(api, pid):
     handle = api.OpenProcess(0x1000, False, pid)
     if not handle:
         if ctypes.get_last_error() == 87:
             return None
-        raise ctypes.WinError(ctypes.get_last_error())
+        raise _process_query_error(pid)
     values = [wintypes.FILETIME() for _ in range(4)]
     try:
         if not api.GetProcessTimes(handle, *(ctypes.byref(value) for value in values)):
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise _process_query_error(pid)
         return (values[0].dwHighDateTime << 32) | values[0].dwLowDateTime
     finally:
         api.CloseHandle(handle)
 
 
-def living_children():
+def living_children(*, root_pid=None):
     if sys.platform != 'win32':
         raise NotImplementedError('Host process inventory is not yet qualified on this platform')
+    current = os.getpid() if root_pid is None else root_pid
+    if type(current) is not int or current <= 0:
+        raise ValueError('root_pid must be a positive process id')
     api = _windows_api()
     snapshot = api.CreateToolhelp32Snapshot(0x2, 0)
     if snapshot == ctypes.c_void_p(-1).value:
         raise ctypes.WinError(ctypes.get_last_error())
-    parents = {}
+    parents, images = {}, {}
     try:
         entry = ProcessEntry()
         entry.dwSize = ctypes.sizeof(entry)
         present = api.Process32FirstW(snapshot, ctypes.byref(entry))
         while present:
-            parents[int(entry.th32ProcessID)] = int(entry.th32ParentProcessID)
+            pid = int(entry.th32ProcessID)
+            parents[pid] = int(entry.th32ParentProcessID)
+            images[pid] = str(entry.szExeFile)
             present = api.Process32NextW(snapshot, ctypes.byref(entry))
         if ctypes.get_last_error() != 18:
             raise ctypes.WinError(ctypes.get_last_error())
     finally:
         api.CloseHandle(snapshot)
-    current = os.getpid()
-    created = {current: _created_at(api, current)}
+    def created_at(pid):
+        try:
+            return _created_at(api, pid)
+        except OSError as error:
+            error.add_note(
+                f'Inventory root PID {current}; candidate PID {pid}; '
+                f'snapshot parent PID {parents.get(pid)}; image {images.get(pid, "")}'
+            )
+            raise
+
+    started = created_at(current)
+    if started is None:
+        raise ProcessLookupError(f'Process inventory root {current} exited before observation')
+    created = {current: started}
     children = []
     pending = set(parents) - {current}
     while True:
@@ -75,7 +98,7 @@ def living_children():
             return children
         for pid in found:
             pending.remove(pid)
-            started = _created_at(api, pid)
+            started = created_at(pid)
             if started is None or started < created[parents[pid]]:
                 continue
             created[pid] = started

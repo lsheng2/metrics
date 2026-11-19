@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.parametrize('entry', [
     'workbench_serve_entry', 'publication_serve_entry', 'serve_signal_entry',
     'serve_stream_entry', 'serve_failure_entry', 'runtime_recovery_entry',
+    'failed_shutdown_recovery_entry',
 ])
 def test_serve_fixture_preludes_do_not_register_cleanup_before_capture(entry):
     script = """

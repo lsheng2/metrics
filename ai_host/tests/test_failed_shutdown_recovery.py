@@ -12,6 +12,7 @@ from ai_base_runtime.testkit.host_support._domain_assertions import _response
 
 from ai_host.exit_processes import living_children
 from ai_host.tests.conformance_recovery_cases import ApprovalRequest
+from ai_host.tests.failed_shutdown_observations import read_observation
 from ai_host.tests.test_serve_native_failure import (
     assert_listener_released,
     event_named,
@@ -60,11 +61,10 @@ def wait_observation(path, process, log_path, predicate):
     while time.monotonic() < deadline:
         if path.exists():
             try:
-                latest = json.loads(path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                time.sleep(0.05)
-                continue
-            if predicate(latest):
+                latest = read_observation(path)
+            except (FileNotFoundError, json.JSONDecodeError):
+                latest = {}
+            if predicate(latest) and process.poll() is None:
                 return latest
         assert process.poll() is None, log_path.read_text(encoding="utf-8", errors="replace")
         time.sleep(0.05)
@@ -72,7 +72,7 @@ def wait_observation(path, process, log_path, predicate):
 
 
 def owned_descendants(pid):
-    inventory = living_children()
+    inventory = living_children(root_pid=pid)
     family = {pid}
     changed = True
     while changed:
@@ -88,7 +88,7 @@ def start_child(root, mode, endpoint):
     root.mkdir(parents=True, exist_ok=True)
     port = free_port()
     stop = root / f"{mode}.stop"
-    observation = root / f"{mode}.json"
+    observation = root / f"{mode}.observations"
     log_path = root / f"{mode}.log"
     command = [
         sys.executable, "-I", str(ENTRY), str(root), str(port), str(stop), mode, str(observation), endpoint,
@@ -109,6 +109,7 @@ def finish_child(child, expected_code, *, stop=True, wait_timeout=15, check=True
     forced = False
     cleanup_uncertain = False
     cleanup_errors = []
+    inventory_error = None
     wait_error = None
     descendants = []
     if process.poll() is None:
@@ -117,6 +118,10 @@ def finish_child(child, expected_code, *, stop=True, wait_timeout=15, check=True
         except Exception as error:
             cleanup_uncertain = True
             cleanup_errors.append(f"descendant_inventory_failed:{type(error).__name__}")
+            inventory_error = {
+                "type": type(error).__name__, "winerror": getattr(error, "winerror", None),
+                "notes": getattr(error, "__notes__", []),
+            }
     with ExitStack() as stack:
         observers = {row["pid"]: stack.enter_context(observe_process_exit(row["pid"])) for row in descendants}
         try:
@@ -159,6 +164,7 @@ def finish_child(child, expected_code, *, stop=True, wait_timeout=15, check=True
             "wait_error": None if wait_error is None else type(wait_error).__name__,
             "forced_cleanup": forced, "cleanup_uncertain": cleanup_uncertain,
             "cleanup_errors": cleanup_errors, "descendants": descendants,
+            "inventory_error": inventory_error,
             "descendant_exit_codes": descendant_exit_codes,
         }
         (Path(child["log_path"]).parent / f"{Path(child['log_path']).stem}-process.json").write_text(
@@ -191,7 +197,7 @@ def run_ready_then_stop(root, mode, endpoint, expected_code):
         if not finish_started:
             finish_child(child, expected_code, check=False, raise_wait_error=False)
         raise
-    observation = json.loads(child["observation"].read_text(encoding="utf-8"))
+    observation = read_observation(child["observation"])
     output = child["log_path"].read_text(encoding="utf-8", errors="replace")
     return {"observation": observation, "output": output, "events": json_events(output), "process": process_info}
 
@@ -209,7 +215,7 @@ def run_expected_failure(root, mode, endpoint):
     output = child["log_path"].read_text(encoding="utf-8", errors="replace")
     observation = {}
     if child["observation"].exists():
-        observation = json.loads(child["observation"].read_text(encoding="utf-8"))
+        observation = read_observation(child["observation"])
     return {"observation": observation, "output": output, "events": json_events(output), "process": process_info}
 
 def test_finish_child_records_descendants_and_receipt_when_initial_wait_times_out(tmp_path):

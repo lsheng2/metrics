@@ -80,7 +80,7 @@ def native_stop_case(tmp_path, *, trigger, phase):
         try:
             opener = build_opener(ProxyHandler({}))
             wait_until_ready(process, opener, port, log_file, marker, trigger, phase)
-            inventory = living_children()
+            inventory = living_children(root_pid=process.pid)
             family = {process.pid}
             for _ in inventory:
                 family.update(row['pid'] for row in inventory if row['parent_pid'] in family)
