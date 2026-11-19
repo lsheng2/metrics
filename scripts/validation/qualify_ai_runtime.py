@@ -104,6 +104,7 @@ def run_command(argv: list[str], *, cwd: Path, log_dir: Path, label: str, timeou
 def run_pytest_lane(python: Path, target: str, *, run_root: Path, label: str) -> dict:
     junit = run_root / "junit" / f"{label}.xml"
     basetemp = run_root / "basetemp" / label
+    basetemp.parent.mkdir(parents=True, exist_ok=True)
     result = run_command(pytest_command(python, target, junit, basetemp), cwd=ROOT, log_dir=run_root / "logs", label=label)
     result["junit"] = validate_junit(junit)
     result["junit"]["path"] = str(junit)

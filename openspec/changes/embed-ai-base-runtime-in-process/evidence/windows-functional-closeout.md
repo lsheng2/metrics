@@ -123,6 +123,36 @@ bounded clean-control diagnostics then passed in
 Those diagnostics do not substitute for final qualification. Product shutdown
 budgets and the installed wheel remain unchanged.
 
+## Execution Preconditions
+
+The formal interface group later exposed another incomplete SDK teardown after
+the short-request behavior itself passed. The failing run is
+`conformance-runs/d0f403b2-950d-4bb8-8af3-c3143ea89511/`; its command ultimately
+timed out and is not accepted. Diagnostics remained separate from qualification.
+
+Execution inspection found that formal subprocesses inherited the user's
+C-drive TEMP/TMP while the diagnostic drivers selected D. The owner requested
+D-drive artifacts and temporary storage. Subsequent formal execution explicitly
+sets both variables to the owned D directory recorded in
+`functional-closeout-20261119/frozen-d-environment/environment.json`.
+This environmental correction is not claimed as the proved cause of the old
+teardown failure and does not change any runtime budget.
+
+At the unchanged `4d4e00f` source, that explicit environment produced a complete
+native56 PASS in
+`inputs/windows-native-w2/da9bd97e-26a7-4ff8-9ef3-7f1fa5bb9f0b/`.
+Its raw run is `conformance-runs/662ead0e-0587-49aa-bfb5-a6faa1abf392/`.
+
+The supplemental executor then found a missing parent directory for pytest's
+basetemp. Its failed setup output is retained in
+`functional-closeout-20261119/w2-complete-4d4e00f/`. The final qualifier had the
+same precondition gap: `run_pytest_lane` now creates the parent and leaves the
+fresh basetemp itself to pytest. The dedicated RED reproduced the missing
+directory; the 39-case qualifier/profile regression and a real subprocess lane
+smoke passed. Evidence is under `qualifier-path-red`, `qualifier-path-green`,
+and `qualifier-actual-lane-smoke` in the closeout artifact directory.
+This validation-tool change requires the next clean input freeze.
+
 ## Remaining Gates
 
 The added test snapshot still requires independent review and a final frozen
