@@ -281,16 +281,15 @@ POST `runs/`, `runs/<operation_id>/cancel/`, `runs/<operation_id>/resume/`;
 GET `runs/<operation_id>/` is status/htmx polling only. All preserve verified
 BasicAuth identity, CSRF, owner404 and private/no-store; same error conventions
 as HTML routes. Polling never advances the worker or resubmits a command.
-The shipped local `vendor_fallbacks.js` is not full HTMX and does not implement
-`hx-trigger="every 2s"`. The run page loads a scoped local status controller over
+The run page does not use `hx-trigger="every 2s"` from the vendored htmx bundle;
+it loads a scoped local status controller over
 the same GET/HX-Request endpoint: one request at a time, a2-second interval and
 10-second request bound, no POST or worker advance. Each response must be the
 same operation's single status fragment; terminal fragments omit the next URL.
 Leaving the page aborts pending reads. Stale replies cannot replace another
 document. Errors preserve the last observed state with an unavailable marker
-and ordinary refresh link. Data attributes replace the polling-only ancestor
-hx-get that the legacy fallback would incorrectly treat as a Cancel/link click.
-The legacy fallback and delegated editor remain unchanged.
+and ordinary refresh link. Data attributes, not a polling `hx-get` ancestor,
+carry the status URL so Cancel and link clicks inside the fragment never poll.
 
 CLI `project_run start/status/cancel/resume` calls the same services with the
 existing trusted local_operator identity. Runtime endpoint binding is explicit,

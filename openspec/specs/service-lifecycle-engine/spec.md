@@ -138,6 +138,42 @@
 - **THEN** start/stop/readiness/diagnostics/provenance decisions SHALL use the injected operations
 - **AND** those tests SHALL NOT need real ports, real subprocess kills, or real HTTP probes
 
+### Requirement: Default platform operations reap the child processes they start
+默认 `PlatformOperationSet` SHALL 在当前 OS 进程内持有经其 `start_process` 启动的子进程句柄，直到观察到该子进程退出。
+
+- 进程存在性检查与等待退出 SHALL 先依据这些句柄判定，并收集已退出子进程的退出码；
+- 其余 pid SHALL 使用 OS 级检查；
+- 注入的平台操作不受本需求约束。
+
+#### Scenario: Ready service handle is retained
+- **WHEN** `start_service` 经默认平台操作启动服务，readiness 通过后返回，调用方随后执行垃圾回收
+- **THEN** 系统 SHALL NOT 因子进程仍在运行而发出 `ResourceWarning`
+
+#### Scenario: Stopping in the same OS process reaps the child
+- **WHEN** 同一 OS 进程内任一 engine 实例停止该服务并等待其退出
+- **THEN** 等待 SHALL 报告已退出，并且该子进程的退出码 SHALL 已被收集
+- **AND** 此后的垃圾回收 SHALL NOT 发出 `ResourceWarning`
+
+#### Scenario: Aborted start reaps the child
+- **WHEN** readiness 失败，abort 路径终止子进程并等待其退出
+- **THEN** 子进程的退出码 SHALL 已被收集
+- **AND** `start_service` 抛出原异常后，垃圾回收 SHALL NOT 发出 `ResourceWarning`
+
+#### Scenario: Exited child is reported as absent
+- **WHEN** 经默认平台操作启动的子进程已经退出，但退出码尚未收集
+- **THEN** 进程存在性检查 SHALL 返回不存在，并收集退出码
+- **AND** 在 POSIX 上 SHALL NOT 把该子进程的僵尸状态报告为存在
+
+#### Scenario: Other pids use the operating system check
+- **WHEN** 被检查的 pid 不对应当前 OS 进程持有、且退出码尚未收集的子进程句柄
+- **THEN** 进程存在性检查 SHALL 使用 OS 级检查
+- **AND** SHALL NOT 依据已收集退出码的旧句柄作出判断
+
+#### Scenario: Launcher exit neither waits for nor terminates running children
+- **WHEN** 启动服务的 OS 进程（例如 CLI `start`）在服务就绪后正常退出
+- **THEN** 该进程 SHALL NOT 等待或终止仍在运行的子进程
+- **AND** 服务 SHALL 继续运行，并可由之后的进程按 lifecycle state 停止
+
 ### Requirement: Live service resolution is typed and generic
 系统 SHALL provide a typed live service resolution surface for launcher-adjacent tools that need to contact a managed service. Consumers SHOULD use explicit inputs or this typed service view before falling back to default ports.
 
@@ -278,3 +314,72 @@
 - **WHEN** a service node declares lazy/manual activation or restart policy
 - **THEN** those declarations SHALL be serializable and visible to adapters
 - **AND** core SHALL NOT schedule project-specific activation triggers or restarts by itself
+
+### Requirement: Runtime instance identity is the local runtime authority
+系统 SHALL expose an app-neutral runtime instance identity containing a project namespace and an instance id safe for lifecycle keys, filenames, local namespaces, telemetry attributes, and generated runtime projections.
+
+#### Scenario: Stable identity derivation
+- **WHEN** a local launcher derives an identity from the same project name, seed, and label
+- **THEN** the derived instance id SHALL be stable across repeated invocations
+- **AND** a different seed SHALL produce a different instance id
+
+#### Scenario: Unsafe identity is rejected
+- **WHEN** a caller supplies an identity containing path traversal, whitespace, or shell-unsafe characters
+- **THEN** the lifecycle engine SHALL reject the identity before it can be used in state paths, namespace keys, or stop authority decisions
+
+### Requirement: Runtime resource namespaces isolate local projections
+系统 SHALL derive resource namespaces from a runtime instance identity so local services can isolate ports, state directories, database names, compose project names, queue/key prefixes, and telemetry attributes without embedding project-specific service topology in the generic engine.
+
+#### Scenario: Namespace includes instance identity
+- **WHEN** a project adapter asks the engine to derive a namespace for a service group
+- **THEN** the namespace SHALL include the runtime project name, instance id, service group, safe state directory name, safe database name, safe compose project name, telemetry attributes, and declared ports
+
+#### Scenario: Invalid port is rejected
+- **WHEN** a namespace declares a port outside the TCP port range
+- **THEN** the lifecycle engine SHALL reject the namespace
+
+### Requirement: External service mode controls stop authority
+系统 SHALL model external services as `dedicated`, `shared_consumed`, or `shared_managed`, and SHALL return explicit stop authority decisions for an actor identity.
+
+#### Scenario: Dedicated owner may stop service
+- **WHEN** a runtime instance owns a dedicated service
+- **THEN** the owner actor SHALL be allowed to stop the service
+- **AND** a different actor SHALL be denied unless force is explicitly requested
+
+#### Scenario: Shared consumer cannot stop external service
+- **WHEN** a runtime instance consumes a shared external service managed by another owner
+- **THEN** the consumer SHALL NOT be allowed to stop the external service
+- **AND** the decision SHALL allow clearing only the local binding when appropriate
+
+### Requirement: Runtime isolation conflicts are detected before launch
+系统 SHALL expose a generic conflict detector that reports duplicate instance/service declarations, duplicate namespaces, and duplicate ports across runtime bindings.
+
+#### Scenario: Duplicate service instance is detected
+- **WHEN** two bindings claim the same project instance and service name
+- **THEN** the conflict detector SHALL report a duplicate instance/service conflict
+
+#### Scenario: Duplicate namespace is detected
+- **WHEN** two bindings use the same namespace prefix
+- **THEN** the conflict detector SHALL report a duplicate namespace conflict
+
+#### Scenario: Duplicate port is detected
+- **WHEN** two bindings declare the same local port
+- **THEN** the conflict detector SHALL report a duplicate port conflict
+
+### Requirement: Dashboard launcher consumes one durable runtime profile
+Scrum Dashboard SHALL use one durable runtime profile per local workspace as the authority for profile-managed E2E service identity, lifecycle state root, and primary local ports.
+
+#### Scenario: Profile is created once and reused
+- **WHEN** the Dashboard E2E launcher starts without an explicit runtime instance id
+- **THEN** it SHALL create `state/local/runtime-instance.json` when absent
+- **AND** later starts in the same workspace SHALL reuse the stored instance id
+
+#### Scenario: Generated env is not authority
+- **WHEN** Dashboard writes `state/local/worktree-runtime.env`
+- **THEN** the file SHALL be a generated compatibility projection of `runtime-instance.json`
+- **AND** launcher code SHALL NOT treat the env projection as more authoritative than explicit CLI/env values or the durable JSON profile
+
+#### Scenario: Repeated worktree start reuses lifecycle state root
+- **WHEN** the same Dashboard worktree is started repeatedly
+- **THEN** the launcher SHALL use the same lifecycle instance name and state root
+- **AND** restart/stop SHALL target the previously registered services for that runtime instance before selecting fallback ports

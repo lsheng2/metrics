@@ -1,0 +1,370 @@
+/*
+ * Page layer: Workbench splitter, evidence table, series chips, menu placement and ticket detail.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+/* Pane splitters exist only in the 1024px+ grid; stacked panes have nothing to resize. */
+.workbench-splitter {
+    display: none;
+    position: absolute;
+    z-index: calc(var(--z-sticky) + 1);
+    border: 0;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--color-border) 82%, transparent);
+    color: var(--color-text);
+}
+
+@media screen and (min-width: 1024px) {
+    .workbench-splitter {
+        display: block;
+    }
+}
+
+.workbench-splitter::before {
+    position: absolute;
+    color: color-mix(in srgb, var(--color-text) 62%, transparent);
+    font-size: var(--text-sm);
+    letter-spacing: 0.18rem;
+    line-height: 1;
+}
+
+.workbench-splitter-horizontal {
+    right: calc(var(--workbench-ai-width) + var(--workbench-gap));
+    left: 0;
+    top: calc(var(--workbench-chart-height) + (var(--workbench-gap) - var(--workbench-splitter-size)) / 2);
+    height: var(--workbench-splitter-size);
+    cursor: row-resize;
+}
+
+.workbench-splitter-horizontal::before {
+    content: "...";
+    top: -0.33rem;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.workbench-splitter-vertical {
+    top: 0;
+    right: calc(var(--workbench-ai-width) + (var(--workbench-gap) - var(--workbench-splitter-size)) / 2);
+    bottom: 0;
+    width: var(--workbench-splitter-size);
+    cursor: col-resize;
+}
+
+.workbench-splitter-vertical::before {
+    content: ".\A.\A.";
+    top: 50%;
+    left: -0.15rem;
+    white-space: pre;
+    transform: translateY(-50%);
+}
+
+.workbench-evidence-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: 0;
+    padding: var(--space-2-5);
+}
+
+/* Only the 1024px+ IDE frame gives the evidence pane a fixed height for the card to fill. In the stacked page
+   the pane row is content-sized, and a percentage min-height there would pad the card with blank space. */
+@media screen and (min-width: 1024px) {
+    .workbench-pane-evidence .workbench-evidence-card {
+        min-height: 100%;
+    }
+}
+
+.workbench-evidence-heading,
+.workbench-evidence-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.workbench-evidence-heading {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: var(--space-2);
+}
+
+.workbench-evidence-title {
+    min-width: 0;
+}
+
+.workbench-evidence-title__name {
+    margin: 0 0 var(--space-0-5);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+}
+
+.workbench-evidence-title__meta {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+}
+
+.workbench-evidence-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+/* Evidence rows name their chart series with the same swatch colour the chart legend uses. */
+.series-set {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    vertical-align: middle;
+}
+
+/* A ticket in several series shows the first label, then swatch-only chips; `title` lists them all. */
+.series-set > .series-chip + .series-chip {
+    gap: 0;
+    font-size: 0;
+}
+
+.series-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    white-space: nowrap;
+}
+
+.series-chip::before {
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 0.125rem;
+    background: var(--series-color, var(--color-text-tertiary));
+    content: "";
+}
+
+.series-chip[data-series-key="all_open_bugs"] {
+    --series-color: var(--color-series-all-open-bugs);
+}
+
+.series-chip[data-series-key="all_open_critical_high"] {
+    --series-color: var(--color-series-all-open-critical-high);
+}
+
+.series-chip[data-series-key="new_critical_high"] {
+    --series-color: var(--color-series-new-critical-high);
+}
+
+.series-chip[data-series-key="new_medium_low"] {
+    --series-color: var(--color-series-new-medium-low);
+}
+
+.series-chip[data-series-key="fixed_or_closed_bugs"] {
+    --series-color: var(--color-series-fixed-or-closed-bugs);
+}
+
+/* The Columns menu leads the evidence toolbar, so its panel opens toward the content, not the sidebar. */
+.workbench-evidence-actions > .workbench-menu:first-child > .workbench-menu-panel {
+    right: auto;
+    left: 0;
+}
+
+.workbench-evidence-filter {
+    margin-bottom: 0;
+}
+
+.workbench-pane-body > .workbench-evidence-filter {
+    margin-top: var(--space-3);
+}
+
+.workbench-evidence-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.5fr) repeat(4, minmax(80px, 1fr)) minmax(7.5rem, auto);
+    gap: var(--space-2);
+    align-items: end;
+}
+
+.workbench-evidence-filter-actions {
+    align-self: end;
+}
+
+.workbench-evidence-filter-actions .button {
+    width: 100%;
+}
+
+.workbench-evidence-layout {
+    --workbench-ticket-detail-width: 245px;
+    /* Evidence in the page flow (Bug Trend, and the Workbench below 1024px) caps the table and the ticket detail
+       so that, scrolled to the page end, they fit between the top bar and the status bar (minus the page bottom
+       padding and the card padding), keeping the sticky header, horizontal scrollbar and detail on screen. */
+    --evidence-page-max-height: max(18rem, 100dvh - var(--layout-topbar-height) - var(--app-statusbar-offset) - var(--space-8) - var(--space-6));
+    display: grid;
+    min-height: 0;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(0, 1fr) 0.4rem minmax(180px, var(--workbench-ticket-detail-width));
+    gap: var(--space-2);
+}
+
+.workbench-evidence-layout.is-detail-collapsed {
+    grid-template-columns: minmax(0, 1fr) 0 0;
+}
+
+.workbench-evidence-table-wrap {
+    min-width: 0;
+    overflow: auto;
+}
+
+.workbench-evidence-table {
+    font-size: var(--text-xs);
+    white-space: nowrap;
+}
+
+.workbench-evidence-table th,
+.workbench-evidence-table td {
+    padding: var(--space-1) var(--space-1-5);
+    vertical-align: middle;
+}
+
+.workbench-evidence-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+}
+
+/* Long provider summaries must not push every other column off screen; the detail pane shows the full text. */
+.workbench-evidence-table td[data-workbench-field="summary"] {
+    max-width: 30rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workbench-evidence-table tr.is-active {
+    outline: 2px solid var(--color-accent-text);
+    outline-offset: -2px;
+}
+
+.workbench-select-column {
+    width: 1.65rem;
+}
+
+.workbench-evidence-detail-splitter {
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--color-border) 82%, transparent);
+    cursor: col-resize;
+}
+
+.workbench-evidence-layout.is-detail-collapsed .workbench-evidence-detail-splitter,
+.workbench-evidence-layout.is-detail-collapsed .workbench-ticket-detail {
+    display: none;
+}
+
+.workbench-ticket-detail {
+    min-width: 0;
+    overflow: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+#bug-trend-content > #bug-trend-evidence-container {
+    margin-top: var(--space-4);
+}
+
+#bug-trend-content .workbench-evidence-table-wrap {
+    max-height: var(--evidence-page-max-height);
+}
+
+#bug-trend-content .workbench-ticket-detail {
+    position: sticky;
+    top: calc(var(--layout-topbar-height) + var(--space-3));
+    align-self: start;
+    max-height: var(--evidence-page-max-height);
+}
+
+.workbench-ticket-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-2);
+}
+
+.workbench-ticket-detail-title {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+}
+
+.workbench-ticket-detail-hint {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+}
+
+.workbench-ticket-detail-issue {
+    font-weight: var(--weight-semibold);
+}
+
+.workbench-ticket-detail-summary {
+    margin-top: var(--space-2);
+}
+
+.workbench-ticket-detail-actions {
+    margin-top: var(--space-3);
+}
+
+.workbench-ticket-detail-body {
+    padding: var(--space-2);
+}
+
+.workbench-ticket-detail-fields {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: var(--space-1) var(--space-2);
+    margin-top: var(--space-2-5);
+    font-size: var(--text-xs);
+}
+
+.workbench-ticket-detail-fields dt {
+    color: var(--color-text-secondary);
+    font-weight: var(--weight-medium);
+}
+
+@media screen and (max-width: 1023px) {
+    .workbench-control-grid,
+    .workbench-evidence-filter-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-2) var(--space-2-5);
+    }
+
+    .workbench-control-grid .field:first-child,
+    .workbench-apply-field,
+    .workbench-evidence-filter-text,
+    .workbench-evidence-filter-actions {
+        grid-column: 1 / -1;
+    }
+
+    .workbench-apply-field .button,
+    .workbench-evidence-filter-actions .button {
+        width: 100%;
+    }
+
+    .workbench-pane-evidence .workbench-evidence-table-wrap,
+    .workbench-pane-evidence .workbench-ticket-detail {
+        max-height: var(--evidence-page-max-height);
+    }
+}
+
+/* On phones the ticket detail stacks under the table; workbench-evidence.js scrolls it into view on selection. */
+@media screen and (max-width: 768px) {
+    .workbench-evidence-layout,
+    .workbench-evidence-layout.is-detail-collapsed {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workbench-evidence-detail-splitter {
+        display: none;
+    }
+}

@@ -4,12 +4,12 @@ from project_management.app.api import reports as report_api
 from project_management.app.api.project_runs import ProjectRunWorker
 from project_management.app.api.report_factories import build_report_preparation_service
 from project_management.app.api.summary_analysis import SummaryAnalysisService
-from project_management.app.domain.summary_contracts import AiBackendTarget
-from project_management.out.ai_task_contract import AiTaskContract
+from project_management.app.api.ai_profiles import load_task_profile
+from project_management.app.domain.task_runs import TaskPrincipal
+from project_management.services.task_contracts import SummaryTaskContract
 from project_management.tests.history_persistence_fixtures import daily_note_edit, history_fixture
-from project_management.tests.project_run_fixtures import ProjectRunHttp
+from project_management.tests.project_run_fixtures import ProjectRunPort
 from project_management.tests.report_draft_fixtures import draft_command
-from project_management.tests.summary_fixtures import PACK_ROOT
 from project_management.tests.test_daily_reprepare_backend import prepare_refresh_manual, refresh_manual_service
 
 
@@ -100,12 +100,12 @@ def test_shouldReprepareChangedItemsWithoutOverwritingHumanNoteOrRedispatchingUn
             '203': {'id': '203', 'body': 'Bob (qa-b), please rerun validation on build r8.'},
         },
     },))
-    contract = AiTaskContract.load(PACK_ROOT)
-    http = ProjectRunHttp(contract)
-    run_service.analysis_service = SummaryAnalysisService(fixture.archive, contract, http.client_factory)
-    run_service.backend_resolver = lambda actor, project_id, stage_id: AiBackendTarget(
-        'http://127.0.0.1:18888', 'metrics-dashboard', 'store-fixture',
-        f'projects.{project_id}.stages.{stage_id}', 'dashboard-join-1', 'base-b-cancel-synthetic-1',
+    contract = SummaryTaskContract(load_task_profile('metrics.project_summary'))
+    port = ProjectRunPort(contract)
+    run_service.analysis_service = SummaryAnalysisService(fixture.archive, contract, port)
+    run_service.task_profile = contract.profile
+    run_service.principal_resolver = lambda actor, project_id, stage_id: TaskPrincipal(
+        subject=actor.subject, runtime_subject=actor.subject, display_name=actor.subject, anonymous=False,
     )
     worker = ProjectRunWorker(run_service, daily_preparation_service=service)
     first = service.prepare(
@@ -138,4 +138,4 @@ def test_shouldReprepareChangedItemsWithoutOverwritingHumanNoteOrRedispatchingUn
 
     assert completed.item_results[0].state == 'no_work'
     assert retained.authoring_context['notes'][0]['body_fragment'] == saved.authoring_context['notes'][0]['body_fragment']
-    assert [request for request in http.requests if request == ('POST', '/api/runs')] == [('POST', '/api/runs')]
+    assert [call[0] for call in port.calls if call[0] == 'start'] == ['start']

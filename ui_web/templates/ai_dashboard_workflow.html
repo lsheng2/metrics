@@ -1,266 +1,120 @@
 {% extends "base.html" %}
-
-{% block title %}AI Dashboard Workflow{% endblock %}
-{% block page_title %}AI Dashboard Workflow{% endblock %}
+{% load dashboard_format i18n %}
 
 {% block content %}
-<article class="block">
-    <section class="box">
-        <div class="level">
-            <div class="level-left">
-                <div>
-                    <h2 class="title is-4">AI Sidecar Readiness{% include "partials/help_tip.html" with label="AI Sidecar Readiness" text="Shows whether Dashboard can use AI Base for chat/workspace integration. Metrics validation still runs without AI Base." %}</h2>
-                    <p class="is-size-7 has-text-grey">Metrics validation remains available when AI Base is disabled.</p>
-                </div>
-            </div>
-            <div class="level-right">
-                <span class="tag {% if sidecar_status.status == 'ready' %}is-success{% elif sidecar_status.status == 'disabled' %}is-warning{% else %}is-danger{% endif %}">
-                    {{ sidecar_status.status }}
-                </span>
-            </div>
+<article class="block ai-workflow-page">
+    <header class="page-header">
+        <h2 class="page-header__title">{% trans "AI Dashboard Workflow" %}</h2>
+        <div class="tags">
+            <span class="tag {{ ai_runtime.status|status_tone }}" data-runtime-status="{{ ai_runtime.status }}">{{ ai_runtime.status|service_state_label }}</span>
+            <a href="{% url 'ui_web:workbench' %}">{% trans "Workbench" %}</a>
         </div>
-        <div class="table-container responsive-admin-table-box">
-            <table class="table is-fullwidth is-striped responsive-admin-table">
-                <tbody>
-                    <tr>
-                        <th class="has-help-tip" data-label="Field">Profile{% include "partials/help_tip.html" with label="AI profile" text="The AI Base integration profile expected by Dashboard." %}</th>
-                        <td data-label="Value">{{ sidecar_status.profile_id }}</td>
-                        <th data-label="Field">Service</th>
-                        <td data-label="Value">{{ sidecar_status.service_id }}</td>
-                    </tr>
-                    <tr>
-                        <th data-label="Field">Base URL</th>
-                        <td data-label="Value">{{ sidecar_status.base_url }}</td>
-                        <th class="has-help-tip" data-label="Field">Capabilities{% include "partials/help_tip.html" with label="Capabilities" text="AI Base features available to Dashboard, such as chat, workspace sync, or host actions." %}</th>
-                        <td data-label="Value">
-                            {% for capability, enabled in sidecar_status.capabilities.items %}
-                                <span class="tag {% if enabled %}is-success{% else %}is-light{% endif %}">{{ capability }}={{ enabled }}</span>
-                            {% empty %}
-                                <span class="tag is-light">none</span>
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th data-label="Field">Reason</th>
-                        <td data-label="Value" colspan="3">{{ sidecar_status.reason|default:"-" }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+    </header>
 
-    <section class="box">
-        <h2 class="title is-4">Workflow Request{% include "partials/help_tip.html" with label="Workflow Request" text="A controlled Metrics workflow request that validates chart intent, renderability, and Grafana operation preconditions before publication." %}</h2>
-        <p class="is-size-7 has-text-grey mb-3">Contract Endpoint{% include "partials/help_tip.html" with label="Contract Endpoint" text="The Dashboard-owned API route used by AI Base or this form for chart validation and publication checks." %}: <code>{{ workflow_api_url }}</code></p>
-        <form class="dashboard-tool-form dashboard-top-toolbar" method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
-            {% csrf_token %}
-            <div class="dashboard-tool-grid">
-                <div class="dashboard-tool-field">
-                    <label class="label" for="profile_id">Profile{% include "partials/help_tip.html" with label="Profile" text="Provider profile that supplies provider id, source query ownership, mapping, supported charts, and workspace identity." %}</label>
-                    <div class="select is-fullwidth">
-                        <select id="profile_id" name="profile_id">
-                            {% for profile in profile_options %}
-                                <option value="{{ profile.profile_id }}" {% if profile.profile_id == form_values.profile_id %}selected{% endif %}>
-                                    {{ profile.profile_id }} ({{ profile.provider_id }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="dashboard-tool-field">
-                    <label class="label" for="chart_id">Chart{% include "partials/help_tip.html" with label="Chart" text="The Metrics chart recipe to validate and render for this profile." %}</label>
-                    <div class="select is-fullwidth">
-                        <select id="chart_id" name="chart_id">
-                            {% for chart in chart_options %}
-                                <option value="{{ chart.chart_id }}" {% if chart.chart_id == form_values.chart_id %}selected{% endif %}>
-                                    {{ chart.title }} / {{ chart.chart_id }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="dashboard-tool-field">
-                    <label class="label" for="requested_series">Requested Series{% include "partials/help_tip.html" with label="Requested Series" text="Comma-separated chart series requested by the user or AI plan. Unsupported series become recipe gaps instead of silent success." %}</label>
-                    <input class="input" id="requested_series" name="requested_series" value="{{ form_values.requested_series }}">
-                </div>
-                <div class="dashboard-tool-field">
-                    <label class="label" for="range_mode">Range Mode{% include "partials/help_tip.html" with label="Range Mode" text="The date grammar for range start/end. WW uses work-week tokens; Date uses calendar dates." %}</label>
-                    <div class="select is-fullwidth">
-                        <select id="range_mode" name="range_mode">
-                            <option value="ww" {% if form_values.range_mode == 'ww' %}selected{% endif %}>WW</option>
-                            <option value="date" {% if form_values.range_mode == 'date' %}selected{% endif %}>Date</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="dashboard-tool-field">
-                    <label class="label" for="range_start">Range Start</label>
-                    <input class="input" id="range_start" name="range_start" value="{{ form_values.range_start }}">
-                </div>
-                <div class="dashboard-tool-field">
-                    <label class="label" for="range_end">Range End</label>
-                    <input class="input" id="range_end" name="range_end" value="{{ form_values.range_end }}">
-                </div>
-                <div class="dashboard-tool-field">
-                    <label class="label" for="operation">gcx Operation{% include "partials/help_tip.html" with label="gcx Operation" text="The Grafana connector operation being preflighted, from validation through snapshot or publish." %}</label>
-                    <div class="select is-fullwidth">
-                        <select id="operation" name="operation">
-                            <option value="grafana_import" {% if form_values.operation == 'grafana_import' %}selected{% endif %}>grafana_import</option>
-                            <option value="grafana_validate" {% if form_values.operation == 'grafana_validate' %}selected{% endif %}>grafana_validate</option>
-                            <option value="grafana_snapshot" {% if form_values.operation == 'grafana_snapshot' %}selected{% endif %}>grafana_snapshot</option>
-                            <option value="grafana_publish" {% if form_values.operation == 'grafana_publish' %}selected{% endif %}>grafana_publish</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="dashboard-tool-field">
-                    <label class="label" for="panel_title">Panel Title</label>
-                    <input class="input" id="panel_title" name="panel_title" value="{{ form_values.panel_title }}">
+    <form class="dashboard-tool-form dashboard-top-toolbar ai-workflow-form" method="post" action="{% url 'ui_web:ai_dashboard_workflow' %}">
+        {% csrf_token %}
+        <div class="dashboard-tool-grid">
+            <div class="dashboard-tool-field">
+                <label class="label" for="profile_id">{% trans "Profile" %}</label>
+                <div class="select is-fullwidth">
+                    <select id="profile_id" name="profile_id" required>
+                        <option value="">{% trans "Select profile" %}</option>
+                        {% for profile in profile_options %}
+                            <option value="{{ profile.profile_id }}" {% if profile.profile_id == form_values.profile_id %}selected{% endif %}>{{ profile.profile_id }} ({{ profile.provider_id }})</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
-            <div class="dashboard-tool-actions mt-3">
-                <button class="button is-primary" type="submit">Run Metrics Validation</button>
+            <div class="dashboard-tool-field">
+                <label class="label" for="chart_id">{% trans "Chart" %}</label>
+                <div class="select is-fullwidth">
+                    <select id="chart_id" name="chart_id" required>
+                        {% for chart in chart_options %}
+                            <option value="{{ chart.chart_id }}" {% if chart.chart_id == form_values.chart_id %}selected{% endif %}>{{ chart.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-        </form>
-    </section>
+            <div class="dashboard-tool-field">
+                <label class="label" for="requested_series">{% trans "Requested series" %}</label>
+                <input class="input" id="requested_series" name="requested_series" value="{{ form_values.requested_series }}" required>
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="range_mode">{% trans "Range mode" %}</label>
+                <div class="select is-fullwidth">
+                    <select id="range_mode" name="range_mode">
+                        <option value="ww" {% if form_values.range_mode == 'ww' %}selected{% endif %}>WW</option>
+                        <option value="date" {% if form_values.range_mode == 'date' %}selected{% endif %}>{% trans "Date" %}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="range_start">{% trans "Range start" %}</label>
+                <input class="input" id="range_start" name="range_start" value="{{ form_values.range_start }}" required>
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="range_end">{% trans "Range end" %}</label>
+                <input class="input" id="range_end" name="range_end" value="{{ form_values.range_end }}" required>
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="visualization">{% trans "Visualization" %}</label>
+                <div class="select is-fullwidth">
+                    <select id="visualization" name="visualization">
+                        <option value="timeseries" {% if form_values.visualization == 'timeseries' %}selected{% endif %}>{% trans "Time series" %}</option>
+                        <option value="barchart" {% if form_values.visualization == 'barchart' %}selected{% endif %}>{% trans "Bar chart" %}</option>
+                        <option value="table" {% if form_values.visualization == 'table' %}selected{% endif %}>{% trans "Table" %}</option>
+                        <option value="stat" {% if form_values.visualization == 'stat' %}selected{% endif %}>{% trans "Statistic" %}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="panel_title">{% trans "Panel title" %}</label>
+                <input class="input" id="panel_title" name="panel_title" value="{{ form_values.panel_title }}">
+            </div>
+        </div>
+        <div class="dashboard-tool-actions is-right">
+            <button class="button is-primary" type="submit">
+                <i class="iconoir-play-solid" aria-hidden="true"></i>
+                {% trans "Run Metrics Validation" %}
+            </button>
+        </div>
+    </form>
 
     {% if workflow_error %}
-        <section class="notification is-danger">{{ workflow_error }}</section>
+        <div class="message is-danger" role="alert"><div class="message-body">{{ workflow_error }}</div></div>
     {% endif %}
-
-    {% if not workflow_result %}
-        <section class="columns is-multiline">
-            <div class="column is-one-third">
-                <div class="box">
-                    <h3 class="title is-5">Intent Validation{% include "partials/help_tip.html" with label="Intent Validation" text="Checks whether the requested chart, series, range, and provider profile form a supported Metrics request." %}</h3>
-                    <p class="has-text-grey">Not run.</p>
-                </div>
-            </div>
-            <div class="column is-one-third">
-                <div class="box">
-                    <h3 class="title is-5">Render Preview{% include "partials/help_tip.html" with label="Render Preview" text="Dry-run preview proving the generated Grafana dashboard/panel payload is renderable before publication." %}</h3>
-                    <p class="has-text-grey">Not run.</p>
-                </div>
-            </div>
-            <div class="column is-one-third">
-                <div class="box">
-                    <h3 class="title is-5">gcx Precondition{% include "partials/help_tip.html" with label="gcx Precondition" text="Safety gate for Grafana mutation, approval state, destination, and dry-run proof." %}</h3>
-                    <p class="has-text-grey">Not run.</p>
-                </div>
-            </div>
-        </section>
-    {% endif %}
-
     {% if workflow_result %}
-        <section class="box">
-            <h2 class="title is-4">Workflow Result{% include "partials/help_tip.html" with label="Workflow Result" text="Combined output from intent validation, render validation, and Grafana precondition checks." %}</h2>
-            <div class="columns is-multiline">
-                <div class="column is-one-quarter">
-                    <strong>Correlation</strong><br>{{ workflow_result.correlation_id }}
-                </div>
-                <div class="column is-one-quarter">
-                    <strong>Provider{% include "partials/help_tip.html" with label="Provider" text="The source system behind the selected profile, such as Jira or HSD-ES." %}</strong><br>{{ workflow_result.request.provider_id }}
-                </div>
-                <div class="column is-one-quarter">
-                    <strong>Profile{% include "partials/help_tip.html" with label="Profile" text="The provider profile used by this workflow result." %}</strong><br>{{ workflow_result.request.profile_id }}
-                </div>
-                <div class="column is-one-quarter">
-                    <strong>Next Action{% include "partials/help_tip.html" with label="Next Action" text="The recommended operator or application step after validation completes." %}</strong><br>{{ workflow_result.guidance.next_action }}
-                </div>
-                <div class="column is-one-quarter">
-                    <strong>Guidance Status</strong><br>{{ workflow_result.guidance.status }}
-                </div>
-            </div>
-            <p>{{ workflow_result.guidance.message }}</p>
-        </section>
-
-        <section class="columns is-multiline">
-            <div class="column is-one-third">
-                <div class="box">
-                    <h3 class="title is-5">Intent Validation{% include "partials/help_tip.html" with label="Intent Validation" text="Checks whether the requested chart, series, range, and provider profile form a supported Metrics request." %}</h3>
-                    <p><strong>Status</strong>: {{ workflow_result.intent_validation.status }}</p>
-                    <p><strong>Valid</strong>: {{ workflow_result.intent_validation.valid }}</p>
-                    {% if workflow_result.intent_validation.needs_metric_recipe %}
-                        <p><strong>Needs Series</strong>: {{ workflow_result.intent_validation.needs_metric_recipe.requested_series }}</p>
-                    {% endif %}
-                    {% for finding in workflow_result.intent_validation.findings %}
-                        <article class="message is-warning">
-                            <div class="message-body">{{ finding.field }}: {{ finding.message }}</div>
-                        </article>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="column is-one-third">
-                <div class="box">
-                    <h3 class="title is-5">Render Preview{% include "partials/help_tip.html" with label="Render Preview" text="Dry-run preview proving the generated Grafana dashboard/panel payload is renderable before publication." %}</h3>
-                    <p><strong>Status</strong>: {{ workflow_result.render_validation.status }}</p>
-                    <p><strong>Valid</strong>: {{ workflow_result.render_validation.valid }}</p>
-                    {% if workflow_result.render_validation.dashboard_preview %}
-                        <p><strong>Dashboard</strong>: {{ workflow_result.render_validation.dashboard_preview.dashboard_uid }}</p>
-                        <p><strong>Panels</strong>: {{ workflow_result.render_validation.dashboard_preview.panel_count }}</p>
-                    {% else %}
-                        <p>{{ workflow_result.render_validation.reason }}</p>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="column is-one-third">
-                <div class="box">
-                    <h3 class="title is-5">gcx Precondition{% include "partials/help_tip.html" with label="gcx Precondition" text="Safety gate for Grafana mutation, approval state, destination, and dry-run proof." %}</h3>
-                    <p><strong>Status</strong>: {{ workflow_result.gcx_precondition.status }}</p>
-                    <p><strong>Mutation Allowed{% include "partials/help_tip.html" with label="Mutation Allowed" text="Whether this request is allowed to write or publish to Grafana after safety checks." %}</strong>: {{ workflow_result.gcx_precondition.mutation_allowed }}</p>
-                    <p><strong>Approval{% include "partials/help_tip.html" with label="Approval" text="The publication audit state. Publish-style operations require explicit approval before mutation." %}</strong>: {{ workflow_result.gcx_precondition.publication_audit.approval_state }}</p>
-                    {% for finding in workflow_result.gcx_precondition.findings %}
-                        <article class="message is-danger">
-                            <div class="message-body">{{ finding.field }}: {{ finding.message }}</div>
-                        </article>
-                    {% empty %}
-                        <p>{{ workflow_result.gcx_precondition.reason|default:"No blocking findings." }}</p>
-                    {% endfor %}
-                </div>
-            </div>
+        <section aria-labelledby="ai-result-title" data-workflow-status="{{ workflow_result.status }}">
+            <header class="page-header">
+                <h3 class="page-header__title" id="ai-result-title">{% trans "Workflow result" %}</h3>
+                {{ workflow_result.status|status_tag }}
+            </header>
+            <dl class="description-list is-2">
+                <dt>{% trans "Profile" %}</dt><dd>{{ workflow_result.request.profile_id }}</dd>
+                <dt>{% trans "Provider" %}</dt><dd>{{ workflow_result.request.provider_id|or_dash }}</dd>
+                <dt>{% trans "Publish readiness" %}</dt>
+                <dd>{% if workflow_result.publish_readiness.ready %}{% trans "Ready for approval" %}{% else %}{% trans "Not ready" %}{% endif %}</dd>
+                <dt>{% trans "Reason" %}</dt><dd>{{ workflow_result.publish_readiness.reason|or_dash }}</dd>
+                <dt>{% trans "Next action" %}</dt><dd>{{ workflow_result.publish_readiness.next_action|or_dash }}</dd>
+            </dl>
+            {% for finding in workflow_result.findings %}
+                <div class="message is-warning"><div class="message-body"><code>{{ finding.field }}</code> {{ finding.message }}</div></div>
+            {% endfor %}
+            {% if normalized_render_config %}
+                <details>
+                    <summary>{% trans "Validated render config" %}</summary>
+                    <pre>{{ normalized_render_config }}</pre>
+                </details>
+            {% endif %}
         </section>
     {% endif %}
 
-    <section class="box">
-        <h2 class="title is-4">Recent AI Grafana Publishes{% include "partials/help_tip.html" with label="Recent AI Grafana Publishes" text="Recent Dashboard-audited Grafana publication records produced through AI-assisted workflows." %}</h2>
-        <div class="table-container responsive-admin-table-box">
-            <table class="table is-fullwidth is-striped responsive-admin-table is-cardable">
-                <thead>
-                    <tr>
-                        <th>Status</th>
-                        <th class="has-help-tip">Profile{% include "partials/help_tip.html" with label="Profile" text="Provider profile used by the published chart workflow." %}</th>
-                        <th class="has-help-tip">Chart{% include "partials/help_tip.html" with label="Chart" text="Metrics chart recipe that produced the Grafana panel." %}</th>
-                        <th class="has-help-tip">Range{% include "partials/help_tip.html" with label="Range" text="The validated date or work-week window used for publication." %}</th>
-                        <th>Dashboard</th>
-                        <th>Published</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in publish_history.items %}
-                        <tr>
-                            <td data-label="Status">
-                                <span class="tag {% if item.status == 'published' %}is-success{% else %}is-light{% endif %}">
-                                    {{ item.status }}{% if item.latest %} latest{% endif %}
-                                </span>
-                            </td>
-                            <td data-label="Profile">{{ item.profile_id }}</td>
-                            <td data-label="Chart">{{ item.chart_id }}</td>
-                            <td data-label="Range">{{ item.range_start }} to {{ item.range_end }}</td>
-                            <td data-label="Dashboard">
-                                {% if item.dashboard_url %}
-                                    <a href="{{ item.dashboard_url }}">{{ item.dashboard_uid }}</a>
-                                {% else %}
-                                    {{ item.dashboard_uid }}
-                                {% endif %}
-                            </td>
-                            <td data-label="Published">{{ item.created_at }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="6" class="has-text-grey">No AI Grafana publishes recorded yet.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <section aria-labelledby="ai-publishes-title">
+        <header class="page-header">
+            <h3 class="page-header__title" id="ai-publishes-title">{% trans "Recent AI Grafana Publishes" %}</h3>
+            <a href="{% url 'ui_web:ai_publish_history_api' %}">{% trans "Publication history" %}</a>
+        </header>
+        {% include "partials/ai_publish_history.html" %}
     </section>
 </article>
 {% endblock %}

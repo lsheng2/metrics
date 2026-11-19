@@ -1,5 +1,4 @@
 from contextlib import nullcontext
-from copy import deepcopy
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 import hashlib
@@ -7,10 +6,8 @@ import json
 from pathlib import Path
 import uuid
 
-from ai_base_application_sdk import TaskRunClient
-import httpx
-
 from project_management.app.api import ProjectActor, ProjectSummary, ScopeDescriptor, ScopeSelection, StageSummary
+from project_management.app.api.ai_profiles import load_task_profile
 from project_management.app.api.capture_archive import (
     ArchiveLimits,
     ArchiveStorageConfig,
@@ -22,19 +19,30 @@ from project_management.app.api.capture_archive import (
     WorkItemIdentity,
 )
 from project_management.app.api.reports import ReportDraftService, ReportRenderer
-from project_management.app.api.summary_analysis import AiBackendTarget, SummaryAnalysisService
+from project_management.app.api.summary_analysis import SummaryAnalysisService
 from project_management.app.domain.capture_values import canonical_bytes
 from project_management.app.domain.captures import ArchiveError
 from project_management.app.domain.source_resolution import SourceResolutionInput
+from project_management.app.domain.task_runs import (
+    TaskDispatch,
+    TaskPrincipal,
+    TaskRunAdmissionMetadata,
+    TaskResultSummary,
+    TaskRunCancellation,
+    TaskRunError,
+    TaskRunRequest,
+    TaskRunResult,
+    TaskRunSnapshot,
+)
 from project_management.app.spi.archive import CommitReceipt
-from project_management.out.ai_task_contract import AiTaskContract
 from project_management.services.capture import ProjectCaptureService
 from project_management.services.capture_archive import CaptureArchiveService
 from project_management.services.report_sources import ReportSourceReader
+from project_management.services.task_contracts import SummaryTaskContract
 from project_management.storage.paths import safe_relative_path
 from project_management.tests.capture_archive_fixtures import ProjectApiStub
+from project_management.tests.project_run_data import default_item, second_item
 from project_management.tests.report_render_fixtures import daily_template
-from project_management.tests.summary_fixtures import PACK_ROOT
 from provider_sync.app.api.access_contracts import ItemObservation, MembershipObservation, RequestUsage, WorkItemMarker
 
 
@@ -182,118 +190,132 @@ class ProviderAccessDouble:
         return ProviderLeaseDouble(self.stage, self.items, incomplete_details=self.incomplete_details)
 
 
-class ProjectRunHttp:
+class ProjectRunPort:
     def __init__(self, contract):
         self.contract = contract
         self.requests = []
+        self.calls = []
+        self.snapshots = {}
+        self.canceled_run_ids = set()
         self.force_running = False
+        self.force_unknown = False
         self.force_error = None
         self.on_result = None
 
-    def client_factory(self, backend):
-        def transport(request):
-            self.requests.append((request.method, request.url.path))
-            if self.force_error is not None:
-                return httpx.Response(422, json={
-                    'contractVersion': 'task-run/1',
-                    'error': {'code': self.force_error, 'recovery': 'correct_request'},
-                })
-            if request.method == 'POST' and request.url.path == '/api/runs':
-                payload = json.loads(request.content.decode('utf-8'))
-                return httpx.Response(200, json=self.snapshot(payload, state='running' if self.force_running else 'succeeded'))
-            if request.method == 'GET' and request.url.path.endswith('/result'):
-                if self.on_result is not None:
-                    self.on_result()
-                    self.on_result = None
-                return httpx.Response(200, json=self.result(self.last_submit))
-            if request.method == 'POST' and request.url.path.endswith('/cancel'):
-                snapshot = self.snapshot(self.last_submit, state='running')
-                snapshot['state'] = 'canceled'
-                snapshot['terminalAt'] = '2026-11-02T00:00:40.000Z'
-                snapshot['result'] = {'availability': 'not_produced', 'sha256': None,
-                                      'mediaType': None, 'expiresAt': None}
-                snapshot['dispatch']['remoteStop'] = 'confirmed'
-                return httpx.Response(200, json={
-                    'contractVersion': 'task-run/1',
-                    'cancelApplied': True,
-                    'run': snapshot,
-                })
-            raise AssertionError(f'Unexpected Base request: {request.method} {request.url.path}')
-
-        return TaskRunClient(
-            base_url=backend.base_url,
-            source_app_id=backend.source_app_id,
-            run_store_id=backend.run_store_id,
-            credential_ref='synthetic-test',
-            token='synthetic-only',
-            transport=httpx.MockTransport(transport),
+    def admission_metadata(self):
+        return TaskRunAdmissionMetadata(
+            model_identity={'provider': 'typed-test-port', 'model': 'scripted'},
+            runtime_version='0.1.0-test',
         )
 
-    def snapshot(self, submit, *, state):
-        self.last_submit = deepcopy(submit)
-        output_hash = hashlib.sha256(canonical_bytes(self.output(submit)).decode().encode()).hexdigest()
-        return {
-            **self.common(submit),
-            'sourceAppId': 'metrics-dashboard',
-            'clientRunKey': submit['clientRunKey'],
-            'state': state,
-            'lifecycleVersion': 2,
-            'acceptedAt': '2026-11-02T00:00:00.000Z',
-            'updatedAt': '2026-11-02T00:00:30.000Z',
-            'terminalAt': None if state == 'running' else '2026-11-02T00:00:30.000Z',
-            'deadlineAt': submit['deadlineAt'],
-            'grantRevision': 'dashboard-join-1',
-            'limitPolicyRevision': 'base-b-cancel-synthetic-1',
-            'acceptedLimits': submit['limits'],
-            'resultRetentionSeconds': 3600,
-            'observationRetentionSeconds': 7200,
-            'observationExpiresAt': '2026-11-02T02:00:30.000Z',
-            'unresolvedExposure': False,
-            'dispatch': {'attemptCount': 1, 'knowledge': 'response_received', 'remoteStop': 'not_requested'},
-            'result': {
-                'availability': 'pending' if state == 'running' else 'available',
-                'sha256': None if state == 'running' else output_hash,
-                'mediaType': None if state == 'running' else 'application/json',
-                'expiresAt': None if state == 'running' else '2026-11-02T01:00:30.000Z',
-            },
-            'error': None,
-        }
+    def start(self, principal, request):
+        self._record('start', principal, request)
+        self.requests.append(('POST', '/api/runs'))
+        if self.force_error is not None:
+            raise TaskRunError(self.force_error, runtime_code=self.force_error, retry='correct')
+        if self.force_unknown:
+            snapshot = self.snapshot(request, status='indeterminate', uncertainty='unknown',
+                                     error_code='runtime_outcome_unknown', retry='observe')
+        else:
+            snapshot = self.snapshot(request, status='running' if self.force_running else 'succeeded')
+        self.snapshots[request.client_run_key] = snapshot
+        return snapshot
 
-    def result(self, submit):
-        content = canonical_bytes(self.output(submit)).decode()
-        return {
-            **self.common(submit),
-            'outputSchemaSha256': self.contract.output_schema_hash,
-            'content': content,
-            'mediaType': 'application/json',
-            'sha256': hashlib.sha256(content.encode()).hexdigest(),
-        }
+    def lookup(self, principal, request, *, timeout=None):
+        self._record('lookup', principal, request, timeout=timeout)
+        self.requests.append(('GET', '/api/runs/by-client-key'))
+        return self.snapshots.get(request.client_run_key)
 
-    def common(self, submit):
-        return {
-            'contractVersion': 'task-run/1',
-            'runStoreId': 'store-fixture',
-            'runId': 'run-fixture',
-            'scopeKey': submit['scopeKey'],
-            'profile': dict(submit['profile'], definitionSha256=self.contract.definition_hash),
-            'inputSha256': submit['input']['sha256'],
-            'logicalInputHash': submit['logicalInputHash'],
-            'effectiveInputSha256': hashlib.sha256(b'synthetic compiled fixture').hexdigest(),
-            'receipt': {
-                'revision': 1,
-                'executionMode': 'synthetic',
-                'backendId': 'fixture',
-                'modelName': None,
-                'qualificationRef': None,
-                'inputTokens': {'value': None, 'certainty': 'unknown'},
-                'outputTokens': {'value': None, 'certainty': 'unknown'},
-                'providerRequests': {'value': 0, 'certainty': 'known'},
-                'cost': {'amountDecimal': None, 'currency': None, 'certainty': 'unknown'},
-            },
-        }
+    def get(self, principal, request, run_id, *, timeout=None):
+        self._record('get', principal, request, run_id, timeout=timeout)
+        self.requests.append(('GET', f'/api/runs/{run_id}'))
+        snapshot = self.snapshots[request.client_run_key]
+        if run_id in self.canceled_run_ids:
+            snapshot = self.snapshot(request, run_id=run_id, status='canceled')
+            self.snapshots[request.client_run_key] = snapshot
+        return snapshot
 
-    def output(self, submit):
-        value = json.loads(submit['input']['content'])
+    def result(self, principal, request, run_id):
+        self._record('result', principal, request, run_id)
+        self.requests.append(('GET', f'/api/runs/{run_id}/result'))
+        if self.on_result is not None:
+            callback = self.on_result
+            self.on_result = None
+            callback()
+        return self.run_result(request, run_id)
+
+    def cancel(self, principal, run_id, *, timeout=None):
+        self._record('cancel', principal, None, run_id, timeout=timeout)
+        self.requests.append(('POST', f'/api/runs/{run_id}/cancel'))
+        self.canceled_run_ids.add(run_id)
+        return TaskRunCancellation(run_id=run_id, canceled=True)
+
+    def _record(self, method, principal, request, run_id=None, *, timeout=None):
+        if not isinstance(principal, TaskPrincipal):
+            raise AssertionError('typed task principal is required')
+        if request is not None and not isinstance(request, TaskRunRequest):
+            raise AssertionError('typed task request is required')
+        if timeout is not None and (type(timeout) not in {int, float} or timeout < 0):
+            raise AssertionError('non-negative timeout is required')
+        self.calls.append((method, principal, request, run_id, timeout))
+
+    def snapshot(self, request, *, status, run_id='run-fixture', uncertainty='dispatched', error_code=None, retry=None):
+        output_hash = None
+        output_schema = None
+        if status == 'succeeded' and uncertainty == 'dispatched':
+            content = self.content(request)
+            output_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
+            output_schema = request.output_schema_sha256
+        return TaskRunSnapshot(
+            run_id=run_id,
+            profile_id=request.profile_id,
+            profile_version=request.profile_version,
+            status=status,
+            source_input_sha256=request.input_sha256,
+            input_sha256=request.input_sha256,
+            effective_input_sha256=request.input_sha256,
+            dispatch=self.dispatch(request, dispatched=uncertainty == 'dispatched', uncertainty=uncertainty),
+            result=TaskResultSummary(output_sha256=output_hash, output_schema_sha256=output_schema, usage=None),
+            error_code=error_code,
+            retry=retry,
+        )
+
+    def run_result(self, request, run_id):
+        content = self.content(request)
+        return TaskRunResult(
+            run_id=run_id,
+            profile_id=request.profile_id,
+            profile_version=request.profile_version,
+            status='succeeded',
+            source_input_sha256=request.input_sha256,
+            input_sha256=request.input_sha256,
+            effective_input_sha256=request.input_sha256,
+            output_schema_sha256=request.output_schema_sha256,
+            output_sha256=hashlib.sha256(content.encode('utf-8')).hexdigest(),
+            content_json=content,
+            dispatch=self.dispatch(request, dispatched=True, uncertainty='dispatched'),
+            usage=None,
+            error_code=None,
+            retry=None,
+        )
+
+    def dispatch(self, request, *, dispatched, uncertainty):
+        return TaskDispatch(
+            provider='typed-test-port',
+            model='scripted',
+            runtime_version='0.1.0-test',
+            profile_definition_sha256=request.profile_definition_sha256,
+            tool_definition_sha256=None,
+            dispatched=dispatched,
+            uncertainty=uncertainty,
+            usage=None,
+        )
+
+    def content(self, request):
+        return canonical_bytes(self.output(request)).decode('utf-8')
+
+    def output(self, request):
+        value = json.loads(request.input_json)
         return {
             'kind': 'summary',
             'binding': value['binding'],
@@ -463,8 +485,8 @@ class ManualRunEnvironment:
             WritableStageMemoryRepositoryFactory(),
             ArchiveStorageConfig(root, 'Archive Test', 'archive@example.test', limits or self.limits()),
         )
-        self.contract = AiTaskContract.load(PACK_ROOT)
-        self.http = ProjectRunHttp(self.contract)
+        self.contract = SummaryTaskContract(load_task_profile('metrics.project_summary'))
+        self.http = ProjectRunPort(self.contract)
         self.provider = ProviderAccessDouble(
             self.stage,
             items or (self.default_item(),),
@@ -480,7 +502,7 @@ class ManualRunEnvironment:
         self.analysis_service = SummaryAnalysisService(
             self.archive,
             self.contract,
-            self.http.client_factory,
+            self.http,
             clock=self.clock,
         )
         self.draft_service = ReportDraftService(
@@ -491,14 +513,15 @@ class ManualRunEnvironment:
         )
         from project_management.app.api.project_runs import ProjectRunService, ProjectRunWorker
 
-        self.backend_calls = 0
+        self.principal_calls = 0
         self.run_service = ProjectRunService(
             self.project_api,
             self.archive,
             self.capture_service,
             self.analysis_service,
             self.draft_service,
-            self.backend,
+            self.principal,
+            task_profile=self.contract.profile,
             policy=policy,
             capture_limits=capture_limits,
             clock=self.clock,
@@ -506,29 +529,27 @@ class ManualRunEnvironment:
         )
         self.worker = ProjectRunWorker(self.run_service)
 
-    def default_item(self):
-        return {
-            'stable_id': 'ALPHA-1',
-            'summary': 'Intermittent validation failure',
-            'status': 'Fixed',
-            'assignee': {'key': 'dev-a', 'displayName': 'Alice'},
-            'reporter': {'key': 'qa-b', 'displayName': 'Bob'},
-            'comments': {
-                '201': {'id': '201', 'body': 'Failure observed.', 'author': {'key': 'dev-a'}},
-                '202': {'id': '202', 'body': 'Logs attached. Failure reproduced on build r7.'},
-                '203': {'id': '203', 'body': 'Bob (qa-b), please rerun validation on build r8.'},
-            },
-        }
+    def install_summary_service(self, port):
+        self.http = port
+        self.analysis_service = SummaryAnalysisService(
+            self.archive,
+            self.contract,
+            port,
+            clock=self.clock,
+        )
+        self.run_service.analysis_service = self.analysis_service
+        return self.analysis_service
 
-    def backend(self, actor, project_id, stage_id):
-        self.backend_calls += 1
-        return AiBackendTarget(
-            'http://127.0.0.1:18888',
-            'metrics-dashboard',
-            'store-fixture',
-            f'projects.{project_id}.stages.{stage_id}',
-            'dashboard-join-1',
-            'base-b-cancel-synthetic-1',
+    def default_item(self):
+        return default_item()
+
+    def principal(self, actor, project_id, stage_id):
+        self.principal_calls += 1
+        return TaskPrincipal(
+            subject=actor.subject,
+            runtime_subject=actor.subject,
+            display_name=actor.subject,
+            anonymous=False,
         )
 
     def request(self, command_id=None, *, timezone='Asia/Shanghai', template=None):

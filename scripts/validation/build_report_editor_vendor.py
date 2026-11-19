@@ -11,6 +11,7 @@ EDITOR_BUILD = ROOT / 'ui_web' / 'editor_build'
 VENDOR = ROOT / 'ui_web' / 'static' / 'js' / 'report_editor' / 'vendor'
 PACKAGE_JSON = EDITOR_BUILD / 'package.json'
 PACKAGE_LOCK = EDITOR_BUILD / 'package-lock.json'
+SOURCE_ENTRY = EDITOR_BUILD / 'report_milkdown.js'
 BUNDLE = VENDOR / 'milkdown.bundle.js'
 METAFILE = VENDOR / 'milkdown.bundle.meta.json'
 MANIFEST = VENDOR / 'asset-manifest.json'
@@ -45,6 +46,7 @@ def manifest_payload():
         'bundle': 'milkdown.bundle.js',
         'bundle_sha256': sha256(BUNDLE),
         'source_entry': 'ui_web/editor_build/report_milkdown.js',
+        'source_entry_sha256': sha256(SOURCE_ENTRY),
         'package_json': 'ui_web/editor_build/package.json',
         'package_json_sha256': sha256(PACKAGE_JSON),
         'package_lock': 'ui_web/editor_build/package-lock.json',
@@ -58,7 +60,8 @@ def manifest_payload():
 
 
 def sha256(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    # CRLF is folded to LF so a core.autocrlf checkout records the hash npm run check verifies.
+    return hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()
 
 
 def run(command, cwd, env):

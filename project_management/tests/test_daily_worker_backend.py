@@ -28,10 +28,10 @@ from project_management.tests.report_draft_fixtures import draft_command
 from project_management.tests.report_render_fixtures import daily_template
 from project_management.services.capture import ProjectCaptureService
 from project_management.services.report_sources import ReportSourceReader
-from project_management.out.ai_task_contract import AiTaskContract
-from project_management.tests.summary_fixtures import PACK_ROOT
-from project_management.app.api.summary_analysis import AiBackendTarget, SummaryAnalysisService
-from project_management.tests.project_run_fixtures import ProjectRunHttp
+from project_management.tests.summary_fixtures import summary_contract
+from project_management.app.api.summary_analysis import SummaryAnalysisService
+from project_management.app.domain.task_runs import TaskPrincipal
+from project_management.tests.project_run_fixtures import ProjectRunPort
 
 
 def daily_target(operation_id, draft_id='71000000-0000-4000-8000-000000000001',
@@ -89,7 +89,6 @@ def operation_for(environment, request):
         None,
         None,
         None,
-        'synthetic',
     )
 
 
@@ -145,26 +144,24 @@ def test_should_store_daily_manual_request_with_null_backend_and_reject_changed_
         request_hash(request),
         environment.run_service.capture_limits,
     )
-    restored_request, _, backend, stored_hash, _ = validate_stored_request(record)
+    restored_request, _, binding, stored_hash, _ = validate_stored_request(record)
 
     changed = replace(request, target=replace(request.target, analysis_mode='changed_items'))
-    changed_record = stored_request_payload(
-        operation,
-        changed,
-        environment.run_service.policy,
-        None,
-        request_hash(changed),
-        environment.run_service.capture_limits,
-    )
-
-    assert record['schema_version'] == 2
-    assert record['backend'] is None
+    assert record['schema_version'] == 3
+    assert record['task_binding'] is None
     assert restored_request == request
-    assert backend is None
+    assert binding is None
     assert stored_hash == request_hash(request)
     assert original_operation_from_record(record) == operation
     with pytest.raises(RunError) as error:
-        validate_stored_request(changed_record)
+        stored_request_payload(
+            operation,
+            changed,
+            environment.run_service.policy,
+            None,
+            request_hash(changed),
+            environment.run_service.capture_limits,
+        )
     assert error.value.code == 'RUN_STORAGE_INVALID'
 
 
@@ -184,10 +181,10 @@ def test_should_submit_daily_manual_request_without_constructing_backend(tmp_pat
     )
     stored = decode_json((operation_root / 'request.json').read_bytes())
 
-    assert environment.backend_calls == 0
+    assert environment.principal_calls == 0
     assert operation.capture_id == run_capture_id(operation.operation_id)
-    assert stored['schema_version'] == 2
-    assert stored['backend'] is None
+    assert stored['schema_version'] == 3
+    assert stored['task_binding'] is None
 
 
 @pytest.mark.django_db(transaction=True)
@@ -216,7 +213,7 @@ def test_should_prepare_refresh_manual_operation_with_original_null_capture_requ
         fixture.template_service,
         run_service=run_service,
     )
-    source_reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+    source_reader = ReportSourceReader(fixture.archive, summary_contract())
     fixture.continuity.source_reader = source_reader
     fixture.draft_service.source_reader = source_reader
 
@@ -247,18 +244,18 @@ def test_should_prepare_refresh_manual_operation_with_original_null_capture_requ
     assert intent['original_request']['capture_id'] is None
     assert intent['effective_selection']['capture_id'] == run_capture_id(result.operation_id)
     assert intent['request_hash'] == content_hash(intent['original_request'])
-    assert stored['schema_version'] == 2
+    assert stored['schema_version'] == 3
     assert stored['request_hash'] == intent['run_request_hash']
     assert stored['request']['target']['preparation_intent_hash'] == intent['preparation_intent_hash']
     assert stored['request']['target']['draft_id'] == result.draft_id
     assert stored['request']['target']['analysis_mode'] == 'manual_only'
-    assert stored['backend'] is None
+    assert stored['task_binding'] is None
 
 
 @pytest.mark.django_db(transaction=True)
 def test_should_execute_refresh_manual_worker_without_analysis_and_create_one_authored_draft(tmp_path):
     fixture = history_fixture(tmp_path)
-    source_reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+    source_reader = ReportSourceReader(fixture.archive, summary_contract())
     fixture.continuity.source_reader = source_reader
     fixture.draft_service.source_reader = source_reader
     provider = ProviderAccessDouble(fixture.stage, ({
@@ -357,7 +354,7 @@ def test_should_execute_refresh_manual_worker_without_analysis_and_create_one_au
 @pytest.mark.django_db(transaction=True)
 def test_should_cancel_daily_manual_after_capture_before_compose_without_analysis_or_draft(tmp_path):
     fixture = history_fixture(tmp_path)
-    source_reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+    source_reader = ReportSourceReader(fixture.archive, summary_contract())
     fixture.continuity.source_reader = source_reader
     fixture.draft_service.source_reader = source_reader
     provider = ProviderAccessDouble(fixture.stage, ({
@@ -442,7 +439,7 @@ def test_should_cancel_daily_manual_after_capture_before_compose_without_analysi
 @pytest.mark.django_db(transaction=True)
 def test_should_execute_refresh_changed_items_through_existing_analysis_no_work_loop(tmp_path):
     fixture = history_fixture(tmp_path)
-    source_reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+    source_reader = ReportSourceReader(fixture.archive, summary_contract())
     fixture.continuity.source_reader = source_reader
     fixture.draft_service.source_reader = source_reader
     provider = ProviderAccessDouble(fixture.stage, ({
@@ -463,9 +460,9 @@ def test_should_execute_refresh_changed_items_through_existing_analysis_no_work_
         fixture.archive,
         required_parts=('facts', 'comments', 'history'),
     )
-    contract = AiTaskContract.load(PACK_ROOT)
-    http = ProjectRunHttp(contract)
-    analysis_service = SummaryAnalysisService(fixture.archive, contract, http.client_factory)
+    contract = summary_contract()
+    port = ProjectRunPort(contract)
+    analysis_service = SummaryAnalysisService(fixture.archive, contract, port)
 
     from project_management.app.api.project_runs import ProjectRunService, ProjectRunWorker
 
@@ -475,14 +472,13 @@ def test_should_execute_refresh_changed_items_through_existing_analysis_no_work_
         capture_service,
         analysis_service,
         fixture.draft_service,
-        lambda actor, project_id, stage_id: AiBackendTarget(
-            'http://127.0.0.1:18888',
-            'metrics-dashboard',
-            'store-fixture',
-            f'projects.{project_id}.stages.{stage_id}',
-            'dashboard-join-1',
-            'base-b-cancel-synthetic-1',
+        lambda actor, project_id, stage_id: TaskPrincipal(
+            subject=actor.subject,
+            runtime_subject=actor.subject,
+            display_name=actor.subject,
+            anonymous=False,
         ),
+        task_profile=contract.profile,
         notifier=lambda *args: None,
     )
     service = report_api.ReportPreparationService(
@@ -530,7 +526,7 @@ def test_should_execute_refresh_changed_items_through_existing_analysis_no_work_
     assert completed2.state == 'draft_ready'
     assert completed2.item_results[0].state == 'no_work'
     assert completed2.item_results[0].accepted_summary_id == completed1.item_results[0].accepted_summary_id
-    assert [request for request in http.requests if request == ('POST', '/api/runs')] == [('POST', '/api/runs')]
+    assert [request for request in port.requests if request == ('POST', '/api/runs')] == [('POST', '/api/runs')]
 
 
 @pytest.mark.django_db(transaction=True)

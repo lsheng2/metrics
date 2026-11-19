@@ -29,7 +29,7 @@ class LifecycleProfiler(Protocol):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Start/stop the Bug Trend E2E runtime.")
-    parser.add_argument("action", choices=("start", "stop", "restart"))
+    parser.add_argument("action", choices=("start", "stop", "restart", "start-backend", "stop-backend"))
     parser.add_argument("--workspace", default=str(Path(__file__).resolve().parents[1]))
     parser.add_argument("--instance", default="")
     parser.add_argument("--port-profile", default=os.environ.get("METRICS_DASHBOARD_PORT_PROFILE", ""))
@@ -43,7 +43,6 @@ def main() -> None:
     parser.add_argument("--grafana-bin", default=os.environ.get("GRAFANA_BIN", ""))
     parser.add_argument("--grafana-homepath", default=os.environ.get("GRAFANA_HOMEPATH", ""))
     parser.add_argument("--open-entrypoint", choices=("grafana", "workbench", "none"), default="workbench")
-    parser.add_argument("--force-by-port", action="store_true")
     args = parser.parse_args()
 
     workspace = Path(args.workspace).resolve()
@@ -64,6 +63,10 @@ def main() -> None:
 
     if args.action == "stop":
         stop_runtime(lifecycle, args, run_id, runtime_profile)
+    elif args.action == "stop-backend":
+        stop_runtime(lifecycle, args, run_id, runtime_profile, service_names=("django",))
+    elif args.action == "start-backend":
+        start_selected_runtime(args, workspace, lifecycle, runtime_profile, run_id, service_names=("django",))
     else:
         start_runtime(args, workspace, lifecycle, runtime_profile, run_id)
 
@@ -84,6 +87,7 @@ def start_runtime(
     def after_prepare(stop_results: Sequence[object]) -> None:
         nonlocal runtime_scope_id
         print_stop_results(stop_results)
+        raise_for_abnormal_stop_results(stop_results)
         profile_step(lifecycle, "migrate", lambda: run([python_executable, "manage.py", "migrate"], workspace), run_id=run_id)
         profile_step(lifecycle, "seed_bug_trend_sample", lambda: run([python_executable, "manage.py", "seed_bug_trend_sample"], workspace), run_id=run_id)
         if not runtime_scope_id:
@@ -111,13 +115,13 @@ def start_runtime(
             load_specs(args, workspace, python_executable, grafana_bin, grafana_homepath, grafana_config=runtime_grafana_config),
             runtime_profile,
         )
+        remove_stale_stop_files(runtime_specs.values(), port_plan)
         print(f"E2E selected ports: Django={django_port}, Grafana={grafana_port}")
         return (runtime_specs["django"], runtime_specs["grafana"])
 
     restart_result = lifecycle.restart_services(
         tuple(specs.values()),
-        graceful_timeout_seconds=5.0,
-        force_by_port=args.force_by_port,
+        force_by_port=False,
         run_id=run_id,
         after_prepare=after_prepare,
         before_start=before_start,
@@ -142,11 +146,60 @@ def stop_runtime(
     args: argparse.Namespace,
     run_id: str | None = None,
     runtime_profile: ScrumDashboardRuntimeInstanceProfile | None = None,
+    service_names: tuple[str, ...] = ("django", "grafana"),
 ) -> None:
-    results = profile_step(lifecycle, "stop_registered_services", lambda: lifecycle.stop_all(graceful_timeout_seconds=5.0), run_id=run_id)
-    if args.force_by_port:
-        results.extend(profile_step(lifecycle, "force_stop_by_ports", lambda: lifecycle.force_stop_by_ports(force_stop_specs(args, runtime_profile), graceful_timeout_seconds=0.5), run_id=run_id))
+    workspace = Path(args.workspace).resolve()
+    specs = apply_runtime_profile_to_specs(
+        load_specs(args, workspace, sys.executable, args.grafana_bin or "grafana", args.grafana_homepath or ""),
+        runtime_profile,
+    )
+    results = [
+        profile_step(
+            lifecycle,
+            f"stop_{spec.name}",
+            lambda service_spec=spec: lifecycle.stop_service(
+                service_spec.name,
+                graceful_timeout_seconds=service_spec.graceful_timeout_seconds,
+            ),
+            run_id=run_id,
+        )
+        for spec in selected_specs(specs, service_names).values()
+    ]
     print_stop_results(results, empty_message="No E2E services registered.")
+    raise_for_abnormal_stop_results(results)
+
+
+def start_selected_runtime(
+    args: argparse.Namespace,
+    workspace: Path,
+    lifecycle: ServiceLifecycleEngine,
+    runtime_profile: ScrumDashboardRuntimeInstanceProfile | None = None,
+    run_id: str | None = None,
+    service_names: tuple[str, ...] = ("django",),
+) -> None:
+    python_executable = sys.executable
+    specs = selected_specs(
+        apply_runtime_profile_to_specs(
+            load_specs(args, workspace, python_executable, args.grafana_bin or "grafana", args.grafana_homepath or ""),
+            runtime_profile,
+        ),
+        service_names,
+    )
+    def before_start(port_plan: Mapping[str, int], service_specs: Sequence[ServiceSpec]) -> Sequence[ServiceSpec]:
+        remove_stale_stop_files(service_specs, port_plan)
+        return tuple(service_specs)
+
+    restart_result = lifecycle.restart_services(
+        tuple(specs.values()),
+        force_by_port=False,
+        run_id=run_id,
+        after_prepare=raise_for_abnormal_stop_results,
+        before_start=before_start,
+    )
+    django_port = restart_result.port_plan.get("django")
+    if django_port is not None:
+        workbench_url = workbench_url_for(django_port, args.scope_id or "", args.begin, args.end)
+        print(f"Dashboard backend is ready: {workbench_url}")
 
 def print_stop_results(results: Sequence[object], empty_message: str = "") -> None:
     if not results:
@@ -158,9 +211,27 @@ def print_stop_results(results: Sequence[object], empty_message: str = "") -> No
         print(f"{result.name} {status} on 127.0.0.1:{result.port}")
 
 
-def force_stop_specs(args: argparse.Namespace, runtime_profile: ScrumDashboardRuntimeInstanceProfile | None = None) -> tuple[ServiceSpec, ...]:
-    specs = load_specs(args, Path(args.workspace).resolve(), sys.executable, args.grafana_bin or "grafana", args.grafana_homepath or "")
-    return tuple(apply_runtime_profile_to_specs(specs, runtime_profile).values())
+def raise_for_abnormal_stop_results(results: Sequence[object]) -> None:
+    abnormal = [result for result in results if not normal_stop_result(result)]
+    if abnormal:
+        summary = ", ".join(
+            f"{result.name}:{result.reason}:forced={bool(result.forced)}:stopped={bool(result.stopped)}:exit={result.exit_code}"
+            for result in abnormal
+        )
+        raise RuntimeError(f"Abnormal service stop result(s): {summary}")
+
+
+def normal_stop_result(result: object) -> bool:
+    reason = str(result.reason)
+    if reason == "not_registered":
+        return True
+    if not bool(result.stopped):
+        return False
+    if bool(result.forced):
+        return False
+    # A no-op permits explicit recovery; the prior exit stays in the termination ledger.
+    return reason == "already_stopped" or (reason.endswith("stop_command") and result.exit_code == 0)
+
 
 def load_specs(
     args: argparse.Namespace,
@@ -184,6 +255,23 @@ def load_specs(
         "django": replace_ports(specs["django"], parse_ports(args.django_ports)) if args.django_ports else specs["django"],
         "grafana": replace_ports(specs["grafana"], parse_ports(args.grafana_ports)) if args.grafana_ports else specs["grafana"],
     }
+
+
+def selected_specs(specs: Mapping[str, ServiceSpec], service_names: tuple[str, ...]) -> dict[str, ServiceSpec]:
+    missing = [name for name in service_names if name not in specs]
+    if missing:
+        raise RuntimeError(f"Missing service spec(s): {', '.join(missing)}")
+    return {name: specs[name] for name in service_names}
+
+
+def remove_stale_stop_files(specs: Sequence[ServiceSpec], port_plan: Mapping[str, int]) -> None:
+    for spec in specs:
+        port = port_plan.get(spec.name)
+        if port is None:
+            continue
+        for index, part in enumerate(spec.command[:-1]):
+            if part == "--stop-file":
+                Path(spec.command[index + 1].format(port=port, host=spec.host)).unlink(missing_ok=True)
 
 def replace_ports(spec: ServiceSpec, ports: tuple[int, ...]) -> ServiceSpec:
     return ServiceSpec(

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 from project_management.app.domain.captures import SourceChainKey
+from project_management.app.domain.task_runs import TaskPrincipal, TaskRunRequest
 
 
 MESSAGES = {
@@ -14,6 +15,7 @@ MESSAGES = {
     'ANALYSIS_PART_UNSUPPORTED': 'This analysis profile cannot consume the requested source parts.',
     'ANALYSIS_CONTRACT_INVALID': 'The selected AI contract or response is invalid.',
     'ANALYSIS_BACKEND_MISMATCH': 'The AI endpoint, scope, or store differs from the persisted attempt.',
+    'ANALYSIS_PRINCIPAL_MISMATCH': 'The task principal differs from the persisted analysis owner.',
     'ANALYSIS_DEADLINE_EXPIRED': 'The original analysis deadline has expired.',
     'ANALYSIS_ATTEMPT_PENDING': 'A prior analysis attempt for this source remains unresolved.',
     'ANALYSIS_OBSERVATION_LIMIT': 'The analysis observation limit has been reached.',
@@ -34,16 +36,6 @@ class AnalysisError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
-class AiBackendTarget:
-    base_url: str
-    source_app_id: str
-    run_store_id: str
-    scope_key: str
-    grant_revision: str
-    limit_policy_revision: str
-
-
-@dataclass(frozen=True, slots=True)
 class PreparedAnalysis:
     source_key: SourceChainKey
     target_capture_id: str
@@ -60,13 +52,17 @@ class AnalysisAttempt:
     project_id: str
     stage_id: str
     source_key: SourceChainKey
-    backend: AiBackendTarget
+    principal: TaskPrincipal
     prepared: PreparedAnalysis
-    request: Mapping
+    request: TaskRunRequest
     profile_definition_hash: str
     output_schema_hash: str
     dispatched: bool = False
     cancel_requested: bool = False
+
+    def __post_init__(self):
+        if not isinstance(self.principal, TaskPrincipal) or not isinstance(self.request, TaskRunRequest):
+            raise ValueError('Typed analysis principal and request are required')
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,5 +97,5 @@ class AnalysisCancellation:
     state: str
     attempt_id: str
     run_id: str | None
-    remote_stop: str
+    acknowledged: bool | None
     error_code: str | None = None

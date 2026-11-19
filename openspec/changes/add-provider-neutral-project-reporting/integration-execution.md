@@ -4,9 +4,10 @@
 2026-11-05用户批准的当前交付前沿见[delivery-sequence](delivery-sequence.md)：
 它在已有W3能力上先完成DAILY和有界变化源分析，再进入ASSIST/整周。
 下表仍约束完整W3-W7退出条件；不把名单/附件/HSD的全部实现误当成该窄切片的前置。
-当前跨仓执行与验收handoff统一在[execution-handoff](execution-handoff.md)，
-C0准确任务/用例在[sdk-intake-plan](sdk-intake-plan.md)。下方BASE-A章节保留交付证据和背景，
-不作为另一份独立可更新的分工或任务状态。
+2026-11-11起AI接入以[MDB-2](../embed-ai-base-runtime-in-process/proposal.md)为准：运行时在Metrics进程内，
+经project_management task-run端口与`ai_profiles`精确`id@version`调用；无HTTP SDK、App注册、connector、
+contract pack或doctor。[execution-handoff](execution-handoff.md)、[sdk-intake-plan](sdk-intake-plan.md)
+与下方BASE-A章节只保留历史证据，不定义剩余工作。
 适用规范：[应用接入包](application-integration.md)、[Provider访问](provider-access.md)、
 [移植目录](migration-catalog.md)。所有新路径为拟实施目标，不是已存在模块。
 执行前仍须完成前波REPLAN及对应验证架构签核，尤其不能跳过W1.R/W2。
@@ -34,12 +35,12 @@ C0准确任务/用例在[sdk-intake-plan](sdk-intake-plan.md)。下方BASE-A章�
 | W4.DELTA | W4.INDEX | `project_management/app/domain/{delta,delta_contracts,delta_observation}.py`；输入准备/复用判定消费 | A、B、C已采集版本均保留，delta从accepted不是last fetched，缺链/失权拒绝；MIG-01 |
 | W4.EVIDENCE | W4.DELTA | `project_management/app/domain/{evidence,summary_ownership}.py`及schemas | JSON pointer/记录ID/site/principal/hash都匹配；否定/建议不成已确认负责人；MIG-02 |
 | W4.IMPORT | W4.EVIDENCE | `project_management/history_import/`、历史CLI与查询；read-only donor source closure | 导入目标自包含、源离线可读、重复提交幂等、非英文旧summary保留非权威状态；MIG-11 |
-| W5.APP | W4.REPLAN及基座schema/loader contract pack | `ai_bundle/strict-summary/`、独立disabled `interactive-assistant/`、`management/commands/ai_integration.py` | pack缺失CONTRACT_PACK_MISSING且不注册stub；strict manifest不允许工具lane；APP-01/05/07 |
-| W5.MIGRATE | W4.REPLAN及基座API change log/目标pack | `ui_web/ai_base_workbench_adapter.py`、现有adapter/host-action测试及W4.REPLAN冻结的实际SDK消费者闭包 | 按API-02/05等实际采纳ID替换旧调用；APP-09：版本失配零模型/发布，历史归属和批准仍受保护；不得混入可选W5.CHAT |
+| W5.APP | W4.REPLAN（含已合入的MDB-2 5.1） | `project_management/ai_profiles/`中strict summary与disabled助手的profile数据，由`ai_host.package`消费 | 未声明/禁用profile、模型未配置、输入不合schema时在模型调用前以准入错误拒绝；strict summary不声明tool；内容变化即升级精确版本；`check_app_package`通过；APP-01/05/07 |
+| W5.MIGRATE | W4.REPLAN | MDB-2已迁移的workbench/项目AI消费者、其测试与运行时版本准入记录 | 逐个确认无SDK/connector残留；APP-09：运行时版本不受支持时零模型调用、零发布，历史归属和审批仍受保护；不混入可选W5.CHAT |
 | W5.INPUT | W5.APP | `project_management/app/domain/analysis_input.py`、`analysis_chunks.py`、可选codec | 旧摘要+累计delta+必要证据完整，无隐式历史；分块可重建、不能引用未提供片段；MIG-03/04，APP-02 |
-| W5.CLIENT | W5.INPUT及基座Task/Run可执行契约 | `project_management/out/ai_base_tasks.py`、业务attempt映射与budget consumer | 丢POST响应按原clientRunKey查询；unknown不退费、不重新派发；APP-03/04 |
-| W5.ACCEPT | W5.CLIENT | `project_management/services/summary_acceptance.py`、W4 accepted CAS、no-work路径 | wrong evidence/owner/stale source/缺requiredParts拒绝；partial不推进完整accepted；no-change零基座调用；APP-04及MIG-02/09 |
-| W5.CHAT | W5.APP + W2授权只读查询 | 可选ai_bundle skill/connector/host actions、`ui_web`专属只读handler | APP-06/08；默认disabled；无权报告、过期ACK、模型写操作拒绝；不阻塞未启用Chat的首版 |
+| W5.CLIENT | W5.INPUT及MDB-2 task-run端口 | 业务attempt映射与budget，经`out/ai_task_contract.py`端口协议（MDB-2 5.2）调用`RuntimeTaskRunPort` | 结果未知时按原`client_run_key`查询，不重新提交、不续期deadline、不退费；usage取自运行审计；APP-03/04 |
+| W5.ACCEPT | W5.CLIENT | `project_management/services/summary_acceptance.py`、W4 accepted CAS、no-work路径 | wrong evidence/owner/stale source/缺requiredParts拒绝；partial不推进完整accepted；no-change零运行时调用；APP-04及MIG-02/09 |
+| W5.CHAT | W5.APP + W2授权只读查询 | 可选助手profile与Metrics App read tool（经Project公共API，使用认证principal） | APP-06/08；默认disabled；越权查看报告与模型写操作拒绝；无connector/host action；不阻塞未启用Chat的首版 |
 | W6.RENDER | W5.REPLAN | `project_management/reporting/`、HTML模板registry/renderer、Markdown/Excel | HTML首选；模板零模型调用，安全literal/链接和有界输出；MIG-12，HTML精确切片在同目录附录 |
 | W6.PUBLISH | W6.RENDER | report draft/publication服务、单一archive writer、`ui_web`编辑/复制/下载 | 草稿不推进发布，人工确认才提交；原稿/编辑/最终字节保留，失败不前进；全部在途行动保留 |
 | W7.RUN | W6.REPLAN | `project_management/services/operations.py`、owned worker适配、provider_access capture/operation、项目run CLI | 只维护一个业务operation authority，不另加AI Base第二费用真相；原deadline/cancel/unknown、正常收尾；MIG-14 |
@@ -90,8 +91,8 @@ Tier1直接反例，Tier2受影响模块/消费者，Tier3规格/安装资源，
 | 新authority | Producer | 具体consumers | 反例/非目标 |
 | --- | --- | --- | --- |
 | PM-CONNECTION | provider_connections + adoption | provider_access、旧sync两命令、profile connection test、metadata adapter、受影响tasks Jira repo | ACCESS-01/02/06；不默认改未涉及的Azure/PR身份；逐调用者记录迁移状态 |
-| PM-AI-PACK | ai_bundle manifest/prompt/schema | ai_integration doctor、AI Base loader、Task SDK、summary validator、可选Chat工具 | APP-01..08按启用范围；不注册开发skills |
-| PM-AI-VERSION | 基座版本化合同/SDK及应用注册映射 | W5.MIGRATE现有workbench adapter/host actions、W5.CLIENT、ai_integration doctor | APP-09；不支持组合拒绝副作用，已有消费者迁移不归可选新助手 |
+| PM-AI-PROFILE | `ai_profiles`数据（prompt/schema/policy，精确id@version） | `ai_host.package` TaskProfile、运行时准入、summary validator、可选助手read tool | APP-01..08按启用范围；strict summary不声明tool |
+| PM-AI-RUNTIME | requirements固定的运行时版本与准入记录（MDB-2 5.11） | W5.MIGRATE、W5.CLIENT端口、report assist、workbench | APP-09；不支持的版本在模型调用前拒绝，受影响消费者在准入中点名 |
 | PM-PORT | pinned source/target closure | 新domain/storage/service、目标tests、安装资源和当前手册 | 所有MIG有消费者/拒绝边界；不移旧运行状态/secret |
 | PM-CAPTURE | provider gateway + archive | delta/index、metrics投影、report source refs、partial-health | 失权/缺页不完整；旧图表cache不成完整source；无scope外隐式扩展 |
 
@@ -104,18 +105,18 @@ Consumer universe的新增落点：公共API/CLI/内部服务/缓存身份/存�
 
 本轮补齐未来叶任务并不重新关闭W1评审、进行secret采用、注册skill或迁移模块。
 
-## API Evolution Intake
+## Runtime Version Intake
 
-2026-11-01 API-EVO-01取代AI Base接入的默认向后兼容约束，见[演进记录](ai-api-evolution.md)。
-W4.REPLAN先核对基座目标版本、API change IDs、实际Dashboard调用闭包和替代测试；
-关键目标签名未冻结时不得派发对应W5叶任务。W5.MIGRATE与新任务适配可在文件边界独立时并行。
-W5.R要求受影响已有消费者与新任务均完成目标合同验证；未受影响必须以明确census结果说明，
-不要求制造无必要的代码变化。W5.REPLAN再检查应用回执和后续发布/运行依赖。
-通用API的精确规格与基座任务状态不在本文件重复维护。
+API-EVO-01的不兼容原则保留；其SDK/HTTP演进流程由嵌入运行时版本准入（MDB-2 5.11）取代，
+[演进记录](ai-api-evolution.md)仅为历史。W4.REPLAN核对已准入的运行时版本、精确profile `id@version`
+和端口消费者闭包；端口签名未冻结时不得派发对应W5叶任务。W5.MIGRATE与新任务适配可在文件边界独立时并行。
+运行时升级须点名受影响消费者测试；未受影响的以明确census结果说明，不制造无必要的代码变化。
+W5.REPLAN再检查应用回执和后续发布/运行依赖。
 下一步仍是tasks当前执行入口；本附录不能被当作一次性并行实施所有模块的授权。
 
 ## BASE-A Delivery And Parallel Work
 
+已被MDB-2取代：本节只是SDK时代的历史证据，不定义剩余工作或分工。
 2026-11-01基座交付BASE-A.1/.2/.R后，**双方可以立即并行开展非live开发，不再等待BASE-B整体完成**。
 本节是既有DAG的跨仓依赖视图，不另建任务状态，不改变W1至W7的应用内部前置。
 基座的BASE-A完成不能直接勾选Dashboard的W5或运行资格。

@@ -9,46 +9,401 @@ The approved delivery order and interfaces are in
 
 ## Environment
 
-Reporting validation uses the existing separately installed interpreter:
+The migrated `ai_host`, summary, report-assist and project-run boundaries use
+the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
+The current candidate is `ai-base-runtime==0.1.1.dev4`, built from AIB
+`d589ac8e6572a903edc3846e7d78195e85858868`. Its wheel SHA256 is
+`b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94`.
+This is a development candidate, not full AIB or Dashboard qualification.
+Current execution priority is Windows. Linux, WSL and Linux-container validation
+are deferred; their interfaces and environment definitions remain available for
+later qualification and are not prerequisites for this Windows packet.
+
+The Windows delivery sequence is specified in the
+[MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
+with detailed steps and a clause-to-evidence matrix. Installation and entrypoint
+retirement passed W1. Windows synthetic-data `FUNC.ACCEPT` is now complete at
+source `ff09d6ff97dd62e56fb3bfc44914c5c08582a144`: the
+[formal receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json)
+binds 114/114 functional keys, all seven module gates and independent review.
+Next is W3.REPLAN, followed by the
+[performance phase](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md)
+to freeze KPIs, collect probes, optimize and certify. Performance remains NOT_RUN;
+stop/cancel/cleanup bounds remain functional and were not relaxed.
+The receipt covers the tested source, not subsequent product changes or full AIB release.
+The existing MDB-2 `tasks.md` remains the sole migration status ledger.
+
+Windows B5 shutdown qualification requires two complementary proofs under the
+approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):
+real AIB chat subscriptions prove session/run identity and termination; controlled
+active/idle/approximately8MiB streams through the same installed adapter and actual
+serve prove slow/non-reader backpressure and cleanup. Both are required. This
+does not add chat-text streaming or change the candidate, heartbeat2s, quotas4/4,
+threads14, terminal grace2s, slow-reader pause3s or normal exit0 within10s.
+Both B5 proofs and the Windows host functional matrix are accepted by the linked
+receipt; performance/KPI qualification remains separate.
+The approximately8MiB unread workload may span Waitress and TCP buffers.
+Qualification binds all512 payload blocks plus real pending server output;
+it does not require the entire workload to remain in Waitress's own queue.
+Every registered descendant needs a terminal exit observation. The host's
+0/130 contract does not require independently completed helpers to return the
+same exit code as the host.
+
+The native qualification entry is `scripts/validation/windows_host_qualification.py
+--phase conformance --inputs <frozen-inputs.json> --output <new-owned-receipt.json>`.
+It requires a clean source commit, the B5-r1 amendment path/hash and
+`python.environments.candidate`; actual dependency fingerprints are compared
+before and after execution. Its `windows-host-conformance` receipt validates
+the functional B1/B4/B5 keys, including actual commands, exact test inventories
+and stream/process outcomes. A plain JUnit cannot replace that receipt.
+Producer and aggregate input files are separate immutable documents. The native
+checker resolves and hashes the receipt's producer input, then requires matching
+source, candidate, fixture, owner root, amendment and candidate interpreter/
+environment bindings. The aggregate may add receipt references and historical
+interpreter roles; neither can replace the selected candidate binding.
+`--phase performance` remains deferred. Command availability is not evidence
+that W2.CERTIFY or final joint acceptance has passed.
+
+For a native stream shutdown failure, retain the original run and inspect
+`serve.log` before repeating the full matrix. The test entry records the runtime
+stop result and explicit-exit/inventory boundaries; a stalled final stage also
+dumps thread stacks before the unchanged watchdog deadline. These observations
+do not replace cleanup assertions or explain an earlier failure merely because
+a later run passes. They are test diagnostics, not production API fields.
+Test entry preludes must leave callback-registering imports, including
+`unittest.mock`, until the shared serve bootstrap installs exit capture.
+Load such helpers inside `configure`/`prepare`; an unobserved callback is an
+exit failure, not a reason to relax the inventory.
+`ai_host/tests/test_failed_shutdown_recovery.py` adds a separate safety proof:
+after acknowledged public runtime writes, controlled pending store work
+causes a real incomplete stop and serve exit3; a fresh child must recover the
+same task/session/approval/history state without duplicate effects. Its clean
+control and identity negative prevent that proof from silently becoming a
+normal-stop or lock-only smoke. This does not explain a historical OS stall
+or guarantee unacknowledged work survives. Keep all production budgets intact.
+Native test process inventory uses the known host PID as its root; permission
+errors inside that subtree remain failures. Test observation writers publish
+immutable numbered snapshots, avoiding replacement of a file concurrently held
+by a Windows reader. Readers reject an incomplete latest snapshot rather than
+using stale success. These are test-observation rules, not runtime storage APIs.
+Native signal tests wait for the complete expected cleanup-phase value, not
+file existence. An implicit lifetime stop may already have closed HTTP before
+the parent observes readiness; only a live process in its expected controlled
+cleanup phase can satisfy that test's initial observation. Normal lifetime
+and explicit first-stop cases still require HTTP readiness. Stop/signal
+deadlines remain unchanged.
+The serve command loads its explicit-exit module before serving. First-time
+module discovery must not consume the bounded shutdown window; the native
+exit checks still require the actual inventory and cleanup, not just a zero
+process code. This does not remove filesystem I/O from cleanup or change
+its deadline.
+
+The actual-repository pytest witnesses
+`scripts/tests/test_embedded_runtime_boundaries.py::test_current_repository_obeys_embedded_runtime_boundaries`
+and `scripts/tests/test_retired_ai_paths.py::test_current_repository_has_no_retired_windows_paths`
+run the existing checkers against this checkout and require nonzero coverage
+with no violations. Their JUnit evidence is usable by the final qualifier;
+raw checker JSON alone is not a supported evidence binding.
+The Windows host's non-running HTTP proof retains the public WSGI callable
+after final stop, separately checks `close_http`, and uses the real Waitress
+stopping matrix. `start_blocking` exposes no pre-start WSGI handle. Do not
+substitute an ASGI request or an async authentication shim for this synchronous
+host; ASGI host qualification remains not applicable.
+`conformance_boundary_cases.py` verifies full-short-capacity authentication,
+real same-origin navigation retry, embedded CSP and closed/stopped HTTP.
+`conformance_environment_cases.py` observes the actual Windows loop,
+process-state ownership and a deliberately slow callback diagnostic.
+The Workbench browser witness records cold asset requests and their 200
+responses; these are functional checks, not startup/latency KPIs.
+
+An aggregate JUnit may copy whole already-green input suites with a hashed
+provenance list. Reject failed/skipped inputs and duplicate testcase IDs,
+preserve every input case, and validate the output inventory with the existing
+JUnit checker. This is report aggregation, not another test execution, and
+cannot replace the producer-owned native or migration receipts.
+Run the explicit conformance/testkit lane in a separate process from ordinary
+GUI/business tests. Resource baselines are process-scoped; a mixed-process
+observer failure is not a measured leak or a reason to loosen its thresholds.
+All selected cases must still execute, and only whole green reports may merge.
+For full module lanes, the qualifier records an independent pytest execution
+inventory alongside the raw JUnit. Passed subtests can inflate the framework's
+suite total without adding testcase records. The reconciler accepts only a
+difference explained by observed passed subtests, with all collected primary
+cases executed once, no non-pass/deselection, and exact command/output bindings.
+It writes a separate derived XML and hashed provenance; raw reports remain
+unchanged and ordinary JUnit validation stays strict. Replay checks both inputs
+and the derived output before a module result is used.
+The final qualifier keeps detailed logs in `qualifier-runs` and uses the shorter
+owned `qt/<run-id-hex>/<lane>` hierarchy for pytest working directories. This
+leaves room for UUID-heavy native archive fixtures on Windows without changing
+their persistent Git layout or any safety threshold. Arbitrarily deep Git
+repository roots are not certified by this validation layout.
+Keep the explicit module lanes in separate processes: `ai_host` uses a
+file-backed test database for real worker-thread callbacks. Mixing another
+module's database setup into that lane can select an in-memory store whose
+close behavior is different.
+Startup readiness polls treat malformed/truncated HTTP like other transient
+transport failures, while retaining the original absolute deadline and owned
+process check. SLE reports such probes as unreachable; normal API reads remain
+strict and failed probes never establish readiness or endpoint ownership.
+
+The migration qualification entry is `scripts/validation/windows_migration_rehearsal.py
+--inputs <frozen-inputs.json> --output <new-owned-receipt.json>`. It refuses dirty
+source for formal qualification. Inputs include hashed snapshot/retained-publication
+records and exact `candidate`, `old_app`, `old_base` interpreter fingerprints.
+Only the new candidate carries the clean-install/no-legacy-SDK gate; the old
+environment is used solely for the isolated, pinned restore. The qualifier
+accepts its `windows-migration-rehearsal` receipt kind only for the Windows
+portion of task 10.3, after semantic replay. The accepted Windows migration
+receipt is bound by the functional acceptance above; original task 10.3 remains
+open for deferred image-specific obligations. Command availability alone
+never proves a migration or joint acceptance.
+
+Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe'
-& $reportingPython -I -c "import sys, pywintypes, ai_base_application_sdk; from importlib.metadata import version; print(sys.executable); print(version('ai-base-application-sdk')); print(ai_base_application_sdk.__file__)"
+$reportingPython = 'D:\AIGC\artifacts\mdb2-windows-20261117\windows-venv-r4\Scripts\python.exe'
+& $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
-Expected SDK is exactly `0.2.0a1`; its module must resolve under that selected venv.
-It uses the unchanged `task-run/1` a2 pack. Exact wheel/pack and installation identities
-remain in the [SDK contract](../../openspec/changes/add-provider-neutral-project-reporting/sdk-020-integration.md).
-The retained main `.venv` contains SDK0.1.0a2 and is not a supported shortcut for migrated
-report consumers. No current service is silently switched or upgraded.
-The import check is environment evidence only, not a business test.
+Admission checks the wheel provenance, exact package-file set and hashes, and
+the actual import path without importing the runtime package. Missing manifests,
+editable installs and package shadowing are rejected. Do not use a retained old
+environment or an editable source install for migrated consumers. No existing
+service or user database is silently switched.
 
-Use the existing no-dotenv entry, with explicit test nodes and a unique evidence filename:
+### Windows Offline Installation
+
+The owned artifact root is `D:\AIGC\artifacts\mdb2-windows-20261117`.
+Its `wheels/` directory contains the runtime and Windows dependency wheels.
+The installation qualifier takes the release-input record, validates ownership
+and candidate files before creating anything, creates a fresh venv, acquires
+dependency wheels, then installs offline. Network acquisition alone inherits
+the existing process HTTP/HTTPS proxy; installation and tests use a private
+home with pip configuration disabled and no user-site or shared dependencies.
+Source-built dependencies must already have verified compatible wheels in the
+wheelhouse. The recorded rcssmin/rjsmin wheels match the candidate's Python 3.13
+Windows payload; their source archive identities are retained with the inputs.
+
+`scripts/validation/windows_install_smoke.py --inputs <absolute-input-json>
+--output <new-owned-receipt-json>` is a one-time qualification command, not an
+environment repair command. It refuses an existing environment or receipt.
+For another run, prepare an input record naming a fresh prefix under its marked
+artifact root. Failed receipts and environments are retained for diagnosis.
+Only a `PASS` receipt establishes the installed interpreter as usable.
+
+To install another development environment from a successful qualification,
+run from the Dashboard repository root:
 
 ```powershell
-& $reportingPython -I scripts/validation/run_report_authoring_tests.py ui_web/tests/test_report_daily_ui_browser.py::TestReportDailyUiBrowser::test_shouldCarryEditablePersistentReferenceIntoActualNextDay -q --tb=short --durations=5 --junitxml=.tmp/dashboard-delivery-20261105/daily-two-day.xml
+$artifacts = 'D:\AIGC\artifacts\mdb2-windows-20261117'
+$installed = Get-Content -Raw "$artifacts\evidence\install-r4.json" | ConvertFrom-Json
+if ($installed.result -ne 'PASS') { throw 'Installation qualification has not passed' }
+$wheelhouse = Join-Path $artifacts 'wheels'
+foreach ($wheel in $installed.wheels.PSObject.Properties) {
+    if ((Get-FileHash -LiteralPath (Join-Path $wheelhouse $wheel.Name)).Hash.ToLowerInvariant() -ne $wheel.Value) {
+        throw 'Wheelhouse hash mismatch'
+    }
+}
+$constraints = $installed.constraints.path
+if ((Get-FileHash -LiteralPath $constraints).Hash.ToLowerInvariant() -ne $installed.constraints.sha256) {
+    throw 'Windows constraints hash mismatch'
+}
+if ((Get-FileHash -LiteralPath 'requirements.txt').Hash.ToLowerInvariant() -ne $installed.requirements_sha256) {
+    throw 'Requirements changed; requalify this dependency set'
+}
+$newEnvironment = Join-Path (Get-Location) '.venv-embedded'
+if (Test-Path -LiteralPath $newEnvironment) { throw 'Choose a new environment path' }
+& 'C:\Python313\python.exe' -I -m venv $newEnvironment
+if ($LASTEXITCODE -ne 0) { throw 'Environment creation failed' }
+$reportingPython = Join-Path $newEnvironment 'Scripts\python.exe'
+$env:PIP_CONFIG_FILE = 'nul'
+$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev4-py3-none-any.whl'
+& $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints $runtimeWheel
+if ($LASTEXITCODE -ne 0) { throw 'Runtime installation failed' }
+& $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints -r requirements.txt
+if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
+& $reportingPython -I -m pip --isolated check
+if ($LASTEXITCODE -ne 0) { throw 'Dependency check failed' }
+& $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
+if ($LASTEXITCODE -ne 0) { throw 'Runtime admission failed' }
+```
+
+The qualifier also checks complete package files, module/distribution locations,
+disabled user-site and managed `.pth` ownership, and runs package checks and the
+real no-model `serve` page/asset/normal-stop smoke. A dependency download or
+`pip check` alone is not a successful install receipt. Linux dependency effects
+remain deferred and unqualified.
+
+The publication bridge consumes the runtime-issued read-only
+`ToolApproval.approval_id`. It does not derive approval identity from model
+arguments, audit events or the runtime's private persistence. The prior dev2
+record is retained in the MDB-2 change's `evidence/runtime-artifact-e155d4c.json`.
+The dev3 record remains in `evidence/runtime-artifact-0e8b29f.json`. Dev4 corrects
+HTTP-close accounting: an already-ended client stream does not make a later
+normal stop fail, while terminal-send failures during HTTP close remain errors.
+Authentication failures are Metrics-owned observability: `MetricsHost.record_audit`
+and the runtime-mounted WSGI branch both emit a single sanitized `ai_auth_failed`
+log with path, client address and reason, and never write `RuntimeAuditEvent` rows
+for that category. This is host behavior, not an AI Base SPI change.
+
+### Workbench Consumer
+
+The Workbench uses this same candidate through `ai_host.pane` and the registered
+`metrics.workbench` context provider. The host authenticates the request and uses
+`metrics.workbench.<profile_id>` as the runtime session key. A keyed open restores
+the persisted context, so the host explicitly binds the newly resolved ContextRef
+within the same one-second pane budget before returning the embed path.
+The browser loads `EmbedHost` from `handle.ui.asset_url("embed-host.js")`; its
+`context-changed` message carries only the session id. htmx preserves the iframe
+by its session-specific id. Evidence selection stays local until `Ask AI`,
+which sends ordered ticket ids through a server-rendered Workbench refresh;
+the server enforces the 50-ticket/4 KiB ContextRef limit. Ticket bodies are not
+sent to the iframe by a private message. The context binding uses only the
+in-process public runtime port.
+
+Use `ai_host/tests/test_workbench_context_ref.py`,
+`ai_host/tests/test_workbench_context_provider.py`,
+`ai_host/tests/test_workbench_pane.py` and
+`ui_web/tests/test_workbench_ai_host_actions.py` for focused checks.
+`ai_host/tests/test_workbench_browser_join.py` starts the real `serve` command with
+the installed candidate, synthetic data and a scripted model endpoint; its
+temporary archive must remain outside any source checkout. The test records
+browser requests, screenshots and owned process shutdown. Run the host test lane
+separately so its file-backed SQLite fixture governs runtime callback connections.
+The bounded approved-publication join is recorded separately under MDB-2 task
+10.1. Full lifecycle, deployment and final release qualification remain open.
+
+### Approved Chart Publication
+
+The Workbench agent uses `metrics.catalog` and `metrics.chart_workflow` to read
+the selected profile's approved recipes and validate chart intent. Both are
+read tools. `metrics.publish_chart` is an external tool requiring a runtime
+approval. Its preview binds the generated dashboard, target, normalized render
+configuration, selected range/series and a stable data fingerprint. Data
+readiness is checked before requesting approval; unsupported semantics stay
+`needs_metric_recipe` rather than being mapped to a different metric.
+
+The human decides the approval in the embedded AI pane. The runtime checks the
+preview again before execution. Dashboard then imports the approved bytes,
+without rerendering, and stores the runtime approval id, tool-call id, approver,
+digest and target in `AiChartPublication`. A repeated completed tool call reads
+the same stored result; it does not issue another import. A failed import has
+status `failed` and no success URL. A lost database acknowledgement can retry
+the same approved bytes and deterministic Grafana UID with overwrite enabled.
+One App/process serializes publication and supersession with its existing
+publication lock. The latest-history lookup stays inside that lock but outside
+the write transaction, avoiding a SQLite read-to-write upgrade conflict with
+independent audit writes. The transaction still commits the publication row
+atomically; this ordering adds neither automatic imports nor longer timeouts.
+
+The read-only `/api/ai-publish-history/` endpoint and Workbench publication pane
+read these records. New successful publications supersede the previous success
+for the same Grafana base URL and UID; failed attempts do not replace it.
+Historic audit records are not reconstructed into publication history.
+
+Focused checks are `ai_host/tests/test_metrics_tools.py`,
+`ai_host/tests/test_publication_boundaries.py`,
+`ai_host/tests/test_publication_runtime_join.py`,
+`ai_host/tests/test_publication_contention.py`,
+`ai_host/tests/test_publication_recovery.py` and the `bug_metrics/tests/test_ai_chart_*`
+tests. `ai_host/tests/test_publication_browser_join.py` uses production settings
+with synthetic Basic credentials, an isolated database, a scripted model and its
+own local Grafana instance. It verifies the actual imported chart data, not just
+the import acknowledgement. Run it on the selected candidate interpreter with
+a fresh external `--basetemp` directory. No live provider/model or existing
+Grafana instance is part of that test.
+
+Run every reporting, `ui_web` and `project_management` test through the existing no-dotenv
+entry with the selected interpreter in isolated mode (`-I`), naming test files or nodes explicitly:
+
+```powershell
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py <test files or nodes> -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
+```
+
+Plain `pytest` is not equivalent: `pytest.ini` discovers only `tasks`, `forecast`, `velocity` and
+`ui_web` tests, so `project_management` and other modules are silently omitted, and the root
+`conftest.py` loads development settings that read `.env`. The runner denies external networking
+and suppresses dotenv loading; local browser HTTP and separately scoped runtime IPC remain permitted.
+
+Evidence runs add durations and a unique evidence filename:
+
+```powershell
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py ui_web/tests/test_report_daily_ui_browser.py::TestReportDailyUiBrowser::test_shouldCarryEditablePersistentReferenceIntoActualNextDay -q --tb=short -p no:cacheprovider --durations=5 --junitxml=.tmp/dashboard-delivery-20261105/daily-two-day.xml
 ```
 
 The named next-day case is the DAILY closure target; its existence alone is not a pass.
 Do not run a missing test node as evidence. The tasks ledger records its implementation
-and actual result. The runner denies external networking and suppresses dotenv loading;
-local browser HTTP and separately scoped runtime IPC remain permitted.
+and actual result.
+
+## Embedded Task Boundary
+
+Dashboard persists its original UTF-8 canonical request and source hash.
+The adapter uses the runtime's public `canonical_digest` and `canonical_json` for
+runtime requests and output bytes. A returned observation carries both
+`source_input_sha256` and the runtime's `input_sha256`; result content retains
+the runtime's actual `output_sha256`. Never change historical archive hashes,
+normalize old request bytes in place, or equate the two encodings for Unicode.
+
+Unknown dispatch is observed with the original request through read-only
+`lookup`, then `get`/`result`. It never becomes a second `start`. Cancellation
+shares one remaining time budget across lookup, cancel and observation;
+acknowledgement alone does not prove settled execution.
+
+New project-run admission records accept only schema 3 and persist the original
+principal and exact task-profile binding. Old active operation records are
+rejected, not silently converted. Business publications remain untouched.
+The runtime observation contract has no completion timestamp; report readers
+leave the optional summary time unset rather than reuse the retired wire field.
+
+The registered host command is `serve`. Project
+shutdown uses `request_stop()` followed by `wait_stopped(timeout)`, with no
+`stop` alias. Failed startup drains owned resources without replacing an
+already installed owner. Host-loopback smoke and fault-path tests do not
+replace the full stream, signal, performance, browser and publication gates.
+
+`serve` detects an ended runtime and shuts down instead of leaving a dead AI
+pane behind. An already ended loop is not given another HTTP-close coroutine;
+the runtime context's final stop still determines cleanup success.
+Shutdown stops listener admission, closes runtime HTTP, drains
+response iterators through `close()`, flushes connections, and closes the
+Waitress dispatcher on its server thread before stopping the project worker.
+The signed absolute deadlines and watchdog remain in the Windows validation
+matrix and passed the accepted native functional qualification at ff09d6f.
+
+Normal and failed exits emit `serve_exit_inventory` before explicit database
+and logging cleanup, then `serve_exit_cleanup` and the final status line.
+Unknown callbacks/resources or failed cleanup produce exit 3, overriding a
+startup/runtime exit 1; clean exit is 0 and a second stop signal is 130.
+The original startup failure code is retained and printed even when cleanup
+also fails, so a startup timeout is not hidden behind the exit3 diagnostic.
+Do not bypass an inventory failure with a compatibility launcher.
+Static auto-refresh is disabled; restart `serve` after changing static files.
+Non-loopback binding is refused when anonymous approvals are enabled;
+otherwise absent Basic users produce an address-only warning.
 
 ## Validation Selection
 
 | Layer | Proof | Fixture boundary |
 | --- | --- | --- |
-| L0 | schema, null/empty, dates, sort, fragments, delta, hashes | Pure values; no Git, database, browser or Base |
+| L0 | schema, null/empty, dates, sort, fragments, delta, hashes | Pure values; no Git, database, browser or runtime |
 | L1 | durable command, CAS, recovery, source/summary/editorial preservation | Real isolated store only for the transaction being proved |
 | L2 | auth, CSRF, forms/JSON, error codes, nullable serialization | Cheap boundary fixtures plus a small real-service wiring subset |
 | L3 | real Milkdown editing, paint, keyboard, popup, Save/reopen | Mounted editor and real local HTTP/storage; synthetic upstream |
-| L4 | matched application/SDK/Base/publication and complete week | Stable candidate, owned services/data, explicit normal cleanup |
+| L4 | matched application/runtime/publication and complete week | Stable candidate, owned services/data, explicit normal cleanup |
 | External qualification | actual provider/model/Outlook/deployment/scheduling | Separate authorization and evidence; never inferred from local JOIN |
 
 Reuse immutable input/profile/source fixtures. Do not share mutable command, draft, archive
 or acceptance state between independent cases. Case failures must preserve the actual response
 and stop widening the test set until the relevant lower-level cause is understood.
 Do not rebuild a week for every bad field or treat a passing same-source week as proof of delta analysis.
+
+Report service doubles are real `ReportDraftService` instances seeded with real drafts and
+publications, or subclasses that override only what the case needs (for example
+`UnusedReportService` in `ui_web/tests/test_project_run_views.py`). Do not hand-build fake service
+classes: when the facade/service contract changes, a real-service double fails the test, while an
+ad hoc fake hides the drift. Patch view facade factories with
+`ProjectRouteTestSupport.patch_view_factory`, not a manual `setattr` restore.
 
 ## Review And Publication
 
@@ -58,9 +413,9 @@ After two equivalent failures without new evidence, change the hypothesis/diagno
 Review cost at packet boundaries and after 60 minutes on the same user problem.
 
 Record runtime source, fixture/test and environment fingerprints separately.
-For the SDK020 proof, the final strengthened test assertion did not change the runtime;
-the delivery receipt explicitly preserves this distinction.
-Do not extend that example to assume all test files are irrelevant: some are native fixture dependencies.
+Test files can be native fixture dependencies. A validator-only edit and a
+changed application fixture have different effects on retained qualification
+evidence; compare their recorded fingerprints before reusing results.
 
 Stage only approved paths. The retained authoring WIP is not all another owner's work:
 publish its verified closure separately from unrelated Scope/config/style edits.
@@ -93,25 +448,57 @@ limitations, not implied fixes.
 
 The [ASSIST packet](../../openspec/changes/add-provider-neutral-project-reporting/assist-execution.md)
 specifies the current profile, API, local receipt and editor contracts. Its task/qualification
-state remains in the single ledger. Use the selected SDK interpreter, not the legacy venv.
+state remains in the single ledger. Use the selected runtime interpreter, not the legacy venv.
 
 Run pure profile/target tests and `test_report_assist_service.py` /
 `test_report_assist_recovery.py` before `ui_web/tests/test_report_assist_browser.py`.
 The browser cases mount the actual editor and save via real local HTTP; only the upstream
-SDK transport is synthetic at this layer. They cover receipt retirement and same-text
+task-run port is synthetic at this layer. They cover receipt retirement and same-text
 acceptance as well as text/paint/cancel/unavailable states and mobile contrast/hit targets.
 
-`project_management/tests/test_report_assist_http.py` separately uses the installed SDK,
-the fixed Base source, a distinct registered authoring profile, and real data Git.
-It verifies Save, subsequent human paint/provenance, publication and next-day inheritance.
-Its source record is synthetic and it does not call a real provider or model.
-The existing Base fixture accepts an explicit hash-matched profile; its default summary
-profile/pack remains unchanged. Base-only dependencies are loaded in the Base process.
+`ai_host/tests/test_report_runtime_join.py` separately uses the installed runtime,
+the App-owned authoring profile and real data Git. It verifies recovery after a
+lost admission reply, Save, human paint/provenance, publication and next-day
+inheritance. Its model endpoint and source records are synthetic. The paired
+`ai_host/tests/test_summary_runtime_join.py` checks summary recovery and original
+archive identity without a second task submission.
 
 Evidence is retained under `.tmp/dashboard-assist-20261106/`, with unique XML and native
 run directories. Do not count initial RED or an earlier happy-path source as final closure.
 The export/clipboard sample and original five-day/cross-week chain now have separate
-delivery receipts. This single-target Base proof retains its own bounded scope.
+delivery receipts. Those historical receipts qualify only their recorded source
+and environment.
+
+### Served Runtime Join
+
+`project_full_stack.py` starts one real `serve` process with its embedded runtime
+and one bounded loopback model fixture. `ProjectRunFixtureAppConfig` supplies
+synthetic Jira data only to this controlled validation composition. The general
+UI fixture does not replace provider access. Use a fresh external data root:
+
+```powershell
+$prepared = & $reportingPython -I scripts/validation/project_full_stack.py prepare --data-root D:\AIGC\scrum_dashboard_validation\mdb2-runtime-join | ConvertFrom-Json
+$run = $prepared.run_dir
+try {
+    & $reportingPython -I scripts/validation/project_full_stack.py start --run-dir $run --lifetime-seconds 600
+    if ($LASTEXITCODE -ne 0) { throw 'Start failed' }
+    & $reportingPython -I scripts/validation/project_runtime_join.py run --run-dir $run
+    if ($LASTEXITCODE -ne 0) { throw 'Runtime join failed' }
+    & $reportingPython -I scripts/validation/project_full_stack.py restart-app --run-dir $run
+    if ($LASTEXITCODE -ne 0) { throw 'Restart failed' }
+    & $reportingPython -I scripts/validation/project_runtime_join.py reopen --run-dir $run
+    if ($LASTEXITCODE -ne 0) { throw 'Recovery failed' }
+} finally {
+    & $reportingPython -I scripts/validation/project_full_stack.py stop --run-dir $run
+}
+```
+
+`run` exercises the actual HTTP project-run and report-assist consumers, schema-3
+admission, duplicate commands and exactly two model dispatches. It is once-only
+for a given run. `reopen` is read-only and may repeat; each invocation writes a
+unique receipt under `evidence/runtime-reopen-<uuid>/`. Failed evidence is retained
+separately, not overwritten. The stop receipt must report normal cleanup; a
+successful business operation alone does not prove successful service shutdown.
 
 ## Derived Export Validation
 
@@ -138,12 +525,17 @@ The original full-week/cross-week scenario has its own retained qualification re
 Use the existing owned launcher and the
 [week packet](../../openspec/changes/add-provider-neutral-project-reporting/week-qualification.md).
 The fixed `full-week` scenario uses three synthetic Jira records and the installed
-SDK/local Base, with actual source capture and accepted summaries on the first day.
+embedded runtime and loopback model, with actual source capture and accepted summaries on the first day.
 Later unchanged captures reuse those summaries. The browser driver performs the
 six meeting dates through the actual templates, editor, Save and Finalize routes.
+The dedicated fixture also supplies the bounded reference reader for `#ALPHA-101`
+completion through the normal report factory; it does not create another project
+runtime or replace the completion view. The `single` and general UI scenarios
+do not enable that reader. Dispatch counts read the model fixture's
+`model/executor-observations.jsonl`.
 
 ```powershell
-& $reportingPython -I scripts/validation/project_full_stack.py prepare --work-root .tmp/sdk-020-join-20261105 --scenario full-week
+& $reportingPython -I scripts/validation/project_full_stack.py prepare --data-root D:\AIGC\scrum_dashboard_validation\mdb2-full-week --scenario full-week
 ```
 
 Use the exact owned `run_dir` returned by `prepare` for `start`, `status` and
@@ -172,10 +564,11 @@ formats retain their existing hash definitions. The shared producer/consumer rul
 is covered by `test_report_preparation_publication_guard.py`; stale, superseded,
 missing and downgraded bindings must continue to refuse publication.
 
-The [qualified week receipt](../../openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
+The historical [qualified week receipt](../../openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
 binds six daily publications, a weekly view, explicit empty-note/gap handling and
 42 original-file rechecks. It is an operation/continuity qualification, not a
-performance qualification. Concise business output and separate audit downloads
+performance qualification and does not qualify the new embedded composition.
+Concise business output and separate audit downloads
 are covered by the later presentation receipt below, without rewriting that week.
 Profile the recorded long prepare/view waits before choosing an optimization;
 do not use more week runs to locate a read-path problem. The later Report Read
@@ -193,8 +586,8 @@ Run the pure `test_report_standup.py` / `test_report_audit.py`, then the focused
 `test_report_presentation_guards.py` attacks an internally rehashed unknown
 renderer through actual draft consumers. HTTP tests are
 `ui_web/tests/test_report_standup_views.py`; the mounted sample is
-`test_report_standup_browser.py`. Use the same selected SDK/no-dotenv entry.
-No extra full week or Base dispatch is needed for this presentation boundary.
+`test_report_standup_browser.py`. Use the same selected runtime/no-dotenv entry.
+No extra full week or model dispatch is needed for this presentation boundary.
 
 Audit export reads all six original files in one owner-checked, verified
 publication pass. The deterministic ZIP has a separate generator revision and
@@ -208,7 +601,7 @@ Evidence: `.tmp/dashboard-presentation-20261106/` and
 ## Skipped Meetings
 
 The [skip packet](../../openspec/changes/add-provider-neutral-project-reporting/meeting-skips.md)
-adds a local append-only Django calendar chain. It does not change the SDK/profile
+adds a local append-only Django calendar chain. It does not change the runtime/profile
 or start providers, scheduling or model work. Apply migration `0004` only in an
 authorized deployment; tests use the isolated runner database.
 
@@ -260,8 +653,8 @@ page overflow and observation contrast.
 
 Evidence stays under `.tmp/dashboard-source-observation-20261107/`.
 Keep failed runs separately; a test-fixture error is not a product regression.
-No full-week, S1, Base dispatch or real enterprise-source run is needed for this
-boundary. The installed SDK environment and no-dotenv entry above still apply.
+No full-week, S1, model dispatch or real enterprise-source run is needed for this
+boundary. The selected runtime environment and no-dotenv entry above still apply.
 Changing UI labels requires regenerating the checked-in zh-Hans `.mo` from its
 `.po` with the existing `polib` compiler before bilingual validation.
 
@@ -284,7 +677,7 @@ for recovery checkpoint writes or the new controls.
 `scripts/validation/profile_report_reads.py`对已有owned synthetic实例运行真实Django HTTP；
 `--scenario workbench|baseline|preparation|editor --samples 20`保留首请求与所有稳态样本，
 `--dataset s1`选择页20/5秒规模门槛。输出目录只能在该run的evidence下，出站网络被禁止。
-结果包含代码、运行数据、SDK/Django路径和前后指纹；`passed`只代表对应场景，不能替代
+结果包含代码、运行数据、runtime/Django路径和前后指纹；`passed`只代表对应场景，不能替代
 实际点击到最终列表可用的浏览器证据。首次超过10秒时停止扩样定位，不能提高期限。
 
 S1使用`prepare_report_scale.py --manifest-from <owned-synthetic-run>`构建一次持久数据，

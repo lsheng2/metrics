@@ -140,7 +140,7 @@ def owner_payload(run_dir: Path, data_root: Path) -> dict:
 def initialize_run_dir(run_dir: Path, data_root: Path) -> None:
     if UUID_TEXT.fullmatch(run_dir.name) is None:
         raise ValueError('Run directory name must be a canonical UUID.')
-    for name in ('archive', 'base', 'environment', 'lifecycle', 'logs', 'evidence'):
+    for name in ('archive', 'model', 'environment', 'lifecycle', 'logs', 'evidence'):
         (run_dir / name).mkdir()
     write_json(run_dir / 'owner.json', owner_payload(run_dir, data_root))
 

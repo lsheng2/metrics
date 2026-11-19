@@ -1,0 +1,97 @@
+{% load i18n dashboard_format %}
+<div class="report-section-band">
+    <h3 class="report-band-title">{% trans "Key messages" %}</h3>
+    <div class="report-message-grid">
+        {% for message in report_body.messages %}
+            <article class="report-message-row">
+                <div class="report-source-cell">
+                    <strong>{{ message.message_id }}</strong>
+                    <p class="help">{{ message.source_refs|join:", " }}</p>
+                </div>
+                {% with region=message.text_region label="Key message" %}
+                    {% include "projects/reports/editor_region.html" %}
+                {% endwith %}
+            </article>
+        {% endfor %}
+    </div>
+    <div class="report-note-strip">
+        <h4 class="report-field-title">{% trans "Meeting note" %}</h4>
+        {% for region in report_body.report_notes %}
+            {% with label="Meeting note" %}
+                {% include "projects/reports/editor_region.html" %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+</div>
+
+<div class="report-section-band">
+    <h3 class="report-band-title">{% trans "Issue register" %}</h3>
+    {% for row in report_body.rows %}
+        <article class="report-row-editor">
+            <header class="report-row-header">
+                <div>
+                    <strong>{{ row.key }}</strong>
+                    <p>{{ row.title }}</p>
+                </div>
+                <dl>
+                    <div><dt>{% trans "Status" %}</dt><dd>{{ row.status }}</dd></div>
+                    <div><dt>{% trans "Assignee" %}</dt><dd>{{ row.assignee|or_dash }}</dd></div>
+                </dl>
+            </header>
+            <div class="report-row-grid">
+                <div>
+                    <h4 class="report-field-title">{% trans "Summary" %}</h4>
+                    {% with region=row.what_region label="Summary" %}
+                        {% include "projects/reports/editor_region.html" %}
+                    {% endwith %}
+                </div>
+                <div>
+                    <h4 class="report-field-title">{% trans "Current" %}</h4>
+                    {% with region=row.position_region label="Current" %}
+                        {% include "projects/reports/editor_region.html" %}
+                    {% endwith %}
+                </div>
+                <div>
+                    <h4 class="report-field-title">{% trans "Verification" %}</h4>
+                    {% with region=row.verification_region label="Verification" %}
+                        {% include "projects/reports/editor_region.html" %}
+                    {% endwith %}
+                </div>
+            </div>
+            <div class="report-note-strip">
+                <h4 class="report-field-title">{% trans "Meeting note" %}</h4>
+                {% for region in row.note_regions %}
+                    {% with label="Meeting note" %}
+                        {% include "projects/reports/editor_region.html" %}
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            {% for action in row.actions %}
+                <div class="report-action-row">
+                    <div class="report-source-cell">
+                        <strong>{{ action.label }}</strong>
+                    </div>
+                    <div class="report-row-grid">
+                        <div>
+                            <h4 class="report-field-title">{% trans "Action" %}</h4>
+                            {% with region=action.action_region label="Action" %}
+                                {% include "projects/reports/editor_region.html" %}
+                            {% endwith %}
+                        </div>
+                        <div>
+                            <h4 class="report-field-title">{% trans "Owner" %}</h4>
+                            {% with region=action.owner_region label="Owner" %}
+                                {% include "projects/reports/editor_region.html" %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    {% for region in action.note_regions %}
+                        {% with label="Meeting note" %}
+                            {% include "projects/reports/editor_region.html" %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </article>
+    {% endfor %}
+</div>

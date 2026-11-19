@@ -32,7 +32,7 @@ Planned MVP owner additions:
 
 1. Modules communicate through public APIs under `app/api/`.
 2. Domain code remains pure Python and framework-free.
-3. UI uses semantic HTML, Bulma, htmx and Chart.js, plus the approved local Milkdown report editor.
+3. UI uses semantic HTML, htmx, the Meridian design system and Chart.js (via `DashboardCharts`), plus the approved local Milkdown report editor. UI work follows `openspec/docs/current-baseline/frontend-design-requirements.md`.
 4. Dataclasses use `@dataclass(slots=True)`.
 5. External tracker behavior should reuse `sd-metrics-lib` when practical.
 6. Secrets stay in `.env` or deployment environment variables and must not appear in committed files, docs, tests, or chat output.
@@ -41,7 +41,7 @@ Planned MVP owner additions:
 9. Multi-provider first: Jira is the first rich work-item provider, not the architecture boundary. New tracker/work-item/AI workflow designs must define provider-neutral contracts and UI semantics first, then implement Jira, GitHub, Azure DevOps, or other systems as adapters with declared capabilities.
 10. Project-management execution now lives in this Dashboard checkout. Chiplet is an instance only; never use its project ID, query or name as a production default. Jira and HSD-ES use the same project/stage contracts with honest per-provider coverage.
 11. Do not create parallel product surfaces per provider. Shared concepts such as connection profile, work-item facts, metadata discovery, scope query/filter, action plan, approval/audit, and dashboard consumption belong in provider-neutral contracts; provider-specific modules own only external API quirks, auth, pagination, field identity, and sync implementation.
-12. AI Base/SDK early-development policy (2026-11-01): coordinated breaking API changes are allowed and preferred over unnecessary permanent compatibility layers. Follow [API-EVO-01](../../openspec/changes/add-provider-neutral-project-reporting/ai-api-evolution.md) for versioned change records and per-app Agent handoffs; preserve security, evidence and business acceptance, not obsolete signatures. This is a design policy, not proof of migration or permission to delete data.
+12. AI Base/SDK early-development policy (2026-11-01): coordinated breaking API changes are allowed and preferred over unnecessary permanent compatibility layers. Follow [API-EVO-01](../../openspec/changes/add-provider-neutral-project-reporting/ai-api-evolution.md) for versioned change records and per-app Agent handoffs; preserve security, evidence and business acceptance, not obsolete signatures. This is a design policy, not proof of migration or permission to delete data. Once a consumer migrates, delete its legacy path outright, with no fallback or mode switch (`AI_CONTRACT.md` §3).
 
 ## Common Validation
 
@@ -50,15 +50,53 @@ python -m pytest path\to\test_file.py::TestClass::test_method -q
 python manage.py check
 python scripts/check_file_size_limits.py --include-untracked
 python scripts/check_diff_whitespace.py --include-untracked
+npm --prefix ui_web/frontend run check   # UI changes: token/vendor drift, Stylelint, WCAG contrast
 ```
+
+Reporting and embedded-host tests use the selected runtime interpreter and the
+no-dotenv runner in [reporting validation](../../docs/development/reporting-delivery.md),
+not plain pytest. The explicit consumer conformance lane is:
+
+```powershell
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py ai_host/tests/conformance_suite.py ai_host/tests/conformance_host_cases.py ai_host/tests/conformance_http_cases.py ai_host/tests/conformance_order_cases.py ai_host/tests/conformance_process_cases.py -p ai_base_runtime.testkit.pytest_plugin -p ai_host.tests.conformance_fixtures -o ai_host_modes=blocking_wsgi -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
+```
+
+The root pytest configuration does not register that plugin or mode. The explicit
+lane includes the shipped assertions and implemented Metrics boundary checks;
+the ASGI record is not applicable, not a pass. Its success does not by itself
+close the full MDB-2 5.10 lifecycle matrix or 10.4 joined qualification.
+
+The import and retirement gates run from this repository root and do not start
+services. They fail missing/empty scopes and preserve explicit Linux deferrals:
+
+```powershell
+$gateRun = Join-Path '.tmp/runtime-gates' ([guid]::NewGuid().ToString('N'))
+& $reportingPython -I scripts/check_embedded_runtime_boundaries.py --root . --output "$gateRun/boundaries.json"
+& $reportingPython -I scripts/check_retired_ai_paths.py --root . --platform windows --output "$gateRun/retirement.json"
+```
+
+The output must be new. `--platform all` also checks deferred deployment
+definitions; a Windows result never claims that broader gate passed.
+
+## OpenSpec Authoring
+
+Rules learned with OpenSpec CLI 1.14.x. Validate the change with
+`npx --no-install openspec validate <change> --strict` and, after archiving,
+`npx --no-install openspec validate --specs --strict`.
+
+1. A `MODIFIED` requirement restates the whole main-spec requirement and keeps every scenario heading that requirement already has.
+2. When a scenario's premise disappears, do not drop or rename it under `MODIFIED`: move the requirement to `## REMOVED Requirements` with `**Reason**:` and `**Migration**:` lines, and put the new behavior under `## ADDED Requirements` with a new title.
+3. Archiving can create a main spec whose Purpose is "TBD - created by archiving ..."; replace it with the real purpose in the same change.
 
 ## Local Pitfalls
 
-1. Default pytest paths omit `pull_requests`, `project_management` and `provider_sync`.
-   Select affected paths explicitly; reporting uses the no-dotenv entry and selected SDK environment
-   in `docs/development/reporting-delivery.md`.
+1. Default pytest paths omit `pull_requests`, `project_management` and `provider_sync`, and plain `pytest` loads `.env`.
+   Select affected paths explicitly; reporting, `ui_web` and `project_management` tests use the isolated no-dotenv runner,
+   selected runtime interpreter and real `ReportDraftService` doubles in `docs/development/reporting-delivery.md`; present but
+   invalid stage archives are `REPORT_ARTIFACT_INVALID` (`openspec/docs/current-baseline/project-reporting.md`).
 2. Follow the task's owned runtime/port. Do not reuse the unrelated 8017 service or silently upgrade
-   the retained legacy `.venv`; current reporting validation uses SDK 0.2.0a1 with the original a2 pack.
+   the retained legacy `.venv`; current reporting validation uses the candidate
+   pinned in `ai_host/runtime_artifact.json`, with App-owned task profiles.
 3. Azure PR list pagination can return short or overlapping pages. Keep fixed-stride paging and de-duplication in the repository adapter.
 4. Intel Jira MVP setup/current-state notes live under `openspec/docs/historical/`, architecture details live under `openspec/docs/current-baseline/`, and normative requirements live under `openspec/specs/`; link to those docs instead of copying their content into AI guidance.
 5. If a Jira token, PAT, cookie, or Authorization header appears in chat or logs, treat it as exposed and recommend rotation.
@@ -66,3 +104,5 @@ python scripts/check_diff_whitespace.py --include-untracked
 7. If no severity mapping exists for a scope, hide critical/high series instead of guessing severity.
 8. Chart buckets and drilldown issue rows must share the same `calculation_run_id`; do not reconstruct drilldown membership from mutable current issue state.
 9. Avoid naming new shared abstractions `Jira*` unless the abstraction truly cannot apply to GitHub, Azure DevOps, or another work-item provider. Prefer `Provider*`, `WorkItem*`, `Tracker*`, or provider-neutral domain names and put Jira vocabulary in adapter-local code or UI helper text.
+10. `.github/file-size-limits.json` must claim every tracked file (first matching rule wins; a file matching no rule or exemption fails, as does a run that checks nothing). Split by concern before a file reaches its limit: templates into partials, CSS into `css/foundation/`, `css/shell/` or `css/pages/<feature>.css`, browser JS into feature modules. Legacy allowances allow zero growth, apply only in changed-file mode and only while the base revision is already oversized; never raise a limit or add an exemption to make new code fit.
+11. Every stylesheet and script is registered once in `ui_web/static_assets.py`, in cascade/dependency order; `base.html` renders it and browser tests inline the same list. Icon classes must be literal `iconoir-<name>` strings so `npm --prefix ui_web/frontend run build:vendor` can vendor the subset.

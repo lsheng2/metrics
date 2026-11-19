@@ -1,0 +1,225 @@
+/*
+ * Meridian foundation layer: ui_web/static/css/foundation/*.css, loaded in the order listed in
+ * ui_web/static_assets.py.
+ *
+ * Owns the shared component vocabulary (Bulma-derived class names such as .button, .box,
+ * .card, .table, .tag, .message and a small helper set), rebuilt on the Meridian design
+ * tokens in theme.css. Raw colors are forbidden here; use semantic
+ * --color-* tokens or color-mix() over tokens. See
+ * openspec/docs/current-baseline/frontend-design-requirements.md.
+ *
+ * This file: reset and document defaults.
+ */
+
+/* ---------------------------------------------------------------- reset */
+
+html,
+body,
+p,
+ol,
+ul,
+li,
+dl,
+dt,
+dd,
+blockquote,
+figure,
+fieldset,
+legend,
+textarea,
+pre,
+iframe,
+hr,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin: 0;
+    padding: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-size: 100%;
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+}
+
+ul,
+ol {
+    list-style: none;
+}
+
+fieldset {
+    min-width: 0;
+    border: 0;
+}
+
+img,
+video {
+    max-width: 100%;
+    height: auto;
+}
+
+canvas {
+    max-width: 100%;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+td,
+th {
+    padding: 0;
+}
+
+td:not([align]),
+th:not([align]) {
+    text-align: inherit;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+/* ------------------------------------------------------------- document */
+
+html {
+    font-size: 100%;
+    text-size-adjust: 100%;
+    text-rendering: optimizelegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scrollbar-color: var(--color-scrollbar) transparent;
+    background: var(--color-canvas);
+}
+
+/* scrollbar-width does not inherit: every scroll container (tables, code, boards, panes) opts into the
+   thin scrollbar whose token color html passes down through scrollbar-color. */
+* {
+    scrollbar-width: thin;
+}
+
+body {
+    min-height: 100dvh;
+    background: var(--color-canvas);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+    line-height: var(--leading-normal);
+    font-optical-sizing: auto;
+}
+
+a {
+    color: var(--color-accent-text);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+strong,
+b {
+    color: inherit;
+    font-weight: var(--weight-semibold);
+}
+
+small {
+    font-size: var(--text-xs);
+}
+
+code,
+kbd,
+pre,
+samp {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    font-variant-ligatures: none;
+}
+
+code {
+    padding: var(--space-px) var(--space-1);
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+pre code {
+    padding: 0;
+    background: transparent;
+}
+
+kbd {
+    display: inline-flex;
+    align-items: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 var(--space-1);
+    border: 1px solid var(--color-border);
+    border-bottom-width: 2px;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-medium);
+    line-height: 1;
+    justify-content: center;
+}
+
+hr {
+    height: 0;
+    margin: var(--space-4) 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+}
+
+::selection {
+    background: var(--color-selection);
+    color: var(--color-text);
+}
+
+input[type="checkbox"],
+input[type="radio"],
+progress {
+    accent-color: var(--color-accent);
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Set by shell.js for the frame in which the theme flips, so every surface changes colour together. */
+:root[data-theme-switching] *,
+:root[data-theme-switching] ::before,
+:root[data-theme-switching] ::after {
+    transition: none !important;
+}

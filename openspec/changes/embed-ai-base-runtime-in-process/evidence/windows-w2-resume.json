@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-18",
+  "status": "native-stop-root-cause-investigation",
+  "baseline_head": "4192656560b8c945422ea30649708c37388c2b04",
+  "storage": {
+    "owner_direction": "Continue using D after owner freed space",
+    "archive_or_deletion_performed": false,
+    "failed_run_preserved": "D:/AIGC/artifacts/mdb2-windows-20261117/nv-green1",
+    "resumed_run": "D:/AIGC/artifacts/mdb2-windows-20261117/nv-resume-r1",
+    "resumed_file_bytes": 127384558,
+    "fixture_change": "Restore mutated bytes and reuse one full fixture across negative cases; actual native B5 workload unchanged"
+  },
+  "validation": [
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-records-resume-r1.xml",
+      "sha256": "7259cc6e1bc726b8d8f16444a65bbcab91d08771a39d83f8350754b3aa1c0287",
+      "passed": 52,
+      "scope": "Previously disk-interrupted regression; all ten original rejection mutations retained in one isolated fixture"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-integration-r5.xml",
+      "sha256": "e11a67ddfb13b094265916bbf7bfed165ff885829f7977e9f9109d7e10ad9b6e",
+      "passed": 143,
+      "scope": "Native environment, semantic receipt, qualifier/profile, migration consumers and import/retirement checker tests; includes added schema/scope/raw-log rejection mutations"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-public-fault-r1.xml",
+      "sha256": "707de3f88cb829a036f43d23fe3f564704ad765c91f0484d851488b6f31fbdea",
+      "passed": 4,
+      "scope": "Native startup/rollback and ended/internal-fault proof after switching to the public AgentRuntime export"
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/resume-gates-r2/boundaries.json",
+      "sha256": "3680b5e8fb341e684b91b986fccaf272067668f0a54ee3e4f90cc555b54b213d",
+      "checked_files": 1267,
+      "violations": 0
+    },
+    {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/resume-gates-r2/retirement.json",
+      "sha256": "413f66bfa8adcae86a3de55ffc119bf88e6a357a781ee288ea5e068c38ed6e68",
+      "checked_files": 1045,
+      "violations": 0,
+      "scope": "Windows only; original Linux definition remains deferred"
+    }
+  ],
+  "environment": {
+    "package_count": 83,
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117/native-environment-probe-r1/environment.stdout.txt",
+    "sha256": "338385b5e2f07f20bd8f4d119db6b47d57a0f541a0683efc07678888bb0a32c7",
+    "result": "Exact match to frozen candidate environment",
+    "probe_program_sha256": "107e2ee25244e48ecff9da3d7cb410ed01f4893b0e0feccb078f929ea0b271d8",
+    "probe_program_unchanged_after_canonical_detector_reuse": true
+  },
+  "integration_fixes": [
+    "Reject nonzero or Boolean command exits and non-finite/negative HTTP-close durations",
+    "Bind before/after candidate environment and its actual probe commands",
+    "Retain the input-manifest digest from before native execution",
+    "Reject wrong receipt schema and non-functional scope",
+    "Bind B5/disconnect/signal child logs and process records; reject mixed runs",
+    "Share native lane and assertion inventory between driver and validator",
+    "Use the SDK public AgentRuntime export and the installer's existing retired-module detector registry; no checker relaxation"
+  ],
+  "not_claimed": [
+    "Frozen native CLI certification",
+    "Independent W2.R signoff",
+    "W3 migration rehearsal or joint acceptance",
+    "FUNC.ACCEPT, performance, Linux, other Apps or release"
+  ],
+  "review_repair": {
+    "finding": "W2-P1-1",
+    "authority": "INV-6",
+    "status": "focused-validation-passed-refreeze-pending",
+    "production_runtime_changed": false,
+    "refreeze_actions": [
+      {
+        "action": "Resolve and hash the immutable producer input, then compare execution bindings with the aggregate input",
+        "reason": "Requiring one input file creates a cycle when aggregate inputs contain hashes of already-generated receipts"
+      }
+    ],
+    "updated_artifacts": [
+      "scripts/validation/windows_host_conformance_records.py",
+      "scripts/validation/windows_host_conformance_evidence.py",
+      "scripts/tests/test_windows_host_conformance.py",
+      "scripts/tests/test_windows_host_conformance_records.py",
+      "docs/development/reporting-delivery.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-steps.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md"
+    ],
+    "red_evidence": "D:/AIGC/artifacts/mdb2-windows-20261117/aggregate-binding-red1.xml",
+    "green_evidence": "D:/AIGC/artifacts/mdb2-windows-20261117/aggregate-binding-green2.xml",
+    "green_tests": 124,
+    "rerun_gates": [
+      "W2.CERTIFY",
+      "W2.R"
+    ],
+    "post_refreeze_preflight_result": {
+      "command": "openspec validate embed-ai-base-runtime-in-process --strict --no-interactive",
+      "result": "PASS"
+    }
+  },
+  "current_stop_blocker": {
+    "date": "2026-11-18",
+    "source_commit": "c9bb9508ad04e8c4b7c139bccfe8fa3e151a0992",
+    "run_id": "2f2f5391-9102-4255-a0d7-aba8aa6dc8a4",
+    "case": "test_non_reader_cannot_block_bounded_normal_exit[CTRL_BREAK_EVENT]",
+    "native_b5_result": {"passed": 11, "failed": 1},
+    "exit_code": 3,
+    "parent_forced_cleanup": false,
+    "http_close_completed": true,
+    "host_cleanup_errors": ["server_close_failed", "server_thread_alive"],
+    "runtime_stop": {
+      "completed": false,
+      "timed_out": true,
+      "persistent_state_flushed": false,
+      "unclosed_resources": ["runtime_store", "state_lock"],
+      "elapsed_seconds": 1.012677700000495
+    },
+    "observed_blocking_stacks": [
+      "Waitress channel output buffer -> tempfile.close",
+      "RuntimeStore.close_until -> sqlite connection.close"
+    ],
+    "cause_not_established": [
+      "Disk latency, antivirus and external load were not measured or attributed",
+      "The earlier pre-reboot watchdog incident is not retroactively explained",
+      "Unconfirmed persistence completion is not a demonstrated data-loss finding"
+    ],
+    "evidence": [
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/conformance-runs/2f2f5391-9102-4255-a0d7-aba8aa6dc8a4/logs/native-b5.stdout.txt",
+        "sha256": "27b2111d4fe8d35efb9b764998c332c42950fa87936c9e37255db2f79661f0b8"
+      },
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/conformance-runs/2f2f5391-9102-4255-a0d7-aba8aa6dc8a4/junit/b5.xml",
+        "sha256": "30adb8ec7f0c9f2915de6d7336c553c3f9bff0fe015bf00a6ffee8367e28cfeb"
+      },
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/conformance-runs/2f2f5391-9102-4255-a0d7-aba8aa6dc8a4/artifacts/b5/test_non_reader_cannot_block_b1/serve.log",
+        "sha256": "57f12f49b94172b339bbd9452bf4f36badca2624f166f6812c3e97d5cff395e3"
+      }
+    ],
+    "positive_evidence_not_substituted_for_native_acceptance": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/mapped-proof-runs/d089cf8a-ead6-4693-998f-f6e78021565a/proof.json",
+      "sha256": "08816bf03649726e09a3f983edac8ff777c1da9c0c320463d712cc1b9f35f91b",
+      "passed": 120
+    },
+    "owned_process_audit": "No remaining process command line matched this native run or the mapped-proof run after completion",
+    "budgets_and_wheel_changed": false,
+    "blocked_gates": ["W2.CERTIFY", "W2.R", "W2.REPLAN", "W3.JOIN", "FUNC.R", "FUNC.ACCEPT"],
+    "previous_owner_request": "Approve a bounded Windows shutdown design replan before changing the frozen SDK wheel or lifecycle budgets; preserve the outer 10-second stop and persistence requirements",
+    "owner_decision": "Investigate the true root cause first, assess observed latency next, and decide KPI changes last; time-budget replan approval is not a prerequisite for diagnosis",
+    "followup_diagnostics": "windows-root-cause-diagnostics.md",
+    "docs_impact": "none",
+    "docs_impact_reason": "Evidence-only checkpoint reopens acceptance gates; no runtime behavior, API, configuration or operator procedure is changed, and no functional completion is claimed"
+  },
+  "test_counts_overlap": true
+}

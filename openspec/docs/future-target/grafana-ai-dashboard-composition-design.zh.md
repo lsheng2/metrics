@@ -18,7 +18,7 @@
 
 ## 当前 Demo UI 与 Grafana 的关系
 
-当前 demo 中的 Bug Trend 页面是 Django + Bulma + htmx + Chart.js 实现的 reference UI。它的职责不只是画图，还包括：
+当前 demo 中的 Bug Trend 页面是 Django + Meridian design system + htmx + Chart.js 实现的 reference UI。它的职责不只是画图，还包括：
 
 1. 选择 scope/date。
 2. 使用 Metrics-owned calculation run。
@@ -266,7 +266,7 @@ C-first 路线的建议是：先做 `C-stock feasibility spike`，如果无法�
 
 ### Grafana SDK 与集成接口
 
-Grafana 没有一个适合直接把完整 Grafana React 组件嵌入 Django/Bulma 页面并自由组合的通用 SDK。实际可用的集成方式分三类：
+Grafana 没有一个适合直接把完整 Grafana React 组件嵌入 Django/Meridian 页面并自由组合的通用 SDK。实际可用的集成方式分三类：
 
 | 集成方式 | 适合场景 | 与 Metrics 的接口 |
 | --- | --- | --- |

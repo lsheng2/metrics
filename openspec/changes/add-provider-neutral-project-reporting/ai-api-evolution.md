@@ -1,5 +1,8 @@
 # AI API 演进与跨应用迁移记录
 
+> 2026-11-11起已被[MDB-2](../embed-ai-base-runtime-in-process/proposal.md)取代：本文件仅为历史证据，不定义剩余工作；
+> API-EVO-01的不兼容原则保留，演进改由嵌入运行时版本准入执行。
+
 日期：2026-11-01。决策 `API-EVO-01`：accepted，用户已明确批准。
 范围：AI Base、SDK及其应用接入协议的设计与后续协调迁移。
 具体目标API尚待基座review/freeze；本文件不是已发布接口，也不代表迁移已执行。

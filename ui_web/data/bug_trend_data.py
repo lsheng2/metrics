@@ -101,7 +101,6 @@ class BugTrendProviderSetupEditor:
     source_query_help: str
     metadata_supported: bool
     metadata_summary: str
-    detail_rows: list
     json_fields: list
     connection_settings_json: str
     connection_status_label: str

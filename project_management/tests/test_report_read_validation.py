@@ -1,4 +1,6 @@
 from pathlib import Path
+import json
+import sys
 
 import pytest
 
@@ -51,18 +53,34 @@ def test_output_dir_must_be_under_owned_evidence(tmp_path):
         validate_output_dir(run_dir, tmp_path / 'elsewhere')
 
 
-def test_manifest_preflight_rejects_wrong_mode_and_repository(tmp_path):
+def test_manifest_preflight_rejects_old_schema_and_repository(tmp_path):
     from scripts.validation.profile_report_reads import preflight_run_manifest
 
     run_dir = tmp_path / 'run'
     run_dir.mkdir()
     (run_dir / 'runtime-manifest.json').write_text(
-        '{"execution_mode":"manual","repository":"D:/elsewhere","run_dir":"D:/elsewhere/run"}',
+        '{"schema_version":1,"repository":"D:/elsewhere","run_dir":"D:/elsewhere/run"}',
         encoding='utf-8',
     )
 
-    with pytest.raises(ValueError, match='synthetic'):
+    with pytest.raises(ValueError, match='manifest'):
         preflight_run_manifest(run_dir)
+
+
+def test_manifest_preflight_accepts_current_owned_runtime_shape(tmp_path):
+    from scripts.validation.report_read_identity import ROOT, preflight_run_manifest
+
+    manifest = {
+        'schema_version': 2, 'scenario': 'single',
+        'repository': str(ROOT), 'run_dir': str(tmp_path), 'app_python': sys.executable,
+        'catalog': {'actor': 'basic:SYNTHETIC_ALICE', 'project_id': 'project', 'stage_id': 'stage'},
+    }
+    (tmp_path / 'runtime-manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+    assert preflight_run_manifest(tmp_path) == manifest
+    manifest['repository'] = str(tmp_path)
+    (tmp_path / 'runtime-manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+    with pytest.raises(ValueError, match='repository'):
+        preflight_run_manifest(tmp_path)
 
 
 @pytest.mark.django_db(transaction=True)

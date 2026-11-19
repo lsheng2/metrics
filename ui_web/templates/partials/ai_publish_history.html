@@ -1,0 +1,42 @@
+{% load dashboard_format i18n %}
+<div class="table-container responsive-admin-table-box">
+    <table class="table is-fullwidth is-hoverable responsive-admin-table is-cardable">
+        <thead>
+            <tr>
+                <th scope="col">{% trans "Status" %}</th>
+                <th scope="col">{% trans "Profile" %}</th>
+                <th scope="col">{% trans "Chart" %}</th>
+                <th scope="col">{% trans "Range" %}</th>
+                <th scope="col">{% trans "Dashboard" %}</th>
+                <th scope="col">{% trans "Approval" %}</th>
+                <th scope="col">{% trans "Published" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in publish_history.items %}
+                <tr>
+                    <td data-label="{% trans 'Status' %}">
+                        {{ item.status|status_tag }}
+                        {% if item.latest %}<span class="tag is-info">{% trans "Latest" %}</span>{% endif %}
+                    </td>
+                    <td data-label="{% trans 'Profile' %}" title="{{ item.provider_id }} / {{ item.profile_id }}">{{ item.profile_id|truncatechars:28 }}</td>
+                    <td data-label="{% trans 'Chart' %}" title="{{ item.chart_id }}">{{ item.chart_id|truncatechars:24 }}</td>
+                    <td data-label="{% trans 'Range' %}">{{ item.range_start }} - {{ item.range_end }}</td>
+                    <td data-label="{% trans 'Dashboard' %}">
+                        {% if item.grafana_url %}
+                            <a href="{{ item.grafana_url }}" target="_blank" rel="noopener" title="{{ item.dashboard_uid }}">{{ item.title|truncatechars:30 }}</a>
+                        {% else %}
+                            {{ item.error_code|or_dash }}
+                        {% endif %}
+                    </td>
+                    <td data-label="{% trans 'Approval' %}" data-approval-id="{{ item.approval_id }}" title="{{ item.actor }}">
+                        <code title="{{ item.approval_id }}">{{ item.approval_id|truncatechars:32 }}</code>
+                    </td>
+                    <td data-label="{% trans 'Published' %}">{{ item.created_at|timestamp }}</td>
+                </tr>
+            {% empty %}
+                <tr class="is-empty-row"><td colspan="7">{% trans "No AI Grafana publishes recorded yet." %}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

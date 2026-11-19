@@ -5,26 +5,8 @@ from ui_web.views.report_recovery import ReportRecoveryView
 from .utils.url_utils import django_normalized_base_url
 from .views.current_tasks_view import CurrentTasksView, CurrentTasksChildrenView, CurrentTasksStageView, \
     AvailableMembersView, TaskPullRequestGatewayView
-from .views.ai_dashboard_identity_view import AiDashboardIdentityApiView
-from .views.ai_dashboard_view import (
-    AiDashboardCatalogApiView,
-    AiDashboardContextApiView,
-    AiDashboardArtifactValidationApiView,
-    AiDashboardGcxPreconditionApiView,
-    AiDashboardGcxPublicationCallbackApiView,
-    AiDashboardIntentValidationApiView,
-    AiDashboardRenderConfigValidationApiView,
-    AiDashboardWorkflowApiView,
-    AiDashboardWorkflowView,
-    AiDashboardWorkspaceContextApiView,
-)
-from .views.ai_dashboard_publish_view import (
-    AiDashboardPublishApprovalApiView,
-    AiDashboardPublishApprovalDecisionApiView,
-    AiDashboardPublishHistoryApiView,
-    AiDashboardPublishDemoApiView,
-)
-from .views.dev_velocity_view import DevVelocityView, DevVelocityChartView, DevStoryPointsChartView, DevVelocityTasksView
+from .views.ai_dashboard_view import AiDashboardWorkflowView, AiPublishHistoryApiView
+from .views.dev_velocity_view import DevVelocityView, DevVelocityTasksView
 from .views.homepage_view import HomepageView
 from .views.pull_requests_view import PullRequestsView, PullRequestReviewStateView
 from .views.bug_trend_scope_views import BugTrendScopeConfigView, BugTrendScopeLibraryView, BugTrendScopeMetadataView
@@ -85,7 +67,7 @@ from .views.project_run_views import (
     ProjectRunSubmitView,
 )
 from .views.task_forecast_view import TaskForecastView
-from .views.team_velocity_view import TeamVelocityView, TeamVelocityChartView, TeamStoryPointsChartView, TeamVelocityTasksView
+from .views.team_velocity_view import TeamVelocityView, TeamVelocityTasksView
 from .views.workbench_view import WorkbenchGrafanaSelectionView, WorkbenchView
 
 app_name = 'ui_web'
@@ -213,11 +195,7 @@ urlpatterns = [
          name='partials_task_children'),
     path(_base_prefix + 'partials/tasks/<str:task_id>/pr-gateway/', TaskPullRequestGatewayView.as_view(),
          name='partials_task_pr_gateway'),
-    path(_base_prefix + 'partials/dev-velocity/chart/', DevVelocityChartView.as_view(), name='dev_velocity_chart'),
-    path(_base_prefix + 'partials/dev-velocity/sp-chart/', DevStoryPointsChartView.as_view(), name='dev_sp_chart'),
     path(_base_prefix + 'partials/dev-velocity/tasks/', DevVelocityTasksView.as_view(), name='dev_velocity_tasks'),
-    path(_base_prefix + 'partials/team-velocity/chart/', TeamVelocityChartView.as_view(), name='team_velocity_chart'),
-    path(_base_prefix + 'partials/team-velocity/sp-chart/', TeamStoryPointsChartView.as_view(), name='team_sp_chart'),
     path(_base_prefix + 'partials/team-velocity/tasks/', TeamVelocityTasksView.as_view(), name='team_velocity_tasks'),
     path(_base_prefix + 'partials/bug-trend/evidence/', BugTrendEvidenceView.as_view(), name='bug_trend_evidence'),
      path(_base_prefix + 'partials/bug-trend/scope-metadata/', BugTrendScopeMetadataView.as_view(), name='bug_trend_scope_metadata'),
@@ -228,18 +206,5 @@ urlpatterns = [
      path(_base_prefix + 'api/provider-charts/evidence/', ProviderChartEvidenceApiView.as_view(), name='provider_chart_evidence_api'),
      path(_base_prefix + 'api/provider-profiles/readiness/', ProviderProfileReadinessApiView.as_view(), name='provider_profile_readiness_api'),
      path(_base_prefix + 'api/provider-profiles/align-dashboard-range/', ProviderProfileAlignDashboardRangeApiView.as_view(), name='provider_profile_align_dashboard_range_api'),
-     path(_base_prefix + 'api/ai-dashboard/identity/', AiDashboardIdentityApiView.as_view(), name='ai_dashboard_identity_api'),
-     path(_base_prefix + 'api/ai-dashboard/catalog/', AiDashboardCatalogApiView.as_view(), name='ai_dashboard_catalog_api'),
-     path(_base_prefix + 'api/ai-dashboard/intent/validate/', AiDashboardIntentValidationApiView.as_view(), name='ai_dashboard_intent_validation_api'),
-     path(_base_prefix + 'api/ai-dashboard/render-config/validate/', AiDashboardRenderConfigValidationApiView.as_view(), name='ai_dashboard_render_config_validation_api'),
-     path(_base_prefix + 'api/ai-dashboard/artifacts/validate/', AiDashboardArtifactValidationApiView.as_view(), name='ai_dashboard_artifact_validation_api'),
-     path(_base_prefix + 'api/ai-dashboard/workflow/', AiDashboardWorkflowApiView.as_view(), name='ai_dashboard_workflow_api'),
-     path(_base_prefix + 'api/ai-dashboard/gcx/precondition/', AiDashboardGcxPreconditionApiView.as_view(), name='ai_dashboard_gcx_precondition_api'),
-     path(_base_prefix + 'api/ai-dashboard/gcx/publication-callback/', AiDashboardGcxPublicationCallbackApiView.as_view(), name='ai_dashboard_gcx_publication_callback_api'),
-     path(_base_prefix + 'api/ai-dashboard/publish-approval/', AiDashboardPublishApprovalApiView.as_view(), name='ai_dashboard_publish_approval_api'),
-     path(_base_prefix + 'api/ai-dashboard/publish-approval/decision/', AiDashboardPublishApprovalDecisionApiView.as_view(), name='ai_dashboard_publish_approval_decision_api'),
-     path(_base_prefix + 'api/ai-dashboard/publish-demo/', AiDashboardPublishDemoApiView.as_view(), name='ai_dashboard_publish_demo_api'),
-     path(_base_prefix + 'api/ai-dashboard/publish-history/', AiDashboardPublishHistoryApiView.as_view(), name='ai_dashboard_publish_history_api'),
-     path(_base_prefix + 'api/ai-dashboard/context/', AiDashboardContextApiView.as_view(), name='ai_dashboard_context_api'),
-     path(_base_prefix + 'api/ai-dashboard/workspace-context/', AiDashboardWorkspaceContextApiView.as_view(), name='ai_dashboard_workspace_context_api'),
+     path(_base_prefix + 'api/ai-publish-history/', AiPublishHistoryApiView.as_view(), name='ai_publish_history_api'),
 ]

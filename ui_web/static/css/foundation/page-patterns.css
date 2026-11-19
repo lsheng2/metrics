@@ -1,0 +1,280 @@
+/*
+ * Meridian foundation: page header, description list, eyebrow, KPI stat grid and pipeline steps.
+ * Tokens only; the layer order lives in ui_web/static_assets.py.
+ */
+
+/* ------------------------------------------------------- page patterns */
+
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.page-header__title {
+    color: var(--color-text);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-tight);
+}
+
+.page-header__meta {
+    margin-top: var(--space-1);
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+}
+
+.page-header__meta code {
+    overflow-wrap: anywhere;
+}
+
+.page-header__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Key/value facts (preview, publication, run manifests): muted keys, full-width values. */
+.description-list {
+    display: grid;
+    grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
+    gap: var(--space-2) var(--space-6);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    font-size: var(--text-sm);
+}
+
+.description-list:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+.description-list dt {
+    color: var(--color-text-secondary);
+    font-weight: var(--weight-medium);
+}
+
+.description-list dd {
+    min-width: 0;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.description-list pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+/* Inside a surface the list drops its own frame so bordered surfaces never nest. */
+:is(.box, .card) .description-list {
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+/* Two key/value pairs per row on wide screens. */
+@media (min-width: 1024px) {
+    .description-list.is-2 {
+        grid-template-columns: repeat(2, minmax(7rem, max-content) minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .description-list {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: var(--space-1);
+    }
+
+    .description-list dd:not(:last-child) {
+        margin-bottom: var(--space-2);
+    }
+}
+
+.eyebrow {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-caps);
+    line-height: var(--leading-tight);
+    text-transform: uppercase;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: var(--space-3);
+}
+
+.stat-grid:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xs);
+}
+
+.stat__label {
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stat__value {
+    color: var(--color-text);
+    font-size: var(--text-2xl);
+    font-stretch: var(--stretch-display);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-none);
+}
+
+.stat__hint {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+}
+
+/* A unit suffix such as `d` or `%` that should not compete with the number. */
+.stat__unit {
+    margin-left: var(--space-0-5);
+    color: var(--color-text-tertiary);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    letter-spacing: normal;
+}
+
+/* A tone marks a KPI that needs attention: the value takes the tone colour and a dot leads the label. */
+.stat.is-success { --stat-tone: var(--color-success); --stat-tone-text: var(--color-success-text); }
+.stat.is-warning { --stat-tone: var(--color-warning); --stat-tone-text: var(--color-warning-text); }
+.stat.is-danger { --stat-tone: var(--color-danger); --stat-tone-text: var(--color-danger-text); }
+.stat.is-info { --stat-tone: var(--color-info); --stat-tone-text: var(--color-info-text); }
+
+.stat:is(.is-success, .is-warning, .is-danger, .is-info) .stat__value {
+    color: var(--stat-tone-text);
+}
+
+.stat:is(.is-success, .is-warning, .is-danger, .is-info) .stat__label::before {
+    display: inline-block;
+    width: 0.4375rem;
+    height: 0.4375rem;
+    margin-right: var(--space-1-5);
+    border-radius: var(--radius-full);
+    background: var(--stat-tone);
+    content: "";
+    vertical-align: 0.0625rem;
+}
+
+/* Help tips position their bubble outside the label box. */
+.stat__label:has(.help-tip) {
+    overflow: visible;
+}
+
+/* Secondary KPI rows inside a panel. */
+.stat-grid.is-compact {
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: var(--space-2);
+}
+
+.stat-grid.is-compact .stat {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface-muted);
+    box-shadow: none;
+}
+
+.stat-grid.is-compact .stat__value {
+    font-size: var(--text-lg);
+}
+
+/*
+ * Ordered checks or stages: <ol class="pipeline"><li class="box pipeline__step is-success">
+ * <div class="pipeline__head"><h3 class="pipeline__title">…</h3><span class="tag">…</span></div>
+ * <p class="pipeline__body">…</p></li></ol>. The counter badge takes the step tone.
+ */
+.pipeline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: pipeline-step;
+}
+
+.pipeline:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+.pipeline__step {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    margin: 0;
+    counter-increment: pipeline-step;
+}
+
+.pipeline__step.box:not(:last-child) {
+    margin-bottom: 0;
+}
+
+.pipeline__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.pipeline__head::before {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    border: 1px solid var(--pipeline-tone, var(--color-border-strong));
+    border-radius: var(--radius-full);
+    background: var(--pipeline-tone-subtle, var(--color-surface-muted));
+    color: var(--pipeline-tone-text, var(--color-text-secondary));
+    content: counter(pipeline-step);
+    font-size: var(--text-2xs);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-semibold);
+}
+
+.pipeline__title {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+}
+
+.pipeline__body {
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+}
+
+.pipeline__step .description-list {
+    font-size: var(--text-xs);
+}
+
+.pipeline__step.is-success { --pipeline-tone: var(--color-success); --pipeline-tone-subtle: var(--color-success-subtle); --pipeline-tone-text: var(--color-success-text); }
+.pipeline__step.is-warning { --pipeline-tone: var(--color-warning); --pipeline-tone-subtle: var(--color-warning-subtle); --pipeline-tone-text: var(--color-warning-text); }
+.pipeline__step.is-danger { --pipeline-tone: var(--color-danger); --pipeline-tone-subtle: var(--color-danger-subtle); --pipeline-tone-text: var(--color-danger-text); }
+.pipeline__step.is-info { --pipeline-tone: var(--color-info); --pipeline-tone-subtle: var(--color-info-subtle); --pipeline-tone-text: var(--color-info-text); }

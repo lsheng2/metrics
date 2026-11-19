@@ -24,7 +24,7 @@ class TestSummaryDelta(SummaryScenario, unittest.TestCase):
                         sequence=3, previous_capture_id=second.capture_id, source_hash='c' * 64)
         key = self.source_key(self.intent())
         initial = build_initial_input(self.project.id, self.stage, key, first, a,
-                                      'project-reporting.summary@review-1')
+                                      self.contract.profile_ref)
         baseline = AcceptedSummary('74000000-0000-4000-8000-000000000001', 1, first.capture_id,
                                    first.source_hash, self.contract.definition_hash, initial.input_hash,
                                    validate_candidate(initial, self.output(initial)), {})
@@ -33,7 +33,7 @@ class TestSummaryDelta(SummaryScenario, unittest.TestCase):
     def build(self, key, chain, snapshots, baseline):
         module = importlib.import_module('project_management.app.domain.summary_delta')
         return module.build_analysis_input(self.project.id, self.stage, key, chain, snapshots,
-                                           'project-reporting.summary@review-1', baseline)
+                                           self.contract.profile_ref, baseline)
 
     def test_shouldBuildCumulativeInputFromAcceptedBaseline(self):
         key, chain, sources, baseline = self.sources()
@@ -60,7 +60,7 @@ class TestSummaryDelta(SummaryScenario, unittest.TestCase):
     def test_shouldPreserveInitialInputBytesAndIds(self):
         key, chain, sources, _ = self.sources()
         legacy = build_initial_input(self.project.id, self.stage, key, chain[0], sources[0],
-                                     'project-reporting.summary@review-1')
+                                     self.contract.profile_ref)
         self.assertEqual(legacy, self.build(key, chain[:1], sources[:1], None))
 
     def test_shouldIncludePreAcceptanceHistoryWithoutABaseline(self):

@@ -6,7 +6,12 @@
 
 {% block content %}
 <article class="block">
-    <div class="notification is-danger is-light" role="alert">{{ message }}</div>
-    <a class="button" href="{% url 'ui_web:projects' %}"><span class="icon is-small"><i class="iconoir-nav-arrow-left"></i></span><span>{% trans "Back to projects" %}</span></a>
+    <header class="page-header">
+        <h2 class="page-header__title">{% trans "Project request failed" %}</h2>
+    </header>
+    <div class="message is-danger" role="alert"><div class="message-body">{{ message }}</div></div>
+    <div class="dashboard-action-group">
+        <a class="button" href="{% url 'ui_web:projects' %}"><span class="icon is-small"><i class="iconoir-nav-arrow-left" aria-hidden="true"></i></span><span>{% trans "Back to projects" %}</span></a>
+    </div>
 </article>
 {% endblock %}

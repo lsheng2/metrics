@@ -5,6 +5,7 @@ from project_management.app.domain.capture_values import canonical_bytes, decode
 from project_management.app.domain.summary_contracts import AcceptedSummary, AnalysisAttempt, AnalysisError, PreparedAnalysis
 from project_management.app.domain.summary_delta import build_analysis_input
 from project_management.app.domain.summary_input import MAX_CHAIN
+from project_management.app.domain.task_run_codec import result_from_record, snapshot_from_record
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,7 +42,10 @@ def verified_accepted_material(archive, repository, source_key, contract, chain,
         attempt = archive._analysis_attempt(repository, envelope['attempt_id'])
         try:
             snapshot = envelope['payload']['snapshot']
-            candidate = contract.validate_result(attempt, snapshot, accepted.run_result)
+            candidate = contract.validate_result(
+                attempt.prepared, attempt.request, snapshot_from_record(snapshot),
+                result_from_record(accepted.run_result),
+            )
             contract.validate_request(attempt.request)
             baseline = verified[-1].summary if verified else None
             expected_revision = 0 if baseline is None else baseline.revision
@@ -59,10 +63,9 @@ def verified_accepted_material(archive, repository, source_key, contract, chain,
             index = positions[accepted.target_capture_id]
             if index <= previous_index:
                 raise AnalysisError('ANALYSIS_SOURCE_CHANGED')
-            profile = contract.profile_ref
             prepared = build_analysis_input(
                 repository.project.id, repository.stage, source_key, chain[:index + 1], snapshots[:index + 1],
-                f"{profile['key']}@{profile['revision']}", baseline,
+                contract.profile_ref, baseline,
             )
             if prepared != attempt.prepared:
                 raise AnalysisError('ANALYSIS_RESULT_INVALID')

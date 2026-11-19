@@ -1,0 +1,245 @@
+/*
+ * Meridian foundation: pagination, progress, loaders, skeletons, delete buttons, icons and htmx indicators.
+ * Tokens only; the layer order lives in ui_web/static_assets.py.
+ */
+
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+}
+
+.pagination-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.pagination-previous,
+.pagination-next,
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--control-height-sm);
+    height: var(--control-height-sm);
+    padding: 0 var(--space-2-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+:is(.pagination-previous, .pagination-next, .pagination-link):hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-hover);
+    text-decoration: none;
+}
+
+.pagination-link.is-current {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+}
+
+:is(.pagination-previous, .pagination-next, .pagination-link):is([disabled], .is-disabled) {
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.progress {
+    display: block;
+    width: 100%;
+    height: var(--space-1-5);
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-muted);
+    appearance: none;
+}
+
+.progress::-webkit-progress-bar {
+    background: var(--color-surface-muted);
+}
+
+.progress::-webkit-progress-value {
+    background: var(--color-accent);
+}
+
+.progress::-moz-progress-bar {
+    background: var(--color-accent);
+}
+
+.progress:indeterminate {
+    background:
+        linear-gradient(90deg, transparent 0 30%, var(--color-accent) 30% 70%, transparent 70%)
+        var(--color-surface-muted);
+    background-size: 220% 100%;
+    animation: meridian-progress 1.1s var(--ease-standard) infinite;
+}
+
+.progress:indeterminate::-webkit-progress-bar {
+    background: transparent;
+}
+
+.progress:indeterminate::-moz-progress-bar {
+    background: transparent;
+}
+
+.progress.is-small { height: var(--space-1); }
+.progress.is-medium { height: var(--space-2); }
+
+.loader {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 2px solid var(--color-border-strong);
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-radius: var(--radius-full);
+    vertical-align: middle;
+    animation: meridian-spin 600ms linear infinite;
+}
+
+/* Centered spinner placeholder for a region that is about to load:
+   <div class="loader-block" role="status"><span class="loader" aria-hidden="true"></span>
+   <span class="is-sr-only">Loading…</span></div> */
+.loader-block {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-4);
+    font-size: var(--text-xl);
+}
+
+.skeleton-block,
+.skeleton-lines > div {
+    border-radius: var(--radius-md);
+    background:
+        linear-gradient(90deg, var(--color-skeleton) 0%, var(--color-surface-muted) 50%, var(--color-skeleton) 100%);
+    background-size: 200% 100%;
+    animation: meridian-skeleton 1.4s ease-in-out infinite;
+}
+
+.skeleton-block {
+    min-height: 4.5rem;
+}
+
+.skeleton-lines {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.skeleton-lines > div {
+    height: 0.75rem;
+}
+
+.skeleton-lines > div:last-child {
+    width: 60%;
+}
+
+.delete {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-secondary);
+    vertical-align: middle;
+    cursor: pointer;
+    appearance: none;
+}
+
+.delete::before,
+.delete::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: currentcolor;
+    content: "";
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.delete::before {
+    width: 50%;
+    height: 1.5px;
+}
+
+.delete::after {
+    width: 1.5px;
+    height: 50%;
+}
+
+.delete:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+}
+
+.delete.is-small {
+    width: 1rem;
+    height: 1rem;
+}
+
+.icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.icon.is-small {
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.875rem;
+}
+
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    opacity: 1;
+}
+
+@keyframes meridian-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes meridian-progress {
+    from {
+        background-position: 160% 0;
+    }
+
+    to {
+        background-position: -60% 0;
+    }
+}
+
+@keyframes meridian-skeleton {
+    from {
+        background-position: 200% 0;
+    }
+
+    to {
+        background-position: -200% 0;
+    }
+}

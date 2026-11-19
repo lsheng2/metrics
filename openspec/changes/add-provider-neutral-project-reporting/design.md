@@ -2,6 +2,10 @@
 
 Status: accepted direction; implementation is staged by tasks.md.
 
+2026-11-11 AI接入由[MDB-2](../embed-ai-base-runtime-in-process/design.md)取代：AI Base作为`ai-base-runtime`
+在Metrics进程内运行，W4.REPLAN/W5经project_management同步task-run端口与`ai_profiles`精确`id@version`调用；
+下文SDK、contract pack、注册、connector与handoff段落仅为历史背景。
+
 2026-11-06用户要求根据实际延迟建立架构优化规格。
 [读取架构](report-read-performance.md)与[执行/验收](performance-execution.md)
 定义模块内读写分离、一次请求固定head的批量Git读取、packet复用及窄操作入口。
@@ -65,7 +69,7 @@ Jira/HSD-ES mixing in one stage is not initial scope; users create separate stag
 Provider-specific parsing stays in `out/dashboard_scope_catalog.py`.
 No direct imports of bug_metrics ORM/private repositories outside that adapter's public API usage.
 UI uses a module public API, never reads Git paths or model credentials.
-AI Base Task/Run is a dependency for authoritative AI execution, not for project creation or reading stored results.
+The in-process ai-base-runtime task-run port is a dependency for authoritative AI execution, not for project creation or reading stored results.
 
 ## 2. Wave 1 Exact Contract
 
@@ -163,9 +167,9 @@ These are concrete ownership contracts, not permission to implement placeholders
 | W2 Workbench | project_management API -> ui_web/facades/project_management.py -> views/templates | Authenticated owner mapping; GET list/detail read-only; POST create/stage/archive with CSRF; source_changed blocks execution, not historical reads; UI en/zh, safe errors |
 | W3 Provider capture | provider port -> project capture service -> immutable archive | WorkItemIdentity(provider,endpoint,stable_id,key); CaptureEnvelope(scope_hash,principal_fingerprint,parts,coverage,source_hash,captured_at); unauthorized zero reads; partial comments/history cannot be complete |
 | W4 Delta/history | capture/accepted baseline -> deterministic delta -> AnalysisInput | Added/edited/deleted comments by ID, previously captured versions retained, delta from last accepted summary; Git raw authority separate from ORM projection; source lost => pending, no watermark advance |
-| W5 AI | summary service -> AI Base Task client -> candidate validator | Fixed policy/input/output schema, idempotent clientRunKey, unknown usage retained, evidence/owner/language validation; no implicit chat history; invalid result not accepted |
+| W5 AI | summary service -> project_management task-run port (ai_host RuntimeTaskRunPort) -> candidate validator | Fixed policy/input/output schema, exact profile id@version, idempotent client_run_key, unknown usage retained, evidence/owner/language validation; no implicit chat history; invalid result not accepted |
 | W6 Reports | accepted summaries + pending work -> snapshot/templates/draft -> confirmed publication | HTML-first/email copy plus Markdown/Excel; separate human edits; all open actions, coverage/as-of and explicit prior-meeting baseline; one immutable data-Git writer, no auto-push |
-| W7 Runtime/deploy | operator command -> operation log -> owned worker -> services | Manual trigger/status/cancel; original deadline/budget; no free-disk check, no automatic schedule; own process only; shared AI Base cannot be stopped by Dashboard |
+| W7 Runtime/deploy | operator command -> operation log -> owned worker -> services | Manual trigger/status/cancel; original deadline/budget; no free-disk check, no automatic schedule; own process only; the embedded AI runtime starts and stops with the Metrics serve process (MDB-2) |
 
 The W2 exact API, trusted browser identity, session preview/hash confirmation, gettext boundary,
 file ownership and U01-U12 tests are in [workbench-plan](workbench-plan.md).
@@ -222,10 +226,11 @@ not quietly treated as reusable donor modules.
 
 The AI package reuses the existing English summary instructions, schema and evidence validators,
 but runtime Task and optional Chat use separate profiles. CLI tools/skills are not required by the
-first strict summarizer. Optional tooling is disabled until its authority and actual loader are validated.
-Fixed task compilation/publishing APIs belong to AI Base; project report acceptance/publication remains here.
+first strict summarizer. Optional tooling is disabled until its authority and runtime tool authorization are validated.
+Task admission, execution and audit belong to the embedded runtime; project report acceptance/publication remains here.
 
-AI Base may replace the proposed API/SDK/profile shapes after review. W4.REPLAN must freeze the actual
-contract pack and affected Dashboard consumer paths before W5. Existing workbench migrations belong to
-W5.MIGRATE, not optional W5.CHAT. New or changed interfaces require version rejection and migration tests;
-old protocol assertions may be replaced only with an explicit change-to-test mapping that preserves business guarantees.
+Since 2026-11-11 the runtime contract is MDB-2's in-process task-run port with Metrics-owned `ai_profiles`
+(exact `id@version`). W4.REPLAN must freeze the admitted runtime version and affected Dashboard consumer paths
+before W5. Existing workbench migrations belong to MDB-2 and W5.MIGRATE, not optional W5.CHAT. Runtime upgrades
+require version admission and migration tests; old protocol assertions may be replaced only with an explicit
+change-to-test mapping that preserves business guarantees.

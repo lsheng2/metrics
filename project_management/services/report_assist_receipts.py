@@ -2,7 +2,7 @@ from project_management.app.domain.capture_values import canonical_bytes, conten
 from project_management.app.domain.report_assists import available_targets
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.summary_contracts import AnalysisError
-from project_management.services.report_assist_wire import result_reference, wire_attempt
+from project_management.services.report_assist_records import read_assist_candidate, result_reference
 from project_management.storage.report_assists import ReportAssistStore
 
 
@@ -43,11 +43,10 @@ class ReportAssistReceiptVerifier:
             if (target is None or admitted is None or admitted['fragment_hash'] != target.fragment_hash
                     or request.kind != target.kind or request.expected_original_hash != target.expected_original_hash):
                 raise ReportError('REPORT_AI_RESULT_INVALID')
-            output = contract.validate_result(wire_attempt(intent, contract),
-                                              candidate['snapshot'], candidate['result'])
+            snapshot, result, output = read_assist_candidate(intent, candidate, contract)
             selected = next((item for item in output['targets'] if item['target_id'] == target_id), None)
             if (selected is None or selected['status'] != 'filled'
                     or canonical_bytes(selected['fragment']) != canonical_bytes(request.fragment)):
                 raise ReportError('REPORT_AI_RESULT_INVALID')
-            verified[request.edit_id] = result_reference(intent, candidate['snapshot'], candidate['result'], target_id)
+            verified[request.edit_id] = result_reference(intent, snapshot, result, target_id)
         return verified

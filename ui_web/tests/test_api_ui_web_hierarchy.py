@@ -10,7 +10,8 @@ from ui_web.convertors.member_convertor import MemberConvertor
 from ui_web.utils.federated_data_post_processors import MemberGroupTaskFilter
 from ui_web.utils.task_grouping_utils import TaskGroupingUtils
 from ui_web.data.hierarchical_item_data import HierarchicalItemData
-from ui_web.tests.fixtures.ui_web_builders import BusinessScenarios, DomainTaskBuilder, TaskDataBuilder
+from ui_web.tests.fixtures.business_scenarios import BusinessScenarios
+from ui_web.tests.fixtures.ui_web_builders import DomainTaskBuilder, TaskDataBuilder
 from ui_web.tests.mocks.mock_task_search_api import MockTaskSearchApi
 from ui_web.tests.mocks.mock_forecast_api import MockForecastApi
 

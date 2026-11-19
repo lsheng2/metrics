@@ -1,5 +1,7 @@
 # AI Base Review 与增强 Handoff
 
+> 2026-11-11起已被[MDB-2](../embed-ai-base-runtime-in-process/proposal.md)取代：本文件仅为历史证据，不定义剩余工作。
+
 日期：2026-11-01。交付状态：FZ-01已登记，BASE-A合成pack/SDK已交付；并行执行分工见integration-execution。
 目标工作区：`D:/AIGC/Report_creater_agent`。
 这是任务委托和验收要求，不是基座canonical API或第二份实施清单。

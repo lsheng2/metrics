@@ -7,11 +7,11 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import override_settings
 from django.urls import reverse
 
-from project_management.out.ai_task_contract import AiTaskContract
 from project_management.services.report_sources import ReportSourceReader
 from project_management.tests.history_persistence_fixtures import history_fixture
-from project_management.tests.summary_fixtures import PACK_ROOT
+from project_management.tests.summary_fixtures import summary_contract
 from ui_web.facades.project_reports import ProjectReportFacade
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 from ui_web.tests.test_report_daily_ui_views import choice, patch_default_facade, seed_retained_capture
 from ui_web.tests.test_report_template_browser import project_page
@@ -24,7 +24,7 @@ class TestReportQueryBrowser(StaticLiveServerTestCase):
         with TemporaryDirectory() as temporary, pytest.MonkeyPatch.context() as monkeypatch:
             fixture = history_fixture(Path(temporary), actor_subject='basic:alice')
             capture = seed_retained_capture(fixture)
-            reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+            reader = ReportSourceReader(fixture.archive, summary_contract())
             fixture.draft_service.source_reader = reader
             fixture.continuity.source_reader = reader
             evidence = Path('.tmp/dashboard-read-performance-20261106') / f'mounted-{uuid4()}'
@@ -54,8 +54,9 @@ class TestReportQueryBrowser(StaticLiveServerTestCase):
                     preview.locator('[data-report-daily-preview]').click()
                 self.assertEqual(1, page.locator('[data-report-preparation-page]').count())
                 page.locator('[data-report-daily-prepare-form] select[name="capture_id"]').select_option(capture)
-                with page.expect_navigation(wait_until='domcontentloaded'):
-                    page.locator('[data-report-daily-generate]').click()
+                # Prepare and Finalize are Git-backed writes without a read SLO; measured 12-20s under load.
+                with page.expect_navigation(wait_until='domcontentloaded', timeout=120000):
+                    page.locator('[data-report-daily-generate]').click(no_wait_after=True)
                 editor_url = page.url
                 region = page.locator('[data-report-wysiwyg-region][data-target-json*="daily_note"]').first
                 region.locator('[data-report-editor-surface]').click()
@@ -77,10 +78,10 @@ class TestReportQueryBrowser(StaticLiveServerTestCase):
                 page.screenshot(path=str(evidence / 'editor-desktop.png'))
                 page.set_viewport_size({'width': 390, 'height': 844})
                 page.screenshot(path=str(evidence / 'editor-mobile.png'))
-                self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), 390)
+                self.assertLessEqual(page.evaluate('document.documentElement.scrollWidth'), geometry.REPORT_PHONE_PAGE_WIDTH_MAX)
                 page.locator('[data-report-finalize-confirm]').check()
-                with page.expect_navigation(wait_until='domcontentloaded'):
-                    page.locator('[data-report-finalize-button]').click()
+                with page.expect_navigation(wait_until='domcontentloaded', timeout=120000):
+                    page.locator('[data-report-finalize-button]').click(no_wait_after=True)
                 self.assertIn('/publications/', page.url)
                 publication_id = page.url.rstrip('/').rsplit('/', 1)[-1]
                 with page.expect_download() as download:

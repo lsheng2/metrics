@@ -1,0 +1,25 @@
+{% load static i18n dashboard_assets %}
+{% get_current_language as CURRENT_LANGUAGE %}
+<!doctype html>
+<html lang="{% if CURRENT_LANGUAGE|slice:':2' == 'en' %}en{% else %}{{ CURRENT_LANGUAGE }}{% endif %}" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    {% include "partials/theme_bootstrap.html" %}
+    <title>{% block title %}Metrics{% endblock %} · Metrics</title>
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    {% dashboard_stylesheets %}
+</head>
+<body class="standalone-body {% block body_class %}{% endblock %}">
+    {% block header %}
+    <header class="standalone-header">
+        {% include "partials/app_brand.html" %}
+    </header>
+    {% endblock %}
+    <main class="standalone-main" id="app-content">
+        {% block content %}{% endblock %}
+    </main>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

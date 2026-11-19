@@ -13,6 +13,7 @@ from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOpt
 from jira_history.models import JiraIssue
 
 
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport
 
 
@@ -146,15 +147,15 @@ class TestBugTrendScopeProviderViews(BugTrendScopeConfigViewTestSupport, TestCas
         self.assertTrue(results['phone']['tab_body_visible'])
         self.assertTrue(results['desktop']['selected_tab_attached_to_body'])
         self.assertTrue(results['desktop']['selected_tab_is_hsdes'])
-        self.assertTrue(results['desktop']['shell_border_is_blue'])
+        self.assertTrue(results['desktop']['selected_tab_underline_is_blue'])
         self.assertTrue(results['desktop']['workflow_frame_is_blue'])
         self.assertTrue(results['phone']['workflow_frame_is_blue'])
         self.assertTrue(results['desktop']['workflow_frame_wraps_work_area'])
         self.assertTrue(results['phone']['workflow_frame_wraps_work_area'])
-        self.assertLessEqual(results['desktop']['detail_panel_left_border_width'], 1)
-        self.assertLessEqual(results['desktop']['provider_choice_max_height'], 82)
-        self.assertLessEqual(results['desktop']['scope_form_control_height_delta'], 1)
-        self.assertLessEqual(results['phone']['scope_form_control_height_delta'], 1)
+        self.assertLessEqual(results['desktop']['detail_panel_left_border_width'], geometry.HAIRLINE_BORDER_WIDTH_MAX)
+        self.assertLessEqual(results['desktop']['provider_choice_max_height'], geometry.PROVIDER_CHOICE_HEIGHT_MAX)
+        self.assertLessEqual(results['desktop']['scope_form_control_height_delta'], geometry.HEIGHT_DELTA_MAX)
+        self.assertLessEqual(results['phone']['scope_form_control_height_delta'], geometry.HEIGHT_DELTA_MAX)
 
     def test_shouldSaveNewScopeWithSelectedProviderProfileBinding(self):
         # Given
@@ -202,3 +203,23 @@ class TestBugTrendScopeProviderViews(BugTrendScopeConfigViewTestSupport, TestCas
         self.assertEqual('chiplet-2a-jira', binding.profile_id)
         self.assertEqual('jira', binding.provider_id)
         self.assertIn('Provider binding saved.', content)
+
+    def test_shouldRenderMultiValueTextareasOneValuePerLine(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='multi-value-scope',
+            jql='project = STDEL',
+            bug_type_values=['Bug'],
+            critical_high_values=['P1-Critical', 'P2-High'],
+            display_fields=['labels', 'security'],
+        )
+
+        # When
+        response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {'scope_id': str(scope.id)})
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('P1-Critical&#10;P2-High</textarea>', content)
+        self.assertIn('labels&#10;security</textarea>', content)
+        self.assertNotIn('P1-Critical\\nP2-High', content)

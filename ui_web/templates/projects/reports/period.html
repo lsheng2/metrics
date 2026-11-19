@@ -1,34 +1,24 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n dashboard_format %}
 
 {% block title %}{% trans "Weekly period" %}{% endblock %}
 {% block page_title %}{% trans "Weekly period" %}{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a>{% endblock %}
 
 {% block content %}
-<article class="block">
-    <nav class="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
-            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
-            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
-            <li class="is-active"><a href="#" aria-current="page">{{ period.period_key }}</a></li>
-        </ul>
-    </nav>
-
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-4">{% trans "Weekly period" %}</h2>
-                <p class="subtitle is-6"><code>{{ period.period_key }}</code></p>
-            </div>
+<article class="block project-reports">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">{% trans "Weekly period" %}</h2>
+            <p class="page-header__meta"><code>{{ period.period_key }}</code></p>
         </div>
-        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
-    </div>
+        <div class="page-header__actions">{% include "projects/language_switcher.html" %}</div>
+    </header>
 
-    <div class="notification is-light">{% trans "This period view is read only and uses the explicitly selected publications." %}</div>
+    <div class="message is-info" role="note"><div class="message-body">{% trans "This period view is read only and uses the explicitly selected publications." %}</div></div>
 
-    <div class="table-container responsive-admin-table-box" data-period-matrix>
-        <table class="table is-fullwidth is-narrow dashboard-dense-table">
+    <div class="table-container responsive-admin-table-box is-framed" data-period-matrix>
+        <table class="table is-fullwidth is-narrow dashboard-dense-table report-matrix">
             <thead>
                 <tr>
                     <th>{% trans "Issue" %}</th>
@@ -44,7 +34,7 @@
                             <strong>{{ row.current_key }}</strong><p class="help">{{ row.title }}</p>
                                 {% if row.visibility == "removed" %}<p>{% trans "Outside current scope" %}</p>{% endif %}
                             {% for persistent in row.persistent_notes %}
-                                <div class="report-readonly-data" data-period-persistent-note>{{ persistent.html|safe }}</div>
+                                <div class="report-readonly-data paper" data-period-persistent-note>{{ persistent.html|safe }}</div>
                             {% endfor %}
                         </th>
                         {% for cell in row.cells %}
@@ -52,25 +42,25 @@
                                 {% if cell.readonly_entries != None %}
                                 {% for readonly in cell.readonly_entries %}
                                     {% if readonly.kind == "note" %}
-                                    <div class="report-readonly-data" data-period-readonly-note>
+                                    <div class="report-readonly-data paper" data-period-readonly-note>
                                         <strong data-period-source-prefix>{{ readonly.prefix }}</strong>{{ readonly.html|safe }}
                                     </div>
-                                    {% else %}<p data-period-source-observation>{{ readonly.text }}</p>{% endif %}
+                                    {% else %}<p class="report-matrix-observation" data-period-source-observation>{{ readonly.text }}</p>{% endif %}
                                 {% endfor %}
                                 {% else %}
                                 {% for readonly in cell.readonly_notes %}
-                                    <div class="report-readonly-data" data-period-readonly-note>
+                                    <div class="report-readonly-data paper" data-period-readonly-note>
                                         <strong data-period-source-prefix>{{ readonly.prefix }}</strong>
                                         {{ readonly.html|safe }}
                                     </div>
                                 {% endfor %}
                                 {% endif %}
                                 {% for action in cell.actions %}
-                                    <p data-period-action-label>{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</p>
-                                    <div class="report-readonly-data" data-period-action-body>{{ action.body_html|safe }}</div>
+                                    <p class="report-matrix-prefix" data-period-action-label>{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</p>
+                                    <div class="report-readonly-data paper" data-period-action-body>{{ action.body_html|safe }}</div>
                                 {% endfor %}
                                 {% if not cell.readonly_entries and not cell.readonly_notes and not cell.actions %}
-                                    <span class="tag is-light">{{ cell.state }}</span>
+                                    <span class="tag" data-matrix-empty>{{ cell.state }}</span>
                                 {% endif %}
                             </td>
                         {% endfor %}
@@ -80,13 +70,17 @@
         </table>
     </div>
 
-    <section class="block mt-4">
-        <h3 class="title is-5">{% trans "Selected publications" %}</h3>
-        <ul>
-            {% for publication in publications %}
-                <li><code>{{ publication.manifest.publication_id }}</code> · <code>{{ publication.commit_id|slice:":12" }}</code></li>
-            {% endfor %}
-        </ul>
+    <section class="card" aria-labelledby="period-publications-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="period-publications-title">{% trans "Selected publications" %} <span class="card-header-meta">{{ publications|length }}</span></h3>
+        </header>
+        <div class="card-content">
+            <ul class="report-publication-list">
+                {% for publication in publications %}
+                    <li><code>{{ publication.manifest.publication_id }}</code> <code title="{{ publication.commit_id }}">{{ publication.commit_id|slice:":12" }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
     </section>
 </article>
 {% endblock %}

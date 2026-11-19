@@ -1,14 +1,17 @@
-<div class="columns is-mobile board-columns">
+<div class="board" role="region" aria-label="Task board" tabindex="0">
     {% for column in columns %}
-    <div class="column board-column">
-        <h2 class="title is-6">{{ column.name }} ({{ column.count }})</h2>
-        <div class="board-column-body">
+    <section class="board__column" aria-labelledby="board-column-{{ forloop.counter }}">
+        <header class="board__header">
+            <h3 class="board__title" id="board-column-{{ forloop.counter }}">{{ column.name }}</h3>
+            <span class="count-badge">{{ column.count }}</span>
+        </header>
+        <ol class="board__cards">
             {% for task in column.items %}
-                {% include "partials/task_card.html" %}
+            <li>{% include "partials/task_card.html" %}</li>
             {% empty %}
-                <p class="has-text-grey-light is-size-7">No tasks</p>
+            <li class="board__empty">No tasks</li>
             {% endfor %}
-        </div>
-    </div>
+        </ol>
+    </section>
     {% endfor %}
 </div>

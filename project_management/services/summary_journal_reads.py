@@ -1,8 +1,6 @@
 from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime
-import re
-from urllib.parse import urlsplit
 import uuid
 
 from project_management.app.domain.capture_values import (
@@ -10,33 +8,24 @@ from project_management.app.domain.capture_values import (
 )
 from project_management.app.domain.captures import SourceChainKey
 from project_management.app.domain.summary_contracts import (
-    AcceptedSummary, AiBackendTarget, AnalysisAttempt, AnalysisError, PreparedAnalysis,
+    AcceptedSummary, AnalysisAttempt, AnalysisError, PreparedAnalysis,
 )
 from project_management.app.domain.summary_input import MAX_CHAIN, complete_source
 from project_management.storage.paths import validate_uuid
+from project_management.app.domain.task_run_codec import principal_from_record, request_from_record
+from project_management.app.domain.task_runs import TaskPrincipal
 
 
-def validate_backend(backend, project_id, stage_id):
-    try:
-        parsed = urlsplit(backend.base_url)
-        if (not isinstance(backend, AiBackendTarget) or parsed.scheme != 'http'
-                or parsed.hostname != '127.0.0.1' or parsed.port is None
-                or parsed.username or parsed.password or parsed.query or parsed.fragment
-                or parsed.path not in ('', '/')
-                or backend.source_app_id != 'metrics-dashboard'
-                or backend.scope_key != f'projects.{project_id}.stages.{stage_id}'
-                or any(not isinstance(value, str) or not re.fullmatch('[A-Za-z0-9._:-]{1,160}', value)
-                       for value in (backend.run_store_id, backend.grant_revision, backend.limit_policy_revision))):
-            raise ValueError
-    except (ValueError, TypeError, AttributeError):
-        raise AnalysisError('ANALYSIS_BACKEND_MISMATCH') from None
+def validate_principal(principal, owner_subject):
+    if not isinstance(principal, TaskPrincipal) or principal.subject != owner_subject:
+        raise AnalysisError('ANALYSIS_PRINCIPAL_MISMATCH')
 
 
 class SummaryJournalReads:
     def _analysis_envelope(self, repository, path, kind):
         value = decode_json(repository.read_file(path))
         if (not isinstance(value, dict) or type(value.get('schema_version')) is not int
-                or value['schema_version'] != 1 or value.get('kind') != kind
+                or value['schema_version'] != 2 or value.get('kind') != kind
                 or not isinstance(value.get('payload'), dict)):
             raise AnalysisError('ANALYSIS_INVALID')
         validate_uuid(value.get('attempt_id'))
@@ -76,18 +65,20 @@ class SummaryJournalReads:
             prepared = dict(data['prepared'])
             prepared['source_key'] = SourceChainKey(**prepared['source_key'])
             data['prepared'] = PreparedAnalysis(**prepared)
-            data['backend'] = AiBackendTarget(**data['backend'])
+            data['principal'] = principal_from_record(data['principal'])
+            data['request'] = request_from_record(data['request'])
             attempt = AnalysisAttempt(**data)
-            validate_backend(attempt.backend, repository.project.id, repository.stage.id)
+            validate_principal(attempt.principal, repository.owner_subject)
             if (type(attempt.prepared.expected_revision) is not int or attempt.prepared.expected_revision < 0
                     or attempt.attempt_id != attempt_id or envelope['attempt_id'] != attempt_id
                     or attempt.project_id != repository.project.id or attempt.stage_id != repository.stage.id
                     or attempt.source_key != attempt.prepared.source_key
                     or str(uuid.uuid5(uuid.UUID(attempt.stage_id), attempt.prepared.input_hash)) != attempt_id
-                    or attempt.request['clientRunKey'] != attempt_id
-                    or attempt.request['scopeKey'] != attempt.backend.scope_key
-                    or attempt.request['input']['content'] != attempt.prepared.input_content
-                    or attempt.request['input']['sha256'] != attempt.prepared.input_hash
+                    or attempt.request.client_run_key != attempt_id
+                    or attempt.request.input_json != attempt.prepared.input_content
+                    or attempt.request.input_sha256 != attempt.prepared.input_hash
+                    or attempt.request.profile_definition_sha256 != attempt.profile_definition_hash
+                    or attempt.request.output_schema_sha256 != attempt.output_schema_hash
                     or sha256_bytes(attempt.prepared.input_content.encode()) != attempt.prepared.input_hash):
                 raise ValueError
             if self._analysis_cancel_requested(repository, attempt_id, envelope):

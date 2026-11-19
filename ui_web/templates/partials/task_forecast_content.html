@@ -1,222 +1,278 @@
+{% load dashboard_format %}
 {% if error %}
 <article class="message is-danger">
     <div class="message-header">
-        <p>Error Loading Forecast Data</p>
+        <p>Forecast unavailable</p>
     </div>
     <div class="message-body">
         <p><strong>{{ error }}</strong></p>
-        <p>Please check your configuration or try refreshing the page.</p>
+        <p>Check the tracker connection, then run the forecast again.</p>
     </div>
 </article>
-{% else %}
-    {% if success and task_forecast %}
-        <div class="box">
-            <h2 class="title is-3">Task Summary</h2>
-            <div class="content">
-                <h3 class="title is-4">{{ task_forecast.task_title }}</h3>
-                <div class="columns">
-                    <div class="column">
-                        <p><strong>Total Estimation:</strong> {{ task_forecast.total_estimation_days|floatformat:1 }} {{ time_unit|default:"days" }}</p>
-                        {% if include_done_tasks and task_forecast.completed_estimation_days > 0 %}
-                        <p><strong>Completed:</strong> {{ task_forecast.completed_estimation_days|floatformat:1 }} {{ time_unit|default:"days" }}</p>
-                        <p><strong>Remaining:</strong> {{ task_forecast.remaining_estimation_days|floatformat:1 }} {{ time_unit|default:"days" }}</p>
-                        {% endif %}
-                    </div>
-                    <div class="column">
-                        <p><strong>Forecasted Start:</strong> {{ task_forecast.forecasted_start_date|date:"M d, Y" }}</p>
-                        <p><strong>Forecasted End:</strong> {{ task_forecast.forecasted_end_date|date:"M d, Y" }}</p>
-                        {% if task_forecast.average_team_velocity %}
-                        <p><strong>Average Velocity:</strong> {{ task_forecast.average_team_velocity|floatformat:2 }} story points/day</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {% if chart_data %}
-        <div class="box">
-            <h2 class="title is-3">Timeline Chart</h2>
-            <canvas id="taskForecastChart-{{ request.resolver_match.kwargs.task_id|default:'default' }}" width="400" height="200"></canvas>
-        </div>
-        {% elif include_done_tasks %}
-        <div class="box">
-            <h2 class="title is-3">Timeline Chart</h2>
-            <article class="message is-success">
-                <div class="message-body">
-                    All tasks are completed. No remaining work to forecast on the timeline.
-                </div>
-            </article>
-        </div>
+{% elif task_forecast %}
+    {% with root=task_forecast.task_forecasts.0 task_count=task_forecast.task_forecasts|length %}
+    <header class="forecast-heading">
+        <h3 class="forecast-heading__title">
+            {% if root.task_url %}
+                <a href="{{ root.task_url }}" target="_blank" rel="noopener noreferrer">{{ root.task_id }}</a>
+            {% else %}
+                <span>{{ root.task_id }}</span>
+            {% endif %}
+            <span class="forecast-heading__name">{{ root.task_title }}</span>
+        </h3>
+        {% if root.is_done %}
+            <span class="tag is-success">{{ root.status|default:"Done" }}</span>
+        {% elif root.status %}
+            <span class="tag">{{ root.status }}</span>
         {% endif %}
-
-        <div class="box">
-            <h2 class="title is-3">Task Breakdown</h2>
-            <div class="table-container">
-                <table class="table is-striped is-hoverable is-fullwidth dashboard-dense-table" id="taskHierarchy">
-                    <thead>
-                        <tr>
-                            <th>Task</th>
-                            <th>Status</th>
-                            <th>Estimation ({{ time_unit|default:"days" }})</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for task_forecast_item in task_forecast.task_forecasts %}
-                            <tr data-level="{{ task_forecast_item.level }}"
-                                data-task-id="{{ task_forecast_item.task_id }}"
-                                class="task-row{% if task_forecast_item.level > 0 %} child-task level-{{ task_forecast_item.level }} is-hidden{% endif %}{% if task_forecast_item.is_done %} has-text-grey-light{% endif %}"
-                                id="task-{{ forloop.counter0 }}">
-                                <td class="task-hierarchy-cell">
-                                    {% if task_forecast_item.has_children %}
-                                        <button class="task-toggle" type="button" data-target="children-after-{{ forloop.counter0 }}" data-parent-level="{{ task_forecast_item.level }}" aria-expanded="false" aria-label="Toggle child tasks for {{ task_forecast_item.task_id }}">
-                                            <i class="iconoir-nav-arrow-right expand-icon"></i>
-                                        </button>
-                                    {% endif %}
-                                    <strong{% if task_forecast_item.is_done %} class="task-done-text"{% endif %}>
-                                        {% if task_forecast_item.task_url %}
-                                            <a href="{{ task_forecast_item.task_url }}" target="_blank">{{ task_forecast_item.task_id }}</a>
-                                        {% else %}
-                                            {{ task_forecast_item.task_id }}
-                                        {% endif %}
-                                    </strong><br>
-                                    <small{% if task_forecast_item.is_done %} class="task-done-text"{% endif %}>{{ task_forecast_item.task_title }}</small>
-                                </td>
-                                <td>
-                                    {% if task_forecast_item.is_done %}
-                                        <span class="tag is-success">{{ task_forecast_item.status }}</span>
-                                    {% elif task_forecast_item.status %}
-                                        <span class="tag is-warning">{{ task_forecast_item.status }}</span>
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if task_forecast_item.estimation_days > 0 %}
-                                        {{ task_forecast_item.estimation_days|floatformat:1 }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    </header>
+    <section class="stat-grid" aria-label="Forecast summary">
+        <div class="stat">
+            <span class="stat__label">Forecast finish</span>
+            <span class="stat__value">{{ task_forecast.forecasted_end_date|date:"M j, Y"|or_dash }}</span>
+            <span class="stat__hint">
+                {% if task_forecast.forecasted_end_date %}
+                    {{ task_forecast.forecasted_end_date|timeuntil:task_forecast.forecasted_start_date }} after start
+                {% else %}
+                    No estimated work to schedule
+                {% endif %}
+            </span>
         </div>
-    {% elif success %}
-        <article class="message">
-            <div class="message-header">
-                <p>No Data Available</p>
-            </div>
-            <div class="message-body">
-                <p>Task {{ forecast_params.task_id }} was not found or contains no estimatable tasks.</p>
-            </div>
-        </article>
-    {% endif %}
-{% endif %}
-
-<script>
-{% if success and task_forecast and chart_data %}
-function initializeTaskForecastChart() {
-    if (typeof Chart === 'undefined') {
-        console.log('Chart.js not loaded yet, waiting...');
-        setTimeout(initializeTaskForecastChart, 100);
-        return;
-    }
-
-    const canvasId = 'taskForecastChart-{{ request.resolver_match.kwargs.task_id|default:"default" }}';
-
-    if (window.taskForecastChartInstance) {
-        window.taskForecastChartInstance.destroy();
-        window.taskForecastChartInstance = null;
-    }
-
-    const canvas = document.getElementById(canvasId);
-
-    if (!canvas) {
-        console.error('Canvas element not found: ' + canvasId);
-        return;
-    }
-
-    const chartData = JSON.parse('{{ chart_data|escapejs }}');
-
-    const ctx = canvas.getContext('2d');
-    window.taskForecastChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartData.labels,
-            datasets: chartData.datasets
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Task Timeline Forecast'
-                },
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        title: function() {
-                            return "";
-                        }
-                    },
-                    intersect: false
-                }
-            },
-            scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        unit: 'day',
-                        displayFormats: {
-                            day: 'MMM dd'
-                        }
-                    },
-                    min: chartData.min_date,
-                    max: chartData.max_date,
-                    title: {
-                        display: true,
-                        text: 'Timeline'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    max: chartData.labels.length + 1,
-                    ticks: {
-                        stepSize: 1,
-                        callback: function(value, index, values) {
-                            const taskIndex = chartData.labels.length - value;
-                            if (chartData.labels[taskIndex]) {
-                                return chartData.labels[taskIndex].split(':')[0];
-                            }
-                            return '';
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Tasks'
-                    }
-                }
+        <div class="stat">
+            <span class="stat__label">Total estimate</span>
+            <span class="stat__value">{{ task_forecast.total_estimation_days|floatformat:1 }}<span class="stat__unit">d</span></span>
+            {% if include_done_tasks and task_forecast.completed_estimation_days > 0 %}
+                <span class="stat__hint">{{ task_forecast.completed_estimation_days|floatformat:1 }} d done · {{ task_forecast.remaining_estimation_days|floatformat:1 }} d left</span>
+                <progress class="progress is-small" value="{{ task_forecast.completed_share|stringformat:'.3f' }}" max="1" aria-label="Share of estimated work done"></progress>
+            {% else %}
+                <span class="stat__hint">Across {{ task_count }} task{{ task_count|pluralize }}</span>
+            {% endif %}
+        </div>
+        <div class="stat">
+            <span class="stat__label">Forecast start</span>
+            <span class="stat__value">{{ task_forecast.forecasted_start_date|date:"M j, Y" }}</span>
+            <span class="stat__hint">{% if forecast_params.start_date %}Chosen start date{% else %}Today{% endif %}</span>
+        </div>
+        <div class="stat">
+            <span class="stat__label">Velocity</span>
+            <span class="stat__value">{{ task_forecast.average_team_velocity|floatformat:2|or_dash }}</span>
+            <span class="stat__hint">SP/day · {% if forecast_params.member_group %}selected member group{% else %}all member groups{% endif %}</span>
+        </div>
+    </section>
+    <section class="card chart-card" aria-labelledby="forecast-timeline-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="forecast-timeline-title">Timeline<span class="card-header-meta">Task and direct children{% if include_done_tasks %} · muted bars are done{% endif %}</span></h3>
+        </header>
+        <div class="chart-card__body">
+            {% if chart_data %}
+                <div class="chart-frame is-timeline">
+                    <canvas id="forecast-timeline-chart" role="img" aria-label="Forecast timeline of the task and its direct children"></canvas>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <span class="empty-state__icon"><i class="iconoir-calendar" aria-hidden="true"></i></span>
+                    <p class="empty-state__title">No timeline to draw</p>
+                    <p class="empty-state__body">None of these tasks has an estimate yet, or the member group has no velocity history.</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+    <section class="card" aria-labelledby="forecast-breakdown-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="forecast-breakdown-title">Breakdown<span class="card-header-meta">{{ task_count }} task{{ task_count|pluralize }}</span></h3>
+            {% if task_forecast.has_nested_tasks %}
+                <div class="card-header-actions">
+                    <button class="button is-small" type="button" data-task-tree-expand="all" aria-controls="taskHierarchy">
+                        <span class="icon"><i class="iconoir-expand" aria-hidden="true"></i></span>
+                        <span>Expand all</span>
+                    </button>
+                    <button class="button is-small" type="button" data-task-tree-expand="none" aria-controls="taskHierarchy">
+                        <span class="icon"><i class="iconoir-collapse" aria-hidden="true"></i></span>
+                        <span>Collapse all</span>
+                    </button>
+                </div>
+            {% endif %}
+        </header>
+        <div class="table-container">
+            <table id="taskHierarchy" class="table is-hoverable is-fullwidth dashboard-dense-table task-tree">
+                <thead>
+                    <tr>
+                        <th scope="col">Task</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="is-numeric">Estimate (d)</th>
+                        <th scope="col">Forecast</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in task_forecast.task_forecasts %}
+                    <tr class="task-row{% if item.is_done %} is-done{% endif %}" data-level="{{ item.level }}"{% if item.level > 1 %} hidden{% endif %}>
+                        <td>
+                            <div class="task-tree__node" style="--tree-level: {{ item.level }}">
+                                {% if item.has_children %}
+                                    <button class="task-tree__toggle" type="button" aria-expanded="{% if item.level == 0 %}true{% else %}false{% endif %}" aria-label="Child tasks of {{ item.task_id }}">
+                                        <i class="iconoir-nav-arrow-right" aria-hidden="true"></i>
+                                    </button>
+                                {% else %}
+                                    <span class="task-tree__spacer"></span>
+                                {% endif %}
+                                <span class="task-tree__label">
+                                    {% if item.task_url %}
+                                        <a class="task-tree__key" href="{{ item.task_url }}" target="_blank" rel="noopener noreferrer">{{ item.task_id }}</a>
+                                    {% else %}
+                                        <span class="task-tree__key">{{ item.task_id }}</span>
+                                    {% endif %}
+                                    <span class="task-tree__title">{{ item.task_title }}</span>
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.is_done %}
+                                <span class="tag is-success">{{ item.status|default:"Done" }}</span>
+                            {% elif item.status %}
+                                <span class="tag">{{ item.status }}</span>
+                            {% else %}
+                                <span class="has-text-grey-light">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="is-numeric">{% if item.estimation_days > 0 %}{{ item.estimation_days|floatformat:1 }}{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+                        <td class="is-nowrap">
+                            {% if item.forecast_start_date and item.forecast_end_date %}
+                                <time datetime="{{ item.forecast_start_date|date:'c' }}">{{ item.forecast_start_date|date:"M j" }}</time> → <time datetime="{{ item.forecast_end_date|date:'c' }}">{{ item.forecast_end_date|date:"M j" }}</time>
+                            {% else %}
+                                <span class="has-text-grey-light">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endwith %}
+    {% if chart_data %}
+    <script>
+    (function() {
+        function initForecastTimeline() {
+            const canvas = document.getElementById('forecast-timeline-chart');
+            if (!canvas) return;
+            if (window.taskForecastChartInstance) {
+                window.taskForecastChartInstance.destroy();
+                window.taskForecastChartInstance = null;
             }
+            const chartData = JSON.parse('{{ chart_data|escapejs }}');
+            const charts = window.DashboardCharts;
+            const rowCount = chartData.datasets.length;
+            canvas.parentElement.style.setProperty('--chart-rows', rowCount);
+            const dayFormat = new Intl.DateTimeFormat(document.documentElement.lang || undefined, { month: 'short', day: 'numeric' });
+            const isDone = context => Boolean(chartData.datasets[context.datasetIndex].done);
+            const barColor = context => isDone(context)
+                ? charts.alpha(charts.token('--color-text-tertiary'), 0.45)
+                : charts.paletteColor(0);
+
+            // A dashed "Today" guide when the forecast window spans the current date.
+            const annotations = {};
+            const now = Date.now();
+            if (now >= Date.parse(chartData.min_date) && now <= Date.parse(chartData.max_date)) {
+                annotations.today = {
+                    type: 'line',
+                    scaleID: 'x',
+                    value: now,
+                    drawTime: 'beforeDatasetsDraw',
+                    borderColor: () => charts.token('--color-text-tertiary'),
+                    borderWidth: 1,
+                    borderDash: [4, 4],
+                    label: {
+                        display: true,
+                        content: 'Today',
+                        position: 'end',
+                        color: () => charts.token('--color-text-secondary'),
+                        backgroundColor: () => charts.alpha(charts.token('--color-surface'), 0.85),
+                        font: { size: 10, weight: '500' },
+                        padding: { x: 4, y: 2 },
+                        borderRadius: 3
+                    }
+                };
+            }
+
+            window.taskForecastChartInstance = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    datasets: chartData.datasets.map(dataset => ({
+                        label: dataset.label,
+                        data: dataset.data,
+                        borderColor: barColor,
+                        backgroundColor: barColor,
+                        borderWidth: dataset.done ? 8 : 14,
+                        borderCapStyle: 'round',
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        fill: false
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'nearest', axis: 'y', intersect: false },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            min: chartData.min_date,
+                            max: chartData.max_date,
+                            time: { unit: 'day', displayFormats: { day: 'MMM d' } }
+                        },
+                        y: {
+                            min: 0.5,
+                            max: rowCount + 0.5,
+                            grid: { display: false },
+                            // One tick per task row; generated ticks would land on the half-row bounds.
+                            afterBuildTicks: scale => {
+                                scale.ticks = chartData.datasets.map(item => ({ value: item.data[0].y }));
+                            },
+                            ticks: {
+                                autoSkip: false,
+                                callback: value => {
+                                    const dataset = chartData.datasets.find(item => item.data[0].y === value);
+                                    return dataset ? dataset.label.split(':')[0] : '';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        annotation: { annotations },
+                        tooltip: {
+                            filter: (item, index, items) => items.findIndex(other => other.datasetIndex === item.datasetIndex) === index,
+                            callbacks: {
+                                title: items => items.length ? items[0].dataset.label : '',
+                                label: context => {
+                                    const points = context.dataset.data;
+                                    const range = `${dayFormat.format(new Date(points[0].x))} → ${dayFormat.format(new Date(points[points.length - 1].x))}`;
+                                    return isDone(context) ? `${range} · Done` : range;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
-    });
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTaskForecastChart);
-} else {
-    initializeTaskForecastChart();
-}
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initForecastTimeline);
+        } else {
+            initForecastTimeline();
+        }
+    })();
+    </script>
+    {% endif %}
+{% elif forecast_params.task_id %}
+<div class="empty-state is-warning">
+    <span class="empty-state__icon"><i class="iconoir-search" aria-hidden="true"></i></span>
+    <p class="empty-state__title">Nothing to forecast for {{ forecast_params.task_id }}</p>
+    <p class="empty-state__body">The task was not found, or the tracker returned no hierarchy for it. Check the ID and try again.</p>
+</div>
+{% else %}
+<div class="empty-state">
+    <span class="empty-state__icon"><i class="iconoir-hourglass" aria-hidden="true"></i></span>
+    <p class="empty-state__title">Forecast a task</p>
+    <p class="empty-state__body">Enter a task ID to schedule it and its child tasks from their story points and the selected member group's velocity.</p>
+</div>
 {% endif %}
-</script>
-
-<script>
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTaskForecastToggles);
-} else {
-    initializeTaskForecastToggles();
-}
-</script>

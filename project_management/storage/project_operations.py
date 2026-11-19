@@ -39,8 +39,8 @@ class ProjectOperationRepository:
         self.limits = limits
         self.operations = self.runtime / 'operations'
 
-    def submit(self, operation, request, policy, backend, request_hash, capture_limits):
-        record = stored_request_payload(operation, request, policy, backend, request_hash, capture_limits)
+    def submit(self, operation, request, policy, binding, request_hash, capture_limits):
+        record = stored_request_payload(operation, request, policy, binding, request_hash, capture_limits)
         with self._locks():
             existing = self._request_record(operation.operation_id)
             if existing is not None:
@@ -76,8 +76,7 @@ class ProjectOperationRepository:
 
     def request_record(self, operation_id):
         record = self._required_request(operation_id)
-        request, policy, backend, request_hash, capture_limits = validate_stored_request(record)
-        return request, policy, backend, request_hash, capture_limits
+        return validate_stored_request(record)
 
     def list(self, *, limit, _read_map=None):
         return list_operations(self, limit=limit, read_map=_read_map)

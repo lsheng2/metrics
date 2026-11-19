@@ -1,6 +1,7 @@
 import json
 import socket
 import _socket
+from contextlib import ExitStack
 from dataclasses import dataclass, replace
 from email import policy
 from email.parser import BytesParser
@@ -87,19 +88,13 @@ class ReportAuthoringBrowserTestCase(CaptureArchiveScenario, ProjectRouteTestSup
             project_reports.ReportPublicationRevisionView,
             project_reports.ReportPublicationDownloadView,
         )
-        originals = [view.facade_factory for view in classes]
-        for view in classes:
-            view.facade_factory = staticmethod(self.report_facade)
-        completion_original = ReportDraftCompletionView.completion_factory
-        project_api_original = ReportDraftCompletionView.project_api_factory
-        ReportDraftCompletionView.completion_factory = staticmethod(lambda: self.completion)
-        ReportDraftCompletionView.project_api_factory = staticmethod(
-            lambda: ProjectApiStub(self.project, self.stage, owner_subject=self.actor.subject)
+        self.patch_view_factory(self.report_facade, *classes)
+        self.patch_view_factory(lambda: self.completion, ReportDraftCompletionView, attribute='completion_factory')
+        self.patch_view_factory(
+            lambda: ProjectApiStub(self.project, self.stage, owner_subject=self.actor.subject),
+            ReportDraftCompletionView,
+            attribute='project_api_factory',
         )
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(classes, originals)])
-        self.addCleanup(lambda: setattr(ReportDraftCompletionView, 'completion_factory', completion_original))
-        self.addCleanup(lambda: setattr(ReportDraftCompletionView, 'project_api_factory', project_api_original))
 
     def editor_url(self, draft_id):
         from django.urls import reverse
@@ -175,32 +170,46 @@ class BrowserReferenceReader:
 
 
 class BrowserPage:
-    def __init__(self, url):
+    def __init__(self, url, language=None, ready_selector='[data-report-wysiwyg-region]'):
         self.url = url
+        self.language = language
+        self.ready_selector = ready_selector
 
     def __enter__(self):
-        self.original_connect = socket.socket.connect
+        self._stack = ExitStack()
+        original_connect = socket.socket.connect
+        self._stack.callback(setattr, socket.socket, 'connect', original_connect)
         socket.socket.connect = local_only_connect
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=True, channel='chrome')
-        self.context = self.browser.new_context(
-            http_credentials={'username': 'alice', 'password': 'wonder'},
-            viewport={'width': 1440, 'height': 1000},
-        )
-        self.page = self.context.new_page()
-        self.page.route('**/*', lambda route: route.continue_()
-                        if route.request.url.startswith(('http://127.0.0.1:', 'http://localhost:', 'data:', 'blob:'))
-                        else route.abort())
-        self.page.goto(self.url, wait_until='domcontentloaded')
-        self.page.wait_for_selector('[data-report-wysiwyg-region]')
-        return self.page
+        try:
+            self.playwright = self._stack.enter_context(sync_playwright())
+            self.browser = self.playwright.chromium.launch(headless=True, channel='chrome')
+            self._stack.callback(self.browser.close)
+            self.context = self.browser.new_context(
+                http_credentials={'username': 'alice', 'password': 'wonder'},
+                viewport={'width': 1440, 'height': 1000},
+            )
+            if self.language:
+                self.context.add_cookies([{
+                    'name': 'django_language',
+                    'value': self.language,
+                    'url': self.url,
+                }])
+            self.page = self.context.new_page()
+            self.page.route('**/*', lambda route: route.continue_()
+                            if route.request.url.startswith((
+                                'http://127.0.0.1:', 'http://localhost:', 'data:', 'blob:',
+                            ))
+                            else route.abort())
+            self.page.goto(self.url, wait_until='domcontentloaded')
+            if self.ready_selector:
+                self.page.wait_for_selector(self.ready_selector)
+            return self.page
+        except BaseException:
+            self._stack.close()
+            raise
 
     def __exit__(self, exc_type, exc, traceback):
-        try:
-            self.browser.close()
-            self.playwright.stop()
-        finally:
-            socket.socket.connect = self.original_connect
+        return self._stack.__exit__(exc_type, exc, traceback)
 
 
 def form_fields_from_request(request):

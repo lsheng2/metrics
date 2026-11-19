@@ -786,7 +786,7 @@ P1C intentionally keeps execution synchronous for the first productized slice be
 
 ### P1C Web UI Sketch
 
-The UI sketch is intentionally low fidelity. It captures layout, controls, feedback states, and owner boundaries before visual polish. Implementation must keep the existing Metrics dashboard style: semantic HTML, Bulma components, htmx partial refresh, and no React-style frontend architecture.
+The UI sketch is intentionally low fidelity. It captures layout, controls, feedback states, and owner boundaries before visual polish. Implementation must keep the existing Metrics dashboard style: semantic HTML, Meridian design-system primitives, htmx partial refresh, and no React-style frontend architecture.
 
 #### Bug Trend Page Refresh Panel
 

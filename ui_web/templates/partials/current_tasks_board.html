@@ -1,11 +1,58 @@
+{% if error %}
+<article class="message is-danger" role="alert">
+    <div class="message-header"><p>Tasks unavailable</p></div>
+    <div class="message-body">{{ error }}</div>
+</article>
+{% else %}
 {% include "partials/current_tasks_filters.html" %}
-
+<div class="results-bar">
+    <p class="results-bar__count" role="status"><strong>{{ task_count }}</strong> task{{ task_count|pluralize }}{% if task_filter_panel.has_active_selection %} match the filters{% endif %}</p>
+    <div class="results-bar__actions">
+        {% if view_mode != "board" and has_groups %}
+            {% if expand_all and lazy_loading_enabled %}
+            <button type="button" class="button is-small"
+                    hx-get="{% url 'ui_web:partials_tasks' %}?{{ view_queries.list }}" hx-target="#current-tasks-board" hx-push-url="true">
+                <span class="icon"><i class="iconoir-collapse" aria-hidden="true"></i></span><span>Collapse all</span>
+            </button>
+            {% elif lazy_loading %}
+            <button type="button" class="button is-small"
+                    hx-get="{% url 'ui_web:partials_tasks' %}?{{ view_queries.list }}&amp;expand_all=true" hx-target="#current-tasks-board" hx-push-url="true">
+                <span class="icon"><i class="iconoir-expand" aria-hidden="true"></i></span><span>Expand all</span>
+            </button>
+            {% endif %}
+        {% endif %}
+        <div class="buttons has-addons are-small" role="group" aria-label="Layout">
+            <button type="button" class="button{% if view_mode != 'board' %} is-selected{% endif %}" aria-pressed="{% if view_mode != 'board' %}true{% else %}false{% endif %}"
+                    hx-get="{% url 'ui_web:partials_tasks' %}?{{ view_queries.list }}" hx-target="#current-tasks-board" hx-push-url="true">
+                <span class="icon"><i class="iconoir-list" aria-hidden="true"></i></span><span>List</span>
+            </button>
+            <button type="button" class="button{% if view_mode == 'board' %} is-selected{% endif %}" aria-pressed="{% if view_mode == 'board' %}true{% else %}false{% endif %}"
+                    hx-get="{% url 'ui_web:partials_tasks' %}?{{ view_queries.board }}" hx-target="#current-tasks-board" hx-push-url="true">
+                <span class="icon"><i class="iconoir-view-columns-3" aria-hidden="true"></i></span><span>Board</span>
+            </button>
+        </div>
+    </div>
+</div>
 {% if view_mode == "board" %}
     {% include "partials/task_board.html" with columns=tasks %}
+{% elif not task_count %}
+    <div class="empty-state">
+        <span class="empty-state__icon"><i class="iconoir-task-list" aria-hidden="true"></i></span>
+        {% if task_filter_panel.has_active_selection %}
+        <p class="empty-state__title">No tasks match the filters</p>
+        <p class="empty-state__body">Loosen or clear the filters to see in-progress work again.</p>
+        <div class="empty-state__actions">
+            <a class="button" href="{% url 'ui_web:partials_tasks' %}?{{ view_queries.clear }}"
+               hx-get="{% url 'ui_web:partials_tasks' %}?{{ view_queries.clear }}" hx-target="#current-tasks-board" hx-push-url="true">Clear filters</a>
+        </div>
+        {% else %}
+        <p class="empty-state__title">No tasks in progress</p>
+        <p class="empty-state__body">Nothing is in progress or recently finished for this member group.</p>
+        {% endif %}
+    </div>
 {% elif has_groups %}
     {% include "partials/group_renderer.html" with items=tasks level=0 %}
-{% elif not tasks and task_filter_panel.has_active_selection %}
-    <p class="has-text-grey">No tasks match the selected filters.</p>
 {% else %}
-    {% include "partials/task_table.html" with tasks=tasks show_header=true %}
+    {% include "partials/task_table.html" with tasks=tasks table_framed=True %}
+{% endif %}
 {% endif %}

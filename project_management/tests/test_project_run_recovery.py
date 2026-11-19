@@ -113,7 +113,7 @@ def test_FS06a_transition_quota_failure_leaves_no_partial_event_state_or_active_
     assert after == before
 
 
-def test_FS06a_corrupted_backend_or_actor_identity_refuses_before_http(tmp_path):
+def test_FS06a_corrupted_task_binding_or_actor_identity_refuses_before_runtime_port(tmp_path):
     environment = ManualRunEnvironment(tmp_path / 'archive-root')
     operation = environment.run_service.submit(
         environment.actor,
@@ -131,13 +131,13 @@ def test_FS06a_corrupted_backend_or_actor_identity_refuses_before_http(tmp_path)
         / 'operations'
         / operation.operation_id
     )
-    request = decode_json((operation_root / 'request.json').read_bytes())
-    request['backend']['run_store_id'] = 'tampered-store'
-    request['admission_hash'] = content_hash({
-        key: value for key, value in request.items()
+    request_record = decode_json((operation_root / 'request.json').read_bytes())
+    request_record['task_binding']['principal']['subject'] = 'other-owner'
+    request_record['admission_hash'] = content_hash({
+        key: value for key, value in request_record.items()
         if key not in {'request_hash', 'admission_hash'}
     })
-    (operation_root / 'request.json').write_bytes(canonical_bytes(request))
+    (operation_root / 'request.json').write_bytes(canonical_bytes(request_record))
 
     with pytest.raises(RunError) as error:
         environment.worker.execute(environment.actor, environment.project.id, environment.stage.id, operation.operation_id)
@@ -146,7 +146,7 @@ def test_FS06a_corrupted_backend_or_actor_identity_refuses_before_http(tmp_path)
     assert environment.http.requests == []
 
 
-def test_FS06a_hash_consistent_illegal_event_transition_refuses_before_http(tmp_path):
+def test_FS06a_hash_consistent_illegal_event_transition_refuses_before_runtime_port(tmp_path):
     environment = ManualRunEnvironment(tmp_path / 'archive-root')
     operation = environment.run_service.submit(
         environment.actor,

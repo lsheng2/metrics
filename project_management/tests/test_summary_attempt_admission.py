@@ -24,8 +24,17 @@ class TestSummaryAttemptAdmission(SummaryScenario, unittest.TestCase):
     def test_shouldKeepUnknownOrUnresolvedExposureBlocking(self):
         attempt = replace(self.attempt(), dispatched=True)
         succeeded, _ = self.responses(attempt)
-        uncertain = {**succeeded, 'unresolvedExposure': True}
-        pending = {**succeeded, 'state': 'indeterminate', 'terminalAt': None}
+        uncertain_dispatch = replace(succeeded.dispatch, uncertainty='unknown')
+        empty_result = replace(succeeded.result, output_sha256=None, output_schema_sha256=None)
+        uncertain = self.task_record(replace(succeeded, dispatch=uncertain_dispatch))
+        pending = self.task_record(replace(
+            succeeded,
+            status='indeterminate',
+            dispatch=uncertain_dispatch,
+            result=empty_result,
+            error_code='runtime_outcome_unknown',
+            retry='observe',
+        ))
         for observations in (
             (), ({'state': 'unknown', 'code': 'transport_outcome_unknown'},),
             ({'snapshot': uncertain},), ({'snapshot': pending},),
@@ -37,21 +46,27 @@ class TestSummaryAttemptAdmission(SummaryScenario, unittest.TestCase):
     def test_shouldReleaseVerifiedTerminalResultWithoutAcceptingIt(self):
         attempt = replace(self.attempt(), dispatched=True)
         snapshot, _ = self.responses(attempt)
-        self.assertFalse(self.blocked(attempt, ({'snapshot': snapshot},)))
-        failed = {
-            **snapshot, 'state': 'failed',
-            'result': {'availability': 'not_produced', 'sha256': None, 'mediaType': None, 'expiresAt': None},
-            'error': {'code': 'backend_failed', 'message': 'Synthetic failure', 'recovery': 'stop'},
-        }
+        self.assertFalse(self.blocked(attempt, ({'snapshot': self.task_record(snapshot)},)))
+        failed_snapshot = replace(
+            snapshot,
+            status='failed',
+            result=replace(snapshot.result, output_sha256=None, output_schema_sha256=None),
+            error_code='backend_failed',
+            retry='no',
+        )
+        failed = self.task_record(failed_snapshot)
         self.assertFalse(self.blocked(attempt, ({'snapshot': failed},)))
-        may_dispatch = {**failed, 'dispatch': {**failed['dispatch'], 'knowledge': 'may_have_dispatched'}}
+        may_dispatch = self.task_record(replace(
+            failed_snapshot,
+            dispatch=replace(failed_snapshot.dispatch, uncertainty='unknown'),
+        ))
         self.assertTrue(self.blocked(attempt, ({'snapshot': may_dispatch},)))
-        confirmed = {**may_dispatch, 'dispatch': {**may_dispatch['dispatch'], 'remoteStop': 'confirmed'}}
+        confirmed = self.task_record(failed_snapshot)
         self.assertFalse(self.blocked(attempt, ({'snapshot': confirmed},)))
 
     def test_shouldNotTreatAResultReadRejectionAsSubmissionRejection(self):
         attempt = replace(self.attempt(), dispatched=True)
-        observation = {'state': 'rejected', 'code': 'invalid_request', 'recovery': 'correct_request', 'status': 422}
+        observation = {'state': 'rejected', 'code': 'invalid_request', 'retry': 'correct', 'status': 422}
         self.assertTrue(self.blocked(attempt, (observation,)))
         self.assertTrue(self.blocked(attempt, ({**observation, 'operation': 'result'},)))
         self.assertTrue(self.blocked(attempt, ({**observation, 'operation': 'observe'},)))
@@ -61,7 +76,12 @@ class TestSummaryAttemptAdmission(SummaryScenario, unittest.TestCase):
         attempt = replace(self.attempt(), dispatched=True)
         snapshot, _ = self.responses(attempt)
         with self.assertRaises(AnalysisError):
-            self.blocked(attempt, ({'snapshot': {**snapshot, 'runStoreId': 'foreign-store'}},))
-        for value in (None, 'not-a-date', '2026-11-02T00:00:30'):
-            with self.subTest(terminal=value):
-                self.assertTrue(self.blocked(attempt, ({'snapshot': {**snapshot, 'terminalAt': value}},)))
+            self.blocked(attempt, ({'snapshot': self.task_record(replace(snapshot, source_input_sha256='f' * 64))},))
+        empty_result = replace(snapshot.result, output_sha256=None, output_schema_sha256=None)
+        for value in (
+            replace(snapshot, status='running', result=empty_result),
+            replace(snapshot, status='indeterminate', result=empty_result),
+            replace(snapshot, dispatch=replace(snapshot.dispatch, uncertainty='unknown')),
+        ):
+            with self.subTest(status=value.status, uncertainty=value.dispatch.uncertainty):
+                self.assertTrue(self.blocked(attempt, ({'snapshot': self.task_record(value)},)))

@@ -1,0 +1,230 @@
+/*
+ * Page layer: Report templates: template library table and the template block editor.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ * Blocks are opaque surfaces on the canvas like report row editors, so no bordered surface nests in a card.
+ */
+
+.template-table {
+    --responsive-admin-table-min-width: 52rem;
+}
+
+.template-table th.template-col-tag {
+    width: 6.5rem;
+}
+
+.template-table th.template-col-revision {
+    width: 5.5rem;
+}
+
+.template-table th.template-col-hash {
+    width: 8.5rem;
+}
+
+.template-table th.template-col-action {
+    width: 17rem;
+}
+
+.template-table :is(th, td).template-col-action {
+    text-align: end;
+}
+
+.template-row-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
+}
+
+@container (max-width: 40rem) {
+    .template-table td.template-col-action {
+        text-align: start;
+    }
+
+    .template-row-actions {
+        justify-content: flex-start;
+    }
+}
+
+.template-editor-form:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+.template-editor-form .card-content > .dashboard-form-grid:last-child {
+    margin-bottom: 0;
+}
+
+.template-blocks {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+}
+
+.template-blocks__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+}
+
+.template-blocks__title {
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+}
+
+.template-blocks__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1-5);
+}
+
+.template-block-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+}
+
+/* A 3px inset rail names the block kind next to its select: neutral content, accent slot, teal data. */
+.template-block {
+    --template-block-rail: var(--color-border-strong);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2-5);
+    padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 3px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: inset 3px 0 0 var(--template-block-rail), var(--shadow-xs);
+    color: var(--color-text);
+}
+
+.template-block[data-kind="slot"] {
+    --template-block-rail: var(--color-accent);
+}
+
+.template-block[data-kind="data"] {
+    --template-block-rail: var(--color-chart-2);
+}
+
+.template-block__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.template-block__commands {
+    display: flex;
+    gap: var(--space-0-5);
+}
+
+:is(.template-block__commands, .template-matrix-group) .button {
+    width: var(--control-height-sm);
+    padding: 0;
+}
+
+.button.template-block__remove:not(:disabled):hover {
+    background: var(--color-danger-subtle);
+    color: var(--color-danger-text);
+}
+
+.template-block .help {
+    margin-top: 0;
+}
+
+/* The legend shares the field label row height so the three data-panel labels line up. */
+.template-block__options > .label {
+    min-height: var(--control-label-height);
+    line-height: var(--control-label-height);
+}
+
+.template-block__fields {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+    gap: var(--space-2) var(--space-3);
+    align-items: end;
+}
+
+.template-block__wide {
+    grid-column: 1 / -1;
+}
+
+/* Checkbox rows end-align with form-field controls, which `.dashboard-form-field` sizes to the full control height. */
+.template-block__check,
+.template-block__checks {
+    min-height: var(--control-height);
+}
+
+.template-block__check {
+    white-space: nowrap;
+}
+
+.template-block__checks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+}
+
+.template-matrix {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-2-5) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+}
+
+.template-matrix__mode {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.template-matrix__mode .label {
+    margin-bottom: 0;
+}
+
+.template-matrix__groups {
+    display: grid;
+    gap: var(--space-1-5);
+}
+
+.template-matrix__groups:not(:has(*)) {
+    display: none;
+}
+
+.template-matrix-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+    gap: var(--space-0-5);
+    align-items: center;
+    max-width: 32rem;
+}
+
+.template-editor-actions {
+    flex-wrap: nowrap;
+}
+
+.template-editor-actions .status-line {
+    min-width: 0;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .template-block {
+        padding-right: var(--space-3);
+        padding-left: calc(var(--space-3) + 3px);
+    }
+
+    .template-block__fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .template-block__check {
+        white-space: normal;
+    }
+}

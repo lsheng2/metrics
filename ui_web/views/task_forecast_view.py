@@ -9,39 +9,25 @@ from .graceful_template_view import GracefulTemplateView
 class TaskForecastView(GracefulTemplateView):
     template_name = 'task_forecast.html'
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.task_forecast_facade = ui_web_container.task_forecast_facade
-        self.task_forecast_convertor = ui_web_container.task_forecast_convertor
-
     def get_template_names(self):
         if self.request.headers.get('HX-Request'):
             return ["partials/task_forecast_content.html"]
         return [self.template_name]
 
-    def post(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
-
     def populate_context(self, context, **kwargs):
-        context["forecast_params"] = None
+        request_data = ui_web_container.task_forecast_convertor.extract_request_data_from_request(self.request)
+        context["forecast_params"] = request_data
         context["task_forecast"] = None
         context["chart_data"] = ""
-        context["task_breakdown"] = []
-        context["success"] = False
+        if not request_data.task_id:
+            return
 
-        request_data = self.task_forecast_convertor.extract_request_data_from_request(self.request)
+        # Only a forecast needs the tracker-backed facade; the empty form renders without one.
+        task_forecast_facade = ui_web_container.task_forecast_facade
+        task_hierarchy = asyncio.run(task_forecast_facade.get_task_forecast_hierarchy_data(request_data))
+        forecast_chart = task_forecast_facade.get_forecast_chart_from_data(task_hierarchy)
 
-        forecast_params = asyncio.run(self.task_forecast_facade.get_forecast_params_data(request_data))
-        context["forecast_params"] = forecast_params
-
-        if request_data.task_id:
-            task_hierarchy = asyncio.run(self.task_forecast_facade.get_task_forecast_hierarchy_data(request_data))
-            forecast_chart = self.task_forecast_facade.get_forecast_chart_from_data(task_hierarchy)
-
-            context["task_breakdown"] = task_hierarchy
-            context["task_forecast"] = self.task_forecast_facade.get_forecast_summary_from_data(task_hierarchy)
-            context["chart_data"] = ChartJsonUtils.convert_chart_data_to_timeline_chartjs_json(
-                forecast_chart) if forecast_chart else ""
-            context["include_done_tasks"] = request_data.task_scope == TaskScope.ALL
-
-        context["success"] = True
+        context["task_forecast"] = task_forecast_facade.get_forecast_summary_from_data(task_hierarchy)
+        context["chart_data"] = ChartJsonUtils.convert_chart_data_to_timeline_chartjs_json(
+            forecast_chart) if forecast_chart else ""
+        context["include_done_tasks"] = request_data.task_scope == TaskScope.ALL

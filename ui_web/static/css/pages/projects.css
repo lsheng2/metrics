@@ -1,0 +1,56 @@
+/*
+ * Page layer: Projects: project list and stage table column geometry.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ * Widths sit on header cells only, so the phone card layout of `.is-cardable` keeps full-width cells.
+ */
+
+.project-table {
+    --responsive-admin-table-min-width: 40rem;
+}
+
+.project-table th.project-col-key {
+    width: 14rem;
+}
+
+.project-table th.project-col-state {
+    width: 7rem;
+}
+
+.project-table th.project-col-time {
+    width: 10rem;
+}
+
+.stage-table {
+    --responsive-admin-table-min-width: 54rem;
+}
+
+.stage-table th.stage-col-key {
+    width: 10rem;
+}
+
+.stage-table th.stage-col-provider {
+    width: 7rem;
+}
+
+.stage-table th.stage-col-state {
+    width: 9rem;
+}
+
+.stage-table th.stage-col-hash {
+    width: 8.5rem;
+}
+
+.stage-table th.stage-col-action {
+    width: 6.5rem;
+}
+
+.stage-table :is(th, td).stage-col-action {
+    text-align: end;
+}
+
+@container (max-width: 40rem) {
+    .stage-table td.stage-col-action {
+        text-align: start;
+    }
+}

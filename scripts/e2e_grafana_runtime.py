@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 from typing import Mapping
 
@@ -141,9 +142,27 @@ def resolve_grafana_plugins_path(workspace: Path) -> Path:
 
 
 def shared_worktree_grafana_plugins_path(workspace: Path) -> Path | None:
-    if workspace.parent.name != ".worktrees":
+    main_checkout = main_checkout_path(workspace)
+    if main_checkout is None or main_checkout == workspace.resolve():
         return None
-    return workspace.parent.parent / "state" / "grafana" / "data" / "plugins"
+    return main_checkout / "state" / "grafana" / "data" / "plugins"
+
+
+def main_checkout_path(workspace: Path) -> Path | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(workspace), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    common_dir = Path(completed.stdout.strip())
+    if completed.returncode != 0 or common_dir.name != ".git":
+        return None
+    return common_dir.parent.resolve()
 
 
 def tighten_sqlite_file_mode(workspace: Path) -> None:

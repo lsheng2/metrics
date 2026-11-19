@@ -7,9 +7,23 @@ from datetime import datetime, time, timezone
 from ..container import ui_web_container
 from ..data.hierarchical_item_data import HierarchicalItemData
 from ..utils.chart_json_utils import ChartJsonUtils
+from ..utils.chart_transform_utils import ChartTransformUtils
+from ..utils.developer_series_utils import DeveloperSeriesUtils
 from ..utils.task_grouping_utils import TaskGroupingUtils
 from ..utils.velocity_sort_utils import VelocitySortUtils
 from .graceful_template_view import GracefulTemplateView
+
+DISPLAY_PERIODS = 6
+
+
+def chronological_chart_json(chart, last_periods: int = 0):
+    """Chart.js JSON in month order, or None when there is nothing to plot."""
+    if not chart or not chart.labels:
+        return None
+    VelocitySortUtils.sort_chart_data_chronologically(chart)
+    if last_periods:
+        chart = ChartTransformUtils.trim_to_last_n_periods(chart, last_periods)
+    return ChartJsonUtils.convert_chart_data_to_chartjs_json(chart)
 
 
 class DevVelocityView(GracefulTemplateView):
@@ -31,12 +45,12 @@ class DevVelocityView(GracefulTemplateView):
         include_all_statuses = self.request.GET.get('all_tasks') == 'true'
         use_custom_filter = self.request.GET.get('use_custom_filter') == 'true'
 
-        context["month_velocity"] = "{}"
-        context["month_sp"] = "{}"
+        context["month_velocity"] = None
+        context["month_sp"] = None
+        context["developer_series"] = []
         context["success"] = False
         context["build_page_title"] = 'Developer Velocity Dashboard'
         context["velocity_rolling_avg"] = rolling_avg
-        context["sp_rolling_avg"] = rolling_avg
         context["member_group_id"] = member_group_id or ''
         context["include_all_statuses"] = include_all_statuses
         context["use_custom_filter"] = use_custom_filter
@@ -48,108 +62,24 @@ class DevVelocityView(GracefulTemplateView):
         context["velocity_thresholds"] = json.dumps(asdict(velocity_thresholds))
 
         extra_periods = rolling_avg - 1 if rolling_avg > 0 else 0
-        display_periods = 6
-
         velocity_reports_data = asyncio.run(
             self.dev_velocity_facade.get_velocity_reports_data(
-                member_group_id, 6 + extra_periods, include_all_statuses, use_custom_filter
+                member_group_id, DISPLAY_PERIODS + extra_periods, include_all_statuses, use_custom_filter
             )
         )
 
+        trim_periods = DISPLAY_PERIODS if rolling_avg > 0 else 0
         velocity_chart = self.dev_velocity_facade.get_velocity_chart_data(
-            velocity_reports_data, rolling_avg, display_periods if rolling_avg > 0 else 0
+            velocity_reports_data, rolling_avg, trim_periods
         )
-        if velocity_chart and velocity_chart.labels:
-            VelocitySortUtils.sort_chart_data_chronologically(velocity_chart)
-
         story_points_chart = self.dev_velocity_facade.get_story_points_chart_data(
-            velocity_reports_data, rolling_avg, display_periods if rolling_avg > 0 else 0
+            velocity_reports_data, rolling_avg, trim_periods
         )
-        if story_points_chart and story_points_chart.labels:
-            VelocitySortUtils.sort_chart_data_chronologically(story_points_chart)
 
-        context["month_velocity"] = ChartJsonUtils.convert_chart_data_to_chartjs_json(velocity_chart) if velocity_chart else "{}"
-        context["month_sp"] = ChartJsonUtils.convert_chart_data_to_chartjs_json(story_points_chart) if story_points_chart else "{}"
+        context["developer_series"] = DeveloperSeriesUtils.from_chart(velocity_chart, context["selected_developers"])
+        context["month_velocity"] = chronological_chart_json(velocity_chart)
+        context["month_sp"] = chronological_chart_json(story_points_chart)
         context["success"] = True
-
-
-class DevVelocityChartView(GracefulTemplateView):
-    template_name = 'partials/dev_velocity_chart.html'
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.dev_velocity_facade = ui_web_container.dev_velocity_facade
-
-    def populate_context(self, context, **kwargs):
-        member_group_id = self.request.GET.get('member_group_id')
-        rolling_avg = int(self.request.GET.get('rolling_avg', 0))
-        include_all_statuses = self.request.GET.get('all_tasks') == 'true'
-        use_custom_filter = self.request.GET.get('use_custom_filter') == 'true'
-
-        context["month_velocity"] = "{}"
-        context["velocity_rolling_avg"] = rolling_avg
-        context["member_group_id"] = member_group_id or ''
-        context["include_all_statuses"] = include_all_statuses
-        context["use_custom_filter"] = use_custom_filter
-        context["has_custom_filter"] = self.dev_velocity_facade.has_custom_filter(member_group_id)
-        context["selected_period"] = self.request.GET.get('period', '')
-        context["selected_developers"] = self.request.GET.get('developers', '')
-
-        velocity_thresholds = self.dev_velocity_facade.get_velocity_thresholds()
-        context["velocity_thresholds"] = json.dumps(asdict(velocity_thresholds))
-
-        extra_periods = rolling_avg - 1 if rolling_avg > 0 else 0
-        display_periods = 6
-
-        velocity_reports_data = asyncio.run(
-            self.dev_velocity_facade.get_velocity_reports_data(member_group_id, 6 + extra_periods, include_all_statuses, use_custom_filter)
-        )
-
-        velocity_chart = self.dev_velocity_facade.get_velocity_chart_data(
-            velocity_reports_data, rolling_avg, display_periods if rolling_avg > 0 else 0
-        )
-        if velocity_chart and velocity_chart.labels:
-            VelocitySortUtils.sort_chart_data_chronologically(velocity_chart)
-
-        context["month_velocity"] = ChartJsonUtils.convert_chart_data_to_chartjs_json(velocity_chart) if velocity_chart else "{}"
-
-
-class DevStoryPointsChartView(GracefulTemplateView):
-    template_name = 'partials/dev_story_points_chart.html'
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.dev_velocity_facade = ui_web_container.dev_velocity_facade
-
-    def populate_context(self, context, **kwargs):
-        member_group_id = self.request.GET.get('member_group_id')
-        rolling_avg = int(self.request.GET.get('rolling_avg', 0))
-        include_all_statuses = self.request.GET.get('all_tasks') == 'true'
-        use_custom_filter = self.request.GET.get('use_custom_filter') == 'true'
-
-        context["month_sp"] = "{}"
-        context["sp_rolling_avg"] = rolling_avg
-        context["member_group_id"] = member_group_id or ''
-        context["include_all_statuses"] = include_all_statuses
-        context["use_custom_filter"] = use_custom_filter
-        context["has_custom_filter"] = self.dev_velocity_facade.has_custom_filter(member_group_id)
-        context["selected_period"] = self.request.GET.get('period', '')
-        context["selected_developers"] = self.request.GET.get('developers', '')
-
-        extra_periods = rolling_avg - 1 if rolling_avg > 0 else 0
-        display_periods = 6
-
-        velocity_reports_data = asyncio.run(
-            self.dev_velocity_facade.get_velocity_reports_data(member_group_id, 6 + extra_periods, include_all_statuses, use_custom_filter)
-        )
-
-        story_points_chart = self.dev_velocity_facade.get_story_points_chart_data(
-            velocity_reports_data, rolling_avg, display_periods if rolling_avg > 0 else 0
-        )
-        if story_points_chart and story_points_chart.labels:
-            VelocitySortUtils.sort_chart_data_chronologically(story_points_chart)
-
-        context["month_sp"] = ChartJsonUtils.convert_chart_data_to_chartjs_json(story_points_chart) if story_points_chart else "{}"
 
 
 class BaseVelocityTasksView(GracefulTemplateView):
@@ -161,6 +91,8 @@ class BaseVelocityTasksView(GracefulTemplateView):
         self.summary_convertor = ui_web_container.developer_velocity_summary_convertor
 
     def _build_task_hierarchy(self, velocity_tasks, period):
+        if not velocity_tasks:
+            return []
         developer_groups = self._group_by_developer(velocity_tasks)
         total_count = sum(g.count for g in developer_groups)
         return [HierarchicalItemData(

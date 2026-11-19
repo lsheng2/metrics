@@ -32,7 +32,6 @@ def grafana_panel_embed_url(state: WorkbenchPageQueryState, panel: WorkbenchGraf
             'var-begin': state.begin,
             'var-end': state.end,
             'timezone': 'browser',
-            'theme': 'dark',
         }.items()
         if value
     })

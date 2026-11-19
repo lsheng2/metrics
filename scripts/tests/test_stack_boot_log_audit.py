@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -73,27 +75,6 @@ def test_shouldIgnoreKnownGrafanaClientAbortNoise(tmp_path, capsys):
     assert exit_code == 0
     assert "Boot log audit passed" in output
     assert "abort Handler" not in output
-
-
-def test_shouldAcceptAiBaseStateWrittenWithUtf8Bom(tmp_path, capsys):
-    ai_base_workspace = tmp_path / "ai-base"
-    state_path = ai_base_workspace / ".tmp-validation" / "runtime" / "dev-stack-state.dashboard_query_agent.json"
-    state_path.parent.mkdir(parents=True)
-    state_path.write_text(json.dumps({"startup": {"state": "ready", "lastError": None}}), encoding="utf-8-sig")
-
-    exit_code = audit_stack_boot_logs.main(
-        [
-            "--dashboard-workspace",
-            str(tmp_path),
-            "--ai-base-workspace",
-            str(ai_base_workspace),
-            "--require-ai-base-state",
-        ]
-    )
-
-    output = capsys.readouterr().out
-    assert exit_code == 0
-    assert "Boot log audit passed" in output
 
 
 def test_shouldIgnoreAlreadyRunningSyncCommandErrorAsBenign(tmp_path, capsys):
@@ -209,26 +190,17 @@ def test_shouldStillFailUnexpectedTraceback(tmp_path, capsys):
     assert "Traceback (most recent call last)" in output
 
 
-def test_shouldScanAiBaseHeadlessRuntimeLogs(tmp_path, capsys):
-    ai_base_workspace = tmp_path / "ai-base"
-    state_path = ai_base_workspace / ".tmp-validation" / "runtime" / "dev-stack-state.dashboard_query_agent.json"
-    state_path.parent.mkdir(parents=True)
-    state_path.write_text(json.dumps({"startup": {"state": "ready", "lastError": None}}), encoding="utf-8")
-    log_path = ai_base_workspace / ".tmp-validation" / "runtime" / "logs" / "backend.err.log"
-    log_path.parent.mkdir(parents=True)
-    log_path.write_text("ERROR: backend failed to bind\n", encoding="utf-8")
+def test_shouldEscapeUnencodableLogTextWhenConsoleCannotEncodeIt(tmp_path):
+    log_path = tmp_path / "grafana-3001.out.log"
+    log_path.write_text('logger=http.server level=error msg="failed to open listener \u2717"\n', encoding="utf-8")
 
-    exit_code = audit_stack_boot_logs.main(
-        [
-            "--dashboard-workspace",
-            str(tmp_path),
-            "--ai-base-workspace",
-            str(ai_base_workspace),
-            "--require-ai-base-state",
-        ]
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "audit_stack_boot_logs.py"), "--dashboard-workspace", str(tmp_path), "--log-file", str(log_path)],
+        capture_output=True,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
+        check=False,
     )
 
-    output = capsys.readouterr().out
-    assert exit_code == 1
-    assert "backend.err.log" in output
-    assert "backend failed to bind" in output
+    assert completed.returncode == 1
+    assert b"UnicodeEncodeError" not in completed.stderr
+    assert "failed to open listener \\u2717" in completed.stdout.decode("cp1252")

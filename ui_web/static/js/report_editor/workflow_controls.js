@@ -10,11 +10,10 @@ export function createWorkflowControls(root, changed) {
     function addAction(button, restored = null) {
         const host = button.closest('th').querySelector('[data-continuity-new-actions]');
         const node = document.createElement('div');
-        node.className = 'mt-2';
+        node.className = 'report-new-action';
         node.dataset.newReportAction = restored?.action_id || crypto.randomUUID();
         const ownerLabel = document.createElement('label');
         ownerLabel.className = 'label is-small';
-        ownerLabel.style.color = '#334155';
         ownerLabel.textContent = message('messageArOwner', 'AR owner');
         const owner = document.createElement('input');
         owner.type = 'text';
@@ -23,12 +22,12 @@ export function createWorkflowControls(root, changed) {
         owner.setAttribute('aria-label', ownerLabel.textContent);
         owner.value = restored?.owner_ref?.display_name || '';
         const body = document.createElement('div');
-        body.className = 'report-editor-surface mt-2';
+        body.className = 'report-editor-surface paper';
         body.tabIndex = 0;
         body.setAttribute('aria-label', message('messageArBody', 'AR'));
         const remove = document.createElement('button');
         remove.type = 'button';
-        remove.className = 'button is-small mt-1';
+        remove.className = 'button is-small';
         remove.textContent = message('messageRemoveAr', 'Remove unsaved AR');
         node.append(ownerLabel, owner, body, remove);
         host.append(node);

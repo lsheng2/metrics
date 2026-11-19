@@ -13,6 +13,7 @@ from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOpt
 from jira_history.models import JiraIssue
 
 
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport
 
 
@@ -190,8 +191,8 @@ class TestBugTrendScopeActionViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertTrue(result['dirty_banner_visible'])
         self.assertIn('Unsaved *', result['dirty_label_text'])
         self.assertTrue(result['cancel_button_visible'])
-        self.assertLessEqual(result['action_button_height_delta'], 1)
-        self.assertGreaterEqual(result['action_gap_px'], 8)
+        self.assertLessEqual(result['action_button_height_delta'], geometry.HEIGHT_DELTA_MAX)
+        self.assertGreaterEqual(result['action_gap_px'], geometry.EDITOR_ACTION_GAP_MIN)
         self.assertFalse(result['page_horizontal_overflow'])
 
     def test_shouldHighlightActionRequiredScopeFieldsInBrowser(self):
@@ -202,6 +203,7 @@ class TestBugTrendScopeActionViews(BugTrendScopeConfigViewTestSupport, TestCase)
         # Then
         self.assertEqual(200, response.status_code)
         self.assertEqual(['name', 'jql', 'bug_type_values'], result['save_draft_missing_names'])
+        self.assertEqual(3, result['save_draft_visible_border_count'])
         self.assertTrue(result['save_draft_summary_visible'])
         self.assertEqual('scope-name', result['save_draft_focused_id'])
         self.assertIn('At least one bug type value is required before saving this scope.', result['save_draft_messages'])
@@ -216,6 +218,7 @@ class TestBugTrendScopeActionViews(BugTrendScopeConfigViewTestSupport, TestCase)
             ],
             result['enable_missing_names'],
         )
+        self.assertEqual(6, result['enable_visible_border_count'])
         self.assertTrue(result['enable_summary_visible'])
         self.assertEqual('scope-critical-high', result['enable_focused_id'])
         self.assertIn('Add at least one fixed or closed status value before enabling this scope.', result['enable_messages'])

@@ -1,0 +1,17 @@
+<script>
+    (function () {
+        var root = document.documentElement;
+        var preference = 'system';
+        try {
+            preference = window.localStorage.getItem('dashboard-theme') || 'system';
+        } catch (error) {
+            preference = 'system';
+        }
+        if (preference !== 'light' && preference !== 'dark') {
+            preference = 'system';
+        }
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.setAttribute('data-theme', preference === 'dark' || (preference === 'system' && prefersDark) ? 'dark' : 'light');
+        root.setAttribute('data-theme-preference', preference);
+    })();
+</script>

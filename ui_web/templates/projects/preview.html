@@ -1,55 +1,42 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n dashboard_format %}
 
 {% block title %}{% trans "Preview stage" %}{% endblock %}
 {% block page_title %}{% trans "Preview stage" %}{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a>{% endblock %}
 
 {% block content %}
 <article class="block">
-    <nav class="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
-            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
-            <li class="is-active"><a href="#" aria-current="page">{% trans "Preview" %}</a></li>
-        </ul>
-    </nav>
-
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-3">{{ preview.name }}</h2>
-                <p class="subtitle is-6"><code>{{ preview.key }}</code> · {{ source_label }}</p>
-            </div>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">{{ preview.name }}</h2>
+            <p class="page-header__meta"><code>{{ preview.key }}</code> · {{ source_label }}</p>
         </div>
-        <div class="level-right">
-            {% include "projects/language_switcher.html" %}
-        </div>
-    </div>
+        <div class="page-header__actions">{% include "projects/language_switcher.html" %}</div>
+    </header>
 
-    <section class="block">
-        <dl>
-            <dt>{% trans "Provider" %}</dt>
-            <dd>{{ preview.descriptor.provider_id }}</dd>
-            <dt>{% trans "Endpoint" %}</dt>
-            <dd><code>{{ preview.descriptor.endpoint }}</code></dd>
-            <dt>{% trans "Source reference" %}</dt>
-            <dd><code>{{ preview.descriptor.source_ref }}</code></dd>
-            <dt>{% trans "Query kind" %}</dt>
-            <dd>{{ preview.descriptor.query_kind }}</dd>
-            <dt>{% trans "Query" %}</dt>
-            <dd><pre>{{ preview.descriptor.query }}</pre></dd>
-            <dt>{% trans "Definition hash" %}</dt>
-            <dd><code>{{ preview.definition_hash }}</code></dd>
-        </dl>
-    </section>
+    <dl class="description-list">
+        <dt>{% trans "Provider" %}</dt>
+        <dd>{{ preview.descriptor.provider_id|provider_tag }}</dd>
+        <dt>{% trans "Endpoint" %}</dt>
+        <dd><code>{{ preview.descriptor.endpoint }}</code></dd>
+        <dt>{% trans "Source reference" %}</dt>
+        <dd><code>{{ preview.descriptor.source_ref }}</code></dd>
+        <dt>{% trans "Query kind" %}</dt>
+        <dd>{{ preview.descriptor.query_kind }}</dd>
+        <dt>{% trans "Query" %}</dt>
+        <dd><pre>{{ preview.descriptor.query }}</pre></dd>
+        <dt>{% trans "Definition hash" %}</dt>
+        <dd><code>{{ preview.definition_hash }}</code></dd>
+    </dl>
 
-    <div class="buttons">
+    <div class="dashboard-action-group">
+        <a class="button" href="{% url 'ui_web:project_detail' detail.project.id %}"><span class="icon is-small"><i class="iconoir-nav-arrow-left" aria-hidden="true"></i></span><span>{% trans "Back" %}</span></a>
         <form method="post" action="{% url 'ui_web:project_stage_confirm' detail.project.id %}" class="dashboard-action-form">
             {% csrf_token %}
             <input type="hidden" name="preview_id" value="{{ preview_id }}">
-            <button class="button is-primary" type="submit"><span class="icon is-small"><i class="iconoir-check"></i></span><span>{% trans "Confirm stage" %}</span></button>
+            <button class="button is-primary" type="submit"><span class="icon is-small"><i class="iconoir-check" aria-hidden="true"></i></span><span>{% trans "Confirm stage" %}</span></button>
         </form>
-        <a class="button" href="{% url 'ui_web:project_detail' detail.project.id %}"><span class="icon is-small"><i class="iconoir-nav-arrow-left"></i></span><span>{% trans "Back" %}</span></a>
     </div>
 </article>
 {% endblock %}

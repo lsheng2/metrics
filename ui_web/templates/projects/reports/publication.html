@@ -1,90 +1,100 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static dashboard_format %}
 
 {% block title %}{% trans "Published report" %}{% endblock %}
 {% block page_title %}{% trans "Published report" %}{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a>{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/report_exports.css' %}">
+{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/report_exports.css' %}">
-<article class="block">
-    <nav class="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
-            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
-            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
-            <li class="is-active"><a href="#" aria-current="page">{{ publication.manifest.publication_id }}</a></li>
-        </ul>
-    </nav>
-
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-4">{% trans "Published edition" %}</h2>
-                <p class="subtitle is-6"><code>{{ publication.manifest.publication_id }}</code></p>
-            </div>
+{% url 'ui_web:report_publication_download' detail.project.id stage.id publication.manifest.publication_id as download_url %}
+{% url 'ui_web:report_publication_export' detail.project.id stage.id publication.manifest.publication_id as export_url %}
+<article class="block project-reports">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">{% trans "Published edition" %}</h2>
+            <p class="page-header__meta"><code>{{ publication.manifest.publication_id }}</code></p>
         </div>
-        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
+        <div class="page-header__actions">{% include "projects/language_switcher.html" %}</div>
+    </header>
+
+    <div class="report-command-bar">
+        <div class="dashboard-action-group">
+            <a class="button is-small" href="{{ download_url }}?format=html">
+                <span class="icon is-small" aria-hidden="true"><i class="iconoir-download"></i></span>
+                <span>{% trans "Download HTML" %}</span>
+            </a>
+            <a class="button is-small" href="{{ download_url }}?format=plain_text">
+                <span class="icon is-small" aria-hidden="true"><i class="iconoir-download"></i></span>
+                <span>{% trans "Download text" %}</span>
+            </a>
+        </div>
+        {% include "projects/reports/export_controls.html" with export_url=export_url audit_available=True %}
     </div>
 
-    <div class="table-container responsive-admin-table-box">
-        <table class="table is-fullwidth is-narrow dashboard-dense-table">
-            <tbody>
-                <tr><th>{% trans "Draft" %}</th><td><code>{{ publication.manifest.draft_id }}</code></td></tr>
-                <tr><th>{% trans "Draft revision" %}</th><td>{{ publication.manifest.draft_revision }} <code>{{ publication.manifest.draft_revision_hash }}</code></td></tr>
-                <tr><th>{% trans "Source cutoff" %}</th><td>{{ publication.manifest.source_as_of }}</td></tr>
-                <tr><th>{% trans "Finalized by" %}</th><td>{{ publication.manifest.finalized_by }}</td></tr>
-                <tr><th>{% trans "Finalized" %}</th><td>{{ publication.manifest.finalized_at }}</td></tr>
-                <tr><th>{% trans "Commit" %}</th><td><code>{{ publication.commit_id }}</code> · {{ publication.checkout_state }}</td></tr>
-                <tr><th>{% trans "Manifest hash" %}</th><td><code>{{ publication.manifest_sha256 }}</code></td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="buttons">
-        <a class="button" href="{% url 'ui_web:report_publication_download' detail.project.id stage.id publication.manifest.publication_id %}?format=html">
-            <span class="icon is-small"><i class="iconoir-download"></i></span>
-            <span>{% trans "Download HTML" %}</span>
-        </a>
-        <a class="button" href="{% url 'ui_web:report_publication_download' detail.project.id stage.id publication.manifest.publication_id %}?format=plain_text">
-            <span class="icon is-small"><i class="iconoir-download"></i></span>
-            <span>{% trans "Download text" %}</span>
-        </a>
-    </div>
-    {% url 'ui_web:report_publication_export' detail.project.id stage.id publication.manifest.publication_id as export_url %}
-    {% include "projects/reports/export_controls.html" with export_url=export_url audit_available=True %}
+    <section class="card" aria-labelledby="publication-manifest-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="publication-manifest-title">{% trans "Manifest" %}</h3>
+        </header>
+        <div class="card-content">
+            <dl class="description-list is-2">
+                <dt>{% trans "Draft" %}</dt><dd><code>{{ publication.manifest.draft_id }}</code></dd>
+                <dt>{% trans "Draft revision" %}</dt><dd>{{ publication.manifest.draft_revision }} <code title="{{ publication.manifest.draft_revision_hash }}">{{ publication.manifest.draft_revision_hash|slice:":12" }}</code></dd>
+                <dt>{% trans "Source cutoff" %}</dt><dd>{{ publication.manifest.source_as_of|timestamp }}</dd>
+                <dt>{% trans "Finalized by" %}</dt><dd>{{ publication.manifest.finalized_by|or_dash }}</dd>
+                <dt>{% trans "Finalized" %}</dt><dd>{{ publication.manifest.finalized_at|timestamp }}</dd>
+                <dt>{% trans "Commit" %}</dt><dd><code title="{{ publication.commit_id }}">{{ publication.commit_id|slice:":12" }}</code> {{ publication.checkout_state|status_tag }}</dd>
+                <dt>{% trans "Manifest hash" %}</dt><dd><code title="{{ publication.manifest_sha256 }}">{{ publication.manifest_sha256|slice:":12" }}</code></dd>
+            </dl>
+        </div>
+    </section>
 
     {% if publication.manifest.purpose == "standup" %}
-        {% if publication.manifest.schema_version == 2 and publication.manifest.report_role == "daily" %}
-        <form method="post" action="{% url 'ui_web:report_publication_linked_revision' detail.project.id stage.id publication.manifest.publication_id %}" class="dashboard-action-form mt-4">
-            {% csrf_token %}
-            {{ linked_revision_form.command_id }}
-            <button class="button is-primary" type="submit" data-report-linked-revision>
-                <span class="icon is-small"><i class="iconoir-edit-pencil"></i></span>
-                <span>{% trans "Create linked correction" %}</span>
-            </button>
-        </form>
-        {% endif %}
-        <form method="post" action="{% url 'ui_web:report_publication_revision' detail.project.id stage.id publication.manifest.publication_id %}" class="dashboard-action-form mt-4">
-            {% csrf_token %}
-            {{ revision_form.command_id }}
-            {{ revision_form.template_version }}
-            <div class="field">
-                <label class="label" for="{{ revision_form.template_id.id_for_label }}">{{ revision_form.template_id.label }}</label>
-                <div class="select">
-                    <select id="{{ revision_form.template_id.id_for_label }}" name="{{ revision_form.template_id.html_name }}">
-                        {% for value, label in revision_form.fields.template_id.choices %}
-                            <option value="{{ value }}" {% if revision_form.template_id.value == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
+    <section class="card" aria-labelledby="publication-revision-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="publication-revision-title">{% trans "New revision" %}</h3>
+        </header>
+        <div class="card-content">
+            {% if publication.manifest.schema_version == 2 and publication.manifest.report_role == "daily" %}
+            <form method="post" action="{% url 'ui_web:report_publication_linked_revision' detail.project.id stage.id publication.manifest.publication_id %}" class="dashboard-action-form">
+                {% csrf_token %}
+                {{ linked_revision_form.command_id }}
+                <div class="dashboard-action-group">
+                    <button class="button" type="submit" data-report-linked-revision>
+                        <span class="icon is-small" aria-hidden="true"><i class="iconoir-edit-pencil"></i></span>
+                        <span>{% trans "Create linked correction" %}</span>
+                    </button>
                 </div>
-            </div>
-            <button class="button is-primary" type="submit">
-                <span class="icon is-small"><i class="iconoir-plus"></i></span>
-                <span>{% trans "Create revision" %}</span>
-            </button>
-        </form>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'ui_web:report_publication_revision' detail.project.id stage.id publication.manifest.publication_id %}" class="dashboard-edit-form">
+                {% csrf_token %}
+                {{ revision_form.command_id }}
+                {{ revision_form.template_version }}
+                <div class="dashboard-form-grid">
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ revision_form.template_id.id_for_label }}">{{ revision_form.template_id.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ revision_form.template_id.id_for_label }}" name="{{ revision_form.template_id.html_name }}">
+                            {% for value, label in revision_form.fields.template_id.choices %}
+                                <option value="{{ value }}" {% if revision_form.template_id.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                    </div>
+                    <div class="dashboard-action-group">
+                        <button class="button is-primary" type="submit">
+                            <span class="icon is-small" aria-hidden="true"><i class="iconoir-plus"></i></span>
+                            <span>{% trans "Create revision" %}</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
     {% else %}
-        <div class="notification is-light">{% trans "New revisions are only available for standup publications." %}</div>
+    <div class="message is-info" role="note"><div class="message-body">{% trans "New revisions are only available for standup publications." %}</div></div>
     {% endif %}
 </article>
 {% endblock %}

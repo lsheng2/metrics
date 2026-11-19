@@ -1,0 +1,272 @@
+/*
+ * Meridian foundation: buttons, button groups and toggle buttons.
+ * Tokens only; the layer order lives in ui_web/static_assets.py.
+ */
+
+/* ------------------------------------------------------------- controls */
+
+.button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1-5);
+    height: var(--control-height);
+    min-height: var(--control-height);
+    padding: 0 var(--control-padding-x);
+    border: var(--control-border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xs);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    line-height: 1;
+    text-decoration: none;
+    vertical-align: middle;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition:
+        background-color var(--duration-fast) var(--ease-standard),
+        border-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard),
+        box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.button:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.button:active {
+    background: var(--color-surface-active);
+}
+
+/* Ghost button: transparent until hover; never combined with a semantic variant (a design-system test enforces it). */
+.button.is-light {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    color: var(--color-text-secondary);
+}
+
+.button.is-light:hover {
+    border-color: transparent;
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+}
+
+.button.is-primary {
+    border-color: var(--color-surface-inverse);
+    background: var(--color-surface-inverse);
+    color: var(--color-on-inverse);
+}
+
+.button.is-primary:hover {
+    border-color: color-mix(in srgb, var(--color-surface-inverse) 84%, var(--color-canvas));
+    background: color-mix(in srgb, var(--color-surface-inverse) 84%, var(--color-canvas));
+    color: var(--color-on-inverse);
+}
+
+.button.is-link {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+}
+
+.button.is-link:hover {
+    border-color: var(--color-accent-hover);
+    background: var(--color-accent-hover);
+    color: var(--color-on-accent);
+}
+
+.button.is-info {
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-text);
+}
+
+.button.is-info:hover {
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-subtle-hover);
+    color: var(--color-accent-text);
+}
+
+.button.is-success {
+    border-color: var(--color-success-border);
+    background: var(--color-success-subtle);
+    color: var(--color-success-text);
+}
+
+.button.is-success:hover {
+    border-color: var(--color-success-border);
+    background: var(--color-success-subtle-hover);
+    color: var(--color-success-text);
+}
+
+.button.is-warning {
+    border-color: var(--color-warning-border);
+    background: var(--color-warning-subtle);
+    color: var(--color-warning-text);
+}
+
+.button.is-warning:hover {
+    border-color: var(--color-warning-border);
+    background: var(--color-warning-subtle-hover);
+    color: var(--color-warning-text);
+}
+
+.button.is-danger {
+    border-color: var(--color-danger-border);
+    background: var(--color-danger-subtle);
+    color: var(--color-danger-text);
+}
+
+.button.is-danger:hover {
+    border-color: var(--color-danger-border);
+    background: var(--color-danger-subtle-hover);
+    color: var(--color-danger-text);
+}
+
+.button.is-selected,
+.button.is-active,
+.toggle-button:has(> input:checked) {
+    z-index: 1;
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-text);
+}
+
+.button:focus-visible {
+    z-index: 2;
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 1px;
+}
+
+.button[disabled],
+.button.is-disabled,
+fieldset[disabled] .button {
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.button.is-small,
+.buttons.are-small .button {
+    gap: var(--space-1);
+    height: var(--control-height-sm);
+    min-height: var(--control-height-sm);
+    padding: 0 var(--control-padding-x-sm);
+    font-size: var(--text-xs);
+}
+
+.button.is-medium {
+    height: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0 var(--space-4);
+    font-size: var(--text-md);
+}
+
+.button.is-fullwidth {
+    display: flex;
+    width: 100%;
+}
+
+.button .icon,
+.button [class*="iconoir-"] {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    font-size: 1rem;
+}
+
+.button.is-small .icon,
+.button.is-small [class*="iconoir-"],
+.buttons.are-small .button .icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    font-size: 0.875rem;
+}
+
+.button.is-loading {
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.button.is-loading > * {
+    visibility: hidden;
+}
+
+.button.is-loading::after {
+    position: absolute;
+    top: calc(50% - 0.5em);
+    left: calc(50% - 0.5em);
+    width: 1em;
+    height: 1em;
+    border: 2px solid var(--color-text-tertiary);
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-radius: var(--radius-full);
+    animation: meridian-spin 600ms linear infinite;
+    content: "";
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1-5);
+}
+
+.buttons:not(:last-child) {
+    margin-bottom: var(--space-2);
+}
+
+.buttons.is-right {
+    justify-content: flex-end;
+}
+
+.buttons.is-centered {
+    justify-content: center;
+}
+
+/* Addon groups stay joined while they fit and wrap like any button row on narrow screens. */
+.buttons.has-addons {
+    column-gap: 0;
+}
+
+.buttons.has-addons .button:not(:first-child) {
+    margin-left: -1px;
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+}
+
+.buttons.has-addons .button:not(:last-child) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+/* A checkbox presented as a toggle button. The transparent native input keeps keyboard and
+   assistive-technology semantics, and htmx forms submit it like any other field. */
+.toggle-button {
+    position: relative;
+    user-select: none;
+}
+
+.toggle-button > input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+    opacity: 0;
+}
+
+.toggle-button:has(> input:focus-visible) {
+    z-index: 2;
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 1px;
+}

@@ -23,7 +23,7 @@ export function createAssistController(root, { activeRegion, resolveTarget, bloc
 
     function showStatus(key, error = false) {
         status.textContent = message(key);
-        status.classList.toggle('has-text-danger', error);
+        status.classList.toggle('is-danger', error);
     }
 
     function current(ctx) {

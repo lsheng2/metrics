@@ -42,6 +42,7 @@ class TasksVelocityFacade:
         custom_query = self._get_custom_filter(member_group_id) if use_custom_filter else None
         tasks = await self._search_tasks(start_date, end_date, member_group_id, include_all_statuses, custom_query,
                                          self._development_stage_status_codes)
+        developer_names = developer_names or TasksVelocityFacade._extract_developer_names(tasks)
         developer_velocities = await self._compute_developer_velocities(developer_names)
         return self._velocity_task_detail_convertor.convert_tasks_to_developers_breakdown(
             tasks, developer_names, developer_velocities

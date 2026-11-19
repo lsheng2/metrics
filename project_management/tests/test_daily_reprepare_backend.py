@@ -5,17 +5,17 @@ import pytest
 from project_management.app.api import reports as report_api
 from project_management.app.domain.capture_values import decode_json
 from project_management.app.api.project_runs import ProjectRunService, ProjectRunWorker
-from project_management.out.ai_task_contract import AiTaskContract
+from project_management.app.api.ai_profiles import load_task_profile
 from project_management.services.capture import ProjectCaptureService
 from project_management.services.report_sources import ReportSourceReader
+from project_management.services.task_contracts import SummaryTaskContract
 from project_management.tests.history_persistence_fixtures import daily_note_edit, history_fixture, note_by_id
 from project_management.tests.project_run_fixtures import ProviderAccessDouble
 from project_management.tests.report_draft_fixtures import draft_command
-from project_management.tests.summary_fixtures import PACK_ROOT
 
 
 def refresh_manual_service(fixture, provider_items):
-    source_reader = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT))
+    source_reader = ReportSourceReader(fixture.archive, SummaryTaskContract(load_task_profile('metrics.project_summary')))
     fixture.continuity.source_reader = source_reader
     fixture.draft_service.source_reader = source_reader
     provider = ProviderAccessDouble(fixture.stage, tuple(provider_items))
@@ -28,9 +28,9 @@ def refresh_manual_service(fixture, provider_items):
             fixture.archive,
             required_parts=('facts', 'comments', 'history'),
         ),
-        object(),
+        None,
         fixture.draft_service,
-        lambda *args: None,
+        None,
         notifier=lambda *args: None,
     )
     service = report_api.ReportPreparationService(

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "node": "W1.RETIRE",
+  "recorded_on": "2026-11-17",
+  "result": "PASS",
+  "scope": "Implemented Windows retirement gates and current operator truth; independent W1.R remains required.",
+  "runtime_version": "0.1.1.dev4",
+  "runtime_wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+  "checks": [
+    {
+      "name": "AST import and scoped loop boundaries",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/boundary-inventory-final.json",
+      "sha256": "22c8e82957562c86042d18e153e2b5b9f782987f98cc9610591f3d5db24006c2",
+      "checked_files": 1210,
+      "violations": 0
+    },
+    {
+      "name": "Active Windows legacy code/configuration/documentation inventory",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/retirement-inventory-final.json",
+      "sha256": "6808986698889d25bf028dd5587ac2b83d80b793a26a6254bec76235d6dc97b0",
+      "checked_files": 1023,
+      "violations": 0
+    },
+    {
+      "name": "Checker mutations, CLI failure binding, entrypoint, profile and fixture consumers",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/retirement-focused-final.xml",
+      "sha256": "7f5988ec58a7cbdb86ce412d7246154c068236839ddeb7e4059678d8fe3883c7",
+      "passed": 58,
+      "failed": 0
+    },
+    {
+      "name": "Actual Windows stack with default smoke enabled and normal owned-service stops",
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/default-stack-smoke-green.xml",
+      "sha256": "fe535d2654d22b2780bae58000029c1c0121055c58ef0c2bc478efb2d0549aa2",
+      "passed": 1,
+      "failed": 0,
+      "note": "SkipJiraSync and NoOpen preserve the authorized synthetic boundary; SkipSmoke is no longer supplied."
+    }
+  ],
+  "implementation": [
+    "Removed both standalone metrics entry modules and the application WSGI setting override.",
+    "Removed unused external-runtime URL projections from profile and stack entry.",
+    "Default smoke checks the current server-rendered workflow form.",
+    "Generated fixture commands use literal quoted paths and explicit PowerShell invocation.",
+    "Checker policy exceptions accept declarative detector literals, not executable calls or unrelated values.",
+    "Actual CLI negative checks return nonzero and preserve an existing output file.",
+    "Updated current install/start/stop/validation docs and project-local review/UI command references."
+  ],
+  "hygiene": {
+    "openspec_strict": "PASS",
+    "file_size": "PASS",
+    "whitespace": "PASS",
+    "ui_overlay_structure": "PASS; existing browser procedure reheaded as Browser Gate Policy without changing design values"
+  },
+  "preserved_evidence": [
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/retirement-gates-red.xml",
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/retirement-additional-red.xml",
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/legacy-env-projection-red.xml",
+    "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/default-stack-smoke-red.xml"
+  ],
+  "deferred": [
+    {
+      "path": "ops/docker/Dockerfile",
+      "reason": "Linux deployment definition remains unqualified and retains its historical entry reference. Windows gate reports this explicitly.",
+      "trigger": "A later owner-authorized Linux migration and native qualification."
+    }
+  ],
+  "not_claimed": [
+    "Whole-repository all-platform retirement",
+    "Full 5.10 or 10.2-10.4 qualification",
+    "Whole AIB release, other-App completion or publication authorization",
+    "A new UI design or visual-baseline qualification"
+  ]
+}

@@ -1,29 +1,28 @@
 {% if author_options or iteration_options or release_options %}
-<form class="pr-filters dashboard-tool-form dashboard-top-toolbar box mb-4"
-      hx-get="{% url 'ui_web:partials_pull_requests' %}"
-      hx-trigger="submit"
-      hx-target="#main-content"
-      hx-indicator="#loading-indicator"
-      hx-push-url="true">
-    <input type="hidden" name="member_group_id" value="{{ selected_member_group_id|default:'' }}">
-    <div class="dashboard-tool-grid">
+<form id="pr-filters" class="pr-filters box dashboard-tool-form dashboard-top-toolbar" aria-label="Pull request filters"
+      method="get" action="{% url 'ui_web:pull_requests' %}"
+      hx-get="{% url 'ui_web:partials_pull_requests' %}" hx-target="#main-content" hx-indicator="#loading-indicator" hx-push-url="true">
+    {% if selected_member_group_id %}<input type="hidden" name="member_group_id" value="{{ selected_member_group_id }}">{% endif %}
+    <div class="dashboard-tool-grid is-toolbar">
         <div class="dashboard-tool-field">
-            <div class="select is-small is-fullwidth">
-                <select name="author">
-                    <option value="">All Authors</option>
+            <label class="label" for="pr-filter-author">Author</label>
+            <div class="select is-fullwidth">
+                <select id="pr-filter-author" name="author">
+                    <option value="">All</option>
                     {% for author in author_options %}
-                    <option value="{{ author }}" {% if author == selected_author %}selected{% endif %}>{{ author }}</option>
+                    <option value="{{ author }}"{% if author == selected_author %} selected{% endif %}>{{ author }}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
         {% if iteration_options %}
         <div class="dashboard-tool-field">
-            <div class="select is-small is-fullwidth">
-                <select name="iteration">
-                    <option value="">All Iterations</option>
+            <label class="label" for="pr-filter-iteration">Iteration</label>
+            <div class="select is-fullwidth">
+                <select id="pr-filter-iteration" name="iteration">
+                    <option value="">All</option>
                     {% for iteration in iteration_options %}
-                    <option value="{{ iteration }}" {% if iteration == selected_iteration %}selected{% endif %}>{{ iteration }}</option>
+                    <option value="{{ iteration }}"{% if iteration == selected_iteration %} selected{% endif %}>{{ iteration }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -31,34 +30,25 @@
         {% endif %}
         {% if release_options %}
         <div class="dashboard-tool-field">
-            <div class="select is-small is-fullwidth">
-                <select name="release">
-                    <option value="">All Releases</option>
+            <label class="label" for="pr-filter-release">Release</label>
+            <div class="select is-fullwidth">
+                <select id="pr-filter-release" name="release">
+                    <option value="">All</option>
                     {% for release_id, release_name in release_options %}
-                    <option value="{{ release_id }}" {% if release_id == selected_release %}selected{% endif %}>{{ release_name }}</option>
+                    <option value="{{ release_id }}"{% if release_id == selected_release %} selected{% endif %}>{{ release_name }}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
         {% endif %}
         <div class="dashboard-tool-actions">
-            <button type="submit" class="button is-small is-primary">
-                <span class="icon is-small"><i class="iconoir-check"></i></span>
-                <span>Apply</span>
-            </button>
+            <button type="submit" class="button is-primary">Apply</button>
+            {% if selected_author or selected_iteration or selected_release %}
+            <a class="button is-light" href="{% url 'ui_web:pull_requests' %}{% if selected_member_group_id %}?member_group_id={{ selected_member_group_id|urlencode }}{% endif %}"
+               hx-get="{% url 'ui_web:partials_pull_requests' %}{% if selected_member_group_id %}?member_group_id={{ selected_member_group_id|urlencode }}{% endif %}"
+               hx-target="#main-content" hx-indicator="#loading-indicator" hx-push-url="true">Clear</a>
+            {% endif %}
         </div>
-        {% if selected_author or selected_iteration or selected_release %}
-        <div class="dashboard-tool-actions">
-            <a class="button is-small is-light"
-               hx-get="{% url 'ui_web:partials_pull_requests' %}?member_group_id={{ selected_member_group_id|urlencode }}"
-               hx-target="#main-content"
-               hx-indicator="#loading-indicator"
-               hx-push-url="true">
-                <span class="icon is-small"><i class="iconoir-xmark"></i></span>
-                <span>Clear filter</span>
-            </a>
-        </div>
-        {% endif %}
     </div>
 </form>
 {% endif %}

@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-17",
+  "scope": "MDB-2 typed task retirement and validation host migration",
+  "platformScope": "Windows prioritized by owner on 2026-11-17. Linux interfaces/environment retained; Linux, WSL and Linux-container validation deferred, not a blocker for this Windows packet.",
+  "dashboardBaseline": "10c9fa9e806a8ce529a4b3628d122abea33142a9",
+  "aibSourceCommit": "d589ac8e6572a903edc3846e7d78195e85858868",
+  "runtime": {
+    "version": "0.1.1.dev4",
+    "wheelSha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+    "wheelPath": "D:/AIGC/temp/aib2-artifacts/w3/dashboard-stream-cleanup-20261117-01/ai_base_runtime-0.1.1.dev4-py3-none-any.whl",
+    "python": "D:/AIGC/temp/aib2-lanes/dashboard-stream-cleanup-20261117-01/venv/Scripts/python.exe",
+    "pipCheck": "No broken requirements found.",
+    "candidateNotReleaseQualification": true
+  },
+  "tests": [
+    {
+      "scope": "host, append-only audit, task port, serve lifecycle and project runtime",
+      "path": ".tmp/mdb2-retirement-host-r1.xml",
+      "sha256": "f481e2b66c119b74c9de229e10fdf31cfc180fc724b4606b7c65e6161605b334",
+      "passed": 78,
+      "skipped": 0
+    },
+    {
+      "scope": "explicit SDK testkit and implemented Metrics host boundary assertions",
+      "path": ".tmp/mdb2-retirement-conformance-r1.xml",
+      "sha256": "191ed2f70266230937fe2422a38bf623d91a2463cd6dc19586be11e10c476564",
+      "passed": 52,
+      "skipped": 1,
+      "skipReason": "not applicable: host did not declare asgi"
+    },
+    {
+      "scope": "validation launchers, model, archive/read fixtures and admission",
+      "path": ".tmp/mdb2-retirement-validation-r1.xml",
+      "sha256": "0471b73b1318f7cc393464c668a8996b8dcafeb84b757cd98e65c46e65655abc",
+      "passed": 58,
+      "skipped": 0,
+      "seconds": 548.97,
+      "includes": "100 native publications fixture; not a new latency qualification"
+    },
+    {
+      "scope": "installed summary/authoring runtime joins, typed contracts, workers and report query views",
+      "path": ".tmp/mdb2-retirement-consumers-r1.xml",
+      "sha256": "50333bca20939aca6a343dadbb2016dea5cdb852d75835ba444c05bfb8633fbc",
+      "passed": 35,
+      "skipped": 0,
+      "junitSuiteTestsAttribute": 59,
+      "junitTestcaseNodes": 35,
+      "accountingNote": "Terminal summary and 35 concrete testcase nodes agree. The preserved XML suite tests attribute is inconsistent; its cause is not established and it is not counted as 59 passing cases."
+    },
+    {
+      "scope": "final schema-3 admission, retirement and full-week fixture consumers",
+      "path": ".tmp/mdb2-retirement-final-boundaries.xml",
+      "sha256": "25839cb00692192b68f240e3b9aa24b7ee7ec9906fae62e7978871086b3f9b27",
+      "passed": 23,
+      "skipped": 0
+    },
+    {
+      "scope": "final model directory layout, owned lifecycle, week readers and immutable receipts",
+      "path": ".tmp/mdb2-retirement-fixture-final.xml",
+      "sha256": "c90f4cf93653527adf79d3608afea8ec75e740f5bae649bf59971ca0ef08847d",
+      "passed": 23,
+      "skipped": 0
+    },
+    {
+      "scope": "strict model connection shape, lifecycle, model fixture, receipt and week consumer regressions",
+      "path": ".tmp/mdb2-retirement-connection-green.xml",
+      "sha256": "ea3188021a238dba15e894e97801008a1977065631fe45ee59d67cd14701eb62",
+      "passed": 33,
+      "skipped": 0
+    }
+  ],
+  "testAccounting": "Groups overlap and must not be added to one another or earlier totals. Later fixture-focused checks cover the reference-reader move and model-directory initialization after the broad validation run.",
+  "servedJoin": {
+    "runDirectory": "D:/AIGC/scrum_dashboard_validation/mdb2-retirement-final/778c50a7-f2b2-4e86-9b42-f9871a356223",
+    "runReceipt": {
+      "path": "evidence/runtime-run-9ff83650-e7d8-429e-8a91-4072c4c994f0/receipt.json",
+      "sha256": "eda7b079efe370ca029aa8e55f457a8f9992fe3993eeea40b2a0ae80888daf97"
+    },
+    "reopenReceipt": {
+      "path": "evidence/runtime-reopen-29f285a4-02e1-47a4-b36d-47edc53373e6/receipt.json",
+      "sha256": "af434c62cc2bff5f9cb56b1d701ae36dbd68148a42c7959a40e0e9665568cc25"
+    },
+    "stopReceipt": {
+      "path": "evidence/stop/ed1b9a56-ae07-4e9e-8685-6ec35c624081/stop-receipt.json",
+      "sha256": "b6a34b965a0a773a79e5ab9ac037957d29574a65cb5b1b47b017a9fda531cee3"
+    },
+    "status": "passed",
+    "schemaVersion": 3,
+    "principal": "basic:SYNTHETIC_ALICE",
+    "model": {"provider": "openai-compatible", "model": "scripted"},
+    "modelDispatchCount": 2,
+    "operationId": "114aa84a-7fb1-5fba-b7f9-3aabc4c444f7",
+    "assistId": "36e068bd-af20-5e0f-b744-d30d6e3ccfa3",
+    "normalStop": true,
+    "forcedStop": false,
+    "ownedPidsAbsentAfterStop": [8312, 83152, 19016],
+    "sourceBinding": "Each immutable runtime receipt includes the working-tree source file fingerprints and admitted runtime identity."
+  },
+  "connectionBoundaryRecheck": {
+    "runDirectory": "D:/AIGC/scrum_dashboard_validation/mdb2-retirement-final/778c50a7-f2b2-4e86-9b42-f9871a356223",
+    "reopenReceipt": {
+      "path": "evidence/runtime-reopen-cfc3a26b-39eb-4a95-96ec-40b641f3494c/receipt.json",
+      "sha256": "d73094c35de5163022c4f32b3e7a59d14e11cdef435a0e3e598f796901903d07"
+    },
+    "stopReceipt": {
+      "path": "evidence/stop/54427f1e-9c35-4c37-9ffa-463348d8b2d1/stop-receipt.json",
+      "sha256": "393302b84b25a22e9d7814a3cac9ad884ef3d8271c6b757773870ea037ccae38"
+    },
+    "status": "passed",
+    "modelDispatchCount": 2,
+    "normalStop": true,
+    "forcedStop": false,
+    "ownedPidsAbsentAfterStop": [92544, 51844],
+    "scope": "Fresh owned startup with strict connection validation, read-only recovery and normal stop. Business/runtime code is unchanged from servedJoin; the new receipt binds the stricter validation source."
+  },
+  "retainedFailures": [
+    ".tmp/mdb2-retirement-receipts-red.xml",
+    ".tmp/mdb2-retirement-week-red.xml",
+    ".tmp/mdb2-retirement-connection-red.xml",
+    "D:/AIGC/scrum_dashboard_validation/mdb2-runtime-join/a220a7d8-9100-4af8-bb0a-2b5553e78430/evidence/runtime-reopen-ba5dd1a3-3249-40e2-af99-81dff2bd7665"
+  ],
+  "checks": {
+    "djangoCheck": "System check identified no issues (0 silenced).",
+    "aiHostMigrations": "No changes detected in app 'ai_host'",
+    "reviewState": ".tmp/mdb2-retirement-review/state.json"
+  },
+  "limitations": [
+    "This is a bounded Windows synthetic-consumer packet, not whole-topic closure.",
+    "Full-week reference/counter wiring is tested; the six-date browser scenario was not repeated.",
+    "Remaining launcher/global retirement, full 5.10 and 10.4 lifecycle qualification remain open.",
+    "Docker, native Linux, real providers/models, user-data migration and formal release are not qualified here.",
+    "No push, main merge, user database migration or existing-service switch was performed."
+  ]
+}

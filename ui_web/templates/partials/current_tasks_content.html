@@ -1,24 +1,25 @@
-{% if error %}
-    <article class="message is-danger">
-        <div class="message-header">
-            <p>Error</p>
+<article id="current-tasks-page" class="block">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Current tasks</h2>
+            <p class="page-header__meta">In-progress and recently finished work, grouped by member group and stage. Health is the forecast risk signal.</p>
         </div>
-        <div class="message-body">
-            {{ error }}
-        </div>
-    </article>
-{% else %}
-    {% if lazy_loading_enabled %}
-        <div hx-get="{% url 'ui_web:partials_available_members' %}{% if selected_member_group_id %}?member_group_id={{ selected_member_group_id|urlencode }}{% endif %}"
-             hx-trigger="load"
-             hx-swap="outerHTML">
-            {% include "partials/loading_indicator.html" %}
-        </div>
+    </header>
+    {% if error %}
+        <article class="message is-danger" role="alert">
+            <div class="message-header"><p>Tasks unavailable</p></div>
+            <div class="message-body">{{ error }}</div>
+        </article>
     {% else %}
-        {% include "partials/available_members_table.html" %}
+        {% if lazy_loading_enabled %}
+            <div class="skeleton-block current-tasks__members-placeholder" role="status" aria-label="Loading available members"
+                 hx-get="{% url 'ui_web:partials_available_members' %}{% if selected_member_group_id %}?member_group_id={{ selected_member_group_id|urlencode }}{% endif %}"
+                 hx-trigger="load" hx-swap="outerHTML"></div>
+        {% else %}
+            {% include "partials/available_members_table.html" %}
+        {% endif %}
+        <div id="current-tasks-board">
+            {% include "partials/current_tasks_board.html" %}
+        </div>
     {% endif %}
-
-    <div id="current-tasks-board">
-        {% include "partials/current_tasks_board.html" %}
-    </div>
-{% endif %}
+</article>

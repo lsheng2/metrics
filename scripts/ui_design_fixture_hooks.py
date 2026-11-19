@@ -20,9 +20,10 @@ from sd_metrics_lib.utils.enums import HealthStatus
 from ui_web.data.member_data import MemberGroupData
 from ui_web.data.pull_request_data import ApprovalData, LinkedTaskData, PersonActivitySummaryData, PullRequestData
 from ui_web.data.task_data import AssigneeData, AssignmentData, ForecastData, LinkedPullRequestData, ReleaseData, SystemMetadataData, TimeTrackingData
-from ui_web.data.task_forecast_data import TaskForecastBreakdownItem, TaskForecastParamsData, TaskForecastSummaryData
+from ui_web.data.task_forecast_data import TaskForecastBreakdownItem, TaskForecastRequestData, TaskForecastSummaryData
 from ui_web.data.velocity_task_detail_data import DeveloperVelocitySummary, TaskVelocityData
 from ui_web.data.bug_trend_data import BugTrendEvidenceData
+from ui_web.tests.dashboard_asset_support import inline_dashboard_assets, shell_fragment_html
 
 
 def provider_profile_test_success(context: dict) -> dict:
@@ -83,19 +84,17 @@ def current_tasks_fake_data(context: dict) -> dict:
         "show_header": True,
         "pr_gateway_column_enabled": True,
         "release_column_enabled": True,
-        "task_table_colspan": 11,
+        "task_table_colspan": 10,
     }, request=_fixture_request())
     return _html_fixture("current-tasks-fake-data", fragment)
 
 
 def task_forecast_fake_data(context: dict) -> dict:
     fragment = render_to_string("partials/task_forecast_content.html", {
-        "success": True,
         "task_forecast": _task_forecast_summary_data(),
         "chart_data": "",
         "include_done_tasks": True,
-        "time_unit": "days",
-        "forecast_params": TaskForecastParamsData(task_id="TASK-101", task_scope=TaskScope.ALL),
+        "forecast_params": TaskForecastRequestData(task_id="TASK-101", task_scope=TaskScope.ALL),
     }, request=_fixture_request())
     return _html_fixture("task-forecast-fake-data", fragment)
 
@@ -213,10 +212,6 @@ def _render_provider_profile_editor(provider_id: str, connection_test: dict) -> 
         source_query_help="Jira query language",
         metadata_supported=True,
         metadata_summary="Jira metadata fields are available after connection.",
-        detail_rows=[
-            SimpleNamespace(label="Auth", value="API token / PAT", help_text=""),
-            SimpleNamespace(label="Probe", value="Server info", help_text=""),
-        ],
         json_fields=[
             {"name": "source_population", "label": "Source population", "value": json.dumps({"native_query_text": "project = SAMPLE"})},
             {"name": "scope_labels", "label": "Scope labels", "value": json.dumps({"ip": "SAMPLE"})},
@@ -242,11 +237,13 @@ def _fixture_request():
 
 
 def _velocity_fragment(title: str, variant: str) -> str:
+    title_id = f"{variant}-velocity-fixture-title"
     return (
-        f'<section class="box"><h2 class="title is-3">{title}</h2>'
-        '<p class="subtitle is-6">Fixture chart drilldown selected.</p>'
-        '<div class="notification is-info is-light">September 2026 selected</div>'
-        '</section>'
+        f'<section class="card" aria-labelledby="{title_id}"><header class="card-header">'
+        f'<h2 class="card-header-title" id="{title_id}">{title}'
+        '<span class="card-header-meta">Fixture chart drilldown selected.</span></h2></header>'
+        '<div class="card-content"><div class="message is-info" role="status">'
+        '<div class="message-body"><p>September 2026 selected</p></div></div></div></section>'
         + render_to_string("partials/velocity_task_table.html", {
             "tasks": [_velocity_task_data()],
             "summary": _velocity_summary(),
@@ -312,15 +309,26 @@ def _evidence_row():
 
 def _task_forecast_summary_data() -> TaskForecastSummaryData:
     return TaskForecastSummaryData(
-        task_title="Fixture Forecast Root",
         total_estimation_days=9.0,
         forecasted_start_date=datetime(2026, 9, 9, tzinfo=timezone.utc),
         forecasted_end_date=datetime(2026, 9, 18, tzinfo=timezone.utc),
         average_team_velocity=1.2,
         task_forecasts=[
-            TaskForecastBreakdownItem("TASK-101", "Forecast root task", 5.0, 0, True, False, "In Progress"),
-            TaskForecastBreakdownItem("TASK-102", "Child implementation task", 3.0, 1, False, False, "Development"),
-            TaskForecastBreakdownItem("TASK-103", "Completed verification task", 1.0, 1, False, True, "Done"),
+            TaskForecastBreakdownItem(
+                "TASK-101", "Forecast root task", 5.0, 0, True, False, "In Progress",
+                forecast_start_date=datetime(2026, 9, 9, tzinfo=timezone.utc),
+                forecast_end_date=datetime(2026, 9, 18, tzinfo=timezone.utc),
+            ),
+            TaskForecastBreakdownItem(
+                "TASK-102", "Child implementation task", 3.0, 1, False, False, "Development",
+                forecast_start_date=datetime(2026, 9, 9, tzinfo=timezone.utc),
+                forecast_end_date=datetime(2026, 9, 14, tzinfo=timezone.utc),
+            ),
+            TaskForecastBreakdownItem(
+                "TASK-103", "Completed verification task", 1.0, 1, False, True, "Done",
+                forecast_start_date=datetime(2026, 9, 14, tzinfo=timezone.utc),
+                forecast_end_date=datetime(2026, 9, 15, tzinfo=timezone.utc),
+            ),
         ],
         completed_estimation_days=1.0,
         remaining_estimation_days=8.0,
@@ -363,17 +371,4 @@ def _velocity_summary() -> DeveloperVelocitySummary:
 
 
 def _browser_html(fragment: str) -> str:
-    static_dir = Path(__file__).resolve().parents[1] / "ui_web" / "static"
-    vendor_css = (static_dir / "css" / "vendor_fallbacks.css").read_text(encoding="utf-8")
-    main_css = (static_dir / "css" / "main.css").read_text(encoding="utf-8")
-    main_js = (static_dir / "js" / "main.js").read_text(encoding="utf-8")
-    return (
-        '<!doctype html><html lang="en" data-theme="dark" class="has-navbar-fixed-top">'
-        f"<head><style>{vendor_css}\n{main_css}</style></head>"
-        '<body class="is-flex is-flex-direction-column is-fullheight">'
-        '<div class="columns is-gapless is-flex-grow-1 dashboard-app-layout">'
-        '<main class="column is-flex is-flex-direction-column dashboard-main-column">'
-        '<section class="section is-flex-grow-1"><div class="container"><div id="main-content">'
-        f"{fragment}"
-        f"</div></div></section></main></div><script>{main_js}</script></body></html>"
-    )
+    return inline_dashboard_assets(shell_fragment_html(fragment))

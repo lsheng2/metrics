@@ -112,6 +112,7 @@ def test_should_return_preservation_review_issues_from_public_reprepare_result_a
         fixture.stage.id,
         prepared.operation_id,
     )
+    assert completed.error_code is None and completed.draft_id is not None, completed
     draft = fixture.draft_service.get(fixture.actor, fixture.project.id, fixture.stage.id, completed.draft_id)
     dropped_issue = draft.authoring_context['row_order']['rows'][1]['issue_ref']
     parent = fixture.draft_service.save_authored(
@@ -159,6 +160,7 @@ def test_should_return_preservation_review_issues_from_public_reprepare_result_a
         fixture.stage.id,
         queued.operation_id,
     )
+    assert finished.error_code is None and finished.draft_id is not None, finished
     current = service.prepare(
         fixture.actor,
         fixture.project.id,

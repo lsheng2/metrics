@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime
+from typing import List, Optional
 
 from django.conf import settings
 
@@ -32,9 +33,10 @@ class TaskForecastChartUtils:
     @staticmethod
     def _create_breakdown_item(task_data: TaskData, level: int,
                                 has_children: bool) -> TaskForecastBreakdownItem:
+        forecast = task_data.forecast
         estimation_days = 0.0
-        if task_data.forecast and task_data.forecast.estimation_time_days:
-            estimation_days = task_data.forecast.estimation_time_days
+        if forecast and forecast.estimation_time_days:
+            estimation_days = forecast.estimation_time_days
 
         status = ""
         if task_data.system_metadata and task_data.system_metadata.original_status:
@@ -52,5 +54,11 @@ class TaskForecastChartUtils:
             has_children=has_children,
             is_done=TaskForecastChartUtils.is_task_data_done(task_data),
             status=status,
-            task_url=task_url
+            task_url=task_url,
+            forecast_start_date=TaskForecastChartUtils._parse_forecast_date(forecast.start_date if forecast else None),
+            forecast_end_date=TaskForecastChartUtils._parse_forecast_date(forecast.end_date if forecast else None)
         )
+
+    @staticmethod
+    def _parse_forecast_date(value: Optional[str]) -> Optional[datetime]:
+        return datetime.fromisoformat(value) if value else None

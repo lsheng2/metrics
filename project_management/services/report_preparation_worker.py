@@ -28,7 +28,8 @@ def preparation_runtime_options(service):
     run = service.run_service
     refresh = run is not None and callable(run.notifier)
     analysis = None if run is None else run.analysis_service
-    available = refresh and callable(getattr(run, 'backend_resolver', None))
+    available = (refresh and callable(getattr(run, 'principal_resolver', None))
+                 and getattr(run, 'task_profile', None) is not None)
     available = available and all(callable(getattr(analysis, name, None)) for name in ('prepare', 'advance', 'cancel'))
     return {'refresh': bool(refresh), 'analysis': bool(available)}
 

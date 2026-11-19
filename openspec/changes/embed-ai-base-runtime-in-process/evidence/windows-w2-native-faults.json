@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "kind": "w2-native-functional-progress-not-acceptance",
+  "dashboard_baseline_commit": "4192656560b8c945422ea30649708c37388c2b04",
+  "source_kind": "working-tree",
+  "source_files": [
+    {
+      "path": "ai_host/lifecycle.py",
+      "sha256": "333b4f367138e1021cca8237f7f55a9518edec62e6fda6bd63a0bf77841df82f"
+    },
+    {
+      "path": "ai_host/management/commands/serve.py",
+      "sha256": "6970f3e22b677980ea5cbdd00758aeaee2b6e5c0f2e228362164ace5192dbb29"
+    },
+    {
+      "path": "ai_host/serve_exit.py",
+      "sha256": "1e8f7567a9b6c2b72b5283970cb5b4ba1a0eb8c46221df211d71dff909eafa1f"
+    },
+    {
+      "path": "ai_host/tests/serve_test_entry.py",
+      "sha256": "fd847bb372e338fd5b969f76edb0e3a70c0cd956b4f90e2e5f300072853afb9e"
+    },
+    {
+      "path": "ai_host/tests/serve_failure_entry.py",
+      "sha256": "73f84132d75c9b4be59fc7420a7d78a919dc84afa22fc5d0a990df5b1c618abf"
+    },
+    {
+      "path": "ai_host/tests/test_serve_native_failure.py",
+      "sha256": "66a7c97e60e06578f99a26ea3c740c34b3bfccaa8d68d24263a7b225a8ae6835"
+    },
+    {
+      "path": "ai_host/tests/test_lifecycle.py",
+      "sha256": "8b5e3286f0d08dfcff479f2be93f99f3c27850e1f19809cf9c69965114959179"
+    },
+    {
+      "path": "ai_host/tests/test_serve_exit_inventory.py",
+      "sha256": "f267e7e6600dc7bfa512269652bfb99695353bffada0ba30f49dbb368ec4eefd"
+    },
+    {
+      "path": "ai_host/tests/conformance_order_cases.py",
+      "sha256": "fdefcc8f5402602cb7271ca5bb83904a4f39c9c91261860d5ba5489de0d74942"
+    },
+    {
+      "path": "ai_host/tests/conformance_server.py",
+      "sha256": "c388d935dc9d886d9f813270b1e92bb40fd4ddad223a4bf0bb174ff4a17f2bde"
+    },
+    {
+      "path": "ai_host/tests/runtime_recovery_entry.py",
+      "sha256": "84b4569dbbcd806630aa2842c7dc9fc93cd27bc0d8a261f9d5694c36f45a5c6b"
+    },
+    {
+      "path": "ai_host/tests/conformance_recovery_cases.py",
+      "sha256": "a8fb427d79586b9592630a3de9d8a966e17fc2b81ce7671338c0828d3004f783"
+    }
+  ],
+  "tests": [
+    {
+      "passed": 40,
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-native-failures-green-r3.xml",
+      "sha256": "f6b856193a7f987b372a9600c03eb30e4a3d01bc2c1b10ceb430eb47db7cc83e"
+    },
+    {
+      "passed": 58,
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-order-runtime-combined-r4.xml",
+      "sha256": "b67bdc080c767c86f2e0c5fb6a799d0e8761e3fee32ab0e74a09a9d87c9becd0"
+    },
+    {
+      "passed": 1,
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-hard-exit-recovery-r2.xml",
+      "sha256": "8c0a75571cb3e95b28fe26b4aee64517811b3a475080af7362cf1aaf0fab2e37"
+    }
+  ],
+  "fixes": [
+    "No HTTP-close coroutine submitted to an already ended runtime loop; context StopResult remains authoritative",
+    "Original startup failure code/message survives cleanup failure exit3"
+  ],
+  "proof": [
+    "Actual adapter/server host-auth-stop ordering",
+    "Native public-stop-induced ended observation and timeout rollback completed/incomplete exits with lock reopen",
+    "Real runtime context exit then immediate os._exit; second process reopens run/session/approval/history without model redispatch"
+  ],
+  "remaining": [
+    "B5 mandatory chat backlog fixture requires owner decision",
+    "Actual internal-loop-fault subcase remains distinct from clean public stop induced ended test",
+    "20-disconnect and remaining native conformance driver/final review not closed"
+  ],
+  "owner_decision": "evidence/windows-b5-owner-decision.md",
+  "performance": "NOT_RUN"
+}

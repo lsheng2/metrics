@@ -66,7 +66,7 @@ class TestReportAssistBrowser(ReportHistoryUiBrowserSupport):
         self.assertEqual('ai_assisted', edit.origin)
         self.assertEqual(edit.source_ai_result_ref, note['provenance']['ai_result_ref'])
         self.assertEqual('ai_assisted', note['provenance']['origin'])
-        self.assertEqual(1, len([item for item in env.requests if item[0] == 'POST']))
+        self.assertEqual(1, len([item for item in env.requests if item[0] == 'start']))
 
     def test_shouldRejectCandidateAfterNewHumanText(self):
         self.reject_stale_candidate('text')
@@ -95,7 +95,7 @@ class TestReportAssistBrowser(ReportHistoryUiBrowserSupport):
                 self.assertEqual('true', page.locator('[data-report-editor]').get_attribute('data-report-authoring-dirty'))
         original = self.service.get(self.actor, self.project.id, self.stage.id, draft.draft_id)
         self.assertEqual(1, original.revision)
-        self.assertEqual(1, len([item for item in env.requests if item[0] == 'POST']))
+        self.assertEqual(1, len([item for item in env.requests if item[0] == 'start']))
 
     def test_shouldUndoApplyAndSaveLaterHumanPaintWithoutForgedAiAttribution(self):
         draft, env, note_id = self.assist_case()
@@ -123,7 +123,7 @@ class TestReportAssistBrowser(ReportHistoryUiBrowserSupport):
 
     def test_shouldKeepManualEditingAvailableWhenAiIsUnavailableInChinese(self):
         draft, env, note_id = self.assist_case()
-        env.service.backend = None
+        env.service.task_run_port = None
         with patch.object(ReportAssistView, 'service_factory', staticmethod(lambda: env.service)):
             with project_page(self.editor_url(draft.draft_id), language='zh-hans') as page:
                 region = self.daily_region(page, note_id)
@@ -182,7 +182,7 @@ class TestReportAssistBrowser(ReportHistoryUiBrowserSupport):
                 page.locator('[data-report-assist-apply]').wait_for()
                 page.locator('[data-report-assist-apply]').click()
                 self.assertIn('Review the validation result.', region.inner_text())
-        self.assertEqual(1, len([item for item in env.requests if item[0] == 'POST']))
+        self.assertEqual(1, len([item for item in env.requests if item[0] == 'start']))
 
     def test_shouldRetireAcceptedReceiptAndAdvanceNoteHashesWhileNewerLocalEditsRemain(self):
         draft, env, note_id = self.assist_case()
@@ -253,8 +253,9 @@ class TestReportAssistBrowser(ReportHistoryUiBrowserSupport):
                 .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
                 .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
             const foreground = preview ? luminance(getComputedStyle(preview).color) : null;
-            const background = luminance(getComputedStyle(element).backgroundColor);
-            const revision = document.querySelector('[data-report-editor] > .level code').getBoundingClientRect();
+            const background = luminance(getComputedStyle(
+                preview ? preview.closest('[data-report-assist-preview]') : element).backgroundColor);
+            const revision = document.querySelector('[data-report-editor] > .page-header code').getBoundingClientRect();
             return {left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
                     width: innerWidth, height: innerHeight, scroll: element.scrollWidth,
                     client: element.clientWidth, revisionRight: revision.right,

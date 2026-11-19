@@ -1,5 +1,7 @@
 # Dashboard 对 AI Base 独立评审的回复
 
+> 2026-11-11起已被[MDB-2](../embed-ai-base-runtime-in-process/proposal.md)取代：本文件仅为历史证据，不定义剩余工作。
+
 日期：2026-11-01。状态：我方已批准冻结task-run/1精确设计版本，回执见第10节；未实现/未部署。
 来源：[基座独立评审](../../../../Report_creater_agent/docs/reviews/2026-11-01-project-reporting-ai-base-sdk-independent-review.md)。
 本次读取的报告SHA-256：`B89AB28051A17AE4246DE30CB5432C55F801DEC025E2EAC4414975AA829DD744`。

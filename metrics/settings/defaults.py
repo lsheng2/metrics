@@ -17,7 +17,8 @@ SECRET_KEY = env.str('SECRET_KEY', default='django-insecure-*9v(o_9aymv6f@li@hd+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+# Loopback-only default: a wildcard would let DNS-rebound pages reach connector routes as same-origin.
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost', '[::1]'])
 
 # Application definition
 DJANGO_APP = (
@@ -34,6 +35,7 @@ DJANGO_COMM_APP = (
 )
 
 CUSTOM_APP = (
+    'ai_host',
     'tasks',
     'forecast',
     'velocity',
@@ -73,6 +75,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'ui_web.context_processors.dashboard_navigation',
                 'ui_web.context_processors.member_groups',
                 'ui_web.context_processors.service_status_bar',
             ],
@@ -80,7 +83,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'metrics.wsgi.application'
+AI_HOST_ALLOW_ANONYMOUS_APPROVAL = False
 
 CACHES = {
     'default': {
@@ -143,6 +146,7 @@ COMPRESS_OFFLINE = True
 STATIC_URL = env.str('METRICS_BASE_URL', default='') + 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_AUTOREFRESH = False
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

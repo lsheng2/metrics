@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-16",
+  "scope": "configured-model host startup; scripted transport only",
+  "wheelSha256": "c9101064cdae5aa74246d2a507c706e0791e1d9499b771593a91312bab429216",
+  "sourceEvidenceSha256": "ca738ec800e425783b0a845b3220bd64f98cb621cc0f6a782db1f0c5fbc43f62",
+  "sourceFiles": {
+    ".tmp/mdb2-dashboard-20261116/startup-diagnosis/startup_diagnosis.json": "263e5e94a64b0346cd5f5f9af7295d81d8b3a6ea02a068fd57dd5cf3b9de5c64",
+    "ai_host/package.py": "8ac7fd9c2db8880ac3a11d7d89af16b1d46efad089ca75c2e26e98af905f2fe2",
+    "ai_host/runtime_artifact.json": "cfa10b3d73a6d6c0e724843738e3a0670d3e6f36f2beed6889da5d2881a48ee5",
+    "ai_host/settings.py": "7954ef914cca247e14b774a49e9003a6a53b85020b28038dabe85f798b80be08",
+    "ai_host/task_runs.py": "68f42203aabf423097a4008995ed47beee946c88f5fd3079395bc65afe9ed68c",
+    "project_management/ai_profiles/project_summary.json": "88d5d2cb62f38bce76cedb6b6f2fa617f30f81c1c70d78a4ae74e5102f073c8e",
+    "project_management/ai_profiles/report_authoring.json": "33d915e9149a3d7814e88e15018c9495f8fd2fd0d471061621ffcc0d566ddb18",
+    "project_management/app/api/ai_profiles.py": "d04db8c7a5f361c62bc8c05853c94d2434bedd9b2ac4651908150da27e8b05cd",
+    "project_management/app/domain/ai_profiles.py": "abd1204de9e1f68db081ff0388cd75986495b3dd7c3b6a213526576f16032d27",
+    "project_management/app/domain/task_runs.py": "de12fb7a479e20a8db8b6ede6a9224e9135e56f737b51bad997382685987d66d"
+  },
+  "profileRunStartupSeconds": 12.012899,
+  "emptyStartupSeconds": [
+    4.731651,
+    9.490139,
+    4.195725,
+    3.904827,
+    4.069781
+  ],
+  "populatedStartupSeconds": [
+    3.807238,
+    3.517562,
+    4.42432,
+    3.440647,
+    3.722206
+  ],
+  "selectedStartTimeoutSeconds": 20,
+  "reason": "Margin above the measured configured-model maximum, rather than no-model startup",
+  "profileRunId": "d2faf3cb-1edd-409b-b036-0a7c6d4b9b23",
+  "modelRequests": 1,
+  "allStopsCompleted": true,
+  "notQualified": [
+    "live models/providers",
+    "full Dashboard workflow",
+    "full host shutdown edges"
+  ]
+}

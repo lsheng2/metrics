@@ -1,0 +1,74 @@
+{% load i18n dashboard_format %}
+<section class="card" aria-labelledby="report-run-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="report-run-title">{% trans "Independent report run" %}</h3>
+        <div class="card-header-actions">
+            {% if run.runtime_ready %}
+                <span class="tag is-success">{% trans "Runtime ready" %}</span>
+            {% else %}
+                <span class="tag">{% trans "Runtime disabled" %}</span>
+            {% endif %}
+        </div>
+    </header>
+    {% if run.run_form %}
+        <div class="card-content">
+            <form method="post" action="{% url 'ui_web:project_run_submit' detail.project.id stage.id %}" class="dashboard-edit-form">
+                {% csrf_token %}
+                {{ run.run_form.command_id }}
+                {{ run.run_form.expected_stage_hash }}
+                {{ run.run_form.template_version }}
+                <div class="dashboard-form-grid">
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ run.run_form.template_id.id_for_label }}">{{ run.run_form.template_id.label }}</label>
+                        <div class="select is-fullwidth"><select id="{{ run.run_form.template_id.id_for_label }}" name="{{ run.run_form.template_id.html_name }}">
+                            {% for value, label in run.run_form.fields.template_id.choices %}
+                                <option value="{{ value }}" {% if run.run_form.template_id.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select></div>
+                    </div>
+                    <div class="dashboard-form-field">
+                        <label class="label" for="{{ run.run_form.timezone.id_for_label }}">{{ run.run_form.timezone.label }}</label>
+                        <input class="input" id="{{ run.run_form.timezone.id_for_label }}" name="{{ run.run_form.timezone.html_name }}" value="{{ run.run_form.timezone.value|default:'Asia/Shanghai' }}">
+                    </div>
+                    <div class="dashboard-action-group">
+                        <button class="button is-primary" type="submit"{% if not run.runtime_ready %} disabled aria-disabled="true"{% endif %}>
+                            <span class="icon is-small"><i class="iconoir-play-solid" aria-hidden="true"></i></span>
+                            <span>{% trans "Run stage report" %}</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    {% endif %}
+    <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable project-reports-table run-table">
+            <thead>
+                <tr>
+                    <th scope="col">{% trans "Operation" %}</th>
+                    <th scope="col" class="report-col-state">{% trans "State" %}</th>
+                    <th scope="col" class="report-col-number">{% trans "Revision" %}</th>
+                    <th scope="col" class="report-col-time">{% trans "Created" %}</th>
+                    <th scope="col" class="report-col-action"><span class="is-sr-only">{% trans "Open" %}</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for operation in run.operations %}
+                    <tr>
+                        <td data-label="{% trans "Operation" %}"><code title="{{ operation.operation_id }}">{{ operation.operation_id }}</code></td>
+                        <td data-label="{% trans "State" %}">{{ operation.state|status_tag }}</td>
+                        <td data-label="{% trans "Revision" %}">{{ operation.revision }}</td>
+                        <td data-label="{% trans "Created" %}">{{ operation.created_at|timestamp }}</td>
+                        <td class="report-col-action">
+                            <a class="button is-small" href="{% url 'ui_web:project_run_status' detail.project.id stage.id operation.operation_id %}">
+                                <span class="icon is-small"><i class="iconoir-activity" aria-hidden="true"></i></span>
+                                <span>{% trans "Open" %}</span>
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-empty-row"><td colspan="5">{% trans "No run operations yet." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

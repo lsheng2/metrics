@@ -1,5 +1,7 @@
 # AI Base / SDK 公共能力增强请求
 
+> 2026-11-11起已被[MDB-2](../embed-ai-base-runtime-in-process/proposal.md)取代：本文件仅为历史证据，不定义剩余工作。
+
 日期：2026-11-01。状态：首批task-run/1边界已获我方设计冻结确认，扩展项仍分波，未实施。
 接收方：`D:/AIGC/Report_creater_agent` 的基座维护者。
 本文件是跨仓请求，不是Dashboard仓库中的第二份基座canonical规格或基座任务清单。

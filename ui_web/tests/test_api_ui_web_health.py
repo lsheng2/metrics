@@ -8,7 +8,8 @@ from ui_web.facades.tasks_facade import TasksFacade
 from ui_web.convertors.task_convertor import TaskConvertor
 from ui_web.convertors.member_convertor import MemberConvertor
 from ui_web.utils.federated_data_post_processors import MemberGroupTaskFilter
-from ui_web.tests.fixtures.ui_web_builders import BusinessScenarios, DomainTaskBuilder
+from ui_web.tests.fixtures.business_scenarios import BusinessScenarios
+from ui_web.tests.fixtures.ui_web_builders import DomainTaskBuilder
 from ui_web.tests.mocks.mock_task_search_api import MockTaskSearchApi
 from ui_web.tests.mocks.mock_forecast_api import MockForecastApi
 

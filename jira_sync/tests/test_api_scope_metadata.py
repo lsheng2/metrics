@@ -1,8 +1,13 @@
-from django.test import TestCase
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
 from django.core.cache import cache
 
+from bug_metrics.app.api.provider_connections import ConnectionError as ProviderConnectionError
 from bug_metrics.models import JiraScopeConfig
 from jira_sync.app.api.scope_metadata import ApiForScopeMetadata
+from jira_sync.container import jira_sync_container
+from jira_sync.out.jira_scope_issue_adapter import create_jira_client
 from jira_sync.out.jira_scope_metadata_adapter import JiraScopeMetadataAdapter
 
 
@@ -273,3 +278,19 @@ class TestScopeMetadataApi(TestCase):
 
         # Then
         self.assertEqual(2, client.issue_type_requests)
+
+    @override_settings(METRICS_JIRA_SERVER_URL=None, METRICS_JIRA_EMAIL=None, METRICS_JIRA_API_TOKEN=None)
+    def test_shouldReportMissingJiraSettingsOnlyWhenMetadataIsRequested(self):
+        # Given
+        with patch('jira_sync.container.create_jira_client', wraps=create_jira_client) as client_factory:
+            api = jira_sync_container.scope_metadata_api
+            clients_before_request = client_factory.call_count
+
+            # When
+            with self.assertRaises(ProviderConnectionError) as raised:
+                api.discover_scope_options('jira', 'project = STDEL', [], ['Bug'])
+
+        # Then
+        self.assertEqual(0, clients_before_request)
+        self.assertEqual(1, client_factory.call_count)
+        self.assertEqual('PROVIDER_ENDPOINT_INVALID', raised.exception.code)

@@ -8,6 +8,8 @@ Chiplet只是一个项目实例，不能作为生产模块名、默认范围、p
 
 ## What Changes
 
+- 2026-11-11 AI接入改为[MDB-2](../embed-ai-base-runtime-in-process/proposal.md)进程内运行时：未完成的W4.REPLAN/W5
+  经project_management同步task-run端口与`ai_profiles`精确`id@version`调用；下列SDK/注册/connector/pack条目仅为历史。
 - 2026-11-06根据语言跳转后的工作台39.6秒、169次Git调用的诊断，
   新增[读取性能架构](report-read-performance.md)及[实施/验收](performance-execution.md)：
   模块内读写分离、固定head的批量读取、请求级校验复用与窄操作入口。
@@ -17,13 +19,13 @@ Chiplet只是一个项目实例，不能作为生产模块名、默认范围、p
 - 增加独立 `project_management` 模块，Project是用户业务容器，不是provider profile的别名。
 - Stage冻结一个明确的来源定义；来源变化须新建Stage，不覆盖历史。
 - 先交付本机CLI与持久目录，随后接入双语工作台、coverage-aware采集与报告。
-- 复用 `bug_metrics/app/api`、`provider_sync/app/api` 和现有AI Base边界。
+- 复用 `bug_metrics/app/api`、`provider_sync/app/api`；AI执行经进程内`ai-base-runtime`的task-run端口（MDB-2）。
 - 完整摘要/行动、Git原文、成功接受/发布水位沿既有站会要求移植，不重建Chiplet专属应用。
 - HSD-ES以同一公共流程接入；缺少完整评论/历史能力时明确partial/unsupported，不伪装完整。
-- 新增应用AI接入包的明确产物与消费者，区分无工具权威Task和可选交互skill/connector。
+- 新增应用AI接入的明确产物与消费者（`ai_profiles`精确版本profile），区分无工具权威Task和可选只读助手tool。
 - 统一Provider CLI与连接/凭据服务，优先复用Dashboard设置；旧PAT仅按明确目标和受保护采用流程迁移。
 - 以MIG-01至19盘点旧实现、依赖、目标模块、测试与不能直接搬的部分，拆成可执行叶任务。
-- 按用户批准的API-EVO-01允许AI Base/SDK协调式breaking changes；记录精确差异、版本、消费者迁移和验收，不默认永久兼容旧API。
+- 按用户批准的API-EVO-01不默认兼容旧AI接口；2026-11-11起由MDB-2嵌入运行时版本准入记录版本、受影响消费者和验收。
 - 2026-11-02确认报告模板化，以邮件兼容HTML为主产物；支持网页内人工编辑/注释、
   带格式复制和下载，用户明确选择定稿并提交独立数据Git。保留原始摘要、人工修改和
   每日不可变版本；模板切换/编辑不调用模型，Markdown/Excel原要求不取消。
@@ -47,7 +49,7 @@ HTML编辑不包含自动发邮件、任意HTML模板上传、离线编辑回导
 ## Scope And Authorities
 
 Dashboard是产品host；project_management拥有项目/阶段/报告业务。
-bug_metrics拥有可变范围/指标；provider适配器拥有来源解析；AI Base拥有AI执行事实。
+bug_metrics拥有可变范围/指标；provider适配器拥有来源解析；进程内AI Base运行时拥有AI执行事实（MDB-2）。
 本目录tasks.md是此变更唯一执行清单，原chiplet T12没有被自动标完成或恢复。
 详细边界见design.md，阶段与依赖见tasks.md。
 2026-11-01用户另行允许旧Jira token迁移；这是有界credential adoption授权，

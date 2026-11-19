@@ -18,8 +18,7 @@ class ChartJsonUtils:
         for dataset in chart_data.datasets:
             chart_dict['data'].append({
                 'developer': dataset.label,
-                'metrics': dataset.data,
-                'color': dataset.color or dataset.background_color or dataset.border_color
+                'metrics': dataset.data
             })
 
         return json.dumps(chart_dict)
@@ -40,11 +39,7 @@ class ChartJsonUtils:
             chart_dict['datasets'].append({
                 'label': dataset.label,
                 'data': dataset.data,
-                'fill': dataset.fill,
-                'borderColor': dataset.border_color,
-                'backgroundColor': dataset.background_color,
-                'borderWidth': dataset.border_width,
-                'pointRadius': dataset.point_radius
+                'done': dataset.is_done
             })
 
         return json.dumps(chart_dict)

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
 import subprocess
 import sys
-from types import SimpleNamespace
 import uuid
 
 import pytest
@@ -18,7 +16,6 @@ from project_management.out.capture_archive import LocalArchiveRepositoryFactory
 from project_management.out.dashboard_scope_catalog import DashboardScopeCatalog
 from project_management.services.capture import ProjectCaptureService
 from project_management.services.capture_archive import CaptureArchiveService
-from scripts.validation.project_full_stack_base import ExactDynamicVectorExecutor, load_profile
 from scripts.validation.project_full_stack_fixture import (
     ACTOR_SUBJECT,
     CAPTURE_PLACEHOLDER,
@@ -30,7 +27,7 @@ from scripts.validation.project_full_stack_fixture import (
     synthetic_profile_records,
 )
 from scripts.validation.project_full_stack_support import ensure_data_root, initialize_run_dir
-from project_management.tests.summary_fixtures import PACK_ROOT
+from scripts.validation.project_vector_matching import summary_output
 
 
 @pytest.mark.django_db(transaction=True)
@@ -39,27 +36,16 @@ def test_should_accept_only_dynamic_capture_id_fields_in_exact_base_vector(tmp_p
     run_dir.mkdir()
     prepare_catalog(run_dir)
     vector = json.loads((run_dir / 'fixture-vector.json').read_text(encoding='utf-8'))
-    profile = load_profile(PACK_ROOT)
-    vector = {**vector, 'schema_documents': profile['schemaDocuments']}
-    executor = ExactDynamicVectorExecutor(vector, tmp_path / 'observations.jsonl', profile['inputSchema'])
     capture_id = str(uuid.uuid4())
     submitted = bind_capture_id(vector['input_template'], capture_id)
-    compiled = SimpleNamespace(
-        messages=[('user', json.dumps(submitted, ensure_ascii=False, sort_keys=True, separators=(',', ':')))],
-        effective_input_sha256='e' * 64,
-    )
 
-    result = json.loads(asyncio.run(executor.execute(compiled)))
+    result, _ = summary_output(vector, submitted)
 
     assert result['target_capture_id'] == capture_id
     changed = bind_capture_id(vector['input_template'], capture_id)
     changed['evidence'][2]['value']['body'] = 'Changed retained text.'
-    changed_compiled = SimpleNamespace(
-        messages=[('user', json.dumps(changed, ensure_ascii=False, sort_keys=True, separators=(',', ':')))],
-        effective_input_sha256='e' * 64,
-    )
     with pytest.raises(ValueError):
-        asyncio.run(executor.execute(changed_compiled))
+        summary_output(vector, changed)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -123,7 +109,7 @@ def test_should_reject_nonregistered_jira_request_boundaries(tmp_path):
         ])
 
 
-def test_shouldAssembleRuntimeWithPageSizeTwoCaptureLimitWhenUsingQualificationSettings(tmp_path):
+def test_shouldUsePageSizeTwoCaptureLimitWhenUsingQualificationSettings(tmp_path):
     data_root = ensure_data_root(tmp_path / 'data')
     run_dir = data_root / str(uuid.uuid4())
     run_dir.mkdir()
@@ -141,6 +127,36 @@ def test_shouldAssembleRuntimeWithPageSizeTwoCaptureLimitWhenUsingQualificationS
     assert result.returncode == 0, result.stdout + result.stderr
     observed = json.loads(result.stdout)
     assert observed == {'factory_page_size': 2, 'request_page_size': 2}
+
+
+def test_validation_app_config_installs_synthetic_provider_access_boundary(tmp_path):
+    data_root = ensure_data_root(tmp_path / 'data')
+    run_dir = data_root / str(uuid.uuid4())
+    run_dir.mkdir()
+    initialize_run_dir(run_dir, data_root)
+    script = provider_access_probe(run_dir)
+
+    result = subprocess.run(
+        [sys.executable, '-I', '-c', script],
+        cwd=Path.cwd(),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    observed = json.loads(result.stdout)
+    assert observed == {'complete': True, 'snapshots': ['101'], 'external_attempts': 0}
+
+
+def test_owned_layout_uses_model_evidence_directory(tmp_path):
+    data_root = ensure_data_root(tmp_path / 'layout')
+    run_dir = data_root / str(uuid.uuid4())
+    run_dir.mkdir()
+    initialize_run_dir(run_dir, data_root)
+
+    assert (run_dir / 'model').is_dir()
+    assert not (run_dir / 'base').exists()
 
 
 def prepared_project_api():
@@ -172,23 +188,57 @@ import django
 django.setup()
 from django.core.management import call_command
 call_command('migrate', interactive=False, verbosity=0)
-from scripts.validation.project_full_stack_fixture import prepare_catalog, build_runtime_environment
+from scripts.validation.project_full_stack_fixture import prepare_catalog
 from project_management.app.domain.run_admission_values import capture_limits_payload
+from provider_sync.app.api.access_factory import capture_limits_from_settings
+from django.conf import settings
 prepare_catalog(Path({str(run_dir)!r}))
-connection = {{
-    'baseUrl': 'http://127.0.0.1:48640',
-    'sourceAppId': 'metrics-dashboard',
-    'runStoreId': 'store-fixture',
-    'credentialRef': 'synthetic-integration',
-    'token': 'synthetic-token',
-    'grantRevision': 'dashboard-join-1',
-    'limitPolicyRevision': 'base-b-cancel-synthetic-1',
-    'packRoot': {str(PACK_ROOT)!r},
-}}
-runtime = build_runtime_environment(connection)
-payload = capture_limits_payload(runtime.run_service.capture_limits)
+limits = capture_limits_from_settings(settings)
+payload = capture_limits_payload(limits)
 print(json.dumps({{
-    'factory_page_size': runtime.run_service.capture_limits.page_size,
+    'factory_page_size': limits.page_size,
     'request_page_size': payload['page_size'],
 }}, sort_keys=True))
+"""
+
+
+def provider_access_probe(run_dir):
+    return f"""
+import json
+import os
+from pathlib import Path
+import socket
+import sys
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
+sys.path.insert(0, {str(Path.cwd())!r})
+os.environ['DJANGO_SETTINGS_MODULE'] = 'scripts.validation.project_full_stack_settings'
+os.environ['METRICS_PROJECT_FULL_STACK_RUN_DIR'] = {str(run_dir)!r}
+os.environ['METRICS_PROJECT_FULL_STACK_BOOTSTRAP'] = '1'
+attempts = []
+def deny(*args, **kwargs):
+    attempts.append(repr(args[:1]))
+    raise AssertionError('external network was attempted')
+socket.socket.connect = deny
+socket.socket.connect_ex = deny
+socket.create_connection = deny
+import django
+django.setup()
+from django.core.management import call_command
+call_command('migrate', interactive=False, verbosity=0)
+from scripts.validation.project_full_stack_fixture import prepare_catalog
+catalog = prepare_catalog(Path({str(run_dir)!r}))
+from provider_sync.app.api.access_factory import create_provider_access_service
+from provider_sync.app.api.access_contracts import AccessContext, CaptureLimits
+from project_management.app.api import ProjectActor
+service = create_provider_access_service()
+context = AccessContext(
+    ProjectActor(catalog['actor']), catalog['project_id'], catalog['stage_id'],
+    str(uuid4()), str(uuid4()), datetime.now(UTC) + timedelta(minutes=5),
+    CaptureLimits(page_size=2),
+)
+with service.open_capture(context, online=True) as lease:
+    membership = service.enumerate(lease)
+    rows = [item.identity.stable_id for item in membership.members]
+print(json.dumps({{'complete': membership.coverage.state == 'complete', 'snapshots': rows, 'external_attempts': len(attempts)}}, sort_keys=True))
 """

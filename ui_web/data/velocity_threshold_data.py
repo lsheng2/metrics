@@ -6,7 +6,6 @@ from typing import List
 class VelocityLevelThreshold:
     level_name: str
     threshold: float
-    color: str
 
 
 @dataclass(slots=True)

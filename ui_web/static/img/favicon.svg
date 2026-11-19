@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+    <style>
+        .tile { fill: #1c2024; }
+        .bar { fill: #ffffff; }
+        @media (prefers-color-scheme: dark) {
+            .tile { fill: #edeef0; }
+            .bar { fill: #111113; }
+        }
+    </style>
+    <rect class="tile" width="32" height="32" rx="7"/>
+    <rect class="bar" x="7.5" y="16" width="4.5" height="9" rx="1.5"/>
+    <rect class="bar" x="13.75" y="7" width="4.5" height="18" rx="1.5"/>
+    <rect class="bar" x="20" y="12" width="4.5" height="13" rx="1.5"/>
+</svg>

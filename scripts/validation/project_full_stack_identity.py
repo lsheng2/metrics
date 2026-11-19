@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from pathlib import Path
-import importlib
 import time
 import uuid
 from urllib.parse import urlsplit
@@ -12,17 +11,9 @@ from scripts.service_lifecycle_engine import StopResult
 from scripts.service_lifecycle_engine.provenance import command_fingerprint
 from scripts.validation.project_full_stack_support import digest_file, json_lines, read_json, safe_url, write_json
 from scripts.validation.project_summary_support import worker_matches_process
-from scripts.validation.project_summary_support import (
-    owned_work_root, sdk_selection, sdk_selection_digest, verify_base_source, verify_installed_sdk,
-)
 
 
-APP_ID = 'metrics-dashboard'
-CREDENTIAL_REF = 'synthetic-integration'
-CONTRACT_VERSION = 'task-run/1'
-PACK_VERSION = '0.1.0a2'
-GRANT_REVISION = 'dashboard-join-1'
-LIMIT_REVISION = 'base-b-cancel-synthetic-1'
+MODEL_QUALIFICATION = 'loopback_openai_compatible'
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,81 +102,23 @@ def write_exit_receipt(path: Path, *, service: str, launch_id: str, pid: int, ex
     }, replace=path.exists())
 
 
-def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, default_base_python: Path, app_python: Path, allowed_work_roots=()) -> None:
-    work = work_root_for_manifest(manifest, root, allowed_work_roots)
-    if manifest.get('schema_version') != 1 or manifest.get('execution_mode') != 'synthetic':
+def validate_manifest(run_dir: Path, manifest: dict, *, root: Path, app_python: Path) -> None:
+    if manifest.get('schema_version') != 2:
         raise ValueError('Runtime manifest schema is invalid.')
     expected_paths = {
         'repository': root.resolve(),
         'run_dir': run_dir.resolve(),
-        'base_source': work / 'base-source',
-        'pack_root': work / 'artifacts' / 'contract-pack',
     }
     for key, expected in expected_paths.items():
         if Path(manifest[key]).resolve(strict=True) != expected:
             raise ValueError(f'Runtime manifest {key} is not trusted.')
-    if Path(manifest['base_python']).resolve(strict=True) != default_base_python.resolve(strict=True):
-        raise ValueError('Runtime manifest Base interpreter is not trusted.')
     if Path(manifest['app_python']).resolve(strict=True) != app_python.resolve(strict=True):
         raise ValueError('Runtime manifest app interpreter is not trusted.')
-    selection = sdk_selection(work)
-    if (manifest.get('sdk_version', '0.1.0a2') != selection['sdk_version']
-            or manifest.get('sdk_selection_sha256') != sdk_selection_digest(work)):
-        raise ValueError('Runtime manifest SDK identity mismatch.')
-    verify_base_source(work, Path(manifest['base_source']).resolve(strict=True))
-    sdk = importlib.import_module('ai_base_application_sdk')
-    if verify_installed_sdk(work, sdk) != manifest.get('sdk_wheel_sha256'):
-        raise ValueError('Runtime manifest SDK identity mismatch.')
-    if digest_file(Path(manifest['pack_root']) / 'manifest.json') != manifest.get('contract_pack_manifest_sha256'):
-        raise ValueError('Runtime manifest contract pack identity mismatch.')
-    if selection.get('contract_pack_manifest_sha256', manifest['contract_pack_manifest_sha256']) != manifest['contract_pack_manifest_sha256']:
-        raise ValueError('Selected SDK contract pack identity mismatch.')
     if digest_file(run_dir / 'fixture-vector.json') != manifest['catalog'].get('fixture_vector_sha256'):
         raise ValueError('Runtime manifest vector identity mismatch.')
     from scripts.validation.project_week_scenarios import validate_scenario
     validate_scenario(manifest, read_json(run_dir / 'fixture-vector.json'))
     validate_catalog_route(manifest)
-
-
-def resolve_qualification_work_root(value: Path, root: Path, approved_work_roots) -> Path:
-    try:
-        return owned_work_root(value, root)
-    except ValueError:
-        candidate = Path(value).resolve(strict=True)
-        if candidate not in {path.resolve(strict=False) for path in approved_work_roots}:
-            raise
-        return candidate
-
-
-def relocated_manifest(run_dir: Path, manifest: dict, work: Path, *, root: Path, default_base_python: Path, app_python: Path, allowed_work_roots=()) -> dict:
-    if manifest.get('sdk_version', '0.1.0a2') != sdk_selection(work)['sdk_version']:
-        raise ValueError('SDK selection cannot be changed for a retained run.')
-    base_source = (work / 'base-source').resolve(strict=True)
-    pack_root = (work / 'artifacts' / 'contract-pack').resolve(strict=True)
-    provenance = verify_base_source(work, base_source)
-    sdk = importlib.import_module('ai_base_application_sdk')
-    updated = {
-        **manifest,
-        'base_source': str(base_source),
-        'pack_root': str(pack_root),
-        'base_source_provenance': provenance,
-        'sdk_wheel_sha256': verify_installed_sdk(work, sdk),
-        'sdk_selection_sha256': sdk_selection_digest(work),
-        'contract_pack_manifest_sha256': digest_file(pack_root / 'manifest.json'),
-    }
-    validate_manifest(run_dir, updated, root=root, default_base_python=default_base_python,
-                      app_python=app_python, allowed_work_roots=allowed_work_roots)
-    return updated
-
-
-def work_root_for_manifest(manifest: dict, root: Path, allowed_work_roots) -> Path:
-    base_source = Path(manifest['base_source']).resolve(strict=True)
-    work = base_source.parent
-    allowed = {Path(value).resolve(strict=False) for value in allowed_work_roots}
-    allowed.add((root / '.tmp' / 'task-run-w5').resolve(strict=False))
-    if work not in allowed or base_source != work / 'base-source':
-        raise ValueError('Runtime manifest work root is not trusted.')
-    return work
 
 
 def validate_catalog_route(manifest: dict) -> None:
@@ -202,43 +135,36 @@ def status_url(port: int, manifest: dict) -> str:
     return safe_url(port, manifest['routes']['project_stage_reports'])
 
 
-def wait_valid_connection(run_dir: Path, descriptor: LaunchDescriptor, state: dict, manifest: dict, *, platform_ops, expected_store=None, seconds=20.0) -> dict:
+def wait_valid_model_connection(run_dir: Path, descriptor: LaunchDescriptor, state: dict, manifest: dict, *, platform_ops, seconds=20.0) -> dict:
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         if descriptor.connection_file and descriptor.connection_file.exists():
             connection = read_json(descriptor.connection_file)
-            validate_connection(connection, descriptor, state, manifest, platform_ops=platform_ops, expected_store=expected_store)
-            write_json(run_dir / 'base' / 'connection.json', connection, replace=True)
+            validate_model_connection(connection, descriptor, state, manifest, platform_ops=platform_ops)
+            write_json(run_dir / 'model' / 'connection.json', connection, replace=True)
             return connection
         time.sleep(0.05)
-    raise TimeoutError('Timed out waiting for current Base connection publication.')
+    raise TimeoutError('Timed out waiting for current model connection publication.')
 
 
-def validate_connection(connection: dict, descriptor: LaunchDescriptor, state: dict, manifest: dict, *, platform_ops, expected_store=None) -> None:
-    required = {'executionMode', 'qualification', 'contractVersion', 'packVersion', 'pid', 'scopeKey',
-                'sourceAppId', 'baseUrl', 'credentialRef', 'token', 'runStoreId', 'stopFile',
-                'grantRevision', 'limitPolicyRevision', 'packRoot', 'launchId', 'exitFile'}
-    if set(connection) < required:
-        raise ValueError('Base connection schema is incomplete.')
-    url = urlsplit(connection['baseUrl'])
-    if (connection['executionMode'] != 'synthetic' or connection['qualification'] != 'synthetic_only'
-            or connection['contractVersion'] != CONTRACT_VERSION or connection['packVersion'] != PACK_VERSION
-            or connection['sourceAppId'] != APP_ID or connection['credentialRef'] != CREDENTIAL_REF
-            or connection['grantRevision'] != GRANT_REVISION or connection['limitPolicyRevision'] != LIMIT_REVISION
-            or connection['scopeKey'] != manifest['catalog']['scope_key']
-            or connection['launchId'] != descriptor.launch_id
-            or Path(connection['stopFile']).resolve(strict=False) != descriptor.stop_file
-            or Path(connection['exitFile']).resolve(strict=False) != descriptor.exit_file
-            or Path(connection['packRoot']).resolve(strict=True) != Path(manifest['pack_root']).resolve(strict=True)
-            or not isinstance(connection['token'], str) or not connection['token']
-            or not isinstance(connection['runStoreId'], str) or not connection['runStoreId']
-            or (expected_store is not None and connection['runStoreId'] != expected_store)
+def validate_model_connection(connection: dict, descriptor: LaunchDescriptor, state: dict, manifest: dict, *, platform_ops) -> None:
+    required = {'schema_version', 'qualification', 'pid', 'base_url', 'model', 'api_key',
+                'stop_file', 'launch_id', 'exit_file'}
+    if not isinstance(connection, dict) or set(connection) != required:
+        raise ValueError('Model connection schema is invalid.')
+    url = urlsplit(connection['base_url'])
+    if (connection['schema_version'] != 1 or connection['qualification'] != MODEL_QUALIFICATION
+            or connection['launch_id'] != descriptor.launch_id
+            or Path(connection['stop_file']).resolve(strict=False) != descriptor.stop_file
+            or Path(connection['exit_file']).resolve(strict=False) != descriptor.exit_file
+            or connection['model'] != 'scripted'
+            or not isinstance(connection['api_key'], str) or not connection['api_key']
             or url.scheme != 'http' or url.hostname != '127.0.0.1' or url.port != int(state['port'])
-            or url.username or url.password or url.query or url.fragment or url.path not in ('', '/')):
-        raise ValueError('Base connection identity is invalid.')
+            or url.username or url.password or url.query or url.fragment or url.path != '/v1'):
+        raise ValueError('Model connection identity is invalid.')
     proof = validate_process_proof(descriptor, state, platform_ops=platform_ops, worker_pid=int(connection['pid']))
     if int(connection['pid']) != int(proof['worker_pid']):
-        raise ValueError('Base connection does not match SLE process provenance.')
+        raise ValueError('Model connection does not match SLE process provenance.')
 
 
 def validate_process_proof(descriptor: LaunchDescriptor, state: dict, *, platform_ops, worker_pid: int | None = None) -> dict:
@@ -285,7 +211,7 @@ def process_relation(candidate: int, wrapper_pid: int, command: tuple[str, ...],
             return 'registered_wrapper'
         return None
     reference = ProcessReference(wrapper_pid, command, platform_ops)
-    return 'w5_worker_child' if worker_matches_process(candidate, reference) else None
+    return 'worker_child' if worker_matches_process(candidate, reference) else None
 
 
 def stdout_offset(service_state: dict) -> int:

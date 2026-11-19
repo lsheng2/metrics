@@ -48,7 +48,7 @@ Save依然不是Finalize，旧页面的缓存不能绕过锁内revision/hash检�
 [执行计划](../../changes/add-provider-neutral-project-reporting/performance-execution.md)
 和[任务](../../changes/add-provider-neutral-project-reporting/tasks.md)。
 
-### 已验证的演示
+### 历史演示与当前验证入口
 
 2026-11-06验收使用真实Django/worker、Git、安装SDK0.2.0a1和Base HTTP，
 Jira响应与模型输出均为明确的合成内容。首日三次派发产生三份已接受摘要，
@@ -59,26 +59,16 @@ Jira响应与模型输出均为明确的合成内容。首日三次派发产生�
 原单票演示仍作为[历史证据](../../changes/add-provider-neutral-project-reporting/manual-workflow-delivery.json)保留，
 不再用旧`.venv`启动迁移后的报告代码。
 
-资格测试服务已正常停止。HTML位于下方数据根的
+资格测试服务已正常停止。历史数据根
+`D:\AIGC\scrum_dashboard_validation\full-stack\aa2fb399-4557-4342-b725-8de2dab91aba` 中的HTML位于
 `evidence/canonical/20261030/report.html`和`evidence/canonical/20261102/report.html`。
-再次打开隔离合成应用时，从本仓执行：
+这些发布文件保持不变，但旧环境与旧运行清单不能用于验证迁移后的代码。
+当前候选由`ai_host/runtime_artifact.json`固定；按
+[开发验证指南](../../../docs/development/reporting-delivery.md#served-runtime-join)
+新建受控数据目录，经`serve`和loopback假模型运行、重启、只读恢复及正常停止。
+当前摘要与报告辅助联调不等于旧整周验收已自动转移到新候选；完整资格仍由MDB-2账本记录。
 
-```powershell
-$run = 'D:\AIGC\scrum_dashboard_validation\full-stack\aa2fb399-4557-4342-b725-8de2dab91aba'
-$reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe'
-& $reportingPython -I scripts/validation/project_full_stack.py start --run-dir $run --lifetime-seconds 1800
-```
-
-使用命令成功返回的URL。本次地址为
-`http://127.0.0.1:8127/projects/3bc2224e-a6ce-4f85-be43-3c63223a9125/stages/2e4ffd3f-4fb7-46f0-84ea-2b194bfa34d9/reports/`。
-合成账号为`SYNTHETIC_ALICE`，密码为`SYNTHETIC_ALICE_PASSWORD`；
-它们不是公司凭据。演示应用会话限时1800秒。正常退出：
-
-```powershell
-& $reportingPython -I scripts/validation/project_full_stack.py stop --run-dir $run
-```
-
-这些命令复用已验证的本机输入、原store与数据根，不是正式安装器。
+该验证入口不是正式安装器。
 旧项目配置Demo、真实数据库和正式定时任务没有在本轮迁移或启用。
 旧模板继续保留原始摘要与详细审计表。新建模板时优先选择“精简每日站会”或
 “精简每周站会”，正文使用有效notes与AR，完整审计通过独立附件获取。
@@ -185,6 +175,10 @@ English/简体中文来自Django gettext静态资源。语言选择、页面`lan
 旧的项目/阶段配置Demo不会自动升级到这些源码。
 
 列表每页20条并保留采集游标；过多记录明确拒绝，不把截断结果或Git故障显示为空列表。
+只有阶段archive目录确实不存在才算尚未建档：显示Run，GET不创建文件。已存在的目录在打开前
+未通过路径或身份校验（如空目录或`ARCHIVE_IDENTITY_MISMATCH`）时，`ReportQueryService.workspace()`
+返回`REPORT_ARTIFACT_INVALID`：页面以400显示“Report artifact is invalid.”，不显示Run、不创建文件，
+也不当作缺失报告或空工作台；存储不可用或不支持读取仍返回`REPORT_STORAGE_UNAVAILABLE`。
 保存支持多条注释，未显式删除的旧注释会保留。Copy与Finalize仅作用于精确已保存修订，
 有未保存修改时禁用；切换界面语言不会悄悄丢弃或保存这些修改。
 定稿确认显示实际注册的数据archive UUID、项目和阶段，不暴露路径或让用户输入remote。
@@ -391,12 +385,12 @@ Saved capture或Refresh source。采集选项显示UTC截止时间和短ID，来
 CLI使用同一准备服务。`project_run preview`返回系列策略hash和正式baseline引用，
 `prepare`要求显式`--expected-series-policy-hash`，非初始基线还要提供其publication ID、
 manifest hash和commit。`--source-mode saved_capture --analysis-mode manual_only`不依赖
-Base运行；`--source-mode refresh --execute-local`使用已配置的同一worker同步执行。
+嵌入运行时；`--source-mode refresh --execute-local`使用已配置的同一worker同步执行。
 `reprepare`要求原准备ID及精确operation/draft修订。`start/status/cancel/resume`保持原格式；
 CLI身份仍为可信`local_operator`，不允许通过参数伪造浏览器用户。
 
 ```powershell
-$reportingPython = Join-Path (Get-Location) '.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe'
+$reportingPython = 'D:\AIGC\temp\aib2-lanes\dashboard-stream-cleanup-20261117-01\venv\Scripts\python.exe'
 & $reportingPython manage.py project_run preview $ProjectId $StageId --series-id $SeriesId --meeting-date 2026-10-26 --template-id $TemplateId --template-revision 1 --template-revision-hash $TemplateHash
 ```
 
@@ -468,10 +462,11 @@ Markdown嵌套表及不支持结构明确失败；原HTML仍可下载。
 HSDES直接由Stage的saved-query profile路由，不伪造Jira scope。
 
 AI填写是单独的候选操作，不是模板渲染或生成报告的默认副作用。
-手工编辑不依赖Base；候选先审阅再保存，继续沿原显式定稿/Git/权限边界。
-独立`project-reporting.authoring@1`使用SDK0.2.0a1和原a2的`task-run/1` wire；
-不改变summary@review-1或把合成资格当成正式模型资格。实际接口和限定证据见
-[ASSIST合同](../../changes/add-provider-neutral-project-reporting/assist-execution.md)。
+手工编辑不依赖嵌入运行时；候选先审阅再保存，继续沿原显式定稿/Git/权限边界。
+应用自有`metrics.report_authoring@1`与`metrics.project_summary@1`使用同一宿主的
+typed task-run端口，但分别验证自己的输入、输出与接受规则；合成资格不是正式模型资格。
+当前接线与限定证据见[开发验证指南](../../../docs/development/reporting-delivery.md#assist-validation)；
+[ASSIST合同](../../changes/add-provider-neutral-project-reporting/assist-execution.md)保留业务接受规则的历史依据。
 原模板设计器backlog只提升为受控block/slot模板库；任意脚本/CSS/像素布局引擎仍非本次范围。
 
 #### 显式AI辅助
@@ -491,12 +486,13 @@ AI填写是单独的候选操作，不是模板渲染或生成报告的默认副
 - Apply后尚未保存就手改时，临时AI凭证被清除，按人工内容保存。已保存的AI内容再被人工修改，
   则保留其AI来源引用并标注人工修改；归档和翌日继承使用最终有效富文本，不重放原候选。
 
-默认没有运行资格，不会创建Base客户端。运维须在Django settings中显式设置
-`METRICS_REPORT_ASSIST_FACTORY`为服务端callable或导入路径，接口为
-`factory(*, draft_service, contract) -> ReportAssistService`。该factory提供经过资格验证的
-backend/grant与SDK client factory；浏览器不能提交endpoint、token或profile。
-普通`.env`键不会自动注册此factory，也不会因已有summary grant而自动授权authoring。
-缺失/损坏的authoring bundle只阻断AI，不阻断人工草稿。
+`manage.py serve`经候选准入后托管嵌入运行时。服务端配置
+`METRICS_AI_MODEL_BASE_URL`、`METRICS_AI_MODEL_NAME`与`METRICS_AI_MODEL_API_KEY`，
+并启用`METRICS_PROJECT_RUN_ENABLED`，由现有组合根安装项目运行时。
+`build_report_assist_service`取得该运行时的task-run端口与主体解析器，
+加载应用自有`metrics.report_authoring@1`；不接受另一个客户端工厂或旧后端授权记录。
+浏览器不能提交endpoint、token或profile。未配置模型、运行时不可用或authoring档案
+缺失/损坏时不能生成AI候选，手工草稿编辑与保存仍可使用。
 
 ### 内部报告数据读取
 
@@ -535,7 +531,7 @@ backend/grant与SDK client factory；浏览器不能提交endpoint、token或pro
 ### 内部取消接口
 
 `SummaryAnalysisService.cancel`先将取消意图写入原attempt归档，再查询原key或取消
-已核验的原run。尚未派发时不创建SDK客户端。取消意图与派发/接受共享原有写锁，
+已核验的原run。尚未派发时不创建运行时任务。取消意图与派发/接受共享原有写锁，
 能阻止新派发和迟到结果接受；已经接受的历史摘要不被撤销。
 正常观察上限仍为16，取消有独立保留槽，控制网络调用共用10秒预算。
 远端停止无法确认时保持unknown，不假称退款或进程已经停止，也不换新key重派。
@@ -546,10 +542,11 @@ backend/grant与SDK client factory；浏览器不能提交endpoint、token或pro
 ### 内部手动运行器
 
 `project_management.app.api.project_runs`提供`ProjectRunService`和
-`ProjectRunWorker`。运行器、宿主线程、CLI和网页入口已通过专项测试及独立代码复核，
-但不能将这些服务测试当成浏览器到实际Base HTTP的验收。
+`ProjectRunWorker`。MDB-2 正在将调用方迁入进程内运行时；已有测试只证明其记录的
+切片，不代表 Dashboard 页面、AI pane 与审批发布的联合验收已完成。
 
-一次手动运行保存原请求、项目/阶段/操作者、后端身份、截止时间和采集预算。
+一次手动运行以 schema 3 保存原请求、项目/阶段/操作者、宿主主体、精确任务档案、
+截止时间和采集预算。旧 active operation 格式被拒绝，不做兼容读取或就地迁移。
 同一命令重放使用原操作，不重新分配capture/attempt或延长期限。事件日志在独立
 数据目录的`runtime/operations`中，完整准入记录hash与逐次事件链分别核验。
 状态文件缺失可只读投影，损坏记录、非法状态变化和过期推理明确拒绝。
@@ -557,13 +554,15 @@ backend/grant与SDK client factory；浏览器不能提交endpoint、token或pro
 
 Worker调用既有采集、分析和草稿服务。无变化来源复用原接受摘要；未覆盖成员保持pending，
 不因缺数据判为关闭，也不因模型unknown换新key重试。取消与分析准备/派发/接受共享
-归档写锁下的检查，远端取消使用原SDK边界和共享控制预算。恢复保留逐票的attempt及
+归档写锁下的检查，取消经同步任务端口并共享剩余控制预算。提交结果不确定时只用
+原请求 lookup，不以再次 start 代替查询。恢复保留逐票的attempt及
 已接受摘要；终态只能重放，不能继续增加修订。
 运行只产生明确版本的草稿，不自动定稿、发送邮件、push或启用定时。
 
 ### 显式宿主
 
-`project_serve --host 127.0.0.1 --port <port>`显式安装并启动一个串行worker。
+`manage.py serve --host 127.0.0.1 --port <port>`组合 Django 与单个嵌入式运行时，
+在项目运行功能启用时注入同步 task-run 端口并启动一个串行 worker。
 普通`runserver`、模块导入和页面GET都不会启动它。原生运行结束会输出结构化
 `project_runtime_stopped`记录；启动/服务/清理失败、worker未退出或有未决工作均返回非零。
 `project_run`提供status以及显式本地执行的start/cancel/resume命令，复用同一套业务服务。
@@ -575,10 +574,10 @@ Worker调用既有采集、分析和草稿服务。无变化来源复用原接�
 每次仅一个只读请求；读取失败保留最后观察值并显示不可用提示，不自动重交任务。
 原运行产出的修订链接与最新编辑器分开；较新的定稿不会把旧草稿误标为final。
 
-默认`METRICS_PROJECT_RUN_ENABLED=false`。当前a2只具备synthetic资格，
-普通设置即使开启也不能激活真实provider/model；验证环境使用显式受信
-`METRICS_PROJECT_RUNTIME_FACTORY`。不能靠改execution_mode或填写token升级资格。
-浏览历史运行不依赖AI端点可用，也不创建provider/SDK客户端。
+默认`METRICS_PROJECT_RUN_ENABLED=false`。组合根显式注入 task-run 端口与宿主主体解析器，
+不再通过旧工厂设置或 execution mode 选择后端。本地 CLI 在显式执行期间持有独立
+运行时上下文；清理失败输出错误 JSON 后以 3 退出。功能开关和凭据配置都不等于
+真实 provider/model 的验收授权。浏览历史运行不依赖 AI 可用，也不创建 provider 客户端。
 可重复的合成启动/停止命令与实际结果见本文开头的已验证演示。
 
 部署需要既有Django session表和project_management migration。本次只迁移专属合成测试库，
@@ -612,7 +611,7 @@ Ego桌面验证保留在本地`.tmp/project-reporting-w2/browser/`，不将合�
 相关方案见[design](../../changes/add-provider-neutral-project-reporting/design.md)和
 [capability delta](../../changes/add-provider-neutral-project-reporting/specs/project-reporting/spec.md)。
 
-## 后续接入与移植
+## 接入状态与演进资料
 
 统一 `provider_access` 的诊断入口和内部采集API已经实现；
 默认生产配置中的capture/operation仍未启用，专属演示runtime只运行合成白名单。
@@ -620,54 +619,41 @@ Ego桌面验证保留在本地`.tmp/project-reporting-w2/browser/`，不将合�
 首次完整输入、无变化复用及有界累计delta已贯通，完整大输入/来源能力与正式资格仍未完成。
 连接解析与本机`provider_credentials`采用代码已实现，完整门禁状态见任务清单；
 操作与限制见[Provider连接与凭据](provider-credentials.md)，尚未采用用户真实凭据。
-详细设计现在已补入同一OpenSpec：
+当前运行时接入以 [MDB-2 设计](../../changes/embed-ai-base-runtime-in-process/design.md)
+和[开发验证指南](../../../docs/development/reporting-delivery.md)为准。
+以下资料用于追溯此前的接入设计与迁移讨论，不代表当前接口或完成状态：
 
 - [应用AI接入包](../../changes/add-provider-neutral-project-reporting/application-integration.md)：哪些CLI/prompt/schema必须有，哪些skill/connector只是可选交互。
 - [Provider访问与凭据](../../changes/add-provider-neutral-project-reporting/provider-access.md)：复用Dashboard设置、显式站点绑定和受保护旧PAT采用，默认不复制token。
 - [旧实现移植清单](../../changes/add-provider-neutral-project-reporting/migration-catalog.md)：MIG-01至19的来源、目标、测试及不能直接搬的依赖。
 - [叶任务与验收](../../changes/add-provider-neutral-project-reporting/integration-execution.md)：W3-W7的API消费者、依赖、拒绝路径和原生资格。
-- [基座公共增强请求](../../changes/add-provider-neutral-project-reporting/ai-base-enhancement-request.md)：基座/SDK需独立完善的中立能力、RCA/SoC/Sample/Dashboard实际消费者影响、回归门槛及可转交提示词；尚未实施。
+- [基座公共增强请求](../../changes/add-provider-neutral-project-reporting/ai-base-enhancement-request.md)：历史能力请求、消费者影响与回归门槛讨论。
 - [API演进与迁移记录](../../changes/add-provider-neutral-project-reporting/ai-api-evolution.md)：用户批准的API-EVO-01、breaking change记录格式及逐应用迁移要求。
 - [AI Base review与增强handoff](../../changes/add-provider-neutral-project-reporting/ai-base-review-handoff.md)：项目背景、日常流程、转向原因、业务到API映射，以及提示词、其他应用影响和返回产物。
-- [设计冻结回执与接入材料](../../changes/add-provider-neutral-project-reporting/ai-base-review-response.md)：第10节FZ-01绑定task-run/1精确设计及schema版本；BASE-A实现包已交付，资格边界见下文。
+- [历史设计冻结回执与接入材料](../../changes/add-provider-neutral-project-reporting/ai-base-review-response.md)：保留FZ-01与BASE-A交付时的设计和schema证据，不作为当前嵌入运行时的配置或接口依据。
 
-基座最终`task-run/1`设计已获应用方冻结确认，基座已登记FZ-01并交付BASE-A；双方CF语义一致。
-边界包括逐app签名service-account、operator精确scope、持久runStoreId、分期留存、
-应用绑定input_hash，以及已有key重放先于新准入；新Stage创建不等于获得AI权限。
-Dashboard端正式模型profile仍未注册或部署；冻结回执不等于生产资格。
+Dashboard 通过 `ai_host` 在自身进程内托管一个 AIB runtime，使用同源 AI pane
+和 App-owned 同步 task-run 端口。候选 wheel 的精确版本、来源和 SHA256 由
+[`ai_host/runtime_artifact.json`](../../../ai_host/runtime_artifact.json)固定并在使用前校验。
+摘要和报告辅助分别引用 `metrics.project_summary@1` 与 `metrics.report_authoring@1`；
+schema、instructions 和定义摘要由 `project_management/ai_profiles` 的应用档案提供。
+这些应用策略不会变成其他 App 的默认策略。
 
-基座已交付a2 contract pack和Python wheel；Dashboard的可选开发依赖为
-`requirements-ai-task.txt`，当前报告验证选择SDK0.2.0a1及原a2的21文件pack。
-保留主`.venv`仍是旧SDK0.1.0a2，不用于迁移后的报告验证。选择的环境和SDK接入资格
-见[验证指南](../../../docs/development/reporting-delivery.md)，不等于真实provider/model已启用。
-双方可按[并行交付与汇合点](../../changes/add-provider-neutral-project-reporting/integration-execution.md)
-分别推进BASE-B与应用业务，无需互相等待整阶段完成；后续业务波次仍按本地评审和依赖推进。
-当前跨仓执行入口为[execution-handoff](../../changes/add-provider-neutral-project-reporting/execution-handoff.md)，
-双方各写本仓OpenSpec；不是由Dashboard代写基座内部实现。
-[C0 SDK进件计划](../../changes/add-provider-neutral-project-reporting/sdk-intake-plan.md)已细化环境、
-接口、12个验证用例和退出条件。C0.N1已落地为
-[可运行验证脚本](../../../scripts/validation/test_task_run_sdk_intake.py)，12例全部通过；
-C0.R、W1.R和W2.R已通过隔离候选的独立评审；新的业务接线由W5.JOIN单独验证。
-这些是已安装SDK的MockTransport测试，不是基座服务或项目报告验收。
-BASE-B及Dashboard后续波次仍须各owner按包达到就绪标准，具体等待点见execution-handoff第4节。
+Project run 的 schema-v3 请求记录保存原始主体、精确档案及定义摘要、配置模型身份和
+运行时版本。缺少实际运行身份时拒绝 AI 准入，不以占位身份或旧接口继续执行。
+历史业务发布保留原始字节；不支持的 active wire 格式明确报错，不静默转换。
+当前开发环境与复验命令见[验证指南](../../../docs/development/reporting-delivery.md)。
+候选消费通过不等于真实 provider/model 或全部部署姿态已经取得资格。
 
-用户于2026-11-01批准早期协调式API重构，取代此前默认向后兼容策略。
-基座可修改SDK、Chat/Task、身份注册以及SoC同步/回调形式，应用按版本化迁移包更新，
-不要求永久保留旧接口。但RCA草稿/任务关联、SoC patch/signoff、Dashboard批准与历史归属
-仍须按目标合同验证，不能以“允许breaking”为由删除业务保证。
-本应用已完成C0.N1安装SDK验证，生产AI资格及既有工作台迁移尚未完成。未支持的旧版本应明确拒绝，
-不能静默fallback；已有工作台的受影响调用由W5.MIGRATE处理，不属于可选新助手。
-英文、无工具、完整输入等严格报告策略仍是本应用profile，不强加给其他应用。
-
-同一Jira URL不代表两个凭据视野相同；UI/worker/CLI将共用ProviderAccessService，
-不直连Jira数据库，不在认证失败后试另一个token。权威摘要模型无需直接访问Jira或调用CLI。
-上述设计不是已实现行为；旧库源码/测试、凭据、运行历史和进程接管按四种不同边界分别迁移。
+UI、worker 和 CLI 复用 ProviderAccessService，不直连 Jira 数据库，也不在认证失败后
+尝试另一个 token。验证组合使用专用 provider 夹具与确定性模型，通过真实 `serve`
+完成请求；旧架构的历史结果只保留在相应 change 的证据中。
 
 ## 严格摘要切片
 
 内部入口为 `project_management.app.api.summary_analysis.SummaryAnalysisService`。
-`prepare`只读获准归档并持久化原始attempt；`advance`通过已安装Task SDK推进一次观察，
-不会在丢回包后自动换key或重新POST。输入、派发声明、观察及accepted summary共用原有
+`prepare`只读获准归档并持久化原始attempt；`advance`通过同步 task-run 端口推进观察，
+不会在丢回包后自动换 key 或再次提交。输入、派发声明、观察及 accepted summary 共用原有
 Git归档、锁和空间占用配额，不另建一份attempt数据库。
 
 当前切片支持首次完整输入、100版本/64证据/65536字节以内的累计delta与无变化复用。
@@ -676,19 +662,20 @@ Git归档、锁和空间占用配额，不另建一份attempt数据库。
 所以每个保留版本都须另查完整性；partial/access-lost或中间A→B→A不能算无变化。
 超长/超限多版本/未支持附件与依赖不会静默裁剪；完整索引、导入及大输入仍属后续W4/W5工作。
 旧已接受尝试不阻断新输入；未决提交保留原key/deadline/预算，已验证终态才允许不同输入。
-有界增量的SDK0.2真实本地HTTP与报告读取证据见
-[delta-core](../../changes/add-provider-neutral-project-reporting/delta-core.md)。
-已验证的联合场景使用真实应用目录/归档/API、安装a2 SDK和专属Base HTTP服务：
-1次合成执行产生1份accepted summary，重建应用服务后无变化复用不增加执行。
-这不是收费模型解读质量资格；测试executor只返回明确登记的合成结果。
+此前 HTTP 接入的有界增量证据保留在
+[delta-core](../../changes/add-provider-neutral-project-reporting/delta-core.md)，不作为当前接口说明。
+当前联合验证使用真实应用目录/归档、安装的 runtime 候选和确定性模型，
+覆盖单次执行、重复观察及恢复后的复用；真实模型解读质量仍需单独资格。
 
-接受前校验Base原snapshot/result的身份、scope、grant/限额策略、期限、profile及hash，
+接受前校验 runtime 原 snapshot/result 的主体、run、期限、精确 profile 及 hash，
 再核对引用、引文、未确认负责人和源版本CAS。模型不生成本地input_hash，平台原content/hash
 不改写。review-1的blockers/limitations是引用ID；历史字段值只作上下文，不能单独证明
 当前明确下一负责人。当前基本文字检查也不等于已完成真实模型语言/内容质量资格。
 
 联合验证使用显式的独立D盘数据根；代码、来源Git、模型运行库和验证回执分离。
-`--resume-source`只复用尚无attempt的合成采集检查点，不代表已实现原生Run冷恢复。
-精确接口、命令、源码移植范围和资格边界见
+W5.JOIN时期的`project_summary_join.py`已于2026-11-10删除；其`--resume-source`只复用尚无attempt的
+合成采集检查点，从未代表原生Run冷恢复。当前联合资格验证使用`project_full_stack.py`，见
+[验证指南](../../../docs/development/reporting-delivery.md)。
+精确接口、源码移植范围、资格边界及历史命令见
 [W5.JOIN实施包](../../changes/add-provider-neutral-project-reporting/early-ai-integration.md)。
 手动Run按钮现已消费该切片并通过合成验证；定时任务、真实凭据采用及自动发布未启用。

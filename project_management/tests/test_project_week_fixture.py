@@ -1,4 +1,3 @@
-import asyncio
 from copy import deepcopy
 import importlib
 import json
@@ -7,10 +6,10 @@ from types import SimpleNamespace
 import pytest
 
 from project_management.app.domain.capture_values import canonical_bytes, content_hash
-from project_management.tests.summary_fixtures import PACK_ROOT, SummaryScenario
+from project_management.tests.summary_fixtures import SummaryScenario
 from scripts.validation.project_full_stack import build_parser
-from scripts.validation.project_full_stack_base import ExactDynamicVectorExecutor, load_profile
 from scripts.validation.project_full_stack_fixture import build_vector
+from scripts.validation.project_vector_matching import summary_output
 
 
 def fixture():
@@ -52,43 +51,25 @@ def test_shouldBuildThreeDistinctStableVectorsAndPreserveSingleVector(tmp_path):
     assert {row['fields']['status']['name'] for row in module.week_issues()} >= {'Fixed', 'In Analysis'}
     assert canonical_bytes(module.week_issues()) == canonical_bytes(module.week_issues())
     assert build_vector(scenario.project.id, scenario.stage)['schema_version'] == 1
-    profile = load_profile(PACK_ROOT)
-    executor = ExactDynamicVectorExecutor(
-        {**vector, 'schema_documents': profile['schemaDocuments']}, tmp_path / 'observations.jsonl',
-        profile['inputSchema'],
-    )
     for index, case in enumerate(vector['cases'], 1):
         value = dynamic_input(case['input_template'], f'71000000-0000-4000-8000-{index:012d}')
-        output = asyncio.run(executor.execute(SimpleNamespace(
-            messages=(('user', canonical_bytes(value).decode()),), effective_input_sha256='a' * 64,
-        )))
-        result = json.loads(output)
+        result, _ = summary_output(vector, value)
         assert result['binding'] == value['binding']
         assert result['target_capture_id'] == value['target_capture_id']
-    assert len((tmp_path / 'observations.jsonl').read_text().splitlines()) == 3
 
 
 def test_shouldRejectUnknownOrChangedWeekInputBeforeDispatchReceipt(tmp_path):
     module, scenario = fixture()
     vector = module.build_week_vector(scenario.project.id, scenario.stage)
-    profile = load_profile(PACK_ROOT)
-    observed = tmp_path / 'observations.jsonl'
-    executor = ExactDynamicVectorExecutor(
-        {**vector, 'schema_documents': profile['schemaDocuments']}, observed, profile['inputSchema'],
-    )
     value = dynamic_input(vector['cases'][0]['input_template'], '71000000-0000-4000-8000-000000000001')
     value['binding']['stable_id'] = '999'
     with pytest.raises(ValueError):
-        asyncio.run(executor.execute(SimpleNamespace(messages=(('user', canonical_bytes(value).decode()),),
-                                                     effective_input_sha256='a' * 64)))
-    assert not observed.exists()
+        summary_output(vector, value)
     value = dynamic_input(vector['cases'][0]['input_template'], '71000000-0000-4000-8000-000000000001')
     value['evidence'][0]['value']['summary'] = 'Changed fixture value'
     value['evidence'][0]['source_hash'] = content_hash(value['evidence'][0]['value'])
     with pytest.raises(ValueError):
-        asyncio.run(executor.execute(SimpleNamespace(messages=(('user', canonical_bytes(value).decode()),),
-                                                     effective_input_sha256='a' * 64)))
-    assert not observed.exists()
+        summary_output(vector, value)
 
 
 def test_shouldKeepWeekTransportBoundToExactPopulationAndPagination(tmp_path):
@@ -138,14 +119,14 @@ def test_shouldCaptureThreeRealRowsMatchingTheRegisteredWeekVectors(tmp_path):
     assert receipt.complete
     assert [row.identity.stable_id for row in capture.snapshots] == ['101', '102', '103']
     vector = json.loads((run / 'fixture-vector.json').read_text())
-    from scripts.validation.project_full_stack_base import normalize_capture_id
+    from scripts.validation.project_vector_matching import normalize_capture_id
     from project_management.app.domain.captures import SourceChainKey
     for reference, expected in zip(capture.snapshots, vector['cases']):
         key = SourceChainKey('jira', reference.identity.endpoint_id, reference.identity.stable_id,
                              'principal-1', provider.stage.definition_hash)
         source = archive.read_snapshot(actor, catalog['project_id'], catalog['stage_id'], receipt.capture_id, key)
         prepared = build_analysis_input(catalog['project_id'], provider.stage, key, (reference,), (source,),
-                                        'project-reporting.summary@review-1')
+                                        module.PROFILE_REVISION)
         normalized = normalize_capture_id(json.loads(prepared.input_content), receipt.capture_id,
                                           vector['capture_placeholder'])
         assert normalized == expected['input_template']

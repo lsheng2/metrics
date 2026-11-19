@@ -1,0 +1,177 @@
+/*
+ * Meridian shell: collapsed rail (desktop), navigation drawer (mobile) and responsive overrides.
+ * Load order lives in ui_web/static_assets.py.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Collapsed rail (desktop) and drawer (mobile)
+ * ------------------------------------------------------------------------ */
+
+.app-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    background: var(--color-scrim);
+    animation: meridian-fade-in var(--duration-base) var(--ease-standard);
+}
+
+.app-scrim[hidden] {
+    display: none;
+}
+
+@keyframes meridian-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@media (min-width: 769px) {
+    html[data-sidebar="collapsed"] .app-sidebar {
+        flex-basis: var(--layout-sidebar-rail);
+        width: var(--layout-sidebar-rail);
+    }
+
+    html[data-sidebar="collapsed"] .dashboard-sidebar-splitter,
+    html[data-sidebar="collapsed"] .app-brand__name,
+    html[data-sidebar="collapsed"] .app-search-trigger__label,
+    html[data-sidebar="collapsed"] .app-search-trigger .app-kbd,
+    html[data-sidebar="collapsed"] .app-nav__text,
+    html[data-sidebar="collapsed"] .app-nav__toggle,
+    html[data-sidebar="collapsed"] .app-nav__submenu {
+        display: none;
+    }
+
+    html[data-sidebar="collapsed"] .app-sidebar__header {
+        justify-content: center;
+        padding: 0;
+    }
+
+    html[data-sidebar="collapsed"] .app-brand {
+        flex: 0 0 auto;
+    }
+
+    html[data-sidebar="collapsed"] .app-search-trigger {
+        justify-content: center;
+        width: var(--control-height);
+        margin-inline: auto;
+        padding: 0;
+    }
+
+    html[data-sidebar="collapsed"] .app-nav {
+        padding-inline: var(--space-2);
+        scrollbar-gutter: auto;
+    }
+
+    html[data-sidebar="collapsed"] .app-nav .menu-label {
+        height: 1px;
+        margin: var(--space-2) var(--space-1);
+        padding: 0;
+        overflow: hidden;
+        background: var(--color-border-subtle);
+        color: transparent;
+    }
+
+    html[data-sidebar="collapsed"] .app-nav__link,
+    html[data-sidebar="collapsed"] .app-nav__row:has(.app-nav__toggle) .app-nav__link {
+        justify-content: center;
+        padding: 0;
+    }
+
+    html[data-sidebar="collapsed"] .app-sidebar__footer {
+        flex-direction: column;
+        padding-inline: 0;
+    }
+
+    html[data-sidebar="collapsed"] .theme-switch {
+        flex-direction: column;
+    }
+
+    html[data-sidebar="collapsed"] .app-topbar__search {
+        display: inline-flex;
+    }
+
+    html[data-sidebar="collapsed"] [data-shell-collapse] i {
+        transform: scaleX(-1);
+    }
+}
+
+@media (max-width: 768px) {
+    .app-sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: var(--z-drawer);
+        width: min(18rem, 86vw);
+        height: 100dvh;
+        border-right-color: var(--color-border);
+        background: var(--color-surface);
+        transform: translateX(-100%);
+        visibility: hidden;
+    }
+
+    /*
+     * Only an explicit open or close slides the drawer. The resting state has no transition, so a viewport
+     * that crosses the breakpoint hides the sidebar at once instead of sliding it across the content.
+     */
+    html[data-drawer="open"] .app-sidebar {
+        box-shadow: var(--shadow-lg);
+        transform: none;
+        transition: transform var(--duration-slow) var(--ease-standard);
+        visibility: visible;
+    }
+
+    html[data-drawer="closing"] .app-sidebar {
+        box-shadow: var(--shadow-lg);
+        transition: transform var(--duration-slow) var(--ease-standard), visibility 0s linear var(--duration-slow);
+    }
+
+    .dashboard-sidebar-splitter,
+    [data-shell-collapse] {
+        display: none;
+    }
+
+    .app-topbar {
+        padding: 0 var(--space-4);
+    }
+
+    .app-topbar__menu,
+    .app-topbar__search {
+        display: inline-flex;
+    }
+
+    .app-crumbs__trail > :not(:last-child) {
+        display: none;
+    }
+
+    .app-crumbs__trail > :last-child::before {
+        content: none;
+    }
+
+    .app-content {
+        padding: var(--space-4) var(--space-3) var(--space-6);
+    }
+
+    .workbench-status-item {
+        padding: 0 var(--space-2);
+    }
+
+    .command-palette {
+        margin-top: var(--space-4);
+    }
+
+    .command-palette__hint,
+    .command-palette__footer {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-drawer] .app-sidebar,
+    .command-palette[open],
+    .app-toasts > .message,
+    .app-scrim {
+        animation: none;
+        transition: none;
+    }
+}

@@ -8,15 +8,17 @@ Everything repository-specific lives here so the DAG workflow stays portable.
 - Profile source: repo-local.
 - Agent routing mode: multiagent-configured.
 - Profile history: migrated from the legacy `.github/skills/dag-based-planning/templates/project-profile.md` path for the renamed `lsheng2-dag-based-planning` skill.
-- Plan location: `openspec/docs/` for stable architecture or implementation plans; `.github/` for AI workflow/customization changes.
+- Plan location: the current `openspec/changes/<change>/` for execution plans and its sole task ledger; `openspec/docs/` for stable architecture; `.github/` for AI workflow/customization changes.
 - Shell: PowerShell on Windows.
 - Runtime: Python from the active environment; project commands use `python manage.py ...` and `python -m pytest ...`.
 - Development authority: root `AI_CONTRACT.md`; AGENTS/CLAUDE/Copilot are routing entries.
-- Reporting exception: use the fixed SDK environment and no-dotenv test entry documented in
+- Reporting exception: use the fixed embedded-runtime environment and no-dotenv test entry documented in
   `docs/development/reporting-delivery.md`; do not infer the reporting interpreter from the active shell.
 
 ## Source Roots
 
+- `ai_host/`
+- `provider_sync/`
 - `tasks/`
 - `project_management/`
 - `forecast/`
@@ -44,12 +46,15 @@ Legitimate `owner_paths` include source roots above plus current docs, tests, te
 - `CLAUDE.md`
 - `README.md`
 - `openspec/docs/`
+- `openspec/changes/`
 - module-local `tests/`
 - `ui_web/templates/`
 - `ui_web/static/`
 
 ## Test Roots
 
+- `ai_host/tests/`
+- `provider_sync/tests/`
 - `tasks/tests/`
 - `project_management/tests/`
 - `forecast/tests/`

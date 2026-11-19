@@ -1,9 +1,16 @@
 <div class="bug-trend-chart-shell">
-    {% if unavailable_reason %}
-        <div class="notification is-warning">{{ unavailable_reason }}</div>
+    {% if chart_has_data %}
+        <div class="bug-trend-legend is-sr-only" id="bugTrendLegend" role="note" aria-label="Chart series legend"></div>
+        <div class="bug-trend-chart-frame">
+            <canvas class="bug-trend-chart-canvas" id="bugTrendChart" width="900" height="360" data-testid="bug-trend-chart"></canvas>
+        </div>
+    {% else %}
+        <div class="empty-state{% if unavailable_reason %} is-warning{% endif %}" data-testid="bug-trend-chart-empty">
+            <span class="empty-state__icon">{% if unavailable_reason %}<i class="iconoir-warning-triangle" aria-hidden="true"></i>{% else %}<i class="iconoir-graph-up" aria-hidden="true"></i>{% endif %}</span>
+            <p class="empty-state__title">No chart data for this range</p>
+            <p class="empty-state__body">{{ unavailable_reason|default:"The latest calculation run has no buckets inside the selected dates. Widen the range or recalculate the scope." }}</p>
+        </div>
     {% endif %}
-    <div class="bug-trend-legend" id="bugTrendLegend" aria-label="Chart series legend"></div>
-    <canvas class="bug-trend-chart-canvas" id="bugTrendChart" width="900" height="360" data-testid="bug-trend-chart"></canvas>
 </div>
 
 <script>
@@ -21,21 +28,22 @@
         if (!canvas) return;
         const chartData = {{ chart_json|safe }};
         if (!chartData || !chartData.labels || chartData.labels.length === 0) return;
-        const themeStyles = getComputedStyle(document.documentElement);
-        const chartTextColor = themeStyles.getPropertyValue('--bulma-text').trim() || '#dce3f7';
-        const chartGridColor = themeStyles.getPropertyValue('--bulma-border').trim() || 'rgba(220, 227, 247, 0.18)';
+        const dashboardCharts = window.DashboardCharts;
+        const seriesColor = (dataset, index) => () => window.DashboardCharts.seriesColor(dataset.series_name, index);
         const readableSeriesLabel = value => String(value || '')
             .replace(/_/g, ' ')
             .replace(/\b\w/g, character => character.toUpperCase());
         const legend = document.getElementById('bugTrendLegend');
         if (legend) {
             legend.replaceChildren();
-            chartData.datasets.forEach(dataset => {
+            chartData.datasets.forEach((dataset, index) => {
                 const item = document.createElement('span');
                 item.className = 'bug-trend-legend-item';
                 const swatch = document.createElement('span');
                 swatch.className = 'bug-trend-legend-swatch';
-                swatch.style.backgroundColor = dataset.color;
+                if (dashboardCharts) {
+                    swatch.style.backgroundColor = dashboardCharts.seriesCssColor(dataset.series_name, index);
+                }
                 const label = document.createElement('span');
                 label.textContent = readableSeriesLabel(dataset.series_name);
                 item.append(swatch, label);
@@ -46,18 +54,20 @@
             type: 'bar',
             data: {
                 labels: chartData.labels,
-                datasets: chartData.datasets.map(dataset => ({
+                datasets: chartData.datasets.map((dataset, index) => ({
                     type: dataset.type,
                     label: dataset.series_name,
                     data: dataset.values,
-                    borderColor: dataset.color,
-                    backgroundColor: dataset.type === 'bar' ? dataset.color : 'transparent',
-                    tension: 0.2,
+                    borderColor: seriesColor(dataset, index),
+                    backgroundColor: dataset.type === 'bar' ? seriesColor(dataset, index) : 'transparent',
+                    pointBackgroundColor: seriesColor(dataset, index),
+                    tension: 0.25,
                     fill: false
                 }))
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 interaction: { intersect: true, mode: 'nearest' },
                 plugins: {
                     legend: {
@@ -65,11 +75,6 @@
                         position: 'top',
                         align: 'start',
                         labels: {
-                            boxWidth: 10,
-                            boxHeight: 10,
-                            color: chartTextColor,
-                            padding: 10,
-                            usePointStyle: true,
                             generateLabels: chart => Chart.defaults.plugins.legend.labels.generateLabels(chart).map(item => ({
                                 ...item,
                                 text: readableSeriesLabel(item.text),
@@ -113,13 +118,10 @@
                 },
                 scales: {
                     x: {
-                        ticks: { color: chartTextColor },
-                        grid: { color: chartGridColor },
+                        grid: { display: false },
                     },
                     y: {
                         beginAtZero: true,
-                        ticks: { color: chartTextColor },
-                        grid: { color: chartGridColor },
                     }
                 }
             }

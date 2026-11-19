@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from bug_metrics.publication_models import AiChartPublication
 
 from bug_metrics.model_hashes import (
     SCOPE_SOURCE_MODE_CUSTOM_JQL,

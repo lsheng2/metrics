@@ -335,7 +335,7 @@ def test_git_lookup_failure_is_not_treated_as_absent_publication(tmp_path):
             command_id=draft_command(348), expected_revision=1,
         )
 
-    assert error.value.code == 'REPORT_ARTIFACT_INVALID'
+    assert error.value.code == 'REPORT_STORAGE_UNAVAILABLE'
     assert calls['append'] == 0
 
 

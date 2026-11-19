@@ -1,68 +1,49 @@
 {% extends "base.html" %}
 
-{% block title %}Task Forecast Dashboard{% endblock %}
-
 {% block content %}
-<div class="box">
-    <h2 class="title is-3">Forecast Parameters</h2>
-    <form class="dashboard-tool-form dashboard-top-toolbar" method="post"
-          hx-post="{% url 'ui_web:task_forecast' %}"
-          hx-target="#forecast-results"
-          hx-swap="innerHTML">
-        {% csrf_token %}
-        <div class="dashboard-tool-grid">
-            <div class="dashboard-tool-field">
-                <div class="field">
-                    <label class="label" for="task_id">Task ID:</label>
-                    <div class="control">
-                        <input class="input" type="text" id="task_id" name="task_id" value="{{ forecast_params.task_id|default:'' }}" required>
-                    </div>
-                </div>
-            </div>
-            <div class="dashboard-tool-field">
-                <div class="field">
-                    <label class="label" for="start_date">Start Date:</label>
-                    <div class="control">
-                        <input class="input" type="date" id="start_date" name="start_date" value="{{ forecast_params.start_date|default_if_none:'' }}">
-                    </div>
-                </div>
-            </div>
-            <div class="dashboard-tool-field">
-                <div class="field">
-                    <label class="label" for="member_group">Velocity for Member Group:</label>
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                            <select id="member_group" name="member_group">
-                                <option value="">All Member Groups</option>
-                                {% for group in global_available_member_groups %}
-                                <option value="{{ group.id }}" {% if forecast_params.member_group == group.id %}selected{% endif %}>{{ group.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<article id="task-forecast-page" class="block">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Task forecast</h2>
+            <p class="page-header__meta">Schedules a task and its children one after another from story points and historical velocity, starting today or on a chosen date.</p>
         </div>
-        <div class="dashboard-tool-grid mt-3">
+    </header>
+    <form class="box dashboard-tool-form dashboard-top-toolbar" aria-label="Forecast parameters"
+          hx-get="{% url 'ui_web:task_forecast' %}" hx-target="#forecast-results" hx-swap="innerHTML"
+          hx-push-url="true" hx-indicator="#loading-indicator">
+        <div class="dashboard-tool-grid is-toolbar">
             <div class="dashboard-tool-field">
-                <div class="field">
-                    <div class="control">
-                        <label class="checkbox">
-                            <input type="checkbox" name="include_done_tasks" value="true"
-                                   {% if forecast_params.task_scope.name == "ALL" %}checked{% endif %}>
-                            Include Completed Tasks
-                        </label>
-                    </div>
+                <label class="label" for="task_id">Task ID</label>
+                <input class="input" type="text" id="task_id" name="task_id" value="{{ forecast_params.task_id|default_if_none:'' }}"
+                       placeholder="e.g. PROJ-123" autocomplete="off" spellcheck="false" required>
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="start_date">Start date</label>
+                <input class="input" type="date" id="start_date" name="start_date" value="{{ forecast_params.start_date|default_if_none:'' }}">
+            </div>
+            <div class="dashboard-tool-field">
+                <label class="label" for="member_group">Velocity from</label>
+                <div class="select is-fullwidth">
+                    <select id="member_group" name="member_group">
+                        <option value="">All member groups</option>
+                        {% for group in global_available_member_groups %}
+                            <option value="{{ group.id }}"{% if forecast_params.member_group == group.id|stringformat:"s" %} selected{% endif %}>{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
-        </div>
-        <div class="dashboard-tool-actions mt-3">
-            <button class="button is-primary" type="submit">Generate Forecast</button>
+            <div class="dashboard-tool-actions is-right">
+                <label class="button toggle-button">
+                    <input type="checkbox" name="include_done_tasks" value="true"{% if forecast_params.task_scope.name == "ALL" %} checked{% endif %}>
+                    <span class="icon"><i class="iconoir-check" aria-hidden="true"></i></span>
+                    <span>Include done</span>
+                </label>
+                <button class="button is-primary" type="submit">Forecast</button>
+            </div>
         </div>
     </form>
-</div>
-
-<div id="forecast-results">
-    {% include "partials/task_forecast_content.html" %}
-</div>
+    <div id="forecast-results">
+        {% include "partials/task_forecast_content.html" %}
+    </div>
+</article>
 {% endblock %}

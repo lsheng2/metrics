@@ -1,6 +1,7 @@
 import asyncio
 from typing import Union, List
 
+from django.utils.http import urlencode
 from django.views.generic import TemplateView
 
 from pull_requests.app.domain.model.pull_request import PullRequestRef
@@ -42,6 +43,8 @@ class CurrentTasksView(GracefulTemplateView):
         lazy_loading = lazy_loading_enabled and not expand_all and not needs_full_fetch and view_mode != 'board'
 
         context["view_mode"] = view_mode
+        context["expand_all"] = expand_all
+        context["view_queries"] = self._view_queries(view_mode)
         context["lazy_loading_enabled"] = lazy_loading_enabled
         context["lazy_loading"] = lazy_loading
         context["release_column_enabled"] = self.tasks_facade.is_release_column_enabled()
@@ -63,9 +66,21 @@ class CurrentTasksView(GracefulTemplateView):
         grouped_tasks = self._group_tasks(tasks, view_mode)
 
         context["tasks"] = grouped_tasks
+        context["task_count"] = len(tasks)
         context["selected_member_group_id"] = group_id
         context["has_groups"] = self._determine_has_groups(grouped_tasks)
         context["success"] = True
+
+    def _view_queries(self, view_mode: str) -> dict:
+        """Query strings for the layout switch (keeping applied filters) and for clearing the filters."""
+        applied = {key: value for key, value in self.request.GET.items()
+                   if value and key not in ('view', 'expand_all')}
+        member_group = {key: value for key, value in applied.items() if key == 'member_group_id'}
+        return {
+            'list': urlencode({**applied, 'view': 'list'}),
+            'board': urlencode({**applied, 'view': 'board'}),
+            'clear': urlencode({**member_group, 'view': view_mode}),
+        }
 
     def _populate_available_members(self, context, tasks, group_id):
         available_members = asyncio.run(self.members_facade.get_available_members(tasks, group_id))

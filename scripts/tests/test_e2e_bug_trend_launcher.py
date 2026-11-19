@@ -12,7 +12,7 @@ if str(ROOT / "scripts") not in sys.path:
 
 import e2e_bug_trend
 from dashboard_runtime_instance_profile import build_dashboard_runtime_instance_profile
-from service_lifecycle_engine import ServiceSpec, ServiceState
+from service_lifecycle_engine import ServiceSpec, ServiceState, StopResult
 
 
 def test_bug_trend_load_specs_uses_json_ports_unless_cli_overrides(tmp_path):
@@ -55,7 +55,7 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
             calls.append(("profile_step", label, run_id, prefix))
             return callback()
 
-        def restart_services(self, service_specs, graceful_timeout_seconds=5.0, force_by_port=False, run_id=None, after_prepare=None, before_start=None):
+        def restart_services(self, service_specs, graceful_timeout_seconds=None, force_by_port=False, run_id=None, after_prepare=None, before_start=None):
             calls.append(("restart_services", tuple(spec.name for spec in service_specs), graceful_timeout_seconds, force_by_port, run_id))
             after_prepare([])
             port_plan = {"django": 9100, "grafana": 9200}
@@ -82,7 +82,6 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
             "service_config": str(tmp_path / "services.json"),
             "django_ports": "",
             "grafana_ports": "",
-            "force_by_port": True,
             "scope_id": "7",
             "begin": "2026-01-01",
             "end": "2026-02-01",
@@ -103,12 +102,97 @@ def test_bug_trend_start_runtime_uses_joint_port_plan(monkeypatch, tmp_path):
 
     e2e_bug_trend.start_runtime(args, tmp_path, FakeLifecycle(), run_id="run-1")
 
-    assert calls[0] == ("restart_services", ("django", "grafana"), 5.0, True, "run-1")
+    assert calls[0] == ("restart_services", ("django", "grafana"), None, False, "run-1")
     assert ("profile_step", "migrate", "run-1", "E2E timing") in calls
     assert ("profile_step", "seed_bug_trend_sample", "run-1", "E2E timing") in calls
     assert ("profile_step", "write_grafana_config", "run-1", "E2E timing") in calls
     assert ("runtime_specs", ("django", "grafana")) in calls
     assert ("datasource", 9200, 9100) in calls
+
+
+def test_bug_trend_stop_runtime_uses_per_service_grace_without_force_by_port(monkeypatch, tmp_path):
+    django_spec = ServiceSpec.from_values("django", [9100], [sys.executable, "--version"], graceful_timeout_seconds=15.0)
+    grafana_spec = ServiceSpec.from_values("grafana", [9200], ["grafana", "server"], graceful_timeout_seconds=5.0)
+    calls = []
+
+    class FakeLifecycle:
+        def profile_step(self, label, callback, run_id=None, prefix="ServiceLifecycleEngine timing"):
+            calls.append(("profile_step", label, run_id, prefix))
+            return callback()
+
+        def stop_service(self, name, graceful_timeout_seconds=5.0):
+            calls.append(("stop_service", name, graceful_timeout_seconds))
+            return StopResult(name, 1, 12345, True, False, "stop_command", exit_code=0)
+
+    args = type(
+        "Args",
+        (),
+        {
+            "workspace": str(tmp_path),
+            "service_config": str(tmp_path / "services.json"),
+            "django_ports": "",
+            "grafana_ports": "",
+            "grafana_bin": "grafana",
+            "grafana_homepath": str(tmp_path),
+        },
+    )()
+    monkeypatch.setattr(e2e_bug_trend, "load_specs", lambda *values, **kwargs: {"django": django_spec, "grafana": grafana_spec})
+
+    e2e_bug_trend.stop_runtime(FakeLifecycle(), args, run_id="run-1")
+
+    assert ("stop_service", "django", 15.0) in calls
+    assert ("stop_service", "grafana", 5.0) in calls
+    assert not any(call[0] == "force_stop_by_ports" for call in calls)
+
+
+def test_bug_trend_stop_runtime_fails_for_identity_mismatch_or_abnormal_cleanup(monkeypatch, tmp_path):
+    specs = {
+        "django": ServiceSpec.from_values("django", [9100], [sys.executable, "--version"], graceful_timeout_seconds=15.0),
+        "grafana": ServiceSpec.from_values("grafana", [9200], ["grafana", "server"], graceful_timeout_seconds=5.0),
+    }
+
+    class FakeLifecycle:
+        def __init__(self, result):
+            self.result = result
+
+        def profile_step(self, label, callback, run_id=None, prefix="ServiceLifecycleEngine timing"):
+            return callback()
+
+        def stop_service(self, name, graceful_timeout_seconds=5.0):
+            return self.result
+
+    args = type(
+        "Args",
+        (),
+        {
+            "workspace": str(tmp_path),
+            "service_config": str(tmp_path / "services.json"),
+            "django_ports": "",
+            "grafana_ports": "",
+            "grafana_bin": "grafana",
+            "grafana_homepath": str(tmp_path),
+        },
+    )()
+    monkeypatch.setattr(e2e_bug_trend, "load_specs", lambda *values, **kwargs: specs)
+
+    bad_results = [
+        StopResult("django", 9100, 12345, False, False, "identity_mismatch"),
+        StopResult("django", 9100, 12345, True, True, "terminated"),
+        StopResult("django", 9100, 12345, True, True, "killed"),
+    ]
+    for result in bad_results:
+        try:
+            e2e_bug_trend.stop_runtime(FakeLifecycle(result), args, run_id="run-1", service_names=("django",))
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError(f"abnormal stop result should fail CLI boundary: {result}")
+
+    for result in (
+        StopResult("django", 9100, None, False, False, "not_registered"),
+        StopResult("django", 9100, 12345, True, False, "already_stopped", exit_code=0),
+    ):
+        e2e_bug_trend.stop_runtime(FakeLifecycle(result), args, run_id="run-1", service_names=("django",))
 
 
 def test_bug_trend_runtime_profile_prioritizes_primary_ports(tmp_path):
@@ -122,6 +206,27 @@ def test_bug_trend_runtime_profile_prioritizes_primary_ports(tmp_path):
 
     assert profiled["django"].preferred_ports == (8012, 8002, 8022)
     assert profiled["grafana"].preferred_ports == (3051, 3001, 3151)
+
+
+def test_bug_trend_service_config_uses_serve_stop_file_and_dashboard_grace(tmp_path):
+    args = type(
+        "Args",
+        (),
+        {
+            "service_config": str(ROOT / "scripts" / "e2e_bug_trend.services.json"),
+            "django_ports": "",
+            "grafana_ports": "",
+        },
+    )()
+
+    specs = e2e_bug_trend.load_specs(args, tmp_path, "python.exe", "grafana.exe", tmp_path / "grafana")
+    django = specs["django"]
+
+    assert django.command[:6] == ("python.exe", "manage.py", "serve", "--host", "127.0.0.1", "--port")
+    assert "--stop-file" in django.command
+    assert "{port}" in django.command
+    assert django.stop_command
+    assert django.graceful_timeout_seconds >= 15.0
 
 
 def test_bug_trend_selected_ports_propagate_to_runtime_outputs(monkeypatch, tmp_path):
@@ -211,18 +316,6 @@ def test_bug_trend_runtime_grafana_config_is_generated_when_template_is_missing(
     assert "preinstall_disabled = true" in runtime_content
     assert "check_for_plugin_updates = false" in runtime_content
     assert all(directory.exists() for directory in expected_directories)
-
-
-def test_bug_trend_runtime_grafana_config_reuses_main_worktree_plugin_cache(tmp_path):
-    workspace = tmp_path / "scrum_dashboard" / ".worktrees" / "service-lifecycle-engine"
-    plugin_cache = tmp_path / "scrum_dashboard" / "state" / "grafana" / "data" / "plugins"
-    (plugin_cache / "yesoreyeram-infinity-datasource").mkdir(parents=True)
-    workspace.mkdir(parents=True)
-
-    runtime_config = e2e_bug_trend.write_runtime_grafana_config(workspace, 3999)
-
-    runtime_content = runtime_config.read_text(encoding="utf-8")
-    assert f"plugins = {plugin_cache.as_posix()}" in runtime_content
 
 
 def test_bug_trend_scope_id_resolver_reads_seeded_scope_from_shell_output(monkeypatch, tmp_path):

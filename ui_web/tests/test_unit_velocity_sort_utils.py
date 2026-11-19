@@ -10,7 +10,7 @@ class TestVelocitySortUtilsChronologicalSort(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["2024-03", "2024-01", "2024-02"],
-            datasets=[ChartDatasetData(label="Alice", data=[30.0, 10.0, 20.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[30.0, 10.0, 20.0])]
         )
 
         # When
@@ -25,8 +25,8 @@ class TestVelocitySortUtilsChronologicalSort(unittest.TestCase):
         chart = ChartData(
             labels=["2024-12", "2024-10", "2024-11"],
             datasets=[
-                ChartDatasetData(label="Alice", data=[12.0, 10.0, 11.0], color="red"),
-                ChartDatasetData(label="Bob", data=[120.0, 100.0, 110.0], color="blue")
+                ChartDatasetData(label="Alice", data=[12.0, 10.0, 11.0]),
+                ChartDatasetData(label="Bob", data=[120.0, 100.0, 110.0])
             ]
         )
 
@@ -42,7 +42,7 @@ class TestVelocitySortUtilsChronologicalSort(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["Charlie", "Alice", "Bob"],
-            datasets=[ChartDatasetData(label="Velocity", data=[3.0, 1.0, 2.0], color="red")]
+            datasets=[ChartDatasetData(label="Velocity", data=[3.0, 1.0, 2.0])]
         )
 
         # When
@@ -56,7 +56,7 @@ class TestVelocitySortUtilsChronologicalSort(unittest.TestCase):
         # Given
         chart = ChartData(
             labels=["2024-01", "2024-03", "2024-02"],
-            datasets=[ChartDatasetData(label="Alice", data=[10.0, 30.0, 20.0], color="red")]
+            datasets=[ChartDatasetData(label="Alice", data=[10.0, 30.0, 20.0])]
         )
 
         # When

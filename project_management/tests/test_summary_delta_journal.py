@@ -11,7 +11,7 @@ from project_management.tests.report_source_fixtures import ReportSourceScenario
 class TestSummaryDeltaJournal(ReportSourceScenario, unittest.TestCase):
     def prepare(self, archive, key):
         return archive.prepare_analysis(self.actor, self.project.id, self.stage.id, key,
-                                        self.contract, self.backend(), datetime.now(UTC) + timedelta(minutes=5))
+                                        self.contract, self.principal(), datetime.now(UTC) + timedelta(minutes=5))
 
     def accept(self, archive, attempt):
         archive.claim_analysis_dispatch(self.actor, self.project.id, self.stage.id, attempt.attempt_id)
@@ -70,8 +70,13 @@ class TestSummaryDeltaJournal(ReportSourceScenario, unittest.TestCase):
             failed_attempt = self.prepare(archive, first.source_key).attempt
             archive.claim_analysis_dispatch(self.actor, self.project.id, self.stage.id, failed_attempt.attempt_id)
             failed, _ = self.responses(failed_attempt)
-            failed.update(state='failed', error={'code': 'backend_failed', 'message': 'Synthetic', 'recovery': 'stop'},
-                          result={'availability': 'not_produced', 'sha256': None, 'mediaType': None, 'expiresAt': None})
+            failed = replace(
+                failed,
+                status='failed',
+                result=replace(failed.result, output_sha256=None, output_schema_sha256=None),
+                error_code='backend_failed',
+                retry='no',
+            )
             archive.record_analysis_observation(self.actor, self.project.id, self.stage.id,
                                                 failed_attempt.attempt_id, {'snapshot': failed})
             self.capture_summary_source(archive, snapshot=first.snapshot)

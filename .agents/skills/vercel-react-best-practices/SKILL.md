@@ -12,4 +12,4 @@ Canonical source for this project is the Copilot-facing adapter:
 
 `../../../.github/skills/vercel-react-best-practices/SKILL.md`
 
-Load that file first. This Django dashboard normally uses Bulma, htmx, and Chart.js rather than React/Next.js, so apply this skill only when the touched surface is actually React or Next.js.
+Load that file first. This Django dashboard uses server-rendered templates, htmx, the Meridian CSS design system and Chart.js rather than React/Next.js, so apply this skill only when the touched surface is actually React or Next.js.

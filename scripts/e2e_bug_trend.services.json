@@ -4,18 +4,20 @@
     {
       "name": "django",
       "preferred_ports": [8002, 8012, 8022, 8032, 8042],
-      "command": ["{python}", "manage.py", "runserver", "{host}:{port}", "--noreload"],
+      "command": ["{python}", "manage.py", "serve", "--host", "127.0.0.1", "--port", "{port}", "--stop-file", "{workspace}/state/local/serve-stop/django-{port}.stop"],
+      "stop_command": ["{python}", "-c", "import pathlib, sys; path = pathlib.Path(sys.argv[1]); path.parent.mkdir(parents=True, exist_ok=True); path.touch()", "{workspace}/state/local/serve-stop/django-{port}.stop"],
       "host": "127.0.0.1",
       "cwd": "{workspace}",
       "health_url": "http://{host}:{port}/",
       "startup_timeout_seconds": 30,
-      "graceful_timeout_seconds": 5,
+      "graceful_timeout_seconds": 15,
       "port_release_timeout_seconds": 2
     },
     {
       "name": "grafana",
       "preferred_ports": [3001, 3051, 3151, 3251, 3351],
       "command": ["{grafana_bin}", "server", "--homepath", "{grafana_homepath}", "--config", "{grafana_config}"],
+      "stop_command": ["{python}", "scripts/service_lifecycle_engine/controlled_stop.py", "--pid", "{pid}", "--expected-start-marker", "{process_start_marker}", "--expected-command-line", "{command_line}"],
       "host": "127.0.0.1",
       "cwd": "{workspace}",
       "health_url": "http://{host}:{port}/api/health",

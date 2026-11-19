@@ -1,9 +1,7 @@
 from pathlib import Path
-import socket
 
 from django.test import override_settings
 from django.urls import reverse
-from playwright.sync_api import sync_playwright
 
 from project_management.app.api import reports as report_api
 from project_management.app.domain.capture_values import canonical_bytes
@@ -16,12 +14,12 @@ from ui_web.facades.project_reports import ProjectReportFacade
 from ui_web.facades.report_templates import ProjectReportTemplateFacade
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 from ui_web.tests.report_authoring_browser_support import (
+    BrowserPage,
     ReportAuthoringBrowserTestCase,
     browser_page,
     fetch_local_route_response,
     form_fields_from_request,
     fulfill_route_response,
-    local_only_connect,
 )
 
 
@@ -92,13 +90,8 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
             report_templates.ReportTemplateArchiveView,
             report_templates.ReportTemplateCopyView,
         )
-        originals = [view.facade_factory for view in report_classes + template_classes]
-        for view in report_classes:
-            view.facade_factory = staticmethod(self.report_facade)
-        for view in template_classes:
-            view.facade_factory = staticmethod(self.template_facade)
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(report_classes + template_classes, originals)])
+        self.patch_view_factory(self.report_facade, *report_classes)
+        self.patch_view_factory(self.template_facade, *template_classes)
 
     def test_visualTemplateLibraryPinsReportSlotAndCompletionFlow(self):
         with project_page(self.template_library_url()) as page:
@@ -118,12 +111,17 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
             page.screenshot(path=str(BUILDER_FIX_SCREENSHOT), full_page=True)
 
         ready = self.template_service.list(self.actor, self.project.id, limit=20, offset=0).items[0]
+        create_url = reverse('ui_web:report_draft_create', kwargs={
+            'project_id': self.project.id,
+            'stage_id': self.stage.id,
+        })
         with project_page(self.stage_reports_url()) as page:
-            page.locator('[name="template_choice"]').select_option(
+            create_form = page.locator(f'form[action="{create_url}"]')
+            create_form.locator('[name="template_choice"]').select_option(
                 f'user|{ready.template_id}|{ready.current_revision}|{ready.revision_hash}'
             )
             with page.expect_navigation():
-                page.get_by_text('Create draft').click()
+                create_form.get_by_text('Create draft').click()
             page.wait_for_selector('[data-report-wysiwyg-region]')
             page.wait_for_selector('[data-report-authoring-initialized="true"]')
             page.locator('[data-template-slot-id]').first.wait_for()
@@ -143,7 +141,7 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
             inline = page.evaluate("""
                 () => {
                     const root = document.querySelector('[data-report-editor]');
-                    const slotTitle = document.querySelector('[data-template-slot-id] .title');
+                    const slotTitle = document.querySelector('[data-template-slot-id] .report-band-title');
                     const header = document.querySelector('.report-readonly-data th');
                     const bodyCell = Array.from(document.querySelectorAll('.report-readonly-data td'))
                         .find(cell => cell.textContent.includes('DEMO-101'));
@@ -158,8 +156,8 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
                     };
                     return {
                         text: root.textContent,
-                        slotColor: getComputedStyle(slotTitle).color,
-                        slotBackground: getComputedStyle(slotTitle.closest('.report-section-band')).backgroundColor,
+                        slotContrast: contrast(rgb(getComputedStyle(slotTitle).color),
+                            rgb(getComputedStyle(slotTitle.closest('.report-section-band')).backgroundColor)),
                         headerColor: getComputedStyle(header).color,
                         headerBackground: getComputedStyle(header).backgroundColor,
                         headerContrast: contrast(rgb(getComputedStyle(header).color), rgb(getComputedStyle(header).backgroundColor)),
@@ -210,8 +208,7 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
         self.assertIn('In Progress', inline['text'])
         self.assertIn('Retest fixed patch', inline['text'])
         self.assertIn('Evidence and coverage', inline['text'])
-        self.assertEqual('rgb(17, 24, 39)', inline['slotColor'])
-        self.assertEqual('rgb(251, 252, 254)', inline['slotBackground'])
+        self.assertGreaterEqual(inline['slotContrast'], 4.5, inline)
         self.assertGreaterEqual(inline['headerContrast'], 4.5, inline)
         self.assertIn('DEMO-101', inline['bodyText'])
         self.assertGreaterEqual(inline['bodyContrast'], 4.5, inline)
@@ -250,7 +247,7 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
                 () => {
                     window.__confirmText = null;
                     window.confirm = text => { window.__confirmText = text; return false; };
-                    const link = document.querySelector('nav.breadcrumb a[href]');
+                    const link = document.querySelector('.app-crumbs__trail a[href]');
                     const event = new MouseEvent('click', {bubbles: true, cancelable: true});
                     link.dispatchEvent(event);
                     window.__blocked = event.defaultPrevented;
@@ -480,35 +477,9 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
         self.assertEqual('PAINT-TABLE-HIGHLIGHT', observed['tableText'])
 
 
-class ProjectPage:
+class ProjectPage(BrowserPage):
     def __init__(self, url, language=None):
-        self.url = url
-        self.language = language
-
-    def __enter__(self):
-        self.original_connect = socket.socket.connect
-        socket.socket.connect = local_only_connect
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=True, channel='chrome')
-        self.context = self.browser.new_context(
-            http_credentials={'username': 'alice', 'password': 'wonder'},
-            viewport={'width': 1440, 'height': 1000},
-        )
-        if self.language:
-            self.context.add_cookies([{'name': 'django_language', 'value': self.language, 'url': self.url}])
-        self.page = self.context.new_page()
-        self.page.route('**/*', lambda route: route.continue_()
-                        if route.request.url.startswith(('http://127.0.0.1:', 'http://localhost:', 'data:', 'blob:'))
-                        else route.abort())
-        self.page.goto(self.url, wait_until='domcontentloaded')
-        return self.page
-
-    def __exit__(self, exc_type, exc, traceback):
-        try:
-            self.browser.close()
-            self.playwright.stop()
-        finally:
-            socket.socket.connect = self.original_connect
+        super().__init__(url, language=language, ready_selector=None)
 
 
 def project_page(url, language=None):

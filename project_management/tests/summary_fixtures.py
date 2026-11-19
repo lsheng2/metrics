@@ -2,24 +2,28 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
-from pathlib import Path
 import uuid
 
-from project_management.app.api.capture_archive import PartCoverage, StoredSnapshotRef
-from project_management.app.domain.capture_values import canonical_bytes
-from project_management.app.domain.summary_contracts import AiBackendTarget, AnalysisAttempt
+from project_management.app.api.capture_archive import MembershipInput, PartCoverage, StoredSnapshotRef
+from project_management.app.domain.capture_values import canonical_bytes, decode_json
+from project_management.app.domain.summary_contracts import AnalysisAttempt
+from project_management.app.domain.task_runs import (
+    TaskDispatch, TaskPrincipal, TaskResultSummary, TaskRunResult, TaskRunSnapshot,
+)
 from project_management.app.domain.summary_input import build_initial_input
-from project_management.out.ai_task_contract import AiTaskContract
+from project_management.app.api.ai_profiles import load_task_profile
+from project_management.services.task_contracts import SummaryTaskContract
 from project_management.tests.capture_archive_fixtures import CaptureArchiveScenario
 
 
-PACK_ROOT = Path(__file__).resolve().parents[1] / 'ai_bundle' / 'strict-summary' / 'task-run-contract-0.1.0a2'
+def summary_contract():
+    return SummaryTaskContract(load_task_profile('metrics.project_summary'))
 
 
 class SummaryScenario(CaptureArchiveScenario):
     def setUp(self):
         super().setUp()
-        self.contract = AiTaskContract.load(PACK_ROOT)
+        self.contract = summary_contract()
 
     def summary_source(self):
         original = self.snapshot(('raw-1',))
@@ -39,30 +43,39 @@ class SummaryScenario(CaptureArchiveScenario):
         ref = StoredSnapshotRef(snapshot.identity, str(uuid.uuid4()), 1, None, 'a' * 64, 'snapshot.json')
         return ref, snapshot
 
-    def backend(self):
-        return AiBackendTarget('http://127.0.0.1:18888', 'metrics-dashboard', 'store-fixture',
-                               f'projects.{self.project.id}.stages.{self.stage.id}',
-                               'dashboard-join-1', 'base-b-cancel-synthetic-1')
+    def principal(self):
+        return TaskPrincipal(
+            subject=self.actor.subject, runtime_subject=self.actor.subject,
+            display_name=self.actor.subject, anonymous=False,
+        )
+
+    def capture_source(self, archive, snapshot=None):
+        _, initial = self.summary_source()
+        intent = replace(self.intent(), required_parts=('facts', 'comments', 'history'))
+        archive.prepare(self.actor, intent)
+        page = archive.append_page(self.actor, intent, self.page())
+        source = replace(snapshot or initial, raw_page_ids=(page.page_id,))
+        archive.append_snapshot(self.actor, intent, source)
+        complete = source.consistent and all(
+            getattr(source.coverage, part).state == 'complete' for part in intent.required_parts
+        )
+        archive.finalize(
+            self.actor, intent,
+            MembershipInput((source.identity,), self.complete_part(), (page.page_id,)),
+            complete=complete, failure_code=None if complete else 'SOURCE_INCOMPLETE',
+        )
+        return self.source_key(intent, source.identity)
 
     def prepared(self):
         ref, snapshot = self.summary_source()
         return build_initial_input(self.project.id, self.stage, self.source_key(self.intent()), ref,
-                                   snapshot, 'project-reporting.summary@review-1')
+                                   snapshot, self.contract.profile_ref)
 
-    def attempt(self, prepared=None, backend=None):
-        prepared, backend = prepared or self.prepared(), backend or self.backend()
+    def attempt(self, prepared=None, principal=None):
+        prepared, principal = prepared or self.prepared(), principal or self.principal()
         attempt_id = str(uuid.uuid5(uuid.UUID(self.stage.id), prepared.input_hash))
-        request = {
-            'clientRunKey': attempt_id, 'scopeKey': backend.scope_key, 'profile': self.contract.profile_ref,
-            'input': {'mediaType': 'application/json', 'content': prepared.input_content,
-                      'sha256': prepared.input_hash},
-            'logicalInputHash': {'algorithm': 'dashboard-json-review-1', 'digest': prepared.input_hash},
-            'deadlineAt': (datetime.now(UTC) + timedelta(minutes=5)).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
-            'limits': {'maxInputBytes': len(prepared.input_content.encode()), 'maxOutputBytes': 65536,
-                       'maxInputTokens': None, 'maxOutputTokens': None},
-            'minimumResultRetentionSeconds': 60,
-        }
-        return AnalysisAttempt(attempt_id, self.project.id, self.stage.id, prepared.source_key, backend,
+        request = self.contract.make_request(prepared, attempt_id, datetime.now(UTC) + timedelta(minutes=5))
+        return AnalysisAttempt(attempt_id, self.project.id, self.stage.id, prepared.source_key, principal,
                                prepared, request, self.contract.definition_hash, self.contract.output_schema_hash)
 
     def output(self, prepared):
@@ -84,32 +97,28 @@ class SummaryScenario(CaptureArchiveScenario):
     def responses(self, attempt, output=None):
         content = canonical_bytes(output or self.output(attempt.prepared)).decode()
         output_hash = hashlib.sha256(content.encode()).hexdigest()
-        receipt = {
-            'revision': 1, 'executionMode': 'synthetic', 'backendId': 'fixture', 'modelName': None,
-            'qualificationRef': None, 'inputTokens': {'value': None, 'certainty': 'unknown'},
-            'outputTokens': {'value': None, 'certainty': 'unknown'},
-            'providerRequests': {'value': 0, 'certainty': 'known'},
-            'cost': {'amountDecimal': None, 'currency': None, 'certainty': 'unknown'},
-        }
-        common = {
-            'contractVersion': 'task-run/1', 'runStoreId': attempt.backend.run_store_id, 'runId': 'run-fixture',
-            'scopeKey': attempt.request['scopeKey'],
-            'profile': dict(attempt.request['profile'], definitionSha256=attempt.profile_definition_hash),
-            'inputSha256': attempt.prepared.input_hash, 'logicalInputHash': attempt.request['logicalInputHash'],
-            'effectiveInputSha256': hashlib.sha256(b'synthetic compiled fixture').hexdigest(), 'receipt': receipt,
-        }
-        result = dict(common, outputSchemaSha256=attempt.output_schema_hash, content=content,
-                      mediaType='application/json', sha256=output_hash)
-        snapshot = dict(
-            common, sourceAppId=attempt.backend.source_app_id, clientRunKey=attempt.attempt_id,
-            state='succeeded', lifecycleVersion=2, acceptedAt='2026-11-02T00:00:00.000Z',
-            updatedAt='2026-11-02T00:00:30.000Z', terminalAt='2026-11-02T00:00:30.000Z',
-            deadlineAt=attempt.request['deadlineAt'], grantRevision=attempt.backend.grant_revision,
-            limitPolicyRevision=attempt.backend.limit_policy_revision, acceptedLimits=attempt.request['limits'],
-            resultRetentionSeconds=3600, observationRetentionSeconds=7200,
-            observationExpiresAt='2026-11-02T02:00:30.000Z', unresolvedExposure=False,
-            dispatch={'attemptCount': 1, 'knowledge': 'response_received', 'remoteStop': 'not_requested'},
-            result={'availability': 'available', 'sha256': output_hash, 'mediaType': 'application/json',
-                    'expiresAt': '2026-11-02T01:00:30.000Z'}, error=None,
+        dispatch = TaskDispatch(
+            provider='openai-compatible', model='scripted', runtime_version='0.1.0',
+            profile_definition_sha256=attempt.profile_definition_hash, tool_definition_sha256=None,
+            dispatched=True, uncertainty='dispatched', usage=None,
+        )
+        common = dict(
+            run_id='run-fixture', profile_id=attempt.request.profile_id,
+            profile_version=attempt.request.profile_version, status='succeeded',
+            source_input_sha256=attempt.prepared.input_hash,
+            input_sha256=attempt.prepared.input_hash, effective_input_sha256=attempt.prepared.input_hash,
+            dispatch=dispatch, error_code=None, retry=None,
+        )
+        result = TaskRunResult(
+            **common, output_schema_sha256=attempt.output_schema_hash,
+            output_sha256=output_hash, content_json=content, usage=None,
+        )
+        snapshot = TaskRunSnapshot(
+            **common, result=TaskResultSummary(
+                output_sha256=output_hash, output_schema_sha256=attempt.output_schema_hash, usage=None,
+            ),
         )
         return snapshot, result
+
+    def task_record(self, value):
+        return decode_json(canonical_bytes(value))

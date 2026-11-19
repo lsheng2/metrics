@@ -1,23 +1,22 @@
-<div class="box">
-    <h3 class="title is-4">Developer Story Points (Last 6 Months){% if use_custom_filter %} - Member Group Custom Filter{% endif %}</h3>
-    <div class="buttons are-small">
-        <button class="button" id="showAll-dev-sp">Show All</button>
-        <button class="button" id="hideAll-dev-sp">Hide All</button>
-        {% if has_custom_filter %}
-        <button class="button {% if use_custom_filter %}is-info{% endif %}"
-                hx-get="{% url 'ui_web:dev_sp_chart' %}?member_group_id={{ member_group_id }}{% if sp_rolling_avg %}&rolling_avg={{ sp_rolling_avg }}{% endif %}{% if include_all_statuses %}&all_tasks=true{% endif %}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-push-url="{% url 'ui_web:dev_velocity' %}?member_group_id={{ member_group_id }}{% if sp_rolling_avg %}&rolling_avg={{ sp_rolling_avg }}{% endif %}{% if include_all_statuses %}&all_tasks=true{% endif %}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}&developers={{ selected_developers|urlencode }}{% endif %}"
-                hx-target="#sp-chart-container"
-                hx-swap="innerHTML"
-                hx-indicator="#loading-indicator">
-            Member Group Custom Filter
-        </button>
+<section class="card chart-card" aria-labelledby="dev-sp-chart-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="dev-sp-chart-title">Resolved story points<span class="card-header-meta">stacked by developer{% if velocity_rolling_avg %} · {{ velocity_rolling_avg }}-month average{% endif %}{% if include_all_statuses %} · incl. unfinished{% endif %}</span></h3>
+    </header>
+    <div class="chart-card__body">
+        {% if month_sp %}
+            <div class="chart-frame">
+                <canvas id="storyPointsChart" role="img" aria-label="Resolved story points per developer per month"></canvas>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-state__icon"><i class="iconoir-stat-up" aria-hidden="true"></i></span>
+                <p class="empty-state__title">No resolved story points</p>
+                <p class="empty-state__body">Story points appear here once estimated work is resolved.</p>
+            </div>
         {% endif %}
     </div>
-    <canvas id="storyPointsChart" width="400" height="200"></canvas>
-    <p class="help has-text-grey">Click on a bar to see task details below</p>
-</div>
-
+</section>
+{% if month_sp %}
 <script>
 (function() {
     function initStoryPointsChart() {
@@ -25,123 +24,58 @@
             setTimeout(initStoryPointsChart, 100);
             return;
         }
-
-        var showAllBtn = document.getElementById('showAll-dev-sp');
-        var hideAllBtn = document.getElementById('hideAll-dev-sp');
-
-        if (showAllBtn) {
-            showAllBtn.addEventListener('click', function() {
-                if (window.devStoryPointsChartInstance) {
-                    window.devStoryPointsChartInstance.data.datasets.forEach(function(dataset, index) {
-                        window.devStoryPointsChartInstance.setDatasetVisibility(index, true);
-                    });
-                    window.devStoryPointsChartInstance.update();
-                }
-            });
-        }
-
-        if (hideAllBtn) {
-            hideAllBtn.addEventListener('click', function() {
-                if (window.devStoryPointsChartInstance) {
-                    window.devStoryPointsChartInstance.data.datasets.forEach(function(dataset, index) {
-                        window.devStoryPointsChartInstance.setDatasetVisibility(index, false);
-                    });
-                    window.devStoryPointsChartInstance.update();
-                }
-            });
-        }
-
         if (window.devStoryPointsChartInstance) {
             window.devStoryPointsChartInstance.destroy();
             window.devStoryPointsChartInstance = null;
         }
-
-        var canvas = document.getElementById('storyPointsChart');
-        if (!canvas) {
-            return;
-        }
-
-        var chartData = {{ month_sp|safe }};
-
-        var taskDetailsBaseUrl = '{% url "ui_web:dev_velocity_tasks" %}';
-        var dashboardBaseUrl = '{% url "ui_web:dev_velocity" %}';
-        var memberGroupId = '{{ member_group_id }}';
-        var rollingAvg = '{{ sp_rolling_avg }}';
-        var allTasks = '{{ include_all_statuses|yesno:"true,false" }}';
-        var useCustomFilter = '{{ use_custom_filter|yesno:"true,false" }}';
-
-        function getVisibleDevelopers(chart) {
-            var visible = [];
-            chart.data.datasets.forEach(function(dataset, index) {
-                if (chart.isDatasetVisible(index)) {
-                    visible.push(chartData.data[index].developer);
-                }
-            });
-            return visible;
-        }
-
-        if (chartData && chartData.labels && chartData.data) {
-            window.devStoryPointsChartInstance = new Chart(canvas.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: chartData.labels,
-                    datasets: chartData.data.map(function(item) {
-                        return {
-                            label: item.developer,
-                            data: item.metrics,
-                            backgroundColor: item.color,
-                            borderColor: item.color,
-                            borderWidth: 1
-                        };
-                    })
+        const canvas = document.getElementById('storyPointsChart');
+        if (!canvas) return;
+        const chartData = {{ month_sp|safe }};
+        const barColor = index => () => window.DashboardCharts.paletteColor(index);
+        const separatorColor = () => window.DashboardCharts.token('--color-surface');
+        const storyPoints = value => (Math.round(Number(value) * 10) / 10).toLocaleString();
+        const chart = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.data.map((item, index) => ({
+                    label: item.developer,
+                    data: item.metrics,
+                    backgroundColor: barColor(index),
+                    hoverBackgroundColor: barColor(index),
+                    borderColor: separatorColor,
+                    borderWidth: { top: 1 },
+                    borderRadius: 0
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                onHover: window.DashboardVelocity.pointerOnHover,
+                onClick: (event, elements, chartInstance) => {
+                    if (elements.length) window.DashboardVelocity.openDeveloperPeriod(chartInstance, elements[0].index);
                 },
-                options: {
-                    responsive: true,
-                    onClick: function(event, elements, chart) {
-                        if (!elements || elements.length === 0) return;
-                        var period = chartData.labels[elements[0].index];
-                        var developers = getVisibleDevelopers(chart);
-                        if (developers.length === 0) return;
-                        var someHidden = developers.length < chartData.data.length;
-                        var sharedParams = '?period=' + encodeURIComponent(period)
-                            + (someHidden ? '&developers=' + encodeURIComponent(developers.join(',')) : '')
-                            + '&member_group_id=' + encodeURIComponent(memberGroupId)
-                            + (rollingAvg && rollingAvg !== '0' ? '&rolling_avg=' + encodeURIComponent(rollingAvg) : '')
-                            + (allTasks === 'true' ? '&all_tasks=true' : '')
-                            + (useCustomFilter === 'true' ? '&use_custom_filter=true' : '');
-                        history.pushState(null, '', dashboardBaseUrl + sharedParams);
-                        htmx.ajax('GET', taskDetailsBaseUrl + sharedParams, {target: '#task-details-container', swap: 'innerHTML'}).then(function() {
-                            document.getElementById('task-details-container').scrollIntoView({behavior: 'smooth'});
-                        });
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            usePointStyle: true,
-                            itemSort: function(a, b) { return b.raw - a.raw; }
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        itemSort: (a, b) => (b.raw || 0) - (a.raw || 0),
+                        filter: item => Number(item.raw) > 0,
+                        callbacks: {
+                            label: context => `${context.dataset.label}: ${storyPoints(context.parsed.y)} SP`,
+                            footer: items => `Total ${storyPoints(items.reduce((sum, item) => sum + (Number(item.parsed.y) || 0), 0))} SP`
                         }
                     }
                 }
-            });
-        }
+            }
+        });
+        window.devStoryPointsChartInstance = chart;
+        window.DashboardVelocity.registerDeveloperChart(chart);
     }
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initStoryPointsChart);
     } else {
@@ -149,3 +83,4 @@
     }
 })();
 </script>
+{% endif %}

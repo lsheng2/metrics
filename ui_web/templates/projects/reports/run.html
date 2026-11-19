@@ -3,32 +3,23 @@
 
 {% block title %}{% trans "Run status" %} - {{ stage.name }}{% endblock %}
 {% block page_title %}{% trans "Run status" %}{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a>{% endblock %}
 
 {% block content %}
-<article class="block">
-    <nav class="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
-            <li><a href="{% url 'ui_web:project_detail' detail.project.id %}">{{ detail.project.name }}</a></li>
-            <li><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></li>
-            <li class="is-active"><a href="#" aria-current="page">{% trans "Run status" %}</a></li>
-        </ul>
-    </nav>
-
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-4">{% trans "Run status" %}</h2>
-                <p class="subtitle is-6"><code>{{ operation.operation_id }}</code></p>
-            </div>
+<article class="block project-reports">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">{% trans "Run status" %}</h2>
+            <p class="page-header__meta"><code>{{ operation.operation_id }}</code></p>
         </div>
-        <div class="level-right">{% include "projects/language_switcher.html" %}</div>
-    </div>
+        <div class="page-header__actions">{% include "projects/language_switcher.html" %}</div>
+    </header>
 
-    <p class="notification is-warning is-light" data-run-poll-error hidden>
-        {% trans "Error" %}: <code>RUN_STATUS_UNAVAILABLE</code>
-        <a href="{% url 'ui_web:project_run_status' detail.project.id stage.id operation.operation_id %}">{% trans "Run status" %}</a>
-    </p>
+    <div class="message is-warning" role="alert" data-run-poll-error hidden>
+        <div class="message-body">
+            <p>{% trans "Error" %}: <code>RUN_STATUS_UNAVAILABLE</code> <a href="{% url 'ui_web:project_run_status' detail.project.id stage.id operation.operation_id %}">{% trans "Run status" %}</a></p>
+        </div>
+    </div>
     {% include "projects/reports/run_status_fragment.html" %}
 </article>
 {% endblock %}

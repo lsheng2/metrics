@@ -1,35 +1,82 @@
-{% if error %}
-<article class="message is-danger">
-    <div class="message-header">
-        <p>⚠️ Error Loading Velocity Data</p>
-    </div>
-    <div class="message-body">
-        <p><strong>{{ error }}</strong></p>
-        {% if config_help %}
-            <p>{{ config_help }}</p>
-            <p>Please contact your system administrator to configure the required data source.</p>
-        {% else %}
-            <p>Please check your configuration or try refreshing the page.</p>
+<article id="team-velocity-page" class="block">
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Team velocity</h2>
+            <p class="page-header__meta">Story points per logged day over the last 12 months. Select a month on either chart to list its tasks.</p>
+        </div>
+        {% if not error %}
+            <form id="velocity-options" class="page-header__actions dashboard-action-form" aria-label="Velocity options"
+                  data-tasks-url="{% url 'ui_web:team_velocity_tasks' %}"
+                  hx-get="{% url 'ui_web:team_velocity' %}" hx-trigger="change" hx-target="#main-content"
+                  hx-push-url="true" hx-indicator="#loading-indicator">
+                {% if member_group_id %}<input type="hidden" name="member_group_id" value="{{ member_group_id }}">{% endif %}
+                <input type="hidden" name="period" value="{{ selected_period }}"{% if not selected_period %} disabled{% endif %}>
+                <label class="button is-small toggle-button">
+                    <input type="checkbox" id="velocity-rolling-avg" name="rolling_avg" value="{{ velocity_rolling_avg|default:3 }}"{% if velocity_rolling_avg %} checked{% endif %}>
+                    <span class="icon"><i class="iconoir-graph-up" aria-hidden="true"></i></span>
+                    <span>{{ velocity_rolling_avg|default:3 }}-month average</span>
+                </label>
+                {% if has_custom_filter %}
+                    <label class="button is-small toggle-button">
+                        <input type="checkbox" id="velocity-custom-filter" name="use_custom_filter" value="true"{% if use_custom_filter %} checked{% endif %}>
+                        <span class="icon"><i class="iconoir-filter" aria-hidden="true"></i></span>
+                        <span>Group custom filter</span>
+                    </label>
+                {% endif %}
+            </form>
         {% endif %}
-    </div>
-</article>
-{% else %}
-<div id="team-velocity-chart-container">
-    {% include 'partials/team_velocity_chart.html' %}
-</div>
-
-<div id="team-sp-chart-container">
-    {% include 'partials/team_story_points_chart.html' %}
-</div>
-
-<div id="task-details-container"
-     {% if selected_period %}
-     hx-get="{% url 'ui_web:team_velocity_tasks' %}?period={{ selected_period|urlencode }}&member_group_id={{ member_group_id|urlencode }}{% if use_custom_filter %}&use_custom_filter=true{% endif %}"
-     hx-trigger="load"
-     hx-swap="innerHTML"
-     {% endif %}>
-    {% if selected_period %}
-        {% include "partials/loading_indicator.html" %}
+    </header>
+    {% if error %}
+        {% include "partials/velocity_error.html" %}
+    {% else %}
+        {% include "partials/velocity_page_script.html" %}
+        {% if velocity_summary %}
+            <section class="stat-grid" aria-label="Velocity summary">
+                <div class="stat">
+                    <span class="stat__label">Average velocity</span>
+                    <span class="stat__value">{{ velocity_summary.average_velocity|floatformat:2 }}</span>
+                    <span class="stat__hint">SP/day over {{ velocity_summary.period_count }} month{{ velocity_summary.period_count|pluralize }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat__label">Latest · {{ velocity_summary.latest_period }}</span>
+                    <span class="stat__value">{{ velocity_summary.latest_velocity|floatformat:2 }}</span>
+                    <span class="stat__hint">
+                        {% if velocity_summary.latest_change is None %}
+                            First month in range
+                        {% elif velocity_summary.latest_change > 0 %}
+                            <span class="delta is-up"><i class="iconoir-arrow-up" aria-hidden="true"></i>+{{ velocity_summary.latest_change|floatformat:2 }}</span> vs previous month
+                        {% elif velocity_summary.latest_change < 0 %}
+                            <span class="delta is-down"><i class="iconoir-arrow-down" aria-hidden="true"></i>&minus;{{ velocity_summary.latest_change|floatformat:2|cut:"-" }}</span> vs previous month
+                        {% else %}
+                            Unchanged from previous month
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="stat">
+                    <span class="stat__label">Resolved story points</span>
+                    <span class="stat__value">{{ velocity_summary.total_story_points|floatformat:0 }}</span>
+                    <span class="stat__hint">Last {{ velocity_summary.period_count }} month{{ velocity_summary.period_count|pluralize }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat__label">Best month</span>
+                    <span class="stat__value">{{ velocity_summary.best_velocity|floatformat:2 }}</span>
+                    <span class="stat__hint">{{ velocity_summary.best_period }}</span>
+                </div>
+            </section>
+        {% endif %}
+        <div class="chart-grid is-2">
+            <div id="team-velocity-chart-container">
+                {% include 'partials/team_velocity_chart.html' %}
+            </div>
+            <div id="team-sp-chart-container">
+                {% include 'partials/team_story_points_chart.html' %}
+            </div>
+        </div>
+        <div id="task-details-container" hx-indicator="#loading-indicator"
+             {% if selected_period %}hx-get="{% url 'ui_web:team_velocity_tasks' %}" hx-include="#velocity-options" hx-trigger="load"{% endif %}>
+            {% if selected_period %}
+                {% include "partials/loading_indicator.html" %}
+            {% endif %}
+        </div>
     {% endif %}
-</div>
-{% endif %}
+</article>

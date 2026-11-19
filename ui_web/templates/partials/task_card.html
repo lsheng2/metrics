@@ -1,54 +1,34 @@
-{% load avatar_filters %}
-<div class="card mb-3 task-card{% if task.forecast.health_status.name == "GREEN" %} is-health-green{% elif task.forecast.health_status.name == "YELLOW" %} is-health-yellow{% elif task.forecast.health_status.name == "ORANGE" %} is-health-orange{% elif task.forecast.health_status.name == "RED" %} is-health-red{% elif task.forecast.health_status.name == "GRAY" %} is-health-gray{% endif %}">
-    <div class="card-content p-3">
-        <div class="is-flex is-justify-content-space-between is-align-items-center mb-2">
-            <code class="is-size-7">{{ task.id }}</code>
-            {% if task.assignment.assignee %}
-                <span class="tag avatar-initials has-text-white"
-                      style="background-color: {{ task.assignment.assignee.display_name|avatar_color }};"
-                      title="{{ task.assignment.assignee.display_name }}">
-                    {{ task.assignment.assignee.display_name|initials }}
-                </span>
-            {% else %}
-                <span class="is-size-7 has-text-grey-light">Unassigned</span>
-            {% endif %}
-        </div>
-        <p class="is-size-7 mb-1">
-            {% if task.system_metadata.url %}
-                <a href="{{ task.system_metadata.url }}" target="_blank">{{ task.title }}</a>
-            {% else %}
-                {{ task.title }}
-            {% endif %}
-        </p>
-        {% if task.parent %}
-        <p class="is-size-7 has-text-grey-light mb-2">
-            {% if task.parent.system_metadata.url %}
-                <a href="{{ task.parent.system_metadata.url }}" target="_blank" class="has-text-grey-light">{{ task.parent.title|default:task.parent.id }}</a>
-            {% else %}
-                {{ task.parent.title|default:task.parent.id }}
-            {% endif %}
-        </p>
-        {% endif %}
-        <div class="is-size-7 has-text-grey">
-            {% if task.time_tracking.total_spent_time_days %}{{ task.time_tracking.total_spent_time_days|floatformat:1 }}d{% else %}-{% endif %}
-            {% if task.story_points %}&middot; SP {{ task.story_points }}{% endif %}
-        </div>
-        {% if release_column_enabled and task.releases %}
-        <div class="is-size-7 has-text-grey-light mt-2">
-            {% for release in task.releases %}{{ release.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-        </div>
-        {% endif %}
-        {% if pr_gateway_column_enabled and task.linked_pull_request %}
-        <hr class="my-2">
-        <div class="is-size-7">
-            <span class="has-text-grey-light mr-1">Policy gateway:</span>
-            <span hx-get="{% url 'ui_web:partials_task_pr_gateway' task.id %}?pull_request_id={{ task.linked_pull_request.id|urlencode }}&repository_id={{ task.linked_pull_request.repository_id|urlencode }}&project_id={{ task.linked_pull_request.project_id|urlencode }}&project={{ task.linked_pull_request.project_name|urlencode }}"
-                  hx-trigger="revealed"
-                  hx-target="this"
-                  hx-swap="innerHTML">
-                <span class="icon is-small has-text-grey-light"><span class="loader"></span></span>
-            </span>
-        </div>
+<article class="board-card"{% if task.forecast.health_status %} data-health="{{ task.forecast.health_status.name }}"{% endif %}>
+    <div class="board-card__top">
+        <span class="board-card__key">{{ task.id }}</span>
+        {% if task.assignment.assignee %}
+            {% include "partials/avatar.html" with person=task.assignment.assignee avatar_size="medium" avatar_labelled=True only %}
+        {% else %}
+            <span>Unassigned</span>
         {% endif %}
     </div>
-</div>
+    {% if task.system_metadata.url %}
+        <a class="board-card__title" href="{{ task.system_metadata.url }}" target="_blank" rel="noopener noreferrer" title="{{ task.title }}">{{ task.title }}</a>
+    {% else %}
+        <p class="board-card__title" title="{{ task.title }}">{{ task.title }}</p>
+    {% endif %}
+    {% if task.parent %}
+        <p class="board-card__parent" title="Parent {{ task.parent.id }}"><span class="is-sr-only">Parent: </span>{{ task.parent.title|default:task.parent.id }}</p>
+    {% endif %}
+    <div class="board-card__meta">
+        {% if task.forecast.health_status %}{% include "partials/task_health.html" with forecast=task.forecast only %}{% endif %}
+        {% if task.time_tracking.total_spent_time_days %}<span>{{ task.time_tracking.total_spent_time_days|floatformat:1 }}d spent</span>{% endif %}
+        {% if task.story_points is not None %}<span>{{ task.story_points|floatformat:"-1" }} SP</span>{% endif %}
+        {% if task.child_tasks_count %}<span>{{ task.child_tasks_count }} subtask{{ task.child_tasks_count|pluralize }}</span>{% endif %}
+    </div>
+    {% if release_column_enabled and task.releases %}
+        <div class="tags">{% for release in task.releases %}<span class="tag is-small">{{ release.name }}</span>{% endfor %}</div>
+    {% endif %}
+    {% if pr_gateway_column_enabled and task.linked_pull_request %}
+        <div class="board-card__gateway">
+            <span class="board-card__gateway-label">Policy gateway</span>
+            <span hx-get="{% url 'ui_web:partials_task_pr_gateway' task.id %}?pull_request_id={{ task.linked_pull_request.id|urlencode }}&amp;repository_id={{ task.linked_pull_request.repository_id|urlencode }}&amp;project_id={{ task.linked_pull_request.project_id|urlencode }}&amp;project={{ task.linked_pull_request.project_name|urlencode }}"
+                  hx-trigger="revealed" hx-target="this" hx-swap="innerHTML"><span class="loader" aria-hidden="true"></span></span>
+        </div>
+    {% endif %}
+</article>

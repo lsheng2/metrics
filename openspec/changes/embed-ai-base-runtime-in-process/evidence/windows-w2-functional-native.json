@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "kind": "w2-functional-progress-not-acceptance",
+  "dashboard_baseline_commit": "4192656560b8c945422ea30649708c37388c2b04",
+  "source_kind": "working-tree",
+  "source_files": [
+    {
+      "sha256": "912882e9265e74d29ab121369abccd2f345e4092bbb97ed7f8b2c9a82d72ec16",
+      "path": "ai_host/tests/test_serve_native_signal.py"
+    },
+    {
+      "sha256": "8ac179162159be5fdf6248e43baae31fe26677f2b37366560f873a8aacaf5093",
+      "path": "ai_host/tests/serve_signal_entry.py"
+    },
+    {
+      "sha256": "0cfcd2b4598a3c188743077745b666dd056440bcc46e1964cb85c4ac79d425cb",
+      "path": "ai_host/tests/serve_test_entry.py"
+    },
+    {
+      "sha256": "40859f08d314879113949fa5168f50fe11dd6a488503c666d67c223eefe5034d",
+      "path": "ai_host/management/commands/serve.py"
+    },
+    {
+      "sha256": "79951c8db99ac1f9b0b9fe3049303b0f66c1bbe941da8176bbb6e43cde82840b",
+      "path": "ai_host/lifecycle.py"
+    },
+    {
+      "sha256": "c1557e16b4e41e290dd643ec829c4ab5d3f1ad13e51c9c87572cac8ac54fccb7",
+      "path": "ai_host/serve_control.py"
+    },
+    {
+      "sha256": "78de43d7364d27eedbeba747a21b9b7a03ec3d462da9c05d5060bc62e80a382c",
+      "path": "ai_host/serve_exit.py"
+    },
+    {
+      "sha256": "4df8b2f7e910f8633eab24907b71e8d33a1c0b7950675c910540a64c995970c7",
+      "path": "ai_host/exit_inventory.py"
+    },
+    {
+      "sha256": "d5689323190d168eb19c5d8a0c75c8313e804db61bde7afa6cd8f80abb823a76",
+      "path": "ai_host/exit_processes.py"
+    },
+    {
+      "sha256": "deeb445e347ddccbd0f6f03ac761c438ee0e928d939db0cc7a74599ec756f35e",
+      "path": "ai_host/wiring.py"
+    },
+    {
+      "sha256": "5d47a11e27b5b134d08b2b33c36e6e9fe0fece87544066be8a504052d317c469",
+      "path": "scripts/service_lifecycle_engine/process_exit.py"
+    },
+    {
+      "sha256": "3ad11bd5654c5b498b99618335942c867976dce835e5a312487800aa8ffdbef1",
+      "path": "scripts/service_lifecycle_engine/controlled_stop.py"
+    }
+  ],
+  "native_matrix": {
+    "sha256": "98823dd90a72dea85f6e9fa5886cc3b3a0098572f212f6fbb781f9933d972b54",
+    "second_signal_phases": [
+      "drain",
+      "flush",
+      "final"
+    ],
+    "cases": [
+      "ai_host.tests.test_serve_native_signal::test_native_normal_stop_triggers_complete_cleanup_and_exit_zero[stop-file]",
+      "ai_host.tests.test_serve_native_signal::test_native_normal_stop_triggers_complete_cleanup_and_exit_zero[lifetime]",
+      "ai_host.tests.test_serve_native_signal::test_native_normal_stop_triggers_complete_cleanup_and_exit_zero[SIGINT]",
+      "ai_host.tests.test_serve_native_signal::test_native_normal_stop_triggers_complete_cleanup_and_exit_zero[SIGTERM]",
+      "ai_host.tests.test_serve_native_signal::test_native_normal_stop_triggers_complete_cleanup_and_exit_zero[CTRL_BREAK_EVENT]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[drain-stop-file]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[drain-lifetime]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[drain-SIGINT]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[drain-SIGTERM]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[drain-CTRL_BREAK_EVENT]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[flush-stop-file]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[flush-lifetime]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[flush-SIGINT]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[flush-SIGTERM]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_signal_during_cleanup_exits_130_in_one_second[flush-CTRL_BREAK_EVENT]",
+      "ai_host.tests.test_serve_native_signal::test_native_second_control_event_after_stop_file_exits_130_in_one_second"
+    ],
+    "passed": 16,
+    "normal_triggers": [
+      "stop-file",
+      "lifetime",
+      "SIGINT",
+      "SIGTERM",
+      "CTRL_BREAK_EVENT"
+    ],
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117/w2-functional-native-signal-matrix-r4.xml"
+  },
+  "retained_old_fixture": {
+    "normal_stop": true,
+    "http_status": 200,
+    "source_commit": "ee7bfb0e734e1123ba5c611997fedd6052f50049",
+    "run_dir": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-seed-data/b8e05e89-ddf2-4f69-bc79-1c2527d1147d",
+    "publication_path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-seed-data/b8e05e89-ddf2-4f69-bc79-1c2527d1147d/evidence/retained-publication.json",
+    "readiness_path": "D:/AIGC/artifacts/mdb2-windows-20261117/migration-seed-data/b8e05e89-ddf2-4f69-bc79-1c2527d1147d/evidence/retained-readiness.json",
+    "readiness_sha256": "e498a7b935ec1f7169d50a6c83c5f33fc9272dbdf6413e1d5f9561efd51a496c",
+    "base_dispatch_count": 0,
+    "publication_sha256": "2d59be515a9089fd10c28bcc54f448021972107975d9844d35fbef7d000735a6",
+    "publication_visible": true
+  },
+  "retained_failures": {
+    "diagnoses": [
+      "Candidate environment has no psutil; native inventory and SLE exit observation reused",
+      "Creation time is not process liveness; retained SLE handle observes actual exit",
+      "Seed archive author differed from host configuration; new fixture uses existing archive_config builder"
+    ],
+    "fixture": "migration-seed-data/5cd026a9-88c7-4b4d-abb3-0625ad928aaa",
+    "native": [
+      "w2-functional-native-signal-matrix-r1.xml",
+      "w2-functional-native-signal-matrix-r2.xml"
+    ]
+  },
+  "scope": "Native functional stop regression and executable old retained-data readiness only; no W2.CERTIFY, W3 migration, final acceptance or performance claim"
+}

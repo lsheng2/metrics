@@ -35,7 +35,7 @@ if ($Broad) {
         ui_web.tests.test_workbench_views `
         ui_web.tests.test_workbench_chart_views `
         ui_web.tests.test_workbench_ai_host_actions `
-        ui_web.tests.test_ai_dashboard_api_surface `
+        ui_web.tests.test_embedded_chart_workflow `
         ui_web.tests.test_ui_design_baseline_gate `
         ui_web.tests.test_ui_design_monkey_journey }
 

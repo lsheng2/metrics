@@ -312,7 +312,13 @@ def test_shouldFailClosedWhenCompatibilityStateFileIsCorrupt(tmp_path):
 
 def test_shouldEmitPreparedAndReadyEventsDuringRestart(monkeypatch, tmp_path):
     events = []
-    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", event_handler=events.append)
+    lifecycle = ServiceLifecycleEngine(
+        "test-project",
+        tmp_path,
+        state_directory=tmp_path / "state",
+        event_handler=events.append,
+        platform_ops=PlatformOperationSet(is_port_available=lambda host, port: True),
+    )
     spec = ServiceSpec.from_values("api", [8100], [sys.executable, "api.py"])
 
     monkeypatch.setattr(lifecycle, "prepare_startup", lambda service_specs, **kwargs: [])
@@ -389,7 +395,13 @@ class FakeProcess:
 
 def test_shouldEmitAbortedEventWhenRestartStartFails(monkeypatch, tmp_path):
     events = []
-    lifecycle = ServiceLifecycleEngine("test-project", tmp_path, state_directory=tmp_path / "state", event_handler=events.append)
+    lifecycle = ServiceLifecycleEngine(
+        "test-project",
+        tmp_path,
+        state_directory=tmp_path / "state",
+        event_handler=events.append,
+        platform_ops=PlatformOperationSet(is_port_available=lambda host, port: True),
+    )
     spec = ServiceSpec.from_values("api", [8100], [sys.executable, "api.py"])
 
     monkeypatch.setattr(lifecycle, "prepare_startup", lambda service_specs, **kwargs: [])
@@ -416,6 +428,7 @@ def test_shouldEmitAbortedEventWhenRestartStartFails(monkeypatch, tmp_path):
 def test_restartServicesShouldEmitAbortedEventWithPersistedProvenanceWhenStartFails(monkeypatch, tmp_path):
     events = []
     operations = PlatformOperationSet(
+        is_port_available=lambda host, port: True,
         start_process=lambda *args, **kwargs: FakeProcess(12345),
         process_exists=lambda pid: True,
         process_matches_command=lambda pid, command: True,

@@ -141,12 +141,13 @@ def create_standalone_scale_fixture(
     )
     source_head = git_head(fixture.archive_root, fixture.project.id, fixture.stage.id)
     fixture.source_reader.source_commit = source_head
-    from project_management.out.ai_task_contract import AiTaskContract
+    from project_management.app.api.ai_profiles import load_task_profile
+    from project_management.services.task_contracts import SummaryTaskContract
     from project_management.services.report_sources import ReportSourceReader
-    from project_management.tests.summary_fixtures import PACK_ROOT
     from project_management.storage.repository import CaptureArchiveRepository
 
-    fixture.source_reader.snapshot = ReportSourceReader(fixture.archive, AiTaskContract.load(PACK_ROOT)).read(
+    contract = SummaryTaskContract(load_task_profile('metrics.project_summary'))
+    fixture.source_reader.snapshot = ReportSourceReader(fixture.archive, contract).read(
         fixture.actor, fixture.project.id, fixture.stage.id, ReportSelection(capture_id=capture_ids[-1]),
     )
     if len(fixture.source_reader.snapshot.rows) != 3:

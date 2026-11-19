@@ -79,6 +79,42 @@ class TestGrafanaRenderConfig(TestCase):
             self._provider_target_keys(first_dashboard),
         )
 
+    def test_shouldGenerateTimeseriesTargetWithTimestampColumnAndEvidenceFields(self):
+        # Given
+        render_config = self._valid_render_config()
+        allowlist = grafana_render_config.load_allowlist(ALLOWLIST_PATH)
+
+        # When
+        dashboard = grafana_render_config.generate_dashboard(render_config, allowlist)
+
+        # Then
+        target = next(
+            target
+            for panel in dashboard['panels']
+            for target in panel.get('targets', [])
+            if target['metricsContract']['shape'] == 'wide_bucket_series'
+        )
+        columns = {column['selector']: column for column in target['columns']}
+        self.assertEqual('timestamp', columns['bucket_start']['type'])
+        self.assertEqual('2006-01-02', columns['bucket_start']['timestampFormat'])
+        self.assertEqual('string', columns['bucket_id']['type'])
+        self.assertEqual('string', columns['calculation_run_id']['type'])
+        self.assertEqual('number', columns['new_critical_high']['type'])
+        self.assertIn('bucket_start', target['metricsContract']['requiredFields'])
+        self.assertEqual(['calculation_run_id', 'bucket_id'], target['metricsContract']['evidenceLinkFields'])
+
+    def test_shouldGenerateUniquePanelIdsWhenSectionRowsWrapNumericDraftPanels(self):
+        # Given
+        render_config = self._valid_render_config()
+        allowlist = grafana_render_config.load_allowlist(ALLOWLIST_PATH)
+
+        # When
+        dashboard = grafana_render_config.generate_dashboard(render_config, allowlist)
+
+        # Then
+        panel_ids = [panel['id'] for panel in dashboard['panels']]
+        self.assertEqual(len(panel_ids), len(set(panel_ids)))
+
     def test_shouldWriteGeneratedDashboardArtifactThatPassesGrafanaValidator(self):
         # Given
         import tempfile
@@ -117,9 +153,10 @@ class TestGrafanaRenderConfig(TestCase):
                 {
                     'id': 'quality',
                     'title': 'Quality',
+                    'layout': {'x': 0, 'y': 0, 'w': 24, 'h': 1},
                     'panels': [
                         {
-                            'panel_id': 'open_bug_trend',
+                            'panel_id': '1',
                             'title': 'Open Bug Trend',
                             'type': 'timeseries',
                             'layout': {'x': 0, 'y': 0, 'w': 12, 'h': 8},

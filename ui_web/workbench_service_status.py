@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from django.conf import settings
+from django.utils.translation import gettext
 
 from scripts.service_lifecycle_engine import (
     FilesystemLifecycleStateStore,
@@ -18,28 +19,28 @@ from scripts.service_lifecycle_engine import (
     resolve_lifecycle_service_launch_metadata,
 )
 
-from .ai_base_workbench_adapter import AiBaseWorkbenchAdapter
+from ai_host.pane import runtime_status
 from .workbench_registry import WorkbenchServiceStatus
 
 
-DEFAULT_FULL_STACK_LAUNCHER_COMMAND = 'powershell -ExecutionPolicy Bypass -File scripts\\e2e_dashboard_ai_stack.ps1 -Action restart -ForceByPort'
+DASHBOARD_RESTART_COMMAND = 'python manage.py serve --port <port>'
 
 
 @dataclass(slots=True)
 class WorkbenchServiceStatusBuilder:
-    ai_adapter: AiBaseWorkbenchAdapter
     dashboard_home_url: str
 
-    def build(self, sidecar_status: dict) -> list[WorkbenchServiceStatus]:
-        ai_status = sidecar_status.get('status') or 'disabled'
+    def build(self) -> list[WorkbenchServiceStatus]:
+        runtime = runtime_status()
+        ai_status = runtime['status']
         grafana_base_url = str(settings.METRICS_AI_GRAFANA_BASE_URL or '').rstrip('/')
-        ai_frontend_url = self.ai_adapter.frontend_base_url(sidecar_status)
+        ai_url = runtime['root_path']
         checked_at = self._status_checked_at()
         lifecycle_services = self._dashboard_lifecycle_services()
         return [
             self._status_from_snapshot(
                 'dashboard',
-                'Dashboard UI',
+                gettext('Dashboard UI'),
                 self._live_snapshot(
                     service_id='dashboard',
                     status=self._health_status_for_observed_dashboard_service(lifecycle_services, 'django'),
@@ -51,7 +52,9 @@ class WorkbenchServiceStatusBuilder:
                     provenance=self._provenance_for(lifecycle_services, 'django'),
                 ),
                 self.dashboard_home_url,
-                next_action='If this shell stops responding, restart python manage.py runserver on the Dashboard port.',
+                next_action=gettext('If this shell stops responding, restart %(command)s on the Dashboard port.') % {
+                    'command': DASHBOARD_RESTART_COMMAND,
+                },
             ),
             self._status_from_snapshot(
                 'grafana',
@@ -63,12 +66,12 @@ class WorkbenchServiceStatusBuilder:
                     checked_at=checked_at,
                     target_url=self._base_url_for(lifecycle_services, 'grafana', grafana_base_url),
                     lifecycle_state=self._lifecycle_state_for(lifecycle_services, 'grafana'),
-                    reason='' if grafana_base_url else 'METRICS_AI_GRAFANA_BASE_URL is empty.',
+                    reason='' if grafana_base_url else gettext('METRICS_AI_GRAFANA_BASE_URL is empty.'),
                     launch_metadata=self._launch_metadata_for(lifecycle_services, 'grafana'),
                     provenance=self._provenance_for(lifecycle_services, 'grafana'),
                 ),
                 self._base_url_for(lifecycle_services, 'grafana', grafana_base_url),
-                '' if grafana_base_url else 'METRICS_AI_GRAFANA_BASE_URL is empty.',
+                '' if grafana_base_url else gettext('METRICS_AI_GRAFANA_BASE_URL is empty.'),
                 self._grafana_next_action(grafana_base_url),
             ),
             self._status_from_snapshot(
@@ -79,19 +82,21 @@ class WorkbenchServiceStatusBuilder:
                     status=self._health_status_for_ai_base(ai_status),
                     display_status=self._display_status_for_ai_base(ai_status),
                     checked_at=checked_at,
-                    target_url=ai_frontend_url,
-                    reason=str(sidecar_status.get('reason') or ''),
-                    special_state='' if ai_status in {'ready', 'connected', 'available'} else ai_status,
-                    launch_metadata=ServiceLaunchMetadata(source='ai-sidecar-status'),
+                    target_url=ai_url,
+                    reason='',
+                    special_state='' if ai_status == 'ready' else ai_status,
+                    launch_metadata=ServiceLaunchMetadata(source='embedded-runtime'),
                 ),
-                ai_frontend_url,
-                str(sidecar_status.get('reason') or ''),
-                self.ai_adapter.next_action(ai_status),
+                ai_url,
+                '',
+                gettext('If this shell stops responding, restart %(command)s on the Dashboard port.') % {
+                    'command': DASHBOARD_RESTART_COMMAND,
+                },
             ),
         ]
 
     def _status_checked_at(self) -> str:
-        return datetime.now().strftime('%I:%M:%S %p').lstrip('0')
+        return datetime.now().strftime('%H:%M:%S')
 
     def _live_snapshot(
         self,
@@ -196,12 +201,10 @@ class WorkbenchServiceStatusBuilder:
         return 'warning'
 
     def _health_status_for_ai_base(self, ai_status: str) -> ServiceHealthStatus:
-        if ai_status in {'ready', 'connected', 'available'}:
+        if ai_status == 'ready':
             return ServiceHealthStatus.READY
-        if ai_status in {'disabled', 'stopped'}:
+        if ai_status == 'not_running':
             return ServiceHealthStatus.STOPPED
-        if ai_status in {'unavailable', 'disconnected'}:
-            return ServiceHealthStatus.UNREACHABLE
         return ServiceHealthStatus.DEGRADED
 
     def _display_status_for_ai_base(self, ai_status: str) -> str:
@@ -322,8 +325,8 @@ class WorkbenchServiceStatusBuilder:
 
     def _grafana_next_action(self, grafana_base_url: str) -> str:
         if not grafana_base_url:
-            return 'Set METRICS_AI_GRAFANA_BASE_URL and start the Grafana service before using the panel preview.'
+            return gettext('Set METRICS_AI_GRAFANA_BASE_URL and start the Grafana service before using the panel preview.')
         port = urlparse(grafana_base_url).port
         if port:
-            return f'If the panel is blank, check that Grafana is listening on port {port}.'
-        return 'If the panel is blank, check the configured Grafana URL and service health.'
+            return gettext('If the panel is blank, check that Grafana is listening on port %(port)s.') % {'port': port}
+        return gettext('If the panel is blank, check the configured Grafana URL and service health.')

@@ -1,0 +1,61 @@
+<td>
+    {% if task.assignment.assignee %}
+        <span class="person">{% include "partials/avatar.html" with person=task.assignment.assignee only %}{{ task.assignment.assignee.display_name }}</span>
+    {% else %}
+        <span class="has-text-grey-light">Unassigned</span>
+    {% endif %}
+</td>
+<td class="task-table__task">
+    <div class="work-item-ref">
+        <span class="work-item-ref__key">{{ task.id }}</span>
+        <div class="work-item-ref__body">
+            {% if task.system_metadata.url %}
+                <a class="work-item-ref__title" href="{{ task.system_metadata.url }}" target="_blank" rel="noopener noreferrer" title="{{ task.title }}">{{ task.title }}</a>
+            {% else %}
+                <span class="work-item-ref__title" title="{{ task.title }}">{{ task.title }}</span>
+            {% endif %}
+            {% if task.parent %}
+                <span class="cell-meta" title="Parent {{ task.parent.id }}"><span class="is-sr-only">Parent: </span>{% if task.parent.system_metadata.url %}<a href="{{ task.parent.system_metadata.url }}" target="_blank" rel="noopener noreferrer">{{ task.parent.title|default:task.parent.id }}</a>{% else %}{{ task.parent.title|default:task.parent.id }}{% endif %}</span>
+            {% endif %}
+        </div>
+    </div>
+</td>
+<td>{% include "partials/task_health.html" with forecast=task.forecast only %}</td>
+<td class="is-numeric">{% if task.time_tracking.total_spent_time_days %}{{ task.time_tracking.total_spent_time_days|floatformat:1 }}d{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+<td class="is-numeric">{% if task.time_tracking.current_assignee_spent_time_days %}{{ task.time_tracking.current_assignee_spent_time_days|floatformat:1 }}d{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+<td class="is-numeric">{% if task.forecast and task.forecast.estimation_time_days %}{{ task.forecast.estimation_time_days|floatformat:1 }}d{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+<td class="is-numeric">{% if task.story_points is not None %}{{ task.story_points|floatformat:"-1" }}{% else %}<span class="has-text-grey-light">—</span>{% endif %}</td>
+<td class="is-numeric">
+    {% if task.child_tasks_count and not is_child_row %}
+        <button type="button" class="button is-small is-light task-children-toggle"
+                aria-expanded="false" aria-controls="children-{{ task.id }}"
+                aria-label="{{ task.child_tasks_count }} subtask{{ task.child_tasks_count|pluralize }}"
+                hx-get="{% url 'ui_web:partials_task_children' task.id %}"
+                hx-target="next tbody" hx-swap="innerHTML" hx-trigger="click once">
+            <i class="iconoir-nav-arrow-right" aria-hidden="true"></i><span class="loader" aria-hidden="true"></span><span>{{ task.child_tasks_count }}</span>
+        </button>
+    {% elif task.child_tasks_count %}
+        {{ task.child_tasks_count }}
+    {% else %}
+        <span class="has-text-grey-light">—</span>
+    {% endif %}
+</td>
+{% if pr_gateway_column_enabled %}
+<td>
+    {% if task.linked_pull_request %}
+        <span hx-get="{% url 'ui_web:partials_task_pr_gateway' task.id %}?pull_request_id={{ task.linked_pull_request.id|urlencode }}&amp;repository_id={{ task.linked_pull_request.repository_id|urlencode }}&amp;project_id={{ task.linked_pull_request.project_id|urlencode }}&amp;project={{ task.linked_pull_request.project_name|urlencode }}"
+              hx-trigger="revealed" hx-target="this" hx-swap="innerHTML"><span class="loader" aria-hidden="true"></span></span>
+    {% else %}
+        <span class="has-text-grey-light">—</span>
+    {% endif %}
+</td>
+{% endif %}
+{% if release_column_enabled %}
+<td>
+    {% if task.releases %}
+        <span class="tags">{% for release in task.releases %}<span class="tag is-small">{{ release.name }}</span>{% endfor %}</span>
+    {% else %}
+        <span class="has-text-grey-light">—</span>
+    {% endif %}
+</td>
+{% endif %}

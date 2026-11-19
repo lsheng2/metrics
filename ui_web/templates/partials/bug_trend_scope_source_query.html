@@ -1,0 +1,89 @@
+{% if scope_provider_context.selected_provider_id == 'jira' %}
+<section class="provider-section scope-config-source-panel" data-source-mode-root aria-labelledby="scope-source-heading">
+    <div class="provider-section-heading">
+        <div>
+            <h3 class="provider-section-title" id="scope-source-heading">Source population</h3>
+            <p class="provider-section-help">This source mode is the single authority for Jira ticket membership. The inactive source mode is ignored during save and sync.</p>
+        </div>
+        <div class="buttons has-addons scope-source-mode-switch" role="radiogroup" aria-label="Jira source mode">
+            <label class="button is-small toggle-button" for="source-mode-custom-jql">
+                <input id="source-mode-custom-jql" type="radio" name="source_mode" value="{{ source_mode_context.custom_jql_mode }}" data-source-mode-option {% if source_mode_context.custom_jql_active %}checked{% endif %}>
+                Custom JQL
+            </label>
+            <label class="button is-small toggle-button" for="source-mode-query-builder">
+                <input id="source-mode-query-builder" type="radio" name="source_mode" value="{{ source_mode_context.query_builder_mode }}" data-source-mode-option {% if source_mode_context.query_builder_active %}checked{% endif %}>
+                Query Builder
+            </label>
+        </div>
+    </div>
+    <div class="scope-source-panels">
+        <div class="scope-source-panel{% if not source_mode_context.custom_jql_active %} is-inactive{% endif %}"
+             data-source-mode-panel="{{ source_mode_context.custom_jql_mode }}"
+             {% if not source_mode_context.custom_jql_active %}hidden{% endif %}>
+            <div class="dashboard-form-field scope-config-form-field scope-config-form-field-wide">
+                <label class="label" for="scope-jql">Custom JQL{% include "partials/help_tip.html" with label="Custom JQL" text="Jira Query Language used for sync and metadata discovery when Custom JQL is selected. Query Builder fields are ignored in this mode." %} <span class="dashboard-required-tag">Required to save</span></label>
+                <textarea class="textarea" id="scope-jql" name="jql" required data-source-mode-input data-source-mode="{{ source_mode_context.custom_jql_mode }}" data-required-label="Custom JQL" data-required-message="Custom JQL is required before saving this scope." {% if not source_mode_context.custom_jql_active %}disabled{% endif %}>{{ source_mode_context.custom_jql_value }}</textarea>
+            </div>
+            <p class="provider-section-help">Query Builder fields are an inactive source mode and are ignored unless Query Builder is selected.</p>
+        </div>
+        <div class="scope-source-panel{% if not source_mode_context.query_builder_active %} is-inactive{% endif %}"
+             data-source-mode-panel="{{ source_mode_context.query_builder_mode }}"
+             {% if not source_mode_context.query_builder_active %}hidden{% endif %}>
+            <p class="provider-section-help">Type values directly, or open a field picker to refresh Jira metadata and search selectable values in place.</p>
+            <div id="query-builder-controls">
+                {% include "partials/bug_trend_scope_query_builder_controls.html" %}
+            </div>
+            <div class="scope-query-builder-toolbar scope-query-builder-validation-toolbar">
+                <p>Validate values checks the current Query Builder fields against refreshed Jira metadata without saving the scope.</p>
+                <button class="button is-small" type="button"
+                        hx-get="{{ scope_metadata_url }}?refresh_metadata=1&validate_scope=1"
+                        hx-include="closest form"
+                        hx-target="#scope-metadata-options"
+                        hx-swap="innerHTML">Validate values</button>
+            </div>
+            <div id="scope-metadata-options" class="scope-query-builder-metadata-result">
+                {% include "partials/bug_trend_scope_metadata.html" %}
+            </div>
+            <p class="provider-section-help">Custom JQL is an inactive source mode and is ignored while Query Builder is selected.</p>
+        </div>
+    </div>
+</section>
+{% else %}
+<section class="provider-section scope-config-source-panel" aria-labelledby="scope-source-heading">
+    <h3 class="provider-section-title" id="scope-source-heading">Source population</h3>
+    <div class="dashboard-form-field scope-config-form-field scope-config-form-field-wide">
+        <label class="label" for="scope-jql">{{ scope_provider_context.source_query_label|default:"JQL" }}{% include "partials/help_tip.html" with label="Source query" text=scope_provider_context.source_query_help %} <span class="dashboard-required-tag">Required to save</span></label>
+        <textarea class="textarea" id="scope-jql" name="jql" required data-required-label="{{ scope_provider_context.source_query_label|default:'JQL' }}" data-required-message="{{ scope_provider_context.source_query_label|default:'JQL' }} is required before saving this scope.">{{ config.jql }}</textarea>
+    </div>
+</section>
+<section class="provider-section scope-config-metadata-section" aria-labelledby="scope-metadata-heading">
+    <div class="provider-section-heading">
+        <div>
+            <h3 class="provider-section-title" id="scope-metadata-heading">Metadata discovery context{% include "partials/help_tip.html" with label="Metadata discovery context" text="Provider-derived candidates for projects, issue types, statuses, and fields. Refreshing them does not save the scope and is advisory unless selected in Query Builder." %}</h3>
+            <p class="provider-section-help">{{ scope_provider_context.metadata_summary }} Metadata refresh is advisory unless selected in Query Builder. IP and Project label are display labels or binding hints.</p>
+        </div>
+        {% if scope_provider_context.metadata_supported %}
+            <button class="button is-small" type="button"
+                    hx-get="{% url 'ui_web:bug_trend_scope_metadata' %}"
+                    hx-include="closest form"
+                    hx-target="#scope-metadata-options"
+                    hx-swap="innerHTML">Refresh metadata</button>
+        {% else %}
+            <button class="button is-small" type="button" disabled>Refresh metadata unavailable</button>
+        {% endif %}
+    </div>
+    {% if scope_provider_context.metadata_supported %}
+        <div class="dashboard-form-field scope-config-form-field">
+            <label class="label" for="scope-selected-projects">Selected Jira projects{% include "partials/help_tip.html" with label="Selected Jira projects" text="Optional fallback for metadata refresh when Custom JQL uses filter ids or cannot expose project keys. This is advisory metadata context unless the project is selected in Query Builder." %}</label>
+            <input class="input" id="scope-selected-projects" name="selected_projects" placeholder="STDEL, 131600">
+        </div>
+    {% else %}
+        <div class="message is-warning">
+            <div class="message-body">This provider uses provider profile workflow/readiness instead of Jira metadata refresh on this page.</div>
+        </div>
+    {% endif %}
+    <div id="scope-metadata-options" class="scope-query-builder-metadata-result">
+        {% include "partials/bug_trend_scope_metadata.html" %}
+    </div>
+</section>
+{% endif %}

@@ -1,0 +1,109 @@
+/*
+ * Meridian application shell: ui_web/static/css/shell/*.css, loaded after the foundation layer
+ * in the order listed in ui_web/static_assets.py.
+ * Owns the page frame only: sidebar navigation, collapsed rail, mobile drawer, top bar,
+ * content well, command palette, toasts, service status bar and workbench full-bleed mode.
+ * Every color, size and duration comes from theme.css. Page content styles live in
+ * css/foundation/ (primitives) and css/pages/ (feature surfaces).
+ *
+ * This file: frame variables, document frame and shared shell controls.
+ */
+
+:root {
+    --dashboard-sidebar-width: var(--layout-sidebar-width);
+    --app-nav-item-height: 1.875rem;
+}
+
+/* The fixed status bar reserves its height at the document end, so no content can sit under it. */
+.app-body {
+    --app-statusbar-offset: 0px;
+    min-height: 100dvh;
+    padding-bottom: var(--app-statusbar-offset);
+    background: var(--color-canvas);
+}
+
+.app-body:has(> .workbench-status-bar) {
+    --app-statusbar-offset: var(--layout-statusbar-height);
+}
+
+/* Focus moves and in-page anchors scroll clear of the sticky top bar and the fixed status bar. */
+html {
+    scroll-padding-top: var(--layout-topbar-height);
+}
+
+html:has(> .app-body > .workbench-status-bar) {
+    scroll-padding-bottom: var(--layout-statusbar-height);
+}
+
+.skip-link {
+    position: fixed;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: var(--z-toast);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-inverse);
+    color: var(--color-on-inverse);
+    font-weight: var(--weight-medium);
+    transform: translateY(-300%);
+    transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.skip-link:focus-visible {
+    color: var(--color-on-inverse);
+    transform: none;
+}
+
+.app-shell {
+    display: flex;
+    align-items: flex-start;
+    min-height: calc(100dvh - var(--app-statusbar-offset));
+}
+
+/* ---------------------------------------------------------------------------
+ * Shared shell controls
+ * ------------------------------------------------------------------------ */
+
+.app-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-height-sm);
+    height: var(--control-height-sm);
+    flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: var(--text-lg);
+    transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.app-icon-button:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+}
+
+.app-icon-button:active {
+    background: var(--color-surface-active);
+}
+
+.app-kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 var(--space-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-muted);
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-medium);
+    line-height: 1;
+    white-space: nowrap;
+}

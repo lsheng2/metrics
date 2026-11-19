@@ -52,6 +52,7 @@ from .models import (
     ProvenanceCapability,
     ResolvedPortPlan,
     RestartResult,
+    ServiceExitedBeforeReadyError,
     ServiceSpec,
     ServiceState,
     StopResult,
@@ -75,6 +76,8 @@ from .startup_models import (
 )
 from .startup_orchestration import plan_service_startup, start_services_in_dependency_order
 from .platform_ops import is_port_available, process_exists
+from .controlled_stop import controlled_stop
+from .process_exit import ProcessExitObservation, observe_process_exit
 
 from .engine import ServiceLifecycleEngine
 from .platform import PlatformOperationSet
@@ -136,6 +139,7 @@ __all__ = [
     "ServiceDependency",
     "ServiceDependencyRequirement",
     "ServiceDiagnosticCode",
+    "ServiceExitedBeforeReadyError",
     "ServiceHealthSnapshot",
     "ServiceHealthStatus",
     "ServiceLaunchAttempt",
@@ -166,6 +170,9 @@ __all__ = [
     "assert_service_lifecycle_conformance",
     "build_external_service_state",
     "build_service_health_snapshot",
+    "controlled_stop",
+    "observe_process_exit",
+    "ProcessExitObservation",
     "capture_process_provenance",
     "diagnostic_value",
     "diagnostic_values",

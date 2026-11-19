@@ -549,7 +549,7 @@ Each calculation run writes a `bug_trend_calculation_run`, aggregate bucket coun
 Use existing baseline UI technology:
 
 - Django templates for page structure.
-- Bulma for layout and controls.
+- The Meridian design system (`ui_web/static/css/foundation/` primitives with the shell and page layers) for layout and controls.
 - HTMX for filter changes, sync actions, and partial reloads.
 - Chart.js for the mixed line/bar indicator chart.
 - `chartjs-adapter-date-fns` for date axes.
@@ -631,7 +631,7 @@ Responsibilities:
 | Date axis | chartjs-adapter-date-fns | Already loaded by baseline. Avoids custom date scale code. |
 | Milestone/current marker | chartjs-plugin-annotation | Already loaded by baseline. Avoids custom canvas overlays. |
 | UI partial updates | HTMX | Existing baseline pattern for content and evidence partials. |
-| Styling | Bulma | Existing baseline CSS framework. |
+| Styling | Meridian design system | Token-driven primitives in `ui_web/static/css/foundation/` (`frontend-design-requirements.md`). |
 | Data grid | HTML table first | Evidence-list MVP does not need DataTables/AG Grid yet. Add only if sorting/filtering exceeds native table needs. |
 
 Rejected for MVP:
@@ -677,7 +677,7 @@ Minimum browser UI scenarios:
 3. Clicking a bucket/series opens evidence with the same `calculation_run_id` and bucket id and displays the exact membership rows.
 4. A saved scope edit that changes `config_version_hash` prevents old runs from rendering as current results and prompts sync/recalculation.
 5. Date ranges before, after, or partially outside the completed calculation run coverage show unavailable or rejected states.
-6. The page uses the existing Bulma, HTMX, and Chart.js path and introduces no React/ECharts/Plotly/Recharts runtime dependency.
+6. The page uses the existing Meridian design system, HTMX, and Chart.js path and introduces no React/ECharts/Plotly/Recharts runtime dependency.
 
 ## DAG Implementation Plan
 
@@ -699,7 +699,7 @@ dirty_paths:
 | `SYNC-1` dashboard page load reads local durable data, not live Jira. | `jira_sync` and `jira_history/app/api` persistence | `bug_metrics`, `ui_web` | A focused test or trace showing `/bug-trend/` can render with Jira client mocked unavailable. |
 | `TREND-1` chart series names are stable dashboard outputs, not Jira status names. | `bug_metrics` domain service | `ui_web` chart and evidence views | Unit tests with two scopes using different status names produce the same series keys. |
 | `EVIDENCE-1` every chart bucket can resolve to the exact issue rows behind its counts. | `bug_metrics` calculation run and bucket membership artifact persistence | `bug_metrics/app/api` evidence query, `ui_web` evidence list | Tests for a bucket read persisted evidence rows with the same `calculation_run_id` and bucket artifact id as the bucket count, and later current-issue changes do not change old evidence row facts. |
-| `UI-1` indicator UI uses existing Bulma, HTMX, and Chart.js ownership path. | `ui_web` templates/views/static | Browser users | No React/ECharts/Plotly/Recharts dependency or parallel chart abstraction is introduced. |
+| `UI-1` indicator UI uses existing Meridian design system, HTMX, and Chart.js ownership path. | `ui_web` templates/views/static | Browser users | No React/ECharts/Plotly/Recharts dependency or parallel chart abstraction is introduced. |
 | `SEC-1` Jira credentials remain local secret/config only. | `.env`, deployment secret store, settings loader | `jira_sync/out` | `git ls-files` and staged diff scans do not contain `.env` or PAT-like values. |
 | `COV-1` chart ranges are limited to locally reliable Jira history coverage. | `jira_sync_cursor` and trend calculation run metadata | `bug_metrics`, `ui_web` | Tests selecting ranges before start, after end, and partially overlapping the completed calculation run coverage reject or mark buckets unavailable. |
 

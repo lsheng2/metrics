@@ -1,0 +1,152 @@
+{
+  "acceptance_profile": "functional",
+  "candidate": {
+    "source_commit": "d589ac8e6572a903edc3846e7d78195e85858868",
+    "version": "0.1.1.dev4",
+    "wheel": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\wheels\\ai_base_runtime-0.1.1.dev4-py3-none-any.whl",
+    "wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94"
+  },
+  "complete_conformance": {
+    "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\functional-closeout-20261119\\w2-complete-ff09d6f\\receipt.json",
+    "sha256": "e5c17ae6346c41c187d7b1fbd819143fcbd9ac98d7a3cfe03e3fc626b1c65c20"
+  },
+  "evidence_policy": "Counts overlap between producers; do not sum them. Whole green report reuse is not new execution.",
+  "functional_status": "PASS",
+  "generator": {
+    "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\functional-closeout-20261119\\write-functional-acceptance.py",
+    "sha256": "ee3df08f5f8bad7829169f32b28452d26f4846d0bcc0061f199f4a4301af97e8"
+  },
+  "historical_failures": "Preserved. Current PASS does not establish a shared OS root cause or erase earlier failures.",
+  "mapped_proof": {
+    "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\mapped-proof-runs\\b171358e-9f7a-4aec-aeca-7b6428fb6741\\proof.json",
+    "sha256": "2cf896387cbafe0e96f5545b4f3334798a401c764a950047e1bb8fb489a4fddc"
+  },
+  "module_lanes": {
+    "ai_host/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\qualifier-runs\\135bef80-bdec-45b5-af7b-00fdc0a1c5fc\\junit\\lane-1.verified.xml",
+        "sha256": "ca89e6e765ab967168cfa568cd30fa66ab4fb04e143051114d2217e78a44aca7"
+      },
+      "tests": 262
+    },
+    "bug_metrics/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\qualifier-runs\\135bef80-bdec-45b5-af7b-00fdc0a1c5fc\\junit\\lane-3.verified.xml",
+        "sha256": "3ab6e7f58e8ff56dd93bb60c71d4baa85ddf955499e1b11fb5deb738adbf8a33"
+      },
+      "tests": 250
+    },
+    "jira_sync/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\qualifier-runs\\135bef80-bdec-45b5-af7b-00fdc0a1c5fc\\junit\\lane-4.verified.xml",
+        "sha256": "f55c2ab0ca6f6bd9ce2165acc8fadd0106e86ef6ec6208277a7aad15f8cb9092"
+      },
+      "tests": 32
+    },
+    "metrics/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\qualifier-runs\\135bef80-bdec-45b5-af7b-00fdc0a1c5fc\\junit\\lane-2.verified.xml",
+        "sha256": "abd917fad1aa3e16164c542882082421163d70f70698ac1f3cea0109142a8fbf"
+      },
+      "tests": 19
+    },
+    "project_management/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\qualification-resumption-runs\\f22ee8cf-e452-494e-a1de-9d210874a3e4\\junit\\lane-6.verified.xml",
+        "sha256": "ea7e4d4daf11ae7602b5cc1b108ee398c88c4bb4848d58d6904b71057a4f3b58"
+      },
+      "tests": 971
+    },
+    "scripts/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\qualification-resumption-runs\\f22ee8cf-e452-494e-a1de-9d210874a3e4\\junit\\lane-7.verified.xml",
+        "sha256": "24a07f0cf42fa0f4a158306d475e25e975900e43fb66ced152ef7fc6c0189e63"
+      },
+      "tests": 548
+    },
+    "ui_web/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\qualifier-runs\\135bef80-bdec-45b5-af7b-00fdc0a1c5fc\\junit\\lane-5.verified.xml",
+        "sha256": "49ce26bc847fb39f6efb5237c8afb7545cc18dc265c50e661d844fc7d2debda9"
+      },
+      "tests": 759
+    }
+  },
+  "performance_deferred_aspects": [
+    "clause:10.4:B3-incremental-timing:performance",
+    "clause:10.4:B6-page-assets:performance",
+    "clause:10.4:B6-production-static:performance",
+    "clause:10.4:B9-saturation:performance",
+    "clause:10.4:exclusive-window:performance",
+    "clause:10.4:source-and-cleanup:performance",
+    "task:10.4"
+  ],
+  "performance_status": "NOT_RUN",
+  "producers": {
+    "windows-host-conformance": {
+      "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\inputs\\windows-native-w2\\308b37ac-769d-45c7-bc01-6457f2f7df3d\\native-receipt.json",
+      "sha256": "3096e1585cb582abd20ac8f5b4e82bb9ec30f7efc0d0d526f74a504c238c6fe3"
+    },
+    "windows-migration-rehearsal": {
+      "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\inputs\\windows-w3\\c772ac2a-e5e0-454d-80be-69f012a5067d\\migration-receipt.json",
+      "sha256": "e37834b3baf507067af68b7332c12890d5f5bc13ccaa075f29cc9dcfbd79a79e"
+    }
+  },
+  "qualification": {
+    "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\inputs\\windows-functional\\a6fce774-f92a-42e8-b5ce-6b661d1201e8\\qualification.json",
+    "sha256": "a3a95c4ea86845bb30a66118387721fd8e02ac3708ae22da44464e9a7b009752"
+  },
+  "qualification_inputs": {
+    "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\inputs\\windows-functional\\a6fce774-f92a-42e8-b5ce-6b661d1201e8\\inputs.json",
+    "sha256": "dce952e2d0098ff4fefe648729cd335c83360e9e6a5e8d7c3567661ae77b72ca"
+  },
+  "qualification_mode": "same-source-resumption",
+  "qualification_validator": {
+    "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\functional-closeout-20261119\\qualification-resumption\\validate_resumption_receipt.py",
+    "sha256": "f41cb0a376748be6e3294106c7bd742985876e5d7ed45d7e9f106895f23cce37"
+  },
+  "required_functional_evidence_keys": 114,
+  "reviews": {
+    "FUNC.R": {
+      "clean_passes": 1,
+      "gate": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\functional-closeout-20261119\\review\\gate.json",
+        "sha256": "248778be6bb6f8ebd3af1c337f8017908676fa6d63c5388b1da244e0822897ea"
+      },
+      "required_passes": 1,
+      "transcript": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\functional-closeout-20261119\\review\\func-pass-2.txt",
+        "sha256": "2743ddb5c06740507bb7e01a01183530096680477b8f3f8e1229cab30765d53e"
+      }
+    },
+    "W2.R": {
+      "clean_passes": 1,
+      "gate": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\functional-closeout-20261119\\review\\w2-ff09d6f-gate.json",
+        "sha256": "0317b383088dd9e9e0a1933f64cfa223dee587b477dbc6bbf09a1c774df603a9"
+      },
+      "required_passes": 1,
+      "transcript": {
+        "path": "D:\\AIGC\\artifacts\\mdb2-windows-20261117\\functional-closeout-20261119\\review\\w2-ff09d6f-pass-1.txt",
+        "sha256": "72549a8cd263b401c729628dd8da18e662e579e1a3e9327b0557fa47bdb4fa63"
+      }
+    }
+  },
+  "schema_version": 1,
+  "scope": "Windows Dashboard MDB-2 synthetic functional acceptance",
+  "scope_exclusions": [
+    "performance",
+    "Linux/WSL/containers",
+    "other Apps",
+    "real providers/models/data",
+    "whole AIB release",
+    "push/merge/worktree retirement"
+  ],
+  "source_policy": "The validated source precedes the documentation-only acceptance commit; that commit is reported separately.",
+  "status": "PASS",
+  "validated_functional_evidence_keys": 114,
+  "validated_source": {
+    "commit": "ff09d6ff97dd62e56fb3bfc44914c5c08582a144",
+    "status": ""
+  }
+}

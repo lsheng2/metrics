@@ -2,7 +2,7 @@
 
 日期：2026-11-03。状态：accepted，实施中。父设计：[authoring](report-authoring-v2.md)。
 方法为本次新增/升级契约；已实现范围以唯一tasks及当前guide为准。
-Python 内部及 Dashboard HTTP 沿现有 snake_case；Base 请求继续其 camelCase task-run/1。
+Python 内部及 Dashboard HTTP 沿现有 snake_case；AI 运行自2026-11-11经MDB-2同步task-run端口，值类型归project_management。
 连续性、系列/周周期、状态、AR 和触发契约见[report continuity](report-continuity.md)。
 本次补齐尚未发布的作者层 schema2；不修改已经产生的 schema1 原字节。
 
@@ -472,14 +472,14 @@ ReportAssistService.candidate(actor, project_id, stage_id, draft_id, assist_id)
     -> AssistCandidate
 ```
 
-observe 可以查询既有 Base run，不得在 GET 上隐式新建/重派模型任务。首次 dispatch 只来自 submit。
+observe 可以查询既有运行时 run，不得在 GET 上隐式新建/重派模型任务。首次 dispatch 只来自 submit。
 新状态：`prepared, observing, candidate_ready, insufficient_evidence,
 failed, cancel_requested, canceled, unknown`。
-无 runId 的未知 submit 用原 clientRunKey 查询，不换 key 重试；返回不确定费用保留原状态。
-原 profile/request/输入哈希先持久化，候选必须核验 task-run/1 身份、scope、grant、原结果 hash。
-服务复用已安装 SDK/transport，不复用写死 summary profile 的 `AiTaskContract.load`。
-新增 authoring contract loader，在 `project_management/ai_bundle/report-authoring/` 固定 prompt/schema；
-未安装/注册/授权该 profile 时返回 `REPORT_AI_UNAVAILABLE`，人工编辑不受影响。
+无 run id 的未知 submit 用原 `client_run_key` 查询，不换 key 重试；返回不确定费用保留原状态。
+原 profile `id@version`/request/输入哈希先持久化，候选必须核验运行记录身份、profile版本、principal与原结果 hash。
+服务经MDB-2同步task-run端口提交（决策10），不复用 summary profile。
+`metrics.report_authoring` 的 instructions/schema 以数据固定在 `project_management/ai_profiles/`（取代 `ai_bundle/`）；
+profile未声明/禁用、模型未配置或运行时不可用时返回 `REPORT_AI_UNAVAILABLE`，人工编辑不受影响。
 2026-11-06实际接口、存储文件、终态/未知结果分类与对应验证入口已细化在
 [ASSIST执行合同](assist-execution.md)。该文档补充本节，不建立第二份任务状态。
 
@@ -502,7 +502,7 @@ Save 再核验目标/base revision/hash 与候选来源，写 human acceptance a
 并返回当前日报note的`current_note_hashes`，保留保存期间新增的本地文字及下一次CAS依据。
 接受后的文本可继续人工修改并记录差异；从不等同于 SummaryAnalysisService.accept。
 一 draft 同时一个活跃 assist。初始 input128KiB/output64KiB/总期限180秒/观察最多16次，
-服从更严格的 Base accepted limits；不能扩大既有全局预算或清零失败费用。
+服从更严格的运行时准入限制；不能扩大既有全局预算或清零失败费用。
 长轮询按已有 deadline 停止；浏览器关闭不自动撤销运行，重开读取原 assist。
 
 ## 5. HTTP Surface

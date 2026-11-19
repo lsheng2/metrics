@@ -54,8 +54,7 @@ class PullRequestConvertor:
 
     @staticmethod
     def _in_review_tag() -> PolicyResultData:
-        return PolicyResultData(name="In review", status="in_review",
-                                css_class="is-light has-text-grey", icon="iconoir-clock")
+        return PolicyResultData(name="In review", status="in_review", css_class="", icon="iconoir-clock")
 
     @staticmethod
     def _blocker_tag(name: str) -> PolicyResultData:

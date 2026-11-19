@@ -1,0 +1,161 @@
+/*
+ * Meridian foundation: page layout: block rhythm, boxes, cards and messages.
+ * Tokens only; the layer order lives in ui_web/static_assets.py.
+ */
+
+/* --------------------------------------------------------------- layout */
+
+.block:not(:last-child),
+.box:not(:last-child),
+.card:not(:last-child),
+.message:not(:last-child),
+.table:not(:last-child),
+.table-container:not(:last-child),
+.pagination:not(:last-child),
+.progress:not(:last-child) {
+    margin-bottom: var(--space-4);
+}
+
+/* ------------------------------------------------------------- surfaces */
+
+.box,
+.card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xs);
+    color: var(--color-text);
+}
+
+.box {
+    padding: var(--space-4);
+}
+
+/* Cards never clip overflow, so help tips and popovers can escape; edge children inherit the radius. */
+.card > :first-child {
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+}
+
+.card > :last-child {
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 2.5rem;
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.card-header-title {
+    flex: 1 1 auto;
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+}
+
+.card-content {
+    padding: var(--space-4);
+}
+
+/* A table that follows card content is separated from it by a hairline. */
+.card-content + .table-container {
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.card-footer {
+    display: flex;
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.card-footer-item {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2-5);
+}
+
+.card-footer-item:not(:last-child) {
+    border-right: 1px solid var(--color-border-subtle);
+}
+
+.message {
+    --tone-bg: var(--color-neutral-subtle);
+    --tone-border: var(--color-neutral-border);
+    --tone-text: var(--color-text);
+    --tone-strong: var(--color-text-secondary);
+
+    border: 1px solid var(--tone-border);
+    border-radius: var(--radius-lg);
+    background: var(--tone-bg);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+}
+
+.message.is-primary,
+.message.is-link {
+    --tone-bg: var(--color-accent-subtle);
+    --tone-border: var(--color-accent-border);
+    --tone-text: var(--color-accent-text);
+    --tone-strong: var(--color-accent);
+}
+
+.message.is-info {
+    --tone-bg: var(--color-info-subtle);
+    --tone-border: var(--color-info-border);
+    --tone-text: var(--color-info-text);
+    --tone-strong: var(--color-info);
+}
+
+.message.is-success {
+    --tone-bg: var(--color-success-subtle);
+    --tone-border: var(--color-success-border);
+    --tone-text: var(--color-success-text);
+    --tone-strong: var(--color-success);
+}
+
+.message.is-warning {
+    --tone-bg: var(--color-warning-subtle);
+    --tone-border: var(--color-warning-border);
+    --tone-text: var(--color-warning-text);
+    --tone-strong: var(--color-warning);
+}
+
+.message.is-danger {
+    --tone-bg: var(--color-danger-subtle);
+    --tone-border: var(--color-danger-border);
+    --tone-text: var(--color-danger-text);
+    --tone-strong: var(--color-danger);
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--tone-border);
+    color: var(--tone-text);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+}
+
+.message-body {
+    padding: var(--space-2-5) var(--space-3);
+    color: var(--color-text);
+}
+
+.message-body strong {
+    color: var(--tone-text);
+}
+
+/* Inline links in a tinted message take its tone and an underline, so color is never the only cue. */
+.message-body a:not(.button, .tag) {
+    color: var(--tone-text);
+    text-decoration: underline;
+}

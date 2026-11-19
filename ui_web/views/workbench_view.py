@@ -1,18 +1,15 @@
 from dataclasses import replace
 from datetime import date, timedelta
 from urllib.parse import urlencode
-from urllib.parse import urlparse
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.shortcuts import redirect
 from django.views.generic import TemplateView
 from django.urls import reverse
 
 from ..container import ui_web_container
-from ..ai_base_workbench_adapter import AiBaseWorkbenchAdapter
+from ai_host.pane import workbench_pane
 from ..workbench_grafana import grafana_full_dashboard_url, grafana_panel_embed_url
 from ..workbench_registry import default_workbench_panes
-from ..workbench_service_status import DEFAULT_FULL_STACK_LAUNCHER_COMMAND
 from ..workbench_state import WorkbenchPageQueryState
 from .bug_trend_query import parse_date_query
 from .graceful_template_view import GracefulTemplateView
@@ -20,15 +17,12 @@ from .graceful_template_view import GracefulTemplateView
 
 class WorkbenchView(GracefulTemplateView):
     template_name = 'workbench.html'
-    full_stack_launcher_command = DEFAULT_FULL_STACK_LAUNCHER_COMMAND
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bug_trend_facade = ui_web_container.bug_trend_facade
-        self.ai_adapter = AiBaseWorkbenchAdapter(self.full_stack_launcher_command)
 
     def populate_context(self, context, **kwargs):
-        sidecar_status = self.bug_trend_facade.get_ai_sidecar_status_payload()
         state = self._state()
         context['build_page_title'] = 'Metrics Workbench'
         context['workbench_panes'] = self._pane_registry()
@@ -39,22 +33,13 @@ class WorkbenchView(GracefulTemplateView):
         context['workbench_clear_selection_url'] = self._workbench_url(state.cleared_selection().to_query_params())
         context['workbench_grafana_panel_url'] = grafana_panel_embed_url(state)
         context['workbench_grafana_full_url'] = grafana_full_dashboard_url(state)
-        context['workbench_ai_context'] = self._ai_context(state, sidecar_status)
-        context['workbench_ai_workspace_error'] = self.request.GET.get('ai_workspace_error', '')
         self._populate_chart_context(context, state)
-
-    def post(self, request, *args, **kwargs):
-        if request.POST.get('action') != 'sync_ai_workspace':
-            return redirect('ui_web:workbench')
-        sidecar_status = self.bug_trend_facade.get_ai_sidecar_status_payload()
-        state = self._state(request.POST)
-        redirect_params = state.to_query_params()
-        try:
-            context_bundle = self.bug_trend_facade.get_ai_workspace_context_bundle_payload(state.profile_id)
-            self.ai_adapter.sync_workspace_context(sidecar_status, context_bundle)
-        except Exception as error:
-            redirect_params['ai_workspace_error'] = f'{type(error).__name__}'
-        return redirect(self._workbench_url(redirect_params))
+        pane_state = replace(state, chart_id=context['active_chart_id'])
+        context['workbench_ai_context'] = {
+            'runtime': workbench_pane(self.request, pane_state, ticket_ids=state.selected_ticket_ids),
+            'scope_binding': self._scope_binding_context(state),
+        }
+        context['publish_history'] = self.bug_trend_facade.get_ai_chart_publications(10)
 
     def _pane_registry(self):
         return [
@@ -66,7 +51,7 @@ class WorkbenchView(GracefulTemplateView):
         return reverse(route_name)
 
     def _workbench_url(self, params: dict) -> str:
-        query = urlencode(params)
+        query = urlencode(params, doseq=True)
         if query:
             return f'{reverse("ui_web:workbench")}?{query}'
         return reverse('ui_web:workbench')
@@ -142,6 +127,7 @@ class WorkbenchView(GracefulTemplateView):
         context['begin'] = begin.isoformat()
         context['end'] = end.isoformat()
         context['chart_json'] = self.bug_trend_facade.get_chart_json(chart_data)
+        context['chart_has_data'] = bool(chart_data.labels)
         context['unavailable_reason'] = chart_data.unavailable_reason
         context['run_metadata'] = chart_data.run_metadata or {}
         context['evidence'] = None
@@ -190,14 +176,6 @@ class WorkbenchView(GracefulTemplateView):
             return 'This scope is using a compatibility provider binding. Confirm it in Scope Library before explicit-only operation.'
         return ''
 
-    def _ai_context(self, state: WorkbenchPageQueryState, sidecar_status: dict) -> dict:
-        context = self.ai_adapter.context(state, sidecar_status, self._host_origin())
-        scope_binding = self._scope_binding_context(state)
-        context['scope_binding'] = scope_binding
-        context['ai_base']['chat_gate'] = self._ai_chat_gate(state, sidecar_status, scope_binding)
-        context['ai_base']['chat_ready'] = context['ai_base']['chat_gate']['ready']
-        return context
-
     def _scope_binding_context(self, state: WorkbenchPageQueryState) -> dict:
         scope_option = self._scope_option(self.bug_trend_facade.get_scope_options(), state.scope_id)
         if not scope_option:
@@ -213,72 +191,6 @@ class WorkbenchView(GracefulTemplateView):
             'provider_id': scope_option.provider_id,
             'blockers': scope_option.binding_blockers or [],
         }
-
-    def _ai_chat_gate(self, state: WorkbenchPageQueryState, sidecar_status: dict, scope_binding: dict) -> dict:
-        if not self.ai_adapter.is_enabled(sidecar_status):
-            return {
-                'ready': False,
-                'status': 'disabled',
-                'message': 'AI chat is not enabled for this Dashboard process.',
-                'can_sync_workspace': False,
-            }
-        if self._scope_binding_needs_registry_profile(scope_binding):
-            return {
-                'ready': False,
-                'status': 'registry_profile_required',
-                'message': self._registry_profile_required_message(scope_binding),
-                'can_sync_workspace': False,
-            }
-        if scope_binding['status'] not in {'explicit', 'compatibility'} or not state.profile_id or not state.provider_id:
-            return {
-                'ready': False,
-                'status': 'binding_required',
-                'message': 'Bind this scope to a provider profile before opening AI chat.',
-                'can_sync_workspace': False,
-            }
-        if not self._is_registry_backed_profile(state.profile_id, state.provider_id):
-            return {
-                'ready': False,
-                'status': 'registry_profile_required',
-                'message': 'AI chat requires a registry-backed provider profile. Rebind this scope in Scope Library.',
-                'can_sync_workspace': False,
-            }
-        return self.ai_adapter.resolve_chat_binding(state, sidecar_status, self._host_origin())
-
-    def _scope_binding_needs_registry_profile(self, scope_binding: dict) -> bool:
-        blocker_codes = {
-            blocker.get('code', '')
-            for blocker in scope_binding.get('blockers', [])
-            if isinstance(blocker, dict)
-        }
-        return bool(blocker_codes.intersection({
-            'profile_not_found',
-            'profile_disabled',
-            'provider_profile_mismatch',
-            'registered_provider_profile_required',
-        }))
-
-    def _registry_profile_required_message(self, scope_binding: dict) -> str:
-        blockers = [
-            blocker
-            for blocker in scope_binding.get('blockers', [])
-            if isinstance(blocker, dict) and blocker.get('message')
-        ]
-        blocker_message = blockers[0]['message'] if blockers else 'AI chat requires a registry-backed provider profile.'
-        return f'{blocker_message} Rebind this scope in Scope Library.'
-
-    def _is_registry_backed_profile(self, profile_id: str, provider_id: str) -> bool:
-        return any(
-            choice.profile_id == profile_id and choice.provider_id == provider_id
-            for choice in self.bug_trend_facade.get_scope_provider_profile_choices()
-        )
-
-    def _host_origin(self) -> str:
-        parsed_url = urlparse(self.request.build_absolute_uri('/'))
-        if not parsed_url.scheme or not parsed_url.netloc:
-            return ''
-        return f'{parsed_url.scheme}://{parsed_url.netloc}'
-
 
 class WorkbenchGrafanaSelectionView(TemplateView):
     template_name = 'workbench_grafana_selection.html'

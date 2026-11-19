@@ -1,0 +1,326 @@
+/*
+ * Page layer: Scope Library (import menu, lifecycle strip, scope table with pinned name and action
+ * columns, inline provider binding, binding audit) and the Scope Audit page.
+ *
+ * Loaded in cascade order by ui_web/static_assets.py; every value comes from theme.css tokens.
+ */
+
+/* ------------------------------------------------- import menu (shared with Provider Setup) */
+
+.scope-import-menu {
+    display: inline-flex;
+}
+
+.scope-import-panel {
+    min-width: 16rem;
+}
+
+.scope-import-form {
+    display: grid;
+    gap: var(--space-1-5);
+    margin: 0;
+}
+
+.scope-import-form .input[type="file"] {
+    max-width: 15rem;
+}
+
+/* ------------------------------------------------------------------- lifecycle strip */
+
+.scope-lifecycle-guide {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-3);
+    padding: var(--space-1-5) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-muted);
+}
+
+.scope-lifecycle-guide__title {
+    flex: none;
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+}
+
+/* Numbered badges carry the order, so wrapped lines never start with a dangling connector. */
+.scope-lifecycle-steps {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-4);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    list-style: none;
+}
+
+.scope-lifecycle-steps > li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1-5);
+    white-space: nowrap;
+}
+
+.scope-lifecycle-steps__index {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border-strong);
+    color: var(--color-text);
+    font-size: var(--text-2xs);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-semibold);
+}
+
+.scope-readiness-help {
+    flex: none;
+    margin-left: auto;
+}
+
+.scope-readiness-panel {
+    width: min(52rem, calc(100vw - 2 * var(--layout-gutter)));
+    max-width: none;
+    max-height: min(70vh, 40rem);
+    overflow-y: auto;
+}
+
+/* A reference table: it keeps the dense-table contract but wraps prose instead of truncating it. */
+.scope-readiness-table {
+    --responsive-admin-table-min-width: 40rem;
+
+    font-size: var(--text-xs);
+}
+
+.table.scope-readiness-table :is(th, td) {
+    overflow-wrap: break-word;
+    vertical-align: top;
+    white-space: normal;
+}
+
+.scope-readiness-table thead th:first-child {
+    width: 11rem;
+}
+
+.scope-readiness-table thead th:last-child {
+    width: 15rem;
+}
+
+.scope-readiness-table tbody th {
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+}
+
+@media (max-width: 768px) {
+    .scope-lifecycle-guide {
+        flex-wrap: wrap;
+    }
+
+    .scope-lifecycle-steps {
+        flex-basis: 100%;
+        order: 3;
+    }
+}
+
+/* ------------------------------------------------------------------------ results bar */
+
+.scope-library-policy {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+}
+
+/* -------------------------------------------------------------------------- scope table */
+
+/* Column widths sum to the table minimum, so wide screens show every column without scrolling. */
+.scope-library-table {
+    --responsive-admin-table-min-width: 89rem;
+    --scope-action-min-width: 3.5rem;
+}
+
+.scope-library-table col.scope-col-name { width: 16rem; }
+.scope-library-table col.scope-col-ip { width: 5rem; }
+.scope-library-table col.scope-col-project { width: 8rem; }
+.scope-library-table col.scope-col-status { width: 6.5rem; }
+.scope-library-table col.scope-col-binding { width: 20rem; }
+.scope-library-table col.scope-col-profile { width: 11rem; }
+.scope-library-table col.scope-col-provider { width: 6.5rem; }
+.scope-library-table col.scope-col-hash { width: 7rem; }
+.scope-library-table col.scope-col-actions { width: 9rem; }
+
+/*
+ * Name and Actions stay pinned while the middle columns scroll. Pinned cells need opaque
+ * backgrounds; header cells sit one layer above body cells so header help tips cover them.
+ */
+.scope-library-table :is(th, td).scope-col-name {
+    position: sticky;
+    left: 0;
+    box-shadow: inset -1px 0 0 var(--color-border);
+}
+
+.scope-library-table :is(th, td).scope-col-actions {
+    position: sticky;
+    right: 0;
+    overflow: visible;
+    box-shadow: inset 1px 0 0 var(--color-border);
+}
+
+.scope-library-table tbody td:is(.scope-col-name, .scope-col-actions) {
+    z-index: var(--z-sticky);
+    background: var(--color-surface);
+}
+
+.scope-library-table.is-hoverable tbody tr:hover > td:is(.scope-col-name, .scope-col-actions) {
+    background: var(--color-surface-hover);
+}
+
+.table.scope-library-table thead th {
+    z-index: calc(var(--z-sticky) + 1);
+}
+
+.table.scope-library-table thead th:is(.scope-col-name, .scope-col-actions) {
+    z-index: calc(var(--z-sticky) + 2);
+}
+
+.scope-library-table td.scope-col-actions:has(.scope-row-menu[open]) {
+    z-index: var(--z-dropdown);
+}
+
+.table a.scope-library-link {
+    font-weight: var(--weight-medium);
+}
+
+/* Binding cell: status tag, then the inline editor or provenance, then a blocker icon. */
+.scope-binding {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-1-5);
+    min-width: 0;
+}
+
+.scope-tag-tip {
+    display: inline-block;
+    flex: none;
+    white-space: nowrap;
+}
+
+.scope-binding-provenance {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: var(--text-2xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scope-binding-blocker {
+    display: inline-flex;
+    flex: none;
+    color: var(--color-danger-text);
+}
+
+.scope-binding-editor {
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.scope-binding-editor .select select {
+    max-width: 7.5rem;
+}
+
+/* Row actions: one primary action plus the More menu, left-aligned so every row lines up. */
+.scope-primary-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-1);
+}
+
+.scope-primary-actions > form {
+    display: inline-flex;
+}
+
+.scope-primary-actions > .button,
+.scope-primary-actions > form > .button,
+.scope-row-menu > summary.button {
+    min-width: var(--scope-action-min-width);
+}
+
+.scope-row-menu {
+    display: inline-flex;
+}
+
+.scope-row-menu > .workbench-menu-panel {
+    gap: var(--space-1);
+    min-width: 9rem;
+    padding: var(--space-1-5);
+}
+
+.scope-row-menu > .workbench-menu-panel form {
+    display: grid;
+    gap: var(--space-1);
+}
+
+.scope-row-menu > .workbench-menu-panel :is(.button, .input) {
+    width: 100%;
+}
+
+.scope-row-menu > .workbench-menu-panel .button {
+    justify-content: flex-start;
+}
+
+@container (max-width: 40rem) {
+    .scope-library-table :is(th, td):is(.scope-col-name, .scope-col-actions) {
+        position: static;
+        box-shadow: none;
+    }
+
+    .scope-library-table tbody td:is(.scope-col-name, .scope-col-actions),
+    .scope-library-table.is-hoverable tbody tr:hover > td:is(.scope-col-name, .scope-col-actions) {
+        background: none;
+    }
+
+    .scope-binding {
+        flex-wrap: wrap;
+    }
+}
+
+/* ---------------------------------------------------------------------- binding audit */
+
+.scope-binding-audit-table {
+    --responsive-admin-table-min-width: 44rem;
+    font-size: var(--text-xs);
+}
+
+/* -------------------------------------------------------------------------- scope audit */
+
+.scope-audit-coverage .stat {
+    justify-content: space-between;
+}
+
+.scope-audit-coverage .stat__label {
+    white-space: normal;
+}
+
+.scope-audit-table {
+    --responsive-admin-table-min-width: 48rem;
+}

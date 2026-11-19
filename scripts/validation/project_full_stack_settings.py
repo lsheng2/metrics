@@ -37,7 +37,8 @@ os.environ['SECRET_KEY'] = 'django-insecure-synthetic-full-stack-qualification'
 with patch('environs.Env.read_env', lambda self, *args, **kwargs: None):
     from metrics.settings.defaults_metrics import *  # noqa: F401,F403,E402
 
-INSTALLED_APPS = INSTALLED_APPS + ('scripts.validation.project_ui_fixture_app.ProjectUiFixtureAppConfig',)
+INSTALLED_APPS = INSTALLED_APPS + ('scripts.validation.project_ui_fixture_app.ProjectRunFixtureAppConfig',)
+METRICS_PROJECT_VALIDATION_SCENARIO = 'single'
 DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
 DATABASES['default']['NAME'] = DB_PATH
@@ -71,14 +72,6 @@ _cookie_base = re.sub(r'[^A-Za-z0-9_]', '_', RUN_DIR.name)
 SESSION_COOKIE_NAME = f'w7_{_cookie_base}_sessionid'
 CSRF_COOKIE_NAME = f'w7_{_cookie_base}_csrftoken'
 LANGUAGE_COOKIE_NAME = f'w7_{_cookie_base}_language'
-
-
-def METRICS_PROJECT_RUNTIME_FACTORY():
-    from scripts.validation.project_full_stack_fixture import build_runtime_environment
-
-    connection = json.loads((RUN_DIR / 'base' / 'connection.json').read_text(encoding='utf-8'))
-    return build_runtime_environment(connection)
-
 
 if BOOTSTRAP:
     Path(METRICS_TASK_SEARCH_CACHE_DIR).mkdir(parents=True, exist_ok=True)

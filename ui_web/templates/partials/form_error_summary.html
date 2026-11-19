@@ -1,0 +1,7 @@
+{# Labelled summary of every bound-form error. Use for forms with hidden or loop-rendered fields; never print form.errors raw. #}
+{% if form.errors %}<div class="message is-danger" role="alert"><div class="message-body">
+    <ul class="form-error-summary">
+        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        {% for field in form %}{% for error in field.errors %}<li><strong>{{ field.label }}</strong>{{ error }}</li>{% endfor %}{% endfor %}
+    </ul>
+</div></div>{% endif %}

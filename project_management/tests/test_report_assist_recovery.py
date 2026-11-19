@@ -1,7 +1,6 @@
+from dataclasses import replace
 from uuid import uuid4
 
-from ai_base_application_sdk import TaskRunClientError
-import httpx
 import pytest
 
 from project_management.app.api import report_factories
@@ -10,6 +9,7 @@ from project_management.app.domain.report_authoring import AuthoredEditRequest
 from project_management.app.domain.report_authoring_fragments import plain_text_fragment
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.summary_contracts import AnalysisError
+from project_management.app.domain.task_runs import TaskRunCancellation, TaskRunError
 from project_management.storage.report_assists import ReportAssistStore
 from project_management.tests.test_report_assist_service import assist_environment, submit
 
@@ -38,20 +38,20 @@ def test_shouldBuildAndSaveManualReportWhenAuthoringProfileCannotLoad(assist_env
 def test_shouldSettleDefiniteFailureWithoutReleasingUnknownExposure(assist_environment, case):
     env = assist_environment
 
-    def response(request, snapshot, result):
+    def response(method, snapshot, result):
         if case == 'rejected':
-            raise TaskRunClientError('invalid_request', 'correct_request', status=422)
-        if request.url.path.endswith('/result'):
+            raise TaskRunError('input_schema_invalid', retry='correct')
+        if method == 'result':
             if case == 'invalid_result':
-                return httpx.Response(200, json={**result, 'sha256': '0' * 64})
+                return replace(result, output_schema_sha256='0' * 64)
             env.drafts.save_authored(
                 env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id,
                 command_id=str(uuid4()), expected_revision=1, expected_revision_hash=env.draft.revision_hash,
                 edits=(AuthoredEditRequest(str(uuid4()), 'note', {'scope': 'report'},
                                            plain_text_fragment('New manual content.')),),
             )
-            return httpx.Response(200, json=result)
-        return httpx.Response(200, json=snapshot)
+            return result
+        return snapshot
 
     env.state['response_hook'] = response
     result = submit(env)
@@ -63,11 +63,9 @@ def test_shouldSettleDefiniteFailureWithoutReleasingUnknownExposure(assist_envir
     assert ready.state == 'candidate_ready'
 
 
-def test_shouldKeepUnverifiedStoreIdentityUnknown(assist_environment):
+def test_shouldKeepUnverifiedRuntimeBindingUnknown(assist_environment):
     env = assist_environment
-    env.state['response_hook'] = lambda request, snapshot, result: httpx.Response(
-        200, json={**snapshot, 'runStoreId': 'wrong-store'},
-    )
+    env.state['response_hook'] = lambda method, snapshot, result: replace(snapshot, profile_version='wrong-version')
     unknown = submit(env)
     assert unknown.state == 'unknown'
     with pytest.raises(ReportError) as busy:
@@ -81,17 +79,10 @@ def test_shouldObserveCanceledRequestUntilRemoteExposureIsSettled(assist_environ
     env.state['drop_submit'] = True
     started = submit(env)
 
-    def response(request, snapshot, result):
-        snapshot = {
-            **snapshot, 'state': 'indeterminate', 'terminalAt': None, 'unresolvedExposure': True,
-            'dispatch': {'attemptCount': 1, 'knowledge': 'may_have_dispatched', 'remoteStop': 'unknown'},
-            'result': {'availability': 'not_produced', 'sha256': None, 'mediaType': None, 'expiresAt': None},
-        }
-        if request.url.path.endswith('/cancel'):
-            return httpx.Response(200, json={
-                'contractVersion': 'task-run/1', 'cancelApplied': True, 'run': snapshot,
-            })
-        return httpx.Response(200, json=snapshot)
+    def response(method, snapshot, result):
+        if method == 'cancel':
+            return TaskRunCancellation(run_id=snapshot.run_id, canceled=True)
+        return replace(snapshot, status='indeterminate', dispatch=replace(snapshot.dispatch, uncertainty='unknown'))
 
     env.state['response_hook'] = response
     args = (env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id, started.assist_id)
@@ -103,16 +94,28 @@ def test_shouldObserveCanceledRequestUntilRemoteExposureIsSettled(assist_environ
     with pytest.raises(ReportError) as canceled:
         env.service.candidate(*args)
     assert canceled.value.code == 'REPORT_AI_CANCELED'
-    assert env.requests[-1][0] == 'GET'
-    assert not any(path.endswith('/result') for _, path in env.requests)
+    assert env.requests[-1][0] == 'get'
+    assert not any(method == 'result' for method, _ in env.requests)
+
+
+def test_unknown_cancel_never_admits_when_lookup_has_no_row(assist_environment):
+    env = assist_environment
+    env.state['drop_submit'] = True
+    started = submit(env)
+    env.state['absent_lookup'] = True
+    args = (env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id, started.assist_id)
+    result = env.service.cancel(*args, command_id=str(uuid4()))
+    assert result.state == 'cancel_requested'
+    assert env.service.observe(*args).state == 'cancel_requested'
+    assert [method for method, _ in env.requests] == ['start', 'lookup', 'lookup']
 
 
 def test_shouldBoundObservationIoBeforeCallingSdkAgain(assist_environment):
     env = assist_environment
     env.state['drop_submit'] = True
     started = submit(env)
-    env.state['response_hook'] = lambda request, snapshot, result: httpx.Response(
-        200, json={**snapshot, 'state': 'indeterminate', 'terminalAt': None, 'unresolvedExposure': True},
+    env.state['response_hook'] = lambda method, snapshot, result: replace(
+        snapshot, status='indeterminate', dispatch=replace(snapshot.dispatch, uncertainty='unknown'),
     )
     args = (env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id, started.assist_id)
     for _ in range(MAX_OBSERVATIONS + 2):
@@ -125,10 +128,10 @@ def test_shouldBoundObservationIoBeforeCallingSdkAgain(assist_environment):
 def test_shouldAcceptLastAdmittedResultAndCancelWithoutExtraObservation(assist_environment):
     env = assist_environment
 
-    def no_result(request, snapshot, result):
-        if request.url.path.endswith('/result'):
-            raise httpx.ReadTimeout('Synthetic result timeout', request=request)
-        return httpx.Response(200, json=snapshot)
+    def no_result(method, snapshot, result):
+        if method == 'result':
+            raise TaskRunError('RUN_UNAVAILABLE', runtime_code='runtime_call_timeout', retry='observe')
+        return snapshot
 
     env.state['response_hook'] = no_result
     started = submit(env)
@@ -146,6 +149,22 @@ def test_shouldFailClosedOnMalformedStoredActivePointer(assist_environment):
     env = assist_environment
     with env.archive._report_repository(env.archive.actor, env.archive.project.id, env.archive.stage.id, write=True) as repo:
         ReportAssistStore(repo).write(env.draft.draft_id, 'active', {})
+    with pytest.raises(ReportError) as invalid:
+        env.service.describe(env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id)
+    assert invalid.value.code == 'REPORT_ARTIFACT_INVALID'
+
+
+@pytest.mark.parametrize('field,value', (
+    ('snapshot', {'state': 'succeeded'}),
+    ('cancel', {'run_id': 'run-fixture', 'canceled': 'yes'}),
+))
+def test_malformed_typed_observation_has_a_report_error(assist_environment, field, value):
+    env = assist_environment
+    ready = submit(env)
+    with env.archive._report_repository(env.archive.actor, env.archive.project.id, env.archive.stage.id, write=True) as repo:
+        store = ReportAssistStore(repo)
+        observation = store.read(ready.assist_id, 'observation-00')
+        store.write(ready.assist_id, 'observation-00', {**observation, field: value}, immutable=False)
     with pytest.raises(ReportError) as invalid:
         env.service.describe(env.archive.actor, env.archive.project.id, env.archive.stage.id, env.draft.draft_id)
     assert invalid.value.code == 'REPORT_ARTIFACT_INVALID'

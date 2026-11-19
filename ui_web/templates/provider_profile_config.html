@@ -1,81 +1,39 @@
 {% extends "base.html" %}
+{% load i18n dashboard_format %}
 
-{% block title %}Provider Profile Config{% endblock %}
+{% block title %}{% trans "Profile Config" %}{% endblock %}
+
+{% block page_title %}{% trans "Profile Config" %}{% endblock %}
+
+{% block breadcrumbs %}<a href="{% url 'ui_web:provider_setup' %}">{% trans "Provider Setup" %}</a>{% endblock %}
 
 {% block content %}
 <article class="block provider-setup-page provider-profile-config-page">
-    <nav class="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-            <li><a href="{% url 'ui_web:bug_trend' %}">Bug Trend</a></li>
-            <li><a href="{% url 'ui_web:provider_setup' %}">Provider Setup</a></li>
-            <li class="is-active"><a href="#" aria-current="page">Profile Config</a></li>
-        </ul>
-    </nav>
-
-    <div class="level scope-library-header">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-3">Provider Profile Config{% include "partials/help_tip.html" with label="Provider Profile Config" text="Create or edit one provider onboarding profile. The profile owns provider connection, temporary local credentials and defaults; scopes own concrete JQL, saved query and project range." %}</h2>
-                {% if provider_profile_editor_mode == 'new' %}
-                    <p class="subtitle is-6">New profile draft</p>
-                {% else %}
-                    <p class="subtitle is-6">Editing profile {{ provider_setup_editor.profile.profile_id }}</p>
-                {% endif %}
-            </div>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">Provider Profile Config{% include "partials/help_tip.html" with label="Provider Profile Config" text="Create or edit one provider onboarding profile. The profile owns the provider connection, temporary local credentials and shared defaults; scopes own concrete JQL, saved query and project range. Credentials stay local and export redacts token values." %}</h2>
+            <p class="page-header__meta">{% if provider_profile_editor_mode == 'new' %}New profile draft{% else %}Editing profile <code>{{ provider_setup_editor.profile.profile_id }}</code> {{ provider_setup_editor.profile.lifecycle_state|status_tag }}{% endif %}</p>
         </div>
-        <div class="level-right">
-            <div class="buttons are-small">
-                <a class="button" href="{% url 'ui_web:provider_setup' %}">Provider Setup</a>
-                <a class="button" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a>
-            </div>
+        <div class="page-header__actions">
+            <a class="button is-small" href="{% url 'ui_web:bug_trend_scope_library' %}">Scope Library</a>
         </div>
-    </div>
+    </header>
 
-    {% if saved %}<div class="notification is-success is-light">Provider profile saved.</div>{% endif %}
-    {% if binding_saved %}<div class="notification is-success is-light">Scope binding saved.</div>{% endif %}
-    {% if duplicated_profile %}<div class="notification is-info is-light">Duplicated provider profile {{ duplicated_profile }} as draft.</div>{% endif %}
-    {% if imported_profile %}<div class="notification is-success is-light">Imported provider profile {{ imported_profile }} as draft.</div>{% endif %}
-    {% if binding_error %}<div class="notification is-danger is-light">{{ binding_error }}</div>{% endif %}
+    {% if saved %}<div class="message is-success" role="status"><div class="message-body">Provider profile saved.</div></div>{% endif %}
+    {% if binding_saved %}<div class="message is-success" role="status"><div class="message-body">Scope binding saved.</div></div>{% endif %}
+    {% if duplicated_profile %}<div class="message is-info" role="status"><div class="message-body">Duplicated provider profile {{ duplicated_profile }} as draft.</div></div>{% endif %}
+    {% if imported_profile %}<div class="message is-success" role="status"><div class="message-body">Imported provider profile {{ imported_profile }} as draft.</div></div>{% endif %}
+    {% if binding_error %}<div class="message is-danger" role="alert"><div class="message-body">{{ binding_error }}</div></div>{% endif %}
     {% if provider_profile_errors %}
-        <div class="notification is-danger is-light">
-            <p class="has-text-weight-semibold">Provider profile was not saved.</p>
-            {% for field_name, message in provider_profile_errors.items %}
-                <p>{{ field_name }}: {{ message }}</p>
-            {% endfor %}
+        <div class="message is-danger" role="alert">
+            <div class="message-body">
+                <p><strong>Provider profile was not saved.</strong></p>
+                {% for field_name, message in provider_profile_errors.items %}
+                    <p><code>{{ field_name }}</code>: {{ message }}</p>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
-    {% if provider_connection_test %}
-        <div class="notification {% if provider_connection_test.status == 'success' %}is-success{% elif provider_connection_test.status == 'configuration_required' %}is-warning{% else %}is-danger{% endif %} is-light">
-            <p class="has-text-weight-semibold">Connection test: {{ provider_connection_test.status }}</p>
-            <p>{{ provider_connection_test.summary }}</p>
-            {% if provider_connection_test.details %}
-                <p class="is-size-7">
-                    {% for key, value in provider_connection_test.details.items %}
-                        <span>{{ key }}: {{ value }}</span>{% if not forloop.last %} · {% endif %}
-                    {% endfor %}
-                </p>
-            {% endif %}
-        </div>
-    {% endif %}
-
-    <section class="scope-config-readiness-strip provider-profile-config-strip">
-        <div>
-            <span class="scope-config-kicker">Profile authority</span>
-            <p>Provider connection, temporary credentials, credential reference and shared defaults live here.</p>
-        </div>
-        <div>
-            <span class="scope-config-kicker">Scope handoff</span>
-            <p>Create Scope from Profile after the provider connection/onboarding is reviewed.</p>
-        </div>
-        <div>
-            <span class="scope-config-kicker">Credentials</span>
-            <p>Credentials can be stored locally in the profile for now; export redacts token values.</p>
-        </div>
-        <div>
-            <span class="scope-config-kicker">Advanced JSON</span>
-            <p>Raw mappings stay collapsed unless a profile is new or needs low-level repair.</p>
-        </div>
-    </section>
 
     {% if provider_setup_editor %}
         {% include "partials/provider_profile_editor.html" %}

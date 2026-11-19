@@ -15,6 +15,7 @@ from jira_history.models import JiraIssue
 
 from bug_metrics.app.api import bug_trend_api
 from ui_web.facades.bug_trend_facade import BugTrendFacade
+from ui_web.tests import ui_geometry_contract as geometry
 from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport, FakeSuccessfulScopeMetadataApi
 
 
@@ -115,7 +116,7 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertEqual(200, response.status_code)
         self.assertIn('title="configuration_required">unbound</span>', content)
         self.assertNotIn('data-label="Provider">jira</td>', content)
-        self.assertIn('data-label="Provider">-</td>', content)
+        self.assertIn('data-label="Provider"><span class="has-text-grey-light">—</span></td>', content)
 
     def test_shouldKeepScopeLibraryRowActionsCompactInBrowser(self):
         # Given
@@ -139,17 +140,17 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
 
         # Then
         self.assertTrue(result['same_row'])
-        self.assertEqual([31], result['primary_heights'])
-        self.assertTrue(all(width >= 44 for width in result['primary_widths']))
-        self.assertLessEqual(max(result['primary_widths']) - min(result['primary_widths']), 2)
+        self.assertEqual([geometry.ROW_ACTION_BUTTON_HEIGHT], result['primary_heights'])
+        self.assertTrue(all(width >= geometry.ROW_ACTION_BUTTON_MIN_WIDTH for width in result['primary_widths']))
+        self.assertLessEqual(max(result['primary_widths']) - min(result['primary_widths']), geometry.ROW_ACTION_BUTTON_WIDTH_DELTA_MAX)
         self.assertTrue(result['archive_action_visible'])
         self.assertTrue(result['open_after_summary_click'])
         self.assertFalse(result['open_after_blank_click'])
         self.assertFalse(result['open_after_escape'])
         self.assertFalse(result['horizontal_overflow'])
         self.assertTrue(result['help_tip_visible_on_hover'])
-        self.assertLessEqual(result['help_tip_width'], 1)
-        self.assertGreaterEqual(result['icon_help_tip_width'], 12)
+        self.assertLessEqual(result['help_tip_width'], geometry.HELP_TIP_ANCHOR_WIDTH_MAX)
+        self.assertGreaterEqual(result['icon_help_tip_width'], geometry.ICON_HELP_TIP_MIN_WIDTH)
         self.assertFalse(result['import_file_visible_initial'])
         self.assertTrue(result['import_file_visible_after_open'])
 
@@ -194,7 +195,7 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertEqual(1, result['signature_item_count'], result)
         self.assertFalse(result['signature_horizontal_overflow'], result)
         self.assertTrue(result['signature_values_fit'], result)
-        self.assertGreaterEqual(result['actions_to_signature_gap'], 12, result)
+        self.assertGreaterEqual(result['actions_to_signature_gap'], geometry.ACTIONS_TO_SIGNATURE_GAP_MIN, result)
 
     def test_shouldAdaptScopeLibraryTableAcrossScreenWidthsInBrowser(self):
         # Given
@@ -224,14 +225,14 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
 
         # Then
         self.assertFalse(results['wide']['page_horizontal_overflow'])
-        self.assertTrue(results['wide']['table_horizontal_overflow'])
+        self.assertFalse(results['wide']['table_horizontal_overflow'])
         self.assertNotEqual('none', results['wide']['hash_column_display'])
         self.assertFalse(results['desktop']['page_horizontal_overflow'])
         self.assertTrue(results['desktop']['table_horizontal_overflow'])
-        self.assertLessEqual(results['desktop']['scope_lifecycle_height'], 58)
-        self.assertLessEqual(results['desktop']['max_body_row_height'], 40)
+        self.assertLessEqual(results['desktop']['scope_lifecycle_height'], geometry.SCOPE_LIFECYCLE_GUIDE_HEIGHT_MAX)
+        self.assertLessEqual(results['desktop']['max_body_row_height'], geometry.SCOPE_LIBRARY_ROW_HEIGHT_MAX)
         self.assertFalse(results['desktop']['actions_wrap'])
-        self.assertLessEqual(results['desktop']['primary_action_left_offset_delta'], 2)
+        self.assertLessEqual(results['desktop']['primary_action_left_offset_delta'], geometry.SCOPE_ACTION_OFFSET_DELTA_MAX)
         self.assertNotEqual('none', results['desktop']['hash_column_display'])
         self.assertNotEqual('none', results['desktop']['ip_column_display'])
         self.assertNotEqual('none', results['desktop']['project_column_display'])
@@ -294,8 +295,8 @@ class TestBugTrendScopeConfigViews(BugTrendScopeConfigViewTestSupport, TestCase)
         self.assertIn('Legacy visible Jira scope', content)
         self.assertIn('title="configuration_required">unbound</span>', content)
         self.assertNotIn('>configuration_required</span>', content)
-        self.assertIn('data-label="Profile" title="">-', content)
-        self.assertIn('data-label="Provider">-</td>', content)
+        self.assertIn('data-label="Profile" title=""><span class="has-text-grey-light">—</span>', content)
+        self.assertIn('data-label="Provider"><span class="has-text-grey-light">—</span></td>', content)
         self.assertIn('Select a registered provider profile, archive this scope, or delete the archived scope.', content)
         self.assertNotIn('Confirm this inferred provider binding as explicit?', content)
 

@@ -1,0 +1,69 @@
+{% load dashboard_format i18n %}
+<aside class="workbench-pane workbench-pane-ai" data-workbench-pane="ai-assistant" aria-labelledby="workbench-ai-title">
+    <header class="workbench-pane-header">
+        <div class="workbench-pane-title-group">
+            <h2 class="workbench-pane-title" id="workbench-ai-title">{% trans "AI Assistant" %}</h2>
+            <span class="tag {{ runtime.status|status_tone }}">{{ runtime.status|service_state_label }}</span>
+        </div>
+        <div class="workbench-pane-actions" data-ui-action-group>
+            {% if runtime.embed_path %}
+                <a class="button is-small" href="{{ runtime.embed_path }}" target="_blank" rel="noopener">{% trans "Open" %}</a>
+            {% endif %}
+            <button class="button is-small" type="button" data-workbench-collapse="ai-assistant" aria-expanded="true">{% trans "Collapse" %}</button>
+        </div>
+    </header>
+    <div class="workbench-pane-body workbench-ai-pane-body" data-ai-runtime-status="{{ runtime.status }}">
+        <div class="workbench-ai-binding-note">
+            <span>{% trans "Binding" %}</span>
+            <span title="{{ binding.provider_id }} / {{ binding.profile_id }}">{{ binding.provider_id|or_dash }} / {{ binding.profile_id|truncatechars:32|or_dash }}</span>
+        </div>
+        {% if runtime.binding_status == "binding_unresolved" %}
+            <div class="workbench-ai-unavailable">
+                <p>{% trans "Bind this scope to an available provider profile in Scope Library." %}</p>
+                <a href="{% url 'ui_web:bug_trend_scope_library' %}">{% trans "Scope Library" %}</a>
+            </div>
+        {% elif runtime.embed_path %}
+            <p class="help" data-ai-embed-error hidden>{% trans "AI is temporarily unavailable. Retry." %}</p>
+            {% if runtime.approval_requires_basic %}
+                <p class="help">{% trans "Publishing approval requires a Basic user." %} <code>METRICS_BASIC_AUTH_USERS</code></p>
+            {% endif %}
+            <iframe id="workbench-ai-session-{{ runtime.session_id }}"
+                    class="workbench-ai-chat-frame"
+                    src="{{ runtime.embed_path }}"
+                    title="{% trans 'AI Base chat' %}"
+                    hx-preserve="true"
+                    referrerpolicy="no-referrer"></iframe>
+        {% else %}
+            <div class="workbench-ai-unavailable">
+                {% if runtime.status == "not_configured" %}
+                    <p>{% trans "AI model is not configured." %}</p>
+                    <ul>{% for name in runtime.missing_settings %}<li><code>{{ name }}</code></li>{% endfor %}</ul>
+                {% elif runtime.status == "temporarily_unavailable" %}
+                    <p>{% trans "AI is temporarily unavailable. Retry." %}</p>
+                    <a class="button" href="{{ request.get_full_path }}"
+                       hx-get="{{ request.get_full_path }}" hx-target=".workbench-shell"
+                       hx-select=".workbench-shell" hx-swap="outerHTML ignoreTitle:true">{% trans "Retry" %}</a>
+                {% else %}
+                    <p>{% trans "AI runtime is not running." %}</p>
+                    <code>python manage.py serve --port &lt;port&gt;</code>
+                {% endif %}
+                <a href="{% url 'ui_web:ai_dashboard_workflow' %}">{% trans "Diagnostics" %}</a>
+            </div>
+        {% endif %}
+        <details class="disclosure workbench-publication-history" data-workbench-publication-history>
+            <summary class="disclosure__summary">
+                <span>{% trans "Publication history" %}</span>
+            </summary>
+            <div class="disclosure__body">
+                <div class="workbench-publication-history__toolbar">
+                    <a class="button is-small" href="{{ request.get_full_path }}"
+                       hx-get="{{ request.get_full_path }}" hx-target="[data-workbench-publication-history-region]"
+                       hx-select="[data-workbench-publication-history-region]" hx-swap="outerHTML ignoreTitle:true">{% trans "Refresh" %}</a>
+                </div>
+                <div data-workbench-publication-history-region>
+                    {% include "partials/ai_publish_history.html" %}
+                </div>
+            </div>
+        </details>
+    </div>
+</aside>

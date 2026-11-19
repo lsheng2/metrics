@@ -1,29 +1,22 @@
-<div class="box">
-    <h3 class="title is-4">Velocity{% if velocity_rolling_avg %} ({{ velocity_rolling_avg }}M Avg){% endif %}{% if use_custom_filter %} - Member Group Custom Filter{% endif %}</h3>
-    <div class="buttons are-small">
-        <button class="button {% if velocity_rolling_avg %}is-info{% endif %}"
-                hx-get="{% url 'ui_web:team_velocity_chart' %}?member_group_id={{ member_group_id }}{% if not velocity_rolling_avg %}&rolling_avg=3{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}{% endif %}"
-                hx-push-url="{% url 'ui_web:team_velocity' %}?member_group_id={{ member_group_id }}{% if not velocity_rolling_avg %}&rolling_avg=3{% endif %}{% if use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}{% endif %}"
-                hx-target="#team-velocity-chart-container"
-                hx-swap="innerHTML"
-                hx-indicator="#loading-indicator">
-            Rolling Average
-        </button>
-        {% if has_custom_filter %}
-        <button class="button {% if use_custom_filter %}is-info{% endif %}"
-                hx-get="{% url 'ui_web:team_velocity_chart' %}?member_group_id={{ member_group_id }}{% if velocity_rolling_avg %}&rolling_avg={{ velocity_rolling_avg }}{% endif %}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}{% endif %}"
-                hx-push-url="{% url 'ui_web:team_velocity' %}?member_group_id={{ member_group_id }}{% if velocity_rolling_avg %}&rolling_avg={{ velocity_rolling_avg }}{% endif %}{% if not use_custom_filter %}&use_custom_filter=true{% endif %}{% if selected_period %}&period={{ selected_period|urlencode }}{% endif %}"
-                hx-target="#team-velocity-chart-container"
-                hx-swap="innerHTML"
-                hx-indicator="#loading-indicator">
-            Member Group Custom Filter
-        </button>
+<section class="card chart-card" aria-labelledby="team-velocity-chart-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="team-velocity-chart-title">Velocity<span class="card-header-meta">SP per logged day{% if velocity_rolling_avg %} · {{ velocity_rolling_avg }}-month average{% endif %}</span></h3>
+    </header>
+    <div class="chart-card__body">
+        {% if month_velocity %}
+            <div class="chart-frame">
+                <canvas id="teamVelocityChart" role="img" aria-label="Team velocity per month"></canvas>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <span class="empty-state__icon"><i class="iconoir-graph-up" aria-hidden="true"></i></span>
+                <p class="empty-state__title">No velocity yet</p>
+                <p class="empty-state__body">No resolved work with logged time was found in the last 12 months.</p>
+            </div>
         {% endif %}
     </div>
-    <canvas id="teamVelocityChart" width="400" height="200"></canvas>
-    <p class="help has-text-grey">Click on a data point to see task details below</p>
-</div>
-
+</section>
+{% if month_velocity %}
 <script>
 (function() {
     function initTeamVelocityChart() {
@@ -31,76 +24,50 @@
             setTimeout(initTeamVelocityChart, 100);
             return;
         }
-
         if (window.teamVelocityChartInstance) {
             window.teamVelocityChartInstance.destroy();
             window.teamVelocityChartInstance = null;
         }
-
         const canvas = document.getElementById('teamVelocityChart');
-        if (!canvas) {
-            console.error('Team velocity chart canvas not found');
-            return;
-        }
-
+        if (!canvas) return;
         const chartData = {{ month_velocity|safe }};
-        const taskDetailsBaseUrl = '{% url "ui_web:team_velocity_tasks" %}';
-        const dashboardBaseUrl = '{% url "ui_web:team_velocity" %}';
-        const memberGroupId = '{{ member_group_id }}';
-        const rollingAvg = '{{ velocity_rolling_avg }}';
-        const useCustomFilter = '{{ use_custom_filter|yesno:"true,false" }}';
-
-        if (chartData && chartData.labels && chartData.data) {
-            window.teamVelocityChartInstance = new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: chartData.data.map(item => ({
-                        label: item.developer,
-                        data: item.metrics,
-                        borderColor: item.color,
-                        backgroundColor: item.color,
-                        fill: false,
-                        tension: 0.1
-                    }))
+        const lineColor = index => () => window.DashboardCharts.paletteColor(index);
+        const areaColor = index => () => window.DashboardCharts.alpha(window.DashboardCharts.paletteColor(index), 0.08);
+        window.teamVelocityChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: chartData.data.map((item, index) => ({
+                    label: item.developer,
+                    data: item.metrics,
+                    borderColor: lineColor(index),
+                    pointBackgroundColor: lineColor(index),
+                    backgroundColor: areaColor(index),
+                    fill: 'origin',
+                    tension: 0.3
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                onHover: window.DashboardVelocity.pointerOnHover,
+                onClick: (event, elements) => {
+                    if (elements.length) window.DashboardVelocity.openPeriod(chartData.labels[elements[0].index]);
                 },
-                options: {
-                    responsive: true,
-                    onClick: function(event, elements) {
-                        if (!elements || elements.length === 0) return;
-                        const period = chartData.labels[elements[0].index];
-                        const sharedParams = '?period=' + encodeURIComponent(period)
-                            + '&member_group_id=' + encodeURIComponent(memberGroupId)
-                            + (rollingAvg && rollingAvg !== '0' ? '&rolling_avg=' + encodeURIComponent(rollingAvg) : '')
-                            + (useCustomFilter === 'true' ? '&use_custom_filter=true' : '');
-                        history.pushState(null, '', dashboardBaseUrl + sharedParams);
-                        htmx.ajax('GET', taskDetailsBaseUrl + sharedParams, {target: '#task-details-container', swap: 'innerHTML'}).then(function() {
-                            document.getElementById('task-details-container').scrollIntoView({behavior: 'smooth'});
-                        });
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            usePointStyle: true,
-                            itemSort: (a, b) => b.raw - a.raw
-                        }
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: context => `${Number(context.parsed.y).toFixed(2)} SP/day` }
                     }
                 }
-            });
-        }
+            }
+        });
     }
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initTeamVelocityChart);
     } else {
@@ -108,3 +75,4 @@
     }
 })();
 </script>
+{% endif %}

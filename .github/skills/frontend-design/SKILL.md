@@ -11,4 +11,4 @@ Canonical source for this skill is the user-level Copilot skill:
 
 Load that file first and follow its referenced resources. This project file exists only to expose the same skill through the repository-level Copilot skill surface.
 
-Project UI constraints still come from `AGENTS.md`, `.github/copilot-instructions.md`, and the existing Bulma/htmx/Chart.js patterns in `ui_web/`.
+Project UI constraints come from `AI_CONTRACT.md` and the binding `openspec/docs/current-baseline/frontend-design-requirements.md` (Meridian tokens, primitives, light/dark/system themes and frontend QA gates). Those project rules take precedence over the generic guidance in the user-level skill.

@@ -42,6 +42,13 @@ class LifecycleStateStoreError(RuntimeError):
         self.failure_kind = failure_kind
 
 
+class ServiceExitedBeforeReadyError(RuntimeError):
+    def __init__(self, service_name: str, exit_code: int) -> None:
+        super().__init__(f"{service_name} exited before becoming ready (exit code {exit_code})")
+        self.service_name = service_name
+        self.exit_code = exit_code
+
+
 @dataclass(frozen=True, slots=True)
 class ServiceSpec:
     name: str
@@ -120,6 +127,7 @@ class StopResult:
     stop_source: StopSource = StopSource.REGISTERED_PROCESS
     force_requested: bool = False
     provenance: ProcessProvenance | None = None
+    exit_code: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

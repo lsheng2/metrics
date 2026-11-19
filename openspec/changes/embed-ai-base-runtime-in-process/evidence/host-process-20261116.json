@@ -1,0 +1,31 @@
+{
+  "port": 4284,
+  "source_before": {
+    "ai_host/management/commands/serve.py": "162e88389934b0ece84c02a6f541b05a97c0a488feef917c329ab6aef109f47e",
+    "ai_host/lifecycle.py": "65fb10e77d257cbb7dc197024a6e48b2a31ba7c07da4d8d158750038b24ae5af",
+    "ai_host/state.py": "bf5ba2bae0c8195b040482bd836098fbb6a4c940209ca2bc42fdb09208f87495",
+    "ai_host/runtime_artifact.json": "764d6aa2e179a363dd6b686b24cf9de4138a6f25390c20ad3f1a88e07a867bcb",
+    "project_management/runtime.py": "b241cefd446c90ed84526c1b99bae1ab6cffde4b0a8c98fbfcb59f05fdd9e729",
+    "project_management/app/api/run_factories.py": "439d779ff699c877fd5730dead4b209e5c20ad88cf853ba6183255188cfcf78e",
+    "ai_host/tests/serve_test_entry.py": "34b938dc348fd90d1abaf3c2667156a9293ff5815b2222e73cb1215581dae097"
+  },
+  "responses": {
+    "/": 200,
+    "/ai/": 200,
+    "/ai/assets/ui-9fa649820806.js": 200,
+    "/ai/assets/ui-ef016af8684b.css": 200
+  },
+  "forced_cleanup": false,
+  "pid": 47624,
+  "returncode": 0,
+  "stop_seconds": 0.4818418000359088,
+  "source_after": {
+    "ai_host/management/commands/serve.py": "162e88389934b0ece84c02a6f541b05a97c0a488feef917c329ab6aef109f47e",
+    "ai_host/lifecycle.py": "65fb10e77d257cbb7dc197024a6e48b2a31ba7c07da4d8d158750038b24ae5af",
+    "ai_host/state.py": "bf5ba2bae0c8195b040482bd836098fbb6a4c940209ca2bc42fdb09208f87495",
+    "ai_host/runtime_artifact.json": "764d6aa2e179a363dd6b686b24cf9de4138a6f25390c20ad3f1a88e07a867bcb",
+    "project_management/runtime.py": "b241cefd446c90ed84526c1b99bae1ab6cffde4b0a8c98fbfcb59f05fdd9e729",
+    "project_management/app/api/run_factories.py": "439d779ff699c877fd5730dead4b209e5c20ad88cf853ba6183255188cfcf78e",
+    "ai_host/tests/serve_test_entry.py": "34b938dc348fd90d1abaf3c2667156a9293ff5815b2222e73cb1215581dae097"
+  }
+}

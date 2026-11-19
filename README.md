@@ -15,7 +15,9 @@ The visual template library supports versioned blocks/slots, pinned report
 creation, manual filling and explicit finalization. Its scoped synthetic
 desktop workflow is qualified. Explicit AI filling follows the
 [Authoring V2 design](openspec/changes/add-provider-neutral-project-reporting/report-authoring-v2.md),
-with scoped installed-SDK/local-Base qualification on `main`.
+with the earlier scoped delivery recorded in the reporting ledger.
+The current embedded-runtime migration and its Windows qualification are tracked
+in [MDB-2](openspec/changes/embed-ai-base-runtime-in-process/tasks.md).
 Editor save/reopen and lifecycle scenarios passed scoped desktop Chrome tests;
 the full-week/cross-week authoring and pending-gap workflows are qualified with
 synthetic sources. [The evidence](openspec/changes/add-provider-neutral-project-reporting/week-delivery.md)
@@ -48,10 +50,10 @@ the remaining product migration or deployment tasks.
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![Django 6.0+](https://img.shields.io/badge/django-6.0+-green.svg)
-![HTMX](https://img.shields.io/badge/htmx-1.9.12-blue)
-![Chart.js](https://img.shields.io/badge/Chart.js-4.5.1-orange)
+![HTMX](https://img.shields.io/badge/htmx-2.0.11-blue)
+![Chart.js](https://img.shields.io/badge/Chart.js-4.6.1-orange)
 ![chartjs-plugin-annotation](https://img.shields.io/badge/chartjs--plugin--annotation-3.1.0-orange)
-![Bulma CSS](https://img.shields.io/badge/bulma-1.0.4-green)
+![Meridian design system](https://img.shields.io/badge/UI-Meridian%20design%20system-3e63dd)
 
 ## What It Does
 
@@ -97,8 +99,10 @@ cd metrics
 
 Copy the example environment file:
 
-```bash
-cp .env.example .env
+```powershell
+if (-not (Test-Path -LiteralPath '.env')) {
+    Copy-Item -LiteralPath '.env.example' -Destination '.env'
+}
 ```
 
 Edit `.env` with your configuration (see [Configuration Guide](#configuration-guide) below).
@@ -147,16 +151,24 @@ docker run -p 8000:8000 --env-file .env metrics-dashboard
 
 Visit http://localhost:8000 in your browser.
 
-### Option 2: Python Development Setup
+### Option 2: Windows Python Development Setup
 
 #### 1. Clone and Setup
 
-```bash
+```powershell
 git clone <repository-url>
 cd metrics
-source ~/.virtualenvs/metrics/bin/activate  # or your venv
-pip install -r requirements.txt
 ```
+
+Create a **new** Python 3.13 environment using the approved Windows wheelhouse
+and the [offline installation procedure](docs/development/reporting-delivery.md#windows-offline-installation).
+Install the verified `ai-base-runtime` wheel by file path before the named
+requirements. A requirements-only installation does not establish the runtime
+provenance required by `serve`. Keep any retained legacy `.venv` unchanged;
+select the new interpreter explicitly.
+
+Linux/container definitions above are retained for later qualification. They
+are not validated installation paths for the current embedded-runtime candidate.
 
 #### 2. Configure Your Task Tracker
 
@@ -202,25 +214,34 @@ METRICS_MEMBERS={"John Doe": {"level": "senior", "member_groups": ["Team A"], "s
 
 #### 3. Run the Application
 
-```bash
-python manage.py migrate
-python manage.py check  # Verify configuration
-python manage.py runserver 8000
+```powershell
+& $reportingPython manage.py migrate
+if ($LASTEXITCODE -ne 0) { throw 'Migration failed' }
+& $reportingPython manage.py check
+if ($LASTEXITCODE -ne 0) { throw 'Configuration check failed' }
+$env:METRICS_DASHBOARD_PYTHON = $reportingPython
+.\scripts\local_start_backend.ps1 -Port 8000
 ```
+
+Stop this owned instance with `.\scripts\local_stop_backend.ps1 -Port 8000`.
+The profile and service lifecycle records determine ownership; the stop command
+does not adopt another listener by port.
 
 #### 4. Access Dashboard
 
 Visit http://localhost:8000 in your browser.
 
-## Unified Metrics Workbench Demo
+## Unified Metrics Workbench
 
-The unified workbench is the preferred E2E demo entry point for the Dashboard + Grafana + optional AI Base flow. It keeps the user in one Dashboard-owned UI while preserving Grafana as a chart renderer and AI Base as an optional assistant pane.
+The Workbench uses the embedded AIB runtime in the Dashboard process. Install the
+fixed development candidate described in `docs/development/reporting-delivery.md`,
+then start the combined host:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\e2e_dashboard_ai_stack.ps1 -Action restart
+python manage.py serve --host 127.0.0.1 --port 8002
 ```
 
-The launcher starts or detects the Dashboard, Grafana, and AI Base services, suppresses the lower-level Grafana browser entry point, and opens only:
+Open the Dashboard-owned Workbench:
 
 ```text
 http://127.0.0.1:8002/workbench/
@@ -228,7 +249,14 @@ http://127.0.0.1:8002/workbench/
 
 In the workbench, the top chart pane shows the Metrics-owned reference chart and a compact Grafana single-panel preview. Clicking an evidence-backed chart bar, such as `new_critical_high`, refreshes the ticket evidence pane below with the matching Jira or HSD-ES rows. Grafana stock panel links route through `/workbench/grafana-selection/` so a Grafana click can update the workbench selection instead of moving the user to a separate Grafana workflow.
 
-Charts that do not support point-level evidence declare `range_only`, `summary_only`, or `unsupported`; the evidence pane clears stale rows and shows the scoped state. The diagnostics pane lists Dashboard, Grafana, and AI Base status with the relevant URL and next action. If the unified demo blocks, the rollback path is to keep using the legacy full-page Dashboard URLs plus the full Grafana dashboard link exposed from the workbench diagnostics/admin path.
+Charts that do not support point-level evidence declare `range_only`, `summary_only`, or `unsupported`; the evidence pane clears stale rows and shows the scoped state.
+The AI pane is `ready`, `not_configured`, or `not_running`. Configure the three
+`METRICS_AI_MODEL_*` variables to enable chat; missing settings are shown by name
+only. Unresolved scope bindings link to Scope Library. Chat uses a same-origin
+iframe and one persisted session per authenticated principal and provider profile.
+Range/chart changes bind fresh server-owned context without reloading that iframe.
+Grafana remains separately configured. Publication and the remaining launcher
+migration are still tracked by MDB-2; this candidate is not full joint acceptance.
 
 ## Configuration Guide
 
@@ -551,31 +579,36 @@ If not set, the dashboard will be publicly accessible.
 #### Environment Security
 
 - Set `DEBUG=False` in production
-- Configure `ALLOWED_HOSTS` with your domain: `ALLOWED_HOSTS=your-domain.com,www.your-domain.com`
+- `ALLOWED_HOSTS` defaults to loopback only (`127.0.0.1`, `localhost`, `[::1]`) so DNS-rebound pages cannot
+  reach the dashboard; set it to your domain when serving under another hostname:
+  `ALLOWED_HOSTS=your-domain.com,www.your-domain.com`
 - Use strong, unique passwords for `METRICS_BASIC_AUTH_USERS`
 - Store API tokens securely and rotate them regularly
 
-### Production Setup
+### Windows Candidate Deployment
 
-1. **Build Static Assets**
+Production qualification of the embedded host is still tracked in MDB-2.
+This is the single candidate entrypoint to validate, not a release approval.
+Linux/container definitions remain deferred and unqualified.
 
-   ```bash
-   python manage.py compress
+1. **Prepare State And Static Assets**
+
+   ```powershell
+   & $reportingPython manage.py migrate
+   & $reportingPython manage.py collectstatic --noinput
+   & $reportingPython manage.py compress
+   & $reportingPython manage.py check --deploy
    ```
-2. **Run with Production Server**
+2. **Start The Owned Host**
 
-   ```bash
-   gunicorn metrics.wsgi:application
+   ```powershell
+   $env:METRICS_DASHBOARD_PYTHON = $reportingPython
+   .\scripts\local_start_backend.ps1 -Port 8000
    ```
-3. **Database Setup**
+3. **Stop The Same Instance**
 
-   ```bash
-   python manage.py migrate
-   ```
-4. **Health Check**
-
-   ```bash
-   python manage.py check --deploy
+   ```powershell
+   .\scripts\local_stop_backend.ps1 -Port 8000
    ```
 
 ### Performance Optimization
@@ -654,11 +687,14 @@ tasks = await (
 
 ### Frontend Architecture
 
-The UI is a dynamic, server-rendered application that leverages modern libraries to create a responsive and interactive experience without a complex JavaScript toolchain:
+The UI is a server-rendered application with no client-side framework or runtime bundler. A small
+Node toolchain in `ui_web/frontend/` runs only during development to generate design tokens,
+vendor pinned libraries and enforce the frontend quality gates:
 
-- **Bulma**: A lightweight, modern CSS framework used for all styling.
+- **Meridian design system**: DTCG design tokens built with Style Dictionary generate `theme.css`; `css/foundation/` provides the primitives and `css/shell/` plus `shell.js`/`command-palette.js` the app frame with sidebar, command palette and light/dark/system themes. `ui_web/static_assets.py` is the single ordered list of stylesheets and scripts. Every UI change follows the binding [frontend design requirements](openspec/docs/current-baseline/frontend-design-requirements.md).
 - **HTMX**: The core of the UI's interactivity. HTMX is used to perform AJAX requests and update parts of a page directly from HTML, enabling a dynamic, single-page application feel.
-- **Chart.js**: Powers all data visualizations, rendering the charts and graphs for velocity and forecasting.
+- **Chart.js**: Powers all data visualizations; `DashboardCharts` maps every chart color to the active theme tokens.
+- **Quality gates**: Stylelint, WCAG contrast checks over token pairs, and Playwright + axe-core browser QA across themes and viewports.
 
 ### Core Implementation Classes
 

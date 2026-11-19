@@ -9,11 +9,11 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import override_settings
 from django.urls import reverse
 
-from project_management.app.api import run_factories
-from project_management.out.ai_task_contract import AiTaskContract
+from ai_host.task_runs import RuntimeTaskRunPort
+from project_management.app.api.ai_profiles import load_task_profile
+from project_management.services.task_contracts import SummaryTaskContract
 from project_management.services.report_sources import ReportSourceReader
 from project_management.tests.history_persistence_fixtures import history_fixture, publication_file_bytes
-from project_management.tests.summary_fixtures import PACK_ROOT
 from project_management.tests.test_report_meeting_resumption import iso_calendar
 from project_management.tests.test_report_template_compilation import matrix_block
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
@@ -32,14 +32,15 @@ class TestReportMeetingBrowser(StaticLiveServerTestCase):
         self.fixture = history_fixture(Path(self.temporary.name), document=document, actor_subject='basic:alice')
         iso_calendar(self.fixture)
         self.fixture.retained_capture_id = seed_retained_capture(self.fixture)
-        reader = ReportSourceReader(self.fixture.archive, AiTaskContract.load(PACK_ROOT))
+        reader = ReportSourceReader(self.fixture.archive, SummaryTaskContract(load_task_profile('metrics.project_summary')))
         self.fixture.source_reader = reader
         self.fixture.continuity.source_reader = reader
         self.fixture.draft_service.source_reader = reader
         self.monkeypatch = pytest.MonkeyPatch()
         self.addCleanup(self.monkeypatch.undo)
         self.sdk_calls = []
-        self.monkeypatch.setattr(run_factories, 'TaskRunClient', self.forbid_model)
+        for method in ('start', 'lookup', 'get', 'result', 'cancel'):
+            self.monkeypatch.setattr(RuntimeTaskRunPort, method, self.forbid_model)
         self.facade_patch = patch_default_facade(self.monkeypatch, self.fixture)
         self.facade_patch.__enter__()
         self.addCleanup(self.facade_patch.__exit__, None, None, None)
@@ -48,7 +49,7 @@ class TestReportMeetingBrowser(StaticLiveServerTestCase):
 
     def forbid_model(self, *args, **kwargs):
         self.sdk_calls.append(True)
-        raise AssertionError('Calendar/manual resumption must not create an AI client')
+        raise AssertionError('Calendar/manual resumption must not invoke an AI task')
 
     def url(self, name, **extra):
         return self.live_server_url + reverse('ui_web:' + name, kwargs={

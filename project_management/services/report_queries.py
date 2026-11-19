@@ -51,8 +51,10 @@ class ReportQueryService:
             raise ReportError('REPORT_INVALID')
         self.drafts._validate_page(query.page_size, query.draft_offset)
         self.drafts._validate_page(query.page_size, query.publication_offset)
+        opened = False
         try:
             with self.archive._report_read_view(actor, project_id, stage_id, allow_absent=True) as view:
+                opened = True
                 if view is None:
                     return ReportWorkspaceRead('absent', None, datetime.now(UTC).isoformat(),
                                                CaptureMetadataPage((), None), ReportDraftPage((), None),
@@ -81,6 +83,9 @@ class ReportQueryService:
         except (ArchiveError, ProjectError) as error:
             if getattr(error, 'code', '') in {'ARCHIVE_STORAGE_UNAVAILABLE', 'ARCHIVE_READ_UNSUPPORTED'}:
                 raise ReportError('REPORT_STORAGE_UNAVAILABLE') from None
+            # A present stage archive that fails identity checks is corrupt, never a missing report.
+            if not opened and isinstance(error, ArchiveError):
+                raise ReportError('REPORT_ARTIFACT_INVALID') from None
             raise self.drafts._report_error(error, missing_as_not_found=True) from None
 
     def _operations(self, view, actor):

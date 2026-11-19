@@ -1,5 +1,7 @@
+from contextlib import ExitStack
 from dataclasses import asdict
 import json
+import os
 import uuid
 
 from django.core.management.base import BaseCommand, CommandError
@@ -16,6 +18,7 @@ from project_management.app.api.project_runs import (
 )
 from project_management.app.api.report_factories import build_report_preparation_for_run
 from project_management.app.api.reports import PublicationRef, ReportError, TemplateSelection, UserTemplateSelection
+from project_management.app.api.task_runtime import LocalRuntimeCleanupError, open_local_task_run_port
 
 
 class Command(BaseCommand):
@@ -83,19 +86,17 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         actor = ProjectActor('local_operator')
         try:
-            runtime = get_project_runtime()
-            daily_local = options['operation'] in {'prepare', 'reprepare'} and options.get('execute_local')
-            if runtime is not None and daily_local:
-                raise RunError('RUN_BUSY')
-            needs_local = options['operation'] == 'start' or options.get('source_mode') == 'refresh'
-            if runtime is None and options.get('execute_local') and needs_local:
-                runtime = build_project_runtime()
-            service = runtime.run_service if runtime is not None else build_run_read_service()
-            if options.get('source_mode') == 'refresh' and runtime is None:
-                raise RunError('RUN_UNAVAILABLE')
-            if daily_local and runtime is not None and service.notifier is None:
-                service.notifier = lambda *args: None
-            result = self._execute(service, runtime, actor, options)
+            with ExitStack() as contexts:
+                result = self._run_command(actor, options, contexts)
+        except LocalRuntimeCleanupError as error:
+            self.stdout.write(json.dumps({'schema_version': 1, 'result': None, 'error': {
+                'code': error.code, 'message': error.message,
+            }}))
+            self.stderr.write('project_run cleanup failed.')
+            self.stdout.flush()
+            self.stderr.flush()
+            self._exit_after_cleanup_failure()
+            return
         except (RunError, ReportError, ProjectError) as error:
             raise CommandError(json.dumps({'schema_version': 1, 'result': None, 'error': {
                 'code': error.code,
@@ -103,6 +104,27 @@ class Command(BaseCommand):
             }}), returncode=1) from None
         self.stdout.write(json.dumps({'schema_version': 1, 'result': asdict(result), 'error': None},
                                      cls=DjangoJSONEncoder))
+
+    def _run_command(self, actor, options, contexts):
+        runtime = get_project_runtime()
+        daily_local = options['operation'] in {'prepare', 'reprepare'} and options.get('execute_local')
+        if runtime is not None and daily_local:
+            raise RunError('RUN_BUSY')
+        needs_local = options['operation'] == 'start' or options.get('source_mode') == 'refresh'
+        if runtime is None and options.get('execute_local') and needs_local:
+            local = contexts.enter_context(open_local_task_run_port())
+            runtime = build_project_runtime(
+                task_runs=local.task_runs, principal_resolver=local.principal_resolver,
+            )
+        service = runtime.run_service if runtime is not None else build_run_read_service()
+        if options.get('source_mode') == 'refresh' and runtime is None:
+            raise RunError('RUN_UNAVAILABLE')
+        if daily_local and runtime is not None and service.notifier is None:
+            service.notifier = lambda *args: None
+        return self._execute(service, runtime, actor, options)
+
+    def _exit_after_cleanup_failure(self):
+        os._exit(3)
 
     def _execute(self, service, runtime, actor, options):
         operation = options['operation']

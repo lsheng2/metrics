@@ -1,0 +1,45 @@
+{% load i18n dashboard_format %}
+<section class="card" aria-labelledby="report-publications-title">
+    <header class="card-header">
+        <h3 class="card-header-title" id="report-publications-title">{% trans "Published editions" %}</h3>
+    </header>
+    <div class="table-container responsive-admin-table-box">
+        <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable project-reports-table publication-table">
+            <thead>
+                <tr>
+                    <th scope="col">{% trans "Publication" %}</th>
+                    <th scope="col" class="report-col-number">{% trans "Draft revision" %}</th>
+                    <th scope="col" class="report-col-time">{% trans "Source cutoff" %}</th>
+                    <th scope="col" class="report-col-time">{% trans "Finalized" %}</th>
+                    <th scope="col" class="report-col-hash">{% trans "Commit" %}</th>
+                    <th scope="col" class="report-col-action"><span class="is-sr-only">{% trans "Open" %}</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for publication in publications.items %}
+                    <tr>
+                        <td data-label="{% trans "Publication" %}"><code title="{{ publication.manifest.publication_id }}">{{ publication.manifest.publication_id }}</code></td>
+                        <td data-label="{% trans "Draft revision" %}">{{ publication.manifest.draft_revision }}</td>
+                        <td data-label="{% trans "Source cutoff" %}">{{ publication.manifest.source_as_of|timestamp }}</td>
+                        <td data-label="{% trans "Finalized" %}">{{ publication.manifest.finalized_at|timestamp }}</td>
+                        <td data-label="{% trans "Commit" %}"><code title="{{ publication.commit_id }}">{{ publication.commit_id|slice:":12" }}</code></td>
+                        <td class="report-col-action">
+                            <a class="button is-small" href="{% url 'ui_web:report_publication' detail.project.id stage.id publication.manifest.publication_id %}">
+                                <span class="icon is-small"><i class="iconoir-page" aria-hidden="true"></i></span>
+                                <span>{% trans "Open" %}</span>
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="is-empty-row"><td colspan="6">{% trans "No published editions yet." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if publication_previous_offset != None or publications.next_offset != None %}
+        <nav class="pagination is-small project-reports-pager" role="navigation" aria-label="{% trans "Publication pages" %}">
+            {% if publication_previous_offset != None %}<a class="pagination-previous" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}?draft_offset={{ draft_offset }}&publication_offset={{ publication_previous_offset }}{% if capture_after %}&capture_after={{ capture_after|urlencode }}{% endif %}">{% trans "Previous publications" %}</a>{% endif %}
+            {% if publications.next_offset != None %}<a class="pagination-next" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}?draft_offset={{ draft_offset }}&publication_offset={{ publications.next_offset }}{% if capture_after %}&capture_after={{ capture_after|urlencode }}{% endif %}">{% trans "Next publications" %}</a>{% endif %}
+        </nav>
+    {% endif %}
+</section>

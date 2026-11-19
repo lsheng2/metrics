@@ -11,4 +11,4 @@
 
 - [x] 3.1 Update the Dashboard AI E2E runbook with AI Base Chat demo steps.
 - [x] 3.2 Run Dashboard OpenSpec validation and AI Base focused/backend/desktop checks.
-- [ ] 3.3 Commit and push Dashboard docs/specs and AI Base implementation separately.
+- [x] 3.3 Commit and push Dashboard docs/specs and AI Base implementation separately. Evidence: Dashboard `1ac2be4` (archived by `3f51cb5`) and AI Base `ea453c3`, each on its repository's `origin/main`.

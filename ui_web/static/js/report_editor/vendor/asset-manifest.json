@@ -3,6 +3,7 @@
   "bundle": "milkdown.bundle.js",
   "bundle_sha256": "f537a725757e99f95e7961c3aecdbfb02397ec31b96e24acfe33f5c35d466c59",
   "source_entry": "ui_web/editor_build/report_milkdown.js",
+  "source_entry_sha256": "98a0cdfad4bb9adc1dba18125af95c2a22236d9bdd9d8de571b87445ddfef763",
   "package_json": "ui_web/editor_build/package.json",
   "package_json_sha256": "68bdca80cfb329562beb46fad25355b3a4171a943ced9a66d0840c2231cf2863",
   "package_lock": "ui_web/editor_build/package-lock.json",

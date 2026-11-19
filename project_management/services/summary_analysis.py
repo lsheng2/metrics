@@ -1,179 +1,173 @@
-import asyncio
 from datetime import UTC, datetime
-import re
-
-from ai_base_application_sdk import TaskRunClientError
+import math
+import time
 
 from project_management.app.domain.summary_contracts import AnalysisCancellation, AnalysisError, AnalysisStep
+from project_management.app.domain.task_run_codec import cancellation_from_record, snapshot_from_record
+from project_management.app.domain.task_run_observations import execution_is_settled
+from project_management.app.domain.task_runs import TaskPrincipal, TaskRunError
+from project_management.services.summary_journal_reads import validate_principal
 
 
 class SummaryAnalysisService:
-    def __init__(self, archive, contract, client_factory, clock=None):
+    def __init__(self, archive, contract, task_run_port, clock=None):
         self.archive = archive
         self.contract = contract
-        self.client_factory = client_factory
+        self.task_run_port = task_run_port
         self.clock = clock or (lambda: datetime.now(UTC))
-        self.control_timeout_seconds = 10
 
-    def prepare(self, actor, project_id, stage_id, source_key, *, backend, deadline_at, cancel_requested=None):
-        return self.archive.prepare_analysis(actor, project_id, stage_id, source_key,
-                                             self.contract, backend, deadline_at,
-                                             cancel_requested=cancel_requested)
+    def prepare(self, actor, project_id, stage_id, source_key, *, principal, deadline_at, cancel_requested=None):
+        validate_principal(principal, actor.subject)
+        return self.archive.prepare_analysis(
+            actor, project_id, stage_id, source_key, self.contract, principal, deadline_at,
+            cancel_requested=cancel_requested,
+        )
 
-    async def advance(self, actor, project_id, stage_id, attempt_id, *, backend, cancel_requested=None):
+    def _attempt(self, arguments, principal):
+        validate_principal(principal, arguments[0].subject)
+        attempt = self.archive.read_analysis_attempt(*arguments)
+        if not isinstance(principal, TaskPrincipal) or attempt.principal != principal:
+            raise AnalysisError('ANALYSIS_PRINCIPAL_MISMATCH')
+        self.contract.validate_request(attempt.request)
+        return attempt
+
+    def _observations(self, arguments, attempt):
+        observations = self.archive.read_analysis_observations(*arguments)
+        latest = None
+        acknowledgement = None
+        for observation in observations:
+            if not isinstance(observation, dict):
+                raise AnalysisError('ANALYSIS_INVALID')
+            try:
+                if 'snapshot' in observation:
+                    snapshot = snapshot_from_record(observation['snapshot'])
+                    self.contract.validate_snapshot(attempt.request, snapshot)
+                    if latest is not None and latest.run_id != snapshot.run_id:
+                        raise AnalysisError('ANALYSIS_RESULT_INVALID')
+                    latest = snapshot
+                if 'cancel' in observation:
+                    acknowledgement = cancellation_from_record(observation['cancel'])
+                    if observation.get('run_id') != acknowledgement.run_id:
+                        raise AnalysisError('ANALYSIS_RESULT_INVALID')
+            except (TypeError, ValueError):
+                raise AnalysisError('ANALYSIS_RESULT_INVALID') from None
+        if acknowledgement is not None and latest is not None and acknowledgement.run_id != latest.run_id:
+            raise AnalysisError('ANALYSIS_RESULT_INVALID')
+        return latest, acknowledgement
+
+    def advance(self, actor, project_id, stage_id, attempt_id, *, principal, cancel_requested=None):
         arguments = (actor, project_id, stage_id, attempt_id)
-        attempt = await asyncio.to_thread(self.archive.read_analysis_attempt, *arguments)
-        if attempt.backend != backend:
-            raise AnalysisError('ANALYSIS_BACKEND_MISMATCH')
+        attempt = self._attempt(arguments, principal)
         if attempt.cancel_requested:
-            return AnalysisStep('canceled', attempt_id, error_code='ANALYSIS_CANCELED')
-        remaining = (datetime.fromisoformat(attempt.request['deadlineAt']) - self.clock()).total_seconds()
-        if remaining <= 0:
+            canceled = self.cancel(*arguments, principal=principal)
+            return AnalysisStep(canceled.state, attempt_id, error_code=canceled.error_code)
+        if not attempt.dispatched and attempt.request.deadline_at <= self.clock():
             raise AnalysisError('ANALYSIS_DEADLINE_EXPIRED')
-        if not attempt.dispatched:
-            self.contract.validate_request(attempt.request)
+        snapshot, _ = self._observations(arguments, attempt)
+        operation = 'observe'
         try:
-            dispatch = await asyncio.to_thread(self.archive.claim_analysis_dispatch, *arguments,
-                                               cancel_requested=cancel_requested)
-            operation = 'submit' if dispatch else 'observe'
-            async with self.client_factory(backend) as client:
-                snapshot = await self._network(
-                    attempt, lambda: client.submit(attempt.request) if dispatch else client.get_by_client_key(
-                        backend.scope_key, attempt.attempt_id,
-                    ),
-                )
-                self.contract.validate_snapshot(attempt, snapshot)
-                await asyncio.to_thread(self.archive.record_analysis_observation, *arguments, {'snapshot': snapshot})
-                if snapshot['state'] != 'succeeded':
-                    return AnalysisStep(snapshot['state'], attempt_id)
-                operation = 'result'
-                result = await self._network(attempt, lambda: client.get_result(backend.scope_key, snapshot['runId']))
-                self.contract.validate_result(attempt, snapshot, result)
-                accepted = await asyncio.to_thread(self.archive.accept_analysis, *arguments,
-                                                   snapshot, result, self.contract,
-                                                   cancel_requested=cancel_requested)
-                return AnalysisStep('accepted', attempt_id, accepted)
+            if not attempt.dispatched:
+                claimed = self.archive.claim_analysis_dispatch(*arguments, cancel_requested=cancel_requested)
+                operation = 'submit' if claimed else 'observe'
+            if snapshot is None:
+                if operation == 'submit':
+                    snapshot = self.task_run_port.start(principal, attempt.request)
+                else:
+                    snapshot = self.task_run_port.lookup(principal, attempt.request)
+                    if snapshot is None:
+                        self.archive.record_analysis_observation(
+                            *arguments, {'state': 'unknown', 'operation': 'lookup'},
+                        )
+                        return AnalysisStep('unknown', attempt_id)
+            else:
+                snapshot = self.task_run_port.get(principal, attempt.request, snapshot.run_id)
+            self.contract.validate_snapshot(attempt.request, snapshot)
+            self.archive.record_analysis_observation(*arguments, {'snapshot': snapshot})
+            if snapshot.dispatch.uncertainty == 'unknown':
+                return AnalysisStep('unknown', attempt_id, error_code=snapshot.error_code)
+            if snapshot.status != 'succeeded':
+                return AnalysisStep(snapshot.status, attempt_id, error_code=snapshot.error_code)
+            operation = 'result'
+            result = self.task_run_port.result(principal, attempt.request, snapshot.run_id)
+            self.contract.validate_result(attempt.prepared, attempt.request, snapshot, result)
+            accepted = self.archive.accept_analysis(
+                *arguments, snapshot, result, self.contract, cancel_requested=cancel_requested,
+            )
+            return AnalysisStep('accepted', attempt_id, accepted)
         except AnalysisError as error:
             if error.code == 'ANALYSIS_CANCELED':
                 return AnalysisStep('canceled', attempt_id, error_code=error.code)
             raise
-        except (TaskRunClientError, TimeoutError) as error:
-            code = error.code if isinstance(error, TaskRunClientError) else 'transport_outcome_unknown'
-            if not isinstance(code, str) or re.fullmatch('[a-z][a-z0-9_]{0,79}', code) is None:
-                code = 'invalid_response'
-            recovery = error.recovery if isinstance(error, TaskRunClientError) else 'query_by_client_key'
-            if recovery not in {'correct_request', 'query_by_client_key', 'stop', 'poll', 'query_run'}:
-                recovery = 'query_by_client_key'
-            status = error.status if isinstance(error, TaskRunClientError) else None
-            state = 'rejected' if operation == 'submit' and recovery == 'correct_request' and status in {400, 413, 422} else 'unknown'
-            observation = {'state': state, 'code': code, 'recovery': recovery, 'status': status, 'operation': operation}
-            await asyncio.to_thread(self.archive.record_analysis_observation, *arguments, observation)
+        except TaskRunError as error:
+            state = 'rejected' if operation == 'submit' and error.retry == 'correct' else 'unknown'
+            code = error.runtime_code or error.code
+            self.archive.record_analysis_observation(*arguments, {
+                'state': state, 'code': code, 'retry': error.retry, 'operation': operation,
+            })
             return AnalysisStep(state, attempt_id, error_code=code)
 
-    async def cancel(self, actor, project_id, stage_id, attempt_id, *, backend, timeout_seconds=None):
-        arguments = (actor, project_id, stage_id, attempt_id)
-        attempt = await asyncio.to_thread(self.archive.read_analysis_attempt, *arguments)
-        if attempt.backend != backend:
-            raise AnalysisError('ANALYSIS_BACKEND_MISMATCH')
-        attempt = await asyncio.to_thread(self.archive.request_analysis_cancel, *arguments)
-        if attempt.backend != backend:
-            raise AnalysisError('ANALYSIS_BACKEND_MISMATCH')
-        if not attempt.dispatched:
-            return AnalysisCancellation('canceled', attempt_id, None, 'not_requested')
-        observations = await asyncio.to_thread(self.archive.read_analysis_observations, *arguments)
-        retained = self._retained_cancellation(attempt, observations)
-        if retained is not None:
-            return retained
-        run_id = self._observed_run_id(attempt, observations)
-        control_deadline = self._control_deadline(timeout_seconds)
-        async with self.client_factory(backend) as client:
-            if run_id is None:
-                try:
-                    snapshot = await self._control_network(control_deadline, lambda: client.get_by_client_key(
-                        backend.scope_key, attempt.attempt_id,
-                    ))
-                    self.contract.validate_snapshot(attempt, snapshot)
-                    run_id = snapshot['runId']
-                except (TaskRunClientError, TimeoutError) as error:
-                    if self._refuses_trusted_identity(error):
-                        raise AnalysisError('ANALYSIS_RESULT_INVALID') from None
-                    code, status = self._safe_transport_error(error)
-                    observation = {'state': 'cancel_requested', 'remote_stop': 'unknown',
-                                   'code': code, 'status': status}
-                    await asyncio.to_thread(self.archive.record_analysis_observation, *arguments,
-                                            observation, cancellation=True)
-                    return AnalysisCancellation('cancel_requested', attempt_id, None, 'unknown', code)
-            try:
-                response = await self._control_network(control_deadline, lambda: client.cancel(backend.scope_key, run_id))
-                snapshot = self.contract.validate_cancel(attempt, response, expected_run_id=run_id)
-                await asyncio.to_thread(self.archive.record_analysis_observation, *arguments,
-                                        {'run_id': run_id, 'cancel': response}, cancellation=True)
-                return AnalysisCancellation('canceled', attempt_id, run_id,
-                                            snapshot['dispatch']['remoteStop'])
-            except (TaskRunClientError, TimeoutError) as error:
-                if self._refuses_trusted_identity(error):
-                    raise AnalysisError('ANALYSIS_RESULT_INVALID') from None
-                code, status = self._safe_transport_error(error)
-                observation = {'state': 'cancel_requested', 'run_id': run_id, 'remote_stop': 'unknown',
-                               'code': code, 'status': status}
-                await asyncio.to_thread(self.archive.record_analysis_observation, *arguments,
-                                        observation, cancellation=True)
-                return AnalysisCancellation('cancel_requested', attempt_id, run_id, 'unknown', code)
-
-    async def _network(self, attempt, action):
-        remaining = (datetime.fromisoformat(attempt.request['deadlineAt']) - self.clock()).total_seconds()
-        if remaining <= 0:
-            raise TimeoutError
-        async with asyncio.timeout(remaining):
-            return await action()
-
-    def _control_deadline(self, timeout_seconds=None):
-        seconds = self.control_timeout_seconds if timeout_seconds is None else timeout_seconds
-        if type(seconds) not in {int, float} or not 0 < seconds <= 10:
+    def cancel(self, actor, project_id, stage_id, attempt_id, *, principal, timeout_seconds=10):
+        if (type(timeout_seconds) not in (int, float)
+                or not math.isfinite(timeout_seconds) or timeout_seconds <= 0):
             raise AnalysisError('ANALYSIS_INVALID')
-        return asyncio.get_running_loop().time() + seconds
+        deadline = time.monotonic() + timeout_seconds
 
-    async def _control_network(self, deadline, action):
-        remaining = deadline - asyncio.get_running_loop().time()
-        if remaining <= 0:
-            raise TimeoutError
-        async with asyncio.timeout(remaining):
-            return await action()
+        def call(method, *args):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TaskRunError('RUN_UNAVAILABLE', runtime_code='runtime_call_timeout', retry='observe')
+            return method(*args, timeout=remaining)
 
-    def _retained_cancellation(self, attempt, observations):
-        for observation in reversed(observations):
-            if 'cancel' in observation:
-                response = observation['cancel']
-                try:
-                    run_id = observation['run_id']
-                    snapshot = self.contract.validate_cancel(attempt, response, expected_run_id=run_id)
-                    return AnalysisCancellation('canceled', attempt.attempt_id, run_id,
-                                                snapshot['dispatch']['remoteStop'])
-                except (KeyError, TypeError):
-                    raise AnalysisError('ANALYSIS_RESULT_INVALID') from None
-            if observation.get('state') == 'cancel_requested' and observation.get('remote_stop') == 'unknown':
-                if len(observations) >= 17:
-                    return AnalysisCancellation('cancel_requested', attempt.attempt_id, observation.get('run_id'),
-                                                'unknown', observation.get('code'))
-        return None
-
-    def _observed_run_id(self, attempt, observations):
-        run_id = None
-        for observation in observations:
-            if 'snapshot' in observation:
-                snapshot = observation['snapshot']
-                self.contract.validate_snapshot(attempt, snapshot)
-                run_id = snapshot['runId']
-        return run_id
-
-    def _safe_transport_error(self, error):
-        code = error.code if isinstance(error, TaskRunClientError) else 'transport_outcome_unknown'
-        if not isinstance(code, str) or re.fullmatch('[a-z][a-z0-9_]{0,79}', code) is None:
-            code = 'invalid_response'
-        status = error.status if isinstance(error, TaskRunClientError) else None
-        return code, status
-
-    def _refuses_trusted_identity(self, error):
-        return isinstance(error, TaskRunClientError) and error.code in {
-            'invalid_response', 'contract_unsupported', 'run_store_mismatch',
-        }
+        arguments = (actor, project_id, stage_id, attempt_id)
+        attempt = self._attempt(arguments, principal)
+        attempt = self.archive.request_analysis_cancel(*arguments)
+        if not attempt.dispatched:
+            return AnalysisCancellation('canceled', attempt_id, None, None)
+        snapshot, acknowledgement = self._observations(arguments, attempt)
+        new_acknowledgement = False
+        try:
+            if snapshot is None:
+                snapshot = call(self.task_run_port.lookup, principal, attempt.request)
+                if snapshot is None:
+                    self.archive.record_analysis_observation(
+                        *arguments, {'state': 'cancel_requested', 'operation': 'lookup'},
+                    )
+                    return AnalysisCancellation('cancel_requested', attempt_id, None, None)
+                self.contract.validate_snapshot(attempt.request, snapshot)
+            if acknowledgement is not None and execution_is_settled(snapshot):
+                return AnalysisCancellation(snapshot.status, attempt_id, snapshot.run_id, acknowledgement.canceled)
+            if acknowledgement is None:
+                acknowledgement = call(self.task_run_port.cancel, principal, snapshot.run_id)
+                new_acknowledgement = True
+                if acknowledgement.run_id != snapshot.run_id:
+                    raise AnalysisError('ANALYSIS_RESULT_INVALID')
+            current = call(self.task_run_port.get, principal, attempt.request, snapshot.run_id)
+            self.contract.validate_snapshot(attempt.request, current)
+            if current.run_id != snapshot.run_id:
+                raise AnalysisError('ANALYSIS_RESULT_INVALID')
+            observation = {'snapshot': current}
+            if new_acknowledgement:
+                observation.update(run_id=current.run_id, cancel=acknowledgement)
+            self.archive.record_analysis_observation(
+                *arguments, observation, cancellation=new_acknowledgement,
+            )
+            state = current.status if execution_is_settled(current) else 'cancel_requested'
+            return AnalysisCancellation(state, attempt_id, current.run_id, acknowledgement.canceled)
+        except TaskRunError as error:
+            run_id = None if snapshot is None else snapshot.run_id
+            observation = {
+                'state': 'cancel_requested', 'run_id': run_id,
+                'code': error.runtime_code or error.code, 'retry': error.retry,
+            }
+            if snapshot is not None:
+                observation['snapshot'] = snapshot
+            if new_acknowledgement:
+                observation['cancel'] = acknowledgement
+            self.archive.record_analysis_observation(
+                *arguments, observation, cancellation=new_acknowledgement,
+            )
+            return AnalysisCancellation(
+                'cancel_requested', attempt_id, run_id,
+                None if acknowledgement is None else acknowledgement.canceled,
+                error.runtime_code or error.code,
+            )

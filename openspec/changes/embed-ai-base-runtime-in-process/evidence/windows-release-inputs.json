@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-11-17",
+  "plan_commit": "8bb83d484f49871502ebf88c6e6bde70b2ac9712",
+  "authorization": {
+    "owner_resume": "User explicitly approved the plan and continuous execution to final checkout on 2026-11-17.",
+    "plan_review_state": ".tmp/mdb2-windows-plan-review/state.json",
+    "plan_review_result": "complete; clean_passes=1; pending_issue_count=0",
+    "release_actions_authorized": false
+  },
+  "source": {
+    "kind": "working-tree",
+    "baseline_commit": "8bb83d484f49871502ebf88c6e6bde70b2ac9712",
+    "repository": "C:/Users/lsheng2/orca/workspaces/scrum_dashboard/moonfish",
+    "code_changed_during_reconciliation": false,
+    "note": "This is prerequisite materialization, not the final immutable W3 source freeze."
+  },
+  "candidate": {
+    "version": "0.1.1.dev4",
+    "wheel": "D:/AIGC/artifacts/mdb2-windows-20261117/wheels/ai_base_runtime-0.1.1.dev4-py3-none-any.whl",
+    "wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94",
+    "source_commit": "d589ac8e6572a903edc3846e7d78195e85858868",
+    "admission_manifest": "ai_host/runtime_artifact.json",
+    "admission_preflight": {
+      "test_file": "ai_host/tests/test_admission.py",
+      "passed": 6,
+      "failed": 0,
+      "execution": "Current goal transcript; isolated no-dotenv runner with the pinned candidate interpreter"
+    }
+  },
+  "python": {
+    "bootstrap": "C:/Python313/python.exe",
+    "bootstrap_version": "3.13.7",
+    "candidate": "D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r4/Scripts/python.exe",
+    "preflight_candidate": "D:/AIGC/temp/aib2-lanes/dashboard-stream-cleanup-20261117-01/venv/Scripts/python.exe",
+    "new_environment_root": "D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r4",
+    "new_environment_must_be_created_fresh": true,
+    "candidate_environment_record": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/inputs/candidate-environment.json",
+      "sha256": "cd1b00bb9a6758fe73112a824565212484b92dbcbbbdf03259d990cc08b0594b"
+    }
+  },
+  "wheelhouse": {
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117/wheels",
+    "runtime_wheel_verified": true,
+    "dependency_wheels_complete": true,
+    "constraints_complete": true,
+    "wheel_count": 82,
+    "constraints": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/install-runs/f20e3481-6fbd-409c-acc7-acdd54e1837b/windows-constraints.txt",
+      "sha256": "76ed644f322982ce08eae506da1a9a34671282c3328427c5bfe5d8add84f4dfd"
+    },
+    "producer_node": "W1.INSTALL",
+    "seed_wheels": [
+      {
+        "filename": "rcssmin-1.3.0-cp313-cp313-win_amd64.whl",
+        "sha256": "87ae77e20bf9da37a1b80193bc42a2664d5bae9084e2fff5dd2a34be90f5cda9"
+      },
+      {
+        "filename": "rjsmin-1.3.0-cp313-cp313-win_amd64.whl",
+        "sha256": "74db0b3a2af406ea48177601634adda92970cce618614e6b2e33efd3b345c7dc"
+      }
+    ],
+    "seed_provenance": "D:/AIGC/artifacts/mdb2-windows-20261117/inputs/cached-dependency-wheels.json",
+    "seed_validation": "Existing source-built Windows wheels, each with all six non-RECORD payload files equal to the candidate environment. Source archive URLs/hashes retained. No site-packages directory copied or shared."
+  },
+  "owned_root": {
+    "path": "D:/AIGC/artifacts/mdb2-windows-20261117",
+    "marker": "D:/AIGC/artifacts/mdb2-windows-20261117/owner.json",
+    "owner": "mdb2-windows-closure",
+    "real_user_data_allowed": false,
+    "external_provider_model_calls_allowed": false
+  },
+  "fixtures": {
+    "rollback_scenario": "single",
+    "rollback_run": "D:/AIGC/artifacts/mdb2-windows-20261117/rollback-data/35db79d3-bf52-410f-856f-ead341e83615",
+    "fixture_vector_sha256": "ce002def5df1c1fcece20f1c7d97994d03174018b669c7da8ca0721b93de6ff7",
+    "real_provider_calls": false,
+    "real_model_calls": false
+  },
+  "checks": {
+    "coverage": "evidence/windows-coverage.json",
+    "original_task_ids_enumerated": 60,
+    "expanded_5_10_and_10_4_clauses": 63,
+    "referenced_prior_artifact_hashes_verified": 19,
+    "final_acceptance": false,
+    "installation": {
+      "result": "PASS",
+      "receipt": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/install-r4.json",
+      "receipt_sha256": "6d4e424cf5dcdfdc4e5adf7a9ae878c7db28f77536336e03b6c3552f061397e6",
+      "input_tests": {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/install-input-tests-r4.xml",
+        "sha256": "ab183ff121a4a4de2138c700973b6949435bcf154f4b32e5893a95e5304e3b2a",
+        "passed": 27
+      },
+      "installed_tests": {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/install-runs/f20e3481-6fbd-409c-acc7-acdd54e1837b/tests.xml",
+        "sha256": "df065464308cc4fa8dfdee20041a7ce967ef2ac0d2feeaa1d1f5d1e5d1c97e39e",
+        "passed": 15
+      },
+      "source_inventory_before_after": [2041, 2041],
+      "source_hashes_unchanged": true,
+      "offline_missing_wheel_refused": true,
+      "pip_check": "PASS",
+      "normal_serve_stop": {
+        "returncode": 0,
+        "forced": false,
+        "pid": 78524,
+        "port": 4090,
+        "seconds": 0.5472399999853224,
+        "parent_and_direct_children_absent": true,
+        "port_released": true
+      },
+      "scope": "W1.INSTALL only; not final source freeze, host certification or Windows acceptance."
+    },
+    "retained_install_failure": {
+      "receipt": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/install-r1.json",
+      "environment": "D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv",
+      "cause": "Dependency acquisition lost the existing process proxy and timed out reaching PyPI. Owned pip child stopped after verified PID/executable/command identity; no host was started. Acquisition-only proxy inheritance is now explicit; offline install and runtime still use the private environment."
+    },
+    "retained_binary_acquisition_failure": {
+      "receipt": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/install-r2.json",
+      "environment": "D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r2",
+      "cause": "PyPI has no compatible binary rcssmin wheel. Seeded the immutable wheelhouse with previously source-built rcssmin/rjsmin wheels after matching every payload file against the candidate. Offline installation still accepts wheels only."
+    },
+    "superseded_install_probe": {
+      "receipt": "D:/AIGC/artifacts/mdb2-windows-20261117/evidence/install-r3.json",
+      "environment": "D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r3",
+      "result": "Installed 15 tests passed; not final installation acceptance",
+      "reason": "Missing APPDATA/LOCALAPPDATA let pip write a relative download cache in the source checkout. Cache preserved under owned artifacts; explicit private paths, no-cache acquisition and an untracked-file inventory regression now cover this gap."
+    }
+  },
+  "rollback": {
+    "source_repository": "D:/AIGC/artifacts/mdb2-windows-20261117/scrum_dashboard",
+    "source_commit": "ee7bfb0e734e1123ba5c611997fedd6052f50049",
+    "private_tag": "mdb2-windows-rollback-baseline",
+    "shared_checkout_modified": false,
+    "source_archive": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/old-dashboard-source.zip",
+      "sha256": "92b8de308d9f3026601a1f4b5f42d6149e861c39607b11935bbece10cf738b6d"
+    },
+    "sdk": {
+      "version": "0.2.0a1",
+      "wheel_sha256": "1ab6c7aa7255abeb4637734f65613827d39593ff72b7ef9d630885922c2dd134",
+      "contract_pack_manifest_sha256": "e7386f82d2bf3963feccc28cfbfda732b9eddb829831d5ba660b50554e5f81c4"
+    },
+    "base_source": {
+      "base_commit": "2332d549ab69a7e927865acd0e3db2a19295c609",
+      "base_tree_sha256": "db92bb903a5d47aeffe3707ef5da27b3dc031b0c7e28bdde527ccb8bf66ac261",
+      "source_delta_sha256": "c5534b86913b2bf4867b6352f1e8c0d185b50378c9626dbf424b98aa181e8fe3",
+      "verified_source_files": 844
+    },
+    "app_python": "D:/AIGC/artifacts/mdb2-windows-20261117/scrum_dashboard/.tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe",
+    "app_python_version": "3.13.7",
+    "base_python": "D:/AIGC/artifacts/mdb2-windows-20261117/Report_creater_agent/.venv/Scripts/python.exe",
+    "base_python_version": "3.14.0",
+    "environment_records": [
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/inputs/old-app-environment.json",
+        "sha256": "0f43341aa92bf66dbb57be7d7cd9b4b166d610fdbedc8cb02984904aeaf856d8"
+      },
+      {
+        "path": "D:/AIGC/artifacts/mdb2-windows-20261117/inputs/old-base-environment.json",
+        "sha256": "f3e2dc38b4207be6014247faef21f715d1eb79ddc4912005dd75ecedfe79930e"
+      }
+    ],
+    "dependency_sharing": "Historical SDK-style read-only host site-packages projection. Metadata/RECORD digests and actual ABI are recorded; revalidate before W3. New Windows installation must not depend on this sharing.",
+    "startup_command": [
+      ".tmp/sdk-020-join-20261105/app-venv/Scripts/python.exe",
+      "-I",
+      "scripts/validation/project_full_stack.py",
+      "start",
+      "--run-dir",
+      "D:/AIGC/artifacts/mdb2-windows-20261117/rollback-data/35db79d3-bf52-410f-856f-ead341e83615",
+      "--lifetime-seconds",
+      "600"
+    ],
+    "read_receipt": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/rollback-data/35db79d3-bf52-410f-856f-ead341e83615/evidence/old-read-8a54df9a-6ccc-4272-8446-eeca438ec5ea.json",
+      "sha256": "8db4d75d3c6d064fa7b2df95d2ed4db4923b76a11afdad77f2b1a274641a5929"
+    },
+    "stop_receipt": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/rollback-data/35db79d3-bf52-410f-856f-ead341e83615/evidence/stop/61c6ed41-6ca1-4f8e-87c9-7ca61fbadbfa/stop-receipt.json",
+      "sha256": "c49f2834b714e79ae391457f2622a978427b0e197174b7e332793f99c90402cb"
+    },
+    "probe_result": {
+      "old_source_start": "passed",
+      "authenticated_seeded_page_read": "passed",
+      "http_status": 200,
+      "normal_stop": true,
+      "forced": false,
+      "owned_pids_absent": [71096, 97416],
+      "base_dispatch_count": 0,
+      "full_upgrade_restore_rehearsal": "not yet run; owned by W3.REHEARSE"
+    },
+    "retained_failure": {
+      "path": "D:/AIGC/artifacts/mdb2-windows-20261117/rollback-data/680b49b8-1c8b-4dd7-8446-33cce322f99c/evidence/failure-9f3da327-d851-49ed-a42d-b4994e7169ba.json",
+      "cause": "Temporary Base probe used Python3.13 with cp314 pydantic_core dependency; fixed by matching the original Base Python3.14 ABI, without changing old source or candidate runtime."
+    }
+  }
+}

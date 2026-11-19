@@ -1,56 +1,38 @@
 {% for item in items %}
     {% if item.type == "member_group" %}
-        <section class="section">
-            <details class="member-group" open>
-                <summary>
-                    <h1 class="title">
-                        <span class="mr-2">
-                            <i class="iconoir-nav-arrow-down"></i>
-                        </span>
-                        {{ item.name }} ({{ item.count }})
-                    </h1>
-                </summary>
-                <div class="content">
+        <details class="disclosure" open>
+            <summary class="disclosure__summary">
+                <i class="disclosure__chevron iconoir-nav-arrow-right" aria-hidden="true"></i>
+                <h{{ level|add:3 }} class="disclosure__title">{{ item.name }}</h{{ level|add:3 }}>
+                <span class="count-badge">{{ item.count }}</span>
+            </summary>
+            {% if item.items.0.type %}
+                <div class="disclosure__body">
                     {% include "partials/group_renderer.html" with items=item.items level=level|add:1 %}
                 </div>
-            </details>
-        </section>
+            {% else %}
+                {% include "partials/task_group_body.html" with tasks=item.items lazy_trigger="load" %}
+            {% endif %}
+        </details>
     {% elif item.type == "stage" %}
-        <article class="panel mt-4">
-            <details {% if not lazy_loading %}open{% endif %}>
-                <summary class="panel-heading">
-                    <span class="mr-2">
-                        <i class="iconoir-nav-arrow-down"></i>
-                    </span>
-                    {{ item.name }} ({{ item.count }})
-                </summary>
-                {% if lazy_loading %}
-                <div class="panel-block is-block"
-                     hx-get="{% url 'ui_web:partials_tasks_stage' %}?task_ids={% for task in item.items %}{{ task.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                     hx-trigger="toggle once from:closest details"
-                     hx-swap="innerHTML">
-                    {% include "partials/loading_indicator.html" %}
-                </div>
-                {% else %}
-                <div class="panel-block is-block">
-                    {% include "partials/task_table.html" with tasks=item.items show_header=true %}
-                </div>
-                {% endif %}
-            </details>
-        </article>
+        <details class="disclosure"{% if not lazy_loading %} open{% endif %}>
+            <summary class="disclosure__summary">
+                <i class="disclosure__chevron iconoir-nav-arrow-right" aria-hidden="true"></i>
+                <h{{ level|add:3 }} class="disclosure__title">{{ item.name }}</h{{ level|add:3 }}>
+                <span class="count-badge">{{ item.count }}</span>
+            </summary>
+            {% include "partials/task_group_body.html" with tasks=item.items %}
+        </details>
     {% elif item.type == "task_velocity" %}
-        <article class="panel mt-4">
-            <details open>
-                <summary class="panel-heading">
-                    <span class="mr-2">
-                        <i class="iconoir-nav-arrow-down"></i>
-                    </span>
-                    {{ item.name }} ({{ item.count }})
-                </summary>
-                <div class="panel-block is-block">
-                    {% include "partials/velocity_task_table.html" with tasks=item.items summary=item.summary %}
-                </div>
-            </details>
-        </article>
+        <details class="disclosure" open>
+            <summary class="disclosure__summary">
+                <i class="disclosure__chevron iconoir-nav-arrow-right" aria-hidden="true"></i>
+                <h{{ level|add:3 }} class="disclosure__title">{{ item.name }}</h{{ level|add:3 }}>
+                <span class="count-badge">{{ item.count }}</span>
+            </summary>
+            <div class="disclosure__body">
+                {% include "partials/velocity_task_table.html" with tasks=item.items summary=item.summary %}
+            </div>
+        </details>
     {% endif %}
 {% endfor %}

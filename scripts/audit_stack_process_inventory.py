@@ -33,10 +33,8 @@ class ProcessFinding:
 @dataclass(slots=True, frozen=True)
 class ExpectedRuntime:
     dashboard_workspace: Path
-    ai_base_workspace: Path | None
     dashboard_django_pid: int
     dashboard_grafana_pid: int
-    ai_base_root_pids: tuple[int, ...]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -52,8 +50,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "Process inventory summary: "
         f"dashboard_django={inventory['dashboard_django']} "
         f"dashboard_grafana={inventory['dashboard_grafana']} "
-        f"grafana_plugins={inventory['grafana_plugins']} "
-        f"ai_base={inventory['ai_base']}"
+        f"grafana_plugins={inventory['grafana_plugins']}"
     )
     if findings:
         print(f"Process inventory audit failed: {len(findings)} issue(s).")
@@ -73,11 +70,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Audit the Dashboard + AI Base stack process inventory.")
+    parser = argparse.ArgumentParser(description="Audit the Dashboard stack process inventory.")
     parser.add_argument("--dashboard-workspace", default=str(Path(__file__).resolve().parents[1]))
-    parser.add_argument("--ai-base-workspace", default="")
     parser.add_argument("--dashboard-state", default="")
-    parser.add_argument("--ai-base-state", default="")
     parser.add_argument("--process-snapshot-json", default="")
     parser.add_argument("--phase", default="")
     return parser.parse_args(argv)
@@ -85,29 +80,16 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 
 def read_expected_runtime(args: argparse.Namespace) -> ExpectedRuntime:
     dashboard_workspace = Path(args.dashboard_workspace).resolve()
-    ai_base_workspace = Path(args.ai_base_workspace).resolve() if args.ai_base_workspace else None
     dashboard_state_path = Path(args.dashboard_state) if args.dashboard_state else default_dashboard_state_path(dashboard_workspace)
-    ai_base_state_path = (
-        Path(args.ai_base_state)
-        if args.ai_base_state
-        else default_ai_base_state_path(ai_base_workspace)
-    )
     dashboard_state = read_json_file(dashboard_state_path)
-    ai_base_state = read_json_file(ai_base_state_path) if ai_base_state_path else {}
     dashboard_services = dashboard_state.get("services", {})
     django_service = dashboard_services.get("django", {})
     grafana_service = dashboard_services.get("grafana", {})
 
     return ExpectedRuntime(
         dashboard_workspace=dashboard_workspace,
-        ai_base_workspace=ai_base_workspace,
         dashboard_django_pid=as_int(django_service.get("pid")),
         dashboard_grafana_pid=as_int(grafana_service.get("pid")),
-        ai_base_root_pids=tuple(
-            as_int(process.get("pid"))
-            for process in ai_base_state.get("processes", [])
-            if isinstance(process, dict) and as_int(process.get("pid")) > 0
-        ),
     )
 
 
@@ -180,7 +162,6 @@ def inspect_processes(runtime: ExpectedRuntime, processes: Sequence[ProcessInfo]
     process_by_pid = {process.process_id: process for process in processes}
     dashboard_django_tree = descendants(process_by_pid, (runtime.dashboard_django_pid,))
     dashboard_grafana_tree = descendants(process_by_pid, (runtime.dashboard_grafana_pid,))
-    ai_base_tree = descendants(process_by_pid, runtime.ai_base_root_pids)
     findings: list[ProcessFinding] = []
     findings.extend(inspect_expected_dashboard_processes(runtime, process_by_pid))
 
@@ -189,14 +170,10 @@ def inspect_processes(runtime: ExpectedRuntime, processes: Sequence[ProcessInfo]
         process_name = process.name.casefold()
         if process_name == "grafana.exe" and "grafana-e2e-" in normalized and process.process_id not in dashboard_grafana_tree:
             findings.append(ProcessFinding("error", process, "stale Grafana E2E process is still running."))
-        elif is_dashboard_runserver(runtime.dashboard_workspace, normalized) and process.process_id not in dashboard_django_tree:
-            findings.append(ProcessFinding("error", process, "stale Dashboard Django runserver is still running."))
-        elif "sample_agent" in normalized:
-            findings.append(ProcessFinding("error", process, "stale AI Base sample_agent profile is still running."))
+        elif is_dashboard_serve(runtime.dashboard_workspace, normalized) and process.process_id not in dashboard_django_tree:
+            findings.append(ProcessFinding("error", process, "stale Metrics serve process is still running."))
         elif process_name.startswith("gpx_"):
             findings.extend(inspect_grafana_plugin(process, dashboard_grafana_tree))
-        elif is_ai_base_visible_window_process(runtime, process, normalized, ai_base_tree):
-            findings.append(ProcessFinding("error", process, "AI Base dev service is running in visible -NoExit window mode."))
 
     return findings
 
@@ -212,9 +189,9 @@ def inspect_expected_dashboard_processes(
             findings.append(
                 missing_process_finding(runtime.dashboard_django_pid, "expected Dashboard Django lifecycle process is not running.")
             )
-        elif not is_dashboard_runserver(runtime.dashboard_workspace, normalize(django_process.command_line)):
+        elif not is_dashboard_serve(runtime.dashboard_workspace, normalize(django_process.command_line)):
             findings.append(
-                ProcessFinding("error", django_process, "Dashboard lifecycle PID no longer belongs to the current Django runserver.")
+                ProcessFinding("error", django_process, "Dashboard lifecycle PID no longer belongs to the current Metrics serve process.")
             )
     if runtime.dashboard_grafana_pid > 0:
         grafana_process = process_by_pid.get(runtime.dashboard_grafana_pid)
@@ -249,21 +226,22 @@ def summarize_inventory(runtime: ExpectedRuntime, processes: Sequence[ProcessInf
     process_by_pid = {process.process_id: process for process in processes}
     dashboard_django_tree = descendants(process_by_pid, (runtime.dashboard_django_pid,))
     dashboard_grafana_tree = descendants(process_by_pid, (runtime.dashboard_grafana_pid,))
-    ai_base_tree = descendants(process_by_pid, runtime.ai_base_root_pids)
     return {
         "dashboard_django": count_named(processes, dashboard_django_tree, ("python.exe", "python")),
         "dashboard_grafana": count_named(processes, dashboard_grafana_tree, ("grafana.exe", "grafana")),
         "grafana_plugins": count_prefixed(processes, dashboard_grafana_tree, "gpx_"),
-        "ai_base": len(ai_base_tree),
     }
 
 
-def is_dashboard_runserver(dashboard_workspace: Path, normalized_command: str) -> bool:
+def is_dashboard_serve(dashboard_workspace: Path, normalized_command: str) -> bool:
     normalized_workspace = normalize(str(dashboard_workspace))
     workspace_parent = normalize(str(dashboard_workspace.parent))
     return (
         ("manage.py" in normalized_command)
-        and ("runserver 127.0.0.1:80" in normalized_command)
+        and (" serve " in f" {normalized_command} ")
+        and ("--host 127.0.0.1" in normalized_command)
+        and ("--port " in normalized_command)
+        and ("--stop-file" in normalized_command)
         and (normalized_workspace in normalized_command or workspace_parent in normalized_command)
     )
 
@@ -278,24 +256,8 @@ def is_current_dashboard_grafana(dashboard_workspace: Path, normalized_command: 
     )
 
 
-def is_ai_base_visible_window_process(
-    runtime: ExpectedRuntime,
-    process: ProcessInfo,
-    normalized_command: str,
-    ai_base_tree: set[int],
-) -> bool:
-    if runtime.ai_base_workspace is None:
-        return False
-    if process.process_id not in ai_base_tree:
-        return False
-    if "-noexit" not in normalized_command:
-        return False
-    normalized_workspace = normalize(str(runtime.ai_base_workspace))
-    return normalized_workspace in normalized_command or "dashboard_query_agent" in normalized_command
-
-
 def descendants(process_by_pid: dict[int, ProcessInfo], root_process_ids: Iterable[int]) -> set[int]:
-    roots = [process_id for process_id in root_process_ids if process_id > 0]
+    roots = [process_id for process_id in root_process_ids if process_id > 0 and process_id in process_by_pid]
     children_by_parent: dict[int, list[int]] = {}
     for process in process_by_pid.values():
         children_by_parent.setdefault(process.parent_process_id, []).append(process.process_id)
@@ -349,11 +311,6 @@ def default_dashboard_state_path(workspace: Path) -> Path:
     return workspace / "state" / "e2e" / "service-lifecycle-engine" / "metrics-bug-trend-default.json"
 
 
-def default_ai_base_state_path(workspace: Path | None) -> Path | None:
-    if workspace is None:
-        return None
-    return workspace / ".tmp-validation" / "runtime" / "dev-stack-state.dashboard_query_agent.json"
-
-
 if __name__ == "__main__":
+    sys.stdout.reconfigure(errors="backslashreplace")
     sys.exit(main())

@@ -1,77 +1,101 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n dashboard_format %}
 
 {% block title %}{{ detail.project.name }}{% endblock %}
 {% block page_title %}{{ detail.project.name }}{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a>{% endblock %}
 
 {% block content %}
 <article class="block">
-    <nav class="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-            <li><a href="{% url 'ui_web:projects' %}">{% trans "Projects" %}</a></li>
-            <li class="is-active"><a href="#" aria-current="page">{{ detail.project.name }}</a></li>
-        </ul>
-    </nav>
-
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h2 class="title is-3">{{ detail.project.name }}</h2>
-                <p class="subtitle is-6"><code>{{ detail.project.key }}</code></p>
-            </div>
+    <header class="page-header">
+        <div>
+            <h2 class="page-header__title">{{ detail.project.name }}</h2>
+            <p class="page-header__meta"><code>{{ detail.project.key }}</code>{% if detail.project.archived %} <span class="tag">{% trans "Archived" %}</span>{% endif %}</p>
         </div>
-        <div class="level-right">
+        <div class="page-header__actions">
             {% include "projects/language_switcher.html" %}
+            <a class="button is-small" href="{% url 'ui_web:report_templates' detail.project.id %}">
+                <span class="icon is-small"><i class="iconoir-page" aria-hidden="true"></i></span>
+                <span>{% trans "Report templates" %}</span>
+            </a>
+            {% if not detail.project.archived %}
+                <details class="popover"{% if stage_form.errors %} open{% endif %}>
+                    <summary class="button is-primary is-small"><span class="icon is-small"><i class="iconoir-plus" aria-hidden="true"></i></span><span>{% trans "Add stage" %}</span></summary>
+                    <div class="popover__panel">
+                        <form method="post" action="{% url 'ui_web:project_stage_preview' detail.project.id %}" class="dashboard-edit-form">
+                            {% csrf_token %}
+                            {% if stage_form.non_field_errors %}
+                                <div class="message is-danger" role="alert"><div class="message-body">{{ stage_form.non_field_errors|join:", " }}</div></div>
+                            {% endif %}
+                            <div class="dashboard-form-grid is-stacked">
+                                <div class="dashboard-form-field">
+                                    <label class="label" for="{{ stage_form.key.id_for_label }}">{{ stage_form.key.label }}</label>
+                                    <input class="input{% if stage_form.key.errors %} is-danger{% endif %}" id="{{ stage_form.key.id_for_label }}" name="{{ stage_form.key.html_name }}" value="{{ stage_form.key.value|default_if_none:'' }}"{% if stage_form.key.errors %} aria-invalid="true" aria-describedby="{{ stage_form.key.id_for_label }}_error" autofocus{% endif %}>
+                                    {% for error in stage_form.key.errors %}<p class="help is-danger" id="{{ stage_form.key.id_for_label }}_error">{{ error }}</p>{% endfor %}
+                                </div>
+                                <div class="dashboard-form-field">
+                                    <label class="label" for="{{ stage_form.name.id_for_label }}">{{ stage_form.name.label }}</label>
+                                    <input class="input{% if stage_form.name.errors %} is-danger{% endif %}" id="{{ stage_form.name.id_for_label }}" name="{{ stage_form.name.html_name }}" value="{{ stage_form.name.value|default_if_none:'' }}"{% if stage_form.name.errors %} aria-invalid="true" aria-describedby="{{ stage_form.name.id_for_label }}_error"{% endif %}{% if not stage_form.key.errors and stage_form.name.errors %} autofocus{% endif %}>
+                                    {% for error in stage_form.name.errors %}<p class="help is-danger" id="{{ stage_form.name.id_for_label }}_error">{{ error }}</p>{% endfor %}
+                                </div>
+                                <div class="dashboard-form-field">
+                                    <label class="label" for="{{ stage_form.source.id_for_label }}">{{ stage_form.source.label }}</label>
+                                    <div class="select is-fullwidth{% if stage_form.source.errors %} is-danger{% endif %}">
+                                        <select id="{{ stage_form.source.id_for_label }}" name="{{ stage_form.source.html_name }}"{% if stage_form.source.errors %} aria-invalid="true" aria-describedby="{{ stage_form.source.id_for_label }}_error" autofocus{% endif %}>
+                                            {% for value, label in stage_form.fields.source.choices %}
+                                                <option value="{{ value }}" {% if stage_form.source.value == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    {% for error in stage_form.source.errors %}<p class="help is-danger" id="{{ stage_form.source.id_for_label }}_error">{{ error }}</p>{% endfor %}
+                                </div>
+                            </div>
+                            <div class="dashboard-action-group is-right">
+                                <button class="button is-primary is-small" type="submit"><span class="icon is-small"><i class="iconoir-eye" aria-hidden="true"></i></span><span>{% trans "Preview" %}</span></button>
+                            </div>
+                        </form>
+                    </div>
+                </details>
+            {% endif %}
         </div>
-    </div>
+    </header>
 
-    {% if detail.project.archived %}
-        <div class="notification is-warning is-light">{% trans "Archived" %}</div>
-    {% endif %}
-
-    <section class="block">
-        <a class="button" href="{% url 'ui_web:report_templates' detail.project.id %}">
-            <span class="icon is-small"><i class="iconoir-list"></i></span>
-            <span>{% trans "Report templates" %}</span>
-        </a>
-    </section>
-
-    <section class="block">
-        <h3 class="title is-5">{% trans "Stages" %}</h3>
+    <section class="card" aria-labelledby="project-stages-title">
+        <header class="card-header">
+            <h3 class="card-header-title" id="project-stages-title">{% trans "Stages" %}</h3>
+            <div class="card-header-actions"><span class="count-badge">{{ detail.stages|length }}</span></div>
+        </header>
         <div class="table-container responsive-admin-table-box">
-            <table class="table is-fullwidth is-narrow dashboard-dense-table">
+            <table class="table is-fullwidth is-hoverable is-narrow responsive-admin-table is-cardable stage-table">
                 <thead>
                     <tr>
-                        <th>{% trans "Name" %}</th>
-                        <th>{% trans "Key" %}</th>
-                        <th>{% trans "Provider" %}</th>
-                        <th>{% trans "Source state" %}</th>
-                        <th>{% trans "Definition hash" %}</th>
-                        <th>{% trans "Reports" %}</th>
+                        <th scope="col">{% trans "Name" %}</th>
+                        <th scope="col" class="stage-col-key">{% trans "Key" %}</th>
+                        <th scope="col" class="stage-col-provider">{% trans "Provider" %}</th>
+                        <th scope="col" class="stage-col-state">{% trans "Source state" %}</th>
+                        <th scope="col" class="stage-col-hash">{% trans "Definition hash" %}</th>
+                        <th scope="col" class="stage-col-action"><span class="is-sr-only">{% trans "Reports" %}</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for stage in detail.stages %}
                         <tr>
-                            <td>{{ stage.name }}</td>
-                            <td><code>{{ stage.key }}</code></td>
-                            <td>{{ stage.descriptor.provider_id }}</td>
-                            <td>
-                                {% if stage.source_status == "current" %}{% trans "Current" %}
-                                {% elif stage.source_status == "source_changed" %}{% trans "Source changed" %}
-                                {% elif stage.source_status == "unavailable" %}{% trans "Unavailable" %}
-                                {% else %}{{ stage.source_status }}{% endif %}
+                            <td data-label="{% trans "Name" %}"><a href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">{{ stage.name }}</a></td>
+                            <td data-label="{% trans "Key" %}"><code>{{ stage.key }}</code></td>
+                            <td data-label="{% trans "Provider" %}">{{ stage.descriptor.provider_id|provider_tag }}</td>
+                            <td data-label="{% trans "Source state" %}">
+                                <span class="tag {{ stage.source_status|status_tone }}">{% if stage.source_status == "current" %}{% trans "Current" %}{% elif stage.source_status == "source_changed" %}{% trans "Source changed" %}{% elif stage.source_status == "unavailable" %}{% trans "Unavailable" %}{% else %}{{ stage.source_status }}{% endif %}</span>
                             </td>
-                            <td><code>{{ stage.definition_hash }}</code></td>
-                            <td>
+                            <td data-label="{% trans "Definition hash" %}"><code title="{{ stage.definition_hash }}">{{ stage.definition_hash|slice:":12" }}</code></td>
+                            <td class="stage-col-action" data-label="{% trans "Reports" %}">
                                 <a class="button is-small" href="{% url 'ui_web:project_stage_reports' detail.project.id stage.id %}">
-                                    <span class="icon is-small"><i class="iconoir-list"></i></span>
+                                    <span class="icon is-small"><i class="iconoir-list" aria-hidden="true"></i></span>
                                     <span>{% trans "Open" %}</span>
                                 </a>
                             </td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="6">{% trans "No stages yet." %}</td></tr>
+                        <tr class="is-empty-row"><td colspan="6">{% trans "No stages yet." %}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -79,52 +103,21 @@
     </section>
 
     {% if not detail.project.archived %}
-        <section class="block">
-            <h3 class="title is-5">{% trans "Add stage" %}</h3>
-            <form method="post" action="{% url 'ui_web:project_stage_preview' detail.project.id %}" class="dashboard-edit-form">
-                {% csrf_token %}
-                {% if stage_form.non_field_errors %}
-                    <div class="notification is-danger is-light" role="alert">{{ stage_form.non_field_errors|join:", " }}</div>
-                {% endif %}
-                <div class="dashboard-form-grid">
-                    <div class="dashboard-form-field">
-                        <label class="label" for="{{ stage_form.key.id_for_label }}">{{ stage_form.key.label }}</label>
-                        <input class="input{% if stage_form.key.errors %} is-danger{% endif %}" id="{{ stage_form.key.id_for_label }}" name="{{ stage_form.key.html_name }}" value="{{ stage_form.key.value|default_if_none:'' }}"{% if stage_form.key.errors %} aria-invalid="true" aria-describedby="{{ stage_form.key.id_for_label }}_error" autofocus{% endif %}>
-                        {% for error in stage_form.key.errors %}<p class="help is-danger" id="{{ stage_form.key.id_for_label }}_error">{{ error }}</p>{% endfor %}
-                    </div>
-                    <div class="dashboard-form-field">
-                        <label class="label" for="{{ stage_form.name.id_for_label }}">{{ stage_form.name.label }}</label>
-                        <input class="input{% if stage_form.name.errors %} is-danger{% endif %}" id="{{ stage_form.name.id_for_label }}" name="{{ stage_form.name.html_name }}" value="{{ stage_form.name.value|default_if_none:'' }}"{% if stage_form.name.errors %} aria-invalid="true" aria-describedby="{{ stage_form.name.id_for_label }}_error"{% endif %}{% if not stage_form.key.errors and stage_form.name.errors %} autofocus{% endif %}>
-                        {% for error in stage_form.name.errors %}<p class="help is-danger" id="{{ stage_form.name.id_for_label }}_error">{{ error }}</p>{% endfor %}
-                    </div>
-                    <div class="dashboard-form-field">
-                        <label class="label" for="{{ stage_form.source.id_for_label }}">{{ stage_form.source.label }}</label>
-                        <div class="select is-fullwidth{% if stage_form.source.errors %} is-danger{% endif %}">
-                            <select id="{{ stage_form.source.id_for_label }}" name="{{ stage_form.source.html_name }}"{% if stage_form.source.errors %} aria-invalid="true" aria-describedby="{{ stage_form.source.id_for_label }}_error" autofocus{% endif %}>
-                                {% for value, label in stage_form.fields.source.choices %}
-                                    <option value="{{ value }}" {% if stage_form.source.value == value %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        {% for error in stage_form.source.errors %}<p class="help is-danger" id="{{ stage_form.source.id_for_label }}_error">{{ error }}</p>{% endfor %}
-                    </div>
-                    <div class="dashboard-action-group">
-                        <button class="button is-primary" type="submit"><span class="icon is-small"><i class="iconoir-eye"></i></span><span>{% trans "Preview" %}</span></button>
-                    </div>
-                </div>
-            </form>
-        </section>
-
-        <section class="block">
-            <form method="post" action="{% url 'ui_web:project_archive' detail.project.id %}" class="dashboard-action-form">
-                {% csrf_token %}
-                <label class="checkbox">
-                    <input type="checkbox" name="{{ archive_form.confirm.html_name }}" id="{{ archive_form.confirm.id_for_label }}" required{% if archive_form.confirm.errors %} aria-invalid="true" aria-describedby="{{ archive_form.confirm.id_for_label }}_error"{% endif %}>
-                    {% trans "Archive this project" %}
-                </label>
-                {% for error in archive_form.confirm.errors %}<p class="help is-danger" id="{{ archive_form.confirm.id_for_label }}_error">{{ error }}</p>{% endfor %}
-                <button class="button is-warning is-light" type="submit"><span class="icon is-small"><i class="iconoir-archive"></i></span><span>{% trans "Archive" %}</span></button>
-            </form>
+        <section class="card" aria-labelledby="project-archive-title">
+            <header class="card-header">
+                <h3 class="card-header-title" id="project-archive-title">{% trans "Archive project" %}</h3>
+            </header>
+            <div class="card-content">
+                <form method="post" action="{% url 'ui_web:project_archive' detail.project.id %}" class="dashboard-action-form is-row">
+                    {% csrf_token %}
+                    <label class="checkbox">
+                        <input type="checkbox" name="{{ archive_form.confirm.html_name }}" id="{{ archive_form.confirm.id_for_label }}" required{% if archive_form.confirm.errors %} aria-invalid="true" aria-describedby="{{ archive_form.confirm.id_for_label }}_error"{% endif %}>
+                        {% trans "Archive this project" %}
+                    </label>
+                    {% for error in archive_form.confirm.errors %}<p class="help is-danger" id="{{ archive_form.confirm.id_for_label }}_error">{{ error }}</p>{% endfor %}
+                    <button class="button is-danger is-small" type="submit"><span class="icon is-small"><i class="iconoir-archive" aria-hidden="true"></i></span><span>{% trans "Archive" %}</span></button>
+                </form>
+            </div>
         </section>
     {% endif %}
 </article>

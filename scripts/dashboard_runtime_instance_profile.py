@@ -20,14 +20,12 @@ from service_lifecycle_engine import (
 )
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 PROJECT_NAME = "metrics-bug-trend"
 
 DEFAULT_SERVICE_PORTS: dict[str, int] = {
     "django": 8002,
     "grafana": 3001,
-    "ai-base-backend": 48300,
-    "ai-base-frontend": 48310,
     "external-litellm": 4000,
 }
 
@@ -102,18 +100,6 @@ class ScrumDashboardRuntimeInstanceProfile:
     def shared_consumed_bindings(self) -> tuple[ExternalServiceBinding, ...]:
         return (
             ExternalServiceBinding(
-                "ai-base-backend",
-                ExternalServiceMode.SHARED_CONSUMED,
-                consumer=self.identity,
-                endpoint=f"http://127.0.0.1:{self.service_ports['ai-base-backend']}",
-            ),
-            ExternalServiceBinding(
-                "ai-base-frontend",
-                ExternalServiceMode.SHARED_CONSUMED,
-                consumer=self.identity,
-                endpoint=f"http://127.0.0.1:{self.service_ports['ai-base-frontend']}",
-            ),
-            ExternalServiceBinding(
                 "external-litellm",
                 ExternalServiceMode.SHARED_CONSUMED,
                 consumer=self.identity,
@@ -166,6 +152,8 @@ def build_dashboard_runtime_instance_profile(
     for service, value in dict(service_port_overrides or {}).items():
         if value in (None, ""):
             continue
+        if str(service) not in ports:
+            raise ValueError(f"Unknown runtime profile service port override: {service}")
         ports[str(service)] = _parse_port(value, service_name=str(service))
     resolved_repo = repo_root.expanduser().resolve()
     resolved_workspace = workspace_root.expanduser().resolve()
@@ -225,6 +213,9 @@ def read_dashboard_runtime_instance_profile(path: Path) -> ScrumDashboardRuntime
     identity_payload = payload.get("identity")
     if not isinstance(identity_payload, dict):
         raise ValueError("Runtime instance profile is missing identity")
+    service_ports = {str(key): int(value) for key, value in dict(payload.get("service_ports") or {}).items()}
+    if set(service_ports) != set(DEFAULT_SERVICE_PORTS):
+        raise ValueError("Runtime instance profile service set does not match schema 2")
     return ScrumDashboardRuntimeInstanceProfile(
         identity=RuntimeInstanceIdentity(
             project_name=str(identity_payload.get("project_name") or ""),
@@ -233,7 +224,7 @@ def read_dashboard_runtime_instance_profile(path: Path) -> ScrumDashboardRuntime
         repo_root=Path(str(payload.get("repo_root") or "")).expanduser().resolve(),
         workspace_root=Path(str(payload.get("workspace_root") or "")).expanduser().resolve(),
         port_profile=str(payload.get("port_profile") or "default"),
-        service_ports={str(key): int(value) for key, value in dict(payload.get("service_ports") or {}).items()},
+        service_ports=service_ports,
     )
 
 
@@ -259,11 +250,7 @@ def render_dashboard_runtime_env_projection(profile: ScrumDashboardRuntimeInstan
         f"METRICS_GRAFANA_PORT={profile.service_ports['grafana']}",
         f"METRICS_DASHBOARD_STATE_DIR={profile.state_root}",
         f"METRICS_DASHBOARD_SERVICE_LIFECYCLE_STATE_DIR={profile.service_lifecycle_state_dir}",
-        f"DASHBOARD_METRICS_BASE_URL=http://127.0.0.1:{profile.service_ports['django']}",
-        f"RCA_DASHBOARD_METRICS_BASE_URL=http://127.0.0.1:{profile.service_ports['django']}",
-        f"METRICS_AI_BASE_URL=http://127.0.0.1:{profile.service_ports['ai-base-backend']}",
-        f"METRICS_AI_BASE_FRONTEND_URL=http://127.0.0.1:{profile.service_ports['ai-base-frontend']}",
-        f"METRICS_EXTERNAL_LITELLM_URL=http://127.0.0.1:{profile.service_ports['external-litellm']}",
+        f"METRICS_AI_MODEL_BASE_URL=http://127.0.0.1:{profile.service_ports['external-litellm']}",
     ]
     return "\n".join(lines) + "\n"
 
@@ -275,6 +262,8 @@ def primary_port_for_service(profile: ScrumDashboardRuntimeInstanceProfile, serv
 def prioritize_profile_port(preferred_ports: tuple[int, ...], profile: ScrumDashboardRuntimeInstanceProfile, service_name: str) -> tuple[int, ...]:
     profile_port = primary_port_for_service(profile, service_name)
     if profile_port is None:
+        return preferred_ports
+    if profile_port not in preferred_ports:
         return preferred_ports
     return (profile_port, *(port for port in preferred_ports if port != profile_port))
 
@@ -309,8 +298,6 @@ def build_argument_parser() -> argparse.ArgumentParser:
     write.add_argument("--instance-id", default="")
     write.add_argument("--django-port")
     write.add_argument("--grafana-port")
-    write.add_argument("--ai-base-backend-port")
-    write.add_argument("--ai-base-frontend-port")
     write.add_argument("--external-litellm-port")
     write.add_argument("--profile-path", required=True)
     write.add_argument("--env-path", required=True)
@@ -328,8 +315,6 @@ def main(argv: list[str] | None = None) -> int:
             service_port_overrides={
                 "django": args.django_port,
                 "grafana": args.grafana_port,
-                "ai-base-backend": args.ai_base_backend_port,
-                "ai-base-frontend": args.ai_base_frontend_port,
                 "external-litellm": args.external_litellm_port,
             },
         )

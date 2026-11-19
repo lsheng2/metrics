@@ -2,20 +2,20 @@ import json
 from types import SimpleNamespace
 from uuid import uuid4
 
-from ai_base_application_sdk import TaskRunClient
-import httpx
 import pytest
 
 from project_management.app.domain.report_assists import available_targets
 from project_management.app.domain.report_authoring import AuthoredEditRequest
 from project_management.app.domain.report_authoring_fragments import plain_text_fragment, rich_text_fragment_plain_text
-from project_management.app.domain.summary_contracts import AiBackendTarget
-from project_management.out.report_ai_task import AuthoringTaskContract
+from project_management.app.api.ai_profiles import load_task_profile
+from project_management.app.domain.task_runs import TaskPrincipal
+from project_management.services.task_contracts import AuthoringTaskContract
 from project_management.services.report_assist_receipts import ReportAssistReceiptVerifier
-from project_management.services.report_assist_wire import wire_attempt
+from project_management.services.report_assist_records import read_assist_attempt
 from project_management.services.report_assists import ReportAssistService
 from project_management.tests.history_persistence_fixtures import continuity_document, history_fixture, prepare_daily
-from project_management.tests.summary_fixtures import PACK_ROOT, SummaryScenario
+from project_management.tests.summary_fixtures import SummaryScenario
+from project_management.tests.test_report_assist_service import AssistPort
 from project_management.tests.test_report_template_compilation import slot_block
 
 
@@ -44,16 +44,14 @@ def test_shouldSaveDistinctTargetFamiliesWithoutChangingSourceOrArState(tmp_path
         next(item for item in offered if item.target['scope'] == 'persistent_note'),
         next(item for item in offered if item.target['scope'] == 'report_action'),
     ]
-    contract = AuthoringTaskContract.load(PACK_ROOT)
-    backend = AiBackendTarget('http://127.0.0.1:18888', 'metrics-dashboard', 'store-fixture',
-                              f'projects.{fixture.project.id}.stages.{fixture.stage.id}', 'grant-1', 'policy-1')
+    contract = AuthoringTaskContract(load_task_profile('metrics.report_authoring'))
     command = str(uuid4())
     calls = []
 
-    def response(request):
-        calls.append(request.method)
+    def response(method, principal, request, run_id):
+        calls.append(method)
         intent = service._read_intent(*args, draft.draft_id, service.assist_id_for(draft.draft_id, command))
-        attempt = wire_attempt(intent, contract)
+        attempt = read_assist_attempt(intent, contract)
         source = json.loads(attempt.prepared.input_content)
         output = {'schema_version': 1, 'targets': [{
             'target_id': row['target_id'], 'status': 'filled',
@@ -63,14 +61,14 @@ def test_shouldSaveDistinctTargetFamiliesWithoutChangingSourceOrArState(tmp_path
             'reason_code': None,
         } for row in source['targets']]}
         snapshot, result = SummaryScenario.responses(SimpleNamespace(), attempt, output)
-        return httpx.Response(200, json=result if request.url.path.endswith('/result') else snapshot)
+        return result if method == 'result' else snapshot
 
-    def client(target):
-        return TaskRunClient(base_url=target.base_url, source_app_id=target.source_app_id,
-                             run_store_id=target.run_store_id, credential_ref='synthetic-only', token='synthetic-only',
-                             transport=httpx.MockTransport(response))
-
-    service = ReportAssistService(drafts, contract, backend=backend, client_factory=client)
+    service = ReportAssistService(
+        drafts, contract, task_run_port=AssistPort(response),
+        principal_resolver=lambda actor: TaskPrincipal(
+            subject=actor.subject, runtime_subject=actor.subject, display_name='Author', anonymous=False,
+        ),
+    )
     drafts.assist_verifier = ReportAssistReceiptVerifier(contract)
     ready = service.submit(*args, draft.draft_id, command_id=command, expected_revision=draft.revision,
                            expected_revision_hash=draft.revision_hash,
@@ -98,4 +96,4 @@ def test_shouldSaveDistinctTargetFamiliesWithoutChangingSourceOrArState(tmp_path
     assert action['tracking_state'] == old_action['tracking_state']
     assert rich_text_fragment_plain_text(action['body_fragment']) == 'Review the validation result.'
     assert saved.authoring_context['persistent_notes'][0]['provenance']['origin'] == 'ai_assisted'
-    assert calls.count('POST') == 1
+    assert calls.count('start') == 1

@@ -51,7 +51,6 @@ export function initializeTemplateBuilder(root) {
         status.textContent = message;
         status.classList.toggle('is-danger', kind === 'error');
         status.classList.toggle('is-success', kind === 'success');
-        status.classList.toggle('is-light', !kind);
     }
 
     function syncBlocked() {
@@ -428,17 +427,10 @@ export function initializeTemplateBuilder(root) {
     }
 
     function addMatrixGroup(row) {
-        if (!row || !crypto?.randomUUID) return;
-        const group = document.createElement('div');
-        group.className = 'field has-addons mt-2';
-        group.dataset.templateMatrixGroup = 'true';
+        const template = root.querySelector('[data-template-matrix-group-template]');
+        if (!row || !template || !crypto?.randomUUID) return;
+        const group = template.content.firstElementChild.cloneNode(true);
         group.dataset.groupId = crypto.randomUUID();
-        group.innerHTML = `
-            <div class="control is-expanded"><input class="input is-small" data-template-matrix-group-label value="Group"></div>
-            <div class="control"><button class="button is-small" type="button" data-template-matrix-group-command="up">↑</button></div>
-            <div class="control"><button class="button is-small" type="button" data-template-matrix-group-command="down">↓</button></div>
-            <div class="control"><button class="button is-small is-danger is-light" type="button" data-template-matrix-group-command="remove">Remove</button></div>
-        `;
         row.querySelector('[data-template-matrix-group-mode]').value = 'manual';
         row.querySelector('[data-template-matrix-groups]').appendChild(group);
     }

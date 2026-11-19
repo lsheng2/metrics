@@ -1,0 +1,59 @@
+/*
+ * Meridian foundation: visibility, width, alignment, numeric and tone helpers.
+ * Tokens only; the layer order lives in ui_web/static_assets.py.
+ * Layout, spacing, font-size and weight helpers are retired: components and page CSS own layout
+ * and type, and ui_web/tests/test_dashboard_ui_design_system.py rejects the retired vocabulary.
+ */
+
+/* -------------------------------------------------------------- helpers */
+
+.is-hidden { display: none !important; }
+.is-invisible { visibility: hidden !important; }
+
+.is-sr-only {
+    position: absolute !important;
+    overflow: hidden !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    border: 0 !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+}
+
+@media (max-width: 768px) {
+    .is-hidden-mobile { display: none !important; }
+}
+
+@media (min-width: 769px) {
+    .is-hidden-tablet { display: none !important; }
+}
+
+.is-fullwidth { width: 100% !important; }
+
+.is-truncated {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.is-tabular { font-variant-numeric: tabular-nums; }
+
+.has-text-left { text-align: left !important; }
+.has-text-centered { text-align: center !important; }
+.has-text-right { text-align: right !important; }
+
+.has-text-dark,
+.has-text-grey-dark { color: var(--color-text) !important; }
+.has-text-grey { color: var(--color-text-secondary) !important; }
+.has-text-grey-light { color: var(--color-text-tertiary) !important; }
+.has-text-white { color: var(--color-on-accent) !important; }
+
+.has-text-primary,
+.has-text-link { color: var(--color-accent-text) !important; }
+.has-text-info { color: var(--color-info-text) !important; }
+.has-text-success { color: var(--color-success-text) !important; }
+.has-text-warning { color: var(--color-warning-text) !important; }
+.has-text-danger { color: var(--color-danger-text) !important; }

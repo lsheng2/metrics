@@ -1,7 +1,5 @@
-{% if pull_request %}
-    {% for policy in pull_request.policies %}
-        <span class="tag is-small mr-1 mb-1 {{ policy.css_class }}" title="{{ policy.name }} — {{ policy.status }}"><i class="{{ policy.icon }} mr-1"></i>{{ policy.name }}</span>
-    {% empty %}
-        <span class="has-text-grey-light">—</span>
-    {% endfor %}
+{% if error %}
+<span class="has-text-grey-light" title="{{ error }}">Unavailable</span>
+{% elif pull_request %}
+<span class="tags">{% for policy in pull_request.policies %}<span class="tag is-small {{ policy.css_class }}" title="{{ policy.name }} — {{ policy.status }}"><i class="{{ policy.icon }}" aria-hidden="true"></i>{{ policy.name }}</span>{% empty %}<span class="has-text-grey-light">—</span>{% endfor %}</span>
 {% endif %}

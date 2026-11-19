@@ -31,7 +31,7 @@ Load progressively:
 2. Keep domain logic pure Python and framework-free.
 3. Prefer `sd-metrics-lib` and existing module seams before custom logic.
 4. Make behavior testable through public APIs, facades, or utilities at the right level.
-5. For UI work, preserve semantic HTML, Bulma, htmx, and Chart.js patterns.
+5. For UI work, follow `openspec/docs/current-baseline/frontend-design-requirements.md`: semantic HTML, htmx, Meridian tokens and primitives, and Chart.js through `DashboardCharts`.
 
 ## Handoff Output
 

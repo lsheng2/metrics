@@ -67,7 +67,6 @@ function initializeReportAuthoring(root) {
         status.textContent = message || '';
         status.classList.toggle('is-danger', kind === 'error');
         status.classList.toggle('is-success', kind === 'success');
-        status.classList.toggle('is-light', !kind);
     }
 
     function setDirty(value) {
@@ -482,9 +481,9 @@ function initializeReportAuthoring(root) {
         if (!status || status.querySelector('[data-report-keep-human-link]')) return;
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = 'button is-small is-light ml-2';
+        button.className = 'button is-small';
         button.dataset.reportKeepHumanLink = 'true';
-        button.textContent = 'Keep as human link';
+        button.textContent = root.dataset.messageKeepHumanLink || 'Keep as human link';
         button.addEventListener('click', convertReferencesToHumanLinks);
         status.appendChild(document.createTextNode(' '));
         status.appendChild(button);

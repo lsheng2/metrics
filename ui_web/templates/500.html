@@ -1,0 +1,19 @@
+{% extends "standalone_base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Something went wrong" %}{% endblock %}
+
+{% block content %}
+{% url 'ui_web:homepage' as home_url %}
+<section class="standalone-panel" aria-labelledby="standalone-title">
+    <span class="standalone-panel__icon is-danger" aria-hidden="true"><i class="iconoir-warning-triangle"></i></span>
+    <p class="eyebrow">{% trans "Error 500" %}</p>
+    <h1 class="standalone-panel__title" id="standalone-title">{% trans "Something went wrong" %}</h1>
+    <p class="standalone-panel__body">{% trans "The server hit an unexpected error while loading this page. Try again in a moment; if it keeps failing, send the time below to the dashboard maintainers." %}</p>
+    <p class="standalone-panel__meta">{% trans "Time" %} <time>{% now "Y-m-d H:i:s T" %}</time></p>
+    <div class="standalone-panel__actions">
+        <a class="button is-primary" href=""><span class="icon is-small"><i class="iconoir-refresh" aria-hidden="true"></i></span><span>{% trans "Try again" %}</span></a>
+        <a class="button" href="{{ home_url|default:'/' }}"><span class="icon is-small"><i class="iconoir-home-simple" aria-hidden="true"></i></span><span>{% trans "Go to home" %}</span></a>
+    </div>
+</section>
+{% endblock %}

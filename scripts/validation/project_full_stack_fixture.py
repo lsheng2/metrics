@@ -44,7 +44,7 @@ ENDPOINT = 'https://tracker.example.test/jira'
 FROZEN_JQL = 'project = ALPHA AND issuekey = ALPHA-101'
 ACTOR_SUBJECT = 'basic:SYNTHETIC_ALICE'
 CAPTURE_PLACEHOLDER = '00000000-0000-0000-0000-000000000000'
-PROFILE_REVISION = 'project-reporting.summary@review-1'
+PROFILE_REVISION = 'metrics.project_summary@1'
 
 
 def synthetic_profile_records(query=FROZEN_JQL) -> list[dict]:
@@ -103,49 +103,6 @@ def prepare_catalog(run_dir: Path, *, query=FROZEN_JQL, vector_builder=None) -> 
         'jql': query,
         'fixture_vector_sha256': hashlib.sha256((run_dir / 'fixture-vector.json').read_bytes()).hexdigest(),
     }
-
-
-def build_runtime_environment(connection: dict, *, records=None, provider_factory=None):
-    from ai_base_application_sdk import TaskRunClient
-    import httpx
-    from project_management.app.api.report_factories import build_report_service
-    from project_management.app.domain.summary_contracts import AiBackendTarget
-    from project_management.app.api.run_factories import _policy_from_settings
-    from project_management.app.api.project_runs import ProjectRunRuntime, ProjectRunService, ProjectRunWorker
-    from project_management.out.ai_task_contract import AiTaskContract
-    from provider_sync.app.api.access_factory import capture_limits_from_settings
-    from django.conf import settings
-
-    registry = ProjectProviderProfileRegistry.from_records(records or synthetic_profile_records())
-    project_api = ApiForProjectManagement(DashboardScopeCatalog(ApiForBugTrend(), lambda: registry))
-    archive = CaptureArchiveService(project_api, LocalArchiveRepositoryFactory(), archive_config(Path(settings.METRICS_PROJECT_ARCHIVE_ROOT)))
-    provider = (provider_factory or create_provider_fixture)(project_api, archive)
-    capture = __import__('project_management.services.capture', fromlist=['ProjectCaptureService']).ProjectCaptureService(
-        project_api, provider.service, archive, required_parts=('facts', 'comments', 'history')
-    )
-    contract = AiTaskContract.load(connection['packRoot'])
-
-    def backend(actor, project_id, stage_id):
-        return AiBackendTarget(connection['baseUrl'], connection['sourceAppId'], connection['runStoreId'],
-                               f'projects.{project_id}.stages.{stage_id}', connection['grantRevision'],
-                               connection['limitPolicyRevision'])
-
-    def client(target):
-        return TaskRunClient(
-            base_url=target.base_url,
-            source_app_id=target.source_app_id,
-            credential_ref=connection['credentialRef'],
-            token=connection['token'],
-            run_store_id=target.run_store_id,
-            transport=httpx.AsyncHTTPTransport(retries=0, trust_env=False),
-        )
-
-    analysis = __import__('project_management.app.api.summary_analysis', fromlist=['SummaryAnalysisService']).SummaryAnalysisService(archive, contract, client)
-    draft = build_report_service(project_api=project_api, archive=archive, contract=contract)
-    service = ProjectRunService(project_api, archive, capture, analysis, draft, backend,
-                                policy=_policy_from_settings(settings),
-                                capture_limits=capture_limits_from_settings(settings))
-    return ProjectRunRuntime(service, ProjectRunWorker(service))
 
 
 def archive_config(root: Path) -> ArchiveStorageConfig:

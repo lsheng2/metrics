@@ -1,19 +1,17 @@
 {% load i18n %}
-{% if report_body.meeting_skip_notice %}<p class="notification is-info is-light" data-meeting-skips>{{ report_body.meeting_skip_notice }}</p>{% endif %}
+{% if report_body.meeting_skip_notice %}<div class="message is-info" role="note" data-meeting-skips><div class="message-body">{{ report_body.meeting_skip_notice }}</div></div>{% endif %}
 {% for block in report_body.blocks %}
     {% if block.kind == "content" %}
         <div class="report-section-band" data-template-fixed-content>
-            <h3 class="title is-5">{% trans "Template content" %}</h3>
-            <div class="report-editor-surface" aria-readonly="true">
-                <div>{{ block.html|safe }}</div>
-                <p class="help">{% trans "Fixed template text is read only in this report." %}</p>
-            </div>
+            <h3 class="report-band-title">{% trans "Template content" %}</h3>
+            <div class="report-editor-surface paper" aria-readonly="true">{{ block.html|safe }}</div>
+            <p class="help">{% trans "Fixed template text is read only in this report." %}</p>
         </div>
     {% elif block.kind == "slot" %}
         <div class="report-section-band" data-template-slot-id="{{ block.slot_id }}">
-            <h3 class="title is-5">
+            <h3 class="report-band-title">
                 {{ block.label }}
-                {% if block.required %}<span class="tag is-warning is-light">{% trans "Required" %}</span>{% endif %}
+                {% if block.required %}<span class="tag is-warning">{% trans "Required" %}</span>{% endif %}
             </h3>
             {% with region=block.region label=block.label %}
                 <div data-template-slot-id="{{ block.slot_id }}">
@@ -23,16 +21,16 @@
         </div>
     {% elif block.kind == "data" %}
         <div class="report-section-band" data-template-data-source="{{ block.source }}">
-            <h3 class="title is-5">{{ block.label }}</h3>
+            <h3 class="report-band-title">{{ block.label }}</h3>
             {% if block.matrix %}
-                <div class="buttons are-small">
+                <div class="report-matrix-commands">
                     <button class="button is-small" type="button" data-continuity-add-persistent data-persistent-target="report">
-                        {% trans "Add report persistent" %}
+                        <span class="icon is-small" aria-hidden="true"><i class="iconoir-plus"></i></span><span>{% trans "Add report persistent" %}</span>
                     </button>
                 </div>
                 <div data-continuity-report-persistent-list></div>
-                <div class="table-container responsive-admin-table-box" data-continuity-matrix style="background:#ffffff; color:#1f2933;">
-                    <table class="table is-fullwidth is-narrow dashboard-dense-table" style="background:#ffffff; color:#1f2933;">
+                <div class="table-container responsive-admin-table-box is-framed" data-continuity-matrix>
+                    <table class="table is-fullwidth is-narrow dashboard-dense-table report-matrix">
                         <thead>
                             <tr>
                                 <th>{% trans "Issue" %}</th>
@@ -44,13 +42,13 @@
                         <tbody>
                             {% for row in block.matrix.rows %}
                                 <tr>
-                                    <th style="background:#f8fafc; color:#111827;">
-                                        <strong data-matrix-ticket-key style="color:#111827;">{{ row.current_key }}</strong>
-                                        <p class="help" style="color:#334155;">{{ row.title }}</p>
+                                    <th>
+                                        <strong data-matrix-ticket-key>{{ row.current_key }}</strong>
+                                        <p class="help">{{ row.title }}</p>
                                         {% if row.visibility == "removed" %}<p>{% trans "Outside current scope" %}</p>{% endif %}
-                                        <div class="buttons are-small mt-2">
+                                        <div class="report-matrix-commands">
                                             <button class="button is-small" type="button" data-continuity-add-persistent data-issue-ref-json="{{ row.issue_ref_json|escape }}">
-                                                {% trans "Add persistent" %}
+                                                <span class="icon is-small" aria-hidden="true"><i class="iconoir-plus"></i></span><span>{% trans "Add persistent" %}</span>
                                             </button>
                                             {% if row.group_choices %}
                                                 <div class="select is-small">
@@ -78,11 +76,11 @@
                                             <div data-continuity-new-actions></div>
                                         {% endif %}
                                         {% for persistent in row.persistent_notes %}
-                                            <div class="notification is-light mt-2" data-continuity-persistent-note-id="{{ persistent.note_id }}">
+                                            <div class="report-persistent-note" data-continuity-persistent-note-id="{{ persistent.note_id }}">
                                                 {% with region=persistent.region label="Persistent note" %}
                                                     {% include "projects/reports/editor_region.html" %}
                                                 {% endwith %}
-                                                <label class="checkbox mt-2">
+                                                <label class="checkbox">
                                                     <input type="checkbox" data-continuity-change data-continuity-value-field="carry_forward" data-continuity-payload="{{ persistent.carry_json|escape }}" {% if persistent.carry_forward %}checked{% endif %}>
                                                     {% trans "Carry forward" %}
                                                 </label>
@@ -90,27 +88,27 @@
                                         {% endfor %}
                                     </th>
                                     {% for cell in row.cells %}
-                                        <td style="background:#ffffff; color:#1f2933;">
+                                        <td>
                                             {% if cell.readonly_entries != None %}
                                             {% for readonly in cell.readonly_entries %}
                                                 {% if readonly.kind == "note" %}
-                                                <div class="report-readonly-data notification is-light" data-matrix-readonly-note style="background:#f8fafc; color:#1f2933;">
+                                                <div class="report-readonly-data paper" data-matrix-readonly-note>
                                                     <p><strong data-matrix-readonly-prefix>{{ readonly.prefix }}</strong></p>{{ readonly.html|safe }}
                                                 </div>
-                                                {% else %}<p data-matrix-history-observation style="color:#334155;">{{ readonly.text }}</p>{% endif %}
+                                                {% else %}<p class="report-matrix-observation" data-matrix-history-observation>{{ readonly.text }}</p>{% endif %}
                                             {% endfor %}
                                             {% else %}
                                             {% for readonly in cell.readonly_notes %}
-                                                <div class="report-readonly-data notification is-light" data-matrix-readonly-note style="background:#f8fafc; color:#1f2933;">
-                                                    <p style="margin:0 0 6px 0; color:#111827;"><strong data-matrix-readonly-prefix style="color:#111827;">{{ readonly.prefix }}</strong></p>
+                                                <div class="report-readonly-data paper" data-matrix-readonly-note>
+                                                    <p><strong data-matrix-readonly-prefix>{{ readonly.prefix }}</strong></p>
                                                     {{ readonly.html|safe }}
                                                 </div>
                                             {% endfor %}
                                             {% endif %}
-                                            {% if cell.prefix %}<p style="margin:0 0 6px 0; color:#111827;"><strong data-matrix-source-prefix style="color:#111827;">{{ cell.prefix }}</strong></p>{% endif %}
-                                            {% if cell.observation_label %}<p data-matrix-source-observation style="margin:0 0 6px 0; color:#334155;">{% trans cell.observation_label %}</p>{% endif %}
+                                            {% if cell.prefix %}<p class="report-matrix-prefix"><strong data-matrix-source-prefix>{{ cell.prefix }}</strong></p>{% endif %}
+                                            {% if cell.observation_label %}<p class="report-matrix-observation" data-matrix-source-observation>{% trans cell.observation_label %}</p>{% endif %}
                                             {% if cell.review_editable %}
-                                            <label class="label is-small" style="color:#334155;">{% trans "Meeting review" %}</label>
+                                            <label class="label is-small">{% trans "Meeting review" %}</label>
                                             <div class="select is-small"><select data-meeting-review data-original-review="{{ cell.review }}" data-review-payload="{{ cell.review_payload|escape }}" aria-label="{% trans "Meeting review" %}">
                                                 <option value="unreviewed" {% if cell.review == "unreviewed" %}selected{% endif %}>{% trans "Unreviewed" %}</option>
                                                 <option value="discussed" {% if cell.review == "discussed" %}selected{% endif %}>{% trans "Discussed" %}</option>
@@ -119,37 +117,39 @@
                                             </select></div>
                                             {% endif %}
                                             {% for action in cell.actions %}
-                                                <div class="mt-2" data-matrix-action-body style="background:#f8fafc; color:#1f2933;">
+                                                <div data-matrix-action-body>
                                                     {% if action.region %}
                                                         {% with region=action.region label="Action" %}
                                                             {% include "projects/reports/editor_region.html" %}
                                                         {% endwith %}
                                                     {% else %}
-                                                        <div class="report-readonly-data">{{ action.body_html|safe }}</div>
+                                                        <div class="report-readonly-data paper">{{ action.body_html|safe }}</div>
                                                     {% endif %}
                                                 </div>
                                                 {% if action.region %}
-                                                    <details class="mt-2" data-continuity-action-control data-action-id="{{ action.action_id }}" data-expected-state="{{ action.state }}" data-evidence-refs="{{ action.evidence_json|escape }}">
-                                                        <summary data-matrix-action-label style="color:#111827;">{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</summary>
-                                                        {% if action.human %}
-                                                        <label class="label is-small" style="color:#334155;">{% trans "AR owner" %}</label>
-                                                        <input class="input is-small" type="text" maxlength="160" data-report-action-owner data-original-owner="{{ action.original_owner }}" data-owner-payload="{{ action.owner_payload|escape }}" value="{{ action.original_owner }}" aria-label="{% trans "AR owner" %}">
-                                                        {% endif %}
-                                                        <label class="label is-small" style="color:#334155;">{% trans "AR state" %}</label>
-                                                        <div class="select is-small"><select data-report-action-state aria-label="{% trans "AR state" %}">
-                                                            <option value="open" {% if action.state == "open" %}selected{% endif %}>{% trans "Open" %}</option>
-                                                            <option value="unknown" {% if action.state == "unknown" %}selected{% endif %}>{% trans "Unknown" %}</option>
-                                                            <option value="done" {% if action.state == "done" %}selected{% endif %}>{% trans "Done" %}</option>
-                                                            <option value="canceled" {% if action.state == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
-                                                        </select></div>
-                                                        <label class="checkbox"><input type="checkbox" data-continuity-action-done> {% trans "Mark done" %}</label>
-                                                        <div class="report-editor-surface mt-2" data-continuity-action-editor tabindex="0" aria-label="{% trans "Resolution" %}"></div>
-                                                        {% for evidence in action.evidence_refs %}
-                                                            <label class="checkbox mr-2"><input type="checkbox" data-continuity-evidence value="{{ evidence }}" checked> {{ evidence }}</label>
-                                                        {% endfor %}
+                                                    <details class="report-action-control" data-continuity-action-control data-action-id="{{ action.action_id }}" data-expected-state="{{ action.state }}" data-evidence-refs="{{ action.evidence_json|escape }}">
+                                                        <summary data-matrix-action-label>{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</summary>
+                                                        <div class="report-action-fields">
+                                                            {% if action.human %}
+                                                            <label class="label is-small">{% trans "AR owner" %}</label>
+                                                            <input class="input is-small" type="text" maxlength="160" data-report-action-owner data-original-owner="{{ action.original_owner }}" data-owner-payload="{{ action.owner_payload|escape }}" value="{{ action.original_owner }}" aria-label="{% trans "AR owner" %}">
+                                                            {% endif %}
+                                                            <label class="label is-small">{% trans "AR state" %}</label>
+                                                            <div class="select is-small"><select data-report-action-state aria-label="{% trans "AR state" %}">
+                                                                <option value="open" {% if action.state == "open" %}selected{% endif %}>{% trans "Open" %}</option>
+                                                                <option value="unknown" {% if action.state == "unknown" %}selected{% endif %}>{% trans "Unknown" %}</option>
+                                                                <option value="done" {% if action.state == "done" %}selected{% endif %}>{% trans "Done" %}</option>
+                                                                <option value="canceled" {% if action.state == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
+                                                            </select></div>
+                                                            <label class="checkbox"><input type="checkbox" data-continuity-action-done> {% trans "Mark done" %}</label>
+                                                            <div class="report-editor-surface paper" data-continuity-action-editor tabindex="0" aria-label="{% trans "Resolution" %}"></div>
+                                                            {% for evidence in action.evidence_refs %}
+                                                                <label class="checkbox"><input type="checkbox" data-continuity-evidence value="{{ evidence }}" checked> {{ evidence }}</label>
+                                                            {% endfor %}
+                                                        </div>
                                                     </details>
                                                 {% else %}
-                                                    <p data-matrix-action-label style="color:#111827;">{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</p>
+                                                    <p data-matrix-action-label>{{ action.label }}{% if action.owner %} @{{ action.owner }}{% endif %} · {{ action.state }}</p>
                                                 {% endif %}
                                             {% endfor %}
                                             {% if cell.current_region %}
@@ -159,7 +159,7 @@
                                                     {% endwith %}
                                                 </div>
                                             {% elif not cell.readonly_notes and not cell.actions and not cell.observation_label %}
-                                                <span class="tag is-light">{{ cell.display }}</span>
+                                                <span class="tag" data-matrix-empty>{{ cell.display }}</span>
                                             {% endif %}
                                         </td>
                                     {% endfor %}
@@ -170,9 +170,9 @@
                 </div>
                 <p class="help">{% trans "Only current-day note slots are editable." %}</p>
             {% else %}
-            <div class="notification is-light">
+            <div class="report-data-block">
                 {% if block.html %}
-                    <div class="report-readonly-data">{{ block.html|safe }}</div>
+                    <div class="report-readonly-data paper">{{ block.html|safe }}</div>
                 {% else %}
                     {% for fact in block.facts %}<p>{{ fact }}</p>{% endfor %}
                 {% endif %}

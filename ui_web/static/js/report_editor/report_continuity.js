@@ -99,13 +99,17 @@ export function createContinuityController(root, form) {
         if (!host || !crypto?.randomUUID) return;
         const noteId = restored?.note_id || crypto.randomUUID();
         const article = document.createElement('article');
-        article.className = 'notification is-light mt-2';
+        article.className = 'report-persistent-note';
         article.dataset.continuityPersistentDraft = noteId;
         article.innerHTML = `
-            <label class="label">Persistent note</label>
-            <div class="report-editor-surface" data-continuity-fragment-surface tabindex="0" aria-label="Persistent note"></div>
-            <label class="checkbox mt-2"><input type="checkbox" data-continuity-carry checked> Carry forward</label>
+            <label class="label is-small"></label>
+            <div class="report-editor-surface paper" data-continuity-fragment-surface tabindex="0"></div>
+            <label class="checkbox"><input type="checkbox" data-continuity-carry checked> <span></span></label>
         `;
+        const noteLabel = root.dataset.messagePersistentNote || 'Persistent note';
+        article.querySelector('.label').textContent = noteLabel;
+        article.querySelector('[data-continuity-fragment-surface]').setAttribute('aria-label', noteLabel);
+        article.querySelector('.checkbox > span').textContent = root.dataset.messageCarryForward || 'Carry forward';
         host.appendChild(article);
         const item = {
             kind: 'persistent',

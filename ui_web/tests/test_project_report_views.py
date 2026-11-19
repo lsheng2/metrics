@@ -67,8 +67,11 @@ class TestProjectReportViews(CaptureArchiveScenario, ProjectRouteTestSupport, Te
         return self.facade
 
     def with_report_facade(self):
+        from ui_web.facades.project_runs import ProjectRunFacade
         from ui_web.views import project_reports
+        from ui_web.views.project_run_views import ProjectRunSubmitView
 
+        self.patch_view_factory(lambda: ProjectRunFacade(None, None, runtime_ready=False), ProjectRunSubmitView)
         classes = [
             project_reports.ProjectStageReportView,
             project_reports.ReportDraftCreateView,
@@ -83,11 +86,7 @@ class TestProjectReportViews(CaptureArchiveScenario, ProjectRouteTestSupport, Te
             project_reports.ReportPublicationRevisionView,
             project_reports.ReportPublicationDownloadView,
         ]
-        originals = [view.facade_factory for view in classes]
-        for view in classes:
-            view.facade_factory = staticmethod(self.report_facade)
-        self.addCleanup(lambda: [setattr(view, 'facade_factory', original)
-                                 for view, original in zip(classes, originals)])
+        self.patch_view_factory(self.report_facade, *classes)
 
     def stage_url(self):
         return reverse('ui_web:project_stage_reports', kwargs={
@@ -196,7 +195,7 @@ class TestProjectReportViews(CaptureArchiveScenario, ProjectRouteTestSupport, Te
         content = stage.content.decode('utf-8')
         self.assertIn('Report workbench', content)
         self.assertIn(self.capture_id, content)
-        self.assertIn('Run stage report', content)
+        self.assertIn('Independent report run', content)
         self.assertIn('Runtime disabled', content)
         self.assertIn('disabled', content)
         self.assertEqual(302, created.status_code)
@@ -421,7 +420,7 @@ class TestProjectReportViews(CaptureArchiveScenario, ProjectRouteTestSupport, Te
             'template_version': '1',
         }, **self.auth('alice'))
 
-        self.assertEqual(400, failed_finalize.status_code)
+        self.assertEqual(503, failed_finalize.status_code)
         self.assertIn('Resume finalization', editor.content.decode('utf-8'))
         self.assertEqual(409, wrong_resume.status_code)
         self.assertEqual(302, resumed.status_code)

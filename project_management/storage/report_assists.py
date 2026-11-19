@@ -19,7 +19,7 @@ class ReportAssistStore:
                 return None
             raise ReportError('REPORT_ARTIFACT_INVALID') from None
         if (not isinstance(envelope, dict) or set(envelope) != {'schema_version', 'payload', 'sha256'}
-                or type(envelope['schema_version']) is not int or envelope['schema_version'] != 1
+                or type(envelope['schema_version']) is not int or envelope['schema_version'] != 2
                 or envelope['sha256'] != content_hash(envelope['payload'])):
             raise ReportError('REPORT_ARTIFACT_INVALID')
         value = envelope['payload']
@@ -32,7 +32,7 @@ class ReportAssistStore:
         return value
 
     def write(self, assist_id, name, value, *, immutable=True):
-        payload = canonical_bytes({'schema_version': 1, 'payload': value, 'sha256': content_hash(value)})
+        payload = canonical_bytes({'schema_version': 2, 'payload': value, 'sha256': content_hash(value)})
         if len(payload) > 524288:
             raise ReportError('REPORT_LIMIT')
         repo = self.repository

@@ -31,5 +31,5 @@ def initials(display_name: str) -> str:
 
 
 @register.filter
-def avatar_color(display_name: str) -> str:
-    return ColorUtils.generate_color(display_name)
+def avatar_slot(display_name: str) -> int:
+    return ColorUtils.palette_slot(display_name)

@@ -1,0 +1,35 @@
+{% extends "standalone_base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Page not found" %}{% endblock %}
+
+{% block content %}
+{% url 'ui_web:homepage' as home_url %}
+<section class="standalone-panel" aria-labelledby="standalone-title">
+    <span class="standalone-panel__icon" aria-hidden="true"><i class="iconoir-search"></i></span>
+    <p class="eyebrow">{% trans "Error 404" %}</p>
+    <h1 class="standalone-panel__title" id="standalone-title">{% trans "Page not found" %}</h1>
+    <p class="standalone-panel__body">{% trans "This page does not exist or has moved. Check the address, or start again from the home page." %}</p>
+    {% if request_path %}
+        <p class="standalone-panel__meta">{% trans "Requested" %} <code>{{ request_path }}</code></p>
+    {% endif %}
+    <div class="standalone-panel__actions">
+        <a class="button is-primary" href="{{ home_url|default:'/' }}"><span class="icon is-small"><i class="iconoir-home-simple" aria-hidden="true"></i></span><span>{% trans "Go to home" %}</span></a>
+        <button type="button" class="button" data-history-back hidden><span class="icon is-small"><i class="iconoir-nav-arrow-left" aria-hidden="true"></i></span><span>{% trans "Go back" %}</span></button>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var back = document.querySelector('[data-history-back]');
+        if (back && window.history.length > 1) {
+            back.hidden = false;
+            back.addEventListener('click', function () {
+                window.history.back();
+            });
+        }
+    })();
+</script>
+{% endblock %}

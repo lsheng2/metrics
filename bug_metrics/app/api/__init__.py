@@ -4,22 +4,8 @@ from typing import List, Optional
 from bug_metrics.models import BugTrendBucket, BugTrendCalculationRun, BugTrendChartDefinition, JiraScopeConfig
 from jira_history.container import jira_history_container
 
-from .ai_context import (
-    DashboardAiArtifactValidationRequest,
-    DashboardAiPublishApprovalRequest,
-    DashboardAiPublishRequest,
-    DashboardAiWorkflowRequest,
-    DashboardCompositionIntent,
-    GcxPublicationCallbackRequest,
-    GcxPublicationPreconditionRequest,
-    ProviderActionPlanRequest,
-    ProviderAiChartDraftRequest,
-    ProviderAiChartExplanationRequest,
-    ProviderAiDashboardContextQuery,
-    ProviderAiDashboardContextService,
-)
+from .ai_context import ProviderAiDashboardContextService
 from .ai_dashboard_api import BugTrendAiDashboardApiMixin
-from .ai_sidecar import AiSidecarProbeService
 from .calculation import BugTrendCalculationService
 from .chart_catalog import ChartCatalogService, ChartDefinition, ChartPublishResult, ChartValidationResult, RendererRouteDecisionResult
 from .chart_data import BUG_TREND_CONTRACT_VERSION, BugTrendChart, BugTrendDataset, BugTrendRunMetadata
@@ -69,7 +55,6 @@ class ApiForBugTrend(BugTrendProviderProfileApiMixin, BugTrendAiDashboardApiMixi
         self._provider_chart_aggregate_service = ProviderChartAggregateService()
         self._provider_chart_evidence_service = ProviderChartEvidenceService(self._provider_chart_aggregate_service, self.get_evidence_tickets)
         self._provider_ai_context_service = ProviderAiDashboardContextService(self._provider_chart_aggregate_service)
-        self._ai_sidecar_probe_service = AiSidecarProbeService()
         self._provider_profile_readiness_service = ProviderProfileReadinessService()
         self._provider_profile_config_service = ProviderProfileConfigService()
         self._provider_profile_connection_test_service = ProviderProfileConnectionTestService(self._provider_profile_config_service)

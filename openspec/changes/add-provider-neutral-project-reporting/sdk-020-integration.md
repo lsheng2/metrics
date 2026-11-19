@@ -1,5 +1,7 @@
 # SDK 0.2 Integration Contract
 
+> Superseded on 2026-11-11 by [MDB-2](../embed-ai-base-runtime-in-process/proposal.md); historical evidence only, defines no remaining work.
+
 Date: 2026-11-05. Owner: Dashboard; AI Base remains the public SDK/API owner.
 Status: accepted scope for specification, scoped publication and pre-integration execution.
 Execution state belongs only to [tasks.md](tasks.md).

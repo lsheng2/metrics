@@ -1,0 +1,7 @@
+{% load i18n %}{% url 'ui_web:homepage' as brand_home_url %}
+<a class="app-brand" href="{{ brand_home_url|default:'/' }}" title="{% trans 'Metrics home' %}">
+    <span class="app-brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="currentColor" focusable="false"><rect x="2.5" y="8" width="3" height="5.5" rx="1"/><rect x="6.5" y="2.5" width="3" height="11" rx="1"/><rect x="10.5" y="5.5" width="3" height="8" rx="1"/></svg>
+    </span>
+    <span class="app-brand__name">Metrics <small>Dashboard</small></span>
+</a>

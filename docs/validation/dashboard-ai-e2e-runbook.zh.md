@@ -1,216 +1,97 @@
-# Dashboard AI E2E Runbook
+# Dashboard AI 发布联调 Runbook
 
-## 目的
+## 状态与边界
 
-本 runbook 用于人工验证 Dashboard 与 AI Base 的真实联调链路：
+本 runbook 描述 MDB-2 当前发布链路：Dashboard 进程内 runtime tools、runtime approval、Grafana import、`AiChartPublication` 历史，以及 Workbench 只读历史查看。
 
-1. Dashboard Django + Grafana 启动。
-2. Jira profile `chiplet-2a-jira` 可选 live sync。
-3. AI Base `dashboard_query_agent` 启动并连接 Dashboard。
-4. Dashboard `workflow.run` 返回 Metrics validation、render validation、gcx precondition。
-5. AI Base connector 暴露 `workflow.run`，并保持 dry-run proof / human approval 语义。
+旧外部伴随服务、旧 HTTP business API、旧 Grafana CLI precondition、旧 proof id、旧 demo approval prefix、旧 demo publish endpoint 和旧 host-action 消息协议都不是当前操作说明。历史案例若提到这些术语，只能作为旧证据阅读。
 
-## 启动
+Windows 入口已统一到进程内 `serve` 和 SLE 所有权管理，安装与启停证据见 MDB-2 的
+`evidence/windows-release-inputs.json`、`evidence/windows-w1-launch.json`。
+完整 10.2-10.4 验收、后续宿主资格和 Linux 部署仍是开放项；
+本 runbook 不把发布链路或 Windows 局部验收当作整个项目关闭的证明。
 
-完整重启，包含 Jira live sync：
+## Windows 入口
+
+安装和解释器选择以 `docs/development/reporting-delivery.md` 为准。普通本地后端入口只启动
+Dashboard，不附带迁移、示例数据或 Grafana 导入；E2E 入口显式管理 Dashboard 与本地
+Grafana。两者都拒绝旧启动选项，不回退到另一套 Python。停止按已登记实例及进程身份进行，
+记录服务真实退出码；强制、失败和未知退出不算正常停止。完整 stack smoke 读取当前
+Workbench 和服务端 workflow form，不再要求已退役的业务 API。
+
+## 当前契约
+
+| Surface | 当前职责 | 可观察结果 |
+| --- | --- | --- |
+| `metrics.catalog` | 读取 profile 与 chart recipe catalog | 不泄漏 provider secret/native query |
+| `metrics.chart_workflow` | 校验 chart intent、render config、数据和发布目标 readiness | 返回 `draft_validated` 或 typed blocker，例如 `needs_metric_recipe` |
+| `metrics.publish_chart` preview | 生成 Dashboard-owned preview bytes，并绑定 `preview_digest` | readiness 不满足时不创建 approval |
+| `metrics.publish_chart` handler | 只消费 runtime approval 绑定的 preview bytes | 写入 `AiChartPublication`，保存 runtime `approval_id` 与 `tool_call_id` |
+| `/api/ai-publish-history/` | JSON-only read API | 只读 `AiChartPublication`，不列旧 audit 推导记录 |
+| Workbench publication history | 只读 UI 历史 | `details[data-workbench-publication-history]` 内显示发布记录 |
+
+Workbench 稳定选择器：
+
+- 打开历史控件：`details[data-workbench-publication-history] > summary`
+- 历史刷新区域：`[data-workbench-publication-history-region]`
+- 单条 approval id：`[data-approval-id="<approval_id>"] code[title="<approval_id>"]`
+
+`Refresh` 是局部 htmx 刷新，使用 `hx-swap="outerHTML ignoreTitle:true"`，不得替换 AI iframe/session，也不得改页面 title。
+
+## 人工验证重点
+
+1. 触发一个 synthetic chart workflow，确认 unsupported series 不被静默改写。
+2. 进入 runtime approval 流程，确认 pending approval 期间切换 range 会更新当前 session binding 的新 `ContextRef`；但已经开始的 run/approval 保留其原始 preview/range，批准后发布的仍是该原始 preview。
+3. 人工批准后，确认 Grafana import 使用已批准 preview bytes。
+4. 打开 Grafana 查询结果，确认 timeseries 至少有一个 time field；当前生成器将 `bucket_start` 声明为 `type: "timestamp"`，`timestampFormat: "2006-01-02"`。
+5. 打开 Workbench，展开 `Publication history`，点击 `Refresh`，确认同一 `approval_id` 可见且 AI iframe identity 未变化。
+6. 重复同一 `tool_call_id` 且已存在 matching publication row 时读取既有结果；若 Grafana import 成功但数据库确认丢失，可以用同一 approved bytes/uid 和 `overwrite: True` 有界重试。历史中同 uid supersession 最新行标记 latest。
+
+不要断言模型回复的固定英文句子、旧 demo UID、旧 proof id 或旧自动 host action。模型可以用不同措辞解释同一 runtime approval 结果。
+
+## 隔离测试命令
+
+按 `docs/development/reporting-delivery.md` 的 no-dotenv 入口运行显式测试路径。示例从 Dashboard repo root 运行 real browser join，并使用新的临时 basetemp：
 
 ```powershell
-cd "C:\Users\lsheng2\OneDrive - Intel Corporation\Documents\my_project\scrum_dashboard"
-powershell -ExecutionPolicy Bypass -File scripts\e2e_restart_dashboard_ai_stack.ps1 -ForceByPort
+$reportingPython = 'D:\AIGC\artifacts\mdb2-windows-20261117\windows-venv-r4\Scripts\python.exe'
+$baseTemp = Join-Path $env:TEMP ('mdb2-publication-browser-' + [guid]::NewGuid().ToString('N'))
+& $reportingPython -I scripts/validation/run_report_authoring_tests.py ai_host/tests/test_publication_browser_join.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function --basetemp $baseTemp
 ```
 
-快速重启，不重新拉 Jira：
+`pytest` 直接运行不是等价门禁，因为它会遗漏部分模块并加载开发设置。
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\e2e_restart_dashboard_ai_stack.ps1 -ForceByPort -SkipJiraSync
-```
-
-只启动：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\e2e_start_dashboard_ai_stack.ps1
-```
-
-停止：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\e2e_stop_dashboard_ai_stack.ps1 -ForceByPort
-```
-
-## 打开页面
-
-- Dashboard AI Workflow: `http://127.0.0.1:8002/ai-dashboard/workflow/`
-- AI Base Dashboard Agent: `http://127.0.0.1:48310/`
-- AI Base backend: `http://127.0.0.1:48300/`
-
-Grafana 端口由 Dashboard 启动输出给出，通常是 `3001`，端口占用时会自动选择其他端口。
-
-## Dashboard Workflow 检查
-
-### Jira supported case
-
-在 Dashboard AI Workflow 页面选择：
-
-- Profile: `chiplet-2a-jira`
-- Chart: `open_bug_trend`
-- Requested Series: `new_critical_high`
-- Range Mode: `WW`
-- Range Start: `26WW32`
-- Range End: `26WW35`
-- gcx Operation: `grafana_import`
-
-点击 `Run Metrics Validation`。
-
-预期：
-
-- Provider: `jira`
-- Intent Validation: `draft_validated`
-- Render Preview: `draft_validated`
-- gcx Precondition: `precondition_passed`
-- Guidance Status: `ready_for_dry_run`
-- Next Action: `gcx_dry_run`
-
-### HSD-ES supported case
-
-选择：
-
-- Profile: `nvu-ttl-hsdes`
-- Chart: `open_bug_trend`
-- Requested Series: `new_critical_high`
-
-预期：
-
-- Intent Validation: `draft_validated`
-- Render Preview: `draft_validated`
-- gcx Precondition: `precondition_passed`
-
-### Unsupported semantic case
-
-把 Requested Series 改为：
+本 packet 的当前证据记录在：
 
 ```text
-new_critical
+openspec/changes/embed-ai-base-runtime-in-process/evidence/publication-packet-20261117.json
 ```
 
-预期：
-
-- Intent Validation: `needs_metric_recipe`
-- Render Preview: `not_checked`
-- gcx Precondition: `not_checked`
-- 系统不应把 `new_critical` 静默替换成 `new_critical_high`
-
-## AI Base 检查
-
-打开 `http://127.0.0.1:48310/`，进入 Dashboard Query Agent 页面。
-
-预期 Metrics Connector 显示：
-
-- Connector ID: `metrics-dashboard`
-- Model Visible Operations 只包含 read/validate 类操作，例如 `catalog.lookup`、`intent.validate`、`render_config.validate`、`context.lookup`
-- Internal Workflow Operation: `workflow.run` 不应 model-visible，只能由受控 workflow/helper 调用
-- Dry-run Proof: `workflow.run can record dry-run proof`
-- Approval Gate: `Human approval required before mutation`
-
-也可以直接检查 backend diagnostics：
-
-```powershell
-Invoke-RestMethod -Uri "http://127.0.0.1:48300/api/runtime/diagnostics/summary" |
-    Select-Object -ExpandProperty security |
-    ConvertTo-Json -Depth 8
-```
-
-预期 connector:
-
-- `available=true`
-- `activated=true`
-- `executable=true`
-- `modelVisibleOperations` 不包含 `workflow.run`、`artifact.validate`、`workflow.publish_demo` 或 callback/mutation 操作
-
-## AI Base Chat Demo
-
-打开 `http://127.0.0.1:48310/`，进入 `Chat` 页面，新建一个 chat session。
-
-输入：
-
-```text
-Create a weekly open bug trend chart for chiplet Jira from 26WW32 to 26WW35, only new critical/high.
-```
-
-预期 Chat 回复包含：
-
-- `Dashboard chart workflow completed.`
-- `Profile: chiplet-2a-jira`
-- `Provider: jira`
-- `Chart: open_bug_trend`
-- `Series: new_critical_high`
-- `Intent validation: draft_validated`
-- `Render validation: draft_validated`
-- `gcx precondition: precondition_passed`
-- `Dry-run proof: dryrun_...`
-- `Approval: human approval required before Grafana mutation`
-
-这个流程是 **受控 chart authoring dry-run**。它证明 AI Base Chat 已经能通过 Dashboard `workflow.run` 走完整验证和 dry-run proof handoff。
-
-## AI Base Chat Publish Authority Check
-
-在同一个 Chat session 继续输入：
-
-```text
-Approve and publish a weekly open bug trend chart for NVU HSDES from 26WW32 to 26WW35, only new critical/high.
-```
-
-预期 Chat 回复包含：
-
-- `human approval required`
-- `dry-run proof`
-- 不应声称已经 publish
-- 不应返回 `approval_chat_demo_...` 作为可执行 approval
-- 不应直接触发 Grafana import
-
-真实 publish 必须走 Dashboard-owned publish authorization：先创建 pending approval，人工 approve 后，publish request 的 provider、workspace key、profile、range、series、artifact ref/version/hash、dry-run proof、operation 和 actor 必须与 approval 记录完全匹配，并且 approval 必须在有效期内。
-
-当 publish authorization 通过时，预期返回：
-
-- `Dashboard chart published to Grafana.`
-- `Dashboard: ai-open-bug-trend-demo`
-- `URL: http://127.0.0.1:3001/d/ai-open-bug-trend-demo/...`
-- `Dry-run proof: dryrun_...`
-- `Approval: approval_...`
-- `Audit: recorded`
-- `Workbench action: metrics.openGrafanaChart pending`
-- `Host action request: hostact_...`
-- `Workbench fallback: /workbench/?...`
-
-主路径不是让用户打开原始 Grafana URL。AI Base compact chat 会把 pending `metrics.openGrafanaChart` host action 发给 unified Workbench，Workbench 接收 `ai-base.host-action.request` 后在 chart pane 内打开对应 chart，并回写 `ai-base.host-action.result`。原始 Grafana URL 只是 fallback。
-
-如果要用 Jira `chiplet-2a-jira` 做同一个 publish workflow，需要先运行不带 `-SkipJiraSync` 的完整重启或手动 sync，确保 `26WW32` 到 `26WW35` 有 completed aggregate artifact；否则 Grafana dashboard 会被创建，但 panel 会显示 `No data`。
+该文件记录的 final browser fixture 是 runtime approval + Grafana + Workbench history 的 synthetic 验证证据；它仍明确标记完整 Dashboard qualification 和完整 AIB qualification 未关闭。
 
 ## 当前安全边界
 
-- `workflow.run` 可以进入 `ready_for_dry_run`。
-- AI Base try-run 可以返回 dry-run proof summary。
-- 真实 Grafana import/publish 需要 human-approved Dashboard publish authorization；Chat 文本不能自造 approval id。
-- 没有 approval id 时，不应执行真实 mutation。
-- approval id、dry-run proof id、artifact ref/version/hash、provider/workspace/profile/range/series/operation/actor 必须匹配同一个未过期 authorization tuple。
-- Unsupported metric series 必须返回 `needs_metric_recipe`，不能由 AI 自行改写语义。
+- 发布身份只来自 runtime `ToolApproval.approval_id`。
+- `tool_call_id` 是幂等键；已有 matching publication row 时重复执行读取既有结果。若 import 成功但 App 记录未落库，恢复路径允许再次导入同一 approved bytes/uid，并以 `overwrite: True` 保持 Grafana 目标等价。
+- handler 校验 `preview_digest`，digest mismatch 不得调用 Grafana。
+- 数据变化导致 preview 失效时不得 import。
+- denied/expired approval 不得调用 handler。
+- publication history 只读 App-owned `AiChartPublication`。
+- Chat 文本、模型输出、旧 audit event、旧 proof id、旧 demo approval prefix 都不是发布授权。
 
-## 常见问题
+## 故障定位
 
-### `base_url_missing`
+| 现象 | 当前检查点 |
+| --- | --- |
+| Workflow not ready | 检查 `publish_readiness.status`、profile binding、provider facts 和 Grafana target |
+| Grafana timeseries no data/time field | 检查 generated target columns；`bucket_start` 应是 `timestamp` |
+| Workbench history看不到记录 | 检查 `/api/ai-publish-history/` JSON 与 `[data-workbench-publication-history-region]` |
+| Refresh 后页面标题变化 | 检查 history refresh 是否保留 `ignoreTitle:true` |
+| Stop 返回 `server_thread_alive` | 检查 Waitress active keepalive channels 是否被 drain/close |
 
-AI Base 没有拿到 Dashboard URL。使用本 runbook 的启动脚本，它会设置：
+## 非目标
 
-```text
-RCA_DASHBOARD_METRICS_BASE_URL=http://127.0.0.1:8002
-DASHBOARD_METRICS_BASE_URL=http://127.0.0.1:8002
-```
-
-### Grafana 不是 3001
-
-如果 3001 被占用，脚本会自动选择其他端口。以启动输出为准。
-
-### Jira sync 慢或证书告警
-
-`-SkipJiraSync` 可以跳过 live Jira sync，用现有本地数据做快速 E2E。
-
-证书 warning 不代表本次 sync 必然失败；以命令最终 JSON 的 `status` 为准。
+- 不验证真实 provider/model。
+- 不验证用户数据库或既有 Grafana 服务。
+- 不以发布链路证明完整宿主资格或 Linux 部署通过。
+- 不声明 9.4、10.2、10.3、10.4 完成。
