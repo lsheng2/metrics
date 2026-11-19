@@ -58,7 +58,7 @@ class ReportSourceScenario(SummaryScenario):
             self.stage.id,
             source_key,
             self.contract,
-            self.backend(),
+            self.principal(),
             datetime.now(UTC) + timedelta(minutes=5),
         )
         attempt = prepared.attempt

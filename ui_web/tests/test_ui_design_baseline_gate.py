@@ -58,7 +58,7 @@ class TestUiDesignBaselineGate(UiDesignBrowserMetricsSupport, TestCase):
 
         overlay = overlay_path.read_text(encoding='utf-8')
         audit = audit_path.read_text(encoding='utf-8')
-        self.assertIn('ui_web.tests.test_ui_design_baseline_gate', overlay)
+        self.assertIn('ui_web/tests/test_ui_design_baseline_gate.py', overlay)
         self.assertIn('Provider Setup inventory and Provider Profile Config editor', audit)
         self.assertIn('Monkey-user flow', audit)
         self.assertIn('Current Tasks', audit)

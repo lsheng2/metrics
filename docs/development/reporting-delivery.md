@@ -121,6 +121,23 @@ Run the explicit conformance/testkit lane in a separate process from ordinary
 GUI/business tests. Resource baselines are process-scoped; a mixed-process
 observer failure is not a measured leak or a reason to loosen its thresholds.
 All selected cases must still execute, and only whole green reports may merge.
+For full module lanes, the qualifier records an independent pytest execution
+inventory alongside the raw JUnit. Passed subtests can inflate the framework's
+suite total without adding testcase records. The reconciler accepts only a
+difference explained by observed passed subtests, with all collected primary
+cases executed once, no non-pass/deselection, and exact command/output bindings.
+It writes a separate derived XML and hashed provenance; raw reports remain
+unchanged and ordinary JUnit validation stays strict. Replay checks both inputs
+and the derived output before a module result is used.
+The final qualifier keeps detailed logs in `qualifier-runs` and uses the shorter
+owned `qt/<run-id-hex>/<lane>` hierarchy for pytest working directories. This
+leaves room for UUID-heavy native archive fixtures on Windows without changing
+their persistent Git layout or any safety threshold. Arbitrarily deep Git
+repository roots are not certified by this validation layout.
+Keep the explicit module lanes in separate processes: `ai_host` uses a
+file-backed test database for real worker-thread callbacks. Mixing another
+module's database setup into that lane can select an in-memory store whose
+close behavior is different.
 Startup readiness polls treat malformed/truncated HTTP like other transient
 transport failures, while retaining the original absolute deadline and owned
 process check. SLE reports such probes as unreachable; normal API reads remain
@@ -268,6 +285,11 @@ digest and target in `AiChartPublication`. A repeated completed tool call reads
 the same stored result; it does not issue another import. A failed import has
 status `failed` and no success URL. A lost database acknowledgement can retry
 the same approved bytes and deterministic Grafana UID with overwrite enabled.
+One App/process serializes publication and supersession with its existing
+publication lock. The latest-history lookup stays inside that lock but outside
+the write transaction, avoiding a SQLite read-to-write upgrade conflict with
+independent audit writes. The transaction still commits the publication row
+atomically; this ordering adds neither automatic imports nor longer timeouts.
 
 The read-only `/api/ai-publish-history/` endpoint and Workbench publication pane
 read these records. New successful publications supersede the previous success
@@ -277,6 +299,7 @@ Historic audit records are not reconstructed into publication history.
 Focused checks are `ai_host/tests/test_metrics_tools.py`,
 `ai_host/tests/test_publication_boundaries.py`,
 `ai_host/tests/test_publication_runtime_join.py`,
+`ai_host/tests/test_publication_contention.py`,
 `ai_host/tests/test_publication_recovery.py` and the `bug_metrics/tests/test_ai_chart_*`
 tests. `ai_host/tests/test_publication_browser_join.py` uses production settings
 with synthetic Basic credentials, an isolated database, a scripted model and its

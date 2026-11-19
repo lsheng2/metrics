@@ -49,13 +49,15 @@ def publish_approved_chart(approval):
                 grafana_url = f'{base_url}/d/{row.dashboard_uid}'
             else:
                 error_code = 'grafana_response_invalid'
+        previous = None
+        if status == 'published':
+            previous = AiChartPublication.objects.filter(
+                dashboard_uid=row.dashboard_uid, grafana_base_url=base_url,
+                status='published', superseded_by__isnull=True,
+            ).first()
+        # The App lock already orders publications. Keep the DB transaction
+        # write-first so concurrent audit writes cannot deadlock a read upgrade.
         with transaction.atomic():
-            previous = None
-            if status == 'published':
-                previous = AiChartPublication.objects.filter(
-                    dashboard_uid=row.dashboard_uid, grafana_base_url=base_url,
-                    status='published', superseded_by__isnull=True,
-                ).first()
             row.status = status
             row.error_code = error_code
             row.grafana_url = grafana_url

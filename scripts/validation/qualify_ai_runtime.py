@@ -65,6 +65,8 @@ def pytest_command(python: Path, target: str, junit: Path, basetemp: Path) -> li
         "scripts/validation/run_report_authoring_tests.py",
         target,
         *selection,
+        "-p", "scripts.validation.pytest_execution_inventory",
+        "--execution-inventory", str(junit.with_suffix(".inventory.json")),
         *BASE_PYTEST_ARGS,
         "--basetemp",
         str(basetemp),
@@ -101,13 +103,27 @@ def run_command(argv: list[str], *, cwd: Path, log_dir: Path, label: str, timeou
     return {**result, "receipt": str(record_path)}
 
 
-def run_pytest_lane(python: Path, target: str, *, run_root: Path, label: str) -> dict:
+def run_pytest_lane(python: Path, target: str, *, run_root: Path, label: str,
+                    basetemp_root: Path | None = None) -> dict:
     junit = run_root / "junit" / f"{label}.xml"
-    basetemp = run_root / "basetemp" / label
+    basetemp = (basetemp_root or run_root / "basetemp") / label
     basetemp.parent.mkdir(parents=True, exist_ok=True)
     result = run_command(pytest_command(python, target, junit, basetemp), cwd=ROOT, log_dir=run_root / "logs", label=label)
-    result["junit"] = validate_junit(junit)
-    result["junit"]["path"] = str(junit)
+    from scripts.validation.pytest_junit_reconciliation import reconcile_junit, validate_reconciled_junit
+    inventory = junit.with_suffix(".inventory.json")
+    derived = junit.with_suffix(".verified.xml")
+    reconciliation = reconcile_junit(
+        junit, inventory, derived, pytest_args=result["argv"][3:], repo_root=ROOT,
+    )
+    proof_path = junit.with_suffix(".reconciliation.json")
+    write_json(proof_path, reconciliation)
+    result["junit"] = {
+        **validate_reconciled_junit(reconciliation, pytest_args=result["argv"][3:], repo_root=ROOT),
+        "path": str(derived),
+    }
+    result["report_reconciliation"] = {"path": str(proof_path), "sha256": inputs.digest_file(proof_path)}
+    result["raw_junit"] = reconciliation["sources"]["raw_junit"]
+    result["execution_inventory"] = reconciliation["sources"]["execution_inventory"]
     result["basetemp"] = str(basetemp)
     return result
 
@@ -120,21 +136,32 @@ def revalidate_frozen_inputs(request: dict) -> None:
 def qualify(request: dict) -> dict:
     paths = request["_paths"]
     owned_root = paths["owned_root"]
-    run_root = owned_root / "qualifier-runs" / str(uuid.uuid4())
+    run_id = uuid.uuid4()
+    run_root = owned_root / "qualifier-runs" / str(run_id)
+    # Keep Git fixture metadata below Windows repository-path limits without
+    # changing the archive format or weakening any tested path/ownership guard.
+    basetemp_root = inputs.canonical(owned_root / "qt" / run_id.hex, must_exist=False)
     (run_root / "logs").mkdir(parents=True)
     (run_root / "junit").mkdir()
     source_before = source_identity(ROOT, request["source"]["commit"])
     revalidate_frozen_inputs(request)
     coverage = validate_coverage(request, paths["coverage"], (ROOT.resolve(), owned_root))
     python = paths["python"]
-    commands = [run_pytest_lane(python, "ai_host/tests/test_admission.py", run_root=run_root, label="admission")]
+    commands = [run_pytest_lane(
+        python, "ai_host/tests/test_admission.py", run_root=run_root, label="admission",
+        basetemp_root=basetemp_root,
+    )]
     commands.append(run_command([str(python), "-I", "-m", "pip", "check"], cwd=ROOT, log_dir=run_root / "logs", label="pip-check"))
     module_results = {
-        lane: run_pytest_lane(python, lane, run_root=run_root, label=f"lane-{index}")
+        lane: run_pytest_lane(
+            python, lane, run_root=run_root, label=f"lane-{index}", basetemp_root=basetemp_root,
+        )
         for index, lane in enumerate(MODULE_LANES, start=1)
     }
     performance_results = {
-        target: run_pytest_lane(python, target, run_root=run_root, label=f"performance-{index}")
+        target: run_pytest_lane(
+            python, target, run_root=run_root, label=f"performance-{index}", basetemp_root=basetemp_root,
+        )
         for index, target in enumerate(PERFORMANCE_TESTS, start=1)
     } if request["acceptance_profile"] == "full" else {}
     revalidate_frozen_inputs(request)

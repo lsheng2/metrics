@@ -50,6 +50,24 @@ def _write_junit(
     )
 
 
+def _write_inventory(path: Path, command: list[str], root: Path, cases: dict[str, str]) -> None:
+    _write_json(path, {
+        "schema_version": 1,
+        "kind": "pytest-execution-inventory",
+        "exitstatus": 0,
+        "pytest_args": command[3:],
+        "rootdir": str(root),
+        "inventory_path": str(path),
+        "collected": cases,
+        "collected_order": list(cases),
+        "primary": {nodeid: 1 for nodeid in cases},
+        "subtests": {},
+        "nonpass_reports": [],
+        "collection_reports": [],
+        "deselected": [],
+    })
+
+
 def _wheel(path: Path, *, version: str = "1.0.0") -> tuple[str, dict[str, str]]:
     package_payload = b"VERSION = '1.0.0'\n"
     package_hash = hashlib.sha256(package_payload).hexdigest()
@@ -188,12 +206,18 @@ def _fake_subprocess(
                 junit_path = Path(item.split("=", 1)[1])
         lane = next((part for part in command if part in qualifier.MODULE_LANES or part == "ai_host/tests/test_admission.py"), "")
         if junit_path is not None:
+            count = 0 if lane_failures.get(lane) == -1 else 1
             _write_junit(
                 junit_path,
-                tests=0 if lane_failures.get(lane) == -1 else 1,
+                tests=count,
                 failures=max(lane_failures.get(lane, 0), 0),
                 hidden_failure=lane == hidden_failure_lane,
                 duplicate=lane == duplicate_lane,
+            )
+            inventory_path = Path(command[command.index("--execution-inventory") + 1])
+            _write_inventory(
+                inventory_path, command, Path(cwd),
+                {f"lane.py::case_{index}": f"lane::case_{index}" for index in range(count)},
             )
         if mutate_source is not None and lane == "project_management/tests":
             mutate_source.write_text("changed during lanes\n", encoding="utf-8")

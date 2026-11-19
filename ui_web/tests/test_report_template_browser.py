@@ -1,9 +1,7 @@
 from pathlib import Path
-import socket
 
 from django.test import override_settings
 from django.urls import reverse
-from playwright.sync_api import sync_playwright
 
 from project_management.app.api import reports as report_api
 from project_management.app.domain.capture_values import canonical_bytes
@@ -16,12 +14,12 @@ from ui_web.facades.project_reports import ProjectReportFacade
 from ui_web.facades.report_templates import ProjectReportTemplateFacade
 from ui_web.tests.project_fixtures import ProjectRouteTestSupport
 from ui_web.tests.report_authoring_browser_support import (
+    BrowserPage,
     ReportAuthoringBrowserTestCase,
     browser_page,
     fetch_local_route_response,
     form_fields_from_request,
     fulfill_route_response,
-    local_only_connect,
 )
 
 
@@ -479,35 +477,9 @@ class TestReportTemplateBrowser(ReportAuthoringBrowserTestCase):
         self.assertEqual('PAINT-TABLE-HIGHLIGHT', observed['tableText'])
 
 
-class ProjectPage:
+class ProjectPage(BrowserPage):
     def __init__(self, url, language=None):
-        self.url = url
-        self.language = language
-
-    def __enter__(self):
-        self.original_connect = socket.socket.connect
-        socket.socket.connect = local_only_connect
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=True, channel='chrome')
-        self.context = self.browser.new_context(
-            http_credentials={'username': 'alice', 'password': 'wonder'},
-            viewport={'width': 1440, 'height': 1000},
-        )
-        if self.language:
-            self.context.add_cookies([{'name': 'django_language', 'value': self.language, 'url': self.url}])
-        self.page = self.context.new_page()
-        self.page.route('**/*', lambda route: route.continue_()
-                        if route.request.url.startswith(('http://127.0.0.1:', 'http://localhost:', 'data:', 'blob:'))
-                        else route.abort())
-        self.page.goto(self.url, wait_until='domcontentloaded')
-        return self.page
-
-    def __exit__(self, exc_type, exc, traceback):
-        try:
-            self.browser.close()
-            self.playwright.stop()
-        finally:
-            socket.socket.connect = self.original_connect
+        super().__init__(url, language=language, ready_selector=None)
 
 
 def project_page(url, language=None):

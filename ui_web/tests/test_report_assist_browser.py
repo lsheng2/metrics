@@ -123,7 +123,7 @@ class TestReportAssistBrowser(ReportHistoryUiBrowserSupport):
 
     def test_shouldKeepManualEditingAvailableWhenAiIsUnavailableInChinese(self):
         draft, env, note_id = self.assist_case()
-        env.service.backend = None
+        env.service.task_run_port = None
         with patch.object(ReportAssistView, 'service_factory', staticmethod(lambda: env.service)):
             with project_page(self.editor_url(draft.draft_id), language='zh-hans') as page:
                 region = self.daily_region(page, note_id)

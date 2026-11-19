@@ -43,7 +43,9 @@ class LifecycleStoppingMixin:
         observation = self.platform_ops.observe_process_exit(stop_pid) if owns_running_process else nullcontext(ProcessExitObservation(lambda: None))
         with observation as read_exit:
             wait_exit = read_exit.wait or (lambda seconds: self.platform_ops.wait_process_exit(stop_pid, seconds))
+            last_action = ""
             if spec_stop_command and owns_running_process:
+                last_action = "stop_command"
                 try:
                     self._run_stop_command(spec_stop_command, port, host, stop_pid, provenance)
                 except Exception:
@@ -63,6 +65,7 @@ class LifecycleStoppingMixin:
                     reason = f"{reason_prefix}identity_changed_before_terminate"
                 else:
                     self.platform_ops.terminate_process(stop_pid)
+                    last_action = "terminated"
                     forced = bool(getattr(self.platform_ops, "terminate_is_forceful", False))
                     if wait_exit(graceful_timeout_seconds):
                         stopped = True
@@ -71,12 +74,21 @@ class LifecycleStoppingMixin:
                         reason = f"{reason_prefix}identity_changed_before_kill"
                     else:
                         self.platform_ops.kill_process(stop_pid)
+                        last_action = "killed"
                         forced = True
                         stopped = wait_exit(2.0)
                         reason = f"{reason_prefix}{'killed' if stopped else 'kill_attempted'}"
-                if stopped and not self.platform_ops.wait_port_available(host, port, float(service.get("port_release_timeout_seconds", 2.0))):
-                    reason = "process_stopped_port_still_busy"
-            exit_code = read_exit() if stopped else None
+            observed_exit = read_exit()
+            # PID lookup can disappear after a timed wait; only the retained
+            # original process observation can turn that race into a known exit.
+            if not stopped and type(observed_exit) is int:
+                stopped = True
+                no_action_reason = "already_stopped" if observed_exit == 0 else "exited_before_terminate"
+                reason = f"{reason_prefix}{last_action or no_action_reason}"
+            if (stopped and last_action in {"terminated", "killed"}
+                    and not self.platform_ops.wait_port_available(host, port, float(service.get("port_release_timeout_seconds", 2.0)))):
+                reason = "process_stopped_port_still_busy"
+            exit_code = observed_exit if stopped else None
             result = StopResult(name=name, port=port, pid=stop_pid, stopped=stopped, forced=forced, reason=reason, provenance=provenance, exit_code=exit_code)
             if self._service_process_fully_stopped(pid, provenance, host, port, listener_identity_url):
                 self._pid_file(name, port).unlink(missing_ok=True)
@@ -160,20 +172,32 @@ class LifecycleStoppingMixin:
         forced = False
         stopped = False
         reason = "not_running"
+        exit_code = None
         if self.platform_ops.process_exists(pid):
             if expected_command and not self.platform_ops.process_matches_command(pid, expected_command):
                 return StopResult(name=name, port=port, pid=pid, stopped=False, forced=False, reason=f"{source}:identity_mismatch", stop_source=stop_source, force_requested=force_requested)
-            self.platform_ops.terminate_process(pid)
-            if self.platform_ops.wait_process_exit(pid, graceful_timeout_seconds):
-                stopped = True
+            with self.platform_ops.observe_process_exit(pid) as read_exit:
+                wait_exit = read_exit.wait or (lambda seconds: self.platform_ops.wait_process_exit(pid, seconds))
+                self.platform_ops.terminate_process(pid)
                 forced = bool(getattr(self.platform_ops, "terminate_is_forceful", False))
-                reason = "terminated"
-            else:
-                self.platform_ops.kill_process(pid)
-                forced = True
-                stopped = self.platform_ops.wait_process_exit(pid, 2.0)
-                reason = "killed" if stopped else "kill_attempted"
-        return StopResult(name=name, port=port, pid=pid, stopped=stopped, forced=forced, reason=f"{source}:{reason}", stop_source=stop_source, force_requested=force_requested)
+                last_action = "terminated"
+                if wait_exit(graceful_timeout_seconds) or type(read_exit()) is int:
+                    stopped = True
+                    reason = "terminated"
+                elif expected_command and not self.platform_ops.process_matches_command(pid, expected_command):
+                    reason = "identity_changed_before_kill"
+                else:
+                    self.platform_ops.kill_process(pid)
+                    last_action = "killed"
+                    forced = True
+                    stopped = wait_exit(2.0)
+                    reason = "killed" if stopped else "kill_attempted"
+                observed_exit = read_exit()
+                if not stopped and type(observed_exit) is int:
+                    stopped = True
+                    reason = last_action
+                exit_code = observed_exit if stopped else None
+        return StopResult(name=name, port=port, pid=pid, stopped=stopped, forced=forced, reason=f"{source}:{reason}", stop_source=stop_source, force_requested=force_requested, exit_code=exit_code)
 
     def _service_process_fully_stopped(self, registered_pid: int, provenance: ProcessProvenance | None, host: str, port: int, listener_identity_url: str = "") -> bool:
         if self.platform_ops.process_exists(registered_pid):

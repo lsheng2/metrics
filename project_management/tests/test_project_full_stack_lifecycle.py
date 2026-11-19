@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -13,7 +14,7 @@ import uuid
 
 import pytest
 
-from scripts.service_lifecycle_engine import ServiceLifecycleEngine, ServiceSpec, StopResult
+from scripts.service_lifecycle_engine import ProcessExitObservation, ServiceLifecycleEngine, ServiceSpec, StopResult
 from scripts.validation import project_full_stack
 from scripts.validation.project_full_stack_identity import (
     create_launch,
@@ -375,6 +376,7 @@ class FakePlatform:
         self.commands = {}
         self.service_by_pid = {}
         self.stdout_by_pid = {}
+        self.exit_code_by_pid = {}
         self.ports = {}
         self.next_pid = 1000
         self.graceful_after = graceful_after
@@ -438,10 +440,22 @@ class FakePlatform:
                 self.graceful_requested.add(pid)
                 launch = json.loads((stop_file.parent / 'launch.json').read_text(encoding='utf-8')) if stop_file else None
                 if launch:
+                    self.exit_code_by_pid[pid] = self.exit_code_by_service.get(launch['service'], 0)
                     write_exit_receipt(Path(launch['exit_file']), service=launch['service'], launch_id=launch['launch_id'],
-                                       pid=pid, exit_code=self.exit_code_by_service.get(launch['service'], 0))
+                                       pid=pid, exit_code=self.exit_code_by_pid[pid])
                 if self.service_by_pid.get(pid) == project_full_stack.APP_NAME:
                     append_worker_stop({'stdout_log': str(self.stdout_by_pid[pid])}, stopped=True)
+
+    def observe_process_exit(self, pid):
+        @contextmanager
+        def observation():
+            pid_value = int(pid)
+            yield ProcessExitObservation(
+                lambda: self.exit_code_by_pid.get(pid_value) if not self.processes.get(pid_value) else None,
+                lambda timeout: self.wait_process_exit(pid_value, timeout),
+            )
+
+        return observation()
 
     def terminate_process(self, pid):
         self.terminate_calls.append(int(pid))

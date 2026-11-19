@@ -67,7 +67,7 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
             self.assertEqual(('201', '202', '203'), tuple(
                 item['source_id'] for item in row.evidence if item['kind'] == 'comment'
             ))
-            self.assertEqual(('2026-11-02T00:00:30.000Z', accepted.summary_id, 1), (
+            self.assertEqual((None, accepted.summary_id, 1), (
                 row.summary_as_of,
                 row.summary_ref.summary_id,
                 row.summary_ref.revision,
@@ -125,7 +125,7 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
             snapshot.coverage['pending_count'],
             snapshot.coverage['complete'],
         ))
-        self.assertEqual((first['capture_id'], '2026-11-02T00:00:30.000Z'), (
+        self.assertEqual((first['capture_id'], None), (
             snapshot.rows[0].summary_ref.target_capture_id,
             snapshot.rows[0].summary_as_of,
         ))
@@ -442,17 +442,18 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
             source_key,
             ref,
             source,
-            f"{self.contract.profile_ref['key']}@{self.contract.profile_ref['revision']}",
+            self.contract.profile_ref,
         )
         attempt_id = str(uuid.uuid5(uuid.UUID(stage.id), prepared.input_hash))
+        request = self.contract.make_request(prepared, attempt_id, datetime.now(UTC) + timedelta(minutes=5))
         attempt = AnalysisAttempt(
             attempt_id,
             self.project.id,
             stage.id,
             source_key,
-            self.backend(),
+            self.principal(),
             prepared,
-            self.request_for_attempt(attempt_id, prepared),
+            request,
             self.contract.definition_hash,
             self.contract.output_schema_hash,
         )
@@ -460,7 +461,7 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
             output = self.output(prepared)
             output['evidence'] = ['fields']
         snapshot, result = self.responses(attempt, output=output)
-        candidate = self.contract.validate_result(attempt, snapshot, result)
+        candidate = self.contract.validate_result(attempt.prepared, attempt.request, snapshot, result)
         accepted = AcceptedSummary(
             str(uuid.uuid5(uuid.UUID(attempt_id), 'accepted')),
             1,
@@ -471,9 +472,9 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
             candidate,
             decode_json(canonical_bytes(result)),
         )
-        intent = {'schema_version': 1, 'kind': 'intent', 'attempt_id': attempt_id, 'payload': attempt}
+        intent = {'schema_version': 2, 'kind': 'intent', 'attempt_id': attempt_id, 'payload': attempt}
         dispatch = {
-            'schema_version': 1,
+            'schema_version': 2,
             'kind': 'dispatch',
             'attempt_id': attempt_id,
             'payload': {'intent_hash': content_hash(intent)},
@@ -483,7 +484,7 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
         files[f'analysis_attempts/{attempt_id}/intent.json'] = canonical_bytes(intent)
         files[f'analysis_attempts/{attempt_id}/dispatch.json'] = canonical_bytes(dispatch)
         files[accepted_path] = canonical_bytes({
-            'schema_version': 1,
+            'schema_version': 2,
             'kind': 'accepted',
             'attempt_id': attempt_id,
             'payload': {'summary': accepted, 'snapshot': snapshot},

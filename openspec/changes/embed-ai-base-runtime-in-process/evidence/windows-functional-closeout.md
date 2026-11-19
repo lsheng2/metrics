@@ -156,6 +156,99 @@ This validation-tool change requires the next clean input freeze.
 
 ## Remaining Gates
 
+### Broad Module Convergence
+
+The subsequent pre-freeze sweep retained actual module results rather than
+restarting frozen native qualification after every fixture issue. These are
+convergence checks, not final acceptance:
+
+- Metrics: 19 passed; bug_metrics: 250 passed; jira_sync: 32 passed.
+- UI raw summary: 120 failed, 613 passed, 49 errors. Most later errors followed
+  one Playwright close failure that left the synchronous event loop active.
+- Project raw summary: 942 passed, 33 failed. Failures were concentrated in
+  retired backend/dict fixture shapes, incomplete stat doubles and missing
+  process-exit observation on a lifecycle fake.
+- Scripts raw summary: 497 passed, two failed: a stale file-size allowance and
+  a native late-exit classification race.
+
+Raw results are under
+`functional-closeout-20261119/module-preflight-dca47b2c7dc942e48b3f21cf2f697a3b/`
+and `module-preflight-23f1bf9016bd4cdbac43dc18e1308fa8/`.
+Framework summary totals can include subtests and are not additive unique-case
+counts. No failing or diagnostic run is accepted as qualification.
+
+Execution inventory now observes collection, primary/subtest call reports,
+non-pass outcomes and deselection without changing execution. Reconciliation
+requires exact invocation/root/output binding and testcase identity coverage;
+only a total explained by the observed passed subtests may be corrected in a
+new derived XML. Original XML is never rewritten. Strict `validate_junit`
+remains unchanged. Actual metrics and bug_metrics runs confirmed respectively
+19+2 and 250+2 reports while retaining 19 and 250 primary testcase records.
+Evidence: `normalized-modules-06a55d70b343498399766cd469b0b833/result.json`,
+`qualified-report-green.xml` (91 checks), and `report-binding-green.xml`
+(40 focused report checks) under the closeout artifact directory.
+
+BrowserPage now owns an ExitStack for socket restoration, Playwright and
+browser closure; ProjectPage reuses it. Partial startup and close failures
+still propagate while remaining resources are unwound. The lifecycle matrix
+went from 13 failed/4 passed to 17 passed. The repaired UI checks passed 32
+cases in `ui-fixes-green.xml`; `browser-driver-fault.xml` also proves an
+owned driver failure does not leave a running loop and a new session opens.
+The Chinese unavailable fixture now disables `task_run_port`, not a retired
+`backend` attribute. The toolbar case retains its final heading/code assertions
+and waits for actual code-block focus/selection before typing. Its original
+intermittent failure was not reproduced separately; no product-editor cause is
+claimed. The UI gate now checks the documented isolated-runner file path.
+
+Typed project fixtures use the current principal, dataclasses, canonical JSON
+and codecs rather than restoring old backend or mapping interfaces. The
+affected group passed 72 cases; the stat double preserves all real stat fields
+except its deliberately changed inode, with five direct checks passing.
+
+SLE now reconciles late exit using the retained original observation, without
+weakening identity checks. A nonzero active exit cannot become a normal
+already-stopped result. PID-file recovery rechecks identity before follow-up
+kill; force requests remain distinct from actual force. Evidence:
+`sle-exit-race-red.xml`, `sle-nonzero-red.xml`,
+`sle-consumer-final-green.xml` (59 checks), and `sle-stuck-native.xml`.
+The stuck toy now remains blocked until force or a separate test-cleanup
+marker; process and port release are checked before that cleanup. Its old
+60-second natural expiry cannot serve as force proof.
+
+The first final qualifier at 0ab6412 reached the complete `ai_host` module:
+259 passed, two failed. Raw run:
+`qualifier-runs/eaca194d-129c-4a91-89a9-eeede94a4758/`.
+That failed module result is not qualification.
+
+The publication failure was an actual `database is locked` at the publication
+INSERT, after approval consumption. It is distinct from the historical SDK
+store-stop timing failures. A file-backed SQLite counterexample holds an audit
+write between the latest-publication SELECT and INSERT. The existing App lock
+still serializes publication/import/history; the latest-row SELECT now precedes
+the database transaction, whose first statement writes. No timeout or external
+import retry was added. `publication-contention-file-red.xml` records the RED;
+`publication-file-green.xml` records 10 passing file-backed publication checks,
+and `publication-owner-green.xml` records six owner checks in a separate process.
+A mixed-module attempt selected the wrong in-memory fixture and is not counted;
+the new regression explicitly requires a file-backed database.
+
+The report fixture failed at Git initialization in a 253-character archive
+directory. Actual GitRunner probes reproduced success at 230/244 and failure
+at 253, despite its existing per-command longpath option. The proposed change
+to separate Git metadata was rejected because it changed the persistent archive
+layout and would reject existing archives. The proposal is preserved in
+`functional-closeout-20261119/rejected-git-layout-proposal/`; all those storage
+changes were removed. Archive format and Git security policy remain unchanged.
+
+The qualifier instead allocates pytest working directories below
+`<owned_root>/qt/<run-id-hex>/<lane>`, separate from its verbose log paths.
+Canonical-path/reparse checks remain, and pytest still owns each fresh leaf.
+`qualifier-depth-red.xml` and `qualifier-depth-green.xml` record RED and 40 GREEN
+executor/profile checks. The original real report-recovery scenario passed
+under that layout in
+`functional-closeout-20261119/short-report-8c0678d896eb41f2a2461120c673d1f5/`.
+This qualifies the controlled validation layout, not arbitrary-depth Git roots.
+
 The d1f8448 refresh passed native56, complete74, recovery39, W2.R and
 migration/rollback. Its mapped run
 `mapped-proof-runs/b4c6da8c-aa8f-4c58-86ac-3aaa1341ea83/` then passed 40

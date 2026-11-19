@@ -104,6 +104,10 @@ does not rewrite its prior exit and permits an explicit later restart.
 An abnormal stop in the current restart attempt blocks subsequent setup/start.
 Identity is rechecked after
 waits before destructive escalation. No second process registry is introduced.
+If PID lookup disappears just after a wait, only the retained original process
+observation may confirm a late exit. A live changed identity remains protected
+from follow-up kill. A newly observed nonzero exit before any stop action is
+`exited_before_terminate`, not a normal already-stopped no-op.
 Normal startup prepares only its selected registered services; it does not
 implicitly recover or terminate processes from orphan PID files. The generic
 engine still accepts an explicit grace override, while Dashboard leaves that

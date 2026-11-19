@@ -5,7 +5,7 @@ import json
 import uuid
 
 from project_management.app.api.capture_archive import MembershipInput, PartCoverage, StoredSnapshotRef
-from project_management.app.domain.capture_values import canonical_bytes
+from project_management.app.domain.capture_values import canonical_bytes, decode_json
 from project_management.app.domain.summary_contracts import AnalysisAttempt
 from project_management.app.domain.task_runs import (
     TaskDispatch, TaskPrincipal, TaskResultSummary, TaskRunResult, TaskRunSnapshot,
@@ -119,3 +119,6 @@ class SummaryScenario(CaptureArchiveScenario):
             ),
         )
         return snapshot, result
+
+    def task_record(self, value):
+        return decode_json(canonical_bytes(value))

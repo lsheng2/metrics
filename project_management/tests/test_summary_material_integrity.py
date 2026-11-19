@@ -5,6 +5,7 @@ from unittest.mock import patch
 from project_management.app.domain.capture_values import canonical_bytes, content_hash, decode_json
 from project_management.app.domain.report_contracts import ReportError
 from project_management.app.domain.summary_contracts import AnalysisError
+from project_management.app.domain.task_run_codec import result_from_record, snapshot_from_record
 
 
 class TestSummaryMaterialIntegrity(unittest.TestCase):
@@ -35,10 +36,11 @@ class TestSummaryMaterialIntegrity(unittest.TestCase):
         fixture.setUp()
         archive, repository, _, paths = fixture.memory_reader_with_capture(return_paths=True)
         envelope = decode_json(repository.files[paths['accepted']])
-        snapshot = envelope['payload']['snapshot']
-        result = envelope['payload']['summary']['run_result']
+        snapshot = snapshot_from_record(envelope['payload']['snapshot'])
+        result = result_from_record(envelope['payload']['summary']['run_result'])
         envelope['payload']['summary']['summary_id'] = '74000000-0000-4000-8000-000000000999'
         repository.files[paths['accepted']] = canonical_bytes(envelope)
+        repository.owner_subject = fixture.actor.subject
         with patch.object(archive, '_analysis_repository', return_value=nullcontext(repository)):
             with self.assertRaises(AnalysisError):
                 archive.accept_analysis(fixture.actor, fixture.project.id, fixture.stage.id,
@@ -66,10 +68,13 @@ class TestSummaryMaterialIntegrity(unittest.TestCase):
         archive, repository, _, paths = fixture.memory_reader_with_capture(return_paths=True)
         envelope = decode_json(repository.files[paths['accepted']])
         before = dict(repository.files)
+        repository.owner_subject = fixture.actor.subject
         with patch.object(archive, '_analysis_repository', return_value=nullcontext(repository)):
             accepted = archive.accept_analysis(
                 fixture.actor, fixture.project.id, fixture.stage.id, envelope['attempt_id'],
-                envelope['payload']['snapshot'], envelope['payload']['summary']['run_result'], fixture.contract,
+                snapshot_from_record(envelope['payload']['snapshot']),
+                result_from_record(envelope['payload']['summary']['run_result']),
+                fixture.contract,
             )
         self.assertEqual(envelope['payload']['summary']['summary_id'], accepted.summary_id)
         self.assertEqual(before, repository.files)

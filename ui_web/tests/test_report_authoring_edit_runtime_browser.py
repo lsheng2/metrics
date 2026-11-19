@@ -302,6 +302,15 @@ class TestReportAuthoringEditRuntimeBrowser(ReportAuthoringBrowserTestCase):
             page.keyboard.press('Enter')
             toolbar.locator('select[data-report-command="code-block"]').select_option('json')
             note.locator('.ProseMirror pre code').wait_for(state='attached')
+            page.wait_for_function("""region => {
+                const editor = region.querySelector('.ProseMirror');
+                const heading = editor?.querySelector('h2');
+                const code = editor?.querySelector('pre[data-language="json"] code');
+                const selection = window.getSelection();
+                return heading?.textContent.includes('Toolbar heading') &&
+                    document.activeElement === editor && code && selection?.isCollapsed &&
+                    code.contains(selection.anchorNode) && code.contains(selection.focusNode);
+            }""", arg=note.element_handle())
             page.keyboard.type('{"ok": true}')
 
             task = self._blank_note(page, 1)

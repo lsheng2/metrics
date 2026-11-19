@@ -86,6 +86,7 @@ def test_sle_real_serve_start_reroutes_around_foreign_listener_and_preserves_it(
 def test_sle_stuck_owned_process_escalates_after_grace_and_is_abnormal(tmp_path: Path) -> None:
     port = find_free_port()
     stop_file = tmp_path / "stuck.stop"
+    cleanup_file = tmp_path / "stuck.cleanup"
     lifecycle = ServiceLifecycleEngine(
         "test-project",
         tmp_path,
@@ -99,14 +100,15 @@ def test_sle_stuck_owned_process_escalates_after_grace_and_is_abnormal(tmp_path:
             sys.executable,
             "-c",
             (
-                "import socket, sys, time; "
+                "import pathlib, socket, sys, time; "
                 "sock=socket.socket(); "
                 "sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); "
                 "sock.bind(('127.0.0.1', int(sys.argv[1]))); "
-                "sock.listen(); "
-                "time.sleep(60)"
+                "sock.listen()\n"
+                "while not pathlib.Path(sys.argv[2]).exists(): time.sleep(0.02)"
             ),
             "{port}",
+            str(cleanup_file),
         ],
         stop_command=[
             sys.executable,
@@ -121,9 +123,14 @@ def test_sle_stuck_owned_process_escalates_after_grace_and_is_abnormal(tmp_path:
     started = time.monotonic()
     try:
         result = lifecycle.stop_service("django", graceful_timeout_seconds=spec.graceful_timeout_seconds)
+        stopped_before_cleanup = not process_exists(state.pid)
+        port_released_before_cleanup = is_port_available("127.0.0.1", port)
     finally:
-        if process_exists(state.pid):
-            kill_process(state.pid)
+        cleanup_file.touch()
+        if process_exists(state.pid) and not lifecycle.platform_ops.wait_process_exit(state.pid, 5.0):
+            if lifecycle.platform_ops.process_matches_command(state.pid, state.command):
+                kill_process(state.pid)
+            assert not process_exists(state.pid), "Owned toy process survived cleanup"
 
     assert time.monotonic() - started >= spec.graceful_timeout_seconds
     assert result.stopped is True
@@ -131,6 +138,8 @@ def test_sle_stuck_owned_process_escalates_after_grace_and_is_abnormal(tmp_path:
     assert result.forced is True
     assert result.force_requested is False
     assert stop_file.exists()
+    assert stopped_before_cleanup
+    assert port_released_before_cleanup
 
 
 def real_serve_spec(tmp_path: Path, ports: list[int], stop_file: Path, environment: dict[str, str]) -> ServiceSpec:

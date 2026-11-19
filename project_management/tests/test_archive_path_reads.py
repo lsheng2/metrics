@@ -59,7 +59,9 @@ def test_opened_file_identity_and_hardlink_refusals_remain(tmp_path, monkeypatch
 
     def replaced(fd):
         info = original(fd)
-        return SimpleNamespace(st_dev=info.st_dev, st_ino=info.st_ino + 1)
+        values = {name: getattr(info, name) for name in dir(info) if name.startswith('st_')}
+        values['st_ino'] = info.st_ino + 1
+        return SimpleNamespace(**values)
 
     monkeypatch.setattr(os, 'fstat', replaced)
     with pytest.raises(ArchiveError) as error:
