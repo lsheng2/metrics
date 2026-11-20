@@ -161,7 +161,8 @@ def test_performance_driver_prepares_raw_root_before_benchmark(monkeypatch, tmp_
     monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
 
     def fake_benchmark(root, python, window, *, recipe):
-        assert root.exists()
+        assert not root.exists()
+        root.mkdir(parents=True)
         payload = performance_measurement_payload()
         payload.update(performance_transport_payload())
         payload["resolved_inputs"] = resolved_inputs_payload()
@@ -174,6 +175,71 @@ def test_performance_driver_prepares_raw_root_before_benchmark(monkeypatch, tmp_
 
     assert receipt["status"] == "PASS"
     assert (tmp_path / "out-performance-run" / "raw").is_dir()
+
+
+def test_performance_driver_captures_environment_under_guard(monkeypatch, tmp_path):
+    from scripts.validation import windows_host_environment as environment
+    from scripts.validation import windows_host_performance as performance
+    from scripts.validation import windows_host_benchmark as benchmark
+
+    request = _driver_request(tmp_path)
+    calls = []
+
+    def guarded_environment_identity(request_arg, directory):
+        calls.append(Path(directory).name)
+        assert (request_arg["_paths"]["owned_root"] / "HEAVY_RUN_ACTIVE").exists()
+        return _environment_identity_payload(directory)
+
+    monkeypatch.setattr(performance, "environment_identity", guarded_environment_identity)
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
+    monkeypatch.setattr(benchmark, "run_benchmark", lambda root, python, window, *, recipe: _benchmark_payload())
+
+    receipt = performance.run_performance(request, mode="certify")
+
+    assert receipt["status"] == "PASS"
+    assert calls == ["before-capture", "after-capture"]
+
+
+def test_performance_driver_lets_real_benchmark_own_raw_root(monkeypatch, tmp_path):
+    from scripts.validation import windows_host_environment as environment
+    from scripts.validation import windows_host_performance as performance
+    from scripts.validation import windows_host_benchmark as benchmark
+
+    request = _driver_request(tmp_path)
+    monkeypatch.setattr(performance, "environment_identity", lambda request, directory: _environment_identity_payload(directory))
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
+
+    phase_roots = []
+
+    def fake_phase(root, python, *, production, window, recipe=None):
+        phase_roots.append(root)
+        assert root.parent.name == "raw"
+        assert root.parent.is_dir()
+        payload = performance_measurement_payload()
+        payload.update(performance_transport_payload())
+        payload["resolved_inputs"] = resolved_inputs_payload(production=production)
+        payload["processes"] = {"cleanup": _normal_cleanup()}
+        return payload
+
+    monkeypatch.setattr(benchmark, "phase", fake_phase)
+
+    receipt = performance.run_performance(request, mode="certify")
+
+    assert receipt["status"] == "PASS"
+    assert [root.name for root in phase_roots] == ["development", "production"]
+
+
+def test_real_benchmark_refuses_reused_nonempty_raw_root(tmp_path):
+    from scripts.validation.windows_host_benchmark import run_benchmark
+
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    (raw / "stale.json").write_text("stale\n", encoding="utf-8")
+
+    with pytest.raises(FileExistsError):
+        run_benchmark(raw, tmp_path / "python.exe", object(), recipe={"blocks": 1, "per_block": 1, "warmup": 1})
 
 
 def test_late_guard_release_failure_replaces_authoritative_pass_output(monkeypatch, tmp_path):
@@ -200,6 +266,14 @@ def test_late_guard_release_failure_replaces_authoritative_pass_output(monkeypat
 
     assert receipt["status"] == "FAIL"
     assert _read_json(request["_paths"]["output"])["status"] == "FAIL"
+
+
+def _benchmark_payload():
+    payload = performance_measurement_payload()
+    payload.update(performance_transport_payload())
+    payload["resolved_inputs"] = resolved_inputs_payload()
+    payload["processes"] = {"cleanup": _normal_cleanup()}
+    return {"development": payload, "production": {**payload, "resolved_inputs": resolved_inputs_payload(production=True)}}
 
 def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: int | None = None,
                   asset_prefix: str = "/ai/assets/"):

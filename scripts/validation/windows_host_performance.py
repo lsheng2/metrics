@@ -72,12 +72,11 @@ def run_performance(request: dict, *, mode: str) -> dict:
         "errors": [],
     }
     try:
-        before_path = environment_dir / "before.json"
-        write_json(before_path, _environment_identity(request, environment_dir / "before-capture"))
-        receipt["environment_before"] = _artifact(before_path, digest_file)
         with MeasurementWindow(request["_paths"]["owned_root"], run_dir, Path(request["source"]["repository"])) as window:
+            before_path = environment_dir / "before.json"
+            write_json(before_path, _environment_identity(request, environment_dir / "before-capture"))
+            receipt["environment_before"] = _artifact(before_path, digest_file)
             raw_root = run_dir / "raw"
-            raw_root.mkdir()
             raw = run_benchmark(raw_root, request["_paths"]["python"], window, recipe=recipe_for_mode(mode))
             for phase, payload in raw.items():
                 measurement_path = measurements_dir / f"{phase}.json"
