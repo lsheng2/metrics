@@ -2208,9 +2208,6 @@ msgstr "此 Jira 上下文没有发现可用的元数据值。"
 msgid "Jira metadata reference"
 msgstr "Jira 元数据参考"
 
-msgid "Reference only. Copy values into semantic mapping fields when they match this scope."
-msgstr "仅供参考。值与此范围匹配时，请复制到语义映射字段。"
-
 msgid "Refresh semantic metadata reference"
 msgstr "刷新语义元数据参考"
 
@@ -2232,6 +2229,3 @@ msgstr[1] "还有 %(count)s 项"
 
 msgid "Refresh metadata to load Jira candidates for bug types, priorities, statuses, resolutions and fields."
 msgstr "刷新元数据以加载 Jira 的缺陷类型、优先级、状态、解决结果和字段候选项。"
-
-msgid "Collapsed by default; refresh does not save the scope."
-msgstr "默认收起；刷新不会保存此范围。"

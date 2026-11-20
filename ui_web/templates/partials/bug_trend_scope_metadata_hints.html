@@ -1,10 +1,6 @@
 {% load i18n %}
 {% url 'ui_web:bug_trend_scope_metadata' as scope_metadata_url %}
 <div class="scope-metadata-hint-toolbar">
-    <div>
-        <span class="scope-config-kicker">{% trans "Jira metadata reference" %}</span>
-        <p class="provider-section-help">{% trans "Reference only. Copy values into semantic mapping fields when they match this scope." %}</p>
-    </div>
     {% if scope_metadata_hint_context.supported %}
         <button class="button is-small" type="button"
                 aria-label="{% trans "Refresh semantic metadata reference" %}"
