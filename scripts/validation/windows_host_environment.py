@@ -14,6 +14,7 @@ import uuid
 
 from scripts.validation.project_full_stack_support import read_json, write_json
 from scripts.validation.windows_host_processes import classify_process_observations, enrich_process_observations
+from scripts.validation.windows_host_process_identity import sanitize_process_rows
 
 
 def source_snapshot(root):
@@ -28,19 +29,15 @@ def source_snapshot(root):
 
 
 def _windows_process_details(processes):
-    relevant_names = {
-        str(row.get('name') or '').casefold()
-        for row in processes
-        if str(row.get('name') or '').casefold().startswith('python') or str(row.get('name') or '').casefold() == 'py.exe'
+    target_pids = {
+        int(row['pid']) for row in processes
+        if str(row.get('name') or '').casefold().startswith(('python', 'py.', 'git'))
     }
-    if not relevant_names:
+    if not target_pids:
         return {}
-    names_literal = ','.join(json.dumps(name) for name in sorted(relevant_names))
     script = (
-        f"$names=@({names_literal});"
         "Get-CimInstance Win32_Process | "
-        "Where-Object { $names -contains $_.Name.ToLowerInvariant() } | "
-        "Select-Object ProcessId,CommandLine,CreationDate,ExecutablePath | "
+        "Select-Object ProcessId,Name,CommandLine,@{Name='CreationDate';Expression={$_.CreationDate.ToString()}},ExecutablePath | "
         "ConvertTo-Json -Compress"
     )
     completed = subprocess.run(
@@ -48,11 +45,7 @@ def _windows_process_details(processes):
         capture_output=True, text=True, timeout=20, check=False,
     )
     if completed.returncode or not completed.stdout.strip():
-        return {
-            int(row['pid']): {'sensor_error': 'process_detail_unavailable'}
-            for row in processes
-            if str(row.get('name') or '').casefold() in relevant_names
-        }
+        return {pid: {'sensor_error': 'process_detail_unavailable'} for pid in target_pids}
     try:
         payload = json.loads(completed.stdout)
     except json.JSONDecodeError:
@@ -64,6 +57,8 @@ def _windows_process_details(processes):
         try:
             pid = int(row.get('ProcessId'))
         except (TypeError, ValueError):
+            continue
+        if pid not in target_pids:
             continue
         details[pid] = {
             'command_line': row.get('CommandLine') or '',
@@ -147,10 +142,7 @@ class MeasurementWindow:
         self.owned_process_identities.update(str(identity) for identity in identities if identity)
 
     def _collect(self):
-        try:
-            snapshot = machine_snapshot(source_root=self.source_root, owned_root=self.guard.parent)
-        except TypeError:
-            snapshot = machine_snapshot()
+        snapshot = machine_snapshot(source_root=self.source_root, owned_root=self.guard.parent)
         row = {
             'utc': datetime.now(UTC).isoformat(),
             'monotonic': time.monotonic(),
@@ -169,8 +161,9 @@ class MeasurementWindow:
             total = row['cpu']['kernel'] - old['kernel'] + row['cpu']['user'] - old['user']
             idle = row['cpu']['idle'] - old['idle']
             row['cpu_busy_percent'] = None if total <= 0 else 100 * (total - idle) / total
-        self.record['snapshots'].append(row)
-        self._stream.write(json.dumps(row, allow_nan=False) + '\n')
+        persisted = {**row, 'processes': sanitize_process_rows(row.get('processes', []))}
+        self.record['snapshots'].append(persisted)
+        self._stream.write(json.dumps(persisted, allow_nan=False) + '\n')
         self._stream.flush()
 
     def _monitor(self):

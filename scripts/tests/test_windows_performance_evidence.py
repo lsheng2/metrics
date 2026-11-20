@@ -158,7 +158,7 @@ def test_performance_driver_prepares_raw_root_before_benchmark(monkeypatch, tmp_
     request = _driver_request(tmp_path)
     monkeypatch.setattr(performance, "environment_identity", lambda request, directory: _environment_identity_payload(directory))
     monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
-    monkeypatch.setattr(environment, "machine_snapshot", lambda: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
 
     def fake_benchmark(root, python, window, *, recipe):
         assert root.exists()
@@ -184,7 +184,7 @@ def test_late_guard_release_failure_replaces_authoritative_pass_output(monkeypat
     request = _driver_request(tmp_path)
     monkeypatch.setattr(performance, "environment_identity", lambda request, directory: _environment_identity_payload(directory))
     monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
-    monkeypatch.setattr(environment, "machine_snapshot", lambda: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
 
     def fake_benchmark(root, python, window, *, recipe):
         payload = performance_measurement_payload()

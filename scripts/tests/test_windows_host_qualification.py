@@ -96,7 +96,7 @@ def test_measurement_window_refuses_overlap_and_detects_source_drift(tmp_path, m
 
     identity = {'head': 'before'}
     monkeypatch.setattr(environment, 'source_snapshot', lambda root: dict(identity))
-    monkeypatch.setattr(environment, 'machine_snapshot', lambda: {'processes': [], 'cpu': {'idle': 1, 'kernel': 2, 'user': 3}})
+    monkeypatch.setattr(environment, 'machine_snapshot', lambda **kwargs: {'processes': [], 'cpu': {'idle': 1, 'kernel': 2, 'user': 3}})
     run = tmp_path / 'run'
     run.mkdir()
     with pytest.raises(ValueError, match='source'):
@@ -113,7 +113,7 @@ def test_measurement_window_never_removes_another_owners_guard(tmp_path, monkeyp
     from scripts.validation import windows_host_environment as environment
 
     monkeypatch.setattr(environment, 'source_snapshot', lambda root: {'head': 'unchanged'})
-    monkeypatch.setattr(environment, 'machine_snapshot', lambda: {'processes': [], 'cpu': {'idle': 1, 'kernel': 2, 'user': 3}})
+    monkeypatch.setattr(environment, 'machine_snapshot', lambda **kwargs: {'processes': [], 'cpu': {'idle': 1, 'kernel': 2, 'user': 3}})
     run = tmp_path / 'run'
     run.mkdir()
     with pytest.raises(ValueError, match='guard'):
