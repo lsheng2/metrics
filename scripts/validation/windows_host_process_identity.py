@@ -300,6 +300,20 @@ def _descendant_pids(root_pid, rows):
     return owned
 
 
+def driver_process_identities(process_rows, driver_pid):
+    by_pid = {row["pid"]: row for row in process_rows if type(row.get("pid")) is int}
+    row = by_pid.get(driver_pid)
+    identities, visited = set(), set()
+    while row and row.get("identity") and row["pid"] not in visited:
+        visited.add(row["pid"])
+        identities.add(row["identity"])
+        parent = by_pid.get(row.get("parent_pid"))
+        if not row.get("command") or not parent or not _commands_match(row["command"], parent.get("command")):
+            break
+        row = parent
+    return identities
+
+
 def startup_owned_identities_from_run(run_root, process_rows, *, pending_launches=()):
     rows = []
     by_pid = {}

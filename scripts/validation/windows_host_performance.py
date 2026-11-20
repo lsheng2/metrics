@@ -120,8 +120,7 @@ def run_performance(request: dict, *, mode: str) -> dict:
         return receipt
     except Exception as error:
         _mark_failed(receipt, error)
-        if output.exists():
-            write_json(output, receipt, replace=True)
+        write_json(output, receipt, replace=output.exists())
         failure = run_dir / "performance-failure.json"
         write_json(failure, receipt, replace=failure.exists())
         return receipt

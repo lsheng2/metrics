@@ -15,7 +15,7 @@ import uuid
 from scripts.validation.project_full_stack_support import read_json, write_json
 from scripts.validation.windows_host_processes import classify_process_observations, enrich_process_observations
 from scripts.validation.windows_host_process_identity import (
-    _command_is_bound_to_run_root, sanitize_process_rows, startup_owned_identities_from_run,
+    _command_is_bound_to_run_root, driver_process_identities, sanitize_process_rows, startup_owned_identities_from_run,
 )
 
 
@@ -162,10 +162,12 @@ class MeasurementWindow:
         startup_identities = startup_owned_identities_from_run(
             self.run_root, row.get('processes', []), pending_launches=tuple(self.launch_intents),
         )
-        owned_identities = self.owned_process_identities | startup_identities['identities']
+        driver_identities = driver_process_identities(row.get('processes', []), os.getpid())
+        owned_identities = self.owned_process_identities | startup_identities['identities'] | driver_identities
         row['ownership_setup'] = {
             'elapsed_ms': (time.monotonic() - setup_started) * 1000,
             'registered_identity_count': len(self.owned_process_identities),
+            'driver_identity_count': len(driver_identities),
             'startup_identity_count': len(startup_identities['identities']),
             'startup_matches': startup_identities['matches'],
         }

@@ -219,6 +219,12 @@ predeclaration. Exact argv, current driver parent and canonical run-root
 membership establish ownership before SLE's slower provenance capture publishes
 `prepared`. Ambiguous or foreign roots remain failures; later registration
 never erases an earlier foreign-workload error.
+Current-driver identity and matching launcher ancestry are separately observed,
+so absolute command paths cannot self-block and do not whitelist another run.
+Aggregate `sha256` binds the validated receipt; `producer_input_sha256` names
+its input separately. Accepted-input producer errors publish a failed requested
+output even before sampling. A late failure may invalidate a previous success
+witness: fail-closed diagnostics do not receive a fabricated ownership witness.
 
 ### PERF.PROBE: Correct The Measurement Chain
 

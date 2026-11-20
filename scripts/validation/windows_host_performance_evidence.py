@@ -311,7 +311,7 @@ def validate_performance_result(receipt: dict, request: dict, *, require_witness
         "collection_status": receipt.get("collection_status"),
         "violations": violations,
         "acceptance_eligible": eligible,
-        "sha256": digest_file(producer_path),
+        "producer_input_sha256": digest_file(producer_path),
     }
 
 
@@ -321,4 +321,4 @@ def validate_bound_receipt(key: str, path: Path, request: dict) -> dict:
     result = validate_performance_result(receipt, request)
     if key.endswith(":performance") and not result["acceptance_eligible"]:
         raise QualificationError("performance evidence is not certification eligible")
-    return result
+    return {**result, "sha256": digest_file(path)}

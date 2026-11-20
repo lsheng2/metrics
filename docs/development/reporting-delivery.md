@@ -68,6 +68,12 @@ Performance launch intent is registered before seed/host process creation.
 Ownership requires the exact resolved argv, current driver parent, canonical
 run-root argument and observed descendant identities, including the interval
 before SLE publishes `prepared`. No foreign-process error is cleared or ignored.
+The observed current driver and exact-command interpreter-wrapper ancestors
+are owned tooling even for absolute CLI paths; another driver remains foreign.
+Accepted coverage hashes identify the receipt, with the input hash named
+`producer_input_sha256` separately. Producer failures publish `FAIL` to the
+requested output. Late failure invalidates any earlier success witness;
+failed/incomplete receipts are diagnostic artifacts, never acceptance proof.
 
 Windows B5 shutdown qualification requires two complementary proofs under the
 approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):

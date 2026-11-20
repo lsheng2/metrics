@@ -224,3 +224,81 @@ def test_predeclared_launch_rejects_near_miss_ownership(tmp_path, fault):
         {"command": command, "parent_pid": 1},
     ])
     assert result["identities"] == set()
+
+
+def test_aggregate_binding_reports_receipt_hash_not_input_hash(tmp_path):
+    from scripts.validation.windows_qualification_evidence import validate_binding
+    from scripts.validation.windows_qualification_inputs import digest_file
+
+    receipt, request = _receipt_case(tmp_path, mode="certify")
+    path = Path(receipt["run_directory"]) / "receipt.json"
+    key = "clause:10.4:B3-incremental-timing:performance"
+    binding = {
+        "kind": "windows-host-performance", "path": str(path), "sha256": digest_file(path),
+        "covers": [key], "fresh": True, "source_commit": request["source"]["commit"],
+        "candidate_wheel_sha256": request["candidate"]["wheel_sha256"],
+        "fixture_vector_sha256": request["fixtures"]["fixture_vector_sha256"],
+    }
+    result = validate_binding(key, binding, request, (Path(request["source"]["repository"]), tmp_path))
+    assert result["sha256"] == digest_file(path)
+    assert result["producer_input_sha256"] == digest_file(request["_paths"]["inputs"])
+    assert result["sha256"] != result["producer_input_sha256"]
+
+
+def test_early_producer_failure_publishes_requested_failure_output(tmp_path, monkeypatch):
+    from scripts.tests.test_windows_performance_evidence import _driver_request
+    from scripts.validation import windows_host_environment as environment
+    from scripts.validation import windows_host_performance as performance
+
+    request = _driver_request(tmp_path)
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {
+        "processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3},
+    })
+    monkeypatch.setattr(performance, "environment_identity",
+                        lambda *args: (_ for _ in ()).throw(OSError("environment unavailable")))
+    receipt = performance.run_performance(request, mode="certify")
+    assert receipt["status"] == "FAIL"
+    assert _read_json(request["_paths"]["output"]) == receipt
+    assert receipt["acceptance_eligible"] is False
+    assert not (tmp_path / "HEAVY_RUN_ACTIVE").exists()
+
+
+@pytest.mark.parametrize("foreign", [False, True])
+def test_absolute_driver_and_redirector_are_owned_but_unrelated_driver_is_not(tmp_path, monkeypatch, foreign):
+    import os
+    import subprocess
+    from scripts.validation import windows_host_environment as environment
+    from scripts.validation.windows_host_process_identity import enrich_process_observations
+
+    run = tmp_path / "run"
+    run.mkdir()
+    command = ["python.exe", "-I", str(tmp_path / "scripts/validation/windows_host_qualification.py")]
+    rows = [
+        {"pid": os.getpid(), "parent_pid": 91, "name": "python.exe"},
+        {"pid": 91, "parent_pid": 90, "name": "python.exe"},
+    ]
+    if foreign:
+        rows.append({"pid": 99, "parent_pid": 90, "name": "python.exe"})
+    details = {row["pid"]: {
+        "command_line": subprocess.list2cmdline(command), "creation_date": "2026-11-21T00:00:00",
+    } for row in rows}
+    observed = enrich_process_observations(rows, details, source_root=tmp_path, owned_root=tmp_path)
+    assert all(row["metrics_workload"] for row in observed)
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "source"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {
+        "processes": observed, "cpu": {"idle": 1, "kernel": 2, "user": 3},
+    })
+
+    def exercise():
+        with environment.MeasurementWindow(tmp_path, run, tmp_path) as window:
+            verdict = run / "receipt.json"
+            verdict.write_text("{}\n", encoding="utf-8")
+            window.bind_verdict(verdict)
+        return window.record
+
+    if foreign:
+        with pytest.raises(ValueError, match="foreign_relevant:99"):
+            exercise()
+    else:
+        assert exercise()["result"] == "PASS"
