@@ -3,13 +3,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from playwright.sync_api import sync_playwright
 
 from bug_metrics.models import BugTrendAuditEvent, BugTrendCalculationRun, BugTrendScopeProviderBinding, JiraScopeConfig
-from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
+from jira_sync.app.api.scope_metadata import ApiForScopeMetadata, ScopeConfigOptions, TrackerFieldOption, TrackerOption
 from jira_history.models import JiraIssue
 
 
@@ -23,6 +24,153 @@ from ui_web.tests.bug_trend_scope_config_test_support import (
     FakeSuccessfulScopeMetadataFacade,
 )
 from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport
+
+
+class BrowserScopeMetadataProvider:
+    def discover_options(self, query: str, selected_projects: list[str], selected_item_types: list[str]):
+        if 'ERR' in query or 'ERR' in selected_projects:
+            raise RuntimeError('Synthetic metadata unavailable')
+        if 'ALT' in query or 'ALT' in selected_projects:
+            return ScopeConfigOptions(
+                projects=[TrackerOption('ALT', 'ALT')],
+                item_types=[TrackerOption('bug-alt', 'Regression Bug')],
+                statuses=[TrackerOption('triaged', 'Triaged'), TrackerOption('resolved', 'Resolved')],
+                resolutions=[TrackerOption('verified', 'Verified')],
+                priorities=[TrackerOption('p0', 'P0-Blocker')],
+                fields=[TrackerFieldOption('customfield_alt_severity', 'Synthetic severity', 'Synthetic severity (customfield_alt_severity)')],
+                components=[TrackerOption('platform', 'Platform')],
+                versions=[TrackerOption('2026.alt', '2026.alt')],
+            )
+        return ScopeConfigOptions(
+            projects=[TrackerOption('STDEL', 'STDEL')],
+            item_types=[TrackerOption('bug', 'Bug')],
+            statuses=[TrackerOption('open', 'Open'), TrackerOption('fixed', 'Fixed')],
+            resolutions=[TrackerOption('done', 'Done')],
+            priorities=[TrackerOption('p1', 'P1-Critical')],
+            fields=[TrackerFieldOption('priority', 'Priority', 'Priority')],
+            components=[TrackerOption('emulation', 'Emulation')],
+            versions=[TrackerOption('2026.01', '2026.01')],
+        )
+
+    def discover_field_values(self, project_id: str, item_type_ids: list[str], field_id: str):
+        return [TrackerOption('browser-value', 'Browser value')]
+
+
+@override_settings(WHITENOISE_AUTOREFRESH=True)
+class TestBugTrendScopeMetadataBrowser(StaticLiveServerTestCase):
+    def test_shouldRefreshLoadedMetadataReferenceThroughHtmxWithoutSavingSemanticFields(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL live htmx metadata hint',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            critical_high_values=['P1-Critical'],
+            source_mode=JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER,
+            query_builder_state={'project': 'STDEL', 'issue_types': ['Bug']},
+        )
+        original_hash = scope.config_version_hash
+        provider = BrowserScopeMetadataProvider()
+        facade = BugTrendFacade(
+            bug_trend_api,
+            ApiForScopeMetadata({'jira': provider}, cache_timeout_seconds=0),
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = facade
+            result = self._exercise_htmx_refresh(scope.id)
+        scope.refresh_from_db()
+
+        # Then
+        self.assertEqual(original_hash, scope.config_version_hash)
+        self.assertEqual(['Bug'], scope.bug_type_values)
+        self.assertEqual(['P1-Critical'], scope.critical_high_values)
+        self.assertFalse(result['initial_open'])
+        self.assertTrue(result['open_after_refresh'])
+        self.assertEqual('Unsaved Browser Bug', result['bug_type_value'])
+        self.assertEqual('Unsaved Browser Critical', result['critical_high_value'])
+        self.assertIn('P1-Critical', result['before_hint'])
+        self.assertIn('Bug', result['before_hint'])
+        self.assertIn('P0-Blocker', result['after_hint'])
+        self.assertIn('Regression Bug', result['after_hint'])
+        self.assertNotIn('P1-Critical', result['after_hint'])
+
+    def test_shouldRenderProviderBoundaryMetadataErrorInBrowser(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL live htmx metadata error',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            source_mode=JiraScopeConfig.SOURCE_MODE_QUERY_BUILDER,
+            query_builder_state={'project': 'ERR', 'issue_types': ['Bug']},
+        )
+        original_hash = scope.config_version_hash
+        facade = BugTrendFacade(
+            bug_trend_api,
+            ApiForScopeMetadata({'jira': BrowserScopeMetadataProvider()}, cache_timeout_seconds=0),
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = facade
+            text = self._loaded_hint_text(scope.id, 'ERR')
+        scope.refresh_from_db()
+
+        # Then
+        self.assertEqual(original_hash, scope.config_version_hash)
+        self.assertIn('Metadata refresh failed: Synthetic metadata unavailable', text)
+        self.assertIn('Metadata refresh could not load the reference.', text)
+
+    def _exercise_htmx_refresh(self, scope_id):
+        url = (
+            self.live_server_url
+            + reverse('ui_web:bug_trend_scope_config')
+            + f'?scope_id={scope_id}&refresh_metadata=1&source_mode=query_builder'
+            + '&query_builder_project=STDEL&query_builder_issue_types=Bug'
+        )
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            try:
+                page = browser.new_page(viewport={'width': 1280, 'height': 900})
+                page.goto(url, wait_until='domcontentloaded')
+                page.wait_for_selector('.scope-semantic-metadata-reference')
+                initial_open = page.locator('.scope-semantic-metadata-reference').evaluate('node => node.open')
+                page.locator('.scope-semantic-metadata-reference').evaluate('node => { node.open = true; }')
+                before_hint = page.locator('#scope-semantic-metadata-hints-content').inner_text()
+                page.fill('#scope-bug-types', 'Unsaved Browser Bug')
+                page.fill('#scope-critical-high', 'Unsaved Browser Critical')
+                page.fill('#query-builder-project', 'ALT')
+                page.locator('#scope-semantic-metadata-hints-content button[hx-get]').click()
+                page.wait_for_function(
+                    "() => document.querySelector('#scope-semantic-metadata-hints-content')?.innerText.includes('P0-Blocker')",
+                )
+                return {
+                    'initial_open': initial_open,
+                    'open_after_refresh': page.locator('.scope-semantic-metadata-reference').evaluate('node => node.open'),
+                    'bug_type_value': page.locator('#scope-bug-types').input_value(),
+                    'critical_high_value': page.locator('#scope-critical-high').input_value(),
+                    'before_hint': before_hint,
+                    'after_hint': page.locator('#scope-semantic-metadata-hints-content').inner_text(),
+                }
+            finally:
+                browser.close()
+
+    def _loaded_hint_text(self, scope_id, project):
+        url = (
+            self.live_server_url
+            + reverse('ui_web:bug_trend_scope_config')
+            + f'?scope_id={scope_id}&refresh_metadata=1&source_mode=query_builder'
+            + f'&query_builder_project={project}&query_builder_issue_types=Bug'
+        )
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            try:
+                page = browser.new_page(viewport={'width': 1280, 'height': 900})
+                page.goto(url, wait_until='domcontentloaded')
+                page.wait_for_selector('#scope-semantic-metadata-hints-content', state='attached')
+                return page.locator('#scope-semantic-metadata-hints-content').text_content()
+            finally:
+                browser.close()
 
 
 class TestBugTrendScopeMetadataViews(BugTrendScopeConfigViewTestSupport, TestCase):

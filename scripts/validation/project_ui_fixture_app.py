@@ -21,6 +21,26 @@ class ProjectUiFixtureAppConfig(AppConfig):
             return cls.from_records(records)
 
         ProjectProviderProfileRegistry.load_default = classmethod(load_synthetic_default)
+        self._install_scope_metadata_fixture()
+
+    def _install_scope_metadata_fixture(self):
+        from jira_sync import container as jira_container_module
+        from jira_sync.app.api.scope_metadata import ApiForScopeMetadata
+        from ui_web import container as ui_container_module
+
+        class SyntheticJiraSyncContainer:
+            @property
+            def jira_sync_api(self):
+                return jira_container_module.jira_sync_api
+
+            @property
+            def scope_metadata_api(self):
+                return ApiForScopeMetadata({'jira': SyntheticScopeMetadataProvider()}, cache_timeout_seconds=0)
+
+        synthetic_container = SyntheticJiraSyncContainer()
+        jira_container_module.jira_sync_container = synthetic_container
+        ui_container_module.jira_sync_container = synthetic_container
+        ui_container_module.ui_web_container._bug_trend_facade = None
 
 
 class ProjectRunFixtureAppConfig(ProjectUiFixtureAppConfig):
@@ -74,6 +94,41 @@ class ProjectRunFixtureAppConfig(ProjectUiFixtureAppConfig):
         from scripts.validation.project_full_stack_fixture import create_provider_fixture
 
         return create_provider_fixture
+
+
+class SyntheticScopeMetadataProvider:
+    def discover_options(self, query: str, selected_projects: list[str], selected_item_types: list[str]):
+        from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOption, TrackerOption
+
+        if 'ERR' in query or 'ERR' in selected_projects:
+            raise RuntimeError('Synthetic metadata unavailable')
+        project = 'ALT' if 'ALT' in query or 'ALT' in selected_projects else 'SYNTH'
+        if project == 'ALT':
+            return ScopeConfigOptions(
+                projects=[TrackerOption('ALT', 'ALT')],
+                item_types=[TrackerOption('bug-alt', 'Regression Bug')],
+                statuses=[TrackerOption('triaged', 'Triaged'), TrackerOption('resolved', 'Resolved')],
+                resolutions=[TrackerOption('verified', 'Verified')],
+                priorities=[TrackerOption('p0', 'P0-Blocker')],
+                fields=[TrackerFieldOption('customfield_alt_severity', 'Synthetic severity', 'Synthetic severity (customfield_alt_severity)')],
+                components=[TrackerOption('platform', 'Platform')],
+                versions=[TrackerOption('2026.alt', '2026.alt')],
+            )
+        return ScopeConfigOptions(
+            projects=[TrackerOption('SYNTH', 'SYNTH')],
+            item_types=[TrackerOption('bug', 'Bug')],
+            statuses=[TrackerOption('open', 'Open'), TrackerOption('fixed', 'Fixed'), TrackerOption('closed', 'Closed')],
+            resolutions=[TrackerOption('done', 'Done')],
+            priorities=[TrackerOption('p1', 'P1-Synthetic')],
+            fields=[TrackerFieldOption('priority', 'Priority', 'Priority')],
+            components=[TrackerOption('ui', 'UI')],
+            versions=[TrackerOption('2026.01', '2026.01')],
+        )
+
+    def discover_field_values(self, project_id: str, item_type_ids: list[str], field_id: str):
+        from jira_sync.app.api.scope_metadata import TrackerOption
+
+        return [TrackerOption('synthetic-value', 'Synthetic value')]
 
 
 class WeekReferenceReader:
