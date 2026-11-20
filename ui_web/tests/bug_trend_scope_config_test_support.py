@@ -34,7 +34,6 @@ class FakeScopeMetadataFacade:
         from bug_metrics.app.api import bug_trend_api
         return BugTrendFacade(bug_trend_api).get_query_builder_metadata_validation(config, scope_metadata)
 
-
 class FakeSuccessfulScopeMetadataApi:
     def discover_scope_options(self, *args, **kwargs):
         return successful_scope_metadata_options()
@@ -73,6 +72,12 @@ class FakePartialScopeMetadataFacade(FakeScopeMetadataFacade):
                 fields=[TrackerFieldOption('customfield_12345', 'Severity', 'Severity (customfield_12345)')],
             ),
         }
+
+
+class FakeEmptyScopeMetadataFacade(FakeScopeMetadataFacade):
+    def get_scope_metadata_options(self, config, selected_projects=None):
+        self.selected_projects.append(selected_projects or [])
+        return ScopeConfigOptions()
 
 
 

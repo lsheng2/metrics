@@ -36,3 +36,8 @@
 
 - [x] 7.1 Add focused facade/view/browser tests for colocated metadata UI, picker-open refresh, searchable filtering, manual values and validation result rendering.
 - [x] 7.2 Run OpenSpec strict validation, focused Django tests, `python manage.py check`, migration dry-run, whitespace checks and an end-to-end browser demo.
+
+## 8. Semantic Mapping Metadata Hint
+
+- [x] 8.1 Add a default-collapsed semantic mapping metadata reference fed by the existing refresh endpoint, and verify full-page rendering, OOB refresh, warning/error/empty states, non-Jira guidance and no-save behavior.
+- [x] 8.2 Keep the refreshed hint out of the semantic mapping form fields so unsaved operator values and the disclosure state are preserved during metadata refresh.

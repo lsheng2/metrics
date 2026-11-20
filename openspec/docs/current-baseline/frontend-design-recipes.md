@@ -754,8 +754,10 @@ Both editors are rewritten and share these rules and selectors (`pages/provider-
 - Scope Config body order: hidden `provider_id`, context lead, Provider binding (4-cell grid: `status_tag`, profile
   select with a `button is-small` "Save binding", provider, blockers; then the always-rendered detail panel), flush
   `details.disclosure.is-flush` "Workflow order" (open for a new scope), Identity, Source population, Semantic mapping,
-  Display fields. State banners, the action bar and the signature `dl` follow the body inside the shell. The page meta
-  shows `enabled`/`draft` through `status_tag` beside one "Dashboard status" help tip.
+  Display fields. Semantic mapping may include one default-collapsed `details.disclosure.is-flush` metadata reference
+  whose body refreshes through the existing metadata endpoint and OOB-updates only its hint content; it is reference-only
+  and must not replace mapping form controls. State banners, the action bar and the signature `dl` follow the body inside
+  the shell. The page meta shows `enabled`/`draft` through `status_tag` beside one "Dashboard status" help tip.
 - Source population: the Jira branch is one section with the radio switch (§4.1) in its heading; each
   `.scope-source-panel` is a grid (gap `--space-3`) and the inactive one carries `hidden` plus `.is-inactive`. Other
   providers get a source section and a metadata section. An htmx target that may stay empty hides itself with

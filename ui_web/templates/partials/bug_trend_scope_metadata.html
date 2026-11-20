@@ -4,6 +4,11 @@
             {% include "partials/bug_trend_scope_query_builder_controls.html" %}
         </div>
     {% endif %}
+    {% if render_metadata_hints_oob and scope_metadata_hint_context %}
+        <div id="scope-semantic-metadata-hints-content" class="scope-metadata-hints-content" hx-swap-oob="innerHTML">
+            {% include "partials/bug_trend_scope_metadata_hints.html" %}
+        </div>
+    {% endif %}
     {% include "partials/bug_trend_scope_metadata_validation.html" %}
     {% if scope_metadata.warnings %}
         <div class="message is-warning">

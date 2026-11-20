@@ -254,3 +254,61 @@ textarea.searchable-value-picker-input {
 .searchable-value-picker.is-refreshing .searchable-value-picker-toggle {
     color: var(--color-accent-text);
 }
+
+.scope-metadata-hints-content {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.scope-metadata-hint-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.scope-metadata-hint-toolbar .provider-section-help {
+    margin-top: var(--space-0-5);
+}
+
+.scope-metadata-hint-grid {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.scope-metadata-hint-group {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.scope-metadata-hint-group:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.scope-metadata-hint-group-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.scope-metadata-hint-group-head strong {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+}
+
+.scope-metadata-hint-count,
+.scope-metadata-hint-group p,
+.scope-metadata-hint-empty {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    line-height: var(--leading-snug);
+}

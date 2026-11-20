@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 
 from ..container import ui_web_container
+from ..facades.scope_metadata_hints import semantic_mapping_metadata_hint_context
 from .graceful_template_view import GracefulTemplateView
 
 
@@ -192,10 +193,15 @@ class BugTrendScopeConfigView(GracefulTemplateView):
         scope_metadata = self._metadata_options(config, query_data)
         context['scope_metadata'] = scope_metadata
         context['source_mode_context'] = self.bug_trend_facade.source_mode_context(config, query_data, scope_metadata)
-        context['scope_provider_context'] = self.bug_trend_facade.get_scope_config_provider_context(
+        scope_provider_context = self.bug_trend_facade.get_scope_config_provider_context(
             config,
             query_data.get('provider_id', ''),
             query_data.get('profile_id', ''),
+        )
+        context['scope_provider_context'] = scope_provider_context
+        context['scope_metadata_hint_context'] = semantic_mapping_metadata_hint_context(
+            scope_metadata,
+            scope_provider_context.selected_provider_id,
         )
         context['metadata_scope_id'] = str(config.id or '')
 
@@ -262,6 +268,11 @@ class BugTrendScopeMetadataView(GracefulTemplateView):
             context['render_query_builder_oob'] = True
             if self.request.GET.get('validate_scope') == '1':
                 context['scope_metadata_validation'] = self.bug_trend_facade.get_query_builder_metadata_validation(config, scope_metadata)
+        context['scope_metadata_hint_context'] = semantic_mapping_metadata_hint_context(
+            scope_metadata,
+            self.request.GET.get('provider_id', 'jira'),
+        )
+        context['render_metadata_hints_oob'] = True
         context['metadata_scope_id'] = scope_id if scope_id and scope_id.isdecimal() else ''
 
 

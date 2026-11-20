@@ -1,3 +1,4 @@
+{% load i18n %}
 <section class="provider-section" aria-labelledby="scope-semantic-heading">
     <div class="provider-section-heading">
         <div>
@@ -5,6 +6,18 @@
             <p class="provider-section-help">These controls classify and bucket tickets after the selected source query fetches them.</p>
         </div>
     </div>
+    <details class="disclosure is-flush scope-semantic-metadata-reference">
+        <summary class="disclosure__summary">
+            <i class="disclosure__chevron iconoir-nav-arrow-right" aria-hidden="true"></i>
+            <h4 class="disclosure__title">{% trans "Jira metadata reference" %}</h4>
+            <span class="disclosure__meta">{% trans "Collapsed by default; refresh does not save the scope." %}</span>
+        </summary>
+        <div class="disclosure__body">
+            <div id="scope-semantic-metadata-hints-content" class="scope-metadata-hints-content">
+                {% include "partials/bug_trend_scope_metadata_hints.html" %}
+            </div>
+        </div>
+    </details>
     <div class="dashboard-form-grid scope-config-form-grid">
         <div class="dashboard-form-field scope-config-form-field">
             <label class="label" for="scope-bug-types">Bug type values{% include "partials/help_tip.html" with label="Bug type values" text="Provider issue or ticket types that should be treated as bugs for trend calculations." %} <span class="dashboard-required-tag">Required to save</span></label>

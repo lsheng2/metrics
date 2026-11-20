@@ -2144,3 +2144,94 @@ msgstr "未配置"
 msgctxt "service state"
 msgid "temporarily unavailable"
 msgstr "暂时不可用"
+
+msgid "Issue types"
+msgstr "事项类型"
+
+msgid "Bug type values"
+msgstr "缺陷类型值"
+
+msgid "Priorities"
+msgstr "优先级"
+
+msgid "Critical/high and medium/low values"
+msgstr "Critical/high 与 medium/low 值"
+
+msgid "Workflow statuses"
+msgstr "工作流状态"
+
+msgid "Open, fixed, closed and reopen status values"
+msgstr "Open、fixed、closed 和 reopen 状态值"
+
+msgid "Resolutions"
+msgstr "解决结果"
+
+msgid "Fixed and closed resolution values"
+msgstr "fixed 和 closed 解决结果值"
+
+msgid "Fields"
+msgstr "字段"
+
+msgid "Severity, component, owner, milestone and fix version fields"
+msgstr "严重度、组件、负责人、里程碑和修复版本字段"
+
+msgid "Components"
+msgstr "组件"
+
+msgid "Component values"
+msgstr "组件值"
+
+msgid "Versions"
+msgstr "版本"
+
+msgid "Milestone and fix version values"
+msgstr "里程碑和修复版本值"
+
+msgid "Jira metadata reference is available for Jira scopes only."
+msgstr "Jira 元数据参考仅适用于 Jira 范围。"
+
+msgid "No metadata reference loaded yet."
+msgstr "尚未加载元数据参考。"
+
+msgid "Metadata refresh could not load the reference."
+msgstr "元数据刷新未能加载参考内容。"
+
+msgid "Metadata reference loaded with warnings."
+msgstr "元数据参考已加载，但有警告。"
+
+msgid "Metadata reference loaded."
+msgstr "元数据参考已加载。"
+
+msgid "No discovered metadata values are available for this Jira context."
+msgstr "此 Jira 上下文没有发现可用的元数据值。"
+
+msgid "Jira metadata reference"
+msgstr "Jira 元数据参考"
+
+msgid "Reference only. Copy values into semantic mapping fields when they match this scope."
+msgstr "仅供参考。值与此范围匹配时，请复制到语义映射字段。"
+
+msgid "Refresh semantic metadata reference"
+msgstr "刷新语义元数据参考"
+
+msgid "Refresh metadata"
+msgstr "刷新元数据"
+
+msgid "Refresh unavailable"
+msgstr "无法刷新"
+
+msgid "%(count)s choice"
+msgid_plural "%(count)s choices"
+msgstr[0] "%(count)s 个候选项"
+msgstr[1] "%(count)s 个候选项"
+
+msgid "%(count)s more"
+msgid_plural "%(count)s more"
+msgstr[0] "还有 %(count)s 项"
+msgstr[1] "还有 %(count)s 项"
+
+msgid "Refresh metadata to load Jira candidates for bug types, priorities, statuses, resolutions and fields."
+msgstr "刷新元数据以加载 Jira 的缺陷类型、优先级、状态、解决结果和字段候选项。"
+
+msgid "Collapsed by default; refresh does not save the scope."
+msgstr "默认收起；刷新不会保存此范围。"

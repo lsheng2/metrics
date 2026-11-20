@@ -13,9 +13,13 @@ from jira_sync.app.api.scope_metadata import ScopeConfigOptions, TrackerFieldOpt
 from jira_history.models import JiraIssue
 
 
+from bug_metrics.app.api import bug_trend_api
+from ui_web.facades.bug_trend_facade import BugTrendFacade
 from ui_web.tests.bug_trend_scope_config_test_support import (
+    FakeEmptyScopeMetadataFacade,
     FakePartialScopeMetadataFacade,
     FakeScopeMetadataFacade,
+    FakeSuccessfulScopeMetadataApi,
     FakeSuccessfulScopeMetadataFacade,
 )
 from ui_web.tests.bug_trend_scope_config_test_support import BugTrendScopeConfigViewTestSupport
@@ -137,6 +141,126 @@ class TestBugTrendScopeMetadataViews(BugTrendScopeConfigViewTestSupport, TestCas
         self.assertIn('Bug</textarea>', content)
         self.assertIn('name="query_builder_components"', content)
         self.assertIn('Emulation</textarea>', content)
+
+    def test_shouldRenderDefaultCollapsedSemanticMappingMetadataReferenceOnFullPage(self):
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = BugTrendFacade(bug_trend_api, FakeSuccessfulScopeMetadataApi())
+            response = self.client.get(reverse('ui_web:bug_trend_scope_config'), {
+                'mode': 'new',
+                'refresh_metadata': '1',
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'query_builder_issue_types': 'Bug',
+            })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertIn('scope-semantic-metadata-reference', content)
+        self.assertIn('id="scope-semantic-metadata-hints-content"', content)
+        self.assertIn('Jira metadata reference', content)
+        self.assertIn('Reference only. Copy values into semantic mapping fields when they match this scope.', content)
+        self.assertIn('hx-get="/partials/bug-trend/scope-metadata/?refresh_metadata=1"', content)
+        self.assertIn('hx-target="#scope-metadata-options"', content)
+        self.assertIn('Issue types', content)
+        self.assertIn('Bug', content)
+        self.assertIn('Priorities', content)
+        self.assertIn('P1-Critical', content)
+        self.assertNotIn('<details class="disclosure is-flush scope-semantic-metadata-reference" open', content)
+
+    def test_shouldReturnSemanticMappingMetadataHintsOutOfBandWithoutReplacingUserMappings(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL semantic hint metadata controls',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+            critical_high_values=['P1-Critical'],
+        )
+        original_hash = scope.config_version_hash
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = FakeSuccessfulScopeMetadataFacade()
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {
+                'scope_id': str(scope.id),
+                'source_mode': 'query_builder',
+                'query_builder_project': 'STDEL',
+                'bug_type_values': 'Unsaved Bug',
+                'critical_high_values': 'Unsaved Critical',
+            })
+        scope.refresh_from_db()
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(original_hash, scope.config_version_hash)
+        self.assertEqual(['Bug'], scope.bug_type_values)
+        self.assertIn('id="scope-semantic-metadata-hints-content"', content)
+        self.assertIn('hx-swap-oob="innerHTML"', content)
+        self.assertIn('Jira metadata reference', content)
+        self.assertIn('Issue types', content)
+        self.assertIn('P1-Critical', content)
+        self.assertIn('Severity (customfield_12345)', content)
+        self.assertNotIn('name="bug_type_values"', content)
+        self.assertNotIn('Unsaved Bug</textarea>', content)
+
+    def test_shouldRenderSemanticMappingMetadataHintWarningAndEmptyStates(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='STDEL semantic hint empty states',
+            jql='project = STDEL AND issuetype = Bug',
+            bug_type_values=['Bug'],
+        )
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = FakeScopeMetadataFacade()
+            error_response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {'scope_id': str(scope.id)})
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = FakePartialScopeMetadataFacade()
+            warning_response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {'scope_id': str(scope.id)})
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = FakeEmptyScopeMetadataFacade()
+            empty_response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {'scope_id': str(scope.id)})
+
+        # Then
+        error_content = error_response.content.decode()
+        warning_content = warning_response.content.decode()
+        empty_content = empty_response.content.decode()
+        self.assertEqual(200, error_response.status_code)
+        self.assertEqual(200, warning_response.status_code)
+        self.assertEqual(200, empty_response.status_code)
+        self.assertIn('Metadata refresh failed: offline', error_content)
+        self.assertIn('Metadata refresh could not load the reference.', error_content)
+        self.assertIn('Unable to load component metadata', warning_content)
+        self.assertIn('Severity (customfield_12345)', warning_content)
+        self.assertIn('No discovered metadata values are available for this Jira context.', empty_content)
+
+    def test_shouldRenderNonJiraSemanticMetadataHintWithoutCallingJiraMetadata(self):
+        # Given
+        scope = JiraScopeConfig.objects.create(
+            name='HSDES semantic hint metadata controls',
+            jql='subject = "ttl"',
+            bug_type_values=['defect'],
+        )
+        facade = FakeScopeMetadataFacade()
+
+        # When
+        with patch('ui_web.views.bug_trend_scope_views.ui_web_container') as container:
+            container.bug_trend_facade = facade
+            response = self.client.get(reverse('ui_web:bug_trend_scope_metadata'), {
+                'scope_id': str(scope.id),
+                'provider_id': 'hsdes',
+            })
+
+        # Then
+        content = response.content.decode()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([], facade.selected_projects)
+        self.assertIn('id="scope-semantic-metadata-hints-content"', content)
+        self.assertIn('Jira metadata reference is available for Jira scopes only.', content)
+        self.assertNotIn('id="query-builder-controls"', content)
 
     def test_shouldRenderQueryBuilderMetadataValidationWithoutSavingScopeConfig(self):
         # Given

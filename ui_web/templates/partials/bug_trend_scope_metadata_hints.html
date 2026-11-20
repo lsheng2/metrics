@@ -1,0 +1,64 @@
+{% load i18n %}
+{% url 'ui_web:bug_trend_scope_metadata' as scope_metadata_url %}
+<div class="scope-metadata-hint-toolbar">
+    <div>
+        <span class="scope-config-kicker">{% trans "Jira metadata reference" %}</span>
+        <p class="provider-section-help">{% trans "Reference only. Copy values into semantic mapping fields when they match this scope." %}</p>
+    </div>
+    {% if scope_metadata_hint_context.supported %}
+        <button class="button is-small" type="button"
+                aria-label="{% trans "Refresh semantic metadata reference" %}"
+                title="{% trans "Refresh semantic metadata reference" %}"
+                hx-get="{{ scope_metadata_url }}?refresh_metadata=1"
+                hx-include="closest form"
+                hx-target="#scope-metadata-options"
+                hx-swap="innerHTML">
+            <span class="icon is-small" aria-hidden="true"><i class="iconoir-refresh"></i></span>
+            <span>{% trans "Refresh metadata" %}</span>
+        </button>
+    {% else %}
+        <button class="button is-small" type="button" disabled>
+            <span class="icon is-small" aria-hidden="true"><i class="iconoir-refresh"></i></span>
+            <span>{% trans "Refresh unavailable" %}</span>
+        </button>
+    {% endif %}
+</div>
+
+{% if scope_metadata_hint_context.warnings %}
+    <div class="message {% if scope_metadata_hint_context.status == 'error' %}is-danger{% else %}is-warning{% endif %}">
+        <div class="message-body">
+            {% for warning in scope_metadata_hint_context.warnings %}
+                <p>{{ warning }}</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+{% if scope_metadata_hint_context.groups %}
+    <div class="scope-metadata-hint-grid" role="list">
+        {% for group in scope_metadata_hint_context.groups %}
+            <section class="scope-metadata-hint-group" role="listitem">
+                <div class="scope-metadata-hint-group-head">
+                    <strong>{{ group.label }}</strong>
+                    <span class="scope-metadata-hint-count">
+                        {% blocktrans count count=group.count %}{{ count }} choice{% plural %}{{ count }} choices{% endblocktrans %}
+                    </span>
+                </div>
+                <p>{{ group.help_text }}</p>
+                <div class="tags">
+                    {% for choice in group.choices %}
+                        <span class="tag" title="{{ choice.title }}">{{ choice.label }}</span>
+                    {% endfor %}
+                    {% if group.more_count %}
+                        <span class="tag">{% blocktrans count count=group.more_count %}{{ count }} more{% plural %}{{ count }} more{% endblocktrans %}</span>
+                    {% endif %}
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+{% else %}
+    <p class="scope-metadata-hint-empty">{{ scope_metadata_hint_context.message }}</p>
+    {% if scope_metadata_hint_context.supported and not scope_metadata_hint_context.loaded %}
+        <p class="provider-section-help">{% trans "Refresh metadata to load Jira candidates for bug types, priorities, statuses, resolutions and fields." %}</p>
+    {% endif %}
+{% endif %}
