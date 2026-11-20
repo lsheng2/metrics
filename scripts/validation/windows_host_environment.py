@@ -14,7 +14,7 @@ import uuid
 
 from scripts.validation.project_full_stack_support import read_json, write_json
 from scripts.validation.windows_host_processes import classify_process_observations, enrich_process_observations
-from scripts.validation.windows_host_process_identity import sanitize_process_rows
+from scripts.validation.windows_host_process_identity import sanitize_process_rows, startup_owned_identities_from_run
 
 
 def source_snapshot(root):
@@ -148,8 +148,17 @@ class MeasurementWindow:
             'monotonic': time.monotonic(),
             **snapshot,
         }
+        setup_started = time.monotonic()
+        startup_identities = startup_owned_identities_from_run(self.run_root, row.get('processes', []))
+        owned_identities = self.owned_process_identities | startup_identities['identities']
+        row['ownership_setup'] = {
+            'elapsed_ms': (time.monotonic() - setup_started) * 1000,
+            'registered_identity_count': len(self.owned_process_identities),
+            'startup_identity_count': len(startup_identities['identities']),
+            'startup_matches': startup_identities['matches'],
+        }
         classification = classify_process_observations(
-            row.get('processes', []), owned_identities=self.owned_process_identities,
+            row.get('processes', []), owned_identities=owned_identities,
         )
         row['process_classification'] = classification
         self.record['process_classification'] = classification

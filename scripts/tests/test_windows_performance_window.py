@@ -157,3 +157,125 @@ def test_windows_process_details_does_not_embed_process_names_in_script(monkeypa
 
     assert "boom" not in captured["script"]
     assert "python.exe" not in captured["script"]
+
+
+def _write_prepared_lifecycle_state(run_root, service_root, *, pid, command):
+    lifecycle = service_root / "lifecycle"
+    lifecycle.mkdir(parents=True)
+    payload = {
+        "services": {
+            "candidate_saturated": {
+                "name": "candidate_saturated",
+                "pid": pid,
+                "port": 8123,
+                "host": "127.0.0.1",
+                "command": command,
+                "lifecycle_state": "prepared",
+                "provenance": {
+                    "wrapper_pid": pid,
+                    "process_start_marker": "sle-marker",
+                    "capability": "registered_process",
+                },
+            }
+        }
+    }
+    (lifecycle / "windows-host-qualification-qualification.json").write_text(
+        json.dumps(payload, sort_keys=True, indent=2), encoding="utf-8",
+    )
+
+
+def test_measurement_window_accepts_prepared_startup_owner_before_ready_registration(tmp_path, monkeypatch):
+    from scripts.validation import windows_host_environment as environment
+    from scripts.validation.windows_host_processes import process_identity
+
+    run = tmp_path / "run"
+    raw_phase = run / "raw" / "development"
+    command = [
+        "D:/AIGC/pf1120/venv/Scripts/python.exe", "-I",
+        str(tmp_path / "repo" / "ai_host/tests/windows_perf_entry.py"),
+        "serve", "--root", str(raw_phase), "--instance", str(raw_phase / "candidate_saturated"),
+    ]
+    command_line = " ".join(command)
+    wrapper_identity = process_identity(34772, "11/20/2026 9:46:23 PM", command_line)
+    child_identity = process_identity(15040, "11/20/2026 9:46:23 PM", command_line + " child")
+    _write_prepared_lifecycle_state(run, raw_phase, pid=34772, command=command)
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "same"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {
+        "processes": [
+            {
+                "pid": 34772,
+                "parent_pid": 1,
+                "name": "python.exe",
+                "identity": wrapper_identity,
+                "command": command,
+                "metrics_workload": True,
+                "relevance": "metrics_runtime",
+            },
+            {
+                "pid": 15040,
+                "parent_pid": 34772,
+                "name": "python.exe",
+                "identity": child_identity,
+                "command": ["python.exe", "-c", "child"],
+                "metrics_workload": True,
+                "relevance": "metrics_runtime",
+            },
+        ],
+        "cpu": {"idle": 1, "kernel": 2, "user": 3},
+    })
+    run.mkdir(exist_ok=True)
+
+    with environment.MeasurementWindow(tmp_path, run, tmp_path) as window:
+        verdict = run / "receipt.json"
+        verdict.write_text('{"status":"PASS"}\n', encoding="utf-8")
+        window.bind_verdict(verdict)
+
+    record = environment.read_json(run / "measurement-window.json")
+    assert record["result"] == "PASS"
+    assert record["snapshots"][0]["ownership_setup"]["startup_identity_count"] == 2
+    assert record["snapshots"][0]["process_classification"]["certification_blockers"] == []
+
+
+def test_measurement_window_rejects_same_basename_process_with_wrong_parent(tmp_path, monkeypatch):
+    from scripts.validation import windows_host_environment as environment
+    from scripts.validation.windows_host_processes import process_identity
+
+    run = tmp_path / "run"
+    raw_phase = run / "raw" / "development"
+    command = [
+        "D:/AIGC/pf1120/venv/Scripts/python.exe", "-I",
+        str(tmp_path / "repo" / "ai_host/tests/windows_perf_entry.py"),
+        "serve", "--root", str(raw_phase), "--instance", str(raw_phase / "candidate_saturated"),
+    ]
+    _write_prepared_lifecycle_state(run, raw_phase, pid=34772, command=command)
+    foreign_command = " ".join(command)
+    foreign_identity = process_identity(15040, "11/20/2026 9:46:23 PM", foreign_command)
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "same"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {
+        "processes": [
+            {
+                "pid": 34772,
+                "parent_pid": 1,
+                "name": "python.exe",
+                "identity": process_identity(34772, "11/20/2026 9:46:23 PM", foreign_command),
+                "command": command,
+                "metrics_workload": True,
+                "relevance": "metrics_runtime",
+            },
+            {
+                "pid": 15040,
+                "parent_pid": 99999,
+                "name": "python.exe",
+                "identity": foreign_identity,
+                "command": command,
+                "metrics_workload": True,
+                "relevance": "metrics_runtime",
+            },
+        ],
+        "cpu": {"idle": 1, "kernel": 2, "user": 3},
+    })
+    run.mkdir(exist_ok=True)
+
+    with pytest.raises(ValueError, match="foreign_relevant:15040"):
+        with environment.MeasurementWindow(tmp_path, run, tmp_path):
+            pass

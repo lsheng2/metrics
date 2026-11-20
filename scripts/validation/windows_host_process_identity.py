@@ -64,6 +64,10 @@ def _command_parts(command_line):
     return [str(part).casefold() for part in (_split_command(command_line) or [])]
 
 
+def _normalize_parts(command):
+    return [str(part).strip().strip('"').replace("\\", "/").casefold() for part in command or ()]
+
+
 def _python_like(row):
     name = str(row.get("name") or "").casefold()
     executable = str(row.get("executable_path") or "").replace("\\", "/").casefold()
@@ -247,3 +251,78 @@ def owned_process_identity_facts_from_state(state, ops):
 
 def owned_process_identities_from_state(state, ops):
     return owned_process_identity_facts_from_state(state, ops)["identities"]
+
+
+def _load_lifecycle_services(run_root):
+    run_root = Path(run_root)
+    services = []
+    for state_file in run_root.glob("raw/*/lifecycle/*.json"):
+        try:
+            payload = json.loads(state_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        value = payload.get("services")
+        if isinstance(value, dict):
+            services.extend((state_file, row) for row in value.values() if isinstance(row, dict))
+    return services
+
+
+def _command_is_bound_to_run_root(command, run_root):
+    root = _normalized_text(run_root)
+    parts = _normalize_parts(command)
+    return bool(root and any(root in part for part in parts))
+
+
+def _commands_match(left, right):
+    return _normalize_parts(left) == _normalize_parts(right)
+
+
+def _descendant_pids(root_pid, rows):
+    parents = {}
+    for row in rows:
+        try:
+            parents[int(row["pid"])] = int(row.get("parent_pid"))
+        except (TypeError, ValueError):
+            continue
+    owned = {int(root_pid)}
+    changed = True
+    while changed:
+        changed = False
+        for pid, parent in parents.items():
+            if pid not in owned and parent in owned:
+                owned.add(pid)
+                changed = True
+    return owned
+
+
+def startup_owned_identities_from_run(run_root, process_rows):
+    rows = []
+    by_pid = {}
+    for row in process_rows:
+        try:
+            pid = int(row.get("pid"))
+        except (TypeError, ValueError):
+            continue
+        by_pid[pid] = row
+        rows.append(row)
+    identities = set()
+    matched = []
+    for state_file, service in _load_lifecycle_services(run_root):
+        if str(service.get("lifecycle_state")) not in {"prepared", "ready"}:
+            continue
+        command = service.get("command")
+        if not isinstance(command, list) or not _command_is_bound_to_run_root(command, run_root):
+            continue
+        try:
+            root_pid = int(service.get("pid"))
+        except (TypeError, ValueError):
+            continue
+        root_row = by_pid.get(root_pid)
+        if root_row is None or not _commands_match(root_row.get("command"), command):
+            continue
+        for pid in _descendant_pids(root_pid, rows):
+            identity = by_pid.get(pid, {}).get("identity")
+            if identity:
+                identities.add(identity)
+                matched.append({"state": str(state_file), "service": service.get("name"), "pid": pid})
+    return {"identities": identities, "matches": matched}
