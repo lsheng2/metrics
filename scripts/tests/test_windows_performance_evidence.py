@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 
@@ -9,6 +10,7 @@ from scripts.tests.windows_performance_support import (
     performance_transport_payload,
     resolved_inputs_payload,
 )
+from scripts.tests.test_windows_performance_inputs import functional_acceptance_payload, performance_policy_payload
 
 
 def test_performance_transport_rejects_functional_eight_frame_spacing():
@@ -154,10 +156,7 @@ def test_performance_driver_prepares_raw_root_before_benchmark(monkeypatch, tmp_
     from scripts.validation import windows_host_benchmark as benchmark
 
     request = _driver_request(tmp_path)
-    monkeypatch.setattr(performance, "environment_identity", lambda request: {
-        "source_head": "dashboard-source",
-        "candidate_wheel_sha256": "c" * 64,
-    })
+    monkeypatch.setattr(performance, "environment_identity", lambda request, directory: _environment_identity_payload(directory))
     monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
     monkeypatch.setattr(environment, "machine_snapshot", lambda: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
 
@@ -183,10 +182,7 @@ def test_late_guard_release_failure_replaces_authoritative_pass_output(monkeypat
     from scripts.validation import windows_host_benchmark as benchmark
 
     request = _driver_request(tmp_path)
-    monkeypatch.setattr(performance, "environment_identity", lambda request: {
-        "source_head": "dashboard-source",
-        "candidate_wheel_sha256": "c" * 64,
-    })
+    monkeypatch.setattr(performance, "environment_identity", lambda request, directory: _environment_identity_payload(directory))
     monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
     monkeypatch.setattr(environment, "machine_snapshot", lambda: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
 
@@ -208,22 +204,28 @@ def test_late_guard_release_failure_replaces_authoritative_pass_output(monkeypat
 def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: int | None = None,
                   asset_prefix: str = "/ai/assets/"):
     run = tmp_path / "run"
+    repo = tmp_path / "repo"
+    repo.mkdir(exist_ok=True)
+    proof = tmp_path / "functional-proof.json"
+    _artifact(proof, {"status": "PASS"})
     request = {
         "acceptance_profile": "full",
         "performance": {"recipe_id": "windows-mdb2-s0b-r1", "mode": mode},
-        "source": {"commit": "dashboard-source"},
-        "candidate": {"wheel_sha256": "c" * 64},
+        "source": {"commit": "dashboard-source", "repository": str(repo)},
+        "python": {"version": "3.13.7"},
+        "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
         "fixtures": {"fixture_vector_sha256": "d" * 64},
         "_paths": {"inputs": tmp_path / "inputs.json", "owned_root": tmp_path},
     }
     (tmp_path / "inputs.json").write_text("{}\n", encoding="utf-8")
-    policy = _artifact(tmp_path / "policy.json", {
-        "schema_version": 1,
-        "kind": "windows-performance-policy",
-        "recipe_id": "windows-mdb2-s0b-r1",
-        "status": "method-frozen-not-measured",
-    })
-    functional = _artifact(tmp_path / "functional.json", {"schema_version": 1, "status": "PASS"})
+    policy = _artifact(
+        repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json",
+        performance_policy_payload(request),
+    )
+    functional = _artifact(
+        repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json",
+        functional_acceptance_payload(request, proof),
+    )
     request["performance"].update(policy_ref=policy, functional_acceptance_ref=functional)
     selected_blocks = blocks if blocks is not None else 1 if mode == "pilot" else 4
     selected_per_block = per_block if per_block is not None else 5 if mode == "pilot" else 40
@@ -258,10 +260,14 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
         "environment_before": _artifact(run / "environment-before.json", {
             "source_head": "dashboard-source",
             "candidate_wheel_sha256": "c" * 64,
+            "observed_environment": _artifact(run / "environment-before-capture" / "environment.json", {"python": "3.13.7"}),
+            "runtime_import_probe": _artifact(run / "environment-before-capture" / "runtime.json", {"distribution": {"version": "1.0.0"}}),
         }),
         "environment_after": _artifact(run / "environment-after.json", {
             "source_head": "dashboard-source",
             "candidate_wheel_sha256": "c" * 64,
+            "observed_environment": _artifact(run / "environment-after-capture" / "environment.json", {"python": "3.13.7"}),
+            "runtime_import_probe": _artifact(run / "environment-after-capture" / "runtime.json", {"distribution": {"version": "1.0.0"}}),
         }),
         "resolved_inputs": {
             "development": _artifact(run / "resolved-development.json", resolved_inputs_payload(
@@ -320,9 +326,21 @@ def _normal_cleanup():
     }
 
 
+def _environment_identity_payload(directory):
+    directory = Path(directory)
+    return {
+        "source_head": "dashboard-source",
+        "candidate_wheel_sha256": "c" * 64,
+        "observed_environment": _artifact(directory / "environment.json", {"python": "3.13.7"}),
+        "runtime_import_probe": _artifact(directory / "runtime.json", {"distribution": {"version": "1.0.0"}}),
+    }
+
+
 def _driver_request(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
+    proof = tmp_path / "functional-proof.json"
+    _artifact(proof, {"status": "PASS"})
     inputs = tmp_path / "inputs.json"
     inputs.write_text("{}\n", encoding="utf-8")
     python = tmp_path / "python.exe"
@@ -332,16 +350,24 @@ def _driver_request(tmp_path):
         "performance": {
             "recipe_id": "windows-mdb2-s0b-r1",
             "mode": "certify",
-            "policy_ref": _artifact(tmp_path / "policy.json", {
-                "schema_version": 1,
-                "kind": "windows-performance-policy",
-                "recipe_id": "windows-mdb2-s0b-r1",
-                "status": "method-frozen-not-measured",
-            }),
-            "functional_acceptance_ref": _artifact(tmp_path / "functional.json", {"schema_version": 1, "status": "PASS"}),
+            "policy_ref": _artifact(
+                repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json",
+                performance_policy_payload({
+                    "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
+                    "python": {"version": "3.13.7"},
+                }),
+            ),
+            "functional_acceptance_ref": _artifact(
+                repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json",
+                functional_acceptance_payload({
+                    "source": {"commit": "dashboard-source"},
+                    "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
+                }, proof),
+            ),
         },
         "source": {"commit": "dashboard-source", "repository": str(repo)},
-        "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64},
+        "python": {"version": "3.13.7"},
+        "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
         "fixtures": {"fixture_vector_sha256": "d" * 64},
         "_paths": {"inputs": inputs, "output": tmp_path / "out.json", "owned_root": tmp_path, "python": python},
     }

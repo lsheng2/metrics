@@ -97,7 +97,7 @@ def phase(root, python, *, production, window, recipe=None):
               'recipe': {**recipe, 'modes': MODES},
               'result': 'FAIL'}
     try:
-        with running_arms(root, python, production=production, spacing_events=recipe['spacing_events']) as arms:
+        with running_arms(root, python, production=production, spacing_events=recipe['spacing_events'], window=window) as arms:
             result['processes'] = arms.record
             result['sanity'] = sanity(arms)
             metadata = {name: row['metadata'] for name, row in arms.record['arms'].items()}

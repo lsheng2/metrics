@@ -26,6 +26,16 @@ def _mark_failed(receipt: dict, error: BaseException | str) -> dict:
     return receipt
 
 
+def _environment_identity(request: dict, directory: Path) -> dict:
+    try:
+        return environment_identity(request, directory)
+    except TypeError as original:
+        try:
+            return environment_identity(request)
+        except TypeError:
+            raise original
+
+
 def run_performance(request: dict, *, mode: str) -> dict:
     from scripts.validation.windows_host_benchmark import run_benchmark
     from scripts.validation.windows_host_environment import MeasurementWindow
@@ -63,7 +73,7 @@ def run_performance(request: dict, *, mode: str) -> dict:
     }
     try:
         before_path = environment_dir / "before.json"
-        write_json(before_path, environment_identity(request))
+        write_json(before_path, _environment_identity(request, environment_dir / "before-capture"))
         receipt["environment_before"] = _artifact(before_path, digest_file)
         with MeasurementWindow(request["_paths"]["owned_root"], run_dir, Path(request["source"]["repository"])) as window:
             raw_root = run_dir / "raw"
@@ -101,7 +111,7 @@ def run_performance(request: dict, *, mode: str) -> dict:
             receipt["collection_status"] = "COMPLETE"
             receipt["status"] = "PASS"
             after_path = environment_dir / "after.json"
-            write_json(after_path, environment_identity(request))
+            write_json(after_path, _environment_identity(request, environment_dir / "after-capture"))
             receipt["environment_after"] = _artifact(after_path, digest_file)
             window_path = run_dir / "measurement-window.json"
 

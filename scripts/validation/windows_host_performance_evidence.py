@@ -99,6 +99,20 @@ def _check_cleanup(cleanup: dict) -> None:
         raise QualificationError("performance cleanup was not normal")
 
 
+def _check_environment(environment: dict, request: dict, *, roots: tuple[Path, ...], run_dir: Path) -> None:
+    if (environment.get("source_head") != request["source"]["commit"]
+            or environment.get("candidate_wheel_sha256") != request["candidate"]["wheel_sha256"]):
+        raise QualificationError("performance environment identity mismatch")
+    for key in ("observed_environment", "runtime_import_probe"):
+        if key not in environment:
+            raise QualificationError("performance environment observation is incomplete")
+        _artifact(environment[key], label=key.replace("_", " "), roots=roots, run_dir=run_dir)
+    probe = environment.get("runtime_import_probe")
+    command = probe.get("command") if isinstance(probe, dict) else None
+    if command is not None:
+        _artifact(command, label="runtime import probe command", roots=roots, run_dir=run_dir)
+
+
 def validate_performance_result(receipt: dict, request: dict) -> dict:
     if receipt.get("schema_version") != 1 or receipt.get("kind") != "windows-host-performance":
         raise QualificationError("unsupported performance receipt")
@@ -124,9 +138,7 @@ def validate_performance_result(receipt: dict, request: dict) -> dict:
         raise QualificationError("performance receipt fixture mismatch")
     for env_key in ("environment_before", "environment_after"):
         _, environment = _artifact(receipt[env_key], label=env_key.replace("_", " "), roots=roots, run_dir=run_dir)
-        if (environment.get("source_head") != request["source"]["commit"]
-                or environment.get("candidate_wheel_sha256") != request["candidate"]["wheel_sha256"]):
-            raise QualificationError("performance environment identity mismatch")
+        _check_environment(environment, request, roots=roots, run_dir=run_dir)
     violations = []
     for phase in PHASES:
         _, resolved = _artifact(receipt["resolved_inputs"][phase], label=f"{phase} resolved inputs", roots=roots, run_dir=run_dir)

@@ -13,7 +13,7 @@ import time
 import uuid
 
 from scripts.validation.project_full_stack_support import read_json, write_json
-from scripts.validation.windows_host_processes import classify_process_observations
+from scripts.validation.windows_host_processes import classify_process_observations, enrich_process_observations
 
 
 def source_snapshot(root):
@@ -27,7 +27,55 @@ def source_snapshot(root):
     return {'head': git('rev-parse', 'HEAD'), 'status_sha256': hashlib.sha256(status.encode()).hexdigest()}
 
 
-def machine_snapshot():
+def _windows_process_details(processes):
+    relevant_names = {
+        str(row.get('name') or '').casefold()
+        for row in processes
+        if str(row.get('name') or '').casefold().startswith('python') or str(row.get('name') or '').casefold() == 'py.exe'
+    }
+    if not relevant_names:
+        return {}
+    names_literal = ','.join(json.dumps(name) for name in sorted(relevant_names))
+    script = (
+        f"$names=@({names_literal});"
+        "Get-CimInstance Win32_Process | "
+        "Where-Object { $names -contains $_.Name.ToLowerInvariant() } | "
+        "Select-Object ProcessId,CommandLine,CreationDate,ExecutablePath | "
+        "ConvertTo-Json -Compress"
+    )
+    completed = subprocess.run(
+        ['powershell', '-NoProfile', '-Command', script],
+        capture_output=True, text=True, timeout=20, check=False,
+    )
+    if completed.returncode or not completed.stdout.strip():
+        return {
+            int(row['pid']): {'sensor_error': 'process_detail_unavailable'}
+            for row in processes
+            if str(row.get('name') or '').casefold() in relevant_names
+        }
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return {}
+    if isinstance(payload, dict):
+        payload = [payload]
+    details = {}
+    for row in payload or []:
+        try:
+            pid = int(row.get('ProcessId'))
+        except (TypeError, ValueError):
+            continue
+        details[pid] = {
+            'command_line': row.get('CommandLine') or '',
+            'creation_date': row.get('CreationDate') or '',
+            'executable_path': row.get('ExecutablePath') or '',
+        }
+        if not details[pid]['command_line'] or not details[pid]['creation_date']:
+            details[pid]['sensor_error'] = 'process_detail_incomplete'
+    return details
+
+
+def machine_snapshot(*, source_root=None, owned_root=None):
     if sys.platform != 'win32':
         raise ValueError('Only Windows qualification is authorized')
     from ai_host.exit_processes import ProcessEntry, _windows_api
@@ -56,6 +104,11 @@ def machine_snapshot():
             raise ctypes.WinError(ctypes.get_last_error())
     finally:
         api.CloseHandle(snapshot)
+    if source_root is not None or owned_root is not None:
+        processes = enrich_process_observations(
+            processes, _windows_process_details(processes),
+            source_root=source_root or '', owned_root=owned_root or '',
+        )
     return {'cpu': cpu, 'processes': processes}
 
 
@@ -90,8 +143,19 @@ class MeasurementWindow:
             self._remove_own_guard()
             raise
 
+    def register_owned_process_identities(self, identities):
+        self.owned_process_identities.update(str(identity) for identity in identities if identity)
+
     def _collect(self):
-        row = {'utc': datetime.now(UTC).isoformat(), 'monotonic': time.monotonic(), **machine_snapshot()}
+        try:
+            snapshot = machine_snapshot(source_root=self.source_root, owned_root=self.guard.parent)
+        except TypeError:
+            snapshot = machine_snapshot()
+        row = {
+            'utc': datetime.now(UTC).isoformat(),
+            'monotonic': time.monotonic(),
+            **snapshot,
+        }
         classification = classify_process_observations(
             row.get('processes', []), owned_identities=self.owned_process_identities,
         )

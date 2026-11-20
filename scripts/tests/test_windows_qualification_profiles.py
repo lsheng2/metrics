@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from scripts.tests.test_qualify_ai_runtime import _base_case, _fake_subprocess, _sha, _write_json
+from scripts.tests.test_windows_performance_inputs import functional_acceptance_payload, performance_policy_payload
 from scripts.validation import qualify_ai_runtime as qualifier
 from scripts.validation import windows_qualification_evidence as evidence
 from scripts.validation.windows_qualification_inputs import QualificationError
@@ -46,15 +47,12 @@ def invoke(case, profile="functional"):
 
 
 def bind_performance_refs(case, manifest, *, mode="certify"):
-    policy = case["owned"] / "policy.json"
-    functional = case["owned"] / "functional.json"
-    _write_json(policy, {
-        "schema_version": 1,
-        "kind": "windows-performance-policy",
-        "recipe_id": "windows-mdb2-s0b-r1",
-        "status": "method-frozen-not-measured",
-    })
-    _write_json(functional, {"schema_version": 1, "status": "PASS"})
+    policy = case["root"] / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json"
+    functional = case["root"] / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json"
+    proof = case["owned"] / "receipts" / "functional-proof.json"
+    _write_json(proof, {"status": "PASS"})
+    _write_json(policy, performance_policy_payload(manifest))
+    _write_json(functional, functional_acceptance_payload(manifest, proof))
     manifest["performance"] = {
         "recipe_id": "windows-mdb2-s0b-r1",
         "mode": mode,
