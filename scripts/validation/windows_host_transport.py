@@ -201,7 +201,7 @@ def saturated_streams(base, *, probe_path=PROBE_PATH, auth=AUTH, direct_asset_pa
 
 def _row_interval(row):
     started = finite(row['started'])
-    ended = finite(row.get('ended', started + row['ms'] / 1000))
+    ended = finite(row['ended'])
     if ended < started:
         raise ValueError('Probe timing is reversed')
     if abs(finite(row['ms']) - ((ended - started) * 1000)) > TIMING_TOLERANCE_MS:

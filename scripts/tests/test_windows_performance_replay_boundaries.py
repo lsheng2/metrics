@@ -440,3 +440,15 @@ def test_failed_phase_binds_preserved_raw_window_and_process_artifacts(tmp_path,
         assert Path(ref["path"]).is_relative_to(Path(receipt["run_directory"]))
         assert ref["sha256"] == digest_file(Path(ref["path"]))
     assert _read_json(request["_paths"]["output"]) == receipt
+
+
+@pytest.mark.parametrize("kind", ["loop_short", "direct_asset", "excess_stream"])
+def test_missing_actual_probe_end_cannot_be_synthesized_from_duration(kind):
+    from scripts.tests.windows_performance_support import performance_transport_payload
+    from scripts.validation.windows_host_transport import validate_transport
+
+    payload = performance_transport_payload()
+    row = next(row for row in payload["saturation"]["probes"] if row["kind"] == kind)
+    del row["ended"]
+    with pytest.raises(ValueError):
+        validate_transport(payload, spacing_events=50, require_direct_asset=True)

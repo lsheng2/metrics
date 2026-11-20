@@ -130,10 +130,11 @@ def transport_payload():
             'opened': ['active', 'idle', 'idle', 'idle'], 'closed': 4, 'errors': [],
             'after': {'streamInFlightCount': 0, 'shortInFlightCount': 1},
             'probes': [
-                {'kind': 'short', 'started': 200.0 + i, 'ms': 20.0, 'status': 200}
+                {'kind': 'short', 'started': 200.0 + i, 'ended': 200.02 + i, 'ms': 20.0, 'status': 200}
                 for i in range(10)
             ] + [
-                {'kind': 'excess', 'started': 200.0 + i, 'ms': 20.0, 'status': 503, 'retry_after': '2'}
+                {'kind': 'excess', 'started': 200.0 + i, 'ended': 200.02 + i,
+                 'ms': 20.0, 'status': 503, 'retry_after': '2'}
                 for i in (0, 5)
             ],
         },
@@ -202,6 +203,7 @@ def test_transport_validator_refuses_incomplete_or_slow_observations(mutation):
         payload['saturation']['probes'][0]['status'] = 503
     elif mutation == 'short_slow':
         payload['saturation']['probes'][0]['ms'] = 100.0
+        payload['saturation']['probes'][0]['ended'] = 200.1
     elif mutation == 'missing_probe':
         payload['saturation']['probes'] = payload['saturation']['probes'][-2:]
     elif mutation == 'wrong_retry':
