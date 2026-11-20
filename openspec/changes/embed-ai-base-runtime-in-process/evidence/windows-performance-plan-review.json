@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "windows-performance-plan-review",
+  "date": "2026-11-20",
+  "reviewed_plan_commit": "6e6212715caa4abad0cf9f56e93bcd836cb3e016",
+  "artifact_id": "pf1120",
+  "private_artifact_root": "D:/AIGC/<artifact_id>",
+  "review": {
+    "status": "PASS",
+    "clean_passes": 1,
+    "required_passes": 1,
+    "counted_attempts": 4,
+    "closed_findings": ["APR-P2-1", "APR-DAG-001", "P2-1"],
+    "open_findings": [],
+    "gate": {
+      "relative": "reviews/plan-gate.json",
+      "sha256": "d5fb3d95fd4ffa53b69bfdc8b68fe9d658bf7a5f066aefdc7740fe0d1eb3ef39"
+    },
+    "final_transcript": {
+      "relative": "reviews/plan-review-4.txt",
+      "sha256": "8688d3f82931868865514022c53151a5334fe7c7e95c360c801843f64464e995"
+    },
+    "noncountable_note": "One earlier transcript used nonnumeric severity placeholders and was retained without counting a PASS."
+  },
+  "refreeze_actions": [
+    {
+      "action": "amend",
+      "reason": "Complete the deferred performance producer/consumer path and restore signed recipe fidelity before measurement."
+    },
+    {
+      "action": "continue",
+      "reason": "Keep dev4, current host architecture, numerical KPIs, functional safety bounds and original acceptance evidence."
+    }
+  ],
+  "updated_artifacts": [
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-steps.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-validation.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-research.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/tasks.md",
+    "docs/development/reporting-delivery.md"
+  ],
+  "rerun_gates": [
+    "PLAN.R",
+    "powershell plan structure and owner/contract mutation checks",
+    "scripts/check_file_size_limits.py --include-untracked",
+    "scripts/check_diff_whitespace.py --include-untracked",
+    "openspec validate embed-ai-base-runtime-in-process --strict --no-interactive"
+  ],
+  "post_refreeze_preflight_result": {
+    "command": "private check-plan.ps1 plus owner/contract mutations and PowerShell command AST validation",
+    "result": "PASS",
+    "nodes": 28,
+    "edges": 30,
+    "performance_dispatch_paths": 26,
+    "negative_owner_contract_cases": 82
+  },
+  "performance_status": "NOT_RUN",
+  "implementation_status": "ready-for-PERF.PROBE"
+}

@@ -1,6 +1,6 @@
 # Windows Performance Phase
 
-Status: authorized planning and probe implementation, not qualified.
+Status: method/plan approved; probe implementation active, not qualified.
 Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-17.
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.

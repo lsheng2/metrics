@@ -7,7 +7,7 @@
 起点是 Dashboard `eb84aa23`，仍使用冻结 dev4；AIB main `6591ad57` 的 dev5
 不自动成为 Dashboard 候选。原功能验收、历史失败、wheel 和 r4 环境保持不变。
 
-本轮先完成独立 W3.REPLAN/PERF.KPI 复核，再校准原性能工具的 50-event B3、
+本轮独立 W3.REPLAN/PERF.KPI 方法复核已完成；接下来校准原性能工具的 50-event B3、
 饱和时短请求加直接资产、同一区间、输入身份和清理证明。先 pilot，再完整诊断，
 再按证据决定优化，最后独占认证；不预先放宽 KPI 或生产 timeout。
 计划见 [性能 test plan](windows-performance-test-plan.md)；
@@ -256,8 +256,8 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] W3.JOIN - 完成联合业务映射和七组完整功能模块门禁；同源码续跑明确区分复用与新执行，114/114 功能证据键全部有效。
 - [x] FUNC.R - 独立 authority-boundary review 达到 1/1 clean pass；两次 counted review 中一项 P1 已闭环，最终 P0-P3 为零，性能及全局排除范围已核对。
 - [x] FUNC.ACCEPT - `evidence/windows-functional-acceptance.json` 已生成；Windows Dashboard MDB-2 功能为 PASS，性能为 NOT_RUN，原 10.4 及其它混合范围父任务保持开放。
-- [ ] W3.REPLAN - 以已验收功能基线再冻结后置性能阶段。
-- [ ] PERF.KPI - 单独冻结 KPI、负载、基线、采样方法和判定规则。
+- [x] W3.REPLAN - 计划 `6e62127` 经独立复核达到 1/1 clean pass；三项归属、契约与命令镜像问题已关闭，结构化记录见 `evidence/windows-performance-plan-review.json`。
+- [x] PERF.KPI - 已冻结原 KPI、负载、基线、采样和判定方法，见 `evidence/windows-performance-inputs.json`；具体运行输入与动态资产在采样前另行绑定，不代表已测量。
 - [ ] PERF.PROBE - 完成保留的性能工具，独立采集诊断基线，不宣称正式验收。
 - [ ] PERF.PROBE.R - 独立复核测量工具、原始诊断证据及受影响功能消费者。
 - [ ] PERF.PROBE.REPLAN - 根据实测证据再冻结优化范围；无证据不改变产品或 KPI。
