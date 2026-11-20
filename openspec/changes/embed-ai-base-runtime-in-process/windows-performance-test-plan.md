@@ -219,6 +219,12 @@ predeclaration. Exact argv, current driver parent and canonical run-root
 membership establish ownership before SLE's slower provenance capture publishes
 `prepared`. Ambiguous or foreign roots remain failures; later registration
 never erases an earlier foreign-workload error.
+Persisted `prepared`/`ready` rows are not an alternate startup admission path:
+they cannot prove a PID's current incarnation. Missing trailing asset probes
+cannot shrink the coverage universe; derive mandatory slots from held duration
+and require every observed slot, including the optional tail, to be complete.
+Probe failures retain structured slot/resource/timing/error-class observations;
+they still abort collection and never become successful latency samples.
 Current-driver identity and matching launcher ancestry are separately observed,
 so absolute command paths cannot self-block and do not whitelist another run.
 Aggregate `sha256` binds the validated receipt; `producer_input_sha256` names
@@ -315,6 +321,46 @@ def test_b9_echo_only_cannot_satisfy_performance():
 12. Freeze clean tool/source bytes and run the complete signed diagnostic
     recipe without a profiler. Preserve every outcome. This is the measurement
     input to the independent probe review, not certification.
+
+### Bounded Asset Localization Before A Full Retry
+
+The first full diagnostic at source `93b0bea` was incomplete after three
+direct-asset read timeouts. Its immutable evidence is retained under
+`D:/AIGC/pf1120/runs/diagnostic-r1-performance-run`. This is a collection
+failure, not a certified KPI result. A simultaneous page sample had ordinary
+HTML timing and a seconds-long asset phase; the mechanism is not yet known.
+
+Use a private, explicitly nonqualifying experiment before another full retry:
+
+1. Reuse the admitted dev4, real `candidate_saturated` fixture, development
+   settings, `bug_trend`, sequential page-plus-assets requests and four held
+   streams. Keep ordinary request timeout configuration and production budgets.
+2. Calibrate instrumentation with 40 samples and a 120-second sampling bound.
+   Then use at most 4,000 samples or 600 seconds, stopping at the first
+   read error or diagnostic 1,000-ms trigger. That trigger controls capture,
+   not a replacement KPI; the ordinary performance recipe remains unchanged.
+3. Use HTTPX response hooks for client header-arrival observations and retain
+   every attempted request's identifier, path, start/end and exception class.
+   Observe server WSGI entry/header boundaries and SDK resource resolution,
+   manifest/asset materialization, and WhiteNoise opening, using monotonic and
+   thread-CPU times. Do not wrap body iterators or change file-wrapper behavior.
+4. Pair the real asset with an authenticated, same-byte memory control in the
+   isolated test fixture. Run server-traced and untraced-server control modes.
+   Never cache or replace the real SDK asset handler as part of instrumentation.
+5. Buffer traces in bounded memory; report discarded prefixes explicitly.
+   Preserve source/helper hashes, candidate identity, actual process ownership
+   and normal cleanup. Do not capture authorization, cookies, query values,
+   response bodies, private filenames or raw exception messages in spans.
+6. Store private bootstrap/trace tools and results under the owned D-drive
+   root, without modifying installed package files or production URLs.
+   Their artifact kind is not `windows-host-performance`; all such experiment
+   results have `acceptance_eligible=false`.
+
+Interpret nested spans as overlapping observations, not additive costs.
+Header logging is not body completion. A non-reproduction does not explain the
+earlier failure. Only evidence localizing a reproducible owner may lead to an
+optimization/refreeze; SDK, shared application or global machine changes keep
+their existing owner decision boundary.
 
 ### PERF.OPTIMIZE: Root Cause Before Change
 

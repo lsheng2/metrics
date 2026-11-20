@@ -253,20 +253,6 @@ def owned_process_identities_from_state(state, ops):
     return owned_process_identity_facts_from_state(state, ops)["identities"]
 
 
-def _load_lifecycle_services(run_root):
-    run_root = Path(run_root)
-    services = []
-    for state_file in run_root.glob("raw/*/lifecycle/*.json"):
-        try:
-            payload = json.loads(state_file.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        value = payload.get("services")
-        if isinstance(value, dict):
-            services.extend((state_file, row) for row in value.values() if isinstance(row, dict))
-    return services
-
-
 def _command_is_bound_to_run_root(command, run_root):
     parts = list(command or ())
     if parts.count("--root") != 1:
@@ -342,22 +328,4 @@ def startup_owned_identities_from_run(run_root, process_rows, *, pending_launche
             if identity:
                 identities.add(identity)
                 matched.append({"state": "predeclared_launch", "pid": pid})
-    for state_file, service in _load_lifecycle_services(run_root):
-        if str(service.get("lifecycle_state")) not in {"prepared", "ready"}:
-            continue
-        command = service.get("command")
-        if not isinstance(command, list) or not _command_is_bound_to_run_root(command, run_root):
-            continue
-        try:
-            root_pid = int(service.get("pid"))
-        except (TypeError, ValueError):
-            continue
-        root_row = by_pid.get(root_pid)
-        if root_row is None or not _commands_match(root_row.get("command"), command):
-            continue
-        for pid in _descendant_pids(root_pid, rows):
-            identity = by_pid.get(pid, {}).get("identity")
-            if identity:
-                identities.add(identity)
-                matched.append({"state": str(state_file), "service": service.get("name"), "pid": pid})
     return {"identities": identities, "matches": matched}

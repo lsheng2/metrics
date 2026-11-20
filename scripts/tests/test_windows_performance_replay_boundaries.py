@@ -365,3 +365,47 @@ def test_probe_elapsed_is_derived_from_the_same_completion_observation(monkeypat
     assert record["errors"] == []
     row = record["probes"][0]
     assert row["ms"] == pytest.approx((row["ended"] - row["started"]) * 1000)
+
+
+def test_unpaired_trailing_slots_cannot_shrink_the_coverage_universe():
+    from scripts.tests.windows_performance_support import performance_transport_payload
+    from scripts.validation.windows_host_transport import validate_transport
+
+    payload = performance_transport_payload(slots=10)
+    payload["saturation"]["probes"] = [
+        row for row in payload["saturation"]["probes"]
+        if not (row["kind"] == "direct_asset" and row["slot"] >= 8)
+    ]
+    with pytest.raises(ValueError):
+        validate_transport(payload, spacing_events=50, require_direct_asset=True)
+
+
+def test_persisted_lifecycle_row_cannot_own_a_reused_pid(tmp_path):
+    from scripts.tests.test_windows_performance_window import _write_prepared_lifecycle_state
+    from scripts.validation.windows_host_process_identity import startup_owned_identities_from_run
+
+    run = tmp_path / "run"
+    phase = run / "raw" / "development"
+    command = ["python.exe", "windows_perf_entry.py", "serve", "--root", str(phase)]
+    _write_prepared_lifecycle_state(run, phase, pid=17, command=command)
+    rows = [{"pid": 17, "parent_pid": 999, "command": command, "identity": "new-incarnation"}]
+    result = startup_owned_identities_from_run(run, rows)
+    assert result["identities"] == set()
+
+
+def test_failed_probe_retains_slot_resource_and_observed_failure_interval(monkeypatch):
+    import httpx
+    from scripts.validation import windows_host_transport as transport
+
+    ticks = iter((10.0, 12.0))
+    monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: next(ticks)))
+    http = SimpleNamespace(get=lambda *args, **kwargs: (_ for _ in ()).throw(httpx.ReadTimeout("synthetic")))
+    record = {"probes": [], "errors": []}
+    transport._probe(http, "http://127.0.0.1:1234", "/ai/assets/runtime.css", "direct_asset",
+                     record, slot=457, scheduled=10.0)
+    assert record["probes"] == []
+    assert record["errors"] == [{
+        "kind": "direct_asset", "slot": 457, "resource": "/ai/assets/runtime.css",
+        "scheduled": 10.0, "started": 10.0, "ended": 12.0, "ms": 2000.0,
+        "error_type": "ReadTimeout",
+    }]

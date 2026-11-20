@@ -68,6 +68,11 @@ Performance launch intent is registered before seed/host process creation.
 Ownership requires the exact resolved argv, current driver parent, canonical
 run-root argument and observed descendant identities, including the interval
 before SLE publishes `prepared`. No foreign-process error is cleared or ignored.
+Persisted lifecycle PID/command rows alone do not establish measurement
+ownership; the observer uses predeclared launches and current creation-bound
+identities. Probe coverage comes from the held duration and every observed
+slot, including an optional complete tail slot. Failed probes retain their
+slot, URL path, start/end times and exception class for localization.
 The observed current driver and exact-command interpreter-wrapper ancestors
 are owned tooling even for absolute CLI paths; another driver remains foreign.
 Accepted coverage hashes identify the receipt, with the input hash named

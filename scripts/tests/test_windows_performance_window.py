@@ -184,7 +184,7 @@ def _write_prepared_lifecycle_state(run_root, service_root, *, pid, command):
     )
 
 
-def test_measurement_window_accepts_prepared_startup_owner_before_ready_registration(tmp_path, monkeypatch):
+def test_measurement_window_uses_observed_identity_registration_not_persisted_state(tmp_path, monkeypatch):
     from scripts.validation import windows_host_environment as environment
     from scripts.validation.windows_host_processes import process_identity
 
@@ -225,14 +225,16 @@ def test_measurement_window_accepts_prepared_startup_owner_before_ready_registra
     })
     run.mkdir(exist_ok=True)
 
-    with environment.MeasurementWindow(tmp_path, run, tmp_path) as window:
+    with environment.MeasurementWindow(
+        tmp_path, run, tmp_path, owned_process_identities={wrapper_identity, child_identity},
+    ) as window:
         verdict = run / "receipt.json"
         verdict.write_text('{"status":"PASS"}\n', encoding="utf-8")
         window.bind_verdict(verdict)
 
     record = environment.read_json(run / "measurement-window.json")
     assert record["result"] == "PASS"
-    assert record["snapshots"][0]["ownership_setup"]["startup_identity_count"] == 2
+    assert record["snapshots"][0]["ownership_setup"]["startup_identity_count"] == 0
     assert record["snapshots"][0]["process_classification"]["certification_blockers"] == []
 
 

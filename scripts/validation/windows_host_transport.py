@@ -102,7 +102,12 @@ def _probe(http, base, path, kind, record, *, slot=None, scheduled=None):
             'etag': response.headers.get('ETag'),
         })
     except Exception as error:
-        record['errors'].append(f'{kind}:{type(error).__name__}')
+        ended = time.monotonic()
+        record['errors'].append({
+            'kind': kind, 'slot': slot, 'resource': path, 'scheduled': scheduled,
+            'started': started, 'ended': ended, 'ms': (ended - started) * 1000,
+            'error_type': type(error).__name__,
+        })
 
 
 @contextmanager
@@ -279,22 +284,19 @@ def validate_transport(
         if len(short) < max(1, math.floor(duration)) or len(excess) < max(1, math.floor(duration / 5)):
             raise ValueError('Missing saturation probes')
         if require_direct_asset:
-            covered_slots = sorted(slot for slot, kinds in slots.items() if {'loop_short', 'direct_asset'} <= kinds)
-            if not covered_slots or covered_slots != list(range(covered_slots[-1] + 1)):
+            last_slot = math.floor(duration)
+            required_slots = set(range(max(1, last_slot)))
+            observed_slots = set(slots)
+            if not required_slots <= observed_slots or not observed_slots <= required_slots | {last_slot}:
                 raise ValueError('Missing paired direct-asset saturation probe')
-            if covered_slots[-1] > math.floor(duration):
-                raise ValueError('Probe is not bound to its scheduled slot')
-            expected_slots = set(covered_slots)
-            for slot in expected_slots:
-                if slots.get(slot, set()) & {'loop_short'} != {'loop_short'} or 'direct_asset' not in slots.get(slot, set()):
-                    raise ValueError('Missing paired direct-asset saturation probe')
-                if per_slot_kind_counts.get((slot, 'loop_short')) != 1 or per_slot_kind_counts.get((slot, 'direct_asset')) != 1:
-                    raise ValueError('Duplicate saturation probe for slot')
+            for slot in observed_slots:
+                expected_kinds = {'loop_short', 'direct_asset'}
                 if slot % 5 == 0:
-                    if 'excess_stream' not in slots.get(slot, set()) or per_slot_kind_counts.get((slot, 'excess_stream')) != 1:
-                        raise ValueError('Missing fifth-slot excess-stream probe')
-            if len(direct) < len(expected_slots):
-                raise ValueError('Missing direct runtime asset probes')
+                    expected_kinds.add('excess_stream')
+                if slots[slot] != expected_kinds:
+                    raise ValueError('Missing paired direct-asset saturation probe')
+                if any(per_slot_kind_counts.get((slot, kind)) != 1 for kind in expected_kinds):
+                    raise ValueError('Duplicate saturation probe for slot')
         stream_count = saturation['after']['streamInFlightCount']
         short_count = saturation['after']['shortInFlightCount']
         if (type(stream_count) is not int or stream_count != 0
