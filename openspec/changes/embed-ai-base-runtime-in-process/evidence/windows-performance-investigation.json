@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "kind": "windows-performance-investigation-checkpoint",
+  "status": "in-progress-kernel-capture-blocked",
+  "performance_accepted": false,
+  "candidate": {
+    "version": "0.1.1.dev4",
+    "wheel_sha256": "b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94"
+  },
+  "measured_sources": {
+    "pilot": "103929236c4ee344710f1ce83ca63854aa9a63bc",
+    "full_diagnostic": "93b0bea33dfb595f6bde42db36aa795f6fd9ccd9",
+    "localization": "7e4478da76c6d0f3721739bf69df4b9126b3797e"
+  },
+  "full_diagnostic": {
+    "collection_status": "INCOMPLETE",
+    "collected_samples": 2880,
+    "direct_asset_read_timeouts": 3,
+    "read_timeout_seconds": 2,
+    "outer_watchdog_triggered": false
+  },
+  "traced": {
+    "samples": 1557,
+    "trigger": {
+      "content_encoding": null,
+      "content_length": 6565,
+      "cpu_ms": 0.0,
+      "decoded_bytes": 6565,
+      "diag_id": "asset-trace-r1-page-99468",
+      "ended": 226679.4660231,
+      "headers_at": 226679.465765,
+      "ms": 2182.544899987988,
+      "path": "/static/js/charts.js",
+      "role": "page",
+      "started": 226677.2834782,
+      "status": 200,
+      "tid": 65340
+    },
+    "client_by_role": {
+      "page": {
+        "count": 49557,
+        "max_ms": 2182.544899987988,
+        "errors": 0
+      },
+      "probe": {
+        "count": 321,
+        "max_ms": 1694.450200011488,
+        "errors": 0
+      },
+      "memory": {
+        "count": 122,
+        "max_ms": 15.333800023654476,
+        "errors": 0
+      }
+    },
+    "resource_resolution_max": {
+      "diag_id": "asset-trace-r1-probe-99470",
+      "path": "/ai/assets/ui-ab5bacd6bc30.css",
+      "stage": "runtime.resource_resolution",
+      "tid": 35276,
+      "started": 226677.7770397,
+      "ended": 226679.4656096,
+      "ms": 1688.569899997674,
+      "cpu_ms": 0.0,
+      "exception": null
+    },
+    "client_dropped": 49542,
+    "server_dropped": 495558
+  },
+  "control": {
+    "samples": 2250,
+    "trigger": {
+      "content_encoding": null,
+      "content_length": 19136,
+      "cpu_ms": 0.0,
+      "decoded_bytes": 19136,
+      "diag_id": "asset-control-r1-page-143412",
+      "ended": 227307.7751684,
+      "headers_at": 227307.7748611,
+      "ms": 2219.1689999890514,
+      "path": "/static/js/pane-layout.js",
+      "role": "page",
+      "started": 227305.5559994,
+      "status": 200,
+      "tid": 25540
+    },
+    "client_by_role": {
+      "page": {
+        "count": 49573,
+        "max_ms": 2219.1689999890514,
+        "errors": 0
+      },
+      "memory": {
+        "count": 119,
+        "max_ms": 11.82310000876896,
+        "errors": 0
+      },
+      "probe": {
+        "count": 308,
+        "max_ms": 1942.1560000046156,
+        "errors": 0
+      }
+    },
+    "server_timing_enabled": false,
+    "client_dropped": 93471
+  },
+  "capture_permission": {
+    "elevated": false,
+    "tool": "C:/Windows/System32/wpr.exe",
+    "version": "10.0.26100.9818",
+    "instance": "AIBPF1121Privilege01",
+    "start_exit_code": 1,
+    "error_code": "0xc5585011",
+    "message": "Failed to enable the policy to profile system performance.",
+    "recording_after_probe": false
+  },
+  "invariants": {
+    "product_code_changed": false,
+    "installed_runtime_files_verified": 131,
+    "kpi_or_timeout_relaxed": false,
+    "linux_executed": false,
+    "real_provider_or_model_calls": false,
+    "normal_cleanup": true
+  },
+  "references": [
+    {
+      "path": "D:\\AIGC\\pf1120\\runs\\pilot-r6.json",
+      "sha256": "e2538bd8f9c7476d50ca4d18e610b2e0245a1b806794fe820b9846a8c402fc88"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\pilot-r6-parent-audit.json",
+      "sha256": "12141fdbfedabd30108aab926011f87f670cc7bc8e46ac584928b606ae5ba3a7"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\runs\\diagnostic-r1.json",
+      "sha256": "720a5553b7899802349536257d8b1fb6cd278bab8396b6a303936445758dc5d9"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\runs\\diagnostic-r1-performance-run\\raw\\development\\measurement.json",
+      "sha256": "92c0f41efaaec675c7ebeacce3282601b43b48d6bffdca7d6c0ab11c6ee5212c"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\runs\\diagnostic-r1-performance-run\\raw\\development\\processes.json",
+      "sha256": "511bf4b569d1a7ef69ec50d95846a601349d7003f93ee3fa20bd2e1c72e81a12"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\runs\\diagnostic-r1-performance-run\\measurement-window.json",
+      "sha256": "bdef907eea31a71cb9f9d01ca7b5f4dd19dc72df0a48065103f483ad2acb71f9"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\diagnostic-r1-forensics.md",
+      "sha256": "2fcc16e76ef9fd7ddba3cddf8ddf58d17bf2b37c43a27b297392ecbd394cf953"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\diagnostic-r1-cleanup-audit.json",
+      "sha256": "623f21fa8784d8fae60acd99289a6e74ae85eb26fb6e058ded2ced581ee14a94"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\localization\\asset-trace-smoke-r1\\result.json",
+      "sha256": "5c2e0eeca75ae519f2081d9d2b8df7787dcc2575a1b8bc0273df9da46a0eccde"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\localization\\asset-trace-r1\\result.json",
+      "sha256": "866a14c3bef30abfe361a15d9f80453f44a22a4cc05a77b92c1fdfb9634004d3"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\localization\\asset-control-r1\\result.json",
+      "sha256": "4eda398db61d109c0d28fc2e2c7640d25ef603075712726e59e4eba19d05bf50"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\asset-trace-r1-analysis.json",
+      "sha256": "955334363991fe1e01767fee3c58f21abdd1962aa3a310e321cca90501426e1c"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\asset-control-r1-analysis.json",
+      "sha256": "30f0e34b12569787789ab58da1aeeb4d0e730edcbb985f949b1536d3c3290597"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\asset-localization-cleanup-audit.json",
+      "sha256": "313127166e8a62f45e7b7bcbb6c9376a4b103073382afd5dba6afbf48bbd4380"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\post-asset-trace-admission.json",
+      "sha256": "665195609155dd40083186d6a177e1006010e9095c39840db606de3e122cc8c7"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\failure-binding-affected1.xml",
+      "sha256": "94f8a06d593aeee4db0003f959f41bc909d820132c65495a1d70a72a90ea1665"
+    }
+  ],
+  "non_claims": [
+    "No complete 11520-sample performance result.",
+    "Instrumented localization and its control are not certification.",
+    "Slow SDK resource-resolution boundary observed; specific Windows component or driver not yet attributed.",
+    "Retained ring-buffer tails are not whole-run latency distributions.",
+    "This later parent manifest binds observed archived bytes; it does not rewrite or retroactively repair old producer receipts."
+  ]
+}

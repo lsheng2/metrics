@@ -231,6 +231,10 @@ Aggregate `sha256` binds the validated receipt; `producer_input_sha256` names
 its input separately. Accepted-input producer errors publish a failed requested
 output even before sampling. A late failure may invalidate a previous success
 witness: fail-closed diagnostics do not receive a fabricated ownership witness.
+The failure output includes `failure_artifacts` references for preserved
+phase measurement/process/resolved files and final window/cleanup observations.
+References are owned-run paths with actual SHA256s; absent partial artifacts
+are not invented and old receipts are not rewritten to add them.
 
 ### PERF.PROBE: Correct The Measurement Chain
 

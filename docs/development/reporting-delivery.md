@@ -55,6 +55,10 @@ asset prefix for the owning fixture, store a real response-body SHA256 separatel
 from any ETag, and reject forged prefixes or non-hex hashes. Cleanup and window
 proofs must come from observed SLE/process/listener and measurement-window
 classification records; missing absence facts are not success.
+The current [Windows investigation checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-investigation.md)
+records an incomplete full diagnostic and separately labelled asset-localization
+experiments. It does not replace the functional receipt or establish
+performance acceptance; current kernel attribution is permission/policy blocked.
 Page-specific asset sets are replayed against their sanity observations, and
 only their union is compared with the arm manifest. Raw page timestamps prove
 block and saturation containment without changing the HTTP-only latency metric.
@@ -79,6 +83,10 @@ Accepted coverage hashes identify the receipt, with the input hash named
 `producer_input_sha256` separately. Producer failures publish `FAIL` to the
 requested output. Late failure invalidates any earlier success witness;
 failed/incomplete receipts are diagnostic artifacts, never acceptance proof.
+Failed performance outputs bind any preserved phase measurement, process,
+resolved-input, window and cleanup files by owned path and SHA256. Missing
+phase artifacts remain missing; a failure reference does not certify partial
+collection or repair an invalidated success witness.
 
 Windows B5 shutdown qualification requires two complementary proofs under the
 approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):

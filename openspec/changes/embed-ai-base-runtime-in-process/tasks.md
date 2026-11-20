@@ -34,6 +34,15 @@ KPI，不因单测或 pilot 通过而勾选 PERF.PROBE。下一门禁是新提�
 代码或冻结 wheel。工具校验的尾部覆盖、过期进程登记和失败观测补齐后，
 152 项相关测试通过；此类校验修复不是上述读取超时的已确认根因。
 
+**定位检查点（2026-11-21）**：见
+[`windows-performance-investigation.md`](evidence/windows-performance-investigation.md)
+及其哈希索引。服务端插桩与未插桩对照均再次出现约两秒资产请求等待；
+插桩将一次慢 AI CSS 请求中的约 1.688 秒定位在 SDK 资源路径解析区间，
+同期内存对照最大约 15 毫秒。尚未确认具体 Windows 阻塞组件，不预先改
+KPI、缓存策略或 wheel。WPR 内核采集权限探测被策略拒绝（`0xc5585011`），
+没有留下录制会话；进一步归因需要提升权限后验证采集能力。所有运行均已
+正常停止并核验无残留。PERF.PROBE、性能认证和总验收仍保持开放。
+
 ## Windows Closure Execution Frontier
 
 **当前状态（2026-11-20）**：Windows Dashboard MDB-2 合成数据功能验收已通过。

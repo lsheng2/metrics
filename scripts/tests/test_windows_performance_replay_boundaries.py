@@ -409,3 +409,34 @@ def test_failed_probe_retains_slot_resource_and_observed_failure_interval(monkey
         "scheduled": 10.0, "started": 10.0, "ended": 12.0, "ms": 2000.0,
         "error_type": "ReadTimeout",
     }]
+
+
+def test_failed_phase_binds_preserved_raw_window_and_process_artifacts(tmp_path, monkeypatch):
+    from scripts.tests.test_windows_performance_evidence import _driver_request, _environment_identity_payload
+    from scripts.validation import windows_host_benchmark as benchmark
+    from scripts.validation import windows_host_environment as environment
+    from scripts.validation import windows_host_performance as performance
+    from scripts.validation.windows_qualification_inputs import digest_file
+
+    request = _driver_request(tmp_path)
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {
+        "processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3},
+    })
+    monkeypatch.setattr(performance, "environment_identity",
+                        lambda request, directory: _environment_identity_payload(directory, request))
+
+    def failed_benchmark(root, *args, **kwargs):
+        _artifact(root / "development/measurement.json", {"result": "FAIL", "samples": [1, 2]})
+        _artifact(root / "development/processes.json", {"cleanup": {"normal": True}})
+        raise ValueError("Saturation stream or probe failed")
+
+    monkeypatch.setattr(benchmark, "run_benchmark", failed_benchmark)
+    receipt = performance.run_performance(request, mode="diagnostic")
+    assert receipt["status"] == "FAIL"
+    assert receipt["acceptance_eligible"] is False
+    for key in ("development_measurement", "development_processes", "measurement_window"):
+        ref = receipt["failure_artifacts"][key]
+        assert Path(ref["path"]).is_relative_to(Path(receipt["run_directory"]))
+        assert ref["sha256"] == digest_file(Path(ref["path"]))
+    assert _read_json(request["_paths"]["output"]) == receipt

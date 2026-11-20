@@ -26,6 +26,27 @@ def _mark_failed(receipt: dict, error: BaseException | str) -> dict:
     return receipt
 
 
+def _bind_failure_artifacts(receipt: dict, run_dir: Path) -> None:
+    from scripts.validation.windows_qualification_inputs import canonical, digest_file
+
+    root = canonical(run_dir, must_exist=True)
+    paths = {"measurement_window": root / "measurement-window.json", "cleanup": root / "cleanup.json"}
+    for phase in ("development", "production"):
+        for label, filename in (("measurement", "measurement.json"), ("processes", "processes.json"),
+                                ("resolved_inputs", "resolved-inputs.json")):
+            paths[f"{phase}_{label}"] = root / "raw" / phase / filename
+    references = receipt.setdefault("failure_artifacts", {})
+    for label, path in paths.items():
+        if not path.is_file():
+            continue
+        target = canonical(path, must_exist=True)
+        if not target.is_relative_to(root):
+            raise ValueError("Failure artifact escaped its owned run")
+        references[label] = _artifact(target, digest_file)
+        if label in {"measurement_window", "cleanup"}:
+            receipt[label] = references[label]
+
+
 def run_performance(request: dict, *, mode: str) -> dict:
     from scripts.validation.windows_host_benchmark import run_benchmark
     from scripts.validation.windows_host_environment import MeasurementWindow
@@ -120,6 +141,10 @@ def run_performance(request: dict, *, mode: str) -> dict:
         return receipt
     except Exception as error:
         _mark_failed(receipt, error)
+        try:
+            _bind_failure_artifacts(receipt, run_dir)
+        except Exception as binding_error:
+            _mark_failed(receipt, binding_error)
         write_json(output, receipt, replace=output.exists())
         failure = run_dir / "performance-failure.json"
         write_json(failure, receipt, replace=failure.exists())
