@@ -64,6 +64,10 @@ standalone/aggregate replay rejects a missing witness or target, inconsistent
 cleanup observations, incomplete intervals and semantically wrong environment
 artifacts. Old pilot files with incomplete proof remain historical diagnostics,
 not inputs to the current certification schema.
+Performance launch intent is registered before seed/host process creation.
+Ownership requires the exact resolved argv, current driver parent, canonical
+run-root argument and observed descendant identities, including the interval
+before SLE publishes `prepared`. No foreign-process error is cleared or ignored.
 
 Windows B5 shutdown qualification requires two complementary proofs under the
 approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):

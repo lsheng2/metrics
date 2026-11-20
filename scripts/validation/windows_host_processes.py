@@ -1,6 +1,6 @@
 """Owned native fixture launches through the existing lifecycle engine."""
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from http.client import HTTPException
 from pathlib import Path
 import socket
@@ -8,7 +8,7 @@ import subprocess
 import time
 
 import httpx
-from scripts.service_lifecycle_engine import ServiceLifecycleEngine, ServiceSpec
+from scripts.service_lifecycle_engine import PlatformOperationSet, ServiceLifecycleEngine, ServiceSpec
 from scripts.validation.project_full_stack import start_sanitized
 from scripts.validation.project_full_stack_support import base_environment, write_json
 from scripts.validation.windows_host_process_cleanup import cleanup_is_normal, stop_arms
@@ -38,6 +38,18 @@ def free_port():
     with socket.socket() as listener:
         listener.bind(('127.0.0.1', 0))
         return listener.getsockname()[1]
+
+
+def measurement_platform_ops(window, operations=None):
+    operations = operations or PlatformOperationSet()
+    if window is None:
+        return operations
+
+    def start_process(command, *args, **kwargs):
+        window.register_launch_intent(command)
+        return operations.start_process(command, *args, **kwargs)
+
+    return replace(operations, start_process=start_process)
 
 
 def fixture_spec(name, root, instance, python, *, production, spacing_events=8):
@@ -89,15 +101,19 @@ def running_arms(root, python, *, production, names=ARMS, spacing_events=8, wind
     if marker.exists() or (root / 'catalog.sqlite3').exists():
         raise ValueError('Native fixture root must be new')
     write_json(marker, {'owner': 'windows-host-qualification', 'root': str(root)})
+    seed_command = [str(python), '-I', str(ENTRY), 'seed', '--root', str(root)]
+    if window is not None:
+        window.register_launch_intent(seed_command)
     with (root / 'seed.stdout.log').open('wb') as stdout, (root / 'seed.stderr.log').open('wb') as stderr:
         seeded = subprocess.run(
-            [str(python), '-I', str(ENTRY), 'seed', '--root', str(root)],
+            seed_command,
             cwd=ROOT, env=base_environment(root / 'seed-environment'), stdout=stdout, stderr=stderr, timeout=90,
         )
     if seeded.returncode:
         raise ValueError('Native fixture seeding failed')
     engine = ServiceLifecycleEngine('windows-host-qualification', root, instance_name='qualification',
-                                   state_directory=root / 'lifecycle', log_directory=root / 'logs')
+                                   state_directory=root / 'lifecycle', log_directory=root / 'logs',
+                                   platform_ops=measurement_platform_ops(window))
     record = {'production': production, 'root': str(root), 'arms': {}, 'cleanup': None}
     started, bases, instances = [], {}, {}
     try:

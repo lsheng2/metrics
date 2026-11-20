@@ -134,3 +134,93 @@ def test_replay_rejects_complete_measurements_copied_from_another_window(tmp_pat
 
     with pytest.raises(QualificationError, match="window"):
         validate_performance_result(receipt, request)
+
+
+@pytest.mark.parametrize("kind", ["excess_stream", "excess"])
+def test_performance_rejects_extra_off_cadence_excess_probe(kind):
+    from scripts.tests.windows_performance_support import performance_transport_payload
+    from scripts.validation.windows_host_transport import validate_transport
+
+    payload = performance_transport_payload(slots=6)
+    extra = deepcopy(next(row for row in payload["saturation"]["probes"] if row["kind"] == "excess_stream"))
+    for key in ("scheduled", "started", "ended"):
+        extra[key] += 1
+    extra["slot"] = 1
+    extra["kind"] = kind
+    payload["saturation"]["probes"].append(extra)
+    with pytest.raises(ValueError):
+        validate_transport(payload, spacing_events=50, require_direct_asset=True)
+
+
+@pytest.mark.parametrize("foreign", [False, True])
+def test_launch_intent_covers_prepublication_without_owning_foreign_parent(tmp_path, monkeypatch, foreign):
+    import os
+    from scripts.validation import windows_host_environment as environment
+
+    run = tmp_path / "run"
+    run.mkdir()
+    command = ["python.exe", "windows_perf_entry.py", "serve", "--root", str(run / "raw" / "development")]
+    rows = []
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "source"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {
+        "processes": rows, "cpu": {"idle": 1, "kernel": 2, "user": 3},
+    })
+
+    def exercise():
+        with environment.MeasurementWindow(tmp_path, run, tmp_path) as window:
+            window.register_launch_intent(command)
+            rows.extend([
+                {"pid": 17, "parent_pid": -1 if foreign else os.getpid(), "command": command,
+                 "identity": "wrapper-identity", "metrics_workload": True},
+                {"pid": 18, "parent_pid": 17, "command": ["python.exe", "-c", "redirector"],
+                 "identity": "child-identity", "metrics_workload": True},
+            ])
+            window._collect()
+            window.check()
+            verdict = run / "receipt.json"
+            verdict.write_text("{}\n", encoding="utf-8")
+            window.bind_verdict(verdict)
+        return window.record
+
+    if foreign:
+        with pytest.raises(ValueError, match="observation|relevant"):
+            exercise()
+    else:
+        record = exercise()
+        assert record["result"] == "PASS"
+        assert record["snapshots"][1]["ownership_setup"]["startup_identity_count"] == 2
+        assert not list(run.glob("raw/*/lifecycle/*.json"))
+
+
+def test_platform_adapter_declares_exact_resolved_command_before_os_spawn(monkeypatch):
+    from scripts.service_lifecycle_engine import PlatformOperationSet
+    from scripts.validation import windows_host_processes as processes
+
+    declarations = []
+    window = SimpleNamespace(register_launch_intent=lambda command: declarations.append(tuple(command)))
+    command = ("python.exe", "--root", "D:/owned/run", "--port", "1234")
+
+    def spawn(actual, *_args):
+        assert declarations == [command]
+        assert tuple(actual) == command
+        return SimpleNamespace(pid=123)
+
+    operations = processes.measurement_platform_ops(window, PlatformOperationSet(start_process=spawn))
+    assert operations.start_process(command).pid == 123
+
+
+@pytest.mark.parametrize("fault", ["prefix_sibling", "different_command", "duplicate_roots"])
+def test_predeclared_launch_rejects_near_miss_ownership(tmp_path, fault):
+    from scripts.validation.windows_host_process_identity import startup_owned_identities_from_run
+
+    run = tmp_path / "run"
+    root = tmp_path / "run-other" if fault == "prefix_sibling" else run / "raw"
+    command = ["python.exe", "windows_perf_entry.py", "serve", "--root", str(root)]
+    actual = [*command, "--unexpected"] if fault == "different_command" else command
+    rows = [{"pid": 17, "parent_pid": 1, "command": actual, "identity": "root"}]
+    if fault == "duplicate_roots":
+        rows.append({"pid": 18, "parent_pid": 1, "command": actual, "identity": "duplicate"})
+    result = startup_owned_identities_from_run(run, rows, pending_launches=[
+        {"command": command, "parent_pid": 1},
+    ])
+    assert result["identities"] == set()

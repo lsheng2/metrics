@@ -14,7 +14,9 @@ import uuid
 
 from scripts.validation.project_full_stack_support import read_json, write_json
 from scripts.validation.windows_host_processes import classify_process_observations, enrich_process_observations
-from scripts.validation.windows_host_process_identity import sanitize_process_rows, startup_owned_identities_from_run
+from scripts.validation.windows_host_process_identity import (
+    _command_is_bound_to_run_root, sanitize_process_rows, startup_owned_identities_from_run,
+)
 
 
 def source_snapshot(root):
@@ -114,6 +116,7 @@ class MeasurementWindow:
         self.identity = str(uuid.uuid4())
         self.record = {'id': self.identity, 'pid': os.getpid(), 'snapshots': [], 'errors': []}
         self.owned_process_identities = set(owned_process_identities or ())
+        self.launch_intents = []
         self._stop = threading.Event()
         self._thread = None
         self._stream = None
@@ -142,6 +145,12 @@ class MeasurementWindow:
     def register_owned_process_identities(self, identities):
         self.owned_process_identities.update(str(identity) for identity in identities if identity)
 
+    def register_launch_intent(self, command):
+        self.check()
+        if not _command_is_bound_to_run_root(command, self.run_root):
+            raise ValueError('Measurement launch command is not bound to the run root')
+        self.launch_intents.append({'command': tuple(command), 'parent_pid': os.getpid()})
+
     def _collect(self):
         snapshot = machine_snapshot(source_root=self.source_root, owned_root=self.guard.parent)
         row = {
@@ -150,7 +159,9 @@ class MeasurementWindow:
             **snapshot,
         }
         setup_started = time.monotonic()
-        startup_identities = startup_owned_identities_from_run(self.run_root, row.get('processes', []))
+        startup_identities = startup_owned_identities_from_run(
+            self.run_root, row.get('processes', []), pending_launches=tuple(self.launch_intents),
+        )
         owned_identities = self.owned_process_identities | startup_identities['identities']
         row['ownership_setup'] = {
             'elapsed_ms': (time.monotonic() - setup_started) * 1000,

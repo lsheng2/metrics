@@ -350,7 +350,7 @@ def test_admitted_toy_interpreter_identity_matches_sensor_and_sle_registry(tmp_p
 
         result = classify_process_observations(enriched, owned_identities=facts["identities"])
 
-        evidence_dir = Path(os.environ.get("PERF_PROBE_EVIDENCE_DIR", "D:/AIGC/pf1120/evidence"))
+        evidence_dir = Path(os.environ.get("PERF_PROBE_EVIDENCE_DIR", str(tmp_path / "evidence")))
         evidence_dir.mkdir(parents=True, exist_ok=True)
         diagnostic.update({
             "result": "observed" if observed_identity and facts.get("sle_marker") else "missing_sensor_fact",

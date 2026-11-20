@@ -213,6 +213,13 @@ asset URL, content hash and size are materialized before warmup. Sample
 intervals prove block/saturation membership; the KPI remains HTML HTTP plus
 asset HTTP time, excluding parsing and hashing.
 
+The performance adapter registers resolved launch intent before calling the
+existing SLE `PlatformOperationSet.start_process`; seed commands use the same
+predeclaration. Exact argv, current driver parent and canonical run-root
+membership establish ownership before SLE's slower provenance capture publishes
+`prepared`. Ambiguous or foreign roots remain failures; later registration
+never erases an earlier foreign-workload error.
+
 ### PERF.PROBE: Correct The Measurement Chain
 
 Owned files are enumerated by this node in the JSON DAG. Keep modules cohesive

@@ -240,12 +240,16 @@ def validate_transport(
                 raise ValueError('Probe outside saturation interval')
             elapsed = finite(row['ms'])
             if require_direct_asset:
+                if row['kind'] not in {'loop_short', 'direct_asset', 'excess_stream'}:
+                    raise ValueError('Unexpected performance probe kind')
                 slot = row.get('slot')
                 scheduled = finite(row.get('scheduled'))
                 if type(slot) is not int or slot < 0 or abs(scheduled - (start + slot)) > 0.001:
                     raise ValueError('Probe is not bound to its scheduled slot')
                 if abs(row_start - scheduled) > 0.5:
                     raise ValueError('Probe is not bound to its scheduled slot')
+                if row['kind'] == 'excess_stream' and slot % 5:
+                    raise ValueError('Excess probe is outside its five-second cadence')
                 slots.setdefault(slot, set()).add(row['kind'])
                 key = (slot, row['kind'])
                 per_slot_kind_counts[key] = per_slot_kind_counts.get(key, 0) + 1

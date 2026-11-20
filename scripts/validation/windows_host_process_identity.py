@@ -268,9 +268,14 @@ def _load_lifecycle_services(run_root):
 
 
 def _command_is_bound_to_run_root(command, run_root):
-    root = _normalized_text(run_root)
-    parts = _normalize_parts(command)
-    return bool(root and any(root in part for part in parts))
+    parts = list(command or ())
+    if parts.count("--root") != 1:
+        return False
+    try:
+        root = Path(str(parts[parts.index("--root") + 1]).strip('"'))
+        return root.is_absolute() and root.resolve().is_relative_to(Path(run_root).resolve())
+    except (IndexError, OSError, ValueError):
+        return False
 
 
 def _commands_match(left, right):
@@ -295,7 +300,7 @@ def _descendant_pids(root_pid, rows):
     return owned
 
 
-def startup_owned_identities_from_run(run_root, process_rows):
+def startup_owned_identities_from_run(run_root, process_rows, *, pending_launches=()):
     rows = []
     by_pid = {}
     for row in process_rows:
@@ -307,6 +312,22 @@ def startup_owned_identities_from_run(run_root, process_rows):
         rows.append(row)
     identities = set()
     matched = []
+    for launch in pending_launches:
+        command = launch["command"]
+        if not _command_is_bound_to_run_root(command, run_root):
+            continue
+        roots = [
+            row for row in rows
+            if row.get("parent_pid") == launch["parent_pid"]
+            and _commands_match(row.get("command"), command)
+        ]
+        if len(roots) != 1:
+            continue
+        for pid in _descendant_pids(roots[0]["pid"], rows):
+            identity = by_pid[pid].get("identity")
+            if identity:
+                identities.add(identity)
+                matched.append({"state": "predeclared_launch", "pid": pid})
     for state_file, service in _load_lifecycle_services(run_root):
         if str(service.get("lifecycle_state")) not in {"prepared", "ready"}:
             continue
