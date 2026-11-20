@@ -45,6 +45,24 @@ def invoke(case, profile="functional"):
     return qualifier.main(["--profile", profile, "--inputs", str(case["inputs"]), "--output", str(case["output"])])
 
 
+def bind_performance_refs(case, manifest, *, mode="certify"):
+    policy = case["owned"] / "policy.json"
+    functional = case["owned"] / "functional.json"
+    _write_json(policy, {
+        "schema_version": 1,
+        "kind": "windows-performance-policy",
+        "recipe_id": "windows-mdb2-s0b-r1",
+        "status": "method-frozen-not-measured",
+    })
+    _write_json(functional, {"schema_version": 1, "status": "PASS"})
+    manifest["performance"] = {
+        "recipe_id": "windows-mdb2-s0b-r1",
+        "mode": mode,
+        "policy_ref": {"path": str(policy), "sha256": _sha(policy)},
+        "functional_acceptance_ref": {"path": str(functional), "sha256": _sha(functional)},
+    }
+
+
 def test_cli_requires_explicit_profile_before_any_execution(tmp_path, monkeypatch):
     case, _ = phase_case(tmp_path, monkeypatch)
     commands = _fake_subprocess(monkeypatch)
@@ -129,6 +147,7 @@ def test_performance_evidence_routes_to_dedicated_semantic_checker(tmp_path, mon
     _write_json(receipt, {"kind": "windows-host-performance", "status": "PASS"})
     binding = deepcopy(manifest["checks"]["evidence_bindings"]["task:1.1"])
     binding.update(kind="windows-host-performance", path=str(receipt), sha256=_sha(receipt), covers=[key])
+    bind_performance_refs(case, manifest)
 
     from scripts.validation import windows_host_performance_evidence as performance_evidence
 
@@ -151,6 +170,25 @@ def test_conformance_native_receipt_cannot_substitute_for_performance_binding(tm
     _write_json(receipt, {"kind": "windows-host-conformance", "status": "PASS"})
     binding = deepcopy(manifest["checks"]["evidence_bindings"]["task:1.1"])
     binding.update(kind="native", path=str(receipt), sha256=_sha(receipt), covers=[key])
+
+    with pytest.raises(QualificationError):
+        evidence.validate_binding(key, binding, manifest, (case["root"], case["owned"]))
+
+
+def test_aggregate_performance_replay_revalidates_policy_identity(tmp_path, monkeypatch):
+    case, _ = phase_case(tmp_path, monkeypatch)
+    manifest = case["manifest"]
+    key = "clause:10.4:B3-incremental-timing:performance"
+    receipt = case["owned"] / "receipts" / "performance.json"
+    _write_json(receipt, {"kind": "windows-host-performance", "status": "PASS"})
+    binding = deepcopy(manifest["checks"]["evidence_bindings"]["task:1.1"])
+    binding.update(kind="windows-host-performance", path=str(receipt), sha256=_sha(receipt), covers=[key])
+    manifest["performance"] = {
+        "recipe_id": "windows-mdb2-s0b-r1",
+        "mode": "certify",
+        "policy_ref": {"path": str(case["owned"] / "missing-policy.json"), "sha256": "0" * 64},
+        "functional_acceptance_ref": {"path": str(case["owned"] / "missing-functional.json"), "sha256": "0" * 64},
+    }
 
     with pytest.raises(QualificationError):
         evidence.validate_binding(key, binding, manifest, (case["root"], case["owned"]))

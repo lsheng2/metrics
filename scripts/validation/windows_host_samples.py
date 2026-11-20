@@ -130,12 +130,12 @@ def validate_cell(samples, *, blocks=BLOCKS, per_block=PER_BLOCK):
     return percentile([row['ms'] for row in samples], 0.95), assets
 
 
-def validate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
+def evaluate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
     try:
         pages = payload['pages']
         if set(pages) != set(MODES):
             raise ValueError('Missing measurement mode')
-        rows = []
+        rows, violations = [], []
         for mode in MODES:
             if set(pages[mode]) != set(PAGE_KEYS):
                 raise ValueError('Missing required page')
@@ -147,10 +147,21 @@ def validate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
                 for arm in ARMS[1:]:
                     candidate, assets = validate_cell(arms[arm], blocks=blocks, per_block=per_block)
                     ratio = candidate / baseline
-                    if assets != baseline_assets or ratio > 1.2:
+                    if assets != baseline_assets:
                         raise ValueError(f'{mode}/{page}/{arm}: asset mismatch or p95 exceeds 1.2x')
+                    if ratio > 1.2:
+                        violations.append({'metric': 'page_ratio', 'mode': mode, 'page': page, 'arm': arm,
+                                           'ratio': ratio, 'limit': 1.2})
                     rows.append({'mode': mode, 'page': page, 'arm': arm, 'ratio': ratio,
                                  'baseline_p95_ms': baseline, 'candidate_p95_ms': candidate})
-        return rows
+        return {'rows': rows, 'violations': violations}
     except (KeyError, TypeError, ZeroDivisionError) as error:
         raise ValueError('Incomplete measurement payload') from error
+
+
+def validate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
+    evaluation = evaluate_pages(payload, blocks=blocks, per_block=per_block)
+    if evaluation['violations']:
+        row = evaluation['violations'][0]
+        raise ValueError(f"{row['mode']}/{row['page']}/{row['arm']}: asset mismatch or p95 exceeds 1.2x")
+    return evaluation['rows']

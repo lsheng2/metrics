@@ -1,6 +1,7 @@
 """Owned native fixture launches through the existing lifecycle engine."""
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from http.client import HTTPException
 import hashlib
 import json
 from pathlib import Path
@@ -36,6 +37,8 @@ def free_port():
 
 def cleanup_is_normal(cleanup):
     services = cleanup.get('services') or {}
+    if cleanup.get('owned_descendants_absent') is not True or cleanup.get('listeners_absent') is not True:
+        return False
     services_normal = bool(services) and all(
         row.get('stopped') is True and row.get('exit_code') == 0
         and row.get('forced') is False and row.get('force_requested') is False
@@ -45,8 +48,8 @@ def cleanup_is_normal(cleanup):
     return bool(
         services_normal
         and cleanup.get('normal') is True
-        and cleanup.get('owned_descendants_absent', True) is True
-        and cleanup.get('listeners_absent', True) is True
+        and cleanup.get('owned_descendants_absent') is True
+        and cleanup.get('listeners_absent') is True
     )
 
 
@@ -86,6 +89,7 @@ def classify_process_observations(records, *, owned_identities):
 
 
 def stop_arms(engine, names):
+    states = engine.read_state() if hasattr(engine, 'read_state') else {}
     results = {}
     for name in reversed(names):
         try:
@@ -93,14 +97,34 @@ def stop_arms(engine, names):
             results[name] = asdict(result)
         except Exception as error:
             results[name] = {'error': type(error).__name__, 'stopped': False}
+    observations = {}
+    owned_descendants_absent = True
+    listeners_absent = True
+    ops = getattr(engine, 'platform_ops', None)
+    for name in names:
+        state = states.get(name, {}) if isinstance(states, dict) else {}
+        result = results.get(name, {})
+        pid = result.get('pid') if isinstance(result, dict) else None
+        pid = pid if pid is not None else state.get('pid')
+        host, port = state.get('host', '127.0.0.1'), state.get('port', result.get('port') if isinstance(result, dict) else None)
+        running = bool(ops and pid is not None and ops.process_exists(int(pid)))
+        listener_pids = list(ops.get_listening_process_ids(str(host), int(port))) if ops and port not in {None, -1} else []
+        owned_descendants_absent = owned_descendants_absent and not running
+        listeners_absent = listeners_absent and not listener_pids
+        observations[name] = {'pid': pid, 'host': host, 'port': port, 'process_running': running,
+                              'listener_pids': listener_pids}
+    services_normal = bool(results) and all(
+        row.get('stopped') is True and row.get('exit_code') == 0
+        and row.get('forced') is False and row.get('force_requested') is False
+        and row.get('reason') == 'stop_command'
+        for row in results.values()
+    )
     cleanup = {
         'services': results,
-        'normal': bool(results) and all(
-            row.get('stopped') is True and row.get('exit_code') == 0
-            and row.get('forced') is False and row.get('force_requested') is False
-            and row.get('reason') == 'stop_command'
-            for row in results.values()
-        ),
+        'observations': observations,
+        'owned_descendants_absent': owned_descendants_absent,
+        'listeners_absent': listeners_absent,
+        'normal': services_normal and owned_descendants_absent and listeners_absent,
     }
     return cleanup
 
@@ -137,7 +161,7 @@ def ready_metadata(base, engine, name):
                             or result['worker_executed']):
                         raise ValueError('Baseline fixture or idle worker is not equivalent')
                     return result
-            except (OSError, TimeoutError, httpx.TransportError):
+            except (OSError, TimeoutError, HTTPException, httpx.TransportError):
                 pass
             if time.monotonic() >= deadline:
                 raise TimeoutError('Native fixture did not become ready')

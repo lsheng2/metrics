@@ -7,7 +7,7 @@ from scripts.validation.project_full_stack_support import write_json
 from scripts.validation.windows_host_processes import running_arms
 from scripts.validation.windows_host_samples import (
     ARMS, BLOCKS, MODES, PAGE_KEYS, PER_BLOCK, WARMUP, Assets,
-    asset_identity, client, parse_assets, run_block, sample_page, validate_pages,
+    asset_identity, client, evaluate_pages, parse_assets, run_block, sample_page,
 )
 from scripts.validation.windows_host_transport import measure_spacing, saturated_streams, validate_transport
 
@@ -26,6 +26,35 @@ def discover_direct_asset(base):
     if not matches:
         raise ValueError('No direct runtime asset was discovered')
     return matches[0]
+
+
+def asset_prefix(path):
+    return path.rsplit('/', 1)[0] + '/' if path else '/ai/assets/'
+
+
+def resolved_inputs(arms, sanity_records, metadata, *, production, recipe, direct_asset):
+    return {
+        'phase': 'production' if production else 'development',
+        'recipe_id': 'windows-mdb2-s0b-r1',
+        'settings': {'production': production, 'debug': not production},
+        'recipe': dict(recipe),
+        'asset_prefix': asset_prefix(direct_asset),
+        'direct_asset': {'url': direct_asset} if direct_asset else None,
+        'arms': {
+            name: {
+                'base_url': arms.bases[name],
+                'role': 'baseline' if name == 'baseline' else 'candidate',
+                'pages': dict(metadata[name]['pages']),
+                'worker_started': metadata[name].get('worker_started'),
+                'worker_executed': metadata[name].get('worker_executed'),
+                'assets': {
+                    url: {'sha256': digest, 'bytes': size}
+                    for page_sample in sanity_records[name].values()
+                    for url, (digest, size) in asset_identity(page_sample).items()
+                },
+            } for name in ARMS
+        },
+    }
 
 
 def sanity(arms):
@@ -72,6 +101,11 @@ def phase(root, python, *, production, window, recipe=None):
             result['processes'] = arms.record
             result['sanity'] = sanity(arms)
             metadata = {name: row['metadata'] for name, row in arms.record['arms'].items()}
+            direct_asset = discover_direct_asset(arms.bases['candidate_saturated']) if recipe['require_direct_asset'] else None
+            result['resolved_inputs'] = resolved_inputs(
+                arms, result['sanity'], metadata, production=production, recipe=recipe, direct_asset=direct_asset,
+            )
+            write_json(root / 'resolved-inputs.json', result['resolved_inputs'])
             result['warmup'] = {}
             for name, base in arms.bases.items():
                 result['warmup'][name] = {
@@ -83,7 +117,6 @@ def phase(root, python, *, production, window, recipe=None):
                     if any(row['status'] != 200 or asset_identity(row) != expected_assets for row in samples):
                         raise ValueError('Warmup page or assets failed')
             result['spacing'] = measure_spacing(arms.bases['candidate'])
-            direct_asset = discover_direct_asset(arms.bases['candidate_saturated']) if recipe['require_direct_asset'] else None
             with saturated_streams(arms.bases['candidate_saturated'], direct_asset_path=direct_asset) as saturation:
                 result['saturation'] = saturation
                 for mode, workers in MODES.items():
@@ -102,15 +135,20 @@ def phase(root, python, *, production, window, recipe=None):
                                 result['pages'][mode][page][name].extend(samples)
                                 result['blocks'].append({'mode': mode, 'page': page, 'block': block,
                                                          'arm': name, 'started': started, 'ended': time.monotonic()})
-                            write_json(root / 'measurement-partial.json', result,
-                                       replace=(root / 'measurement-partial.json').exists())
+                            block_path = root / 'blocks' / f'{mode}-{page}-{block}.json'
+                            write_json(block_path, {'mode': mode, 'page': page, 'block': block,
+                                                    'arms': {name: result['pages'][mode][page][name] for name in ARMS}})
                             if saturation['errors']:
                                 raise ValueError('Saturation stream or probe failed')
                         print(f'measured {mode}/{page} production={production}', flush=True)
-            result['page_validation'] = validate_pages(result, blocks=blocks, per_block=per_block)
-            result['transport_validation'] = validate_transport(
+            pages = evaluate_pages(result, blocks=blocks, per_block=per_block)
+            transport = validate_transport(
                 result, spacing_events=recipe['spacing_events'], require_direct_asset=recipe['require_direct_asset'],
+                direct_asset_prefix=result['resolved_inputs']['asset_prefix'], fail_on_violation=False,
             )
+            result['page_validation'] = pages['rows']
+            result['transport_validation'] = transport
+            result['violations'] = [*pages['violations'], *transport.get('violations', [])]
         result['result'] = 'PASS'
     except Exception as error:
         result['error'] = {'type': type(error).__name__, 'message': str(error)}
@@ -121,6 +159,8 @@ def phase(root, python, *, production, window, recipe=None):
 
 
 def run_benchmark(root, python, window, *, recipe=None):
+    root = Path(root)
+    root.mkdir(parents=True)
     return {
         'development': phase(Path(root) / 'development', python, production=False, window=window, recipe=recipe),
         'production': phase(Path(root) / 'production', python, production=True, window=window, recipe=recipe),

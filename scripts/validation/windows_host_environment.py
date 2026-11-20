@@ -13,6 +13,7 @@ import time
 import uuid
 
 from scripts.validation.project_full_stack_support import read_json, write_json
+from scripts.validation.windows_host_processes import classify_process_observations
 
 
 def source_snapshot(root):
@@ -59,11 +60,12 @@ def machine_snapshot():
 
 
 class MeasurementWindow:
-    def __init__(self, owned_root, run_root, source_root):
+    def __init__(self, owned_root, run_root, source_root, *, owned_process_identities=None):
         self.guard = Path(owned_root) / 'HEAVY_RUN_ACTIVE'
         self.run_root, self.source_root = Path(run_root), Path(source_root)
         self.identity = str(uuid.uuid4())
         self.record = {'id': self.identity, 'pid': os.getpid(), 'snapshots': [], 'errors': []}
+        self.owned_process_identities = set(owned_process_identities or ())
         self._stop = threading.Event()
         self._thread = None
         self._stream = None
@@ -90,6 +92,13 @@ class MeasurementWindow:
 
     def _collect(self):
         row = {'utc': datetime.now(UTC).isoformat(), 'monotonic': time.monotonic(), **machine_snapshot()}
+        classification = classify_process_observations(
+            row.get('processes', []), owned_identities=self.owned_process_identities,
+        )
+        row['process_classification'] = classification
+        self.record['process_classification'] = classification
+        if classification['certification_blockers']:
+            self.record['errors'].append('relevant_process:' + ','.join(classification['certification_blockers']))
         previous = self.record['snapshots']
         if previous:
             old = previous[-1]['cpu']

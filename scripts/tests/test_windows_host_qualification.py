@@ -239,8 +239,8 @@ def test_benchmark_preserves_interleaved_recipe_and_rejects_slow_cells(tmp_path,
     monkeypatch.setattr(benchmark, 'write_json', lambda *args, **kwargs: None)
     window = SimpleNamespace(check=lambda: checks.append(True))
     if slow:
-        with pytest.raises(ValueError):
-            benchmark.phase(tmp_path / 'phase', tmp_path / 'python', production=False, window=window)
+        result = benchmark.phase(tmp_path / 'phase', tmp_path / 'python', production=False, window=window)
+        assert result["violations"]
     else:
         result = benchmark.phase(tmp_path / 'phase', tmp_path / 'python', production=False, window=window)
         assert result['result'] == 'PASS'
@@ -302,6 +302,121 @@ def test_benchmark_uses_explicit_reduced_pilot_recipe_with_performance_transport
     assert all(row[2] == 5 for row in measured)
     assert len(warmup) == 18
     assert all(row[2] == 1 for row in warmup)
+
+
+def test_benchmark_writes_bounded_immutable_block_artifacts(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    from scripts.validation import windows_host_benchmark as benchmark
+
+    names = ('baseline', 'candidate', 'candidate_saturated')
+    pages = {name: '/' + name for name in ('home', 'projects', 'project_detail', 'stage_reports', 'draft_edit', 'bug_trend')}
+    writes = []
+    asset = {'url': '/static/app.js', 'status': 200, 'bytes': 42, 'sha256': 'a' * 64}
+
+    @contextmanager
+    def arms(*args, **kwargs):
+        yield SimpleNamespace(
+            bases={name: name for name in names},
+            record={'arms': {name: {'metadata': {'pages': pages}} for name in names}},
+        )
+
+    def samples(base, path, *, count, workers, block):
+        return [{'block': block, 'sample': index, 'ms': 10.0 if base == 'baseline' else 11.0,
+                 'html_ms': 2.0, 'status': 200, 'started': 10 + index, 'ended': 11 + index,
+                 'assets': [dict(asset)]} for index in range(count)]
+
+    @contextmanager
+    def saturation(*args, **kwargs):
+        yield transport_payload()['saturation']
+
+    monkeypatch.setattr(benchmark, 'running_arms', arms)
+    monkeypatch.setattr(benchmark, 'sanity', lambda arms: {name: {page: {'assets': [asset]} for page in pages} for name in names})
+    monkeypatch.setattr(benchmark, 'run_block', samples)
+    monkeypatch.setattr(benchmark, 'measure_spacing', lambda base: transport_payload()['spacing'])
+    monkeypatch.setattr(benchmark, 'saturated_streams', saturation)
+    monkeypatch.setattr(benchmark, 'write_json', lambda path, value, **kwargs: writes.append((path, value, kwargs)))
+
+    benchmark.phase(
+        tmp_path / 'phase', tmp_path / 'python', production=False, window=SimpleNamespace(check=lambda: None),
+        recipe={"warmup": 1, "blocks": 1, "per_block": 5, "spacing_events": 8, "require_direct_asset": False},
+    )
+
+    written_names = [path.name for path, _, _ in writes]
+    assert "measurement-partial.json" not in written_names
+    block_writes = [path for path, _, _ in writes if path.parent.name == "blocks"]
+    assert len(block_writes) == 12
+    assert len(set(block_writes)) == len(block_writes)
+
+
+def test_transport_accepts_bound_conformance_asset_prefix_and_hashes_body(monkeypatch):
+    from types import SimpleNamespace
+    from scripts.validation import windows_host_transport as transport
+    from scripts.tests.windows_performance_support import performance_transport_payload
+
+    payload = performance_transport_payload(asset_prefix="/conformance/ai/assets/", slots=2)
+    observed = transport.validate_transport(
+        payload, spacing_events=50, require_direct_asset=True, direct_asset_prefix="/conformance/ai/assets/",
+    )
+    assert observed["direct_asset_probes"] == 2
+
+    class Http:
+        def get(self, url, timeout=2):
+            return SimpleNamespace(status_code=200, headers={"ETag": '"sha256-forged"'}, content=b"body")
+
+    record = {"probes": [], "errors": []}
+    monkeypatch.setattr(transport.time, "monotonic", iter([1.0, 1.005, 1.006]).__next__)
+    transport._probe(Http(), "http://127.0.0.1:1", "/conformance/ai/assets/ui.css", "direct_asset", record)
+
+    assert record["probes"][0]["etag"] == '"sha256-forged"'
+    assert record["probes"][0]["content_sha256"] == "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5"
+
+
+def test_transport_rejects_wrong_direct_asset_prefix_or_forged_content_hash():
+    from scripts.validation.windows_host_transport import validate_transport
+    from scripts.tests.windows_performance_support import performance_transport_payload
+
+    payload = performance_transport_payload(asset_prefix="/forged/ai/assets/", slots=2)
+    with pytest.raises(ValueError):
+        validate_transport(payload, spacing_events=50, require_direct_asset=True, direct_asset_prefix="/conformance/ai/assets/")
+
+    payload = performance_transport_payload(asset_prefix="/conformance/ai/assets/", slots=2)
+    payload["saturation"]["probes"][1]["content_sha256"] = "sha256-forged"
+    with pytest.raises(ValueError):
+        validate_transport(payload, spacing_events=50, require_direct_asset=True, direct_asset_prefix="/conformance/ai/assets/")
+
+
+def test_ready_metadata_retries_http_exception_family_without_extending_deadline(monkeypatch):
+    from http.client import BadStatusLine
+    from types import SimpleNamespace
+    from scripts.validation import windows_host_processes as processes
+
+    calls = {"count": 0}
+
+    class Http:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def get(self, url):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise BadStatusLine("partial")
+            return SimpleNamespace(status_code=200, json=lambda: {
+                "pages": {page: f"/{page}" for page in processes.PAGE_KEYS},
+                "worker_started": True,
+                "worker_executed": [],
+            })
+
+    class Ops:
+        def process_exists(self, pid):
+            return True
+
+    engine = SimpleNamespace(read_state=lambda: {"candidate": {"pid": 123}}, platform_ops=Ops())
+    monkeypatch.setattr(processes, "client", lambda: Http())
+    assert processes.ready_metadata("http://127.0.0.1:1", engine, "candidate")["worker_started"] is True
 
 
 def test_dispatcher_requires_mode_for_performance_before_workloads_start(tmp_path, monkeypatch):

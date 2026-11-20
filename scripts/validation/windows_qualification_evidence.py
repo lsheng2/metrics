@@ -134,6 +134,8 @@ def validate_binding(key: str, binding: dict, request: dict, roots: tuple[Path, 
     if key.endswith(":performance") and kind != PERFORMANCE_KIND:
         raise QualificationError("performance requires producer-owned native measurement evidence")
     if key.endswith(":performance"):
+        from scripts.validation.windows_host_performance_contract import validate_performance_contract
+        validate_performance_contract(request, roots, mode=request.get("performance", {}).get("mode"))
         from scripts.validation.windows_host_performance_evidence import validate_bound_receipt
         return validate_bound_receipt(key, path, request)
     if kind in {NATIVE_CONFORMANCE_KIND, "native"}:

@@ -40,3 +40,23 @@ def test_measurement_window_writer_failure_cannot_leave_pass(tmp_path, monkeypat
     record = environment.read_json(run / "measurement-window.json")
     assert record["result"] == "FAIL"
     assert not (tmp_path / "HEAVY_RUN_ACTIVE").exists()
+
+
+def test_measurement_window_blocks_foreign_relevant_workload(tmp_path, monkeypatch):
+    from scripts.validation import windows_host_environment as environment
+
+    monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "same"})
+    monkeypatch.setattr(environment, "machine_snapshot", lambda: {
+        "processes": [{"pid": 9, "identity": "foreign", "command": ["python", "manage.py", "serve"], "metrics_workload": True}],
+        "cpu": {"idle": 1, "kernel": 2, "user": 3},
+    })
+    run = tmp_path / "run"
+    run.mkdir()
+
+    with pytest.raises(ValueError, match="relevant"):
+        with environment.MeasurementWindow(tmp_path, run, tmp_path, owned_process_identities={"owned"}):
+            pass
+
+    record = environment.read_json(run / "measurement-window.json")
+    assert record["result"] == "FAIL"
+    assert record["process_classification"]["certification_blockers"] == ["foreign_relevant:9"]

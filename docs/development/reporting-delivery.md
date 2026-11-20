@@ -47,6 +47,14 @@ run directory. Producer inputs, frozen policy, historical functional reference,
 wheel and environment evidence keep the existing repository-or-owned-root
 canonical path and hash boundary; they are not copied or made arbitrary-root
 inputs merely to fit a run directory.
+Performance replay now treats collection integrity, numeric KPI violations and
+certification eligibility as separate facts. Diagnostic collection may retain
+complete raw samples with violations; certification replays the same raw data and
+rejects any violation. Direct runtime asset probes use the resolved runtime
+asset prefix for the owning fixture, store a real response-body SHA256 separately
+from any ETag, and reject forged prefixes or non-hex hashes. Cleanup and window
+proofs must come from observed SLE/process/listener and measurement-window
+classification records; missing absence facts are not success.
 
 Windows B5 shutdown qualification requires two complementary proofs under the
 approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):

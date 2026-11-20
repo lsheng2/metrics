@@ -1,9 +1,11 @@
 """Observed NDJSON delivery and independent stream/short-request saturation."""
 import base64
 from contextlib import contextmanager
+import hashlib
 from http.client import HTTPConnection
 import json
 import math
+import re
 import socket
 import threading
 import time
@@ -94,7 +96,8 @@ def _probe(http, base, path, kind, record, *, slot=None, scheduled=None):
             'slot': slot, 'kind': kind, 'resource': path, 'scheduled': scheduled,
             'started': started, 'ended': time.monotonic(), 'ms': (time.monotonic() - started) * 1000,
             'status': response.status_code, 'retry_after': response.headers.get('Retry-After'),
-            'content_sha256': response.headers.get('ETag', '').strip('"') or None,
+            'content_sha256': hashlib.sha256(response.content).hexdigest(),
+            'etag': response.headers.get('ETag'),
         })
     except Exception as error:
         record['errors'].append(f'{kind}:{type(error).__name__}')
@@ -197,7 +200,10 @@ def _row_interval(row):
     return started, ended
 
 
-def validate_transport(payload, *, spacing_events=8, require_direct_asset=False):
+def validate_transport(
+    payload, *, spacing_events=8, require_direct_asset=False,
+    direct_asset_prefix='/ai/assets/', fail_on_violation=True,
+):
     try:
         spacing, saturation = payload['spacing'], payload['saturation']
         times = spacing['arrivals']
@@ -207,7 +213,14 @@ def validate_transport(payload, *, spacing_events=8, require_direct_asset=False)
         times = [finite(value) for value in times]
         gaps = [(right - left) * 1000 for left, right in zip(times, times[1:])]
         first, gap_p95 = (times[0] - started) * 1000, percentile(gaps, 0.95)
-        if first < 0 or first > 200 or gap_p95 > 150:
+        violations = []
+        if first < 0:
+            raise ValueError('Buffered or late stream delivery')
+        if first > 200:
+            violations.append({'metric': 'spacing_first_event_ms', 'value': first, 'limit': 200})
+        if gap_p95 > 150:
+            violations.append({'metric': 'spacing_p95_ms', 'value': gap_p95, 'limit': 150})
+        if fail_on_violation and violations:
             raise ValueError('Buffered or late stream delivery')
         if saturation['opened'] != ['active', 'idle', 'idle', 'idle'] or saturation['closed'] != 4 or saturation['errors']:
             raise ValueError('Incomplete saturation or cleanup')
@@ -229,12 +242,20 @@ def validate_transport(payload, *, spacing_events=8, require_direct_asset=False)
                     raise ValueError('Probe is not bound to its scheduled slot')
                 slots.setdefault(slot, set()).add(row['kind'])
             if row['kind'] in {'short', 'loop_short'}:
-                if row['status'] != 200 or elapsed >= 100:
+                if row['status'] != 200:
                     raise ValueError('Short requests failed or reached 100ms')
+                if elapsed >= 100:
+                    violations.append({'metric': 'short_ms', 'slot': row.get('slot'), 'value': elapsed, 'limit': 100})
                 short.append(row)
             elif row['kind'] == 'direct_asset':
-                if row['status'] != 200 or elapsed >= 100 or not str(row.get('resource', '')).startswith('/ai/assets/'):
+                digest = row.get('content_sha256')
+                if (row['status'] != 200
+                        or not str(row.get('resource', '')).startswith(direct_asset_prefix)
+                        or not isinstance(digest, str)
+                        or re.fullmatch(r'[0-9a-f]{64}', digest) is None):
                     raise ValueError('Direct runtime asset probe failed')
+                if elapsed >= 100:
+                    violations.append({'metric': 'direct_asset_ms', 'slot': row.get('slot'), 'value': elapsed, 'limit': 100})
                 direct.append(row)
             elif row['kind'] in {'excess', 'excess_stream'}:
                 if row['status'] != 503 or row['retry_after'] != '2':
@@ -256,7 +277,10 @@ def validate_transport(payload, *, spacing_events=8, require_direct_asset=False)
         if (type(stream_count) is not int or stream_count != 0
                 or type(short_count) is not int or short_count not in {0, 1}):
             raise ValueError('Admission resources were not returned')
+        if fail_on_violation and violations:
+            raise ValueError('Transport KPI violation')
         return {'first_event_ms': first, 'spacing_p95_ms': gap_p95,
-                'short_probes': len(short), 'direct_asset_probes': len(direct), 'excess_probes': len(excess)}
+                'short_probes': len(short), 'direct_asset_probes': len(direct), 'excess_probes': len(excess),
+                'violations': violations}
     except (KeyError, TypeError) as error:
         raise ValueError('Incomplete transport measurement') from error

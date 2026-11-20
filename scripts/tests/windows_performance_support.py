@@ -33,7 +33,7 @@ def performance_page_payload(*, blocks: int = 4, per_block: int = 40) -> dict:
     return {"pages": pages}
 
 
-def performance_transport_payload(*, spacing_events: int = 50, slots: int = 10) -> dict:
+def performance_transport_payload(*, spacing_events: int = 50, slots: int = 10, asset_prefix: str = "/ai/assets/") -> dict:
     started = 100.0
     saturation_start = 200.0
     probes = []
@@ -52,13 +52,14 @@ def performance_transport_payload(*, spacing_events: int = 50, slots: int = 10) 
         probes.append({
             "slot": slot,
             "kind": "direct_asset",
-            "resource": "/ai/assets/runtime.js",
+            "resource": f"{asset_prefix}runtime.js",
             "scheduled": scheduled,
             "started": scheduled + 0.04,
             "ended": scheduled + 0.06,
             "ms": 20.0,
             "status": 200,
             "content_sha256": "b" * 64,
+            "etag": '"sha256-bbbbbbbbbbbb"',
         })
         if slot % 5 == 0:
             probes.append({
@@ -90,16 +91,57 @@ def performance_transport_payload(*, spacing_events: int = 50, slots: int = 10) 
     }
 
 
-def performance_measurement_payload(*, blocks: int = 4, per_block: int = 40) -> dict:
+def performance_measurement_payload(*, blocks: int = 4, per_block: int = 40, warmup: int = 10) -> dict:
     payload = performance_page_payload(blocks=blocks, per_block=per_block)
     payload.update(performance_transport_payload())
     payload["recipe"] = {
         "blocks": blocks,
         "per_block": per_block,
-        "warmup": 10 if blocks == 4 else 1,
+        "warmup": warmup,
         "spacing_events": 50,
+        "require_direct_asset": True,
     }
     return payload
+
+
+def resolved_inputs_payload(
+    *, production: bool = False, asset_prefix: str = "/ai/assets/",
+    warmup: int = 10, blocks: int = 4, per_block: int = 40,
+) -> dict:
+    return {
+        "mode": "certify",
+        "phase": "production" if production else "development",
+        "recipe_id": "windows-mdb2-s0b-r1",
+        "settings": {
+            "debug": not production,
+            "production": production,
+            "collected_static_files": 3 if production else 0,
+        },
+        "recipe": {
+            "warmup": warmup,
+            "blocks": blocks,
+            "per_block": per_block,
+            "spacing_events": 50,
+            "require_direct_asset": True,
+        },
+        "asset_prefix": asset_prefix,
+        "arms": {
+            arm: {
+                "base_url": f"http://127.0.0.1:{8100 + index}",
+                "role": "baseline" if arm == "baseline" else "candidate",
+                "pages": {
+                    page: f"/{page}/" for page in (
+                        "home", "projects", "project_detail", "stage_reports", "draft_edit", "bug_trend"
+                    )
+                },
+                "assets": {"/static/app.js": {"sha256": "a" * 64, "bytes": 42}},
+                "worker_started": True,
+                "worker_executed": [],
+            }
+            for index, arm in enumerate(("baseline", "candidate", "candidate_saturated"))
+        },
+        "direct_asset": {"url": f"{asset_prefix}runtime.js", "sha256": "b" * 64, "bytes": 12},
+    }
 
 
 def write_json(path: Path, value: dict) -> Path:

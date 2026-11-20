@@ -45,6 +45,19 @@ def test_performance_request_reuses_common_input_boundaries_without_copying_exte
     assert request["_paths"]["output"] == case["output"]
 
 
+def test_performance_contract_validates_policy_and_functional_reference_content(tmp_path, monkeypatch):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch, mode="certify")
+    policy = Path(case["manifest"]["performance"]["policy_ref"]["path"])
+    _write_json(policy, {"schema_version": 1, "kind": "wrong", "recipe_id": "windows-mdb2-s0b-r1"})
+    case["manifest"]["performance"]["policy_ref"]["sha256"] = _sha(policy)
+    _write_json(case["inputs"], case["manifest"])
+
+    with pytest.raises(Exception):
+        load_performance_request(case["inputs"], case["output"], mode="certify")
+
+
 @pytest.mark.parametrize("mutation", ["mode", "recipe", "policy_hash", "caller_counts", "functional_escape"])
 def test_performance_request_rejects_unbound_or_caller_selected_recipe_inputs(tmp_path, monkeypatch, mutation):
     from scripts.validation.windows_host_performance_contract import load_performance_request

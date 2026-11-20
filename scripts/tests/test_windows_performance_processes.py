@@ -24,7 +24,7 @@ def test_process_classifier_rejects_foreign_or_unresolved_metrics_workload():
 
 
 def test_cleanup_requires_descendant_and_listener_absence_not_parent_exit_only():
-    from scripts.validation.windows_host_processes import cleanup_is_normal
+    from scripts.validation.windows_host_processes import cleanup_is_normal, stop_arms
 
     parent_only = {
         "services": {"candidate": {"stopped": True, "exit_code": 0, "forced": False, "force_requested": False, "reason": "stop_command"}},
@@ -36,3 +36,36 @@ def test_cleanup_requires_descendant_and_listener_absence_not_parent_exit_only()
     assert cleanup_is_normal(parent_only) is False
     parent_only["owned_descendants_absent"] = True
     assert cleanup_is_normal(parent_only) is True
+
+    missing_facts = {
+        "services": {"candidate": {"stopped": True, "exit_code": 0, "forced": False, "force_requested": False, "reason": "stop_command"}},
+        "normal": True,
+    }
+    assert cleanup_is_normal(missing_facts) is False
+
+
+def test_stop_arms_derives_descendant_and_listener_absence_from_observations():
+    from scripts.service_lifecycle_engine.models import StopResult
+    from scripts.validation.windows_host_processes import stop_arms
+
+    class Ops:
+        def process_exists(self, pid):
+            return pid == 321
+
+        def get_listening_process_ids(self, host, port):
+            return [321] if port == 8123 else []
+
+    class Engine:
+        platform_ops = Ops()
+
+        def read_state(self):
+            return {"candidate": {"pid": 321, "host": "127.0.0.1", "port": 8123}}
+
+        def stop_service(self, name, *, graceful_timeout_seconds):
+            return StopResult(name, 8123, 321, True, False, "stop_command", exit_code=0)
+
+    cleanup = stop_arms(Engine(), ["candidate"])
+
+    assert cleanup["normal"] is False
+    assert cleanup["owned_descendants_absent"] is False
+    assert cleanup["listeners_absent"] is False

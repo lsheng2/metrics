@@ -177,6 +177,10 @@ with a KPI violation can inform optimization, but cannot be acceptance.
 Preserve all cell results and violations, not only the first failing ratio.
 Abort on functional, ownership or collection-integrity failure; do not abort
 the prescribed remaining diagnostic cells solely to discard a slow result.
+Bounded block artifacts are written as immutable per-block records during active
+collection; the complete raw result is assembled after active sampling. Direct
+asset probes bind to the resolved runtime asset prefix and record response-body
+SHA256 separately from ETag metadata.
 
 Only mode `certify`, status `PASS`, empty errors, unchanged identities and
 successful raw-data/window/cleanup recomputation make `acceptance_eligible`
