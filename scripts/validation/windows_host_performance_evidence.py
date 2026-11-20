@@ -103,4 +103,3 @@ def validate_bound_receipt(key: str, path: Path, request: dict) -> dict:
     if key.endswith(":performance") and not result["acceptance_eligible"]:
         raise QualificationError("performance evidence is not certification eligible")
     return result
-

@@ -46,4 +46,3 @@ def load_performance_request(input_arg: str | Path, output_arg: str | Path, *, m
         performance["functional_acceptance_ref"], roots, "functional acceptance reference",
     )
     return request
-

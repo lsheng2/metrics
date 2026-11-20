@@ -36,4 +36,3 @@ def test_cleanup_requires_descendant_and_listener_absence_not_parent_exit_only()
     assert cleanup_is_normal(parent_only) is False
     parent_only["owned_descendants_absent"] = True
     assert cleanup_is_normal(parent_only) is True
-

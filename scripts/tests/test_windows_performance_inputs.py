@@ -67,4 +67,3 @@ def test_performance_request_rejects_unbound_or_caller_selected_recipe_inputs(tm
 
     with pytest.raises(Exception):
         load_performance_request(case["inputs"], case["output"], mode="certify")
-

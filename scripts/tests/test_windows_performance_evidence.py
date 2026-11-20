@@ -146,4 +146,3 @@ def _artifact(path, payload):
 
     write_json(path, payload)
     return {"path": str(path), "sha256": digest_file(path)}
-

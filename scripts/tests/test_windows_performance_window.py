@@ -40,4 +40,3 @@ def test_measurement_window_writer_failure_cannot_leave_pass(tmp_path, monkeypat
     record = environment.read_json(run / "measurement-window.json")
     assert record["result"] == "FAIL"
     assert not (tmp_path / "HEAVY_RUN_ACTIVE").exists()
-
