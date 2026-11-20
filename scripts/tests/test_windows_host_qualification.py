@@ -1,27 +1,17 @@
 from copy import deepcopy
 from types import SimpleNamespace
 import sys
+import time
 
 import pytest
 
 
 def page_payload():
-    from scripts.validation.windows_host_samples import ARMS, MODES, PAGE_KEYS
+    from scripts.tests.windows_performance_support import performance_page_payload, performance_transport_payload
 
-    return {
-        'pages': {
-            mode: {
-                page: {
-                    arm: [
-                        {'block': block, 'sample': sample, 'ms': 10.0 if arm == 'baseline' else 11.0,
-                         'html_ms': 2.0, 'status': 200,
-                         'assets': [{'url': '/static/app.js', 'status': 200, 'bytes': 42, 'sha256': 'a' * 64}]}
-                        for block in range(4) for sample in range(40)
-                    ] for arm in ARMS
-                } for page in PAGE_KEYS
-            } for mode in MODES
-        },
-    }
+    payload = performance_page_payload()
+    payload.update(performance_transport_payload())
+    return payload
 
 
 def test_page_validator_recomputes_all_cells_from_raw_samples():
@@ -150,6 +140,47 @@ def transport_payload():
     }
 
 
+def sample_rows(asset, *, count, block, ms):
+    started = time.monotonic()
+    time.sleep(ms / 1000)
+    ended = time.monotonic()
+    rows = []
+    for index in range(count):
+        rows.append({
+            'block': block, 'sample': index, 'ms': ms, 'html_ms': 2.0, 'status': 200,
+            'started': started, 'ended': ended,
+            'assets': [dict(asset)],
+        })
+    return rows
+
+
+def _active_saturation(payload):
+    saturation = payload["saturation"]
+    started = time.monotonic() - 1
+    for index, row in enumerate(saturation["probes"]):
+        slot = row.get("slot")
+        if slot is None:
+            slot = int(round(row.get("started", 200.0 + index) - 200.0))
+        row["slot"] = slot
+        row["scheduled"] = started + slot
+        row["started"] = row["scheduled"] + 0.01
+        row["ended"] = row["scheduled"] + 0.03
+        row["ms"] = 20.0
+    saturation["started"] = started
+    saturation["ended"] = started + max(row["slot"] for row in saturation["probes"]) + 1
+    return saturation
+
+
+def active_transport_payload():
+    return _active_saturation(transport_payload())
+
+
+def performance_saturation_payload():
+    from scripts.tests.windows_performance_support import performance_transport_payload
+
+    return _active_saturation(performance_transport_payload())
+
+
 def test_transport_validator_uses_observed_times_statuses_and_resource_counts():
     from scripts.validation.windows_host_transport import validate_transport
 
@@ -224,12 +255,11 @@ def test_benchmark_preserves_interleaved_recipe_and_rejects_slow_cells(tmp_path,
     def samples(base, path, *, count, workers, block):
         calls.append((base, path, count, workers, block))
         ms = 10.0 if base == 'baseline' else 20.0 if slow else 11.0
-        return [{'block': block, 'sample': index, 'ms': ms, 'html_ms': 2.0, 'status': 200,
-                 'assets': [dict(asset)]} for index in range(count)]
+        return sample_rows(asset, count=count, block=block, ms=ms)
 
     @contextmanager
     def saturation(*args, **kwargs):
-        yield transport_payload()['saturation']
+        yield active_transport_payload()
 
     monkeypatch.setattr(benchmark, 'running_arms', arms)
     monkeypatch.setattr(benchmark, 'sanity', lambda arms: {name: {page: {'assets': [asset]} for page in pages} for name in names})
@@ -274,13 +304,12 @@ def test_benchmark_uses_explicit_reduced_pilot_recipe_with_performance_transport
     def samples(base, path, *, count, workers, block):
         calls.append((base, path, count, workers, block))
         ms = 10.0 if base == 'baseline' else 11.0
-        return [{'block': block, 'sample': index, 'ms': ms, 'html_ms': 2.0, 'status': 200,
-                 'assets': [dict(asset)]} for index in range(count)]
+        return sample_rows(asset, count=count, block=block, ms=ms)
 
     @contextmanager
     def saturation(*args, **kwargs):
         assert kwargs["direct_asset_path"] == "/ai/assets/runtime.js"
-        yield performance_transport_payload()["saturation"]
+        yield performance_saturation_payload()
 
     monkeypatch.setattr(benchmark, 'running_arms', arms)
     monkeypatch.setattr(benchmark, 'sanity', lambda arms: {name: {page: {'assets': [asset]} for page in pages} for name in names})
@@ -322,13 +351,11 @@ def test_benchmark_writes_bounded_immutable_block_artifacts(tmp_path, monkeypatc
         )
 
     def samples(base, path, *, count, workers, block):
-        return [{'block': block, 'sample': index, 'ms': 10.0 if base == 'baseline' else 11.0,
-                 'html_ms': 2.0, 'status': 200, 'started': 10 + index, 'ended': 11 + index,
-                 'assets': [dict(asset)]} for index in range(count)]
+        return sample_rows(asset, count=count, block=block, ms=10.0 if base == 'baseline' else 11.0)
 
     @contextmanager
     def saturation(*args, **kwargs):
-        yield transport_payload()['saturation']
+        yield active_transport_payload()
 
     monkeypatch.setattr(benchmark, 'running_arms', arms)
     monkeypatch.setattr(benchmark, 'sanity', lambda arms: {name: {page: {'assets': [asset]} for page in pages} for name in names})

@@ -9,11 +9,26 @@ ASSET = {"url": "/static/app.js", "status": 200, "bytes": 42, "sha256": "a" * 64
 
 
 def performance_page_payload(*, blocks: int = 4, per_block: int = 40) -> dict:
-    pages = {}
+    pages, block_rows = {}, []
+    cell_index = 0
     for mode in ("seq", "c4"):
         pages[mode] = {}
         for page in ("home", "projects", "project_detail", "stage_reports", "draft_edit", "bug_trend"):
             pages[mode][page] = {}
+            for block in range(blocks):
+                order = (
+                    ("baseline", "candidate", "candidate_saturated")
+                    if block % 2 == 0 else
+                    ("candidate_saturated", "candidate", "baseline")
+                )
+                for arm in order:
+                    block_start = 201.0 + cell_index * 0.05
+                    block_end = block_start + 0.04
+                    block_rows.append({
+                        "mode": mode, "page": page, "block": block, "arm": arm,
+                        "started": block_start, "ended": block_end,
+                    })
+                    cell_index += 1
             for arm in ("baseline", "candidate", "candidate_saturated"):
                 ms = 10.0 if arm == "baseline" else 11.0
                 pages[mode][page][arm] = [
@@ -23,14 +38,22 @@ def performance_page_payload(*, blocks: int = 4, per_block: int = 40) -> dict:
                         "ms": ms,
                         "html_ms": 2.0,
                         "status": 200,
-                        "started": 1000.0 + block * 10 + sample * 0.01,
-                        "ended": 1000.01 + block * 10 + sample * 0.01,
+                        "started": _sample_started(block_rows, mode, page, block, arm, sample),
+                        "ended": _sample_started(block_rows, mode, page, block, arm, sample) + ms / 1000,
                         "assets": [deepcopy(ASSET)],
                     }
                     for block in range(blocks)
                     for sample in range(per_block)
                 ]
-    return {"pages": pages}
+    return {"pages": pages, "blocks": block_rows}
+
+
+def _sample_started(block_rows, mode, page, block, arm, sample):
+    block_row = next(
+        row for row in block_rows
+        if (row["mode"], row["page"], row["block"], row["arm"]) == (mode, page, block, arm)
+    )
+    return block_row["started"] + sample * 0.0005
 
 
 def performance_transport_payload(*, spacing_events: int = 50, slots: int = 10, asset_prefix: str = "/ai/assets/") -> dict:
@@ -148,3 +171,55 @@ def write_json(path: Path, value: dict) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def performance_phase_cleanup():
+    services, observations = {}, {}
+    for index, arm in enumerate(("baseline", "candidate", "candidate_saturated")):
+        pid, port = 1000 + index, 8100 + index
+        services[arm] = {
+            "name": arm, "port": port, "pid": pid, "stopped": True,
+            "forced": False, "force_requested": False, "reason": "stop_command",
+            "exit_code": 0,
+        }
+        observations[arm] = {
+            "pid": pid, "host": "127.0.0.1", "port": port,
+            "process_running": False, "listener_pids": [], "observation_errors": [],
+            "owned_processes": {
+                str(pid): {"pid": pid, "role": "service_root", "terminal_exit_code": 0, "process_running": False}
+            },
+        }
+    return {
+        "services": services,
+        "observations": observations,
+        "normal": True,
+        "owned_descendants_absent": True,
+        "listeners_absent": True,
+    }
+
+
+def environment_payload(python, prefix):
+    return {
+        "executable": str(python),
+        "python": "3.13.7",
+        "packages": {"ai-base-runtime": {"version": "1.0.0", "location": str(prefix)}},
+        "shadowed_distributions": {},
+        "selected_imports": {"ai_base_runtime": str(prefix / "Lib/site-packages/ai_base_runtime/__init__.py")},
+        "sys_path": [str(prefix / "Lib/site-packages")],
+    }
+
+
+def import_probe_payload(prefix, source):
+    from scripts.validation.windows_install_smoke import PINS
+
+    return {
+        "prefix": str(prefix),
+        "base_prefix": str(prefix.parent / "base-python"),
+        "user_site": False,
+        "legacy_sdk": False,
+        "paths": [str(prefix / "Lib/site-packages"), str(source)],
+        "versions": dict(PINS),
+        "modules": {name: str(prefix / "Lib/site-packages" / name / "__init__.py") for name in PINS},
+        "distributions": {name: str(prefix / "Lib/site-packages") for name in PINS},
+        "unowned_pth": [],
+    }

@@ -65,9 +65,10 @@ def client(*, auth=AUTH):
 def sample_page(http, base, path):
     if urlsplit(base).hostname != '127.0.0.1' or not path.startswith('/'):
         raise ValueError('Only an owned loopback page can be measured')
-    started = time.perf_counter()
+    started = time.monotonic()
+    perf_started = time.perf_counter()
     response = http.get(base + path)
-    html_seconds = time.perf_counter() - started
+    html_seconds = time.perf_counter() - perf_started
     assets = parse_assets(response.text)
     payloads = []
     assets_started = time.perf_counter()
@@ -75,10 +76,12 @@ def sample_page(http, base, path):
         result = http.get(base + asset)
         payloads.append((asset, result.status_code, result.content))
     assets_seconds = time.perf_counter() - assets_started
+    ended = time.monotonic()
     # Hashing and parsing are outside the original HTTP timing window.
     return {
         'ms': (html_seconds + assets_seconds) * 1000,
         'html_ms': html_seconds * 1000, 'status': response.status_code,
+        'started': started, 'ended': ended,
         'assets': [{'url': path, 'status': status, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
                    for path, status, data in payloads],
     }
@@ -117,6 +120,16 @@ def asset_identity(sample):
     return result
 
 
+def _validate_sample_interval(row):
+    started = finite(row['started'])
+    ended = finite(row['ended'], positive=True)
+    if ended < started:
+        raise ValueError('Page sample timing is reversed')
+    if ((ended - started) * 1000) + 5.0 < finite(row['ms'], positive=True):
+        raise ValueError('Page sample elapsed time is inconsistent')
+    return started, ended
+
+
 def validate_cell(samples, *, blocks=BLOCKS, per_block=PER_BLOCK):
     expected = {(block, sample) for block in range(blocks) for sample in range(per_block)}
     if len(samples) != len(expected) or {(row['block'], row['sample']) for row in samples} != expected:
@@ -127,12 +140,42 @@ def validate_cell(samples, *, blocks=BLOCKS, per_block=PER_BLOCK):
             raise ValueError('Page or asset identity changed during measurement')
         if finite(row['html_ms']) > finite(row['ms'], positive=True):
             raise ValueError('Invalid component timings')
+        _validate_sample_interval(row)
     return percentile([row['ms'] for row in samples], 0.95), assets
+
+
+def validate_blocks(payload, *, blocks=BLOCKS):
+    block_rows = payload.get('blocks')
+    if not isinstance(block_rows, list):
+        raise ValueError('Missing block inventory')
+    saturation = payload.get('saturation')
+    sat_start = finite(saturation['started'])
+    sat_end = finite(saturation['ended'], positive=True)
+    expected = []
+    for mode in MODES:
+        for page in PAGE_KEYS:
+            for block in range(blocks):
+                order = ARMS if block % 2 == 0 else tuple(reversed(ARMS))
+                expected.extend((mode, page, block, arm) for arm in order)
+    observed = []
+    intervals = {}
+    for row in block_rows:
+        key = (row.get('mode'), row.get('page'), row.get('block'), row.get('arm'))
+        observed.append(key)
+        started = finite(row['started'])
+        ended = finite(row['ended'], positive=True)
+        if ended < started or not (sat_start <= started <= ended <= sat_end):
+            raise ValueError('Block interval is outside saturation')
+        intervals[key] = (started, ended)
+    if observed != expected:
+        raise ValueError('Block inventory order mismatch')
+    return intervals
 
 
 def evaluate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
     try:
         pages = payload['pages']
+        block_intervals = validate_blocks(payload, blocks=blocks)
         if set(pages) != set(MODES):
             raise ValueError('Missing measurement mode')
         rows, violations = [], []
@@ -144,6 +187,13 @@ def evaluate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
                 if set(arms) != set(ARMS):
                     raise ValueError('Missing required arm')
                 baseline, baseline_assets = validate_cell(arms['baseline'], blocks=blocks, per_block=per_block)
+                for arm, samples in arms.items():
+                    for sample in samples:
+                        key = (mode, page, sample['block'], arm)
+                        started, ended = _validate_sample_interval(sample)
+                        block_started, block_ended = block_intervals[key]
+                        if not (block_started <= started <= ended <= block_ended):
+                            raise ValueError('Page sample interval is outside its block')
                 for arm in ARMS[1:]:
                     candidate, assets = validate_cell(arms[arm], blocks=blocks, per_block=per_block)
                     ratio = candidate / baseline

@@ -15,6 +15,7 @@ from scripts.validation.windows_host_samples import AUTH, client, finite, percen
 
 
 PROBE_PATH = '/ai/apps/metrics/api/qualification'
+TIMING_TOLERANCE_MS = 5.0
 
 
 class Stream:
@@ -197,6 +198,8 @@ def _row_interval(row):
     ended = finite(row.get('ended', started + row['ms'] / 1000))
     if ended < started:
         raise ValueError('Probe timing is reversed')
+    if abs(finite(row['ms']) - ((ended - started) * 1000)) > TIMING_TOLERANCE_MS:
+        raise ValueError('Probe elapsed time is inconsistent')
     return started, ended
 
 
@@ -230,6 +233,7 @@ def validate_transport(
             raise ValueError('Invalid saturation interval')
         short, direct, excess = [], [], []
         slots = {}
+        per_slot_kind_counts = {}
         for row in saturation['probes']:
             row_start, row_end = _row_interval(row)
             if not start <= row_start <= row_end <= end:
@@ -238,9 +242,13 @@ def validate_transport(
             if require_direct_asset:
                 slot = row.get('slot')
                 scheduled = finite(row.get('scheduled'))
-                if type(slot) is not int or slot < 0 or abs(row_start - scheduled) > 0.5:
+                if type(slot) is not int or slot < 0 or abs(scheduled - (start + slot)) > 0.001:
+                    raise ValueError('Probe is not bound to its scheduled slot')
+                if abs(row_start - scheduled) > 0.5:
                     raise ValueError('Probe is not bound to its scheduled slot')
                 slots.setdefault(slot, set()).add(row['kind'])
+                key = (slot, row['kind'])
+                per_slot_kind_counts[key] = per_slot_kind_counts.get(key, 0) + 1
             if row['kind'] in {'short', 'loop_short'}:
                 if row['status'] != 200:
                     raise ValueError('Short requests failed or reached 100ms')
@@ -266,11 +274,21 @@ def validate_transport(
         if len(short) < max(1, math.floor(duration)) or len(excess) < max(1, math.floor(duration / 5)):
             raise ValueError('Missing saturation probes')
         if require_direct_asset:
-            expected_slots = set(range(max(1, math.floor(duration))))
+            covered_slots = sorted(slot for slot, kinds in slots.items() if {'loop_short', 'direct_asset'} <= kinds)
+            if not covered_slots or covered_slots != list(range(covered_slots[-1] + 1)):
+                raise ValueError('Missing paired direct-asset saturation probe')
+            if covered_slots[-1] > math.floor(duration):
+                raise ValueError('Probe is not bound to its scheduled slot')
+            expected_slots = set(covered_slots)
             for slot in expected_slots:
                 if slots.get(slot, set()) & {'loop_short'} != {'loop_short'} or 'direct_asset' not in slots.get(slot, set()):
                     raise ValueError('Missing paired direct-asset saturation probe')
-            if len(direct) < max(1, math.floor(duration)):
+                if per_slot_kind_counts.get((slot, 'loop_short')) != 1 or per_slot_kind_counts.get((slot, 'direct_asset')) != 1:
+                    raise ValueError('Duplicate saturation probe for slot')
+                if slot % 5 == 0:
+                    if 'excess_stream' not in slots.get(slot, set()) or per_slot_kind_counts.get((slot, 'excess_stream')) != 1:
+                        raise ValueError('Missing fifth-slot excess-stream probe')
+            if len(direct) < len(expected_slots):
                 raise ValueError('Missing direct runtime asset probes')
         stream_count = saturation['after']['streamInFlightCount']
         short_count = saturation['after']['shortInFlightCount']

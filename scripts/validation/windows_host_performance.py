@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from scripts.validation.project_full_stack_support import write_json
+from scripts.validation.project_full_stack_support import read_json, write_json
 from scripts.validation.windows_host_performance_contract import environment_identity, load_performance_request, recipe_for_mode
 
 
@@ -116,7 +116,7 @@ def run_performance(request: dict, *, mode: str) -> dict:
 
             def write_verdict():
                 receipt["measurement_window"] = {"path": str(window_path), "sha256": digest_file(window_path)}
-                result = validate_performance_result(receipt, request)
+                result = validate_performance_result(receipt, request, require_witness=False)
                 receipt["violations"] = result["violations"]
                 receipt["acceptance_eligible"] = result["acceptance_eligible"]
                 if receipt["violations"] and mode == "certify":
@@ -124,6 +124,9 @@ def run_performance(request: dict, *, mode: str) -> dict:
                 write_json(output, receipt)
 
             window.bind_verdict(output, writer=write_verdict)
+        completed = read_json(output)
+        completed["_receipt_path"] = str(output)
+        validate_performance_result(completed, request)
         return receipt
     except Exception as error:
         _mark_failed(receipt, error)

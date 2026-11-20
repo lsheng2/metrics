@@ -118,6 +118,7 @@ class MeasurementWindow:
         self._thread = None
         self._stream = None
         self._verdict_writer = None
+        self._verdict_path = None
 
     def __enter__(self):
         if (self.run_root / 'measurement-window.json').exists():
@@ -202,6 +203,26 @@ class MeasurementWindow:
         if path.is_file():
             self.record['verdict']['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
         self._verdict_writer = writer
+        self._verdict_path = path
+
+    def _write_receipt_witness(self):
+        if self._verdict_path is None or not self._verdict_path.is_file():
+            raise ValueError('Measurement verdict is missing')
+        guard = read_json(self.guard)
+        witness = {
+            'schema_version': 1,
+            'kind': 'windows-performance-receipt-write-witness',
+            'receipt_path': str(self._verdict_path),
+            'receipt_sha256': hashlib.sha256(self._verdict_path.read_bytes()).hexdigest(),
+            'guard_expected_id': self.identity,
+            'guard_observed_id': guard.get('id'),
+            'guard_matches': guard.get('id') == self.identity,
+            'write_completed_monotonic': time.monotonic(),
+            'writer_pid': os.getpid(),
+        }
+        if witness['guard_matches'] is not True:
+            raise ValueError('Measurement guard changed before receipt witness')
+        write_json(self.run_root / 'receipt-write-witness.json', witness)
 
     def _remove_own_guard(self):
         if read_json(self.guard).get('id') != self.identity:
@@ -230,6 +251,7 @@ class MeasurementWindow:
             try:
                 if self._verdict_writer is not None:
                     self._verdict_writer()
+                    self._write_receipt_witness()
                 self._remove_own_guard()
             except Exception as error:
                 self.record['result'] = 'FAIL'

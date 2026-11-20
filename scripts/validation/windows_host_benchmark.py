@@ -126,18 +126,20 @@ def phase(root, python, *, production, window, recipe=None):
                         for block in range(blocks):
                             window.check()
                             order = ARMS if block % 2 == 0 else tuple(reversed(ARMS))
+                            block_samples = {}
                             for name in order:
                                 started = time.monotonic()
                                 samples = run_block(
                                     arms.bases[name], metadata[name]['pages'][page],
                                     count=per_block, workers=workers, block=block,
                                 )
+                                block_samples[name] = samples
                                 result['pages'][mode][page][name].extend(samples)
                                 result['blocks'].append({'mode': mode, 'page': page, 'block': block,
                                                          'arm': name, 'started': started, 'ended': time.monotonic()})
                             block_path = root / 'blocks' / f'{mode}-{page}-{block}.json'
                             write_json(block_path, {'mode': mode, 'page': page, 'block': block,
-                                                    'arms': {name: result['pages'][mode][page][name] for name in ARMS}})
+                                                    'arms': block_samples})
                             if saturation['errors']:
                                 raise ValueError('Saturation stream or probe failed')
                         print(f'measured {mode}/{page} production={production}', flush=True)
