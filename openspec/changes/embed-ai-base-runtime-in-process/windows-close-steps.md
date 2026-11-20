@@ -525,7 +525,8 @@ clause's outstanding performance aspect. Original 10.4 remains unchecked.
 
 `W3.REPLAN` follows functional acceptance and freezes the remaining performance
 inputs/owners with structured refreeze evidence. Then execute PERF.KPI,
-PERF.PROBE, PERF.OPTIMIZE and PERF.CERTIFY exactly as defined in
+PERF.PROBE, PERF.PROBE.R, PERF.PROBE.REPLAN, PERF.OPTIMIZE,
+PERF.OPTIMIZE.R and PERF.CERTIFY exactly as defined in
 [windows-performance-phase.md](windows-performance-phase.md).
 
 `CLOSE.R` then verifies combined functional and performance results, including

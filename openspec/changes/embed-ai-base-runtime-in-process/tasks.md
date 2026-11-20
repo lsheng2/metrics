@@ -1,5 +1,20 @@
 # Tasks
 
+## Windows Performance Execution Frontier
+
+**执行授权（2026-11-20）**：owner 已批准开始 Windows 性能专项，先深入研究、
+制定计划与 test plan，再执行。沿用本 change 和唯一账本，不新建产品计划。
+起点是 Dashboard `eb84aa23`，仍使用冻结 dev4；AIB main `6591ad57` 的 dev5
+不自动成为 Dashboard 候选。原功能验收、历史失败、wheel 和 r4 环境保持不变。
+
+本轮先完成独立 W3.REPLAN/PERF.KPI 复核，再校准原性能工具的 50-event B3、
+饱和时短请求加直接资产、同一区间、输入身份和清理证明。先 pilot，再完整诊断，
+再按证据决定优化，最后独占认证；不预先放宽 KPI 或生产 timeout。
+计划见 [性能 test plan](windows-performance-test-plan.md)；
+研究见 [工具与方法](windows-performance-research.md)。
+新增证据和独立环境使用 D 盘；不执行 Linux、真实 provider/model/data 或 push。
+下方功能收尾文字保留为已完成前置阶段和历史执行记录。
+
 ## Windows Closure Execution Frontier
 
 **当前状态（2026-11-20）**：Windows Dashboard MDB-2 合成数据功能验收已通过。
@@ -244,7 +259,10 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [ ] W3.REPLAN - 以已验收功能基线再冻结后置性能阶段。
 - [ ] PERF.KPI - 单独冻结 KPI、负载、基线、采样方法和判定规则。
 - [ ] PERF.PROBE - 完成保留的性能工具，独立采集诊断基线，不宣称正式验收。
+- [ ] PERF.PROBE.R - 独立复核测量工具、原始诊断证据及受影响功能消费者。
+- [ ] PERF.PROBE.REPLAN - 根据实测证据再冻结优化范围；无证据不改变产品或 KPI。
 - [ ] PERF.OPTIMIZE - 按实测瓶颈优化；已达标则记录无需优化，改变行为须功能补验。
+- [ ] PERF.OPTIMIZE.R - 复核优化或无需改动的决定及对应功能证据，再进入认证。
 - [ ] PERF.CERTIFY - 独占窗口完成正式性能验收，并确认受影响功能再次通过。
 - [ ] CLOSE.R - 独立核对功能与性能联合矩阵、证据与后置边界。
 - [ ] WIN.ACCEPT - 写入四目标 Windows 里程碑回执，逐条收账而非归档整个项目。

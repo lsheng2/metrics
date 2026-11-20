@@ -1,14 +1,51 @@
 # Windows Performance Phase
 
-Status: planned, not qualified. Owner ordering amendment: 2026-11-17.
+Status: authorized planning and probe implementation, not qualified.
+Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-17.
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
+
+## Current Execution Packet
+
+The owner authorized Windows performance planning, deeper research, a concrete
+test plan and execution after the bounded functional consolidation. Reuse this
+change rather than creating a parallel OpenSpec or progress ledger.
+
+Read [research](windows-performance-research.md), the
+[implementation and test plan](windows-performance-test-plan.md), and the
+existing [DAG](windows-close-dag.json) together. `profile_source=repo-local`;
+`agent_routing_mode=multiagent-configured`. The parent is the single repository
+writer/coordinator; independent agents own preflight and review questions.
+Measurements are serial and exclusive even when planning/research is parallel.
+
+Start from Dashboard `eb84aa23a123a191d4b5f6569e69e3d00d75268b`.
+The accepted functional receipt is retained at its actual `ff09d6f` source;
+the intervening metadata-hint changes have their separate focused/browser proof.
+Dashboard still consumes dev4 from AIB `d589ac8e6572a903edc3846e7d78195e85858868`,
+not AIB main's dev5. The private execution root is `D:/AIGC/pf1120`, with a fresh
+CPython 3.13.7 environment matching the 83 version pins of frozen r4. Do not edit
+the original environment, wheel, original census or historical receipts.
+
+`PERF.PROBE.R -> PERF.PROBE.REPLAN` separates measurement-tool implementation
+from any product optimization. `PERF.PROBE.REPLAN` is this phase's spelling of
+the project's `W*.REPLAN` gate, with `kind=replan-review`. Optimization requires
+a demonstrated owner and a falsifying regression, or an explicit no-change
+decision when a complete valid measurement already satisfies the signed KPIs.
+`PERF.OPTIMIZE.R` checks changed functional consumers before certification.
+
+No new KPI, production timeout, runtime API, background privilege or real-data
+operation is authorized by this packet. Local scoped commits are execution
+checkpoints; push/release remain separate. Unexplained historical shutdown
+observations are retained, not silently reopened as a prerequisite for every
+performance run. A newly reproduced functional failure stops certification.
 
 ## Entry And Claims
 
 Finish `W2.HOST -> W2.CERTIFY -> W2.R -> W2.REPLAN -> W3.FREEZE ->
 W3.REHEARSE -> W3.JOIN -> FUNC.R -> FUNC.ACCEPT` first. Only then may
 `W3.REPLAN -> PERF.KPI -> PERF.PROBE -> PERF.OPTIMIZE -> PERF.CERTIFY` run.
+The detailed DAG inserts probe review/refreeze before optimization and an
+optimization review before certification; it does not bypass FUNC.ACCEPT.
 Functional acceptance does not certify performance or authorize release.
 
 No performance measurements or optimization are needed to accept the functional
@@ -58,6 +95,32 @@ These are existing signed limits, not new measurements or claimed results:
 | KPI-P3 | B6 again with production settings, DEBUG=False and collectstatic | Same per-page/asset ratio <=1.2 |
 | KPI-P4 | B9, same saturation interval for four held streams, excess stream, short requests and pages | Excess503 with Retry-After2; every short200 and <100 ms; page/asset p95 ratio <=1.2 |
 
+The signed measurement recipe is explicit:
+
+- B3: fifty events, indices 0 through 49, with a 100 ms producer interval.
+  Eight-event functional fixtures are not numerical performance proof.
+- B6/B9: six pages (`home`, `projects`, `project_detail`, `stage_reports`,
+  `draft_edit`, `bug_trend`), modes `seq=1` and `c4=4`, three arms
+  (`baseline`, `candidate`, `candidate_saturated`), warmup 10 per page/arm,
+  four blocks of forty measured samples per cell, alternating forward/reverse
+  arm order, and nearest-rank p95. Measure HTTP page plus distinct referenced
+  static assets; do not relabel this as a browser paint metric.
+- B9: hold one active and three idle streams. Each one-second schedule slot
+  contains both a loop-backed public short request and a discovered direct
+  runtime asset; every fifth slot also probes an excess stream. Record scheduled
+  slot, actual start/end, status and resource identity. Echo-only runs fail.
+  The loop-backed qualification echo is the current controlled counterpart of
+  the old health route; the direct asset must resolve under `/ai/assets/`.
+- Both development and production phases use the full recipe. Production
+  additionally proves `DEBUG=False` and non-empty `collectstatic` output.
+- Authenticated pages and assets use matching content/identities. Preserve the
+  signed static-auth differential: unauthenticated baseline static is 200,
+  unauthenticated candidate static is 401; unauthenticated pages are 401 in
+  both. Do not weaken the candidate or redesign the baseline to erase it.
+- Timeouts, malformed data, failed requests, missing samples, early EOF, source
+  drift and abnormal cleanup remain recorded failures. No trimmed tails,
+  discarded slow samples or post-result threshold selection.
+
 At PERF.KPI, independently verify the exact routes, asset hashes, fixture size,
 warmup/sample counts, p95 calculation and timeout treatment against the signed
 S0b recipe and W2.VA-approved faithful threaded WSGI baseline. Store them with
@@ -69,9 +132,17 @@ change requires an owner decision; do not choose it after seeing results.
 
 ## Bounded Execution
 
+Implementation details, negative cases, exact executors and evidence shapes are
+in [the test plan](windows-performance-test-plan.md). The three execution modes
+are `pilot`, `diagnostic` and `certify`: pilot uses explicitly reduced samples
+and can never satisfy V8; diagnostic uses the full recipe without issuing
+certification; certify additionally requires all frozen input/review gates.
+The dedicated performance checker rejects any non-certify receipt as acceptance.
+
 1. `PERF.PROBE`: finish existing `windows_host_*` sample/process/environment/
-   transport/benchmark helpers and `windows_host_qualification.py --phase
-   performance`. Reuse the existing SLE/full-stack lifecycle. Validate missing
+   transport/benchmark helpers and the explicit-mode performance interface in
+   [the command table](windows-close-validation.md#planned-tool-interfaces).
+   Reuse the existing SLE/full-stack lifecycle. Validate missing
    samples, wrong baseline, source drift, false-green receipt and failed cleanup
    with synthetic tests first. Diagnostic runs do not confer acceptance.
 2. `PERF.OPTIMIZE`: classify measured cost by owner (Django/static/auth,

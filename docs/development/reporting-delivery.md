@@ -33,6 +33,16 @@ stop/cancel/cleanup bounds remain functional and were not relaxed.
 The receipt covers the tested source, not subsequent product changes or full AIB release.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
+The owner authorized this separate Windows performance phase on 2026-11-20.
+The [test plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md)
+defines a fresh D-drive environment, signed sampling recipe, measurement-tool
+negative checks, pilot, full diagnostic, evidence-led optimization and exclusive
+certification. The original dev4 wheel and functional r4 environment stay
+immutable. Pilot/profiler output cannot establish performance acceptance.
+The implementation is still pending its plan/review gates; the existing
+performance CLI refusal below remains the current executable behavior until
+the tool implementation and its consumer checks are complete.
+
 Windows B5 shutdown qualification requires two complementary proofs under the
 approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):
 real AIB chat subscriptions prove session/run identity and termination; controlled

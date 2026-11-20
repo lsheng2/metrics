@@ -154,8 +154,11 @@ already reviewed W1 behavior.
 | W3.REPLAN | FUNC.ACCEPT | freeze remaining performance scope against functional baseline |
 | PERF.KPI | W3.REPLAN | independent KPI/measurement design freeze; existing thresholds retained |
 | PERF.PROBE | PERF.KPI | finish preserved measurement tools and capture diagnostic baseline |
-| PERF.OPTIMIZE | PERF.PROBE | measured owner-scoped fixes or evidence-backed no-change decision |
-| PERF.CERTIFY | PERF.OPTIMIZE | exclusive KPI run and affected functional requalification |
+| PERF.PROBE.R | PERF.PROBE | review measurement implementation, raw diagnostics and functional impact |
+| PERF.PROBE.REPLAN | PERF.PROBE.R | refreeze optimization scope from measured evidence |
+| PERF.OPTIMIZE | PERF.PROBE.REPLAN | measured owner-scoped fixes or evidence-backed no-change decision |
+| PERF.OPTIMIZE.R | PERF.OPTIMIZE | review changed functional consumers or the no-change decision |
+| PERF.CERTIFY | PERF.OPTIMIZE.R | exclusive KPI run and affected functional requalification |
 | CLOSE.R | PERF.CERTIFY | independent combined functional/performance acceptance review |
 | WIN.ACCEPT | CLOSE.R | four-goal Windows milestone receipt and reconciled task status |
 | DELIVERY | WIN.ACCEPT, OWNER.RELEASE | only the explicitly authorized publication/integration actions |
@@ -169,7 +172,8 @@ flowchart TD
   J --> K[W2.R] --> L[W2.REPLAN] --> M[W3.FREEZE]
   M --> N[W3.REHEARSE] --> O[W3.JOIN] --> FR[FUNC.R]
   FR --> FA[FUNC.ACCEPT] --> RP[W3.REPLAN] --> PK[PERF.KPI]
-  PK --> PP[PERF.PROBE] --> PO[PERF.OPTIMIZE] --> PC[PERF.CERTIFY]
+  PK --> PP[PERF.PROBE] --> PPR[PERF.PROBE.R] --> PPRP[PERF.PROBE.REPLAN]
+  PPRP --> PO[PERF.OPTIMIZE] --> POR[PERF.OPTIMIZE.R] --> PC[PERF.CERTIFY]
   PC --> Q[CLOSE.R]
   Q --> R[WIN.ACCEPT]
   R --> S[DELIVERY]
@@ -235,7 +239,7 @@ Linux or whole-AIB acceptance; a commit is not main merge or push.
 ## Plan Preflight And Truth Sync
 
 Use the repo profile's explicit preflight procedure, not the shared checker's
-sample mode. Check JSON parsing, 25 unique node IDs, acyclicity, all references,
+sample mode. Check JSON parsing, 28 unique node IDs, acyclicity, all references,
 the table/graph/ledger ID sets, all `REPLAN` dependencies, validation IDs,
 contract IDs, owner path syntax and original-task coverage. Check current paths
 exist; new paths are explicitly labelled **planned** in the detailed steps.

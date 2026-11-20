@@ -191,8 +191,8 @@ Do not invent a cheaper baseline or substitute a test double.
 - Write `HEAVY_RUN_ACTIVE` before the first process. Hold it through the last
   verdict JSON. Record start/end and each-minute process snapshots plus CPU.
   Capture HEAD and status hashes before/after; any source/status drift invalidates.
-- B3: with 100ms source event spacing, first event <=200ms and inter-arrival
-  p95 <=150ms. Record samples, not just a boolean.
+- B3: fifty events with indices0..49 and 100ms source event spacing, first
+  event <=200ms and inter-arrival p95 <=150ms. Record samples, not a boolean.
 - B4/M5 functional proof is required before FUNC.ACCEPT: repeated disconnects and normal/error/abort/stop release tests; bounded
   return to zero and no leaked owned threads/tasks.
 - B5 functional proof is required before FUNC.ACCEPT as two complementary
@@ -211,7 +211,9 @@ Do not invent a cheaper baseline or substitute a test double.
 - B6/B9: each required page+asset p95 <=1.2 times baseline. Repeat B6 with
   production settings, DEBUG=False and collectstatic output. In the **same**
   saturation interval, excess stream returns503/Retry-After2 and every short
-  request succeeds200 in <100ms. Do not discard inconvenient samples.
+  request succeeds200 in <100ms. Each one-second slot includes both the
+  loop-backed short request and a discovered direct runtime asset; excess
+  stream probing occurs every5seconds. Do not discard inconvenient samples.
 - B7 functional proof is required before FUNC.ACCEPT: original browser subset equivalent. Cold AI pane starts with empty cache;
   assets all200, no final503; assets still200 during loop blockage.
 - B1/stop functional proof is required before FUNC.ACCEPT: native second-signal behavior and terminal/exit evidence for
@@ -233,11 +235,25 @@ All paths below are in the JSON `planned_paths` inventory with a producer node.
 | Tool | Required CLI arguments | Inputs and successful output |
 | --- | --- | --- |
 | `windows_install_smoke.py` | `--inputs` JSON path, `--output` new receipt path | release-inputs record; new owned Windows venv/wheelhouse, exact installation argv, pip/admission/start/stop results |
-| `windows_host_qualification.py` | `--inputs`, `--output`, `--phase conformance` or `--phase performance` | approved source/fixture/candidate/baseline records; all clause IDs for the selected phase, raw samples and cleanup; one phase cannot claim the other |
+| `windows_host_qualification.py` conformance | `--inputs`, `--output`, `--phase conformance`; no `--mode` | Existing functional native receipt; cannot claim numerical performance |
+| `windows_host_qualification.py` performance | `--inputs`, `--output`, `--phase performance`, required `--mode pilot`, `--mode diagnostic` or `--mode certify` | Approved source/fixture/candidate/baseline records, raw samples and cleanup; only a valid certify-mode performance receipt is eligible for performance evidence keys |
 | `windows_migration_rehearsal.py` | `--inputs`, `--output` | verified old/new executable records and owned synthetic snapshot set; per-step upgrade/restore/read/cleanup and original-file integrity |
 | `qualify_ai_runtime.py` | `--inputs`, `--output`, required `--profile functional` or `--profile full` | final frozen inputs plus complete census and repo-owned phase policy; selected-profile receipt with explicit deferred aspects, never profile promotion |
 | `check_embedded_runtime_boundaries.py` | `--root` repository path, `--output` | AST import/asyncio inventory, checked-file count, violating references; no runtime startup |
 | `check_retired_ai_paths.py` | `--root`, `--output`, `--platform windows` or `--platform all` | original9.5 inventory plus exact scope/dispositions; windows result lists Linux deferrals and never claims the all-scope gate |
+
+This table is the current planned argv authority. Concrete examples in the
+[performance test plan](windows-performance-test-plan.md) instantiate it.
+The performance implementation is owned by PERF.PROBE; until it is complete,
+the existing dispatcher continues to refuse performance execution. Missing mode,
+argv/input mode mismatch, or a mode attached to conformance must fail before
+starting workloads. Historical source-bound command records retain their
+original argv and do not override this current interface.
+
+Pilot has deliberately reduced page sample counts; diagnostic uses the full
+recipe without certification. Neither may satisfy a performance binding or
+promote a functional receipt. Certify requires the frozen recipe, all raw
+evidence, window/cleanup checks and the dedicated performance semantic checker.
 
 `--inputs` is an owner-generated record, not a free-form shell-command request.
 Its schema1 fields are: `source` (commit or explicitly labelled working-tree
