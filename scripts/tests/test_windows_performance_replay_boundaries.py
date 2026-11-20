@@ -302,3 +302,66 @@ def test_absolute_driver_and_redirector_are_owned_but_unrelated_driver_is_not(tm
             exercise()
     else:
         assert exercise()["result"] == "PASS"
+
+
+def test_saturation_interval_ends_after_last_inflight_probe(monkeypatch):
+    import threading
+    import time
+    from scripts.validation import windows_host_transport as transport
+
+    probing = threading.Event()
+
+    class Stream:
+        def __init__(self, base, path, **kwargs):
+            self.closed = threading.Event()
+            self.first = "chunk" if path.endswith("/active") else "heartbeat"
+
+        def event(self):
+            if self.first is not None:
+                kind, self.first = self.first, None
+                return {"type": kind}, time.monotonic()
+            assert self.closed.wait(3)
+            return None, time.monotonic()
+
+        def close(self):
+            self.closed.set()
+
+    class Http:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, url, **kwargs):
+            if url.endswith("/echo"):
+                probing.set()
+                time.sleep(0.05)
+            return SimpleNamespace(
+                status_code=503 if url.endswith("/active") else 200,
+                headers={"Retry-After": "2"}, content=b"asset",
+                json=lambda: {"streamInFlightCount": 0, "shortInFlightCount": 0},
+            )
+
+    monkeypatch.setattr(transport, "Stream", Stream)
+    monkeypatch.setattr(transport, "client", lambda **kwargs: Http())
+    with transport.saturated_streams("http://127.0.0.1:1234", direct_asset_path="/ai/assets/runtime.js") as result:
+        assert probing.wait(3)
+    assert result["errors"] == []
+    assert result["closed"] == 4
+    assert result["probes"]
+    assert max(row["ended"] for row in result["probes"]) <= result["ended"]
+
+
+def test_probe_elapsed_is_derived_from_the_same_completion_observation(monkeypatch):
+    from scripts.validation import windows_host_transport as transport
+
+    ticks = iter((10.0, 10.01, 11.0))
+    monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: next(ticks)))
+    response = SimpleNamespace(status_code=200, headers={}, content=b"body")
+    http = SimpleNamespace(get=lambda *args, **kwargs: response)
+    record = {"probes": [], "errors": []}
+    transport._probe(http, "http://127.0.0.1:1234", "/echo", "loop_short", record)
+    assert record["errors"] == []
+    row = record["probes"][0]
+    assert row["ms"] == pytest.approx((row["ended"] - row["started"]) * 1000)

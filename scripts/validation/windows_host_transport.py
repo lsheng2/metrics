@@ -93,9 +93,10 @@ def _probe(http, base, path, kind, record, *, slot=None, scheduled=None):
     started = time.monotonic()
     try:
         response = http.get(base + path, timeout=2)
+        ended = time.monotonic()
         record['probes'].append({
             'slot': slot, 'kind': kind, 'resource': path, 'scheduled': scheduled,
-            'started': started, 'ended': time.monotonic(), 'ms': (time.monotonic() - started) * 1000,
+            'started': started, 'ended': ended, 'ms': (ended - started) * 1000,
             'status': response.status_code, 'retry_after': response.headers.get('Retry-After'),
             'content_sha256': hashlib.sha256(response.content).hexdigest(),
             'etag': response.headers.get('ETag'),
@@ -160,12 +161,12 @@ def saturated_streams(base, *, probe_path=PROBE_PATH, auth=AUTH, direct_asset_pa
         prober.start()
         yield record
     finally:
-        record['ended'] = time.monotonic()
         stop.set()
         if prober is not None:
             prober.join(3)
             if prober.is_alive():
                 record['errors'].append('probe_thread_alive')
+        record['ended'] = time.monotonic()
         for stream in streams:
             try:
                 stream.close()
