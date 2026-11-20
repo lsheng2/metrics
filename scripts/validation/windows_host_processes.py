@@ -1,6 +1,8 @@
 """Owned native fixture launches through the existing lifecycle engine."""
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+import hashlib
+import json
 from pathlib import Path
 import socket
 import subprocess
@@ -32,6 +34,57 @@ def free_port():
         return listener.getsockname()[1]
 
 
+def cleanup_is_normal(cleanup):
+    services = cleanup.get('services') or {}
+    services_normal = bool(services) and all(
+        row.get('stopped') is True and row.get('exit_code') == 0
+        and row.get('forced') is False and row.get('force_requested') is False
+        and row.get('reason') == 'stop_command'
+        for row in services.values()
+    )
+    return bool(
+        services_normal
+        and cleanup.get('normal') is True
+        and cleanup.get('owned_descendants_absent', True) is True
+        and cleanup.get('listeners_absent', True) is True
+    )
+
+
+def _command_fingerprint(command):
+    if command is None:
+        return None
+    sanitized = [Path(str(command[0])).name] if command else []
+    if len(command) > 1:
+        sanitized.append(f'argc={len(command)}')
+    digest = hashlib.sha256(json.dumps([str(part) for part in command], sort_keys=True).encode()).hexdigest()
+    return {'display': ' '.join(sanitized), 'sha256': digest}
+
+
+def classify_process_observations(records, *, owned_identities):
+    processes, blockers = [], []
+    for row in records:
+        relevant = row.get('metrics_workload') is True
+        identity = row.get('identity')
+        if relevant and identity in owned_identities:
+            classification = 'owned_measurement'
+        elif relevant and identity:
+            classification = 'foreign_relevant'
+        elif relevant:
+            classification = 'unresolved_relevant'
+        else:
+            classification = 'tooling_unrelated'
+        item = {
+            'pid': row.get('pid'),
+            'identity': identity,
+            'classification': classification,
+            'command_fingerprint': _command_fingerprint(row.get('command')),
+        }
+        processes.append(item)
+        if classification in {'foreign_relevant', 'unresolved_relevant'}:
+            blockers.append(f'{classification}:{row.get("pid")}')
+    return {'processes': processes, 'certification_blockers': blockers}
+
+
 def stop_arms(engine, names):
     results = {}
     for name in reversed(names):
@@ -40,7 +93,7 @@ def stop_arms(engine, names):
             results[name] = asdict(result)
         except Exception as error:
             results[name] = {'error': type(error).__name__, 'stopped': False}
-    return {
+    cleanup = {
         'services': results,
         'normal': bool(results) and all(
             row.get('stopped') is True and row.get('exit_code') == 0
@@ -49,14 +102,16 @@ def stop_arms(engine, names):
             for row in results.values()
         ),
     }
+    return cleanup
 
 
-def fixture_spec(name, root, instance, python, *, production):
+def fixture_spec(name, root, instance, python, *, production, spacing_events=8):
     stop_file = instance / 'stop'
     return ServiceSpec.from_values(
         name, (free_port(),),
         [str(python), '-I', str(ENTRY), 'serve', '--root', str(root), '--instance', str(instance),
          '--role', 'baseline' if name == 'baseline' else 'candidate', '--port', '{port}',
+         '--spacing-events', str(spacing_events),
          *(['--production'] if production else [])],
         stop_command=[
             str(python), '-I', '-c',
@@ -90,7 +145,7 @@ def ready_metadata(base, engine, name):
 
 
 @contextmanager
-def running_arms(root, python, *, production, names=ARMS):
+def running_arms(root, python, *, production, names=ARMS, spacing_events=8):
     root = canonical(root)
     python = canonical(python)
     if overlaps(root, ROOT) or not names or len(set(names)) != len(names) or not set(names) <= set(ARMS):
@@ -117,7 +172,7 @@ def running_arms(root, python, *, production, names=ARMS):
             instance = root / name
             instance.mkdir()
             instances[name] = instance
-            spec = fixture_spec(name, root, instance, python, production=production)
+            spec = fixture_spec(name, root, instance, python, production=production, spacing_events=spacing_events)
             started.append(name)
             environment = start_sanitized(engine, spec, instance / 'environment')
             state = engine.read_state()[name]

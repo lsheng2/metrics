@@ -109,6 +109,7 @@ def main():
     parser.add_argument('--role', choices=('baseline', 'candidate'))
     parser.add_argument('--port', type=int)
     parser.add_argument('--production', action='store_true')
+    parser.add_argument('--spacing-events', type=int, default=8)
     args = parser.parse_args()
     root = safe_root(args.root)
     instance = root if args.action == 'seed' else Path(args.instance)
@@ -140,7 +141,7 @@ def main():
         from ai_host.tests.conformance_runtime_probe import RuntimeProbe
         from ai_host import package, wiring
         from project_management import runtime
-        probe = RuntimeProbe()
+        probe = RuntimeProbe(spacing_events=args.spacing_events)
         stack.enter_context(patch.object(package, 'METRICS_APP', probe.package(package.METRICS_APP)))
         stack.enter_context(patch.object(runtime, 'build_project_runtime', fixture.build_idle_runtime))
         build = wiring.build_wsgi_application

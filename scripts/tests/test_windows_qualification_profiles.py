@@ -9,6 +9,7 @@ import pytest
 from scripts.tests.test_qualify_ai_runtime import _base_case, _fake_subprocess, _sha, _write_json
 from scripts.validation import qualify_ai_runtime as qualifier
 from scripts.validation import windows_qualification_evidence as evidence
+from scripts.validation.windows_qualification_inputs import QualificationError
 
 
 def phase_case(tmp_path, monkeypatch):
@@ -118,6 +119,41 @@ def test_full_profile_cannot_use_ordinary_junit_as_numeric_performance_proof(tmp
     assert invoke(case, "full") == 1
     assert not case["output"].exists()
     assert not any("run_report_authoring_tests.py" in part for argv in commands for part in argv)
+
+
+def test_performance_evidence_routes_to_dedicated_semantic_checker(tmp_path, monkeypatch):
+    case, _ = phase_case(tmp_path, monkeypatch)
+    manifest = case["manifest"]
+    key = "clause:10.4:B3-incremental-timing:performance"
+    receipt = case["owned"] / "receipts" / "performance.json"
+    _write_json(receipt, {"kind": "windows-host-performance", "status": "PASS"})
+    binding = deepcopy(manifest["checks"]["evidence_bindings"]["task:1.1"])
+    binding.update(kind="windows-host-performance", path=str(receipt), sha256=_sha(receipt), covers=[key])
+
+    from scripts.validation import windows_host_performance_evidence as performance_evidence
+
+    monkeypatch.setattr(
+        performance_evidence,
+        "validate_bound_receipt",
+        lambda received_key, path, request: {"kind": "windows-host-performance", "key": received_key},
+    )
+
+    result = evidence.validate_binding(key, binding, manifest, (case["root"], case["owned"]))
+
+    assert result == {"kind": "windows-host-performance", "key": key}
+
+
+def test_conformance_native_receipt_cannot_substitute_for_performance_binding(tmp_path, monkeypatch):
+    case, _ = phase_case(tmp_path, monkeypatch)
+    manifest = case["manifest"]
+    key = "clause:10.4:B3-incremental-timing:performance"
+    receipt = case["owned"] / "receipts" / "native.json"
+    _write_json(receipt, {"kind": "windows-host-conformance", "status": "PASS"})
+    binding = deepcopy(manifest["checks"]["evidence_bindings"]["task:1.1"])
+    binding.update(kind="native", path=str(receipt), sha256=_sha(receipt), covers=[key])
+
+    with pytest.raises(QualificationError):
+        evidence.validate_binding(key, binding, manifest, (case["root"], case["owned"]))
 
 
 @pytest.mark.parametrize("mutation", ["defer", "remove", "duplicate", "unknown"])

@@ -40,8 +40,13 @@ negative checks, pilot, full diagnostic, evidence-led optimization and exclusive
 certification. The original dev4 wheel and functional r4 environment stay
 immutable. Pilot/profiler output cannot establish performance acceptance.
 The method/plan review passed and its freeze is recorded in the same change.
-The existing performance CLI refusal below remains the current executable
-behavior until the tool implementation and its consumer checks are complete.
+The performance CLI now accepts only `--phase performance --mode
+pilot|diagnostic|certify` and must use the fixed repo-owned recipe. New raw
+per-run measurement, window, cleanup and resolved-input artifacts live under the
+run directory. Producer inputs, frozen policy, historical functional reference,
+wheel and environment evidence keep the existing repository-or-owned-root
+canonical path and hash boundary; they are not copied or made arbitrary-root
+inputs merely to fit a run directory.
 
 Windows B5 shutdown qualification requires two complementary proofs under the
 approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):
@@ -71,8 +76,8 @@ checker resolves and hashes the receipt's producer input, then requires matching
 source, candidate, fixture, owner root, amendment and candidate interpreter/
 environment bindings. The aggregate may add receipt references and historical
 interpreter roles; neither can replace the selected candidate binding.
-`--phase performance` remains deferred. Command availability is not evidence
-that W2.CERTIFY or final joint acceptance has passed.
+`--phase performance` command availability is not evidence that performance
+collection, certification, W2.CERTIFY or final joint acceptance has passed.
 
 For a native stream shutdown failure, retain the original run and inspect
 `serve.log` before repeating the full matrix. The test entry records the runtime

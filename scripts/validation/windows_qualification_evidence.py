@@ -37,6 +37,7 @@ FORBIDDEN_PREFIXES = ("--timeout",)
 REQUIREMENT_DIGEST_POLICY = "Original row text excluding its mutable checkbox; this is the initial census generation."
 TASKS_PATH = "openspec/changes/embed-ai-base-runtime-in-process/tasks.md"
 NATIVE_CONFORMANCE_KIND = "windows-host-conformance"
+PERFORMANCE_KIND = "windows-host-performance"
 NATIVE_CONFORMANCE_KEYS = {
     "clause:10.4:B1-native-second-signal:functional",
     "clause:10.4:B4-disconnect-leaks:functional",
@@ -130,8 +131,11 @@ def validate_binding(key: str, binding: dict, request: dict, roots: tuple[Path, 
     kind = binding.get("kind")
     if request.get("native_conformance") and key in NATIVE_CONFORMANCE_KEYS and kind not in {NATIVE_CONFORMANCE_KIND, "native"}:
         raise QualificationError("native conformance evidence requires the owned semantic checker")
-    if key.endswith(":performance") and kind != "native":
+    if key.endswith(":performance") and kind != PERFORMANCE_KIND:
         raise QualificationError("performance requires producer-owned native measurement evidence")
+    if key.endswith(":performance"):
+        from scripts.validation.windows_host_performance_evidence import validate_bound_receipt
+        return validate_bound_receipt(key, path, request)
     if kind in {NATIVE_CONFORMANCE_KIND, "native"}:
         from scripts.validation.windows_host_conformance_evidence import validate_bound_receipt
         return validate_bound_receipt(key, path, request)

@@ -12,11 +12,12 @@ from ai_base_runtime.apps import AgentDefinition, AppPackage, AppRoute
 class RuntimeProbe:
     """Controlled App handlers; all transport and lifetime behavior is real."""
 
-    def __init__(self):
+    def __init__(self, *, spacing_events=8):
         self.stream_release = threading.Event()
         self.short_release = threading.Event()
         self.loop_entered = threading.Event()
         self.loop_release = threading.Event()
+        self.spacing_events = spacing_events
         self._counts = Counter()
         self._lock = threading.Lock()
         self.handle = None
@@ -111,7 +112,7 @@ class RuntimeProbe:
         }
 
     async def spacing(self, request):
-        for index in range(8):
+        for index in range(self.spacing_events):
             yield json.dumps({'type': 'chunk', 'index': index}).encode() + b'\n'
             await asyncio.sleep(0.1)
 

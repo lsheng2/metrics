@@ -67,6 +67,7 @@ class MeasurementWindow:
         self._stop = threading.Event()
         self._thread = None
         self._stream = None
+        self._verdict_writer = None
 
     def __enter__(self):
         if (self.run_root / 'measurement-window.json').exists():
@@ -113,6 +114,20 @@ class MeasurementWindow:
         if read_json(self.guard).get('id') != self.identity:
             raise ValueError('Measurement guard changed')
 
+    def bind_verdict(self, path, writer=None):
+        path = Path(path)
+        self.check()
+        if writer is None and not path.is_file():
+            raise ValueError('Measurement verdict is missing')
+        self.record['verdict'] = {
+            'path': str(path),
+            'guard_id': self.identity,
+            'written_monotonic': time.monotonic(),
+        }
+        if path.is_file():
+            self.record['verdict']['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
+        self._verdict_writer = writer
+
     def _remove_own_guard(self):
         if read_json(self.guard).get('id') != self.identity:
             raise ValueError('Measurement guard changed; refusing to remove it')
@@ -138,6 +153,8 @@ class MeasurementWindow:
             self.record['result'] = 'PASS' if exc_type is None and not self.record['errors'] else 'FAIL'
             write_json(self.run_root / 'measurement-window.json', self.record)
             try:
+                if self._verdict_writer is not None:
+                    self._verdict_writer()
                 self._remove_own_guard()
             except Exception as error:
                 self.record['result'] = 'FAIL'

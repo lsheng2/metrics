@@ -159,7 +159,14 @@ The performance receipt uses `schema_version=1`,
 `acceptance_eligible`, `producer_input={path,sha256}`, `source`,
 `candidate`, `environment_before`, `environment_after`, `resolved_inputs`,
 `measurements`, `measurement_window`, `cleanup` and `errors`.
-Every referenced artifact uses `{path,sha256}` inside the owned run directory.
+New raw per-run artifacts produced by the measurement tool, including resolved
+inputs, measurements, window proof and cleanup proof, are stored under that run
+directory and referenced by `{path,sha256}`. Producer inputs, the frozen
+performance policy, the historical functional acceptance reference, wheel and
+environment records retain the existing `windows_qualification_inputs` allowed
+roots: declared repository or owned root, canonical path resolution, reparse
+rejection and exact hash checks. Do not copy an environment or relax ownership
+solely to move those external references into a run directory.
 `resolved_inputs` and `measurements` each have exactly `development` and
 `production` entries. Resolved inputs bind actual page URLs, asset hashes,
 seed/fixture identity, auth differential, interpreter and installed origins.

@@ -13,8 +13,8 @@ from ai_host.tests.conformance_runtime_probe import AssetParser, Events, Runtime
 
 
 @contextmanager
-def host_probe(ai_host_factory, ai_server_factory, ai_clock_and_limits, *, config=None):
-    probe = RuntimeProbe()
+def host_probe(ai_host_factory, ai_server_factory, ai_clock_and_limits, *, config=None, spacing_events=8):
+    probe = RuntimeProbe(spacing_events=spacing_events)
     selected = config or replace(
         ai_clock_and_limits.config,
         http_limits=HttpLimits(max_streams=4, max_requests=4, short_request_timeout_seconds=0.3),

@@ -86,20 +86,22 @@ def measure_spacing(base, *, probe_path=PROBE_PATH, auth=AUTH):
     return {'started': started, 'indices': events, 'arrivals': arrivals}
 
 
-def _probe(http, base, path, kind, record):
+def _probe(http, base, path, kind, record, *, slot=None, scheduled=None):
     started = time.monotonic()
     try:
         response = http.get(base + path, timeout=2)
         record['probes'].append({
-            'kind': kind, 'started': started, 'ms': (time.monotonic() - started) * 1000,
+            'slot': slot, 'kind': kind, 'resource': path, 'scheduled': scheduled,
+            'started': started, 'ended': time.monotonic(), 'ms': (time.monotonic() - started) * 1000,
             'status': response.status_code, 'retry_after': response.headers.get('Retry-After'),
+            'content_sha256': response.headers.get('ETag', '').strip('"') or None,
         })
     except Exception as error:
         record['errors'].append(f'{kind}:{type(error).__name__}')
 
 
 @contextmanager
-def saturated_streams(base, *, probe_path=PROBE_PATH, auth=AUTH):
+def saturated_streams(base, *, probe_path=PROBE_PATH, auth=AUTH, direct_asset_path=None):
     record = {'opened': [], 'closed': 0, 'probes': [], 'events': [], 'errors': []}
     streams, readers = [], []
     stop = threading.Event()
@@ -120,12 +122,22 @@ def saturated_streams(base, *, probe_path=PROBE_PATH, auth=AUTH):
 
     def probes():
         with client(auth=auth) as http:
-            deadline, next_extra = record['started'], record['started']
+            deadline, next_extra, slot = record['started'], record['started'], 0
             while not stop.wait(max(0, deadline - time.monotonic())):
-                _probe(http, base, probe_path + '/echo', 'short', record)
+                scheduled = deadline
+                if direct_asset_path:
+                    _probe(http, base, probe_path + '/echo', 'loop_short', record, slot=slot, scheduled=scheduled)
+                    _probe(http, base, direct_asset_path, 'direct_asset', record, slot=slot, scheduled=scheduled)
+                else:
+                    _probe(http, base, probe_path + '/echo', 'short', record, slot=slot, scheduled=scheduled)
                 if time.monotonic() >= next_extra:
-                    _probe(http, base, probe_path + '/active', 'excess', record)
+                    _probe(
+                        http, base, probe_path + '/active',
+                        'excess_stream' if direct_asset_path else 'excess',
+                        record, slot=slot, scheduled=scheduled,
+                    )
                     next_extra += 5
+                slot += 1
                 deadline += 1
 
     try:
@@ -177,11 +189,19 @@ def saturated_streams(base, *, probe_path=PROBE_PATH, auth=AUTH):
                 time.sleep(0.02)
 
 
-def validate_transport(payload):
+def _row_interval(row):
+    started = finite(row['started'])
+    ended = finite(row.get('ended', started + row['ms'] / 1000))
+    if ended < started:
+        raise ValueError('Probe timing is reversed')
+    return started, ended
+
+
+def validate_transport(payload, *, spacing_events=8, require_direct_asset=False):
     try:
         spacing, saturation = payload['spacing'], payload['saturation']
         times = spacing['arrivals']
-        if len(times) != 8 or spacing['indices'] != list(range(8)):
+        if len(times) != spacing_events or spacing['indices'] != list(range(spacing_events)):
             raise ValueError('Missing stream frames')
         started = finite(spacing['started'])
         times = [finite(value) for value in times]
@@ -195,16 +215,28 @@ def validate_transport(payload):
         duration = end - start
         if duration <= 0:
             raise ValueError('Invalid saturation interval')
-        short, excess = [], []
+        short, direct, excess = [], [], []
+        slots = {}
         for row in saturation['probes']:
-            if not start <= finite(row['started']) <= end:
+            row_start, row_end = _row_interval(row)
+            if not start <= row_start <= row_end <= end:
                 raise ValueError('Probe outside saturation interval')
             elapsed = finite(row['ms'])
-            if row['kind'] == 'short':
+            if require_direct_asset:
+                slot = row.get('slot')
+                scheduled = finite(row.get('scheduled'))
+                if type(slot) is not int or slot < 0 or abs(row_start - scheduled) > 0.5:
+                    raise ValueError('Probe is not bound to its scheduled slot')
+                slots.setdefault(slot, set()).add(row['kind'])
+            if row['kind'] in {'short', 'loop_short'}:
                 if row['status'] != 200 or elapsed >= 100:
                     raise ValueError('Short requests failed or reached 100ms')
                 short.append(row)
-            elif row['kind'] == 'excess':
+            elif row['kind'] == 'direct_asset':
+                if row['status'] != 200 or elapsed >= 100 or not str(row.get('resource', '')).startswith('/ai/assets/'):
+                    raise ValueError('Direct runtime asset probe failed')
+                direct.append(row)
+            elif row['kind'] in {'excess', 'excess_stream'}:
                 if row['status'] != 503 or row['retry_after'] != '2':
                     raise ValueError('Missing excess-stream rejection')
                 excess.append(row)
@@ -212,12 +244,19 @@ def validate_transport(payload):
                 raise ValueError('Unknown saturation probe')
         if len(short) < max(1, math.floor(duration)) or len(excess) < max(1, math.floor(duration / 5)):
             raise ValueError('Missing saturation probes')
+        if require_direct_asset:
+            expected_slots = set(range(max(1, math.floor(duration))))
+            for slot in expected_slots:
+                if slots.get(slot, set()) & {'loop_short'} != {'loop_short'} or 'direct_asset' not in slots.get(slot, set()):
+                    raise ValueError('Missing paired direct-asset saturation probe')
+            if len(direct) < max(1, math.floor(duration)):
+                raise ValueError('Missing direct runtime asset probes')
         stream_count = saturation['after']['streamInFlightCount']
         short_count = saturation['after']['shortInFlightCount']
         if (type(stream_count) is not int or stream_count != 0
                 or type(short_count) is not int or short_count not in {0, 1}):
             raise ValueError('Admission resources were not returned')
         return {'first_event_ms': first, 'spacing_p95_ms': gap_p95,
-                'short_probes': len(short), 'excess_probes': len(excess)}
+                'short_probes': len(short), 'direct_asset_probes': len(direct), 'excess_probes': len(excess)}
     except (KeyError, TypeError) as error:
         raise ValueError('Incomplete transport measurement') from error

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 from pathlib import Path
 import sys
 
@@ -13,14 +14,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--inputs", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--phase", required=True, choices=("conformance", "performance"))
+    parser.add_argument("--mode", choices=("pilot", "diagnostic", "certify"))
     args = parser.parse_args(argv)
     if args.phase == "performance":
-        print(
-            "windows_host_qualification: performance phase is deferred to PERF.PROBE/PERF.CERTIFY; "
-            "no benchmark helpers were imported or executed.",
-            file=sys.stderr,
-        )
-        return 1
+        if args.mode is None:
+            parser.error("--phase performance requires --mode pilot|diagnostic|certify")
+        producer = importlib.import_module("scripts.validation.windows_host_performance")
+        return producer.main(["--mode", args.mode, "--inputs", args.inputs, "--output", args.output])
+    if args.mode is not None:
+        parser.error("--mode is only valid with --phase performance")
     from scripts.validation import windows_host_conformance
 
     return windows_host_conformance.main(["--inputs", args.inputs, "--output", args.output])

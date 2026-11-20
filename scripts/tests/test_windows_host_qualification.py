@@ -1,4 +1,6 @@
 from copy import deepcopy
+from types import SimpleNamespace
+import sys
 
 import pytest
 
@@ -226,7 +228,7 @@ def test_benchmark_preserves_interleaved_recipe_and_rejects_slow_cells(tmp_path,
                  'assets': [dict(asset)]} for index in range(count)]
 
     @contextmanager
-    def saturation(*args):
+    def saturation(*args, **kwargs):
         yield transport_payload()['saturation']
 
     monkeypatch.setattr(benchmark, 'running_arms', arms)
@@ -248,3 +250,95 @@ def test_benchmark_preserves_interleaved_recipe_and_rejects_slow_cells(tmp_path,
     assert [row[0] for row in measured[:6]] == [
         'baseline', 'candidate', 'candidate_saturated', 'candidate_saturated', 'candidate', 'baseline',
     ]
+
+
+def test_benchmark_uses_explicit_reduced_pilot_recipe_with_performance_transport(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    from scripts.validation import windows_host_benchmark as benchmark
+    from scripts.tests.windows_performance_support import performance_transport_payload
+
+    names = ('baseline', 'candidate', 'candidate_saturated')
+    pages = {name: '/' + name for name in ('home', 'projects', 'project_detail', 'stage_reports', 'draft_edit', 'bug_trend')}
+    calls = []
+    asset = {'url': '/static/app.js', 'status': 200, 'bytes': 42, 'sha256': 'a' * 64}
+
+    @contextmanager
+    def arms(*args, **kwargs):
+        assert kwargs["spacing_events"] == 50
+        yield SimpleNamespace(
+            bases={name: name for name in names},
+            record={'arms': {name: {'metadata': {'pages': pages}} for name in names}},
+        )
+
+    def samples(base, path, *, count, workers, block):
+        calls.append((base, path, count, workers, block))
+        ms = 10.0 if base == 'baseline' else 11.0
+        return [{'block': block, 'sample': index, 'ms': ms, 'html_ms': 2.0, 'status': 200,
+                 'assets': [dict(asset)]} for index in range(count)]
+
+    @contextmanager
+    def saturation(*args, **kwargs):
+        assert kwargs["direct_asset_path"] == "/ai/assets/runtime.js"
+        yield performance_transport_payload()["saturation"]
+
+    monkeypatch.setattr(benchmark, 'running_arms', arms)
+    monkeypatch.setattr(benchmark, 'sanity', lambda arms: {name: {page: {'assets': [asset]} for page in pages} for name in names})
+    monkeypatch.setattr(benchmark, 'run_block', samples)
+    monkeypatch.setattr(benchmark, 'measure_spacing', lambda base: performance_transport_payload()['spacing'])
+    monkeypatch.setattr(benchmark, 'saturated_streams', saturation)
+    monkeypatch.setattr(benchmark, 'discover_direct_asset', lambda base: "/ai/assets/runtime.js")
+    monkeypatch.setattr(benchmark, 'write_json', lambda *args, **kwargs: None)
+
+    result = benchmark.phase(
+        tmp_path / 'phase', tmp_path / 'python', production=False, window=SimpleNamespace(check=lambda: None),
+        recipe={"warmup": 1, "blocks": 1, "per_block": 5, "spacing_events": 50, "require_direct_asset": True},
+    )
+
+    measured = [row for row in calls if row[-1] >= 0]
+    warmup = [row for row in calls if row[-1] == -1]
+    assert result["result"] == "PASS"
+    assert len(measured) == 36
+    assert all(row[2] == 5 for row in measured)
+    assert len(warmup) == 18
+    assert all(row[2] == 1 for row in warmup)
+
+
+def test_dispatcher_requires_mode_for_performance_before_workloads_start(tmp_path, monkeypatch):
+    from scripts.validation import windows_host_qualification as qualification
+
+    fake = SimpleNamespace(main=lambda argv: pytest.fail("performance producer must not run without a mode"))
+    monkeypatch.setitem(sys.modules, "scripts.validation.windows_host_performance", fake)
+    with pytest.raises(SystemExit):
+        qualification.main(["--phase", "performance", "--inputs", str(tmp_path / "in.json"), "--output", str(tmp_path / "out.json")])
+
+
+def test_dispatcher_routes_performance_mode_to_the_producer(tmp_path, monkeypatch):
+    from scripts.validation import windows_host_qualification as qualification
+
+    calls = []
+    fake = SimpleNamespace(main=lambda argv: calls.append(list(argv)) or 0)
+    monkeypatch.setitem(sys.modules, "scripts.validation.windows_host_performance", fake)
+
+    assert qualification.main([
+        "--phase", "performance", "--mode", "pilot",
+        "--inputs", str(tmp_path / "inputs.json"), "--output", str(tmp_path / "receipt.json"),
+    ]) == 0
+
+    assert calls == [[
+        "--mode", "pilot",
+        "--inputs", str(tmp_path / "inputs.json"), "--output", str(tmp_path / "receipt.json"),
+    ]]
+
+
+def test_dispatcher_rejects_mode_on_conformance_without_calling_conformance(tmp_path, monkeypatch):
+    from scripts.validation import windows_host_qualification as qualification
+
+    fake = SimpleNamespace(main=lambda argv: pytest.fail("conformance producer must not run with performance mode"))
+    monkeypatch.setitem(sys.modules, "scripts.validation.windows_host_conformance", fake)
+
+    with pytest.raises(SystemExit):
+        qualification.main([
+            "--phase", "conformance", "--mode", "pilot",
+            "--inputs", str(tmp_path / "inputs.json"), "--output", str(tmp_path / "receipt.json"),
+        ])

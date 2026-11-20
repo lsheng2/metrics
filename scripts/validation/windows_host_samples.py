@@ -117,8 +117,8 @@ def asset_identity(sample):
     return result
 
 
-def validate_cell(samples):
-    expected = {(block, sample) for block in range(BLOCKS) for sample in range(PER_BLOCK)}
+def validate_cell(samples, *, blocks=BLOCKS, per_block=PER_BLOCK):
+    expected = {(block, sample) for block in range(blocks) for sample in range(per_block)}
     if len(samples) != len(expected) or {(row['block'], row['sample']) for row in samples} != expected:
         raise ValueError('Missing or duplicate samples')
     assets = asset_identity(samples[0])
@@ -130,7 +130,7 @@ def validate_cell(samples):
     return percentile([row['ms'] for row in samples], 0.95), assets
 
 
-def validate_pages(payload):
+def validate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
     try:
         pages = payload['pages']
         if set(pages) != set(MODES):
@@ -143,9 +143,9 @@ def validate_pages(payload):
                 arms = pages[mode][page]
                 if set(arms) != set(ARMS):
                     raise ValueError('Missing required arm')
-                baseline, baseline_assets = validate_cell(arms['baseline'])
+                baseline, baseline_assets = validate_cell(arms['baseline'], blocks=blocks, per_block=per_block)
                 for arm in ARMS[1:]:
-                    candidate, assets = validate_cell(arms[arm])
+                    candidate, assets = validate_cell(arms[arm], blocks=blocks, per_block=per_block)
                     ratio = candidate / baseline
                     if assets != baseline_assets or ratio > 1.2:
                         raise ValueError(f'{mode}/{page}/{arm}: asset mismatch or p95 exceeds 1.2x')
