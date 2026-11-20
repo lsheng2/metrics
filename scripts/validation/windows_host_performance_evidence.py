@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from scripts.validation.project_full_stack_support import read_json
 from scripts.validation.windows_host_conformance_environment import expected_environment
 from scripts.validation.windows_install_smoke import validate_import_probe
 from scripts.validation.windows_host_performance_contract import recipe_for_mode, validate_performance_contract
-from scripts.validation.windows_host_samples import ARMS, MODES, PAGE_KEYS, asset_identity, evaluate_pages
+from scripts.validation.windows_host_samples import ARMS, MODES, PAGE_KEYS, asset_identity, evaluate_pages, finite
 from scripts.validation.windows_host_transport import validate_transport
 from scripts.validation.windows_qualification_inputs import (
     QualificationError,
@@ -65,26 +66,29 @@ def _check_resolved_inputs(resolved: dict, *, phase: str, mode: str) -> str:
         raise QualificationError("resolved input asset prefix mismatch")
     if not isinstance(direct, dict) or not str(direct.get("url", "")).startswith(prefix):
         raise QualificationError("resolved direct asset identity mismatch")
+    if (not re.fullmatch(r"[0-9a-f]{64}", str(direct.get("sha256", "")))
+            or type(direct.get("bytes")) is not int or direct["bytes"] <= 0):
+        raise QualificationError("resolved direct asset content identity missing")
     return prefix
 
 
 def _check_resolved_measurement_identity(resolved: dict, measurement: dict) -> None:
     for arm, arm_row in resolved["arms"].items():
         sanity = measurement.get("sanity", {}).get(arm)
-        if sanity:
-            for page, sample in sanity.items():
-                if page not in arm_row["pages"] or asset_identity(sample) != {
-                    url: (item["sha256"], item["bytes"]) for url, item in arm_row["assets"].items()
-                }:
-                    raise QualificationError("resolved asset identity does not match measurement")
-        else:
+        if not isinstance(sanity, dict) or set(sanity) != set(PAGE_KEYS):
+            raise QualificationError("per-page asset observation missing")
+        union = {}
+        for page in PAGE_KEYS:
+            expected = asset_identity(sanity[page])
+            for url, identity in expected.items():
+                if url in union and union[url] != identity:
+                    raise QualificationError("conflicting shared asset identity")
+                union[url] = identity
             for mode in MODES:
-                for page in PAGE_KEYS:
-                    first = measurement["pages"][mode][page][arm][0]
-                    if asset_identity(first) != {
-                        url: (item["sha256"], item["bytes"]) for url, item in arm_row["assets"].items()
-                    }:
-                        raise QualificationError("resolved asset identity does not match measurement")
+                if any(asset_identity(sample) != expected for sample in measurement["pages"][mode][page][arm]):
+                    raise QualificationError("resolved page asset identity does not match measurement")
+        if union != {url: (item["sha256"], item["bytes"]) for url, item in arm_row["assets"].items()}:
+            raise QualificationError("resolved asset identity does not match measurement")
     direct = resolved.get("direct_asset")
     if direct:
         probes = [
@@ -93,7 +97,7 @@ def _check_resolved_measurement_identity(resolved: dict, measurement: dict) -> N
         ]
         if not probes or any(row.get("resource") != direct.get("url") for row in probes):
             raise QualificationError("resolved direct asset identity does not match measurement")
-        if any(row.get("content_sha256") != direct.get("sha256") for row in probes if direct.get("sha256")):
+        if any(row.get("content_sha256") != direct.get("sha256") for row in probes):
             raise QualificationError("resolved direct asset content does not match measurement")
 
 
@@ -112,17 +116,25 @@ def _check_window(window: dict, *, run_dir: Path, receipt: dict, require_witness
     if window.get("errors"):
         raise QualificationError("measurement window contains errors")
     if not window.get("snapshots") or not all(
-        not row.get("process_classification", {}).get("certification_blockers")
+        isinstance(row.get("process_classification"), dict)
+        and row["process_classification"].get("certification_blockers") == []
         for row in window.get("snapshots", [])
     ):
         raise QualificationError("measurement window classification was not clean")
-    if window.get("source_before") != window.get("source_after"):
+    if (not isinstance(window.get("source_before"), dict)
+            or window["source_before"].get("head") != receipt["source"]["commit"]
+            or window.get("source_before") != window.get("source_after")):
         raise QualificationError("measurement source changed")
     verdict = window.get("verdict")
     if not isinstance(verdict, dict) or verdict.get("guard_id") != window.get("id"):
         raise QualificationError("missing same-window verdict proof")
-    written = verdict.get("written_monotonic")
-    if not (window.get("started_monotonic") <= written <= window.get("ended_monotonic")):
+    try:
+        start = finite(window["started_monotonic"])
+        end = finite(window["ended_monotonic"])
+        written = finite(verdict["written_monotonic"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise QualificationError("measurement window timing missing") from error
+    if not (start <= written <= end):
         raise QualificationError("verdict was not written while the guard was held")
     if not require_witness:
         return
@@ -136,14 +148,24 @@ def _check_window(window: dict, *, run_dir: Path, receipt: dict, require_witness
             or witness.get("guard_observed_id") != window.get("id")
             or witness.get("guard_matches") is not True):
         raise QualificationError("receipt write witness guard mismatch")
-    completed = witness.get("write_completed_monotonic")
-    if not (window.get("started_monotonic") <= completed):
+    try:
+        started = finite(witness["write_started_monotonic"])
+        completed = finite(witness["write_completed_monotonic"])
+        observed = finite(witness["guard_observed_monotonic"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise QualificationError("receipt write witness timing missing") from error
+    if not (window["ended_monotonic"] <= started <= completed <= observed):
         raise QualificationError("receipt write witness timing mismatch")
-    receipt_path = Path(witness.get("receipt_path", ""))
-    if receipt_path.is_file():
-        require_hash(receipt_path, witness.get("receipt_sha256", ""), "receipt write witness")
-        if receipt.get("_receipt_path") is not None and canonical(receipt["_receipt_path"]) != canonical(receipt_path):
-            raise QualificationError("receipt write witness path mismatch")
+    receipt_path = canonical(witness.get("receipt_path", ""), must_exist=True)
+    if not receipt_path.is_file() or not receipt_path.is_relative_to(run_dir.parent):
+        raise QualificationError("receipt write witness target is unowned or missing")
+    if receipt_path != canonical(verdict.get("path", ""), must_exist=True):
+        raise QualificationError("receipt write witness path mismatch")
+    require_hash(receipt_path, witness.get("receipt_sha256", ""), "receipt write witness")
+    if receipt.get("_receipt_path") is not None and canonical(receipt["_receipt_path"]) != receipt_path:
+        raise QualificationError("receipt write witness path mismatch")
+    if {key: value for key, value in receipt.items() if key != "_receipt_path"} != read_json(receipt_path):
+        raise QualificationError("receipt payload differs from witnessed bytes")
 
 
 def _check_cleanup(cleanup: dict) -> None:
@@ -163,15 +185,16 @@ def _check_cleanup(cleanup: dict) -> None:
                 raise QualificationError("performance cleanup PID or port mismatch")
             if observed.get("listener_pids") not in ([], ()):
                 raise QualificationError("performance cleanup listener remains")
-            if observed.get("observation_errors"):
+            if observed.get("observation_errors") != []:
                 raise QualificationError("performance cleanup observation errors")
-            if observed.get("process_running") is True:
+            if observed.get("process_running") is not False:
                 raise QualificationError("performance cleanup process remains")
             owned = observed.get("owned_processes")
             if not isinstance(owned, dict) or int(service["pid"]) not in {int(pid) for pid in owned}:
                 raise QualificationError("performance cleanup owned process proof missing")
-            for row in owned.values():
-                if row.get("process_running") is True or row.get("terminal_exit_code") is None:
+            for pid, row in owned.items():
+                if (str(row.get("pid")) != str(pid) or row.get("process_running") is not False
+                        or type(row.get("terminal_exit_code")) is not int or row["terminal_exit_code"] != 0):
                     raise QualificationError("performance cleanup terminal proof missing")
             normal = (
                 service.get("stopped") is True
@@ -180,6 +203,8 @@ def _check_cleanup(cleanup: dict) -> None:
                 and service.get("force_requested") is False
                 and service.get("reason") == "stop_command"
             )
+            if not normal:
+                raise QualificationError("performance cleanup service did not stop normally")
             arm_normals.append(normal)
         phase_normal = all(arm_normals)
         if phase_cleanup.get("normal") is not phase_normal:
@@ -248,6 +273,9 @@ def validate_performance_result(receipt: dict, request: dict, *, require_witness
     for env_key in ("environment_before", "environment_after"):
         _, environment = _artifact(receipt[env_key], label=env_key.replace("_", " "), roots=roots, run_dir=run_dir)
         _check_environment(environment, request, roots=roots, run_dir=run_dir)
+    _, window = _artifact(receipt["measurement_window"], label="measurement window", roots=roots, run_dir=run_dir)
+    _check_window(window, run_dir=run_dir, receipt=receipt, require_witness=False)
+    previous_end = window["started_monotonic"]
     violations = []
     for phase in PHASES:
         _, resolved = _artifact(receipt["resolved_inputs"][phase], label=f"{phase} resolved inputs", roots=roots, run_dir=run_dir)
@@ -263,12 +291,18 @@ def validate_performance_result(receipt: dict, request: dict, *, require_witness
             )
         except ValueError as error:
             raise QualificationError(str(error)) from error
+        if not (previous_end <= measurement["spacing"]["started"]
+                <= measurement["spacing"]["arrivals"][-1]
+                <= measurement["saturation"]["started"]
+                <= measurement["saturation"]["ended"] <= window["ended_monotonic"]):
+            raise QualificationError("measurement phase is outside its ordered source-bound window")
+        previous_end = measurement["saturation"]["ended"]
         violations.extend({**row, "phase": phase} for row in page_result["violations"])
         violations.extend({**row, "phase": phase} for row in transport_result.get("violations", []))
-    _, window = _artifact(receipt["measurement_window"], label="measurement window", roots=roots, run_dir=run_dir)
-    _check_window(window, run_dir=run_dir, receipt=receipt, require_witness=require_witness)
     _, cleanup = _artifact(receipt["cleanup"], label="cleanup", roots=roots, run_dir=run_dir)
     _check_cleanup(cleanup)
+    if require_witness:
+        _check_window(window, run_dir=run_dir, receipt=receipt)
     status_pass = receipt.get("status") == "PASS" and receipt.get("collection_status") == "COMPLETE"
     eligible = bool(mode == "certify" and status_pass and not receipt.get("errors") and not violations)
     return {

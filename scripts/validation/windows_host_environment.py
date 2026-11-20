@@ -205,10 +205,12 @@ class MeasurementWindow:
         self._verdict_writer = writer
         self._verdict_path = path
 
-    def _write_receipt_witness(self):
+    def _write_receipt_witness(self, write_started):
         if self._verdict_path is None or not self._verdict_path.is_file():
             raise ValueError('Measurement verdict is missing')
+        completed = time.monotonic()
         guard = read_json(self.guard)
+        observed = time.monotonic()
         witness = {
             'schema_version': 1,
             'kind': 'windows-performance-receipt-write-witness',
@@ -217,7 +219,9 @@ class MeasurementWindow:
             'guard_expected_id': self.identity,
             'guard_observed_id': guard.get('id'),
             'guard_matches': guard.get('id') == self.identity,
-            'write_completed_monotonic': time.monotonic(),
+            'write_started_monotonic': write_started,
+            'write_completed_monotonic': completed,
+            'guard_observed_monotonic': observed,
             'writer_pid': os.getpid(),
         }
         if witness['guard_matches'] is not True:
@@ -250,8 +254,9 @@ class MeasurementWindow:
             write_json(self.run_root / 'measurement-window.json', self.record)
             try:
                 if self._verdict_writer is not None:
+                    write_started = time.monotonic()
                     self._verdict_writer()
-                    self._write_receipt_witness()
+                    self._write_receipt_witness(write_started)
                 self._remove_own_guard()
             except Exception as error:
                 self.record['result'] = 'FAIL'

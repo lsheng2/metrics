@@ -12,6 +12,8 @@ from scripts.tests.windows_performance_support import (
     performance_phase_cleanup,
     performance_transport_payload,
     resolved_inputs_payload,
+    seal_receipt,
+    shift_measurement,
 )
 from scripts.tests.test_windows_performance_inputs import functional_acceptance_payload, performance_policy_payload
 
@@ -191,6 +193,7 @@ def test_diagnostic_retains_numeric_violations_without_collection_failure(tmp_pa
         sample["ms"] = 20.0
         sample["ended"] = sample["started"] + 0.02
     receipt["measurements"]["development"] = _artifact(measurement_path, measurement)
+    seal_receipt(receipt)
 
     result = validate_performance_result(receipt, request)
 
@@ -207,6 +210,7 @@ def test_performance_checker_refuses_pilot_diagnostic_or_false_certify_label(tmp
         receipt, request = _receipt_case(tmp_path, mode=mode)
         receipt["status"] = "PASS"
         receipt["acceptance_eligible"] = True
+        seal_receipt(receipt)
         result = validate_performance_result(receipt, request)
         assert result["acceptance_eligible"] is False
 
@@ -274,11 +278,7 @@ def test_performance_driver_prepares_raw_root_before_benchmark(monkeypatch, tmp_
     def fake_benchmark(root, python, window, *, recipe):
         assert not root.exists()
         root.mkdir(parents=True)
-        payload = performance_measurement_payload()
-        payload.update(performance_transport_payload())
-        payload["resolved_inputs"] = resolved_inputs_payload()
-        payload["processes"] = {"cleanup": performance_phase_cleanup()}
-        return {"development": payload, "production": {**payload, "resolved_inputs": resolved_inputs_payload(production=True)}}
+        return _benchmark_payload(window)
 
     monkeypatch.setattr(benchmark, "run_benchmark", fake_benchmark)
 
@@ -304,7 +304,7 @@ def test_performance_driver_captures_environment_under_guard(monkeypatch, tmp_pa
     monkeypatch.setattr(performance, "environment_identity", guarded_environment_identity)
     monkeypatch.setattr(environment, "source_snapshot", lambda root: {"head": "dashboard-source"})
     monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
-    monkeypatch.setattr(benchmark, "run_benchmark", lambda root, python, window, *, recipe: _benchmark_payload())
+    monkeypatch.setattr(benchmark, "run_benchmark", lambda root, python, window, *, recipe: _benchmark_payload(window))
 
     receipt = performance.run_performance(request, mode="certify")
 
@@ -325,6 +325,7 @@ def test_performance_driver_lets_real_benchmark_own_raw_root(monkeypatch, tmp_pa
     phase_roots = []
 
     def fake_phase(root, python, *, production, window, recipe=None):
+        window.record["started_monotonic"] = 0.0
         phase_roots.append(root)
         assert root.parent.name == "raw"
         assert root.parent.is_dir()
@@ -332,7 +333,7 @@ def test_performance_driver_lets_real_benchmark_own_raw_root(monkeypatch, tmp_pa
         payload.update(performance_transport_payload())
         payload["resolved_inputs"] = resolved_inputs_payload(production=production)
         payload["processes"] = {"cleanup": performance_phase_cleanup()}
-        return payload
+        return shift_measurement(payload, 500 if production else 0)
 
     monkeypatch.setattr(benchmark, "phase", fake_phase)
 
@@ -364,11 +365,7 @@ def test_late_guard_release_failure_replaces_authoritative_pass_output(monkeypat
     monkeypatch.setattr(environment, "machine_snapshot", lambda **kwargs: {"processes": [], "cpu": {"idle": 1, "kernel": 2, "user": 3}})
 
     def fake_benchmark(root, python, window, *, recipe):
-        payload = performance_measurement_payload()
-        payload.update(performance_transport_payload())
-        payload["resolved_inputs"] = resolved_inputs_payload()
-        payload["processes"] = {"cleanup": performance_phase_cleanup()}
-        return {"development": payload, "production": {**payload, "resolved_inputs": resolved_inputs_payload(production=True)}}
+        return _benchmark_payload(window)
 
     monkeypatch.setattr(benchmark, "run_benchmark", fake_benchmark)
     monkeypatch.setattr(environment.MeasurementWindow, "_remove_own_guard", lambda self: (_ for _ in ()).throw(ValueError("guard release failed")))
@@ -379,12 +376,16 @@ def test_late_guard_release_failure_replaces_authoritative_pass_output(monkeypat
     assert _read_json(request["_paths"]["output"])["status"] == "FAIL"
 
 
-def _benchmark_payload():
+def _benchmark_payload(window):
+    # The external benchmark double uses a synthetic monotonic epoch.
+    window.record["started_monotonic"] = 0.0
     payload = performance_measurement_payload()
     payload.update(performance_transport_payload())
     payload["resolved_inputs"] = resolved_inputs_payload()
     payload["processes"] = {"cleanup": performance_phase_cleanup()}
-    return {"development": payload, "production": {**payload, "resolved_inputs": resolved_inputs_payload(production=True)}}
+    return {"development": payload, "production": {
+        **shift_measurement(payload, 500), "resolved_inputs": resolved_inputs_payload(production=True),
+    }}
 
 def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: int | None = None,
                   asset_prefix: str = "/ai/assets/"):
@@ -429,12 +430,12 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
         "id": "window-1",
         "result": "PASS",
         "started_monotonic": 10.0,
-        "ended_monotonic": 20.0,
+        "ended_monotonic": 1000.0,
         "errors": [],
         "source_before": {"head": "dashboard-source"},
         "source_after": {"head": "dashboard-source"},
         "snapshots": [{"process_classification": {"certification_blockers": []}}],
-        "verdict": {"guard_id": "window-1", "written_monotonic": 19.0},
+        "verdict": {"guard_id": "window-1", "written_monotonic": 990.0, "path": str(run / "receipt.json")},
     }
     receipt = {
         "schema_version": 1,
@@ -482,7 +483,7 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
         },
         "measurements": {
             "development": _artifact(run / "measurement-development.json", measurement),
-            "production": _artifact(run / "measurement-production.json", measurement),
+            "production": _artifact(run / "measurement-production.json", shift_measurement(measurement, 500)),
         },
         "measurement_window": _artifact(run / "window.json", window),
         "cleanup": _artifact(run / "cleanup.json", {
@@ -503,7 +504,9 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
         "guard_expected_id": "window-1",
         "guard_observed_id": "window-1",
         "guard_matches": True,
-        "write_completed_monotonic": 19.5,
+        "write_started_monotonic": 1001.0,
+        "write_completed_monotonic": 1001.5,
+        "guard_observed_monotonic": 1001.6,
     })
     return receipt, request
 

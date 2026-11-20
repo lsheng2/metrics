@@ -116,6 +116,10 @@ def performance_transport_payload(*, spacing_events: int = 50, slots: int = 10, 
 
 def performance_measurement_payload(*, blocks: int = 4, per_block: int = 40, warmup: int = 10) -> dict:
     payload = performance_page_payload(blocks=blocks, per_block=per_block)
+    payload["sanity"] = {
+        arm: {page: deepcopy(arms[arm][0]) for page, arms in payload["pages"]["seq"].items()}
+        for arm in ("baseline", "candidate", "candidate_saturated")
+    }
     payload.update(performance_transport_payload())
     payload["recipe"] = {
         "blocks": blocks,
@@ -171,6 +175,34 @@ def write_json(path: Path, value: dict) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def seal_receipt(receipt):
+    import hashlib
+
+    run = Path(receipt["run_directory"])
+    path = run / "receipt.json"
+    write_json(path, receipt)
+    witness_path = run / "receipt-write-witness.json"
+    witness = json.loads(witness_path.read_text(encoding="utf-8"))
+    witness["receipt_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    write_json(witness_path, witness)
+
+
+def shift_measurement(value, offset):
+    if isinstance(value, list):
+        return [shift_measurement(row, offset) for row in value]
+    if not isinstance(value, dict):
+        return value
+    result = {}
+    for key, child in value.items():
+        if key in {"started", "ended", "scheduled"} and isinstance(child, (int, float)):
+            result[key] = child + offset
+        elif key == "arrivals":
+            result[key] = [item + offset for item in child]
+        else:
+            result[key] = shift_measurement(child, offset)
+    return result
 
 
 def performance_phase_cleanup():

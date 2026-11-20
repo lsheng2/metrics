@@ -55,6 +55,15 @@ asset prefix for the owning fixture, store a real response-body SHA256 separatel
 from any ETag, and reject forged prefixes or non-hex hashes. Cleanup and window
 proofs must come from observed SLE/process/listener and measurement-window
 classification records; missing absence facts are not success.
+Page-specific asset sets are replayed against their sanity observations, and
+only their union is compared with the arm manifest. Raw page timestamps prove
+block and saturation containment without changing the HTTP-only latency metric.
+Post-write `receipt-write-witness.json` binds the actual receipt bytes and a
+subsequent matching guard observation. Keep this file with the raw run;
+standalone/aggregate replay rejects a missing witness or target, inconsistent
+cleanup observations, incomplete intervals and semantically wrong environment
+artifacts. Old pilot files with incomplete proof remain historical diagnostics,
+not inputs to the current certification schema.
 
 Windows B5 shutdown qualification requires two complementary proofs under the
 approved [B5-r1 decision](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-b5-owner-decision.md):

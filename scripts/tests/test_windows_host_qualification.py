@@ -316,7 +316,9 @@ def test_benchmark_uses_explicit_reduced_pilot_recipe_with_performance_transport
     monkeypatch.setattr(benchmark, 'run_block', samples)
     monkeypatch.setattr(benchmark, 'measure_spacing', lambda base: performance_transport_payload()['spacing'])
     monkeypatch.setattr(benchmark, 'saturated_streams', saturation)
-    monkeypatch.setattr(benchmark, 'discover_direct_asset', lambda base: "/ai/assets/runtime.js")
+    monkeypatch.setattr(benchmark, 'discover_direct_asset', lambda base: {
+        "url": "/ai/assets/runtime.js", "sha256": "b" * 64, "bytes": 12,
+    })
     monkeypatch.setattr(benchmark, 'write_json', lambda *args, **kwargs: None)
 
     result = benchmark.phase(

@@ -197,6 +197,22 @@ nonzero. In-progress files may be finalized to failure; after the producer
 has exited, its result and raw artifacts are immutable. No historical receipt
 is rewritten. Tests must exercise write/release failures explicitly.
 
+Replay also requires `receipt-write-witness.json` in the run directory. The
+window's `ended_monotonic` closes process/source observation, not guard ownership.
+The witness records actual write start/completion and a subsequent matching
+guard observation; their order must follow that observation end. It binds the
+final receipt path, bytes and SHA256 without a self-referential hash. Missing
+targets, different supplied receipt content or missing raw facts fail closed.
+The guard is released only after the witness is persisted. A witness/release
+failure invalidates the producer result. Pre-write validation is internal
+preparation only; standalone and aggregate acceptance require the witness.
+
+Page assets are compared with each page's sanity observation; their union,
+not every page, must equal the resolved arm asset manifest. The direct runtime
+asset URL, content hash and size are materialized before warmup. Sample
+intervals prove block/saturation membership; the KPI remains HTML HTTP plus
+asset HTTP time, excluding parsing and hashing.
+
 ### PERF.PROBE: Correct The Measurement Chain
 
 Owned files are enumerated by this node in the JSON DAG. Keep modules cohesive

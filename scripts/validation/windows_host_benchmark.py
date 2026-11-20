@@ -1,5 +1,6 @@
 """Interleaved S0b page/asset and saturation measurement on the current host."""
 from pathlib import Path
+import hashlib
 import re
 import time
 
@@ -23,9 +24,13 @@ def discover_direct_asset(base):
         if response.status_code != 200:
             raise ValueError('Runtime asset page is unavailable')
         matches = AI_ASSET_RE.findall(response.text)
-    if not matches:
-        raise ValueError('No direct runtime asset was discovered')
-    return matches[0]
+        if not matches:
+            raise ValueError('No direct runtime asset was discovered')
+        resource = http.get(base + matches[0])
+        if resource.status_code != 200 or not resource.content:
+            raise ValueError('Direct runtime asset is unavailable')
+        return {'url': matches[0], 'sha256': hashlib.sha256(resource.content).hexdigest(),
+                'bytes': len(resource.content)}
 
 
 def asset_prefix(path):
@@ -38,8 +43,8 @@ def resolved_inputs(arms, sanity_records, metadata, *, production, recipe, direc
         'recipe_id': 'windows-mdb2-s0b-r1',
         'settings': {'production': production, 'debug': not production},
         'recipe': dict(recipe),
-        'asset_prefix': asset_prefix(direct_asset),
-        'direct_asset': {'url': direct_asset} if direct_asset else None,
+        'asset_prefix': asset_prefix(direct_asset['url'] if direct_asset else None),
+        'direct_asset': direct_asset,
         'arms': {
             name: {
                 'base_url': arms.bases[name],
@@ -117,7 +122,10 @@ def phase(root, python, *, production, window, recipe=None):
                     if any(row['status'] != 200 or asset_identity(row) != expected_assets for row in samples):
                         raise ValueError('Warmup page or assets failed')
             result['spacing'] = measure_spacing(arms.bases['candidate'])
-            with saturated_streams(arms.bases['candidate_saturated'], direct_asset_path=direct_asset) as saturation:
+            with saturated_streams(
+                arms.bases['candidate_saturated'],
+                direct_asset_path=direct_asset['url'] if direct_asset else None,
+            ) as saturation:
                 result['saturation'] = saturation
                 for mode, workers in MODES.items():
                     result['pages'][mode] = {}
