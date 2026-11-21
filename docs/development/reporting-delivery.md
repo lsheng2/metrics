@@ -19,6 +19,18 @@ Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
 
+The owner requires the latest AIB for final delivery as of 2026-11-21.
+The [final-candidate decision](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md#final-delivery-candidate-decision-2026-11-21)
+selects the currently verified dev5 target and defines its admission boundary.
+This is a required next upgrade, not the installed version: the manifest and
+environments above remain dev4 until a new isolated installation, consumer
+admission and affected functional/browser acceptance succeed. Preserve the old
+environments and receipts. Final performance input freeze and certification
+must then use the new candidate and matching functional evidence; no automatic
+latest-version range, mixed-wheel evidence or legacy fallback is permitted.
+The owner separately authorized both repositories' scoped mainline publication;
+publishing code does not claim this upgrade or performance acceptance is done.
+
 The Windows delivery sequence is specified in the
 [MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
 with detailed steps and a clause-to-evidence matrix. Installation and entrypoint
@@ -26,9 +38,10 @@ retirement passed W1. Windows synthetic-data `FUNC.ACCEPT` is now complete at
 source `ff09d6ff97dd62e56fb3bfc44914c5c08582a144`: the
 [formal receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json)
 binds 114/114 functional keys, all seven module gates and independent review.
-Next is W3.REPLAN, followed by the
+The method review and KPI freeze passed; the remaining
 [performance phase](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md)
-to freeze KPIs, collect probes, optimize and certify. Performance remains NOT_RUN;
+must refresh the final candidate, complete probes, optimize if needed and certify.
+Performance acceptance remains NOT_RUN;
 stop/cancel/cleanup bounds remain functional and were not relaxed.
 The receipt covers the tested source, not subsequent product changes or full AIB release.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
@@ -60,9 +73,13 @@ records an incomplete full diagnostic and separately labelled asset-localization
 experiments. It does not replace the functional receipt or establish
 performance acceptance. Elevated kernel collection is verified, but its latest
 bounded run did not reproduce the anomaly; root-cause attribution remains open.
-The next authorized diagnostic uses bounded circular kernel recording and
-request/PID/TID/clock witnesses. No-trigger windows are discarded; calibration
-and instrumented captures remain separate from KPI qualification.
+The bounded circular experiment verified driver/server PID/TID and QPC
+write-bracket correspondence in its calibration ETL. Its subsequent
+2,760-sample diagnostic did not reproduce the anomaly; all five no-trigger
+windows were canceled without diagnostic ETL.
+Calibration and instrumented captures remain separate from KPI qualification.
+No further capture is queued; latest-candidate admission now precedes final
+performance certification.
 Page-specific asset sets are replayed against their sanity observations, and
 only their union is compared with the arm manifest. Raw page timestamps prove
 block and saturation containment without changing the HTTP-only latency metric.

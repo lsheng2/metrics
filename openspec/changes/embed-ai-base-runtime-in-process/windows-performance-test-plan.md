@@ -1,5 +1,11 @@
 # Windows Performance Implementation And Test Plan
 
+The [2026-11-21 owner decision](windows-performance-phase.md#final-delivery-candidate-decision-2026-11-21)
+requires latest-AIB candidate admission and renewed Dashboard functional evidence
+before final performance certification. This plan's dev4 inputs and completed
+experiments remain historical/frozen evidence, not qualification of the new
+candidate. The signed workload and numerical thresholds are unchanged.
+
 > For agentic workers: use `superpowers:executing-plans` for the steps below.
 > Execution status exists only in the existing `tasks.md`, not this document.
 

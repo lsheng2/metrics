@@ -1,5 +1,18 @@
 # Tasks
 
+## Latest Delivery Decision
+
+**Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
+`origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
+最新目标为 `ai-base-runtime==0.1.1.dev5`，具体源码与 wheel SHA256 见
+[最终候选约束](windows-performance-phase.md#final-delivery-candidate-decision-2026-11-21)。
+Dashboard 当前仍消费 dev4；升级准入、新候选功能验收与性能输入复签尚未完成。
+历史 dev4 的已完成节点和不可变证据保留，不代表最新候选已经通过。
+下一切片先完成候选更新及受影响功能补验，再做完整性能诊断和认证；
+不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
+候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
+下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
+
 ## Windows Performance Execution Frontier
 
 **执行授权（2026-11-20）**：owner 已批准开始 Windows 性能专项，先深入研究、

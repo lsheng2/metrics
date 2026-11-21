@@ -1,11 +1,40 @@
 # Windows Performance Phase
 
-Status: method/plan approved; probe implementation active, not qualified.
+Status: method/plan approved; latest-candidate refresh required before certification.
 Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-17.
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 
-## Current Execution Packet
+## Final Delivery Candidate Decision (2026-11-21)
+
+The owner authorized merging/pushing both repositories' existing scoped commits
+to `origin/main` and requires the latest AIB for final Windows Dashboard delivery.
+Code publication is not performance acceptance or product release.
+The currently verified latest target is `ai-base-runtime==0.1.1.dev5`, source
+`3dd15adb8fcc42600a97013d9835d1e50539324e`, wheel SHA256
+`45efb445528d4ccc7a288868317bdc57e5da39945188a2cfefb9f575f0b1e6d6`.
+
+This supersedes dev4 as the final-delivery selection, not its recorded provenance.
+The installed Dashboard candidate, functional receipt and performance policy
+remain dev4 at this checkpoint. Preserve their immutable bytes. Do not start
+final certification on dev4 or relabel its results as evidence for dev5.
+
+The next implementation packet must admit the latest wheel in a separate
+environment, refresh the consumer artifact manifest from verified package bytes,
+run affected host/session/context/approval/task-run/asset/normal-stop checks and
+joined browser coverage, and produce fresh functional acceptance for that wheel.
+Then review/refreeze performance inputs and their acceptance references before
+the complete diagnostic and certify recipe. Candidate/hash mixing and stale
+functional references must be rejected by the refreshed evidence consumers.
+These are renewed inputs to the existing freeze/review/acceptance gates, not
+a second task ledger or a claim that the candidate upgrade is implemented.
+
+Recheck the latest AIB source and built artifact at delivery freeze. A newer
+candidate needs impact review and another immutable selection, not a floating
+dependency or an in-place environment upgrade. KPIs and timeout treatment stay
+unchanged; Sample/RCA qualification cannot substitute for Dashboard acceptance.
+
+## Frozen Diagnostic Packet (2026-11-20)
 
 The owner authorized Windows performance planning, deeper research, a concrete
 test plan and execution after the bounded functional consolidation. Reuse this
