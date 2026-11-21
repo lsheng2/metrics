@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "kind": "dev5-functional-attempt-not-acceptance",
+  "status": "BLOCKED",
+  "observed_utc": "2026-11-21T18:54:20.3957422+00:00",
+  "tested_source": "b7dae4bce1787381a556228849ab93437cda2c8a",
+  "candidate": {
+    "version": "0.1.1.dev5",
+    "source_commit": "3dd15adb8fcc42600a97013d9835d1e50539324e",
+    "wheel_sha256": "45efb445528d4ccc7a288868317bdc57e5da39945188a2cfefb9f575f0b1e6d6"
+  },
+  "functional_inputs": {
+    "path": "D:\\AIGC\\d5-1121\\inputs\\windows-functional\\8fbf8783-9077-478a-9318-7c2785b75a6a\\inputs.json",
+    "sha256": "c7d8cab0af912c65b12ec641c362269fe42a5f181114407e582b02e09269feb4"
+  },
+  "completed_producers": [
+    {
+      "path": "D:\\AIGC\\d5-1121\\evidence\\native-dev5-r2.json",
+      "sha256": "5a2ae2855c7cceecd973874888a0059639e9dc0adcf3edbd935fb0df7b3127ae"
+    },
+    {
+      "path": "D:\\AIGC\\d5-1121\\complete-dev5-r3\\receipt.json",
+      "sha256": "5e1852fc40ea1541f0ab4f86d3383e133c8273f3d4fa4b82dc44a256858fdc83"
+    },
+    {
+      "path": "D:\\AIGC\\d5-1121\\evidence\\migration-dev5-r2.json",
+      "sha256": "db3730ab33a9cc888d088b4f2ba27900a3fac9ed7169bc2a54d4ae024431e9a2"
+    },
+    {
+      "path": "D:\\AIGC\\d5-1121\\mapped-proof-runs\\e261d257-38df-40e0-b63e-68bb8963a7e1\\proof.json",
+      "sha256": "b5487cecf63b3c47d44bf6ab2fcccb17910063df4ce4a9e6fdd60965048dfed6"
+    },
+    {
+      "path": "D:\\AIGC\\d5-1121\\reviews\\w2-refreeze-gate.json",
+      "sha256": "2cd43ded50bd3d1a446db8fd5cf76f07b23010e68c217cfcb128bf67a1c31123"
+    }
+  ],
+  "completed_module_lanes": [
+    {
+      "lane": "ai_host/tests",
+      "primary_cases": 266,
+      "command": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\logs\\lane-1.command.json",
+        "sha256": "be2743feb124cac8b33fb81671bffa0482a5c8d9bd9c2dedc6540f7919b03402"
+      },
+      "junit": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-1.verified.xml",
+        "sha256": "4a4c62fe285bb8e9b9be4cbb2f480b9a9b399eacde773b6b74630fe1cd4694b8"
+      },
+      "reconciliation": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-1.reconciliation.json",
+        "sha256": "2c1b4b02ee6b9615c67b72c7c9de3587b5f093f284c8262b363e92a5b5f25e92"
+      }
+    },
+    {
+      "lane": "metrics/tests",
+      "primary_cases": 19,
+      "command": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\logs\\lane-2.command.json",
+        "sha256": "9799ba0e1a23ab3b1daf230a0518f5a94b11d6ca8616cf8287cd10c5bcae9e6a"
+      },
+      "junit": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-2.verified.xml",
+        "sha256": "736ba05c9d0d7e05576a1f45921cf3bd368037db29ec7d681f6f1aff0c9e13fc"
+      },
+      "reconciliation": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-2.reconciliation.json",
+        "sha256": "b6244c88c63d5aac6ce303bac4a2409b3c957c3a05bbaa020761383cc89e65d3"
+      }
+    },
+    {
+      "lane": "bug_metrics/tests",
+      "primary_cases": 250,
+      "command": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\logs\\lane-3.command.json",
+        "sha256": "18dda5a5666111e136f4cac311842cbead46e02b4d5d75fee79146995a385412"
+      },
+      "junit": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-3.verified.xml",
+        "sha256": "dbd1a930db56a0a0dfa3f1bab5170114b877d4376e3720ec467999e73758b27d"
+      },
+      "reconciliation": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-3.reconciliation.json",
+        "sha256": "a9368ecd7422a3891852600f3ab262d9e4eaba8dd77c2410f4548b48bceedda8"
+      }
+    },
+    {
+      "lane": "jira_sync/tests",
+      "primary_cases": 32,
+      "command": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\logs\\lane-4.command.json",
+        "sha256": "e65d4f209727365c63466f86679b2aa6992a3699f6186a4844551872ae871758"
+      },
+      "junit": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-4.verified.xml",
+        "sha256": "f2cc0e3343a352bf26d7c663061532caa3ed8240b91031b96887364149b71c29"
+      },
+      "reconciliation": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-4.reconciliation.json",
+        "sha256": "66f222f14229ad17e0b3cf845c69f160ba23b8f9da0f2f1a75f5dad5162a0850"
+      }
+    },
+    {
+      "lane": "ui_web/tests",
+      "primary_cases": 765,
+      "command": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\logs\\lane-5.command.json",
+        "sha256": "493b5e053c6e63593801456cd9773667d596a6f67dddd6dde771d49b518e52f3"
+      },
+      "junit": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-5.verified.xml",
+        "sha256": "1d86efc927c3bd62753c79b578a7eb2b87cfc492a8bc4695e5c55df988481e51"
+      },
+      "reconciliation": {
+        "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\junit\\lane-5.reconciliation.json",
+        "sha256": "89f74018ce39ed53627cb2c4a5949ecb7edb5ddd865bb2e5716653a13426f411"
+      }
+    }
+  ],
+  "aggregate_blocker": {
+    "lane": "project_management/tests",
+    "selected_primary_cases": 971,
+    "outer_timeout_seconds": 3600,
+    "timed_out": true,
+    "command": {
+      "path": "D:\\AIGC\\d5-1121\\qualifier-runs\\267f9c1e-d9d6-4b79-9265-2e4fbc3a8fdd\\logs\\lane-6.command.json",
+      "sha256": "5f2945fc3a94b2813006af4aa7150fc45906a179cfc45d1613147e5d2cef09a5"
+    },
+    "cleanup_observation": {
+      "path": "D:\\AIGC\\d5-1121\\evidence\\qualifier-aggregate-timeout-cleanup.json",
+      "sha256": "e84fa82a82157c32129ab4b5c336ed98c58585878e5996196ab83f6ecd3a2758"
+    },
+    "owner_amendment_requested_seconds": 7200,
+    "owner_amendment_received": false
+  },
+  "scripts_readiness": {
+    "selected": 714,
+    "passed": 713,
+    "failed": 1,
+    "scope": "standalone-module-readiness-not-functional-acceptance",
+    "command": {
+      "path": "D:\\AIGC\\d5-1121\\readiness-runs\\c5f5363c-1b5d-46a3-b2e4-707a115299e0\\logs\\scripts.command.json",
+      "sha256": "104587e26aaf5a9412d1f6669861ec8acf766eb6ee10920337b85b3cdb35c891"
+    },
+    "raw_junit": {
+      "path": "D:\\AIGC\\d5-1121\\readiness-runs\\c5f5363c-1b5d-46a3-b2e4-707a115299e0\\junit\\scripts.xml",
+      "sha256": "9c5ec2bf4bbb7d85468c44df6d5ad411e0334aea4e9740bc3110e164daaf5d14"
+    },
+    "finding": "Obsolete performance phase deferred assertion",
+    "correction_scope": "test-only current missing-mode import guard",
+    "correction_source": {
+      "kind": "working-tree",
+      "base_commit": "b7dae4bce1787381a556228849ab93437cda2c8a",
+      "file": "scripts/tests/test_windows_host_conformance.py",
+      "sha256": "4d71de1540cdfdf0c6dfdf7ed31a7476ce5bcb1d688c3b4c56e64cd7005121a5"
+    },
+    "focused_passed": 26,
+    "focused_report": {
+      "path": "D:\\AIGC\\d5-1121\\dispatcher-guard-green-r1\\junit.xml",
+      "sha256": "d7c9f2217e78a44d0db71286aaf8b0403d01298f9aac9f85556287d85534cc52"
+    },
+    "full_corrected_lane_status": "NOT_RUN"
+  },
+  "nonclaims": [
+    "No full dev5 functional acceptance",
+    "No numerical performance qualification",
+    "No deadline or KPI changes",
+    "No relabelled historical receipts",
+    "Partial or instrumented outputs are not acceptance"
+  ]
+}

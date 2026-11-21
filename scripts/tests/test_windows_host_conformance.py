@@ -536,16 +536,28 @@ def test_qualifier_accepts_owned_native_conformance_receipt_for_b5_key(tmp_path,
     assert result["mapped_keys"] == ["clause:10.4:B5-stream-stop:functional"]
 
 
-def test_phase_performance_rejects_before_perf_helper_import_or_execution(tmp_path, monkeypatch, capsys):
+def test_phase_performance_without_mode_rejects_before_producer_import(tmp_path, monkeypatch, capsys):
     from scripts.validation import windows_host_qualification as host_qualification
-    import sys
 
-    case = _case(tmp_path, monkeypatch)
-    sys.modules.pop("scripts.validation.windows_host_benchmark", None)
-    assert host_qualification.main(["--phase", "performance", "--inputs", str(case["inputs"]), "--output", str(case["output"])]) == 1
-    assert "deferred" in capsys.readouterr().err
-    assert "scripts.validation.windows_host_benchmark" not in sys.modules
-    assert not case["output"].exists()
+    original_import = host_qualification.importlib.import_module
+
+    def guarded_import(name, *args, **kwargs):
+        assert name not in {
+            "scripts.validation.windows_host_performance",
+            "scripts.validation.windows_host_benchmark",
+        }, "performance producer imported without an explicit mode"
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(host_qualification.importlib, "import_module", guarded_import)
+    output = tmp_path / "receipt.json"
+    with pytest.raises(SystemExit) as error:
+        host_qualification.main([
+            "--phase", "performance", "--inputs", str(tmp_path / "unused-input.json"),
+            "--output", str(output),
+        ])
+    assert error.value.code == 2
+    assert "requires --mode" in capsys.readouterr().err
+    assert not output.exists()
 
 
 def test_conformance_rejects_dirty_source_before_running_native_lanes(tmp_path, monkeypatch):

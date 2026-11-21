@@ -26,8 +26,15 @@ The active manifest and separately qualified installation now use dev5.
 Installation qualification passed in `D:/AIGC/d5-1121/venv`, with 19
 admission/package/host checks, authenticated page/assets and normal stop.
 The environment has the same 83 distribution versions as the dev4 baseline
-except the runtime version itself. Fresh dev5 functional/browser acceptance
-is still pending; retain the dev4 environments and receipts as history.
+except the runtime version itself. Dev5 native, migration and mapped browser
+proof passed at `b7dae4b`; five full module lanes also passed, but the official
+project module hit the 3600-second aggregate subprocess cap. Full dev5 functional
+acceptance remains blocked; see the
+[source-bound attempt record](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev5-functional-attempt.json).
+An aggregate runner cap is separate from per-test, application shutdown and KPI
+limits. Any amendment requires an explicit decision and fresh formal evidence;
+partial reports and independent readiness runs cannot establish acceptance.
+Retain the dev4 environments and receipts as history.
 Final performance input freeze and certification
 must then use the new candidate and matching functional evidence; no automatic
 latest-version range, mixed-wheel evidence or legacy fallback is permitted.

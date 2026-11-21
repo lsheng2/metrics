@@ -23,10 +23,10 @@ Dashboard 已在独立环境安装 dev5；新候选功能验收与性能输入�
 | W1.VA | Installation scope reviewed | Exact wheelhouse lock, no runtime extras and versioned acceptance requirements incorporated; historical migration inputs need a scoped read-only root |
 | W1.INSTALL | Passed at 3384c40 | D:/AIGC/d5-1121/venv admits the exact 154-file dev5 wheel; install-dev5-r1 PASS, 19 checks and normal serve stop; 83 distributions with only runtime version changed |
 | W1.R / W1.REPLAN | Installation review passed; next wave amended | 47 boundary and 9 launcher tests PASS; independent install gate 1/1 clean pass; extend existing migration admission for hash-bound read-only historical inputs before new qualification freeze |
-| W1.RETIRE | Scoped checker correction | Actual checkout scan found generated diagnostic captures and a plural policy field misclassified; preserve real interface/prefix denials and refreeze |
-| W2.CERTIFY / W2.R | Passed at af53fb9; refreeze required | Native 56, complete conformance 74, recovery 39 and real migration passed; W2 gate 1/1 clean; new checker source needs fresh bound qualification |
-| W3.FREEZE / W3.REHEARSE / W3.JOIN | Pending | Candidate-bound migration and joined browser/module proof |
-| FUNC.R / FUNC.ACCEPT | Pending | Independent dev5 review and new immutable functional receipt |
+| W1.RETIRE | Passed at b7dae4b | Exact identifier/generated-artifact classification; 59 regressions and actual-source gates passed |
+| W2.CERTIFY / W2.R | Passed at b7dae4b | Fresh native 56, complete conformance 74, recovery 39 and real migration passed; source-bound W2 gate 1/1 clean |
+| W3.FREEZE / W3.REHEARSE / W3.JOIN | Migration/mapped passed; full gate blocked | 114 bindings validated; five full modules passed, project aggregate command timed out |
+| FUNC.R / FUNC.ACCEPT | Blocked | No successful full dev5 qualifier or acceptance receipt; aggregate-budget amendment awaits owner decision |
 | PERF.KPI | Pending refresh | New matching dev5 policy/reference inputs; numerical certification remains open |
 
 2026-11-21 resume: the owner authorized completion and timely scoped mainline
@@ -53,8 +53,26 @@ not relabelled af53fb9 evidence. Replan details are in
 `evidence/windows-dev5-retirement-refreeze.json`.
 Focused checker regressions now pass 59 tests. Actual source scans pass with
 1,061 retirement and 1,301 Python-boundary files; original setting-prefix and
-near-miss/ignored-active-source denials remain exercised. Independent correction
-review and the new clean-source qualification are still required.
+near-miss/ignored-active-source denials remain exercised. That correction passed
+independent review and was published at b7dae4b; its formal outcome is below.
+
+**2026-11-22 checkpoint:** b7dae4b completed fresh native/conformance/recovery,
+real migration and independent W2 refreeze review. The mapped run passed all
+49 ordinary cases and validated 114 bindings with its same-source conformance
+origin. Official full lanes passed ai_host 266, metrics 19, bug_metrics 250,
+jira_sync 32 and ui_web 765. Project_management selected 971 cases but reached
+the official 3600-second outer cap; its partial progress is not PASS. Observed
+owned process identities and exact run markers were absent after timeout, with
+unchanged failure-log hashes; this is not normal-stop or acceptance evidence.
+Independent scripts readiness ran 714 cases: 713 passed and one obsolete
+performance-deferred assertion failed. The functional guard now checks the
+current missing-mode refusal before producer import, without global module
+eviction; 26 focused conformance/dispatcher/profile checks passed.
+No application, installed wheel, deadline or KPI changed. The proposed
+7200-second outer project-suite envelope is awaiting explicit owner confirmation;
+old dev4 authorization and receipts are not silently carried forward. Final
+FUNC.R, FUNC.ACCEPT and dev5 performance-input renewal remain open.
+See [`windows-dev5-functional-attempt.json`](evidence/windows-dev5-functional-attempt.json).
 
 ## Windows Performance Execution Frontier
 
