@@ -9,6 +9,8 @@ from project_management.app.domain.report_publication_contracts import PUBLICATI
 from scripts.validation import windows_qualification_inputs as common
 from scripts.validation.project_full_stack_support import read_json
 from scripts.validation.qualify_ai_runtime import run_command, source_identity
+from scripts.validation.windows_migration_history import HistoricalInputs
+from scripts.validation import windows_migration_history
 from scripts.validation.windows_migration_inventory import MigrationSnapshot, SourceIdentity, validate_snapshot
 from scripts.validation.windows_qualification_inputs import QualificationError
 from scripts.validation.windows_install_smoke import LEGACY_SDK_MODULES, installer_environment, validate_import_probe
@@ -60,25 +62,27 @@ class MigrationRequest:
     current: SourceIdentity
     environments: dict
     references: tuple[tuple[Path, str], ...]
+    historical: HistoricalInputs | None = None
 
     @property
     def paths(self):
         return self.data["_paths"]
 
 
-def _reference(value: dict, root: Path, label: str, references: list) -> tuple[Path, dict]:
-    path = common.owned_file(value["path"], root)
+def _reference(value: dict, root: Path, label: str, references: list, *,
+               historical: HistoricalInputs | None = None) -> tuple[Path, dict]:
+    path = windows_migration_history.input_file(value["path"], root, label, historical)
     common.require_hash(path, value["sha256"], label)
     references.append((path, value["sha256"]))
     return path, read_json(path)
 
 
-def _old_identity(source: dict, rollback: dict, root: Path) -> SourceIdentity:
+def _old_identity(source: dict, rollback: dict, root: Path, historical: HistoricalInputs | None) -> SourceIdentity:
     values = {key: source[key] for key in IDENTITY_FIELDS}
     for key in ("repository", "app_python", "base_python", "base_source", "pack_root"):
         if not values[key]:
             raise QualificationError(f"missing old source binding: {key}")
-        values[key] = common.owned_file(values[key], root)
+        values[key] = windows_migration_history.input_file(values[key], root, key, historical)
     identity = SourceIdentity(**values)
     expected = {
         "source_repository": str(identity.repository), "source_commit": identity.commit,
@@ -120,13 +124,15 @@ def validate_seed(seed: dict, old_commit: str) -> dict:
     return {**seed, "route": route}
 
 
-def _environments(data: dict, root: Path, executables: dict, references: list) -> dict:
+def _environments(data: dict, root: Path, executables: dict, references: list,
+                  historical: HistoricalInputs | None) -> dict:
     selected = data["python"]["environments"]
     if set(selected) != set(ENVIRONMENT_ROLES):
         raise QualificationError("complete interpreter environment roles are required")
     result = {}
     for role, executable in executables.items():
-        _, record = _reference(selected[role], root, f"{role} environment", references)
+        read_root = historical if role in {"old_app", "old_base"} else None
+        _, record = _reference(selected[role], root, f"{role} environment", references, historical=read_root)
         if common.canonical(record["executable"]) != executable:
             raise QualificationError(f"{role} environment interpreter mismatch")
         if not record.get("python") or not isinstance(record.get("packages"), dict) or not record["packages"]:
@@ -147,26 +153,36 @@ def from_validated_input(data: dict) -> MigrationRequest:
     paths, references = data["_paths"], []
     root = paths["owned_root"]
     references.append((paths["inputs"], common.digest_file(paths["inputs"])))
-    snapshot_path, payload = _reference(data["migration"]["snapshot"], root, "snapshot", references)
+    historical = windows_migration_history.from_migration(
+        data["migration"], current_repo=ROOT.resolve(), owned_root=root,
+    )
+    if historical is not None:
+        references.append((historical.marker, historical.marker_sha256))
+    snapshot_path, payload = _reference(data["migration"]["snapshot"], root, "snapshot", references, historical=historical)
     payload["files"], payload["directories"] = tuple(payload["files"]), tuple(payload["directories"])
     snapshot = MigrationSnapshot(**payload)
-    old = _old_identity(snapshot.source, data["rollback"], root)
+    old = _old_identity(snapshot.source, data["rollback"], root, historical)
     validate_snapshot(snapshot, old.as_record())
-    source_run = common.owned_file(snapshot.run_dir, root)
-    seed_path, seed = _reference(data["migration"]["seed"], root, "seed", references)
+    source_run = windows_migration_history.input_file(snapshot.run_dir, root, "source run", historical)
+    source_data = windows_migration_history.input_file(snapshot.data_root, root, "source data root", historical)
+    if source_run.parent != source_data:
+        raise QualificationError("source run does not belong to the source data root")
+    seed_path, seed = _reference(data["migration"]["seed"], root, "seed", references, historical=historical)
     if not seed_path.is_relative_to(source_run / "evidence"):
         raise QualificationError("seed does not belong to the source run")
     seed = validate_seed(seed, old.commit)
     current = SourceIdentity(repository=ROOT, commit=data["source"]["commit"], app_python=paths["python"])
     executables = {"candidate": paths["python"], "old_app": old.app_python, "old_base": old.base_python}
-    environments = _environments(data, root, executables, references)
+    environments = _environments(data, root, executables, references, historical)
     protected = [
         ROOT, source_run, old.repository, snapshot_path, seed_path,
         *(python.parent.parent for python in executables.values()),
     ]
+    if historical is not None:
+        protected.append(historical.root)
     if any(common.overlaps(paths["output"], path) for path in protected):
         raise QualificationError("output overlaps protected source, data or environment")
-    return MigrationRequest(data, snapshot, seed, old, current, environments, tuple(references))
+    return MigrationRequest(data, snapshot, seed, old, current, environments, tuple(references), historical)
 
 
 def recheck_inputs(request: MigrationRequest) -> None:

@@ -6,7 +6,7 @@
 `origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
 最新目标为 `ai-base-runtime==0.1.1.dev5`，具体源码与 wheel SHA256 见
 [最终候选约束](windows-performance-phase.md#final-delivery-candidate-decision-2026-11-21)。
-Dashboard 当前仍消费 dev4；升级准入、新候选功能验收与性能输入复签尚未完成。
+Dashboard 已在独立环境安装 dev5；新候选功能验收与性能输入复签尚未完成。
 历史 dev4 的已完成节点和不可变证据保留，不代表最新候选已经通过。
 下一切片先完成候选更新及受影响功能补验，再做完整性能诊断和认证；
 不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
@@ -20,13 +20,24 @@ Dashboard 当前仍消费 dev4；升级准入、新候选功能验收与性能�
 
 | Existing gate | Dev5 state | Evidence / remaining work |
 | --- | --- | --- |
-| W1.VA | Findings addressed in implementation scope | Independent review requires exact wheelhouse lock, no runtime extras and versioned acceptance references |
-| W1.INSTALL | Installed; review pending | New D:/AIGC/d5-1121/venv admits the exact 154-file dev5 wheel; install-dev5-r1 PASS, 19 checks and normal serve stop; 83 distributions with only runtime version changed |
-| W1.R / W1.REPLAN | Pending | Review installed candidate and freeze qualification source |
+| W1.VA | Installation scope reviewed | Exact wheelhouse lock, no runtime extras and versioned acceptance requirements incorporated; historical migration inputs need a scoped read-only root |
+| W1.INSTALL | Passed at 3384c40 | D:/AIGC/d5-1121/venv admits the exact 154-file dev5 wheel; install-dev5-r1 PASS, 19 checks and normal serve stop; 83 distributions with only runtime version changed |
+| W1.R / W1.REPLAN | Installation review passed; next wave amended | 47 boundary and 9 launcher tests PASS; independent install gate 1/1 clean pass; extend existing migration admission for hash-bound read-only historical inputs before new qualification freeze |
 | W2.CERTIFY / W2.R | Pending | Fresh native host, conformance and recovery evidence |
 | W3.FREEZE / W3.REHEARSE / W3.JOIN | Pending | Candidate-bound migration and joined browser/module proof |
 | FUNC.R / FUNC.ACCEPT | Pending | Independent dev5 review and new immutable functional receipt |
 | PERF.KPI | Pending refresh | New matching dev5 policy/reference inputs; numerical certification remains open |
+
+2026-11-21 resume: the owner authorized completion and timely scoped mainline
+commit/push. Installation commit `3384c40` is published; its immutable references
+and actual installed dev5 admission were rechecked. The coordinator reran the
+three migration admission/history/driver suites: 69 passed, no skips
+(`D:/AIGC/d5-1121/parent-resume-r1/migration.xml`). The earlier out-of-scope
+test marker incident was investigated through a read-only USN query: the target
+was newly created at 21:10:49 and deleted at 21:11:40, not overwritten in place.
+The corrected negative fixture writes its marker under pytest `tmp_path`.
+Migration code review, fresh qualification and acceptance remain pending.
+Only this ledger records execution status; prior dev4 receipts remain unchanged.
 
 ## Windows Performance Execution Frontier
 

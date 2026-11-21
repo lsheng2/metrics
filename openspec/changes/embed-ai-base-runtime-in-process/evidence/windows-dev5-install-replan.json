@@ -1,0 +1,82 @@
+{
+  "updated_artifacts": [
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+    "openspec/changes/embed-ai-base-runtime-in-process/tasks.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev5-install-replan.json"
+  ],
+  "scope_exclusions": [
+    "Full dev5 functional acceptance",
+    "Performance/KPI certification",
+    "Linux/live providers/other Apps",
+    "Modification of historical owner markers, environments or receipts"
+  ],
+  "node": "W1.REPLAN",
+  "historical_input_readiness": {
+    "app_python": "3.13.7",
+    "source_clean": true,
+    "both_environment_fingerprints_match_historical": true,
+    "base_python": "3.14.0",
+    "old_source_commit": "ee7bfb0e734e1123ba5c611997fedd6052f50049"
+  },
+  "schema_version": 1,
+  "candidate": {
+    "wheel_sha256": "45efb445528d4ccc7a288868317bdc57e5da39945188a2cfefb9f575f0b1e6d6",
+    "version": "0.1.1.dev5"
+  },
+  "refreeze_actions": [
+    {
+      "reason": "Fresh dev5 migration must read immutable legacy inputs from their hash-bound historical root while keeping candidate and outputs in the new owned root.",
+      "action": "amend"
+    }
+  ],
+  "kind": "windows-dev5-install-replan",
+  "evidence": [
+    {
+      "sha256": "6577e9add337cd8012418a9bda068498f734cb10032f6e746e420501a2da43bf",
+      "path": "D:/AIGC/d5-1121/evidence/install-dev5-r1.json"
+    },
+    {
+      "sha256": "4f12e40d19e11daee2c548c96151a6754df827ee73d4708d47821434b908c62c",
+      "path": "D:/AIGC/d5-1121/evidence/parent-install-unit-r1.xml"
+    },
+    {
+      "sha256": "3f65d98bbb71969440b212cf6aeea3e0727416cca3a0a2ddacff93fb6baeee9f",
+      "path": "D:/AIGC/d5-1121/evidence/launcher-dev5-r1.xml"
+    },
+    {
+      "sha256": "bdc3f9b233974b75ac4d6a48706f92d8d62db77faaac5beedb07b9230367552d",
+      "path": "D:/AIGC/d5-1121/reviews/install-gate.json"
+    },
+    {
+      "sha256": "4b4a1b9b170c120ea397b7a46e54ca690067c0925c1af2942e53b55474037168",
+      "path": "D:/AIGC/d5-1121/reviews/install-review-2.txt"
+    },
+    {
+      "sha256": "7fd5879f901c941150e7073511c31c679e723bf31238f6f2643fd35545ac1202",
+      "path": "D:/AIGC/d5-1121/reviews/migration-inputs-preflight.txt"
+    }
+  ],
+  "status": "PASS",
+  "rerun_gates": [
+    "W2.VA",
+    "W2.HOST",
+    "W2.CERTIFY",
+    "W2.R",
+    "W2.REPLAN",
+    "W3.FREEZE",
+    "W3.REHEARSE",
+    "W3.JOIN",
+    "FUNC.R",
+    "FUNC.ACCEPT",
+    "PERF.KPI"
+  ],
+  "validated_source": "3384c4097ca029ff7c7381e932eb64d372aefd81",
+  "post_refreeze_preflight_result": {
+    "nodes": 28,
+    "result": "PASS",
+    "command": "powershell -File D:/AIGC/pf1120/check-plan.ps1 -Repository D:/AIGC/scrum_dashboard",
+    "original_requirements_unchanged": true,
+    "edges": 30
+  }
+}

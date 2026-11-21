@@ -15,7 +15,7 @@ from scripts.validation.windows_migration_rehearsal import snapshot_source_run
 from scripts.validation.windows_qualification_inputs import QualificationError
 
 
-def migration_case(tmp_path, monkeypatch):
+def migration_case(tmp_path, monkeypatch, *, historical_root: Path | None = None):
     from scripts.validation import windows_migration_admission as admission
 
     case = _base_case(tmp_path, monkeypatch)
@@ -23,11 +23,11 @@ def migration_case(tmp_path, monkeypatch):
     candidate_python.parent.mkdir(parents=True)
     candidate_python.write_text("synthetic interpreter", encoding="utf-8")
     case["manifest"]["python"]["candidate"] = str(candidate_python)
-    materialized = case["owned"] / "rollback"
-    materialized.mkdir()
+    materialized = (historical_root / "rollback") if historical_root is not None else case["owned"] / "rollback"
+    materialized.mkdir(parents=True)
     old, _, _, run = _fixture(materialized)
     snapshot = snapshot_source_run(run, old)
-    snapshot_path = _write_json(case["owned"] / "snapshot.json", asdict(snapshot))
+    snapshot_path = _write_json((historical_root or case["owned"]) / "snapshot.json", asdict(snapshot))
     project_id = "11111111-1111-4111-8111-111111111111"
     stage_id = "22222222-2222-4222-8222-222222222222"
     publication_id = "33333333-3333-4333-8333-333333333333"
@@ -50,7 +50,8 @@ def migration_case(tmp_path, monkeypatch):
     }
     environments = {}
     for role, python in (("candidate", Path(data["python"]["candidate"])), ("old_app", old.app_python), ("old_base", old.base_python)):
-        path = _write_json(case["owned"] / "environments" / f"{role}.json", {
+        environment_root = historical_root if historical_root is not None and role != "candidate" else case["owned"]
+        path = _write_json(environment_root / "environments" / f"{role}.json", {
             "executable": str(python), "python": "3.13.7",
             "packages": {"synthetic": {"version": "1", "record_sha256": "c" * 64, "location": str(python.parent)}},
             "shadowed_distributions": {}, "sys_path": [],

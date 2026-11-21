@@ -239,6 +239,21 @@ receipt is bound by the functional acceptance above; original task 10.3 remains
 open for deferred image-specific obligations. Command availability alone
 never proves a migration or joint acceptance.
 
+Retained synthetic migration inputs may live outside the current owned root only
+through an explicit `migration.historical_inputs` declaration. It contains the
+canonical `root`, the exact historical `repository` label and
+`marker={path,sha256}` for that root's existing `owner.json`. The marker must
+declare schema version 1, owner `mdb2-windows-closure`, and false
+`real_user_data_allowed` / `external_provider_model_calls_allowed` flags.
+The historical repository label is provenance; it need not name a live checkout.
+The read root must be disjoint from the current repository and owned output root.
+Only old-side source, snapshot, seed, interpreter and environment references may
+use it. Candidate inputs, copied state and all outputs stay in the current owned
+root. Missing declarations retain strict current-root admission; no historical
+path is guessed. Input hashes are rechecked, and the consumer binds the complete
+declaration and candidate identity before accepting a fresh migration receipt.
+Never change a historical owner marker or relabel an old receipt for a new wheel.
+
 Use the separately installed candidate interpreter:
 
 ```powershell

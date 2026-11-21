@@ -282,6 +282,58 @@ def test_receipt_cannot_omit_the_post_run_environment_check(tmp_path, monkeypatc
         evidence.validate_result(receipt, request)
 
 
+def test_producer_consumer_binding_includes_historical_input_declaration(tmp_path, monkeypatch):
+    from scripts.tests.test_qualify_ai_runtime import _sha, _write_json
+    from scripts.tests.test_windows_migration_history import _historical_case
+    from scripts.validation import windows_migration_admission as admission
+    from scripts.validation import windows_migration_evidence as evidence
+
+    case = _historical_case(tmp_path, monkeypatch)
+    request = admission.load_request(case["inputs"], case["output"])
+    root = case["owned"] / "migration-runs/11111111-1111-4111-8111-111111111111"
+    root.mkdir(parents=True)
+    produced = json.loads(case["inputs"].read_text(encoding="utf-8"))
+    produced["migration"]["historical_inputs"]["root"] = str(case["history"].parent)
+    producer_inputs = _write_json(case["owned"] / "producer-inputs.json", produced)
+    receipt = {
+        "kind": evidence.KIND,
+        "scope": "windows-functional",
+        "status": "PASS",
+        "run_root": str(root),
+        "postflight": {},
+        "inputs": {"path": str(producer_inputs), "sha256": _sha(producer_inputs)},
+    }
+
+    with pytest.raises(QualificationError, match="migration producer input differs: migration"):
+        evidence.validate_result(receipt, request)
+
+
+def test_historical_dev4_receipt_cannot_bind_to_dev5_request(tmp_path, monkeypatch):
+    from scripts.tests.test_qualify_ai_runtime import _sha, _write_json
+    from scripts.tests.test_windows_migration_history import _historical_case
+    from scripts.validation import windows_migration_admission as admission
+    from scripts.validation import windows_migration_evidence as evidence
+
+    case = _historical_case(tmp_path, monkeypatch)
+    request = admission.load_request(case["inputs"], case["output"])
+    root = case["owned"] / "migration-runs/11111111-1111-4111-8111-111111111111"
+    root.mkdir(parents=True)
+    produced = json.loads(case["inputs"].read_text(encoding="utf-8"))
+    produced["candidate"] = {**produced["candidate"], "source_commit": "dev4-candidate"}
+    producer_inputs = _write_json(case["owned"] / "dev4-producer-inputs.json", produced)
+    receipt_path = _write_json(case["owned"] / "dev4-migration-receipt.json", {
+        "kind": evidence.KIND,
+        "scope": "windows-functional",
+        "status": "PASS",
+        "run_root": str(root),
+        "postflight": {},
+        "inputs": {"path": str(producer_inputs), "sha256": _sha(producer_inputs)},
+    })
+
+    with pytest.raises(QualificationError, match="migration producer input differs: candidate"):
+        evidence.validate_bound_receipt("task:10.3", receipt_path, request.data)
+
+
 @pytest.mark.parametrize("key, message", [("task:10.3", "migration receipt scope"), ("task:1.1", "cannot cover")])
 def test_qualifier_routes_only_the_registered_migration_scope(tmp_path, monkeypatch, key, message):
     from scripts.tests.test_qualify_ai_runtime import _base_case, _sha, _write_json

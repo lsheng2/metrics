@@ -76,6 +76,30 @@ Preflight disposition: the independent Validation Engineer requested the lock,
 capability and versioned-evidence checks above. Implementation must close those
 gaps before upgrade acceptance; current package preparation alone is not PASS.
 
+The installation boundary was committed as `3384c40` after actual dev5 install,
+47 boundary tests, 19 installed-host tests, 9 launcher tests and an independent
+1/1 clean code review. The next wave is amended for historical input ownership:
+the existing migration qualifier needs a declared read-only historical artifact
+root, since its old source/interpreters/snapshot belong to the retired workspace.
+Re-running its old PASS or changing that old owner marker is not permitted.
+
+The optional `migration.historical_inputs` object declares `root`, the exact
+historical `repository` label, and `marker={path,sha256}`. Absent declaration
+retains the original same-owned-root rule; it does not discover or guess old
+paths. Its marker must be the declared root's `owner.json`, bind those labels,
+identify `mdb2-windows-closure` with schema version 1 and explicitly prohibit
+real user data and external provider/model calls. The retired repository label
+is provenance, not an executable path that must still exist.
+Roots must be canonical/non-reparse, disjoint from the current source/write
+root, and not drive or ancestor roots. Only old-side snapshot, seed, source,
+app/base interpreter, pack and old-environment references may use this root.
+Candidate environment/inputs, outputs and copied state remain in the new root.
+Recheck historical marker/file hashes and existing source/environment identity
+before and after the run; validate matching declarations at the receipt consumer.
+Wrong/undeclared sibling roots, overlap, changed bytes and stale dev4 receipts
+must fail. This extends the existing migration chain, not a second qualifier or
+a product SDK compatibility path. Fresh dev5 task10.3 evidence is still required.
+
 | Binding | Value |
 | --- | --- |
 | Dashboard source | `d0c395eb8649a90d2a2cae09d1f5362252bb0353`; clean at plan creation |
