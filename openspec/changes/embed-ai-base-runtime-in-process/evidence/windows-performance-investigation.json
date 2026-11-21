@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "kind": "windows-performance-investigation-checkpoint",
-  "status": "in-progress-kernel-capture-blocked",
+  "status": "in-progress-kernel-capability-verified-anomaly-not-reproduced",
   "performance_accepted": false,
   "candidate": {
     "version": "0.1.1.dev4",
@@ -10,7 +10,8 @@
   "measured_sources": {
     "pilot": "103929236c4ee344710f1ce83ca63854aa9a63bc",
     "full_diagnostic": "93b0bea33dfb595f6bde42db36aa795f6fd9ccd9",
-    "localization": "7e4478da76c6d0f3721739bf69df4b9126b3797e"
+    "localization": "7e4478da76c6d0f3721739bf69df4b9126b3797e",
+    "kernel_localization": "7035834cd3f382a0e9cec6d528fa62f5c1203e42"
   },
   "full_diagnostic": {
     "collection_status": "INCOMPLETE",
@@ -122,6 +123,19 @@
     "real_provider_or_model_calls": false,
     "normal_cleanup": true
   },
+  "kernel_followup": {
+    "status": "NOT_REPRODUCED",
+    "samples": 3648,
+    "sampling_seconds": 600.1148156999843,
+    "application_elevated": false,
+    "captures_saved": 2,
+    "reported_events_lost": [0, 0],
+    "reported_buffers_lost": [0, 0],
+    "maximum_exported_host_file_ms": [20.2084, 8.0587],
+    "total_etl_bytes": 9294577664,
+    "session_state": "EXITED",
+    "original_failure_explained": false
+  },
   "references": [
     {
       "path": "D:\\AIGC\\pf1120\\runs\\pilot-r6.json",
@@ -186,6 +200,14 @@
     {
       "path": "D:\\AIGC\\pf1120\\evidence\\failure-binding-affected1.xml",
       "sha256": "94f8a06d593aeee4db0003f959f41bc909d820132c65495a1d70a72a90ea1665"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\evidence\\asset-etw-r1-audit.json",
+      "sha256": "d6c9e23e9648c88ac775dad70103c33acf4a160abf433104ed64af98b58ec337"
+    },
+    {
+      "path": "D:\\AIGC\\pf1120\\reviews\\asset-etw-r1-interpretation.txt",
+      "sha256": "f3f6cef47dbf510bcdec6504f31095797aa47f8cb23593a134978f97312a16ef"
     }
   ],
   "non_claims": [
@@ -193,6 +215,7 @@
     "Instrumented localization and its control are not certification.",
     "Slow SDK resource-resolution boundary observed; specific Windows component or driver not yet attributed.",
     "Retained ring-buffer tails are not whole-run latency distributions.",
+    "Two zero-reported-loss kernel windows without a reproduced anomaly do not explain historical timeouts.",
     "This later parent manifest binds observed archived bytes; it does not rewrite or retroactively repair old producer receipts."
   ]
 }

@@ -1,12 +1,14 @@
 # Windows Performance Investigation Checkpoint
 
-Date: 2026-11-21. Status: investigation in progress; kernel capture is
-permission/policy blocked. Performance acceptance has NOT passed.
+Date: 2026-11-21. Status: investigation in progress; elevated kernel capture
+verified, but the anomaly was not reproduced in that run. Performance
+acceptance has NOT passed.
 
 This report supplements the existing performance plan and sole `tasks.md`.
 The [machine-readable evidence index](windows-performance-investigation.json)
-pins 16 private result/audit artifacts by SHA256. It is a later parent audit,
-not a rewrite of any original producer receipt.
+pins 18 private result/audit artifacts by SHA256, including the kernel
+follow-up audit and its nested references. It is a later parent audit, not a
+rewrite of any original producer receipt.
 
 ## Scope And Candidate
 
@@ -28,6 +30,7 @@ not a rewrite of any original producer receipt.
 | asset-trace-smoke-r1 | `7e4478da76c6d0f3721739bf69df4b9126b3797e` | 40 samples, 3,190 client requests, 19,076 server events, no trace loss or anomaly; instrumentation calibration only |
 | asset-trace-r1 | same `7e4478d` | Anomaly captured after 1,557 samples with server boundary timing enabled |
 | asset-control-r1 | same `7e4478d` | Anomaly captured after 2,250 samples without server timing wrappers |
+| asset-etw-r1 | `7035834cd3f382a0e9cec6d528fa62f5c1203e42` | 3,648 samples in 600.115 seconds; no anomaly trigger; two bounded kernel captures saved; diagnostic only |
 
 The localization runs keep client timing/correlation in both modes. They are
 not an uninstrumented KPI qualification or a substitute for the full recipe.
@@ -115,19 +118,61 @@ Do not retune KPI-P1 through KPI-P4 yet. Ordinary probe/control timings are
 far below 100 ms, while the failures are seconds-long waits rather than a small
 threshold-edge fluctuation. Investigate the waiting mechanism first.
 
-The current process is not elevated. A uniquely named WPR CPU capture attempt
-failed with exit 1, error `0xc5585011`,
+The earlier ordinary-token WPR CPU capture attempt failed with exit 1, error `0xc5585011`,
 `Failed to enable the policy to profile system performance.`
-The named instance was checked before and after; no recording remains.
+That failure remains historical evidence, not the current blocker. A fresh
+UAC-approved collector session successfully recorded both follow-up windows
+without changing machine policy; the application remained unelevated.
+
+### Elevated Follow-Up
+
+The same owned page/asset workload ran for 600 seconds with four held streams.
+Neither the one-second diagnostic trigger nor a request error occurred. The
+retained client tail reports maxima of 110.343 ms for page/asset requests,
+46.399 ms for the probe role, and 14.067 ms for the memory control. These are
+not full-run percentiles: 182,401 client rows and 1,290,704 server events were
+discarded from the bounded buffers.
+
+| Kernel window (Asia/Shanghai, November 21) | Reported event/buffer loss | Largest exported host-associated file interval | ETL bytes |
+| --- | --- | ---: | ---: |
+| 08:24:56.977-08:26:30.324 | 0 / 0 | 20.2084 ms | 4,567,597,056 |
+| 08:29:52.876-08:31:25.689 | 0 / 0 | 8.0587 ms | 4,726,980,608 |
+
+Both WPR start/stop calls returned zero. The existing Microsoft TraceProcessor
+decoder selected 373,850 / 387,512 file activities and exported the longest
+3,000 per category. No Minifilter events were selected; that provider was not
+enabled. Zero reported loss is not proof of universal ownership or event
+coverage, and these two windows do not cover all 600 seconds. No new
+scheduling-stack attribution is claimed without a reproduced slow request.
+
+The stop/save/hash phases took about 130 and 248 seconds. Those are collector
+costs, not application shutdown latency. The 9,294,577,664-byte total exceeded
+the existing 8 GiB *admission* threshold after the second capture; that policy
+was not a final-file cap. No further capture was admitted, and the temporary
+helper acknowledged `EXITED`. Both named WPR instances were then checked as
+not recording. Nine owned PIDs, port 7857 and the measurement guard were absent.
+Receipt/witness and ETL hashes matched; all 131 admitted runtime files and the
+frozen wheel hash matched again.
+
+This establishes usable elevated collection and an anomaly-free bounded run,
+not a fix or an explanation of the original failure. Capturing no anomaly
+cannot distinguish intermittent behavior from profiler perturbation.
+Docs impact is limited to this troubleshooting checkpoint and the current
+reporting-delivery guide; no product interface or operational setting changed.
 
 Next:
 
-1. Obtain one temporary elevated collector session and verify that Windows
-   policy grants the required profiling capability. Elevation alone is not
-   yet proven sufficient; do not silently change security policy.
-2. Keep the app under its ordinary token. Use a bounded, owned CPU/ready/wait
-   and file-I/O capture around the existing trigger, then stop/save the
-   collector automatically. Validate trace loss and PID/TID correlation.
+1. Independently reviewed next experiment: a small circular kernel buffer
+   for scheduling/ready-thread and file/disk events, saved on the existing
+   one-second diagnostic trigger. Keep the 90-second recording limit and
+   other admission limits; buffer bytes do not guarantee retained seconds.
+   Verify actual span coverage instead of repeating broad file-mode captures.
+2. Preserve the ordinary-token workload, original trigger and limits. Require
+   a slow request plus its request id, PID/TID, adjacent UTC/monotonic clocks
+   and clock uncertainty in the same usable capture. Current request receipts
+   have approximate UTC/QPC anchors, not a calibrated slow-request witness.
+   A changed fixed collector must be separately frozen and admitted, not
+   substituted into this exited session or given a larger allowance silently.
 3. Attribute the delay before selecting an owner fix. A verified, immutable
    resource snapshot/cache is a possible SDK design option, not an implemented
    or validated fix. Any new AIB wheel needs the existing owner/refreeze and

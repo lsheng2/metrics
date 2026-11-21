@@ -58,7 +58,8 @@ classification records; missing absence facts are not success.
 The current [Windows investigation checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-investigation.md)
 records an incomplete full diagnostic and separately labelled asset-localization
 experiments. It does not replace the functional receipt or establish
-performance acceptance; current kernel attribution is permission/policy blocked.
+performance acceptance. Elevated kernel collection is verified, but its latest
+bounded run did not reproduce the anomaly; root-cause attribution remains open.
 Page-specific asset sets are replayed against their sanity observations, and
 only their union is compared with the arm manifest. Raw page timestamps prove
 block and saturation containment without changing the HTTP-only latency metric.
