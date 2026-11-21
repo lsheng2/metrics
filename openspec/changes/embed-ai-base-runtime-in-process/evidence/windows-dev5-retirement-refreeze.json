@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "windows-dev5-retirement-refreeze",
+  "node": "W2.REPLAN",
+  "source_baseline": "af53fb910793d8eb15fcce62c81b775b160c2f81",
+  "trigger": "Fresh W3 mapped execution passed 42 cases then failed the actual-source retirement checker.",
+  "refreeze_actions": [
+    {
+      "action": "amend",
+      "reason": "Correct generated document artifact classification and exact retired identifier matching; retain active ignored-source and setting-prefix denials."
+    },
+    {
+      "action": "amend",
+      "reason": "Run static source gates before refreezing, then renew formal receipts against a new clean commit without promoting prior source evidence."
+    }
+  ],
+  "updated_artifacts": [
+    "scripts/check_retired_ai_paths.py",
+    "scripts/runtime_check_support.py",
+    "scripts/tests/test_retired_ai_paths.py",
+    "scripts/tests/test_embedded_runtime_boundaries.py",
+    "docs/development/reporting-delivery.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/tasks.md",
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev5-retirement-refreeze.json"
+  ],
+  "rerun_gates": [
+    "W1.RETIRE",
+    "W2.CERTIFY",
+    "W2.R",
+    "W3.FREEZE",
+    "W3.REHEARSE",
+    "W3.JOIN",
+    "FUNC.R",
+    "FUNC.ACCEPT"
+  ],
+  "post_refreeze_preflight_result": {
+    "command": "D:/AIGC/pf1120/check-plan.ps1 -Repository D:/AIGC/scrum_dashboard",
+    "result": "PASS",
+    "nodes": 28,
+    "edges": 30,
+    "original_requirements_unchanged": true
+  },
+  "non_claims": [
+    "No runtime, installed wheel, application behavior, timeout or KPI changed.",
+    "Historical generated artifacts and prior failed or passed receipts are not modified.",
+    "No full dev5 functional acceptance or performance certification exists yet."
+  ]
+}

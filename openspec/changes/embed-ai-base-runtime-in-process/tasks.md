@@ -23,7 +23,8 @@ Dashboard 已在独立环境安装 dev5；新候选功能验收与性能输入�
 | W1.VA | Installation scope reviewed | Exact wheelhouse lock, no runtime extras and versioned acceptance requirements incorporated; historical migration inputs need a scoped read-only root |
 | W1.INSTALL | Passed at 3384c40 | D:/AIGC/d5-1121/venv admits the exact 154-file dev5 wheel; install-dev5-r1 PASS, 19 checks and normal serve stop; 83 distributions with only runtime version changed |
 | W1.R / W1.REPLAN | Installation review passed; next wave amended | 47 boundary and 9 launcher tests PASS; independent install gate 1/1 clean pass; extend existing migration admission for hash-bound read-only historical inputs before new qualification freeze |
-| W2.CERTIFY / W2.R | Pending | Fresh native host, conformance and recovery evidence |
+| W1.RETIRE | Scoped checker correction | Actual checkout scan found generated diagnostic captures and a plural policy field misclassified; preserve real interface/prefix denials and refreeze |
+| W2.CERTIFY / W2.R | Passed at af53fb9; refreeze required | Native 56, complete conformance 74, recovery 39 and real migration passed; W2 gate 1/1 clean; new checker source needs fresh bound qualification |
 | W3.FREEZE / W3.REHEARSE / W3.JOIN | Pending | Candidate-bound migration and joined browser/module proof |
 | FUNC.R / FUNC.ACCEPT | Pending | Independent dev5 review and new immutable functional receipt |
 | PERF.KPI | Pending refresh | New matching dev5 policy/reference inputs; numerical certification remains open |
@@ -38,6 +39,22 @@ was newly created at 21:10:49 and deleted at 21:11:40, not overwritten in place.
 The corrected negative fixture writes its marker under pytest `tmp_path`.
 Migration code review, fresh qualification and acceptance remain pending.
 Only this ledger records execution status; prior dev4 receipts remain unchanged.
+
+The af53fb9 mapped run passed 42 cases, including real approval publication,
+Workbench/context and summary/report task joins, then failed the actual-source
+retirement witness. The checker treated historical generated `docs/_build/`
+diagnostics as current instructions and matched the retired singular identifier
+inside the unrelated plural performance field. Correct only classification and
+token boundaries under W1.RETIRE; do not erase artifacts or bypass the witness.
+The preserved complete-conformance r1 baseline-stability failure was followed by
+an isolated 30-case control and unchanged complete r2 PASS; no cause was proven.
+The next formal run uses a new clean source and fresh input/producer receipts,
+not relabelled af53fb9 evidence. Replan details are in
+`evidence/windows-dev5-retirement-refreeze.json`.
+Focused checker regressions now pass 59 tests. Actual source scans pass with
+1,061 retirement and 1,301 Python-boundary files; original setting-prefix and
+near-miss/ignored-active-source denials remain exercised. Independent correction
+review and the new clean-source qualification are still required.
 
 ## Windows Performance Execution Frontier
 

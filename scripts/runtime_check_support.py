@@ -35,7 +35,8 @@ def violation(path, rule, line=0, detail=""):
 def classify(path):
     parts = Path(path).parts
     text = Path(path).as_posix()
-    if text in PROCESS_ARTIFACTS:
+    # Document build outputs contain captured historical source and UI text.
+    if text in PROCESS_ARTIFACTS or text.startswith("docs/_build/"):
         return "process-artifact"
     if text in {".vscode/tasks.json", ".vscode/launch.json"}:
         return "editor-entrypoint"

@@ -62,6 +62,54 @@ def test_test_literals_and_historical_specs_are_not_active_paths(source_tree):
     assert check(source_tree)["passed"]
 
 
+@pytest.mark.parametrize("path,source", [
+    ("scripts/validation/performance_policy.py", "modes = policy.get('execution_modes')"),
+    ("scripts/probe.ps1", "$execution_modes = @('pilot', 'certify')"),
+    (".vscode/tasks.json", '{"execution_modes": ["pilot", "certify"]}'),
+])
+def test_distinct_performance_identifier_does_not_match_retired_mode(source_tree, path, source):
+    file = source_tree / path
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_text(source, encoding="utf-8")
+    assert check(source_tree)["passed"]
+
+
+@pytest.mark.parametrize("path,source", [
+    ("scripts/validation/consumer.py", "mode = config.execution_mode"),
+    ("scripts/probe.ps1", "$execution_mode = 'remote'"),
+    (".vscode/tasks.json", '{"execution_modes": [], "execution_mode": "remote"}'),
+    ("metrics/settings.py", "execution_modes = (); METRICS_AI_BASE_URL = 'old'"),
+])
+def test_retired_identifier_and_setting_prefix_remain_rejected(source_tree, path, source):
+    file = source_tree / path
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_text(source, encoding="utf-8")
+    assert not check(source_tree)["passed"]
+
+
+def test_generated_document_diagnostics_are_process_artifacts(source_tree):
+    file = source_tree / "docs/_build/run/evidence/diagnostic.json"
+    file.parent.mkdir(parents=True)
+    file.write_text('{"snapshot": "sidecar python manage.py runserver"}', encoding="utf-8")
+    result = check(source_tree)
+    assert result["passed"]
+    assert result["classified"]["process-artifact"] == 1
+
+
+@pytest.mark.parametrize("relative", [
+    "docs/_build-sibling/guide.md",
+    "docs/current/_build/guide.md",
+    "docs/current/guide.md",
+])
+def test_generated_root_classification_does_not_hide_current_or_sibling_docs(source_tree, relative):
+    file = source_tree / relative
+    file.parent.mkdir(parents=True)
+    file.write_text("python manage.py runserver", encoding="utf-8")
+    result = check(source_tree)
+    assert not result["passed"]
+    assert any(row["path"] == relative for row in result["violations"])
+
+
 def test_checker_rejects_missing_root_and_empty_code_inventory(source_tree):
     assert not check(source_tree / "ui_web")["passed"]
     for path in source_tree.rglob("*.py"):

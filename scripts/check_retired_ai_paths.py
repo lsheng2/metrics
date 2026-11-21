@@ -31,7 +31,11 @@ DOC_PATTERNS = (
 )
 CODE_SUFFIXES = {".py", ".ps1", ".js", ".ts", ".tsx", ".html", ".json", ".yaml", ".yml", ".toml", ".ini", ".txt"}
 LINUX_DEFINITIONS = {"ops/docker/Dockerfile"}
-POLICY_ASSIGNMENTS = {"CODE_MARKERS", "DOC_MARKERS", "DOC_PATTERNS", "INSTALLER_LITERALS", "ENTRY_MARKERS", "RETIRED_FILES"}
+POLICY_ASSIGNMENTS = {
+    "CODE_MARKERS", "DOC_MARKERS", "DOC_PATTERNS", "INSTALLER_LITERALS",
+    "ENTRY_MARKERS", "RETIRED_FILES", "EXACT_CODE_MARKERS",
+}
+EXACT_CODE_MARKERS = ("execution_mode",)
 ENTRY_MARKERS = ("ForceByPort", "AiBaseWorkspace", "AiBaseBackendUrl", "AiBaseFrontendUrl", "FullAiChatSmoke")
 RETIRED_FILES = {
     "metrics/wsgi.py", "metrics/asgi.py",
@@ -79,15 +83,22 @@ def policy_spans(path, text):
     return allowed
 
 
+def code_pattern(markers):
+    return re.compile("|".join(
+        rf"(?<!\w){re.escape(value)}(?!\w)" if value in EXACT_CODE_MARKERS else re.escape(value)
+        for value in sorted(markers, key=len, reverse=True)
+    ))
+
+
 def check(root, *, platform="windows"):
     if platform not in {"windows", "all"}:
         raise ValueError("Unknown platform scope")
     root, paths, problems, excluded = inventory(root)
     counts = Counter()
     deferred, checked, code_count, docs_count = [], 0, 0, 0
-    code_pattern = re.compile("|".join(re.escape(value) for value in sorted(CODE_MARKERS, key=len, reverse=True)))
+    source_pattern = code_pattern(CODE_MARKERS)
     doc_pattern = re.compile("|".join([*(re.escape(value) for value in DOC_MARKERS), *DOC_PATTERNS]), re.IGNORECASE)
-    entry_pattern = re.compile("|".join(re.escape(value) for value in (*CODE_MARKERS, *ENTRY_MARKERS)))
+    entry_pattern = code_pattern((*CODE_MARKERS, *ENTRY_MARKERS))
     for path in paths:
         relative = path.as_posix()
         role = classify(path)
@@ -109,7 +120,7 @@ def check(root, *, platform="windows"):
         counts[role] += 1
         docs_count += int(document)
         code_count += int(not document)
-        pattern = doc_pattern if document else entry_pattern if path.suffix == ".ps1" or role == "editor-entrypoint" else code_pattern
+        pattern = doc_pattern if document else entry_pattern if path.suffix == ".ps1" or role == "editor-entrypoint" else source_pattern
         allowed = policy_spans(relative, text)
         matches = []
         for match in pattern.finditer(text):

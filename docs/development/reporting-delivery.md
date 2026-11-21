@@ -184,6 +184,13 @@ and `scripts/tests/test_retired_ai_paths.py::test_current_repository_has_no_reti
 run the existing checkers against this checkout and require nonzero coverage
 with no violations. Their JUnit evidence is usable by the final qualifier;
 raw checker JSON alone is not a supported evidence binding.
+The shared inventory classifies generated `docs/_build/` captures as process
+artifacts, while current docs, sibling paths and active code ignored by Git
+remain in scope. The retired mode identifier is matched as a complete token;
+the distinct performance `execution_modes` policy field is not that interface.
+Declared setting-prefix families remain prefix matches. Run both actual-source
+checks before freezing qualification inputs so inventory errors fail before
+expensive native and browser execution.
 The Windows host's non-running HTTP proof retains the public WSGI callable
 after final stop, separately checks `close_http`, and uses the real Waitress
 stopping matrix. `start_blocking` exposes no pre-start WSGI handle. Do not

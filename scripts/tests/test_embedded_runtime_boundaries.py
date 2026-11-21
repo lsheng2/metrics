@@ -65,6 +65,28 @@ def test_test_fixtures_and_unrelated_loop_owners_are_classified_separately(sourc
     assert result["classified"]["test"] == 2
 
 
+def test_generated_document_capture_does_not_become_active_python(source_tree):
+    before = check(source_tree)["checked_files"]
+    file = source_tree / "docs/_build/run/captured_source.py"
+    file.parent.mkdir(parents=True)
+    file.write_text("from ai_base_runtime._internal import state\n", encoding="utf-8")
+    result = check(source_tree)
+    assert result["passed"]
+    assert result["checked_files"] == before
+
+
+@pytest.mark.parametrize("relative", [
+    "docs/_build-sibling/check.py",
+    "docs/current/_build/check.py",
+])
+def test_generated_artifact_rule_does_not_hide_sibling_private_imports(source_tree, relative):
+    file = source_tree / relative
+    file.parent.mkdir(parents=True)
+    file.write_text("from ai_base_runtime._internal import state\n", encoding="utf-8")
+    result = check(source_tree)
+    assert any(row["path"] == relative and row["rule"] == "private_runtime" for row in result["violations"])
+
+
 def test_missing_scope_and_zero_source_do_not_pass(tmp_path, source_tree):
     assert not check(tmp_path / "missing")["passed"]
     assert not check(source_tree / "ai_host")["passed"]
