@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 import time
+import tempfile
 import urllib.error
 import urllib.request
 import uuid
@@ -16,8 +17,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SELECTED_WINDOWS_PYTHON = Path("D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r4/Scripts/python.exe")
-W1_ARTIFACT_ROOT = Path(os.environ.get("MDB2_W1_LAUNCH_ARTIFACT_ROOT", "D:/AIGC/artifacts/mdb2-windows-20261117/w1-launch-real-ps"))
+SELECTED_WINDOWS_PYTHON = Path(sys.executable).resolve()
 QUALIFIED_INFINITY_PLUGIN = Path("D:/AIGC/scrum_dashboard/state/grafana/data/plugins/yesoreyeram-infinity-datasource")
 QUALIFIED_INFINITY_PLUGIN_JSON_SHA256 = "1133bd824b1b31bc77575b7bc728428541bc8833018336e9a95eb6ded4607d67"
 if str(ROOT / "scripts") not in sys.path:
@@ -28,6 +28,32 @@ from service_lifecycle_engine.platform_ops import is_port_available, kill_proces
 
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Windows PowerShell launcher coverage")
+
+
+def configured_w1_artifact_root() -> Path:
+    default = Path(tempfile.gettempdir()) / "scrum-dashboard-w1-launch-real-ps"
+    return Path(os.environ.get("MDB2_W1_LAUNCH_ARTIFACT_ROOT", str(default)))
+
+
+W1_ARTIFACT_ROOT = configured_w1_artifact_root()
+
+
+def test_selected_windows_python_tracks_current_runner() -> None:
+    assert SELECTED_WINDOWS_PYTHON == Path(sys.executable).resolve()
+
+
+def test_w1_artifact_root_default_uses_owned_temp_namespace(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("MDB2_W1_LAUNCH_ARTIFACT_ROOT", raising=False)
+    root = configured_w1_artifact_root()
+    assert root == Path(tempfile.gettempdir()) / "scrum-dashboard-w1-launch-real-ps"
+    assert "mdb2-windows-20261117" not in root.parts
+
+
+def test_w1_artifact_root_preserves_explicit_override(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    override = tmp_path / "explicit-artifacts"
+    monkeypatch.setenv("MDB2_W1_LAUNCH_ARTIFACT_ROOT", str(override))
+    assert configured_w1_artifact_root() == override
+
 
 def test_local_backend_powershell_runs_real_start_stop_restart_on_requested_port() -> None:
     run_root = new_artifact_run_dir("local-backend-real-ps")
@@ -42,6 +68,7 @@ def test_local_backend_powershell_runs_real_start_stop_restart_on_requested_port
     command_log = run_root / "commands.jsonl"
 
     migrate_synthetic_database(environment, source, command_log)
+    assert_command_log_uses_selected_python(command_log, "migrate")
     write_fixture_fingerprints(run_root / "fixture-fingerprints.after-migrate.json", run_root)
     service_config = json.loads((source / "scripts" / "e2e_bug_trend.services.json").read_text(encoding="utf-8"))
     django_config = next(service for service in service_config["services"] if service["name"] == "django")
@@ -62,6 +89,7 @@ def test_local_backend_powershell_runs_real_start_stop_restart_on_requested_port
         assert start1.returncode == 0, start1.stderr + start1.stdout
         first_state = read_single_service_state(source)
         assert int(first_state["port"]) == port
+        assert_service_state_uses_selected_python(first_state)
         assert "manage.py" in first_state["command"]
         assert "serve" in first_state["command"]
         assert "--stop-file" in first_state["command"]
@@ -90,6 +118,7 @@ def test_local_backend_powershell_runs_real_start_stop_restart_on_requested_port
         assert start2.returncode == 0, start2.stderr + start2.stdout
         second_state = read_single_service_state(source)
         assert int(second_state["port"]) == port
+        assert_service_state_uses_selected_python(second_state)
         assert int(second_state["pid"]) != int(first_state["pid"])
         assert_http_ok(f"http://127.0.0.1:{port}/ai/")
 
@@ -162,6 +191,7 @@ def test_e2e_start_stop_powershell_runs_real_dashboard_and_grafana_on_owned_port
         summary = json.loads((source / "state" / "e2e" / "bug_trend_ports.json").read_text(encoding="utf-8"))
         assert summary["django_port"] == django_port
         assert summary["grafana_port"] == grafana_port
+        assert_django_state_uses_selected_python(source)
         assert_http_ok(f"http://127.0.0.1:{django_port}/ai/")
         assert_http_ok(f"http://127.0.0.1:{grafana_port}/api/health")
 
@@ -346,6 +376,28 @@ def termination_records(source: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in ledgers[0].read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+def assert_service_state_uses_selected_python(state: dict[str, object]) -> None:
+    command = state["command"]
+    assert isinstance(command, list)
+    assert Path(command[0]).resolve() == SELECTED_WINDOWS_PYTHON
+
+
+def assert_django_state_uses_selected_python(source: Path) -> None:
+    services = read_single_state_payload(source)["services"]
+    assert_service_state_uses_selected_python(services["django"])
+
+
+def assert_command_log_uses_selected_python(command_log: Path, label: str) -> None:
+    records = [
+        json.loads(line)
+        for line in command_log.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    matches = [record for record in records if record["label"] == label]
+    assert len(matches) == 1, records
+    assert Path(matches[0]["args"][0]).resolve() == SELECTED_WINDOWS_PYTHON
+
+
 def assert_stop_command_cleanup(source: Path, port: int, state: dict[str, object]) -> None:
     records = termination_records(source)
     assert records[-1]["service"] == "django"
@@ -513,7 +565,7 @@ def synthetic_serve_environment(tmp_path: Path, *, source_root: Path = ROOT) -> 
 
 def migrate_synthetic_database(environment: dict[str, str], source_root: Path = ROOT, command_log: Path | None = None) -> None:
     completed = subprocess.run(
-        [str(SELECTED_WINDOWS_PYTHON if SELECTED_WINDOWS_PYTHON.exists() else Path(sys.executable)), str(source_root / "manage.py"), "migrate", "--noinput", "--verbosity", "0"],
+        [str(SELECTED_WINDOWS_PYTHON), str(source_root / "manage.py"), "migrate", "--noinput", "--verbosity", "0"],
         cwd=source_root,
         env=environment,
         text=True,
@@ -523,4 +575,5 @@ def migrate_synthetic_database(environment: dict[str, str], source_root: Path = 
     )
     if command_log is not None:
         append_command_record(command_log, "migrate", completed)
+    assert Path(completed.args[0]).resolve() == SELECTED_WINDOWS_PYTHON
     completed.check_returncode()

@@ -24,9 +24,12 @@ sys.path.insert(0, str(ROOT))
 from scripts.validation.project_full_stack_support import (
     base_environment, digest_file, read_json, reject_reparse_components, write_json,
 )
+from scripts.validation.windows_install_wheelhouse import (
+    WheelhouseLock, load_wheelhouse_lock, verify_wheelhouse_lock,
+)
 
 PINS = {
-    'ai-base-runtime': '0.1.1.dev4', 'django': '6.0.7', 'whitenoise': '6.12.0',
+    'ai-base-runtime': '0.1.1.dev5', 'django': '6.0.7', 'whitenoise': '6.12.0',
     'waitress': '3.0.2', 'portalocker': '4.4.2', 'pytest': '9.2.0',
     'pytest-asyncio': '1.5.0', 'pytest-django': '4.12.0', 'playwright': '1.57.0',
 }
@@ -43,6 +46,9 @@ class InstallRequest:
     root: Path
     wheel: Path
     wheelhouse: Path
+    wheelhouse_manifest: Path
+    wheelhouse_manifest_sha256: str
+    wheelhouse_lock: WheelhouseLock
     environment: Path
     bootstrap: Path
     requirements: Path
@@ -72,13 +78,16 @@ def validate_requirements(path):
     for line in path.read_text(encoding='utf-8').splitlines():
         if not line.strip() or line.lstrip().startswith('#'):
             continue
-        match = re.fullmatch(r'([A-Za-z0-9_.-]+)(?:\[[A-Za-z0-9_,.-]+\])?==([^;\s]+)(?:; .+)?', line)
+        match = re.fullmatch(r'([A-Za-z0-9_.-]+)(?:\[([A-Za-z0-9_,.-]+)\])?==([^;\s]+)(?:; .+)?', line)
         if not match:
             raise ValueError('Requirements must contain exact named pins')
         name = re.sub(r'[-_.]+', '-', match[1]).lower()
+        extras = match[2]
+        if name == 'ai-base-runtime' and extras:
+            raise ValueError('Runtime extras are not part of the Dashboard candidate')
         if name in versions:
             raise ValueError('Duplicate dependency')
-        versions[name] = match[2]
+        versions[name] = match[3]
     if any(versions.get(name) != value for name, value in PINS.items()) or 'gunicorn' in versions:
         raise ValueError('Requirements do not match the qualified Windows dependencies')
     return versions
@@ -127,6 +136,10 @@ def load_request(input_path, output_path):
                 or canonical(owner['repository']) != ROOT.resolve()):
             raise ValueError('Wrong installation owner')
         wheelhouse = owned(data['wheelhouse']['path'], root)
+        manifest_input = data['wheelhouse']['manifest']
+        wheelhouse_manifest = owned(manifest_input['path'], root)
+        wheelhouse_manifest_sha256 = manifest_input['sha256']
+        wheelhouse_lock = load_wheelhouse_lock(wheelhouse, wheelhouse_manifest, wheelhouse_manifest_sha256, root)
         wheel = owned(data['candidate']['wheel'], wheelhouse)
         environment = owned(data['python']['new_environment_root'], root)
         output = owned(output_path, root)
@@ -140,7 +153,8 @@ def load_request(input_path, output_path):
         requirements = ROOT / 'requirements.txt'
         validate_requirements(requirements)
         validate_wheel(wheel, data['candidate'])
-        return InstallRequest(root, wheel, wheelhouse, environment, bootstrap, requirements, output, inputs)
+        return InstallRequest(root, wheel, wheelhouse, wheelhouse_manifest, wheelhouse_manifest_sha256,
+                              wheelhouse_lock, environment, bootstrap, requirements, output, inputs)
     except (KeyError, TypeError, OSError, zipfile.BadZipFile) as error:
         raise ValueError('Invalid installation inputs') from error
 
@@ -241,7 +255,8 @@ def run_install(request):
     receipt = {
         'schema_version': 1, 'gate': 'V1', 'result': 'FAIL', 'run': str(run),
         'inputs_sha256': digest_file(request.inputs), 'requirements_sha256': digest_file(request.requirements),
-        'wheel_sha256': digest_file(request.wheel), 'source_before': source_fingerprints(), 'commands': [],
+        'wheel_sha256': digest_file(request.wheel), 'wheelhouse': request.wheelhouse_lock.receipt(),
+        'source_before': None, 'commands': [],
     }
 
     def command(argv, label, timeout=600, *, expect_failure=False, acquisition=False):
@@ -267,12 +282,15 @@ def run_install(request):
         return log
 
     try:
+        verify_wheelhouse_lock(request.wheelhouse_lock)
+        receipt['source_before'] = source_fingerprints()
         command([request.bootstrap, '-I', '-m', 'venv', request.environment], 'create-venv')
         python = request.environment / 'Scripts/python.exe'
         pip = [python, '-I', '-m', 'pip', '--isolated', '--disable-pip-version-check', '--no-cache-dir']
-        command([*pip, 'download', '--retries', '0', '--timeout', '15', '--only-binary=:all:',
+        command([*pip, 'download', '--no-index', '--retries', '0', '--timeout', '15', '--only-binary=:all:',
                  '--find-links', request.wheelhouse, '--dest', request.wheelhouse, '-r', request.requirements],
                 'acquire-wheels', acquisition=True)
+        verify_wheelhouse_lock(request.wheelhouse_lock)
         wheels = sorted(request.wheelhouse.glob('*.whl'))
         receipt['wheels'] = {path.name: digest_file(path) for path in wheels}
         constraints = run / 'windows-constraints.txt'
@@ -292,9 +310,10 @@ def run_install(request):
         empty = run / 'empty-wheelhouse'
         empty.mkdir()
         command([*pip, 'install', '--no-index', '--find-links', empty, '--no-cache-dir',
-                 '--only-binary=:all:', 'ai-base-runtime==0.1.1.dev4'], 'offline-missing-wheel', expect_failure=True)
+                 '--only-binary=:all:', 'ai-base-runtime==0.1.1.dev5'], 'offline-missing-wheel', expect_failure=True)
         install = [*pip, 'install', '--no-index', '--find-links', request.wheelhouse,
                    '--no-cache-dir', '--only-binary=:all:', '-c', constraints]
+        verify_wheelhouse_lock(request.wheelhouse_lock)
         command([*install, request.wheel], 'install-direct-runtime')
         command([*install, '-r', request.requirements], 'install-requirements')
         command([*pip, 'check'], 'pip-check')
@@ -314,8 +333,7 @@ def run_install(request):
         receipt['source_after'] = source_fingerprints()
         if receipt['source_before'] != receipt['source_after']:
             raise ValueError('Source changed during installation qualification')
-        if any(digest_file(request.wheelhouse / name) != digest for name, digest in receipt['wheels'].items()):
-            raise ValueError('Wheelhouse changed during installation')
+        verify_wheelhouse_lock(request.wheelhouse_lock)
         receipt['result'] = 'PASS'
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         receipt['failure_type'] = type(error).__name__

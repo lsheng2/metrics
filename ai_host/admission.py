@@ -15,6 +15,8 @@ def admit_runtime_candidate(artifact_path=None):
         record = json.loads(path.read_text(encoding='utf-8'))
         if record['distribution'] != 'ai-base-runtime':
             raise RuntimeCandidateError('runtime_distribution_mismatch')
+        if record['genericCapabilities'] != []:
+            raise RuntimeCandidateError('runtime_generic_capabilities_mismatch')
         if version(record['distribution']) != record['version']:
             raise RuntimeCandidateError('runtime_version_mismatch')
         dist = distribution(record['distribution'])

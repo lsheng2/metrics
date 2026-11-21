@@ -36,6 +36,46 @@ decision about resuming other Apps. This is not full AIB repository release.
 
 ## Baseline And Established Architecture
 
+### Dev5 Candidate Refresh (2026-11-21)
+
+The owner resumed implementation of the dev5 upgrade after mainline publication.
+Dashboard starts at `f68138fae673986b430c24791b9e40dec446d8a5`; the selected wheel,
+source and final-delivery policy are in
+[the candidate decision](windows-performance-phase.md#final-delivery-candidate-decision-2026-11-21).
+Use `D:/AIGC/d5-1121` for new installation and evidence. No dev4 environment,
+wheel or historical receipt is edited. The table below remains the historical
+dev4 milestone baseline, not a claim about the new candidate.
+
+Renew W1.VA/INSTALL/R/REPLAN, W2.CERTIFY/R, W3.FREEZE/REHEARSE/JOIN,
+FUNC.R/ACCEPT and PERF.KPI inputs on the new candidate. No new DAG nodes or
+second ledger are introduced; the candidate-specific progress is in `tasks.md`.
+The upgrade ends at refreshed functional acceptance and performance-input
+readiness, not numerical performance certification.
+
+| Authority | Producer | Consumers | Required rejection |
+| --- | --- | --- | --- |
+| Runtime candidate | Verified dev5 wheel and generated `ai_host/runtime_artifact.json` | admission, requirements, installer, native tests | Old version/hash, incomplete files, shadow/editable install, nonempty Dashboard generic capabilities |
+| Dependency lock | Prepared `windows-wheelhouse-lock` JSON | install request/load/run and import probe | Missing/extra/changed wheels, changed manifest, unowned/reparse paths, runtime extras |
+| Functional evidence | Fresh native, recovery, browser, module and migration producers | dev5-scoped review and new acceptance receipt | Old candidate/source/fixture bindings or smoke promoted to acceptance |
+| Performance inputs | New dev5 policy and accepted functional receipt | performance contract and qualifier | Old/mixed references or changed KPI recipe |
+
+The installation request requires `wheelhouse.manifest={path,sha256}` under
+the owned root. Its JSON has `schema_version=1`, `kind=windows-wheelhouse-lock`
+and exact `files={wheelFilename:sha256}`. Validate it before creating a prefix,
+resolve wheels without network against the locked wheelhouse, and revalidate
+before installation and after completion. Existing dependency versions remain
+selected, including existing tiktoken; no RAG extras/capabilities are enabled.
+
+New outputs are `evidence/windows-functional-acceptance-dev5.json` and
+`evidence/windows-performance-inputs-dev5.json`. The old unversioned dev4
+receipts retain their paths and bytes. Active performance references switch
+only after dev5 acceptance. Fresh candidate-scoped reviews and negative
+cross-candidate checks are required; Sample/RCA results do not substitute.
+
+Preflight disposition: the independent Validation Engineer requested the lock,
+capability and versioned-evidence checks above. Implementation must close those
+gaps before upgrade acceptance; current package preparation alone is not PASS.
+
 | Binding | Value |
 | --- | --- |
 | Dashboard source | `d0c395eb8649a90d2a2cae09d1f5362252bb0353`; clean at plan creation |

@@ -11,9 +11,9 @@ The approved delivery order and interfaces are in
 
 The migrated `ai_host`, summary, report-assist and project-run boundaries use
 the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
-The current candidate is `ai-base-runtime==0.1.1.dev4`, built from AIB
-`d589ac8e6572a903edc3846e7d78195e85858868`. Its wheel SHA256 is
-`b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94`.
+The current candidate is `ai-base-runtime==0.1.1.dev5`, built from AIB
+`3dd15adb8fcc42600a97013d9835d1e50539324e`. Its wheel SHA256 is
+`45efb445528d4ccc7a288868317bdc57e5da39945188a2cfefb9f575f0b1e6d6`.
 This is a development candidate, not full AIB or Dashboard qualification.
 Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
@@ -22,19 +22,23 @@ later qualification and are not prerequisites for this Windows packet.
 The owner requires the latest AIB for final delivery as of 2026-11-21.
 The [final-candidate decision](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md#final-delivery-candidate-decision-2026-11-21)
 selects the currently verified dev5 target and defines its admission boundary.
-This is a required next upgrade, not the installed version: the manifest and
-environments above remain dev4 until a new isolated installation, consumer
-admission and affected functional/browser acceptance succeed. Preserve the old
-environments and receipts. Final performance input freeze and certification
+The active manifest and separately qualified installation now use dev5.
+Installation qualification passed in `D:/AIGC/d5-1121/venv`, with 19
+admission/package/host checks, authenticated page/assets and normal stop.
+The environment has the same 83 distribution versions as the dev4 baseline
+except the runtime version itself. Fresh dev5 functional/browser acceptance
+is still pending; retain the dev4 environments and receipts as history.
+Final performance input freeze and certification
 must then use the new candidate and matching functional evidence; no automatic
 latest-version range, mixed-wheel evidence or legacy fallback is permitted.
 The owner separately authorized both repositories' scoped mainline publication;
-publishing code does not claim this upgrade or performance acceptance is done.
+publishing code or passing installation does not establish functional or
+performance acceptance for the new candidate.
 
 The Windows delivery sequence is specified in the
 [MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
 with detailed steps and a clause-to-evidence matrix. Installation and entrypoint
-retirement passed W1. Windows synthetic-data `FUNC.ACCEPT` is now complete at
+retirement passed W1. Historical dev4 Windows synthetic-data `FUNC.ACCEPT` passed at
 source `ff09d6ff97dd62e56fb3bfc44914c5c08582a144`: the
 [formal receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json)
 binds 114/114 functional keys, all seven module gates and independent review.
@@ -238,7 +242,7 @@ never proves a migration or joint acceptance.
 Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = 'D:\AIGC\artifacts\mdb2-windows-20261117\windows-venv-r4\Scripts\python.exe'
+$reportingPython = 'D:\AIGC\d5-1121\venv\Scripts\python.exe'
 & $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
@@ -250,13 +254,19 @@ service or user database is silently switched.
 
 ### Windows Offline Installation
 
-The owned artifact root is `D:\AIGC\artifacts\mdb2-windows-20261117`.
+The current owned artifact root is `D:\AIGC\d5-1121`.
 Its `wheels/` directory contains the runtime and Windows dependency wheels.
 The installation qualifier takes the release-input record, validates ownership
-and candidate files before creating anything, creates a fresh venv, acquires
-dependency wheels, then installs offline. Network acquisition alone inherits
-the existing process HTTP/HTTPS proxy; installation and tests use a private
-home with pip configuration disabled and no user-site or shared dependencies.
+and candidate files before creating anything, creates a fresh venv, resolves
+the prepared dependency wheels without network, then installs offline.
+`wheelhouse.manifest={path,sha256}` is required in the input; its owned JSON
+has `schema_version=1`, `kind=windows-wheelhouse-lock`, and the exact
+`files={wheelFilename:sha256}` inventory. Missing, extra or changed wheels,
+changed lock bytes and unowned/reparse paths fail before installation.
+The lock is rechecked before writes/install and at completion. Runtime extras
+and nonempty Dashboard generic capabilities are not admitted.
+Installation and tests use a private home with pip configuration disabled and
+no user-site or shared dependencies.
 Source-built dependencies must already have verified compatible wheels in the
 wheelhouse. The recorded rcssmin/rjsmin wheels match the candidate's Python 3.13
 Windows payload; their source archive identities are retained with the inputs.
@@ -272,8 +282,8 @@ To install another development environment from a successful qualification,
 run from the Dashboard repository root:
 
 ```powershell
-$artifacts = 'D:\AIGC\artifacts\mdb2-windows-20261117'
-$installed = Get-Content -Raw "$artifacts\evidence\install-r4.json" | ConvertFrom-Json
+$artifacts = 'D:\AIGC\d5-1121'
+$installed = Get-Content -Raw "$artifacts\evidence\install-dev5-r1.json" | ConvertFrom-Json
 if ($installed.result -ne 'PASS') { throw 'Installation qualification has not passed' }
 $wheelhouse = Join-Path $artifacts 'wheels'
 foreach ($wheel in $installed.wheels.PSObject.Properties) {
@@ -294,7 +304,7 @@ if (Test-Path -LiteralPath $newEnvironment) { throw 'Choose a new environment pa
 if ($LASTEXITCODE -ne 0) { throw 'Environment creation failed' }
 $reportingPython = Join-Path $newEnvironment 'Scripts\python.exe'
 $env:PIP_CONFIG_FILE = 'nul'
-$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev4-py3-none-any.whl'
+$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev5-py3-none-any.whl'
 & $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints $runtimeWheel
 if ($LASTEXITCODE -ne 0) { throw 'Runtime installation failed' }
 & $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints -r requirements.txt

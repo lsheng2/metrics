@@ -28,6 +28,8 @@
   "planned_paths": {
     "scripts/validation/windows_install_smoke.py": "W1.INSTALL",
     "scripts/tests/test_windows_install_smoke.py": "W1.INSTALL",
+    "scripts/validation/windows_install_wheelhouse.py": "W1.INSTALL",
+    "scripts/tests/test_windows_install_wheelhouse.py": "W1.INSTALL",
     "scripts/tests/test_windows_launchers.py": "W1.LAUNCH",
     "scripts/service_lifecycle_engine/controlled_stop.py": "W1.LAUNCH",
     "scripts/service_lifecycle_engine/process_exit.py": "W1.LAUNCH",
@@ -130,7 +132,7 @@
     },
     {
       "id": "W1.INSTALL", "depends_on": ["W1.VA"], "kind": "implementation",
-      "owner_paths": ["requirements.txt", "ai_host/admission.py", "ai_host/tests/test_admission.py", "scripts/validation/windows_install_smoke.py", "scripts/tests/test_windows_install_smoke.py", "README.md", "docs/development/reporting-delivery.md"],
+      "owner_paths": ["requirements.txt", "ai_host/runtime_artifact.json", "ai_host/admission.py", "ai_host/tests/test_admission.py", "scripts/validation/windows_install_smoke.py", "scripts/validation/windows_install_wheelhouse.py", "scripts/tests/test_windows_install_smoke.py", "scripts/tests/test_windows_install_wheelhouse.py", "README.md", "docs/development/reporting-delivery.md"],
       "contracts": ["INV-1", "INV-6"], "validation": ["V1"],
       "steps": "windows-close-steps.md#w1install",
       "exit_criteria": "Fresh owned Windows venv admits direct hashed wheel, installs locked dependencies offline and passes pip check/serve smoke; wrong wheel fails before launch.",

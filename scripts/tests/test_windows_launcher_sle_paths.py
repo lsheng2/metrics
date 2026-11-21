@@ -11,7 +11,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SELECTED_WINDOWS_PYTHON = Path("D:/AIGC/artifacts/mdb2-windows-20261117/windows-venv-r4/Scripts/python.exe")
+SELECTED_WINDOWS_PYTHON = Path(sys.executable).resolve()
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -20,6 +20,11 @@ from service_lifecycle_engine.platform_ops import is_port_available, kill_proces
 
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Windows SLE launcher coverage")
+
+
+def test_selected_windows_python_tracks_current_runner() -> None:
+    assert SELECTED_WINDOWS_PYTHON == Path(sys.executable).resolve()
+
 
 def test_sle_launches_real_serve_and_stop_file_stops_normally(tmp_path: Path) -> None:
     port = find_free_port()
@@ -33,9 +38,11 @@ def test_sle_launches_real_serve_and_stop_file_stops_normally(tmp_path: Path) ->
         state_directory=tmp_path / "state",
     )
     spec = real_serve_spec(tmp_path, [port], stop_file, environment)
+    assert_serve_spec_uses_selected_python(spec)
 
     state = lifecycle.start_service(spec, port=port)
     try:
+        assert Path(state.command[0]).resolve() == SELECTED_WINDOWS_PYTHON
         result = lifecycle.stop_service("django", graceful_timeout_seconds=5.0)
     finally:
         if process_exists(state.pid):
@@ -67,9 +74,11 @@ def test_sle_real_serve_start_reroutes_around_foreign_listener_and_preserves_it(
             state_directory=tmp_path / "state",
         )
         spec = real_serve_spec(tmp_path, [foreign_port, fallback_port], stop_file, environment)
+        assert_serve_spec_uses_selected_python(spec)
 
         state = lifecycle.start_service(spec)
         try:
+            assert Path(state.command[0]).resolve() == SELECTED_WINDOWS_PYTHON
             assert state.port == fallback_port
             assert not is_port_available("127.0.0.1", foreign_port)
             result = lifecycle.stop_service("django", graceful_timeout_seconds=5.0)
@@ -147,7 +156,7 @@ def real_serve_spec(tmp_path: Path, ports: list[int], stop_file: Path, environme
         "django",
         ports,
         [
-            sys.executable,
+            str(SELECTED_WINDOWS_PYTHON),
             str(ROOT / "manage.py"),
             "serve",
             "--host",
@@ -158,7 +167,7 @@ def real_serve_spec(tmp_path: Path, ports: list[int], stop_file: Path, environme
             str(stop_file),
         ],
         stop_command=[
-            sys.executable,
+            str(SELECTED_WINDOWS_PYTHON),
             "-c",
             "import pathlib, sys; pathlib.Path(sys.argv[1]).touch()",
             str(stop_file),
@@ -169,6 +178,11 @@ def real_serve_spec(tmp_path: Path, ports: list[int], stop_file: Path, environme
         graceful_timeout_seconds=5.0,
         port_release_timeout_seconds=3.0,
     )
+
+
+def assert_serve_spec_uses_selected_python(spec: ServiceSpec) -> None:
+    assert Path(spec.command[0]).resolve() == SELECTED_WINDOWS_PYTHON
+    assert Path(spec.stop_command[0]).resolve() == SELECTED_WINDOWS_PYTHON
 
 
 def synthetic_serve_environment(tmp_path: Path, *, source_root: Path = ROOT) -> dict[str, str]:
@@ -229,7 +243,7 @@ def synthetic_serve_environment(tmp_path: Path, *, source_root: Path = ROOT) -> 
 
 def migrate_synthetic_database(environment: dict[str, str], source_root: Path = ROOT, command_log: Path | None = None) -> None:
     completed = subprocess.run(
-        [str(SELECTED_WINDOWS_PYTHON if SELECTED_WINDOWS_PYTHON.exists() else Path(sys.executable)), str(source_root / "manage.py"), "migrate", "--noinput", "--verbosity", "0"],
+        [str(SELECTED_WINDOWS_PYTHON), str(source_root / "manage.py"), "migrate", "--noinput", "--verbosity", "0"],
         cwd=source_root,
         env=environment,
         text=True,
@@ -239,6 +253,7 @@ def migrate_synthetic_database(environment: dict[str, str], source_root: Path = 
     )
     if command_log is not None:
         append_command_record(command_log, "migrate", completed)
+    assert Path(completed.args[0]).resolve() == SELECTED_WINDOWS_PYTHON
     completed.check_returncode()
 
 

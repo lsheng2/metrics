@@ -13,6 +13,21 @@ Dashboard 当前仍消费 dev4；升级准入、新候选功能验收与性能�
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
 
+### Dev5 Refresh Progress
+
+本表在同一账本内记录 dev5 对既有节点的复签；下方已完成的 dev4 历史节点
+不自动适用于 dev5。实施依据为 [候选刷新切片](windows-close-plan.md#dev5-candidate-refresh-2026-11-21)。
+
+| Existing gate | Dev5 state | Evidence / remaining work |
+| --- | --- | --- |
+| W1.VA | Findings addressed in implementation scope | Independent review requires exact wheelhouse lock, no runtime extras and versioned acceptance references |
+| W1.INSTALL | Installed; review pending | New D:/AIGC/d5-1121/venv admits the exact 154-file dev5 wheel; install-dev5-r1 PASS, 19 checks and normal serve stop; 83 distributions with only runtime version changed |
+| W1.R / W1.REPLAN | Pending | Review installed candidate and freeze qualification source |
+| W2.CERTIFY / W2.R | Pending | Fresh native host, conformance and recovery evidence |
+| W3.FREEZE / W3.REHEARSE / W3.JOIN | Pending | Candidate-bound migration and joined browser/module proof |
+| FUNC.R / FUNC.ACCEPT | Pending | Independent dev5 review and new immutable functional receipt |
+| PERF.KPI | Pending refresh | New matching dev5 policy/reference inputs; numerical certification remains open |
+
 ## Windows Performance Execution Frontier
 
 **执行授权（2026-11-20）**：owner 已批准开始 Windows 性能专项，先深入研究、
