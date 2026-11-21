@@ -490,3 +490,95 @@ contract, an occupied/foreign measurement window, source drift, or failed
 cleanup. Do not invent a need to solve every historical intermittent failure
 before collecting current unprofiled measurements. KPI changes, a new runtime
 candidate, real-provider work, Linux and publication retain separate decisions.
+
+## Circular Diagnostic Amendment (2026-11-21)
+
+The owner authorized the smaller circular-capture experiment after the two
+anomaly-free file-mode windows. This amends the diagnostic slice of PERF.PROBE,
+not the signed measurement recipe, DAG nodes, formal acceptance or runtime.
+Profile source remains `repo-local`; routing remains `multiagent-configured`.
+Source baseline is clean Dashboard `79681f3`; AIB and the dev4 wheel are unchanged.
+The sole execution ledger is still `tasks.md`.
+
+**Outcome:** retain the same slow request, native PID/TID and defensible clock
+bridge inside a usable bounded kernel interval, or explicitly report a miss.
+No circular-buffer size promises a fixed number of retained seconds.
+
+**Owners and interfaces:** private versioned tools are new files below
+`D:/AIGC/pf1120/circular-trace/`; the earlier `asset-trace/`, collectors and
+receipts remain immutable. The parent owns collector/profile, launcher,
+orchestration and these documents. A separate implementer may own Python
+clock/trigger/fixture adapters and their tests in that private directory only.
+The current test plan, sole ledger and reporting-delivery guide are the only
+planned repository edits until a real product defect is established.
+
+| High-risk boundary | Producer -> consumer | Required behavior and negative check |
+| --- | --- | --- |
+| Capture authority | fixed collector/session -> WPR | Hash-frozen tools; protected ACL; token; exact actions and run id; reject arbitrary executable/path, stale token, traversal, reparse, overlap and changed tools |
+| Save decision | first client trigger -> ordinary controller -> privileged collector | Only matching current capture may save; immutable trigger receipt; no-trigger windows cancel without ETL; gap/boundary triggers cannot claim full coverage |
+| Clock/identity | Windows clock samples and ETW markers -> offline join | Request id, PID, native TID, monotonic/QPC/frequency, precise UTC bracket and uncertainty; reject missing markers, mismatched identities, clock discontinuity and incomplete intervals |
+| Claim | app result + collector/decoder evidence -> investigation report | Diagnostic only; reported loss, overwritten history, capture gaps and normal/forced cleanup remain explicit; synthetic calibration never counts as a reproduced product failure |
+
+Consumer census: applies to diagnostic audit/log/event, validation scripts,
+external artifacts, temporary CLI/admin controls, documentation and fixtures.
+Product public API, business services/UI/exports, persistence/migrations,
+background jobs and product cache policy are unchanged. The circular buffer
+is diagnostic memory only, not an App cache or a new runtime journal.
+
+### Bounded Implementation And Validation
+
+1. Write failing private tests before implementing clock/trigger and collector
+   decisions. Wrong/missing request identity, out-of-order clock brackets,
+   a second trigger replacing the first, no-trigger save, expired session and
+   command injection must fail at the real consumer boundary.
+2. Reuse the original real Windows fixture, four held streams and `bug_trend`
+   load. Copy/adapt private timing wrappers without editing installed files.
+   Keep the existing one-second diagnostic trigger, two-second direct probe
+   read wait and all application stop/watchdog budgets unchanged.
+3. Add sparse Windows ETW string markers using the native provider API and
+   the fixed provider id `fc8d33b5-f242-4f27-913e-84ca401125ae`.
+   Mark clock calibration, the first client trigger and slow server spans.
+   Payloads contain synthetic request ids, bounded route paths, PID/TID and
+   timing only; never headers, credentials, query strings or response bodies.
+   Marker API success alone is insufficient: the ETL decoder must observe it.
+4. Use WPR memory mode with 64 MiB kernel buffers plus a small marker buffer.
+   Enable context switches/ready threads, process/thread and image identity,
+   and file/disk I/O; omit sampled CPU and broad Minifilter collection.
+   Preserve context-switch/ready and relevant file/disk initiation stacks.
+   Freeze and validate the actual profile before elevation.
+5. A fresh session is limited to eight hours, six recording attempts,
+   90 seconds each, the existing six-minute per-collector safety deadline,
+   and 8 GiB saved-ETL admission threshold. No service, scheduled task or
+   machine-policy change. Application code refuses an elevated token.
+   A no-trigger window is canceled, not saved; a controlled short calibration
+   save consumes one attempt. At most five diagnostic windows remain.
+6. First run a small, explicitly synthetic calibration. Verify ordinary-token
+   marker PID/TID and clock payload in the actual ETL, bounded recorder memory,
+   source/tool hashes, normal stop/cancel and no owned residue. If its saved
+   ETL exceeds 512 MiB, stop this recipe and narrow it before another run;
+   this is an artifact-cost stop condition, not a performance KPI.
+7. Only after calibration, run one <=600-second/4,000-sample diagnostic with
+   the existing load. Start recording after fixture warmup, rotate bounded
+   windows with explicit gaps, and save on the first trigger. Stop after the
+   trigger, five windows, app completion or an ownership/collector failure.
+   Do not retry repeatedly when all windows miss the anomaly.
+8. Decode only a triggered trace or the one calibration trace. Check reported
+   loss, actual retained event bounds, marker/clock uncertainty and matching
+   process/thread lifetime. Require the complete relevant request/span
+   interval before quantitative attribution. Capture-end/rundown activities,
+   overlapping spans and unrelated PIDs must not become causal evidence.
+   Retain the earlier frozen candidate and run-to-completion cleanup proof.
+
+Tests use `D:/AIGC/pf1120/venv/Scripts/python.exe -I -B -m pytest` with explicit
+private test paths and fresh JUnit/basetemp paths on D. PowerShell tests run
+the collector's actual decision functions with controlled requests and a
+side-effect interception boundary; actual WPR capability is proven separately.
+The parent alone owns actual app/profiler execution; no tests, source edits,
+builds or Git writes overlap the diagnostic window. Native capture is
+deliberately intrusive and never admitted as formal KPI measurement.
+
+An independent bounded review checks plan/permission boundaries before launch
+and implementation/negative checks before elevation. Do not reopen the already
+completed performance-tool code review or run unrelated App/Linux suites.
+Docs impact: diagnostic validation/operations only; synchronize the current
+guide and record the result without closing PERF.PROBE or WIN.ACCEPT on a miss.

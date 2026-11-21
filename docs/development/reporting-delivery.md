@@ -60,6 +60,9 @@ records an incomplete full diagnostic and separately labelled asset-localization
 experiments. It does not replace the functional receipt or establish
 performance acceptance. Elevated kernel collection is verified, but its latest
 bounded run did not reproduce the anomaly; root-cause attribution remains open.
+The next authorized diagnostic uses bounded circular kernel recording and
+request/PID/TID/clock witnesses. No-trigger windows are discarded; calibration
+and instrumented captures remain separate from KPI qualification.
 Page-specific asset sets are replayed against their sanity observations, and
 only their union is compared with the arm manifest. Raw page timestamps prove
 block and saturation containment without changing the HTTP-only latency metric.

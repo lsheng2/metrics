@@ -51,6 +51,12 @@ KPI、缓存策略或 wheel。WPR 内核采集权限探测被策略拒绝（`0xc
 131 个 runtime 文件与 wheel 哈希一致。权限阻塞已解除，下一步先缩小采集
 范围、提高异常与内核事件的同窗命中率，不重复大体积无异常录制或放宽 KPI。
 
+**循环采集授权（2026-11-21）**：owner 已批准下一轮小型循环缓冲与同请求
+PID/TID/时钟关联。执行细节追加在现有 test plan 的 Circular Diagnostic
+Amendment；仍属 PERF.PROBE 内部诊断，不新建产品 DAG 或放宽预算。新私有
+工具与旧证据隔离，先负例测试、独立边界复核和实际 ETL 标记校准，再执行
+一轮有界复现；无异常窗口取消不落大文件，未命中不算验收。
+
 ## Windows Closure Execution Frontier
 
 **当前状态（2026-11-20）**：Windows Dashboard MDB-2 合成数据功能验收已通过。
