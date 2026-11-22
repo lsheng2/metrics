@@ -5,7 +5,27 @@ Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 
+## Windows Testkit Candidate Amendment (2026-11-22)
+
+The owner authorized only Windows testkit resource-observer calibration,
+independent review, a new immutable wheel and consumer requalification.
+The selected candidate is now `ai-base-runtime==0.1.1.dev6`, source
+`3dfa5bdad5236685802a9183db86bf751eb341b2`, wheel SHA256
+`e8279a3d987da1ef84d1f3f267f04c2b1c2ffd7822f6b3dc70ae10323dc99f1c`.
+The source calibration passed independent review. Two testkit package files
+changed; non-testkit runtime/assets and dependency declarations match dev5.
+Fresh Windows offline installation passed in a new environment; this is not
+functional acceptance or performance qualification.
+
+Preserve dev4/dev5 artifacts and failures. Obtain fresh dev6 functional evidence
+before renewing canonical performance references. The signed baseline, complete
+recipe, numerical KPI and production stop/cancel budgets remain unchanged.
+This selection supersedes the historical dev5 target below, not its evidence.
+
 ## Final Delivery Candidate Decision (2026-11-21)
+
+This dated candidate selection is historical; the 2026-11-22 amendment above
+selects the reviewed calibration candidate. The delivery order still applies.
 
 The owner authorized merging/pushing both repositories' existing scoped commits
 to `origin/main` and requires the latest AIB for final Windows Dashboard delivery.

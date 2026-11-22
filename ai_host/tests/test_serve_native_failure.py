@@ -12,7 +12,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-EXPECTED_RUNTIME_VERSION = "0.1.1.dev5"
+EXPECTED_RUNTIME_VERSION = "0.1.1.dev6"
 
 
 def free_port():

@@ -4,16 +4,53 @@
 
 **Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
 `origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
-最新目标为 `ai-base-runtime==0.1.1.dev5`，具体源码与 wheel SHA256 见
-[最终候选约束](windows-performance-phase.md#final-delivery-candidate-decision-2026-11-21)。
-Dashboard 已在独立环境安装 dev5；新候选功能验收与性能输入复签尚未完成。
-历史 dev4 的已完成节点和不可变证据保留，不代表最新候选已经通过。
+2026-11-22 另授权 Windows testkit 校准，新目标为 `ai-base-runtime==0.1.1.dev6`，
+具体源码与 wheel SHA256 见
+[当前候选约束](windows-performance-phase.md#windows-testkit-candidate-amendment-2026-11-22)。
+Dashboard 已在独立环境安装 dev6；新候选功能验收与性能输入复签尚未完成。
+历史 dev4/dev5 节点和不可变证据保留，不代表最新候选已经通过。
 下一切片先完成候选更新及受影响功能补验，再做完整性能诊断和认证；
 不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
 
-### Dev5 Refresh Progress
+### Dev6 Calibration Progress
+
+Owner authorized Windows testkit calibration and a new immutable candidate on
+2026-11-22. AIB source `3dfa5bdad5236685802a9183db86bf751eb341b2` passed
+114 source host/observer checks and independent source review 1/1, zero
+findings. Candidate `0.1.1.dev6` has wheel SHA256
+`e8279a3d987da1ef84d1f3f267f04c2b1c2ffd7822f6b3dc70ae10323dc99f1c`.
+Only two testkit package files differ from dev5; production code/assets and
+dependency declarations are identical. Production stop deadlines/KPI unchanged.
+
+| Existing gate | Dev6 state | Evidence / remaining work |
+| --- | --- | --- |
+| W1.INSTALL | Fresh installation passed | D:/AIGC/d6-1122/venv; exact155-file admission,19 checks, normal serve stop;83 distributions with runtime-only version change |
+| W1.R / candidate review | Installation review pending; testkit requalification blocked |47 installer/lock regressions passed; old dev5 environment refused; installed testkit113PASS/1ASGI failure, not acceptance |
+| W2.CERTIFY / W2.R | Pending fresh freeze | No dev6 native/complete/recovery/migration receipt yet |
+| W3.JOIN / FUNC.R / FUNC.ACCEPT | Pending | Fresh mapped and all seven module gates plus review/writer required |
+| PERF.KPI / PERF.CERTIFY | Pending | Do not reuse old candidate acceptance or claim numerical performance |
+
+The earlier dev5 source-bound successes and failures below remain historical.
+The calibrated observer is not proof that the earlier slow-stop cause was fixed.
+The dev6 installed ASGI failure has unchanged task/thread identities but a
+baseline handle envelope182..183 versus final183..183. Do not weaken its lower
+bound or count a partial report as PASS. Bounded typed/lifetime diagnostics
+and one real semaphore-leak negative are nonqualifying evidence for further
+testkit-only method work under the existing owner authorization. Any corrected
+payload needs a new immutable candidate. See
+[installation and failed follow-up checkpoint](evidence/windows-dev6-install-checkpoint.json).
+
+### Dev5 Refresh Progress (Historical)
+
+**2026-11-22 calibration authorization:** the owner authorized bounded AIB
+Windows testkit resource-observer calibration, independent review and a new
+immutable candidate wheel before requalification. Production stop budgets,
+performance KPI and real leak detection stay unchanged. This supersedes the
+pending-scope decision below, not its failed evidence. AIB owns the observer;
+Dashboard will pin/admit the reviewed artifact before a new formal source
+freeze. No new native/functional/performance acceptance is claimed.
 
 本表在同一账本内记录 dev5 对既有节点的复签；下方已完成的 dev4 历史节点
 不自动适用于 dev5。实施依据为 [候选刷新切片](windows-close-plan.md#dev5-candidate-refresh-2026-11-21)。

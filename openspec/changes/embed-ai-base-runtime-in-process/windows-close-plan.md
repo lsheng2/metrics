@@ -22,7 +22,8 @@ decision about resuming other Apps. This is not full AIB repository release.
   their interface/environment definitions; do not mark them tested or remove
   them to make a Windows scan green.
 - Other App/generic-capability WIP, live provider/model use, real-user data
-  changes, main integration, push and worktree deletion are not authorized here.
+  changes and worktree deletion are not authorized here. Scoped mainline
+  publication was separately authorized on 2026-11-21; it is not release approval.
 - `WIN.ACCEPT` records the Windows milestone. It does **not** archive MDB-2 or
   close AIB `W3.APPS`, `W4.QUAL`, `CLOSE.R`, `DELIVERY`, or original deferred
   MDB-2 requirements. Whole-change archival needs their actual completion or a
@@ -36,7 +37,28 @@ decision about resuming other Apps. This is not full AIB repository release.
 
 ## Baseline And Established Architecture
 
+### Dev6 Observer Candidate Refresh (2026-11-22)
+
+The owner authorized AIB Windows testkit observer calibration, independent
+review, a new immutable wheel and Dashboard requalification. The source change
+is separately reviewed at AIB `3dfa5bd`; the exact candidate identity is in
+[the amendment](windows-performance-phase.md#windows-testkit-candidate-amendment-2026-11-22).
+Use `D:/AIGC/d6-1122` for the new environment, immutable inputs and evidence.
+Non-testkit runtime/assets and dependency declarations are unchanged from dev5.
+
+Renew the same W1/W2/W3/FUNC gates described below for this candidate; no new
+DAG nodes, parallel qualifier or progress ledger are added. Fresh outputs are
+`evidence/windows-functional-acceptance-dev6.json` and, only after functional
+acceptance, `evidence/windows-performance-inputs-dev6.json`. Retain all dev4/
+dev5 artifacts and failed attempts. The existing official qualifier, semantic
+producers, migration historical-input declaration and exact coverage census
+remain authoritative. No private resumption or old-source PASS relabelling.
+Performance recipe/KPI and production stop/cancel bounds are unchanged.
+
 ### Dev5 Candidate Refresh (2026-11-21)
+
+This subsection preserves the historical dev5 packet. Its method remains the
+baseline, but the dev6 amendment above selects the current artifact and paths.
 
 The owner resumed implementation of the dev5 upgrade after mainline publication.
 Dashboard starts at `f68138fae673986b430c24791b9e40dec446d8a5`; the selected wheel,

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "kind": "windows-dev6-installation-checkpoint",
+  "installation_status": "PASS",
+  "functional_status": "PENDING",
+  "performance_status": "NOT_RUN",
+  "calibrated_testkit_status": "FAILED_INSTALLED_ASGI_CHECK",
+  "candidate": {
+    "version": "0.1.1.dev6",
+    "source_commit": "3dfa5bdad5236685802a9183db86bf751eb341b2",
+    "wheel_sha256": "e8279a3d987da1ef84d1f3f267f04c2b1c2ffd7822f6b3dc70ae10323dc99f1c",
+    "package_files": 155
+  },
+  "source_review": {
+    "path": "D:\\AIGC\\d6-1122\\reviews\\source-gate.json",
+    "sha256": "7a815bd753d80742cdcb36f86a28952d55291be936391919377d952e488aa5dd"
+  },
+  "build": {
+    "path": "D:\\AIGC\\d6-1122\\builds\\3dfa5bdad5236685802a9183db86bf751eb341b2\\build-receipt.json",
+    "sha256": "9d2cda06e4a6c286757270f10231988cf4696963760c7526a4a60f7c5af1282c"
+  },
+  "payload_comparison": {
+    "path": "D:\\AIGC\\d6-1122\\evidence\\candidate-preparation.json",
+    "sha256": "1d8e5860b87d91c480ee10882ad4826a728a823f76af6e47f19167b6f1303744"
+  },
+  "environment_comparison": {
+    "path": "D:\\AIGC\\d6-1122\\evidence\\dependency-version-comparison.json",
+    "sha256": "b9c0b282e69aa482710fd050ec77e661a77b3e7085dccdf8fb1b8e544e0e1cf6"
+  },
+  "install": {
+    "path": "D:\\AIGC\\d6-1122\\evidence\\install-dev6-r1.json",
+    "sha256": "7ca99ba1efeb29eb2cef7024f6bb7f7badbbc15a75c497d467667e6a18317b86"
+  },
+  "installer_red": {
+    "path": "D:\\AIGC\\d6-1122\\evidence\\install-pin-red-r1.xml",
+    "sha256": "97f047154f61481394ddfc9dea21e28ada53ff9f0b85abb4e07478abced15b8a"
+  },
+  "installer_green": {
+    "path": "D:\\AIGC\\d6-1122\\evidence\\install-pin-green-r1.xml",
+    "sha256": "2d6a3d408e11416b7bd7419b9b0b8c0bfb9b283cde0bc636c528254c407988f9"
+  },
+  "old_environment_refusal": {
+    "path": "D:\\AIGC\\d6-1122\\evidence\\old-dev5-environment-refusal.json",
+    "sha256": "2d9903c3485e85cd240b1de93c558051ee4f6e0b7d1eb39ba373b203986040a1"
+  },
+  "installed_attempts": [
+    {
+      "receipt": {
+        "path": "D:\\AIGC\\d6-1122\\evidence\\installed-testkit-r1.json",
+        "sha256": "2447ef68fc6f2462fa42c5333eee9571eba62758c16515442c82bcd0705b56a1"
+      },
+      "passed": 83,
+      "failed": 31,
+      "cause": "Private runner omitted mandatory formal plan path; failure retained and runner configuration corrected only"
+    },
+    {
+      "receipt": {
+        "path": "D:\\AIGC\\d6-1122\\evidence\\installed-testkit-r2.json",
+        "sha256": "8186462fa739845c305ee03d66184f31c7b5396b090c736476768b49d8363240"
+      },
+      "passed": 113,
+      "failed": 1,
+      "case": "w1_disconnect_slot_reclamation__asgi",
+      "finding": "Task/thread identities returned; handle baseline182..183 versus final183..183, ambiguity unresolved"
+    }
+  ],
+  "bounded_diagnostics": [
+    {
+      "path": "D:\\AIGC\\d6-1122\\diag-asgi-r2\\observations.json",
+      "sha256": "5676ddbce22e786acb9a9db8996a27d2cab3804fe3da500b7e1fabc586f86996"
+    },
+    {
+      "path": "D:\\AIGC\\d6-1122\\diag-asgi-r3-leak\\observations.json",
+      "sha256": "7288c1df9f68e9782eea440ae52e2a982aaf142a83587d7e7027d7ae57b4e4fe"
+    }
+  ],
+  "boundaries": [
+    "Installer47checks and actual19checks are not full functional acceptance",
+    "No old wheel/environment/receipt overwrite",
+    "No production runtime/assets/dependency-declaration or stop/KPI change",
+    "No native/migration/mapped/full7module qualification claimed",
+    "Diagnostics do not establish old failure causality or acceptance",
+    "Further method correction requires a new immutable candidate, never an installed patch"
+  ]
+}

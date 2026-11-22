@@ -79,8 +79,8 @@ print(json.dumps({key: record[key] for key in ('distribution', 'version', 'wheel
     record = json.loads(result.stdout)
 
     assert record['distribution'] == 'ai-base-runtime'
-    assert record['version'] == '0.1.1.dev5'
-    assert record['wheelSha256'] == '45efb445528d4ccc7a288868317bdc57e5da39945188a2cfefb9f575f0b1e6d6'
+    assert record['version'] == '0.1.1.dev6'
+    assert record['wheelSha256'] == 'e8279a3d987da1ef84d1f3f267f04c2b1c2ffd7822f6b3dc70ae10323dc99f1c'
 
 
 def test_shouldRejectTamperedRuntimeArtifact(tmp_path):
@@ -121,7 +121,7 @@ def test_candidate_admission_rejects_missing_or_nonempty_generic_capabilities(tm
     payload = b'# synthetic runtime\n'
     record = {
         'distribution': 'ai-base-runtime',
-        'version': '0.1.1.dev5',
+        'version': '0.1.1.dev6',
         'wheelSha256': '4' * 64,
         'packageFiles': {
             'ai_base_runtime/__init__.py': __import__('hashlib').sha256(payload).hexdigest(),
