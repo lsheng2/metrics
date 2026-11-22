@@ -5,7 +5,23 @@ Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 
+## Windows Capture Candidate Amendment (2026-11-22)
+
+The same testkit-only authorization selects `ai-base-runtime==0.1.1.dev8`,
+source `9eee64a9d48a646d1f9f0b1af24839bc4dcd29bb`, wheel SHA256
+`f7b6f8831d7d203630a70ce98905a4b843ae154f684dec2c9094c3b45d28adb9`.
+The source fast path passed independent review and reduces repeated native
+binding work while preserving per-hit identity and final inventory checks.
+Only `_windows_handles.py` differs inside the package from dev7. Production
+code/assets, dependencies, stop budgets, leak detection and the complete
+numerical KPI/recipe are unchanged. Use a new D:/AIGC/d8-1122 environment.
+Installation is not full functional or performance acceptance. Preserve dev7's
+failed native backpressure observation. Renew the existing functional gates
+before any performance-input freeze or numerical certification.
+
 ## Windows Lifetime Candidate Amendment (2026-11-22)
+
+Historical dev7 selection, superseded by the capture candidate above.
 
 The same bounded calibration authorization continues with the independently
 reviewed lifetime-accounting source `294f6c48e9792ea9ed49757104386246e859cc42`.

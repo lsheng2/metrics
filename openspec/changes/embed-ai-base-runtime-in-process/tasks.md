@@ -4,17 +4,38 @@
 
 **Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
 `origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
-2026-11-22 另授权 Windows testkit 校准，当前目标为 `ai-base-runtime==0.1.1.dev7`，
+2026-11-22 另授权 Windows testkit 校准，当前目标为 `ai-base-runtime==0.1.1.dev8`，
 具体源码与 wheel SHA256 见
-[当前候选约束](windows-performance-phase.md#windows-lifetime-candidate-amendment-2026-11-22)。
-Dashboard 已在独立环境安装 dev7；新候选功能验收与性能输入复签尚未完成。
+[当前候选约束](windows-performance-phase.md#windows-capture-candidate-amendment-2026-11-22)。
+Dashboard 已在独立环境安装 dev8；新候选功能验收与性能输入复签尚未完成。
 历史候选节点和不可变证据保留，不代表最新候选已经通过。
 下一切片先完成候选更新及受影响功能补验，再做完整性能诊断和认证；
 不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
 
-### Dev7 Lifetime Accounting Progress
+### Dev8 Capture Calibration Progress
+
+AIB source `9eee64a` passed independent source review 1/1, 150 source host/testkit
+checks and real duplicate/moving-handle leak controls. Source Dashboard
+diagnostic and uninstrumented control each passed 22. The immutable dev8 wheel
+is locked by the current candidate amendment. Only one testkit package file
+differs from dev7; production/assets/dependencies/stop/KPI are unchanged.
+New D:/AIGC/d8-1122/venv installation passed 19 checks, authenticated page/assets
+and normal stop without force. Both environments have 83 distributions and
+only runtime version differs. Old dev7 is refused; 47 installer/lock controls
+passed. Installed testkit passed 150 with unchanged package/frozen input hashes;
+installed duplicate/moving-handle leak negatives also passed. Candidate receipt
+review and fresh native/functional qualification remain separate gates. No
+performance acceptance is claimed. See
+[dev8 candidate evidence](evidence/windows-dev8-candidate-admission.json).
+
+### Dev7 Lifetime Accounting Progress (Historical)
+
+The generic proof below did not qualify the actual Dashboard composition:
+native run `39548f08` failed its backpressure baseline on repeated capture
+races inside the original 3s deadline. Later producers were not run. Preserve
+the failure and dev7 artifacts; the dev8 optimization does not relabel them.
 
 AIB lifetime source `294f6c4` passed148 source checks, real duplicate/moving
 semaphore controls and independent source review1/1 with zero findings.
