@@ -24,9 +24,9 @@ Dashboard 已在独立环境安装 dev5；新候选功能验收与性能输入�
 | W1.INSTALL | Passed at 3384c40 | D:/AIGC/d5-1121/venv admits the exact 154-file dev5 wheel; install-dev5-r1 PASS, 19 checks and normal serve stop; 83 distributions with only runtime version changed |
 | W1.R / W1.REPLAN | Installation review passed; next wave amended | 47 boundary and 9 launcher tests PASS; independent install gate 1/1 clean pass; extend existing migration admission for hash-bound read-only historical inputs before new qualification freeze |
 | W1.RETIRE | Passed at b7dae4b | Exact identifier/generated-artifact classification; 59 regressions and actual-source gates passed |
-| W2.CERTIFY / W2.R | Passed at b7dae4b | Fresh native 56, complete conformance 74, recovery 39 and real migration passed; source-bound W2 gate 1/1 clean |
+| W2.CERTIFY / W2.R | b7dae4b passed; 5d2c6ed refreeze blocked | Earlier native/conformance/recovery/migration proof stays historical; fresh native attempts failed at stop teardown and pre-workload observer stability |
 | W3.FREEZE / W3.REHEARSE / W3.JOIN | Migration/mapped passed; full gate blocked | 114 bindings validated; five full modules passed, project aggregate command timed out |
-| FUNC.R / FUNC.ACCEPT | Pending fresh qualification | No successful full dev5 qualifier or acceptance receipt; owner authorized the scoped aggregate-budget amendment on 2026-11-22 |
+| FUNC.R / FUNC.ACCEPT | Blocked on W2 observer decision | Aggregate amendment published; new-source native gate failed; no full dev5 qualifier or acceptance receipt |
 | PERF.KPI | Pending refresh | New matching dev5 policy/reference inputs; numerical certification remains open |
 
 2026-11-21 resume: the owner authorized completion and timely scoped mainline
@@ -84,6 +84,20 @@ scoped checkpoint, then freeze fresh source/fixture inputs and rerun the formal
 qualification chain. The historical timeout and partial reports remain failed
 evidence, not acceptance. The earlier pending-authorization checkpoint above
 is superseded only as to this decision; FUNC.ACCEPT and PERF remain open.
+
+**2026-11-22 post-amendment checkpoint:** the four-file amendment passed
+57 focused tests and independent scoped review (1/1, zero findings), and was
+published at `5d2c6ed`. New source/fixture inputs were frozen, but native
+qualification failed before complete-conformance/migration/module stages:
+one disconnect case completed its workload then exceeded the unchanged
+one-second runtime stop budget; a fresh attempt exited with a pre-workload
+handle-baseline stability failure. Private diagnostic controls do not qualify
+the candidate. They observed bounded Semaphore churn, but did not establish
+a one-to-one cause for the uninstrumented failure or explain the slow stop.
+Stop broad retries. AIB testkit observer calibration/new wheel requires a new
+scope decision because this authorization kept assertions unchanged.
+No AIB source, installed artifact, stop deadline or KPI was changed.
+See [source-bound checkpoint](evidence/windows-dev5-budget-requalification.json).
 
 ## Windows Performance Execution Frontier
 

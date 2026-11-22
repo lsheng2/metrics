@@ -37,6 +37,14 @@ commands retain their existing caps. This aggregate envelope is separate from
 unchanged per-test, application shutdown and KPI limits. Fresh source-bound
 formal evidence is required; partial reports and independent readiness runs
 cannot establish acceptance.
+The post-amendment `5d2c6ed` source did not pass native requalification: one
+attempt failed in runtime-stop teardown, and the fresh attempt failed the
+pre-workload resource observer's stable-plateau requirement. Diagnostics
+observed bounded Semaphore churn but do not establish acceptance or fully
+explain the uninstrumented failures. Broad retries are stopped; any shipped
+observer calibration and replacement wheel require a scoped decision.
+The [post-amendment checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev5-budget-requalification.json)
+retains both failures and the diagnostic/non-qualification boundary.
 Retain the dev4 environments and receipts as history.
 Final performance input freeze and certification
 must then use the new candidate and matching functional evidence; no automatic
