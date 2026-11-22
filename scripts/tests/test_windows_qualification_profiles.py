@@ -8,8 +8,11 @@ import pytest
 
 from scripts.tests.test_qualify_ai_runtime import _base_case, _fake_subprocess, _sha, _write_json
 from scripts.tests.test_windows_performance_inputs import functional_acceptance_payload, performance_policy_payload
+from scripts.tests.test_windows_performance_evidence import _receipt_case
+from scripts.validation.windows_host_performance_contract import FUNCTIONAL_RELATIVE, POLICY_RELATIVE
 from scripts.validation import qualify_ai_runtime as qualifier
 from scripts.validation import windows_qualification_evidence as evidence
+from scripts.validation.windows_qualification_inputs import digest_file
 from scripts.validation.windows_qualification_inputs import QualificationError
 
 
@@ -47,8 +50,8 @@ def invoke(case, profile="functional"):
 
 
 def bind_performance_refs(case, manifest, *, mode="certify"):
-    policy = case["root"] / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json"
-    functional = case["root"] / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json"
+    policy = case["root"] / POLICY_RELATIVE
+    functional = case["root"] / FUNCTIONAL_RELATIVE
     proof = case["owned"] / "receipts" / "functional-proof.json"
     _write_json(proof, {"status": "PASS"})
     _write_json(policy, performance_policy_payload(manifest))
@@ -160,6 +163,57 @@ def test_performance_evidence_routes_to_dedicated_semantic_checker(tmp_path, mon
     assert result == {"kind": "windows-host-performance", "key": key}
 
 
+@pytest.mark.parametrize("key", ["task:10.4", "clause:10.4:B3-incremental-timing:performance"])
+def test_performance_binding_routes_root_and_clause_to_real_receipt(tmp_path, key):
+    receipt, request = _receipt_case(tmp_path, mode="certify")
+    path = Path(receipt["run_directory"]) / "receipt.json"
+    binding = _performance_binding(path, request, key)
+    aggregate = deepcopy(request)
+    aggregate_path = request["_paths"]["owned_root"] / f"aggregate-{key.replace(':', '-')}.json"
+    aggregate["checks"] = {"evidence_bindings": {key: binding}}
+    _write_json(aggregate_path, {name: value for name, value in aggregate.items() if name != "_paths"})
+    aggregate["_paths"] = {**request["_paths"], "inputs": aggregate_path}
+
+    result = evidence.validate_binding(
+        key,
+        binding,
+        aggregate,
+        (Path(aggregate["source"]["repository"]), aggregate["_paths"]["owned_root"]),
+    )
+
+    assert result["kind"] == "windows-host-performance"
+    assert result["sha256"] == digest_file(path)
+    assert result["producer_input_sha256"] == digest_file(Path(receipt["producer_input"]["path"]))
+
+
+@pytest.mark.parametrize("key", ["task:10.4", "clause:10.4:B3-incremental-timing:performance"])
+def test_performance_binding_rejects_wrong_kind_for_root_and_clause(tmp_path, monkeypatch, key):
+    case, _ = phase_case(tmp_path, monkeypatch)
+    manifest = case["manifest"]
+    receipt = case["owned"] / "receipts" / "junit.xml"
+    receipt.write_text(
+        '<testsuite tests="1" failures="0" errors="0" skipped="0"><testcase classname="lane" name="case_0"/></testsuite>',
+        encoding="utf-8",
+    )
+    binding = deepcopy(manifest["checks"]["evidence_bindings"]["task:1.1"])
+    binding.update(kind="junit", path=str(receipt), sha256=_sha(receipt), covers=[key], cases=["lane::case_0"])
+    bind_performance_refs(case, manifest)
+
+    with pytest.raises(QualificationError):
+        evidence.validate_binding(key, binding, manifest, (case["root"], case["owned"]))
+
+
+@pytest.mark.parametrize("key", ["task:10.4", "clause:10.4:B3-incremental-timing:performance"])
+@pytest.mark.parametrize("mode", ["pilot", "diagnostic"])
+def test_performance_binding_rejects_non_certify_receipts_for_root_and_clause(tmp_path, key, mode):
+    receipt, request = _receipt_case(tmp_path, mode=mode)
+    path = Path(receipt["run_directory"]) / "receipt.json"
+    binding = _performance_binding(path, request, key)
+
+    with pytest.raises(QualificationError):
+        evidence.validate_binding(key, binding, request, (Path(request["source"]["repository"]), request["_paths"]["owned_root"]))
+
+
 def test_conformance_native_receipt_cannot_substitute_for_performance_binding(tmp_path, monkeypatch):
     case, _ = phase_case(tmp_path, monkeypatch)
     manifest = case["manifest"]
@@ -222,3 +276,16 @@ def test_real_census_keeps_all_native_safety_and_mixed_b9_aspects():
         assert f"clause:10.4:{name}:functional" in selected
     assert "clause:10.4:B3-incremental-timing:performance" not in selected
     assert "task:10.4" not in selected
+
+
+def _performance_binding(path: Path, request: dict, key: str) -> dict:
+    return {
+        "kind": "windows-host-performance",
+        "path": str(path),
+        "sha256": digest_file(path),
+        "covers": [key],
+        "fresh": True,
+        "source_commit": request["source"]["commit"],
+        "candidate_wheel_sha256": request["candidate"]["wheel_sha256"],
+        "fixture_vector_sha256": request["fixtures"]["fixture_vector_sha256"],
+    }

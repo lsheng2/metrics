@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "kind": "windows-performance-policy",
+  "recipe_id": "windows-mdb2-s0b-r1",
+  "status": "method-frozen-not-measured",
+  "reviewed_plan_commit": "6e6212715caa4abad0cf9f56e93bcd836cb3e016",
+  "source_baseline": "5d15ddf3a8efeb84ae9518e72ab43277eff4d5d0",
+  "runtime": {
+    "distribution": "ai-base-runtime",
+    "version": "0.1.1.dev9",
+    "source_commit": "fc680c3702ac4eaeae0a75486fa173b280929447",
+    "wheel_sha256": "c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec"
+  },
+  "environment": {
+    "platform": "win32",
+    "python_version": "3.13.7",
+    "version_pin_count": 83,
+    "artifact_id": "d9-1122",
+    "private_artifact_root": "D:/AIGC/<artifact_id>",
+    "version_record": {
+      "relative": "evidence/performance-package-versions-dev9.json",
+      "sha256": "51d316819817519888236e6093643f4b153cb66af90e17bcc67b05b5f7872efd"
+    },
+    "note": "Fresh environment with matching version pins; not a claim that all non-runtime binary builds are byte-identical to r4."
+  },
+  "baseline": {
+    "role": "faithful-threaded-wsgi",
+    "server": [
+      "socketserver.ThreadingMixIn",
+      "django.core.servers.basehttp.WSGIServer",
+      "django.core.servers.basehttp.WSGIRequestHandler",
+      "django.contrib.staticfiles.handlers.StaticFilesHandler"
+    ],
+    "server_timeout_seconds": 0.5,
+    "daemon_request_threads": true,
+    "worker": "real idle ProjectRunRuntime",
+    "dispatch_allowed": false
+  },
+  "full_recipe": {
+    "settings": [
+      "development",
+      "production"
+    ],
+    "page_keys": [
+      "home",
+      "projects",
+      "project_detail",
+      "stage_reports",
+      "draft_edit",
+      "bug_trend"
+    ],
+    "arms": [
+      "baseline",
+      "candidate",
+      "candidate_saturated"
+    ],
+    "modes": {
+      "seq": 1,
+      "c4": 4
+    },
+    "warmup": 10,
+    "blocks": 4,
+    "per_block": 40,
+    "arm_order": "alternate_forward_reverse",
+    "percentile": {
+      "method": "nearest_rank",
+      "quantile": 0.95
+    },
+    "page_ratio_max": 1.2,
+    "spacing": {
+      "events": 50,
+      "interval_seconds": 0.1,
+      "first_event_max_ms": 200,
+      "inter_arrival_p95_max_ms": 150
+    },
+    "saturation": {
+      "streams": [
+        "active",
+        "idle",
+        "idle",
+        "idle"
+      ],
+      "paired_period_seconds": 1,
+      "excess_period_seconds": 5,
+      "probe_kinds": [
+        "loop_short",
+        "direct_asset",
+        "excess_stream"
+      ],
+      "short_status": 200,
+      "short_ms_exclusive_limit": 100,
+      "excess_status": 503,
+      "retry_after": "2",
+      "asset_prefix": "/ai/assets/"
+    },
+    "production": {
+      "debug": false,
+      "collectstatic_required": true
+    },
+    "static_auth": {
+      "unauthenticated_baseline_static": 200,
+      "unauthenticated_candidate_static": 401,
+      "unauthenticated_pages": 401,
+      "authenticated_pages_and_assets": 200
+    }
+  },
+  "execution_modes": {
+    "pilot": {
+      "warmup": 1,
+      "blocks": 1,
+      "per_block": 5,
+      "acceptance_eligible": false
+    },
+    "diagnostic": {
+      "uses_full_recipe": true,
+      "acceptance_eligible": false
+    },
+    "certify": {
+      "uses_full_recipe": true,
+      "acceptance_eligible": true
+    }
+  },
+  "identity_rule": "Per-run immutable requests bind actual clean source, installed environment and this policy hash. Resolved routes, assets, seed and fixture hashes are saved during guarded setup before sampling.",
+  "acceptance_rule": "The eligible mode alone never proves PASS. The owning semantic checker recomputes the complete raw recipe, identities, same-window evidence and normal cleanup.",
+  "non_claims": [
+    "This method metadata records no performance measurement or certification.",
+    "Production stop/leakage budgets and numerical KPI thresholds are unchanged.",
+    "All historical candidate environments, policies, receipts and failures are preserved.",
+    "The accepted functional source is distinct from later validation-tool or documentation commits.",
+    "Other Apps, Linux, real providers/models/data and whole AIB release remain outside this policy."
+  ],
+  "candidate_refreeze": {
+    "baseline": "5d15ddf3a8efeb84ae9518e72ab43277eff4d5d0",
+    "functional_acceptance": {
+      "relative": "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json",
+      "sha256": "f6b86ea0286f9cafb713a5e1c7fd7750048e94ad6ab64cb39f0b6fc5c2d4a3b9"
+    },
+    "scope": "Candidate/reference refresh; the signed numerical recipe is unchanged."
+  }
+}

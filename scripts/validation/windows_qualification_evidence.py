@@ -45,6 +45,10 @@ NATIVE_CONFORMANCE_KEYS = {
 }
 
 
+def is_performance_evidence_key(key: str) -> bool:
+    return key == "task:10.4" or key.endswith(":performance")
+
+
 def validate_argv(argv: list[str]) -> None:
     if any(item in FORBIDDEN_ARGV or item.startswith(FORBIDDEN_PREFIXES) for item in argv):
         raise QualificationError("forbidden evidence command option")
@@ -131,9 +135,9 @@ def validate_binding(key: str, binding: dict, request: dict, roots: tuple[Path, 
     kind = binding.get("kind")
     if request.get("native_conformance") and key in NATIVE_CONFORMANCE_KEYS and kind not in {NATIVE_CONFORMANCE_KIND, "native"}:
         raise QualificationError("native conformance evidence requires the owned semantic checker")
-    if key.endswith(":performance") and kind != PERFORMANCE_KIND:
+    if is_performance_evidence_key(key) and kind != PERFORMANCE_KIND:
         raise QualificationError("performance requires producer-owned native measurement evidence")
-    if key.endswith(":performance"):
+    if is_performance_evidence_key(key):
         from scripts.validation.windows_host_performance_contract import validate_performance_contract
         validate_performance_contract(request, roots, mode=request.get("performance", {}).get("mode"))
         from scripts.validation.windows_host_performance_evidence import validate_bound_receipt

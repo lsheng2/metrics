@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from scripts.tests.test_windows_performance_evidence import _artifact, _read_json, _receipt_case
-from scripts.tests.windows_performance_support import performance_phase_cleanup, seal_receipt
+from scripts.tests.windows_performance_support import performance_phase_cleanup, seal_receipt, write_json
 from scripts.validation.windows_host_performance_evidence import (
     _check_cleanup,
     _check_resolved_measurement_identity,
@@ -136,6 +136,47 @@ def test_replay_rejects_complete_measurements_copied_from_another_window(tmp_pat
         validate_performance_result(receipt, request)
 
 
+def test_standalone_replay_validates_identity_bearing_producer_input(tmp_path):
+    from scripts.validation.windows_qualification_inputs import digest_file
+
+    receipt, request = _receipt_case(tmp_path, mode="certify")
+
+    result = validate_performance_result(receipt, request)
+
+    producer = Path(receipt["producer_input"]["path"])
+    assert result["producer_input_sha256"] == digest_file(producer)
+    assert result["producer_input_sha256"] == digest_file(request["_paths"]["inputs"])
+    assert _read_json(producer)["source"] == request["source"]
+
+
+@pytest.mark.parametrize("mutation", [
+    "schema", "profile", "missing_source", "source_commit", "source_file",
+    "candidate_version", "candidate_wheel", "candidate_source", "owned_root",
+    "fixture_vector", "fixture_file", "python_candidate", "python_environment",
+    "policy_hash", "functional_ref", "mode",
+])
+def test_performance_replay_rejects_changed_producer_identity(tmp_path, mutation):
+    receipt, request = _receipt_case(tmp_path, mode="certify")
+    producer_path = Path(receipt["producer_input"]["path"])
+    producer = _read_json(producer_path)
+    _mutate_producer_identity(producer, mutation, tmp_path)
+    receipt["producer_input"] = _artifact(producer_path, producer)
+    seal_receipt(receipt)
+
+    with pytest.raises(QualificationError):
+        validate_performance_result(receipt, request)
+
+
+def test_performance_replay_rejects_unowned_producer_input_reference(tmp_path):
+    receipt, request = _receipt_case(tmp_path, mode="certify")
+    producer = _read_json(Path(receipt["producer_input"]["path"]))
+    receipt["producer_input"] = _artifact(tmp_path / "outside-producer.json", producer)
+    seal_receipt(receipt)
+
+    with pytest.raises(QualificationError):
+        validate_performance_result(receipt, request)
+
+
 @pytest.mark.parametrize("kind", ["excess_stream", "excess"])
 def test_performance_rejects_extra_off_cadence_excess_probe(kind):
     from scripts.tests.windows_performance_support import performance_transport_payload
@@ -233,15 +274,38 @@ def test_aggregate_binding_reports_receipt_hash_not_input_hash(tmp_path):
     receipt, request = _receipt_case(tmp_path, mode="certify")
     path = Path(receipt["run_directory"]) / "receipt.json"
     key = "clause:10.4:B3-incremental-timing:performance"
-    binding = {
-        "kind": "windows-host-performance", "path": str(path), "sha256": digest_file(path),
-        "covers": [key], "fresh": True, "source_commit": request["source"]["commit"],
-        "candidate_wheel_sha256": request["candidate"]["wheel_sha256"],
-        "fixture_vector_sha256": request["fixtures"]["fixture_vector_sha256"],
-    }
-    result = validate_binding(key, binding, request, (Path(request["source"]["repository"]), tmp_path))
+    binding = _performance_binding(receipt, request, path, key)
+    result = validate_binding(key, binding, request, (Path(request["source"]["repository"]), request["_paths"]["owned_root"]))
     assert result["sha256"] == digest_file(path)
     assert result["producer_input_sha256"] == digest_file(request["_paths"]["inputs"])
+    assert result["sha256"] != result["producer_input_sha256"]
+
+
+def test_aggregate_binding_accepts_separate_input_consuming_same_receipt(tmp_path):
+    from scripts.validation.windows_qualification_evidence import validate_binding
+    from scripts.validation.windows_qualification_inputs import digest_file
+
+    receipt, request = _receipt_case(tmp_path, mode="certify")
+    path = Path(receipt["run_directory"]) / "receipt.json"
+    key = "clause:10.4:B3-incremental-timing:performance"
+    binding = _performance_binding(receipt, request, path, key)
+    aggregate = deepcopy(request)
+    aggregate_path = request["_paths"]["owned_root"] / "aggregate-inputs.json"
+    aggregate["checks"] = {"evidence_bindings": {key: binding}}
+    write_json(aggregate_path, {name: value for name, value in aggregate.items() if name != "_paths"})
+    aggregate["_paths"] = {**request["_paths"], "inputs": aggregate_path}
+
+    result = validate_binding(
+        key,
+        binding,
+        aggregate,
+        (Path(aggregate["source"]["repository"]), aggregate["_paths"]["owned_root"]),
+    )
+
+    assert aggregate["_paths"]["inputs"] != Path(receipt["producer_input"]["path"])
+    assert result["sha256"] == digest_file(path)
+    assert result["producer_input_sha256"] == digest_file(Path(receipt["producer_input"]["path"]))
+    assert result["producer_input_sha256"] != digest_file(aggregate_path)
     assert result["sha256"] != result["producer_input_sha256"]
 
 
@@ -452,3 +516,55 @@ def test_missing_actual_probe_end_cannot_be_synthesized_from_duration(kind):
     del row["ended"]
     with pytest.raises(ValueError):
         validate_transport(payload, spacing_events=50, require_direct_asset=True)
+
+
+def _performance_binding(receipt, request, path: Path, key: str) -> dict:
+    from scripts.validation.windows_qualification_inputs import digest_file
+
+    return {
+        "kind": "windows-host-performance",
+        "path": str(path),
+        "sha256": digest_file(path),
+        "covers": [key],
+        "fresh": True,
+        "source_commit": request["source"]["commit"],
+        "candidate_wheel_sha256": request["candidate"]["wheel_sha256"],
+        "fixture_vector_sha256": request["fixtures"]["fixture_vector_sha256"],
+    }
+
+
+def _mutate_producer_identity(producer: dict, mutation: str, tmp_path: Path) -> None:
+    if mutation == "schema":
+        producer["schema_version"] = "1"
+    elif mutation == "profile":
+        producer["acceptance_profile"] = "functional"
+    elif mutation == "missing_source":
+        del producer["source"]
+    elif mutation == "source_commit":
+        producer["source"]["commit"] = "other-source"
+    elif mutation == "source_file":
+        producer["source"]["files"][0]["sha256"] = "0" * 64
+    elif mutation == "candidate_version":
+        producer["candidate"]["version"] = "9.9.9"
+    elif mutation == "candidate_wheel":
+        producer["candidate"]["wheel_sha256"] = "0" * 64
+    elif mutation == "candidate_source":
+        producer["candidate"]["source_commit"] = "other-aib"
+    elif mutation == "owned_root":
+        producer["owned_root"]["path"] = str(tmp_path / "other-owned")
+    elif mutation == "fixture_vector":
+        producer["fixtures"]["fixture_vector_sha256"] = "0" * 64
+    elif mutation == "fixture_file":
+        producer["fixtures"]["files"][0]["sha256"] = "0" * 64
+    elif mutation == "python_candidate":
+        producer["python"]["candidate"] = str(tmp_path / "python.exe")
+    elif mutation == "python_environment":
+        producer["python"]["environments"]["candidate"]["sha256"] = "0" * 64
+    elif mutation == "policy_hash":
+        producer["performance"]["policy_ref"]["sha256"] = "0" * 64
+    elif mutation == "functional_ref":
+        producer["performance"]["functional_acceptance_ref"]["path"] = str(tmp_path / "functional.json")
+    elif mutation == "mode":
+        producer["performance"]["mode"] = "diagnostic"
+    else:
+        raise AssertionError(mutation)

@@ -33,9 +33,9 @@ This is a development workflow change, not qualification of the failed dev8 run.
 2026-11-22 另授权 Windows testkit 校准，当前目标为 `ai-base-runtime==0.1.1.dev9`，
 具体源码与 wheel SHA256 见
 [当前候选约束](windows-performance-phase.md#windows-convergence-candidate-amendment-2026-11-22)。
-Dashboard dev9 Windows 功能验收已通过；性能输入复签与认证尚未完成。
+Dashboard dev9 Windows 功能验收和性能输入复签评审已通过；性能认证尚未完成。
 历史候选节点和不可变证据保留，不代表最新候选已经通过。
-下一切片复签性能输入并修正回执汇总绑定，再做完整性能诊断和认证；
+下一切片复核回执汇总绑定修复并冻结最终输入，再做完整性能诊断和认证；
 不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
@@ -58,6 +58,28 @@ preserves performance NOT_RUN and the historical failure boundary.
 One earlier UI caret-wait failure remains uncaused; bounded diagnostics and the
 later complete official pass do not establish that its cause was repaired.
 See [dev9 candidate evidence](evidence/windows-dev9-candidate-admission.json).
+
+### Dev9 Performance Refreeze
+
+The versioned dev9 policy is prepared from the accepted candidate and original
+signed recipe; it is not measurement evidence. W3.REPLAN/PERF.KPI refreeze
+review passed 1/1 with zero findings (`D:/AIGC/d9-1122/perf-refreeze-gate.json`).
+A synthetic positive/control pair and independent read-only audit
+confirmed that the existing performance checker wrongly requires producer and
+aggregate input paths to be identical, preventing immutable final binding.
+The [refreeze plan](windows-performance-test-plan.md#dev9-reference-refreeze-2026-11-22)
+restores stable-identity comparison within the existing PERF.PROBE owners.
+The validator correction is implemented: complete immutable producer manifests
+are compared by stable identities; root `task:10.4` and all six performance
+clause keys require certification-eligible semantic evidence. Focused RED
+controls reproduced the path/routing defects and the final affected suite
+passed 186 tests with no failures, errors or skips. Evidence:
+`D:/AIGC/d9-1122/perf-fix-report.md` and `perf-fix/evidence/affected-r4.xml`.
+The original ENOSPC output from one earlier attempt was overwritten by a rerun
+and receives no validation credit; the report discloses that evidence gap.
+Independent implementation review, final-source input freeze, pilot/full
+diagnostic/certify and WIN.ACCEPT stay open. No additional SDK publication or
+numerical-budget change is needed.
 
 ### Dev8 Capture Calibration Progress (Historical)
 

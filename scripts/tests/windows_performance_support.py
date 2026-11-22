@@ -177,6 +177,81 @@ def write_json(path: Path, value: dict) -> Path:
     return path
 
 
+def artifact_ref(path: Path, payload: dict) -> dict:
+    from scripts.validation.windows_qualification_inputs import digest_file
+
+    write_json(path, payload)
+    return {"path": str(path), "sha256": digest_file(path)}
+
+
+def performance_identity_payloads(repo: Path, owned: Path) -> dict:
+    from scripts.validation.windows_qualification_inputs import digest_file
+
+    source_file = repo / "frozen.txt"
+    source_file.write_text("frozen source\n", encoding="utf-8")
+    fixture = write_json(owned / "fixtures" / "fixture.json", {"fixture": "stable"})
+    vector = write_json(owned / "fixtures" / "fixture-vector.json", {
+        "files": [{"path": str(fixture), "sha256": digest_file(fixture)}],
+    })
+    marker = write_json(owned / "owner.json", {
+        "owner": "mdb2-windows-closure",
+        "root": str(owned),
+        "repository": str(repo),
+    })
+    return {
+        "source": {
+            "kind": "commit",
+            "commit": "dashboard-source",
+            "repository": str(repo),
+            "files": [{"path": "frozen.txt", "sha256": digest_file(source_file)}],
+        },
+        "owned_root": {"path": str(owned), "marker": str(marker), "owner": "mdb2-windows-closure"},
+        "fixtures": {
+            "fixture_vector": {"path": str(vector), "sha256": digest_file(vector)},
+            "fixture_vector_sha256": digest_file(vector),
+            "files": [{"path": str(fixture), "sha256": digest_file(fixture)}],
+        },
+    }
+
+
+def performance_driver_request(tmp_path: Path) -> dict:
+    from scripts.tests.test_windows_performance_inputs import functional_acceptance_payload, performance_policy_payload
+    from scripts.validation.windows_host_performance_contract import FUNCTIONAL_RELATIVE, POLICY_RELATIVE
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    identity = performance_identity_payloads(repo, tmp_path)
+    proof = tmp_path / "functional-proof.json"
+    artifact_ref(proof, {"status": "PASS"})
+    inputs = tmp_path / "inputs.json"
+    python = tmp_path / "venv" / "Scripts" / "python.exe"
+    python.parent.mkdir(parents=True)
+    python.write_text("python", encoding="utf-8")
+    environment = artifact_ref(tmp_path / "environment.json", environment_payload(python, tmp_path / "venv"))
+    request = {
+        "schema_version": 1,
+        "acceptance_profile": "full",
+        "performance": {"recipe_id": "windows-mdb2-s0b-r1", "mode": "certify"},
+        "source": identity["source"],
+        "python": {"candidate": str(python), "version": "3.13.7", "environments": {"candidate": environment}},
+        "candidate": {
+            "version": "1.0.0",
+            "wheel": str(tmp_path / "wheels" / "ai_base_runtime-1.0.0-py3-none-any.whl"),
+            "wheel_sha256": "c" * 64,
+            "source_commit": "aib-source",
+        },
+        "owned_root": identity["owned_root"],
+        "fixtures": identity["fixtures"],
+        "_paths": {"inputs": inputs, "output": tmp_path / "out.json", "owned_root": tmp_path, "python": python},
+    }
+    request["performance"].update(
+        policy_ref=artifact_ref(repo / POLICY_RELATIVE, performance_policy_payload(request)),
+        functional_acceptance_ref=artifact_ref(repo / FUNCTIONAL_RELATIVE, functional_acceptance_payload(request, proof)),
+    )
+    artifact_ref(inputs, {key: value for key, value in request.items() if key != "_paths"})
+    return request
+
+
 def seal_receipt(receipt):
     import hashlib
 

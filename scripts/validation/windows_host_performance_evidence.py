@@ -246,6 +246,32 @@ def _check_environment(environment: dict, request: dict, *, roots: tuple[Path, .
         raise QualificationError("performance import probe semantics mismatch") from error
 
 
+def _require_matching_producer_input(reference: dict, request: dict, roots: tuple[Path, ...], *, mode: str) -> Path:
+    producer_path, producer = _artifact(reference, label="producer input", roots=roots)
+    if (not isinstance(producer, dict)
+            or type(producer.get("schema_version")) is not int
+            or producer["schema_version"] != 1
+            or producer.get("acceptance_profile") != "full"):
+        raise QualificationError("performance producer input schema or profile mismatch")
+    validate_performance_contract(producer, roots, mode=mode)
+    for key in ("source", "candidate", "owned_root", "fixtures"):
+        if key not in producer or producer[key] != request.get(key):
+            raise QualificationError(f"performance producer input differs: {key}")
+    if producer.get("performance") != request.get("performance"):
+        raise QualificationError("performance producer input differs: performance")
+    python = producer.get("python")
+    expected_python = request.get("python") or {}
+    if not isinstance(python, dict) or python.get("candidate") != expected_python.get("candidate"):
+        raise QualificationError("performance producer input differs: candidate interpreter")
+    environments = python.get("environments")
+    expected_environment = expected_python.get("environments", {}).get("candidate")
+    if (not isinstance(environments, dict)
+            or not environments.get("candidate")
+            or environments["candidate"] != expected_environment):
+        raise QualificationError("performance producer input differs: candidate environment")
+    return producer_path
+
+
 def validate_performance_result(receipt: dict, request: dict, *, require_witness: bool = True) -> dict:
     receipt = dict(receipt)
     if receipt.get("schema_version") != 1 or receipt.get("kind") != "windows-host-performance":
@@ -256,9 +282,7 @@ def validate_performance_result(receipt: dict, request: dict, *, require_witness
     repository = request.get("source", {}).get("repository", request["_paths"]["owned_root"])
     roots = (canonical(repository, must_exist=True), request["_paths"]["owned_root"])
     validate_performance_contract(request, roots, mode=mode)
-    producer_path, _ = _artifact(receipt["producer_input"], label="producer input", roots=roots)
-    if producer_path != request["_paths"]["inputs"]:
-        raise QualificationError("performance producer input mismatch")
+    producer_path = _require_matching_producer_input(receipt.get("producer_input"), request, roots, mode=mode)
     run_dir = canonical(receipt.get("run_directory", ""), must_exist=True)
     if not run_dir.is_relative_to(request["_paths"]["owned_root"]):
         raise QualificationError("performance run directory is outside owned root")
@@ -319,6 +343,6 @@ def validate_bound_receipt(key: str, path: Path, request: dict) -> dict:
     receipt = read_json(path)
     receipt["_receipt_path"] = str(path)
     result = validate_performance_result(receipt, request)
-    if key.endswith(":performance") and not result["acceptance_eligible"]:
+    if not result["acceptance_eligible"]:
         raise QualificationError("performance evidence is not certification eligible")
     return {**result, "sha256": digest_file(path)}

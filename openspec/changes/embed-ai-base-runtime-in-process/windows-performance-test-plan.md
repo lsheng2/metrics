@@ -24,6 +24,51 @@ pins, Django, Waitress, httpx, SLE, pytest, Windows counters and conditional ETW
 [signed V8 method](windows-close-validation.md#v8-native-measurement-method);
 [research](windows-performance-research.md); [DAG](windows-close-dag.json).
 
+## Dev9 Reference Refreeze (2026-11-22)
+
+The current baseline is Dashboard `5d15ddf3a8efeb84ae9518e72ab43277eff4d5d0`,
+after dev9 functional acceptance at `423846c`. Use `D:/AIGC/d9-1122`, its
+installed interpreter, `windows-functional-acceptance-dev9.json` and
+`windows-performance-inputs-dev9.json`. This replaces only the historical
+candidate/source/root references below. The dev9 wheel/source/hash are fixed
+by the current phase amendment. The 83 dependency versions differ from the
+signed method only for the runtime, after canonical package-name comparison.
+`profile_source=repo-local`; `agent_routing_mode=multiagent-configured`.
+
+W3.REPLAN/PERF.KPI must review this refreeze before PERF.PROBE continues.
+The parent coordinates plan/policy/evidence; one Implementation Engineer owns
+the validator/test slice, and an independent reviewer checks both validation
+architecture and behavior. A separate debugger is unnecessary: the exact
+input-path failure is reproduced and independently confirmed.
+
+Restore the already specified producer/aggregate distinction. An immutable
+producer input exists before its receipt; the later aggregate input binds that
+receipt's SHA256. Requiring both input paths to be identical makes the final
+full qualifier circular. Compare their stable identities instead, after
+canonical-root/hash admission, schema/full-profile validation and the fixed
+performance contract. Keep the original producer input/hash, raw measurements,
+receipt SHA, write witness and every numeric/cleanup/window check unchanged.
+
+| Contract | Producer and consumer | Required proof |
+| --- | --- | --- |
+| PERF-IDENTITY | Producer manifest -> performance contract/evidence checker -> full qualifier | Distinct immutable manifests with equal source, candidate, owner, fixtures, performance refs/mode and candidate interpreter/environment succeed; mutate each family and require refusal |
+| PERF-CLAIM | Receipt/raw artifacts/witness -> standalone and aggregate replay | Input SHA and receipt SHA stay distinct; missing, stale, edited, outside-root, wrong-mode or non-certify evidence cannot become acceptance |
+| PERF-RECIPE | Versioned dev9 policy -> request loader and sampling helpers | Baseline, full recipe and execution modes equal the original signed policy; old-candidate/nonmatching references are rejected, while byte-identical owned copies retain existing admission |
+
+Add the distinct-manifest positive and sibling negatives to the existing
+performance input/evidence/replay test owners. Replace abbreviated producer
+fixtures with complete manifests; do not weaken checks to retain `{}` fixtures.
+No runtime/SDK/UI/storage/API, KPI, timeout, leak or Linux change is part of
+this correction. Reader docs change only for validation and operations.
+
+After focused RED/GREEN and independent review, commit the reviewed changes before final input
+freeze. Share that final source and fixture vector across certify and fresh
+native/migration/mapped producers; do not relabel the earlier functional
+source. The existing full qualifier supplies the final seven-module execution,
+then CLOSE.R/WIN.ACCEPT. Another FUNC.ACCEPT loop is not required merely for
+these validation-tool changes, but affected product changes would require
+their own functional requalification.
+
 ## Global Constraints
 
 - Windows only; synthetic state, loopback endpoints, no real providers/models.

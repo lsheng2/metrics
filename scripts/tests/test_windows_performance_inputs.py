@@ -6,6 +6,21 @@ from pathlib import Path
 import pytest
 
 from scripts.tests.test_qualify_ai_runtime import _base_case, _sha, _write_json
+from scripts.validation.windows_host_performance_contract import FUNCTIONAL_RELATIVE, POLICY_RELATIVE
+
+
+DEV9_FUNCTIONAL_RELATIVE = Path(
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json"
+)
+DEV9_POLICY_RELATIVE = Path(
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9.json"
+)
+LEGACY_FUNCTIONAL_RELATIVE = Path(
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json"
+)
+LEGACY_POLICY_RELATIVE = Path(
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json"
+)
 
 
 def performance_policy_payload(manifest):
@@ -96,10 +111,10 @@ def performance_case(tmp_path, monkeypatch, *, mode="certify"):
     manifest["python"]["environments"] = {"candidate": {"path": str(environment), "sha256": _sha(environment)}}
     functional_proof = case["owned"] / "receipts" / "functional-proof.json"
     _write_json(functional_proof, {"status": "PASS"})
-    policy = case["root"] / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json"
+    policy = case["root"] / POLICY_RELATIVE
     policy.parent.mkdir(parents=True, exist_ok=True)
     _write_json(policy, performance_policy_payload(manifest))
-    functional = case["root"] / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json"
+    functional = case["root"] / FUNCTIONAL_RELATIVE
     _write_json(functional, functional_acceptance_payload(manifest, functional_proof))
     manifest["performance"] = {
         "recipe_id": "windows-mdb2-s0b-r1",
@@ -122,6 +137,68 @@ def test_performance_request_reuses_common_input_boundaries_without_copying_exte
     assert Path(request["performance"]["policy_ref"]["path"]).is_relative_to(case["root"])
     assert Path(request["performance"]["functional_acceptance_ref"]["path"]).is_relative_to(case["root"])
     assert request["_paths"]["output"] == case["output"]
+
+
+def test_performance_request_accepts_dev9_canonical_references(tmp_path, monkeypatch):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch, mode="certify")
+    policy = case["root"] / DEV9_POLICY_RELATIVE
+    functional = case["root"] / DEV9_FUNCTIONAL_RELATIVE
+    proof = case["owned"] / "receipts" / "functional-proof.json"
+    _write_json(policy, performance_policy_payload(case["manifest"]))
+    _write_json(functional, functional_acceptance_payload(case["manifest"], proof))
+    case["manifest"]["performance"]["policy_ref"] = {"path": str(policy), "sha256": _sha(policy)}
+    case["manifest"]["performance"]["functional_acceptance_ref"] = {"path": str(functional), "sha256": _sha(functional)}
+    _write_json(case["inputs"], case["manifest"])
+
+    request = load_performance_request(case["inputs"], case["output"], mode="certify")
+
+    assert Path(request["performance"]["policy_ref"]["path"]) == policy
+    assert Path(request["performance"]["functional_acceptance_ref"]["path"]) == functional
+
+
+def test_performance_request_rejects_stale_pre_dev9_repo_references(tmp_path, monkeypatch):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch, mode="certify")
+    policy = case["root"] / LEGACY_POLICY_RELATIVE
+    functional = case["root"] / LEGACY_FUNCTIONAL_RELATIVE
+    proof = case["owned"] / "receipts" / "functional-proof.json"
+    _write_json(policy, performance_policy_payload(case["manifest"]))
+    _write_json(functional, functional_acceptance_payload(case["manifest"], proof))
+    case["manifest"]["performance"]["policy_ref"] = {"path": str(policy), "sha256": _sha(policy)}
+    case["manifest"]["performance"]["functional_acceptance_ref"] = {"path": str(functional), "sha256": _sha(functional)}
+    _write_json(case["inputs"], case["manifest"])
+
+    with pytest.raises(Exception):
+        load_performance_request(case["inputs"], case["output"], mode="certify")
+
+
+def test_performance_request_accepts_owned_copy_matching_dev9_reference(tmp_path, monkeypatch):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch, mode="certify")
+    canonical_policy = case["root"] / DEV9_POLICY_RELATIVE
+    canonical_functional = case["root"] / DEV9_FUNCTIONAL_RELATIVE
+    proof = case["owned"] / "receipts" / "functional-proof.json"
+    _write_json(canonical_policy, performance_policy_payload(case["manifest"]))
+    _write_json(canonical_functional, functional_acceptance_payload(case["manifest"], proof))
+    owned_policy = case["owned"] / "copies" / "windows-performance-inputs-dev9.json"
+    owned_functional = case["owned"] / "copies" / "windows-functional-acceptance-dev9.json"
+    _write_json(owned_policy, json.loads(canonical_policy.read_text(encoding="utf-8")))
+    _write_json(owned_functional, json.loads(canonical_functional.read_text(encoding="utf-8")))
+    case["manifest"]["performance"]["policy_ref"] = {"path": str(owned_policy), "sha256": _sha(owned_policy)}
+    case["manifest"]["performance"]["functional_acceptance_ref"] = {
+        "path": str(owned_functional),
+        "sha256": _sha(owned_functional),
+    }
+    _write_json(case["inputs"], case["manifest"])
+
+    request = load_performance_request(case["inputs"], case["output"], mode="certify")
+
+    assert Path(request["performance"]["policy_ref"]["path"]) == owned_policy
+    assert Path(request["performance"]["functional_acceptance_ref"]["path"]) == owned_functional
 
 
 def test_performance_contract_validates_policy_and_functional_reference_content(tmp_path, monkeypatch):

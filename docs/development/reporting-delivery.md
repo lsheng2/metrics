@@ -111,6 +111,20 @@ stop/cancel/cleanup bounds remain functional and were not relaxed.
 The receipt covers the tested source, not subsequent product changes or full AIB release.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
+The current dev9 performance refreeze uses versioned policy/functional files;
+old dev4 files remain historical. Separate immutable producer and aggregate
+input documents compare their stable source, candidate, owner, fixture,
+performance-policy and candidate-environment identities, not their paths.
+The producer manifest must have the full profile and supported schema.
+Both root `task:10.4` and the six performance clause bindings require the
+performance checker's certification-eligible result. Input SHA256 and receipt
+SHA256 remain separate; raw measurement, window, write-witness and cleanup
+checks are unchanged. The validator correction passed 186 affected tests;
+independent review and a clean final source freeze precede numerical collection.
+Final native, migration, mapped and certify producers share that source and
+fixture vector. The full qualifier reruns its seven modules; historical
+functional evidence is not relabelled as proof for a different source.
+
 The owner authorized this separate Windows performance phase on 2026-11-20.
 The [test plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md)
 defines a fresh D-drive environment, signed sampling recipe, measurement-tool

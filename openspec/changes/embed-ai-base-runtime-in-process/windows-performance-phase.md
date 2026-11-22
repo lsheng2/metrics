@@ -22,6 +22,14 @@ see the [versioned receipt](evidence/windows-functional-acceptance-dev9.json).
 Performance remains NOT_RUN. Use D:/AIGC/d9-1122 for fresh formal evidence and
 retain all old candidate artifacts/failures unchanged.
 
+The [dev9 refreeze](windows-performance-test-plan.md#dev9-reference-refreeze-2026-11-22)
+renews only candidate references and the producer/aggregate input binding.
+The new [policy](evidence/windows-performance-inputs-dev9.json) preserves the
+signed baseline, full recipe and execution modes. Refreeze review passed 1/1;
+policy preparation is not measurement evidence. The validator boundary
+correction passed 186 affected tests. Independent implementation review must
+pass before freezing the final source and collecting the full recipe.
+
 ## Windows Capture Candidate Amendment (2026-11-22)
 
 Historical dev8 selection, superseded by the convergence candidate above.

@@ -8,7 +8,9 @@ import pytest
 from scripts.tests.windows_performance_support import (
     environment_payload,
     import_probe_payload,
+    performance_driver_request,
     performance_measurement_payload,
+    performance_identity_payloads,
     performance_phase_cleanup,
     performance_transport_payload,
     resolved_inputs_payload,
@@ -16,6 +18,7 @@ from scripts.tests.windows_performance_support import (
     shift_measurement,
 )
 from scripts.tests.test_windows_performance_inputs import functional_acceptance_payload, performance_policy_payload
+from scripts.validation.windows_host_performance_contract import FUNCTIONAL_RELATIVE, POLICY_RELATIVE
 
 
 def test_performance_transport_rejects_functional_eight_frame_spacing():
@@ -102,7 +105,8 @@ def test_performance_checker_rejects_summary_only_cleanup(tmp_path):
     from scripts.validation.windows_qualification_inputs import QualificationError
 
     receipt, request = _receipt_case(tmp_path, mode="certify")
-    receipt["cleanup"] = _artifact(tmp_path / "run" / "cleanup.json", {
+    run = Path(receipt["run_directory"])
+    receipt["cleanup"] = _artifact(run / "cleanup.json", {
         "normal": True,
         "owned_descendants_absent": True,
         "listeners_absent": True,
@@ -187,7 +191,7 @@ def test_diagnostic_retains_numeric_violations_without_collection_failure(tmp_pa
     from scripts.validation.windows_host_performance_evidence import validate_performance_result
 
     receipt, request = _receipt_case(tmp_path, mode="diagnostic")
-    measurement_path = tmp_path / "run" / "measurement-development.json"
+    measurement_path = Path(receipt["run_directory"]) / "measurement-development.json"
     measurement = performance_measurement_payload()
     for sample in measurement["pages"]["seq"]["home"]["candidate"][-9:]:
         sample["ms"] = 20.0
@@ -215,7 +219,7 @@ def test_performance_checker_refuses_pilot_diagnostic_or_false_certify_label(tmp
         assert result["acceptance_eligible"] is False
 
     receipt, request = _receipt_case(tmp_path, mode="certify")
-    receipt["cleanup"] = _artifact(tmp_path / "run" / "cleanup.json", {"normal": False})
+    receipt["cleanup"] = _artifact(Path(receipt["run_directory"]) / "cleanup.json", {"normal": False})
     with pytest.raises(QualificationError):
         validate_performance_result(receipt, request)
 
@@ -225,7 +229,7 @@ def test_performance_checker_rejects_missing_same_window_or_partial_phase(tmp_pa
     from scripts.validation.windows_qualification_inputs import QualificationError
 
     receipt, request = _receipt_case(tmp_path, mode="certify")
-    receipt["measurement_window"] = _artifact(tmp_path / "run" / "window.json", {"result": "PASS"})
+    receipt["measurement_window"] = _artifact(Path(receipt["run_directory"]) / "window.json", {"result": "PASS"})
     with pytest.raises(QualificationError):
         validate_performance_result(receipt, request)
 
@@ -245,7 +249,7 @@ def test_performance_checker_consumes_resolved_inputs_and_asset_prefix(tmp_path)
 
     receipt, request = _receipt_case(tmp_path, mode="certify", asset_prefix="/conformance/ai/assets/")
     receipt["resolved_inputs"]["development"] = _artifact(
-        tmp_path / "run" / "resolved-development.json",
+        Path(receipt["run_directory"]) / "resolved-development.json",
         {"phase": "development", "recipe_id": "windows-mdb2-s0b-r1"},
     )
     with pytest.raises(QualificationError):
@@ -389,34 +393,45 @@ def _benchmark_payload(window):
 
 def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: int | None = None,
                   asset_prefix: str = "/ai/assets/"):
-    run = tmp_path / "run"
+    owned = tmp_path / "owned"
+    run = owned / "run"
     repo = tmp_path / "repo"
     repo.mkdir(exist_ok=True)
-    proof = tmp_path / "functional-proof.json"
+    owned.mkdir(exist_ok=True)
+    identity = performance_identity_payloads(repo, owned)
+    proof = owned / "functional-proof.json"
     _artifact(proof, {"status": "PASS"})
-    python = tmp_path / "venv" / "Scripts" / "python.exe"
+    python = owned / "venv" / "Scripts" / "python.exe"
     python.parent.mkdir(parents=True, exist_ok=True)
     python.write_text("python", encoding="utf-8")
-    environment = _artifact(tmp_path / "environment.json", environment_payload(python, tmp_path / "venv"))
+    environment = _artifact(owned / "environment.json", environment_payload(python, owned / "venv"))
+    inputs = owned / "inputs.json"
     request = {
+        "schema_version": 1,
         "acceptance_profile": "full",
         "performance": {"recipe_id": "windows-mdb2-s0b-r1", "mode": mode},
-        "source": {"commit": "dashboard-source", "repository": str(repo)},
-        "python": {"version": "3.13.7", "environments": {"candidate": environment}},
-        "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
-        "fixtures": {"fixture_vector_sha256": "d" * 64},
-        "_paths": {"inputs": tmp_path / "inputs.json", "owned_root": tmp_path, "python": python},
+        "source": identity["source"],
+        "python": {"candidate": str(python), "version": "3.13.7", "environments": {"candidate": environment}},
+        "candidate": {
+            "version": "1.0.0",
+            "wheel": str(owned / "wheels" / "ai_base_runtime-1.0.0-py3-none-any.whl"),
+            "wheel_sha256": "c" * 64,
+            "source_commit": "aib-source",
+        },
+        "owned_root": identity["owned_root"],
+        "fixtures": identity["fixtures"],
+        "_paths": {"inputs": inputs, "owned_root": owned, "python": python},
     }
-    (tmp_path / "inputs.json").write_text("{}\n", encoding="utf-8")
     policy = _artifact(
-        repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json",
+        repo / POLICY_RELATIVE,
         performance_policy_payload(request),
     )
     functional = _artifact(
-        repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json",
+        repo / FUNCTIONAL_RELATIVE,
         functional_acceptance_payload(request, proof),
     )
     request["performance"].update(policy_ref=policy, functional_acceptance_ref=functional)
+    producer = {key: value for key, value in request.items() if key != "_paths"}
     selected_blocks = blocks if blocks is not None else 1 if mode == "pilot" else 4
     selected_per_block = per_block if per_block is not None else 5 if mode == "pilot" else 40
     selected_warmup = 1 if mode == "pilot" else 10
@@ -446,7 +461,7 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
         "collection_status": "COMPLETE",
         "violations": [],
         "acceptance_eligible": mode == "certify",
-        "producer_input": _artifact(tmp_path / "inputs.json", {}),
+        "producer_input": _artifact(inputs, producer),
         "source": deepcopy(request["source"]),
         "candidate": deepcopy(request["candidate"]),
         "fixtures": deepcopy(request["fixtures"]),
@@ -454,14 +469,14 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
         "environment_before": _artifact(run / "environment-before.json", {
             "source_head": "dashboard-source",
             "candidate_wheel_sha256": "c" * 64,
-            "observed_environment": _artifact(run / "environment-before-capture" / "environment.json", environment_payload(python, tmp_path / "venv")),
-            "runtime_import_probe": _artifact(run / "environment-before-capture" / "runtime.json", import_probe_payload(tmp_path / "venv", repo)),
+            "observed_environment": _artifact(run / "environment-before-capture" / "environment.json", environment_payload(python, owned / "venv")),
+            "runtime_import_probe": _artifact(run / "environment-before-capture" / "runtime.json", import_probe_payload(owned / "venv", repo)),
         }),
         "environment_after": _artifact(run / "environment-after.json", {
             "source_head": "dashboard-source",
             "candidate_wheel_sha256": "c" * 64,
-            "observed_environment": _artifact(run / "environment-after-capture" / "environment.json", environment_payload(python, tmp_path / "venv")),
-            "runtime_import_probe": _artifact(run / "environment-after-capture" / "runtime.json", import_probe_payload(tmp_path / "venv", repo)),
+            "observed_environment": _artifact(run / "environment-after-capture" / "environment.json", environment_payload(python, owned / "venv")),
+            "runtime_import_probe": _artifact(run / "environment-after-capture" / "runtime.json", import_probe_payload(owned / "venv", repo)),
         }),
         "resolved_inputs": {
             "development": _artifact(run / "resolved-development.json", resolved_inputs_payload(
@@ -538,39 +553,4 @@ def _environment_identity_payload(directory, request):
 
 
 def _driver_request(tmp_path):
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    proof = tmp_path / "functional-proof.json"
-    _artifact(proof, {"status": "PASS"})
-    inputs = tmp_path / "inputs.json"
-    inputs.write_text("{}\n", encoding="utf-8")
-    python = tmp_path / "venv" / "Scripts" / "python.exe"
-    python.parent.mkdir(parents=True)
-    python.write_text("python", encoding="utf-8")
-    environment = _artifact(tmp_path / "environment.json", environment_payload(python, tmp_path / "venv"))
-    return {
-        "acceptance_profile": "full",
-        "performance": {
-            "recipe_id": "windows-mdb2-s0b-r1",
-            "mode": "certify",
-            "policy_ref": _artifact(
-                repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs.json",
-                performance_policy_payload({
-                    "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
-                    "python": {"version": "3.13.7"},
-                }),
-            ),
-            "functional_acceptance_ref": _artifact(
-                repo / "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json",
-                functional_acceptance_payload({
-                    "source": {"commit": "dashboard-source"},
-                    "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
-                }, proof),
-            ),
-        },
-        "source": {"commit": "dashboard-source", "repository": str(repo)},
-        "python": {"version": "3.13.7", "environments": {"candidate": environment}},
-        "candidate": {"version": "1.0.0", "wheel_sha256": "c" * 64, "source_commit": "aib-source"},
-        "fixtures": {"fixture_vector_sha256": "d" * 64},
-        "_paths": {"inputs": inputs, "output": tmp_path / "out.json", "owned_root": tmp_path, "python": python},
-    }
+    return performance_driver_request(tmp_path)
