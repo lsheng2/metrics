@@ -108,7 +108,11 @@ def run_pytest_lane(python: Path, target: str, *, run_root: Path, label: str,
     junit = run_root / "junit" / f"{label}.xml"
     basetemp = (basetemp_root or run_root / "basetemp") / label
     basetemp.parent.mkdir(parents=True, exist_ok=True)
-    result = run_command(pytest_command(python, target, junit, basetemp), cwd=ROOT, log_dir=run_root / "logs", label=label)
+    command_options = {"timeout": 7200} if target == "project_management/tests" else {}
+    result = run_command(
+        pytest_command(python, target, junit, basetemp),
+        cwd=ROOT, log_dir=run_root / "logs", label=label, **command_options,
+    )
     from scripts.validation.pytest_junit_reconciliation import reconcile_junit, validate_reconciled_junit
     inventory = junit.with_suffix(".inventory.json")
     derived = junit.with_suffix(".verified.xml")

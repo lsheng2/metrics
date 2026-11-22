@@ -26,7 +26,7 @@ Dashboard 已在独立环境安装 dev5；新候选功能验收与性能输入�
 | W1.RETIRE | Passed at b7dae4b | Exact identifier/generated-artifact classification; 59 regressions and actual-source gates passed |
 | W2.CERTIFY / W2.R | Passed at b7dae4b | Fresh native 56, complete conformance 74, recovery 39 and real migration passed; source-bound W2 gate 1/1 clean |
 | W3.FREEZE / W3.REHEARSE / W3.JOIN | Migration/mapped passed; full gate blocked | 114 bindings validated; five full modules passed, project aggregate command timed out |
-| FUNC.R / FUNC.ACCEPT | Blocked | No successful full dev5 qualifier or acceptance receipt; aggregate-budget amendment awaits owner decision |
+| FUNC.R / FUNC.ACCEPT | Pending fresh qualification | No successful full dev5 qualifier or acceptance receipt; owner authorized the scoped aggregate-budget amendment on 2026-11-22 |
 | PERF.KPI | Pending refresh | New matching dev5 policy/reference inputs; numerical certification remains open |
 
 2026-11-21 resume: the owner authorized completion and timely scoped mainline
@@ -73,6 +73,17 @@ No application, installed wheel, deadline or KPI changed. The proposed
 old dev4 authorization and receipts are not silently carried forward. Final
 FUNC.R, FUNC.ACCEPT and dev5 performance-input renewal remain open.
 See [`windows-dev5-functional-attempt.json`](evidence/windows-dev5-functional-attempt.json).
+
+**2026-11-22 owner amendment:** the owner explicitly authorized a 7200-second
+outer pytest subprocess envelope only for the exact full
+`project_management/tests` lane in the official `qualify_ai_runtime.py` owner.
+Every other command retains its existing cap. Per-test timeouts, production
+stop/cancel bounds, selection, assertions and numerical performance KPI remain
+unchanged. Implement and independently review this bounded amendment, publish a
+scoped checkpoint, then freeze fresh source/fixture inputs and rerun the formal
+qualification chain. The historical timeout and partial reports remain failed
+evidence, not acceptance. The earlier pending-authorization checkpoint above
+is superseded only as to this decision; FUNC.ACCEPT and PERF remain open.
 
 ## Windows Performance Execution Frontier
 

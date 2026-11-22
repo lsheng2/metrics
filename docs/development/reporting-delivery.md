@@ -28,12 +28,15 @@ admission/package/host checks, authenticated page/assets and normal stop.
 The environment has the same 83 distribution versions as the dev4 baseline
 except the runtime version itself. Dev5 native, migration and mapped browser
 proof passed at `b7dae4b`; five full module lanes also passed, but the official
-project module hit the 3600-second aggregate subprocess cap. Full dev5 functional
-acceptance remains blocked; see the
+project module hit the previous 3600-second aggregate subprocess cap. Full dev5
+functional acceptance requires a fresh successful qualification; see the
 [source-bound attempt record](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev5-functional-attempt.json).
-An aggregate runner cap is separate from per-test, application shutdown and KPI
-limits. Any amendment requires an explicit decision and fresh formal evidence;
-partial reports and independent readiness runs cannot establish acceptance.
+The official qualifier gives the exact full `project_management/tests` lane a
+7200-second outer subprocess cap, explicitly authorized on 2026-11-22. Other
+commands retain their existing caps. This aggregate envelope is separate from
+unchanged per-test, application shutdown and KPI limits. Fresh source-bound
+formal evidence is required; partial reports and independent readiness runs
+cannot establish acceptance.
 Retain the dev4 environments and receipts as history.
 Final performance input freeze and certification
 must then use the new candidate and matching functional evidence; no automatic
