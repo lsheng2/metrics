@@ -2,6 +2,32 @@
 
 ## Latest Delivery Decision
 
+### Approved Development Loop Refresh (2026-11-22)
+
+Owner approved source joint testing -> private wheel checks -> formal candidate
+publication/upgrade. Implement under the
+[three-layer amendment](windows-close-plan.md#three-layer-joint-development-amendment-2026-11-22),
+using existing W1.INSTALL/W1.REPLAN ownership and this sole ledger. The runtime
+admission rules, immutable historical artifacts, real leakage tests, production
+stop budgets and KPI remain unchanged. Plan/validation review passed 1/1 with
+zero findings (`D:/AIGC/jd-1122/reviews/plan-gate.json`); structural preflight
+passed 28 nodes / 4 development contracts / 7 owned paths. Tools now pass
+53 focused tests and 57 existing admission/installer checks; the combined
+110-case verification passed. Parent integration
+found and corrected isolated CLI bootstrap, JUnit inventory, snapshot/input
+isolation, failed-run evidence and phase-timing gaps before counted code review.
+Actual source run `88f6ad9d` passed 22 and private-wheel run `206c95a0` passed
+23 with correct origins and matching input inventories; both receipts under
+`D:/AIGC/jdv-1122` remain `acceptance_eligible=false`. Real private-wheel
+alias/moving-handle controls refused held leaks then passed after release.
+Independent code review found one command-failure promotion issue; its complete
+failure family was fixed and fresh rereview passed 1/1
+(`D:/AIGC/jd-1122/reviews/tools-gate.json`). All six commands in the retained
+private-wheel positive run were independently checked as exit 0, not timeout.
+Formal candidate admission/full gates remain open. Source/private-wheel success
+is not promotion of failed dev8.
+This is a development workflow change, not qualification of the failed dev8 run.
+
 **Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
 `origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
 2026-11-22 另授权 Windows testkit 校准，当前目标为 `ai-base-runtime==0.1.1.dev8`，

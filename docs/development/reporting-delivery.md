@@ -325,6 +325,72 @@ editable installs and package shadowing are rejected. Do not use a retained old
 environment or an editable source install for migrated consumers. No existing
 service or user database is silently switched.
 
+### Three-Layer Joint Development
+
+Use development checks before repeating formal candidate publication. The owner
+approved this workflow on 2026-11-22; it does not relax production admission or
+any functional, leakage, shutdown or performance gate.
+
+1. **Source:** the development CLI copies the inventoried Dashboard into an
+   owned run and tests its existing in-process host/backpressure composition
+   against the explicitly selected AIB source. It records actual import origin
+   and before/after source identities. It does not prove source propagation
+   into native child processes or installation correctness.
+2. **Private wheel:** the CLI snapshots the selected sources, builds a private
+   wheel and creates a fresh offline environment from the locked wheelhouse.
+   Only the copied Dashboard manifest is changed to match that wheel. The
+   original `serve` entry and package-bound tests run without a production
+   source-mode flag or editable-install exception.
+3. **Formal candidate:** after source and private-wheel checks plus review,
+   freeze reviewed source, build a new immutable candidate, explicitly upgrade
+   Dashboard's version/hash pins, then rerun the existing full qualification.
+   Only this layer can establish final functional/performance acceptance.
+
+From the Dashboard root, use the current fixed dependency interpreter for the
+source layer. It and the AIB checkout remain read-only; all run state belongs
+to a fresh UUID under the marked development root:
+
+```powershell
+$devPython = 'D:/AIGC/d8-1122/venv/Scripts/python.exe'
+$devRoot = 'D:/AIGC/jdv-1122'
+& $devPython -I -B scripts/validation/aib_joint_dev.py source `
+    --aib-root D:/AIGC/Report_creater_agent --python $devPython --data-root $devRoot
+```
+
+The private-wheel layer reuses the verified dependency pool, not an existing
+qualification environment. No dependency is resolved from the network:
+
+```powershell
+$lock = 'D:/AIGC/d8-1122/inputs/wheelhouse-lock.json'
+$lockSha = (Get-FileHash -LiteralPath $lock -Algorithm SHA256).Hash.ToLowerInvariant()
+& $devPython -I -B scripts/validation/aib_joint_dev.py wheel `
+    --aib-root D:/AIGC/Report_creater_agent --python C:/Python313/python.exe `
+    --build-python D:/AIGC/fc1120/aib-venv/Scripts/python.exe `
+    --wheelhouse D:/AIGC/d8-1122/wheels --wheelhouse-lock $lock `
+    --wheelhouse-sha256 $lockSha --data-root $devRoot
+```
+
+Requests reject overlapping/reparse/unowned roots and reused outputs. Keep
+failure receipts and logs; do not repair an old qualified environment, rewrite
+historical wheels or change behavioral tests to fit a private package.
+Development receipts have `kind=aib-joint-development-run` and
+`acceptance_eligible=false`; even a `succeeded` run is not a formal PASS.
+Dirty inputs are recorded as working-tree inventories, not forged clean
+release commits. A private wheel's path, payload hash and source inventory
+distinguish it from a published wheel with the same source version.
+
+The initial source layer uses the fixed 22-case host/backpressure composition.
+The wheel layer additionally runs the real `test_serve_process.py` smoke.
+Neither is the full seven-module functional gate, migration gate or performance
+certification. Continue those unchanged gates from the existing OpenSpec ledger.
+
+The initial measured commands on 2026-11-22 passed source 22/22 in 62.37s total
+and private-wheel 23/23 in 156.34s total. The latter includes 5.34s building and
+89.53s installing. These are individual command envelopes, not whole-session
+time or application KPI. Receipts separate nonoverlapping phases and explicitly
+include fixture cleanup within test time; external cleanup is not fabricated
+as a separate measured duration.
+
 ### Windows Offline Installation
 
 The current owned artifact root is `D:\AIGC\d8-1122`.

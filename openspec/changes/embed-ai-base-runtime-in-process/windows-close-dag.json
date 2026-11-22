@@ -13,6 +13,18 @@
   "amendment_dirty_inventory": "evidence/windows-functional-first-baseline.json",
   "performance_refreeze_baseline": "eb84aa23a123a191d4b5f6569e69e3d00d75268b",
   "performance_plan": "windows-performance-test-plan.md",
+  "development_flow_amendment": {
+    "date": "2026-11-22",
+    "baseline": "17d56235d7c6ec003639695ce53d11b17f67c306",
+    "plan": "windows-close-plan.md#three-layer-joint-development-amendment-2026-11-22",
+    "owner_node": "W1.INSTALL",
+    "refreeze_actions": [
+      {"action": "amend", "reason": "Owner approved source development and private wheel checks before formal publication; acceptance authorities remain unchanged."}
+    ],
+    "updated_artifacts": ["openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md", "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json", "openspec/changes/embed-ai-base-runtime-in-process/windows-close-steps.md", "openspec/changes/embed-ai-base-runtime-in-process/tasks.md"],
+    "rerun_gates": ["W1.R", "W1.REPLAN"],
+    "post_refreeze_preflight_result": {"command": "powershell -NoProfile -File D:/AIGC/jd-1122/reviews/check-plan.ps1", "result": "PASS"}
+  },
   "expected_node_count": 28,
   "functional_milestone_node": "FUNC.ACCEPT",
   "milestone_node": "WIN.ACCEPT",
@@ -22,10 +34,17 @@
     "OWNER.RESUME": "Subsequent explicit human approval/resume of product execution",
     "OWNER.RELEASE": "Explicit named commit/artifact/main/push/worktree actions; no implicit permission"
   },
-  "contracts": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6", "PERF-IDENTITY", "PERF-RECIPE", "PERF-INTERVAL", "PERF-WINDOW", "PERF-CLEANUP", "PERF-CLAIM"],
+  "contracts": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6", "PERF-IDENTITY", "PERF-RECIPE", "PERF-INTERVAL", "PERF-WINDOW", "PERF-CLEANUP", "PERF-CLAIM", "DEV-INPUT", "DEV-ORIGIN", "DEV-CLAIM", "DEV-ISOLATION"],
   "validation_ids": ["V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11"],
   "planned_paths_policy": "Checked implementation dispatch index, not a second scope authority. Every explicit PERF.PROBE Python owner path maps to PERF.PROBE for this continuation; historical node scopes remain recorded.",
   "planned_paths": {
+    "scripts/validation/aib_joint_dev.py": "W1.INSTALL",
+    "scripts/validation/aib_joint_dev_inputs.py": "W1.INSTALL",
+    "scripts/validation/aib_joint_dev_worker.py": "W1.INSTALL",
+    "scripts/validation/aib_joint_dev_wheel.py": "W1.INSTALL",
+    "scripts/tests/aib_joint_dev_support.py": "W1.INSTALL",
+    "scripts/tests/test_aib_joint_dev.py": "W1.INSTALL",
+    "scripts/tests/test_aib_joint_dev_wheel.py": "W1.INSTALL",
     "scripts/validation/windows_install_smoke.py": "W1.INSTALL",
     "scripts/tests/test_windows_install_smoke.py": "W1.INSTALL",
     "scripts/validation/windows_install_wheelhouse.py": "W1.INSTALL",
@@ -134,8 +153,8 @@
     },
     {
       "id": "W1.INSTALL", "depends_on": ["W1.VA"], "kind": "implementation",
-      "owner_paths": ["requirements.txt", "ai_host/runtime_artifact.json", "ai_host/admission.py", "ai_host/tests/test_admission.py", "scripts/validation/windows_install_smoke.py", "scripts/validation/windows_install_wheelhouse.py", "scripts/tests/test_windows_install_smoke.py", "scripts/tests/test_windows_install_wheelhouse.py", "README.md", "docs/development/reporting-delivery.md"],
-      "contracts": ["INV-1", "INV-6"], "validation": ["V1"],
+      "owner_paths": ["requirements.txt", "ai_host/runtime_artifact.json", "ai_host/admission.py", "ai_host/tests/test_admission.py", "scripts/validation/windows_install_smoke.py", "scripts/validation/windows_install_wheelhouse.py", "scripts/tests/test_windows_install_smoke.py", "scripts/tests/test_windows_install_wheelhouse.py", "scripts/validation/aib_joint_dev.py", "scripts/validation/aib_joint_dev_inputs.py", "scripts/validation/aib_joint_dev_worker.py", "scripts/validation/aib_joint_dev_wheel.py", "scripts/tests/aib_joint_dev_support.py", "scripts/tests/test_aib_joint_dev.py", "scripts/tests/test_aib_joint_dev_wheel.py", "README.md", "docs/development/reporting-delivery.md"],
+      "contracts": ["INV-1", "INV-6", "DEV-INPUT", "DEV-ORIGIN", "DEV-CLAIM", "DEV-ISOLATION"], "validation": ["V1"],
       "steps": "windows-close-steps.md#w1install",
       "exit_criteria": "Fresh owned Windows venv admits direct hashed wheel, installs locked dependencies offline and passes pip check/serve smoke; wrong wheel fails before launch.",
       "parallel_policy": "single-writer"

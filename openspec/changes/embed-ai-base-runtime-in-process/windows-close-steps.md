@@ -85,6 +85,15 @@ output is trusted. This is one bounded design signoff, not a full test run.
 
 ## W1.INSTALL
 
+The 2026-11-22
+[three-layer development amendment](windows-close-plan.md#three-layer-joint-development-amendment-2026-11-22)
+adds `scripts/validation/aib_joint_dev*.py` and its focused script tests under
+this owner. Its source/private-wheel outputs are explicitly nonqualifying;
+the formal install-smoke steps and strict admission below stay unchanged.
+The amendment defines the new CLI, provenance/isolation requirements and exact
+validation commands. Source tools do not modify `requirements.txt` or the
+active runtime artifact; private-wheel checks change only their owned copy.
+
 **Modify:** `requirements.txt`, `README.md`, reporting guide.
 **New:** `scripts/validation/windows_install_smoke.py`,
 `scripts/tests/test_windows_install_smoke.py`.

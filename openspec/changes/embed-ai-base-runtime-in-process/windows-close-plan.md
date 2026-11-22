@@ -37,6 +37,158 @@ decision about resuming other Apps. This is not full AIB repository release.
 
 ## Baseline And Established Architecture
 
+### Three-Layer Joint Development Amendment (2026-11-22)
+
+Owner approved this amendment after comparing dev8 wheel construction (4.58s)
+with repeated source/installed/native verification costs. This changes the
+development workflow, not production admission or any acceptance threshold.
+Profile: `repo-local`; routing: `multiagent-configured`. Dashboard baseline is
+`17d56235d7c6ec003639695ce53d11b17f67c306`; AIB baseline is
+`58ca207c39e31956e2dadc59756623d7df498819`; both started clean.
+Execution state stays in `tasks.md`. Extend existing W1.INSTALL ownership for
+development tools; do not add a competing release DAG or acceptance path.
+
+#### Layer Contract
+
+| Layer | Inputs and action | Output and restriction |
+| --- | --- | --- |
+| source | Explicit AIB checkout plus a fixed Python environment; run the existing no-dotenv Dashboard host fixtures with that source import root | Fast diagnosis with both source inventories and actual module origins; never installation, subprocess-origin or final acceptance proof |
+| wheel | Snapshot selected AIB and Dashboard source into a fresh owned run; build a private wheel; create a fresh isolated environment from the locked offline wheelhouse; update only the copied Dashboard artifact manifest | Existing `serve` and package-bound tests run without changing production admission or either active checkout's pins; receipt remains development-only |
+| formal | Reviewed committed AIB source, new immutable release-candidate version/hash, explicit Dashboard pin upgrade, fresh formal inputs | Existing native, functional, migration and performance gates remain mandatory and unchanged |
+
+Private wheels live under unique run directories and are identified by their
+bytes and source inventory, never promoted by version text alone. They may use
+the source checkout's current version; they are not a second published wheel.
+The copied development manifest must not invent a clean source commit/tree for
+dirty inputs: retain base commit/dirty state in the development receipt and omit
+release source provenance from the copied manifest. Production admission still
+checks the actual wheel SHA, complete package files, import origin and version.
+Original released wheels, installed qualification environments, manifests,
+requirements, KPI recipes and failed receipts remain read-only inputs.
+
+The source layer cannot establish new-code behavior in subprocesses launched by
+tests without its import root. Its initial fixed selection is the existing
+in-process backpressure/host conformance composition. Use the wheel layer for
+real native startup/stop tests. No arbitrary pytest arguments, skip/xfail,
+failure suppression, source-aware production flag, runtime monkeypatch or
+editable-install exception is introduced by the tool.
+
+#### Implementation Packet
+
+One Implementation Engineer owns `scripts/validation/aib_joint_dev*.py` and
+`scripts/tests/test_aib_joint_dev*.py`. Parent owns this plan, DAG ownership,
+`tasks.md` and `docs/development/reporting-delivery.md`. An independent reviewer
+owns plan/validation signoff and implementation review. Parent continues the
+separate Semaphore-origin diagnostic in private artifacts, not these files.
+
+CLI contract:
+
+```text
+{python} -I scripts/validation/aib_joint_dev.py source --aib-root ABS_REPO --python ABS_PYTHON --data-root ABS_ROOT
+{python} -I scripts/validation/aib_joint_dev.py wheel --aib-root ABS_REPO --python ABS_BOOTSTRAP --build-python ABS_BUILD_PYTHON --wheelhouse ABS_WHEELS --wheelhouse-lock ABS_LOCK --wheelhouse-sha256 HEX --data-root ABS_ROOT
+```
+
+`ABS_*` and `HEX` are documented operator inputs, not executable acceptance
+commands. Native Windows is the execution scope. `data-root` must be outside
+both repositories and every supplied interpreter/environment/wheelhouse.
+Refuse reparse paths, overlapping roots, an existing nonempty unowned root and
+reused run outputs before writes. Never delete or repair an environment.
+Each run has a fresh UUID, a development owner marker, a bounded subprocess,
+private HOME/TEMP, no dotenv/provider use, and preserved failure logs.
+Use existing canonical-path, hashing, wheel-lock, no-dotenv test and command
+evidence helpers where their semantics fit; do not relax their owning checks.
+
+Responsibility split:
+
+```python
+# aib_joint_dev.py: parse CLI, dispatch a stage, record result and failure.
+def main(argv: list[str] | None = None) -> int: ...
+# aib_joint_dev_inputs.py: validate paths, inventory/copy source, bind evidence.
+def source_inventory(root: Path, relative: str | None = None) -> dict: ...
+# aib_joint_dev_worker.py: explicit source bootstrap or installed import guard.
+def main(argv: list[str] | None = None) -> int: ...
+# aib_joint_dev_wheel.py: private build/install and copied candidate manifest.
+def prepare_wheel_run(request, run_dir: Path) -> dict: ...
+```
+
+Capture all used source/test/config files (including relevant nonignored new
+files) before and after execution. Exclude credentials, user data and generated
+caches; fail on input drift. Wheel payload hashes must equal the installed
+package before and after the test. Source mode must prove imports resolve in
+the selected AIB source, and wheel mode must prove imports resolve in its new
+environment, not a source checkout or old qualified environment. Missing or
+empty test execution and malformed output are failures.
+
+Every receipt has `kind=aib-joint-development-run`, its stage, source hashes,
+module origins, command exit/JUnit evidence and `acceptance_eligible=false`.
+It has no formal functional/performance PASS fields. The formal qualifier's
+existing `source.kind=commit`, candidate and evidence-type checks remain
+unchanged; tests must prove a development receipt is rejected there.
+Setup/build/install/test/cleanup durations are separate, non-overlapping
+measurements. Test duration is not whole-turn time.
+
+#### Validation And Sequence
+
+1. Write failing boundary tests before implementation: outside/overlap/reparse
+   paths, unowned root, invalid stage, foreign interpreter, existing outputs,
+   incomplete source inventory, source drift, wrong import origin, changed
+   wheel/lock, nonzero/empty tests, and development receipt promotion.
+2. Implement source mode and its actual-origin child guard. Test command uses
+   `scripts/validation/run_report_authoring_tests.py` and the existing
+   `conformance_backpressure_cases.py`, shipped plugin and host fixtures;
+   no early runtime import different from the package lane merely to pass.
+3. Implement wheel mode with fresh snapshot/build/environment. Install only
+   locked local dependency wheels plus the new private runtime wheel; no
+   network resolver or original environment mutation. Run the unchanged
+   real `test_serve_process.py` and backpressure composition in the copied
+   Dashboard. Pin-vs-source version incompatibility must be reported, not
+   hidden by rewriting behavioral tests.
+4. Run focused tool tests and existing installation/admission negative tests.
+   Run one real source-layer attempt and one real wheel-layer attempt. A
+   product assertion failure can demonstrate runner correctness, but cannot
+   be reported as a passing product scenario. Verify exact evidence and
+   normal owned process cleanup. No Linux or live provider execution.
+5. Run file-size/whitespace checks, independent scope/claim review, and scoped
+   commit/push. Update the current guide and ledger in the same packet.
+6. Continue the observer-method diagnosis using the source layer. Only after
+   the actual root cause, leakage negatives and faithful composition pass,
+   use the wheel layer; final candidate publication still needs the formal
+   full gate chain. Do not publish dev9 for an unproven GC-only hypothesis.
+
+Authorities and disconfirming checks:
+
+This table extends the Contract Registry and propagation matrix below for
+the development-only W1.INSTALL amendment; the original INV/PERF contracts
+and formal exit criteria are not superseded.
+
+| Contract | Owner/producer | Consumer | Negative check |
+| --- | --- | --- | --- |
+| DEV-INPUT (high) | input validator and source inventory | both development stages | changed/missing/unowned/overlapping inputs fail before mutation or success |
+| DEV-ORIGIN (high) | child bootstrap and private wheel manifest | host fixtures and real serve | wrong source/site origin or package bytes are rejected |
+| DEV-CLAIM (high) | development receipt writer | operator and formal input validator | partial/empty/failing run and development receipt cannot become formal acceptance |
+| DEV-ISOLATION (high) | owned UUID root and sanitized subprocess | snapshot/build/install/test | original checkouts, qualified environments, wheels and user state stay unchanged |
+
+Consumer census: validation script, external artifact, CLI, diagnostic/evidence,
+operator docs and test fixtures apply. Public API, business service, UI, data
+export, database migration, background scheduler and search/cache behavior do
+not change. Real UI/native qualification remains in the formal chain, not
+silently covered by the source layer. No new product dependency is needed.
+
+Focused execution commands from the Dashboard root use the already admitted
+Windows interpreter; these commands are gates, unlike the CLI templates above:
+
+```powershell
+& D:/AIGC/d8-1122/venv/Scripts/python.exe -I scripts/validation/run_report_authoring_tests.py scripts/tests/test_aib_joint_dev.py scripts/tests/test_aib_joint_dev_wheel.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
+& D:/AIGC/d8-1122/venv/Scripts/python.exe -I scripts/validation/run_report_authoring_tests.py scripts/tests/test_windows_install_smoke.py scripts/tests/test_windows_install_wheelhouse.py ai_host/tests/test_admission.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function
+& D:/AIGC/d8-1122/venv/Scripts/python.exe scripts/check_file_size_limits.py --include-untracked
+& D:/AIGC/d8-1122/venv/Scripts/python.exe scripts/check_diff_whitespace.py --include-untracked
+```
+
+Executor and owner paths are explicit; no shell suppression, collect-only
+mode, implicit pytest discovery or empty selection is acceptance. CLI request
+paths for actual source/wheel demonstrations are recorded in their own run
+receipts and do not substitute for these tool-boundary tests.
+
 ### Dev6 Observer Candidate Refresh (2026-11-22)
 
 The active continuation is now the reviewed dev8 capture candidate, after
