@@ -293,7 +293,10 @@ def performance_phase_cleanup():
             "pid": pid, "host": "127.0.0.1", "port": port,
             "process_running": False, "listener_pids": [], "observation_errors": [],
             "owned_processes": {
-                str(pid): {"pid": pid, "role": "service_root", "terminal_exit_code": 0, "process_running": False}
+                str(pid): {
+                    "pid": pid, "role": "service_root", "terminal_exit_code": 0, "process_running": False,
+                    "native_creation": 90000 + index, "native_handle_opened": True, "native_handle_closed": True,
+                }
             },
         }
     return {

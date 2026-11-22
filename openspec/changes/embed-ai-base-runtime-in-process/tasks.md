@@ -35,7 +35,7 @@ This is a development workflow change, not qualification of the failed dev8 run.
 [当前候选约束](windows-performance-phase.md#windows-convergence-candidate-amendment-2026-11-22)。
 Dashboard dev9 Windows 功能验收和性能输入复签评审已通过；性能认证尚未完成。
 历史候选节点和不可变证据保留，不代表最新候选已经通过。
-下一切片复核回执汇总绑定修复并冻结最终输入，再做完整性能诊断和认证；
+下一切片完成进程观测修正与独立复核，再冻结新输入并做完整性能诊断和认证；
 不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
@@ -80,6 +80,48 @@ and receives no validation credit; the report discloses that evidence gap.
 Independent implementation review, final-source input freeze, pilot/full
 diagnostic/certify and WIN.ACCEPT stay open. No additional SDK publication or
 numerical-budget change is needed.
+
+### Dev9 Process-Window Observation Correction
+
+The validator/input-adapter packet was independently reviewed1/1 with zero
+findings and published at `6e5aa24`. New frozen inputs share one source and
+fixture/environment identity. Native equivalence passed3/3 and native
+runtime/performance conformance passed31/31, all without skips/errors/failures.
+The new pilot collected both settings' samples but failed its process-window
+observer during normal owned shutdown. Its two unresolved PIDs were the
+current production saturated service root and child; retained cleanup confirms
+exit0, no force, no surviving descendants or listeners. The pilot remains FAIL
+and cannot close PERF.PROBE or certify numerical performance.
+
+Bounded native reproduction found a measurement-tool defect: an exited PID
+omitted from the later CIM query silently becomes unrelated, whereas the same
+query's incomplete-detail result blocks. A PID was also reused within the
+pilot, so PID-only cached admission is unsafe. The
+[process-window amendment](windows-performance-test-plan.md#process-window-correction-2026-11-23)
+requires complete/error census semantics, exact native incarnation and retained
+terminal proof, plus actual replay verification. Independent planning and
+validation-architecture review passed1/1 with zero findings
+(`D:/AIGC/d9-1122/process-window-plan-gate.json`); bounded implementation is
+in progress. No AIB wheel, runtime or numerical-budget change.
+The first implementation passed208 affected tests but independent code review
+found3P1 fail-closed gaps in raw replay, SLE root admission and observer release
+(`D:/AIGC/d9-1122/process-window-code-gate.json`). Parent is closing those
+failure classes with raw-derived resolutions, original-marker admission and
+fatal observer-release failures, including cleanup PID-reuse negatives.
+The original native toy's liveness assertion and30s observation bound are
+preserved; the integrated child now uses actual platform getters and an explicit
+release handshake. Final affected-family verification and independent rereview
+remain outstanding at this correction checkpoint, before publication/freeze.
+The second counted code review closed the root/release issues but found the
+complete-identity sibling of raw-to-gate replay still open. The remaining
+correction records the classifier's actual admission inputs and replays the
+same classifier over every raw row. Targeted RED controls exposed9 bypasses
+with2 positive controls; the full affected family and another independent
+review are required before the code gate can complete.
+Adverse evidence is under `D:/AIGC/d9-1122/runs/pilot-final-r1*`;
+the bounded diagnostic is `debug/process-sensor-r1.json` under the same root.
+Pilot production cells also recorded two page-ratio violations; those small
+sample results neither establish the full KPI nor authorize threshold changes.
 
 ### Dev8 Capture Calibration Progress (Historical)
 

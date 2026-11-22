@@ -131,6 +131,8 @@ def running_arms(root, python, *, production, names=ARMS, spacing_events=8, wind
             identities = identity_facts["identities"]
             if window is not None and hasattr(window, 'register_owned_process_identities'):
                 window.register_owned_process_identities(identities)
+            if window is not None and hasattr(window, 'register_owned_process_identity_facts'):
+                window.register_owned_process_identity_facts(identity_facts.get("registrations", []))
             bases[name] = f'http://127.0.0.1:{state["port"]}'
             record['arms'][name] = {
                 'environment': environment,
@@ -141,7 +143,7 @@ def running_arms(root, python, *, production, names=ARMS, spacing_events=8, wind
             record['arms'][name]['metadata'] = ready_metadata(bases[name], engine, name)
         yield RunningArms(engine, record, bases, instances)
     finally:
-        record['cleanup'] = stop_arms(engine, started)
+        record['cleanup'] = stop_arms(engine, started, run_id=getattr(window, 'identity', None))
         write_json(root / 'processes.json', record)
         if started and not record['cleanup']['normal']:
             raise ValueError('Native fixture did not stop normally')

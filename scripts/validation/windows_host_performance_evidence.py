@@ -9,6 +9,7 @@ from scripts.validation.windows_host_conformance_environment import expected_env
 from scripts.validation.windows_install_smoke import validate_import_probe
 from scripts.validation.windows_host_performance_contract import recipe_for_mode, validate_performance_contract
 from scripts.validation.windows_host_samples import ARMS, MODES, PAGE_KEYS, asset_identity, evaluate_pages, finite
+from scripts.validation.windows_host_process_window_evidence import check_terminal_resolution_cleanup, check_window_terminal_facts
 from scripts.validation.windows_host_transport import validate_transport
 from scripts.validation.windows_qualification_inputs import (
     QualificationError,
@@ -121,6 +122,7 @@ def _check_window(window: dict, *, run_dir: Path, receipt: dict, require_witness
         for row in window.get("snapshots", [])
     ):
         raise QualificationError("measurement window classification was not clean")
+    check_window_terminal_facts(window)
     if (not isinstance(window.get("source_before"), dict)
             or window["source_before"].get("head") != receipt["source"]["commit"]
             or window.get("source_before") != window.get("source_after")):
@@ -196,6 +198,11 @@ def _check_cleanup(cleanup: dict) -> None:
                 if (str(row.get("pid")) != str(pid) or row.get("process_running") is not False
                         or type(row.get("terminal_exit_code")) is not int or row["terminal_exit_code"] != 0):
                     raise QualificationError("performance cleanup terminal proof missing")
+                if (
+                    row.get("native_handle_opened") is not True or row.get("native_handle_closed") is not True
+                    or type(row.get("native_creation")) is not int or row["native_creation"] <= 0
+                ):
+                    raise QualificationError("performance cleanup native observer release failed")
             normal = (
                 service.get("stopped") is True
                 and service.get("exit_code") == 0
@@ -325,6 +332,7 @@ def validate_performance_result(receipt: dict, request: dict, *, require_witness
         violations.extend({**row, "phase": phase} for row in transport_result.get("violations", []))
     _, cleanup = _artifact(receipt["cleanup"], label="cleanup", roots=roots, run_dir=run_dir)
     _check_cleanup(cleanup)
+    check_terminal_resolution_cleanup(window, cleanup)
     if require_witness:
         _check_window(window, run_dir=run_dir, receipt=receipt)
     status_pass = receipt.get("status") == "PASS" and receipt.get("collection_status") == "COMPLETE"

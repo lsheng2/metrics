@@ -69,6 +69,94 @@ then CLOSE.R/WIN.ACCEPT. Another FUNC.ACCEPT loop is not required merely for
 these validation-tool changes, but affected product changes would require
 their own functional requalification.
 
+## Process-Window Correction (2026-11-23)
+
+Baseline `6e5aa244a45c515cf2516bcd4b2152aaae59d620` passed the prior
+validator/input-adapter review and was published. Native equivalence passed
+3/3 and transport/performance conformance passed31/31. Its first pilot
+completed both settings' samples but failed the exclusive-window observer
+during owned shutdown. Preserve that pilot and all original input bytes.
+
+The native census and subsequent CIM query are not atomic. In the failed
+window, two current-run processes had complete owned identities before stop;
+the later query returned incomplete details after the stop request. A bounded
+native diagnostic reproduced both incomplete detail and omitted PID outcomes.
+The latter currently falls through to unrelated, so merely ignoring teardown
+errors would also preserve a fail-open sibling. One PID was reused during
+the run; a cached PID or name is not an identity.
+
+This is a bounded amendment within PERF.PROBE, with repo-local profile and
+configured independent review. Parent owns orchestration/docs; one
+Implementation Engineer owns the observation/checker tests; the independent
+Architect Planner Reviewer checks validation architecture before code and the
+final behavior before another source freeze. No runtime optimization, SDK
+publication, threshold, sampling cadence, stop/leak budget or Linux work is
+included. DCP deployment remains not applicable.
+
+| Authority | Producer -> consumer | Required behavior and negative check |
+| --- | --- | --- |
+| OBS-CENSUS | Native census/retained handle/CIM -> enrichment/classifier | Every Python/Git row has complete detail or an explicit error; omitted rows and malformed global JSON cannot become unrelated |
+| OBS-OWNER | Current SLE/descendant admission -> window registration | Bind current run, PID, parent, image, exact native creation, command fingerprint and sensor identity while the handle is retained; reject missing, contradictory or reused identities |
+| OBS-TERMINAL | Pre-CIM native handle -> current snapshot resolution -> final cleanup | Resolve only the registered exact incarnation with observed exit0; keep unknown/live/nonzero/forced/residual-process paths failing |
+| OBS-REPLAY | Raw registrations/resolutions/cleanup -> performance checker -> full qualifier | Verify structured facts and their joins; a clean classification or new Boolean alone is not evidence |
+
+Use a small internal `scripts/validation/windows_host_process_window.py`
+for native read-only capture, owned by PERF.PROBE. Reuse existing read-only
+native primitives and lifecycle observation patterns; do not change shared
+SLE, app or SDK APIs. Existing environment, identity, process-registration,
+cleanup and performance-evidence owners wire it together. Related window,
+process, replay and shared performance fixture tests are the test owners;
+new focused cases use `scripts/tests/test_windows_process_window.py` to keep
+existing near-limit files within their configured size bounds.
+Code-review correction keeps native acquisition in that helper and moves pure
+replay checks to `scripts/validation/windows_host_process_window_evidence.py`.
+Focused claim/admission/release tests use
+`scripts/tests/test_windows_process_window_contract.py`; both paths belong to
+the same PERF.PROBE authority, not another runtime or acceptance interface.
+Replay derives required resolutions from raw observations even if summaries
+are deleted. Persist the classifier's actual observed owned-identity input set
+and privacy-safe command fingerprints. Replay the same owning classifier for
+every raw row, including complete identities and unrelated tooling, and verify
+all classifications, blockers and terminal facts. This preserves the approved
+live admission algorithm rather than introducing a second classifier.
+Root admission must match the original SLE start marker before
+authorizing descendants. Failed observer release is a failing capture outcome,
+not just a diagnostic field. Original real-CIM liveness assertions and their
+observation bounds remain unchanged.
+
+Acquisition order is native census, read-only handle and exact creation
+identity, one CIM query, same-handle terminal observation, then deterministic
+handle release. Unknown native identity or contradictory complete metadata
+must fail closed. A terminal resolution requires a current-run owner
+registration and the same native incarnation; it cannot erase a previous
+blocker, pause observations during stop, or infer identity from PID alone.
+Malformed global CIM output always blocks. Persist privacy-bounded versioned
+registration and resolution facts in the run's window/machine artifacts.
+
+Snapshot ownership and final normal cleanup are distinct. The sensor may
+resolve a proven owned terminal incarnation immediately, without waiting for
+every service stop. Before qualification, the owning replay checker also joins
+that resolution to the same run's retained cleanup observations and verifies
+exit0, no force, and no surviving descendants/listeners. Existing guard,
+source, write-witness, raw timing and cleanup conditions remain mandatory.
+
+T1 must falsify omitted/incomplete/malformed details, inaccessible handles,
+live unresolved work, complete foreign commands, stale creation/PID reuse,
+wrong parent/run/image/command, and exceptions during handle release.
+T2 must exercise actual standalone and aggregate replay against forged clean
+summaries, missing registration, changed incarnation, wrong-run or missing
+cleanup, forced/unknown exit, and existing witness/source/guard failures.
+T3 covers file ownership, unchanged28-node DAG, size/whitespace and OpenSpec.
+T4 uses bounded real short-lived children and a stale registered creation
+identity; do not attempt unbounded OS PID-reuse forcing.
+
+Review this amendment before implementation. After RED/GREEN and independent
+code review, publish the scoped correction, freeze a new input family, and
+rerun native support/pilot before the unchanged full diagnostic and later
+certification sequence. No historical failed window is reclassified. The
+earlier input family and support runs retain their actual source identities.
+Reader-doc impact is validation/operations only.
+
 ## Global Constraints
 
 - Windows only; synthetic state, loopback endpoints, no real providers/models.

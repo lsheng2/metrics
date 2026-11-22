@@ -7,6 +7,14 @@ from datetime import datetime
 from pathlib import Path
 
 from ai_host.exit_processes import living_children
+from scripts.validation.windows_host_process_window import (
+    owner_registrations_by_instance,
+    registration_key,
+    ProcessWindowCapture,
+    native_process_rows_by_pid,
+    terminal_resolution_fact,
+)
+from scripts.validation.windows_qualification_inputs import QualificationError
 
 
 PERFORMANCE_TEST_MARKERS = (
@@ -29,6 +37,10 @@ GIT_READ_COMMANDS = {"status", "rev-parse", "diff", "show", "log", "ls-files", "
 GIT_WRITE_COMMANDS = {
     "add", "am", "apply", "branch", "checkout", "cherry-pick", "clean", "commit",
     "merge", "mv", "pull", "push", "rebase", "reset", "restore", "rm", "switch", "tag", "worktree",
+}
+RELEVANCE_WORKLOAD = {
+    "metrics_runtime": True, "performance_validation": True, "sensor_unresolved": True,
+    "git_write": True, "git_unknown": True, "git_read": False, "tooling_unrelated": False,
 }
 
 
@@ -150,8 +162,10 @@ def _command_fingerprint(command):
     return {'display': ' '.join(sanitized), 'sha256': digest}
 
 
-def classify_process_observations(records, *, owned_identities):
+def classify_process_observations(records, *, owned_identities, owned_process_facts=None, current_run_id=None):
     processes, blockers = [], []
+    resolution_facts = []
+    registrations = owner_registrations_by_instance(owned_process_facts, current_run_id)
     for row in records:
         relevant = row.get('metrics_workload') is True
         identity = row.get('identity')
@@ -160,7 +174,13 @@ def classify_process_observations(records, *, owned_identities):
         elif relevant and identity:
             classification = 'foreign_relevant'
         elif relevant:
-            classification = 'unresolved_relevant'
+            registration = registrations.get(registration_key(row.get("pid"), (row.get("process_window") or {}).get("native_creation")))
+            terminal_fact = terminal_resolution_fact(row, registration, _command_fingerprint) if registration else None
+            if terminal_fact is not None:
+                classification = 'owned_terminal'
+                resolution_facts.append(terminal_fact)
+            else:
+                classification = 'unresolved_relevant'
         else:
             classification = 'tooling_unrelated'
         item = {
@@ -168,85 +188,112 @@ def classify_process_observations(records, *, owned_identities):
             'identity': identity,
             'relevance': row.get('relevance'),
             'classification': classification,
-            'command_fingerprint': _command_fingerprint(row.get('command')),
+            'command_fingerprint': (
+                _command_fingerprint(row["command"]) if row.get("command") is not None
+                else row.get("command_fingerprint")
+            ),
         }
         processes.append(item)
         if classification in {'foreign_relevant', 'unresolved_relevant'}:
             blockers.append(f'{classification}:{row.get("pid")}')
-    return {'processes': processes, 'certification_blockers': blockers}
+    return {'processes': processes, 'certification_blockers': blockers, 'process_resolution_facts': resolution_facts}
 
 
 def sanitize_process_rows(records):
-    allowed = {"pid", "parent_pid", "name", "threads", "identity", "metrics_workload", "relevance", "sensor_error"}
-    return [{key: row[key] for key in allowed if key in row} for row in records]
+    allowed = {
+        "pid", "parent_pid", "name", "threads", "identity", "metrics_workload",
+        "relevance", "sensor_error", "process_window",
+    }
+    return [
+        {**{key: row[key] for key in allowed if key in row},
+         "command_fingerprint": _command_fingerprint(row.get("command"))}
+        for row in records
+    ]
+
+
+def _registration_from_retained_native(pid, ops, platform_ops, *, role, expected_native_creation=None, expected_marker=None):
+    pid = int(pid)
+    row = native_process_rows_by_pid([pid]).get(pid)
+    if not row:
+        return None, None, None
+    command_line, created, marker = "", "", None
+    with ProcessWindowCapture([row]) as capture:
+        native = capture.facts().get(pid, {})
+        command_line = ops.process_command_line(pid)
+        created = platform_ops.get_process_created_at(pid)
+        if role == "service_root":
+            marker = ops.process_start_marker(pid)
+            if not expected_marker or marker != expected_marker:
+                return None, None, None
+    if expected_native_creation is not None and str(native.get("native_creation")) != str(expected_native_creation):
+        return None, None, None
+    sensor_identity = process_identity(pid, created, command_line)
+    fingerprint = _command_fingerprint(_split_command(command_line))
+    if (not fingerprint or not sensor_identity or native.get("handle_opened") is not True
+            or native.get("native_creation") in (None, "")
+            or native.get("parent_pid") is None or not native.get("image_name")):
+        return None, sensor_identity, marker
+    return {
+        "schema_version": 1,
+        "pid": pid,
+        "parent_pid": native.get("parent_pid"),
+        "image_name": native.get("image_name"),
+        "native_creation": native.get("native_creation"),
+        "command_fingerprint": fingerprint,
+        "sensor_identity": sensor_identity,
+        "role": role,
+    }, sensor_identity, marker
 
 
 def owned_process_identity_facts_from_state(state, ops):
     from scripts.service_lifecycle_engine import platform_ops
 
-    identities = set()
-    descendants = []
-    provenance = state.get('provenance') if isinstance(state, dict) else None
-    sle_marker = None
-    pid = None
-    if isinstance(provenance, dict):
-        sle_marker = provenance.get('process_start_marker') or None
-        if sle_marker:
-            identities.add(str(sle_marker))
-    sensor_identity = None
+    facts = {
+        "identities": set(), "sensor_identity": None, "sle_marker": None,
+        "listener_identity": None, "descendant_identities": [], "registrations": [],
+    }
+    provenance = state.get("provenance") if isinstance(state, dict) else None
+    if not isinstance(provenance, dict) or not provenance.get("process_start_marker"):
+        return facts
     try:
-        pid = int(state.get('pid'))
-        command_line = ops.process_command_line(pid)
-        created = platform_ops.get_process_created_at(pid)
-        sensor_identity = process_identity(pid, created, command_line)
-        if sensor_identity:
-            identities.add(sensor_identity)
-        marker = ops.process_start_marker(pid)
-        if marker:
-            sle_marker = sle_marker or marker
-            identities.add(str(marker))
+        pid = int(state["pid"])
+        root, sensor_identity, marker = _registration_from_retained_native(
+            pid, ops, platform_ops, role="service_root", expected_marker=provenance["process_start_marker"],
+        )
+        if root is None:
+            return facts
+        facts.update(sensor_identity=sensor_identity, sle_marker=marker)
+        facts["identities"].update((sensor_identity, marker))
+        facts["registrations"].append(root)
+        child_rows = living_children(root_pid=pid)
+    except QualificationError:
+        raise
     except Exception:
-        pass
-    if pid is not None:
+        return facts
+    for child in child_rows:
+        child_pid = int(child["pid"])
+        child_identity = None
         try:
-            child_rows = living_children(root_pid=pid)
-        except Exception:
-            child_rows = ()
-        for child in child_rows:
-            child_identity = None
-            child_pid = int(child["pid"])
-            try:
-                child_command = ops.process_command_line(child_pid)
-                child_created = platform_ops.get_process_created_at(child_pid)
-                child_identity = process_identity(child_pid, child_created, child_command)
-                if child_identity:
-                    identities.add(child_identity)
-            except Exception:
-                pass
-            descendants.append({
-                "pid": child_pid,
-                "parent_pid": child.get("parent_pid"),
-                "created": child.get("created"),
-                "sensor_identity": child_identity,
-            })
-    listener_identity = None
-    if isinstance(provenance, dict):
-        listener_pid = provenance.get('listener_pid')
-        try:
-            if listener_pid is not None:
-                marker = ops.process_start_marker(int(listener_pid))
-                if marker:
-                    listener_identity = marker
-                    identities.add(str(marker))
+            registration, child_identity, _ = _registration_from_retained_native(
+                child_pid, ops, platform_ops, role="descendant", expected_native_creation=child["created"],
+            )
+            if registration is not None and registration["parent_pid"] == child.get("parent_pid"):
+                facts["identities"].add(child_identity)
+                facts["registrations"].append(registration)
+            else:
+                child_identity = None
+        except QualificationError:
+            raise
         except Exception:
             pass
-    return {
-        "identities": identities,
-        "sensor_identity": sensor_identity,
-        "sle_marker": sle_marker,
-        "listener_identity": listener_identity,
-        "descendant_identities": descendants,
-    }
+        facts["descendant_identities"].append({
+            **child, "sensor_identity": child_identity,
+        })
+    listener_pid = provenance.get("listener_pid")
+    for registration in facts["registrations"]:
+        if registration["pid"] == listener_pid:
+            facts["listener_identity"] = registration["sensor_identity"]
+    return facts
 
 
 def owned_process_identities_from_state(state, ops):

@@ -228,6 +228,89 @@ def test_stop_arms_missing_pid_port_or_platform_observation_is_failure():
     assert cleanup["observations"]["candidate"]["observation_errors"]
 
 
+def test_owner_registration_rejects_descendant_native_creation_mismatch(monkeypatch):
+    from scripts.validation import windows_host_process_identity as identity
+    from scripts.service_lifecycle_engine import platform_ops
+
+    class Ops:
+        def process_command_line(self, pid):
+            return f"python.exe child-{pid}"
+
+        def process_start_marker(self, pid):
+            return f"marker-{pid}"
+
+    monkeypatch.setattr(identity, "living_children", lambda root_pid: [
+        {"pid": 556, "parent_pid": root_pid, "created": 111, "name": "conhost.exe"},
+    ])
+    monkeypatch.setattr(platform_ops, "get_process_created_at", lambda pid: f"created-{pid}")
+    monkeypatch.setattr(identity, "native_process_rows_by_pid", lambda pids: {
+        int(pid): {
+            "pid": int(pid),
+            "parent_pid": 321 if int(pid) == 556 else 1,
+            "name": "conhost.exe" if int(pid) == 556 else "python.exe",
+        } for pid in pids
+    })
+
+    class Capture:
+        def __init__(self, rows):
+            self.rows = rows
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def facts(self):
+            return {
+                row["pid"]: {
+                    "handle_opened": True,
+                    "native_creation": 222 if row["pid"] == 556 else 333,
+                    "parent_pid": row["parent_pid"],
+                    "image_name": row["name"],
+                } for row in self.rows
+            }
+
+    monkeypatch.setattr(identity, "ProcessWindowCapture", Capture)
+
+    facts = identity.owned_process_identity_facts_from_state(
+        {"pid": 321, "provenance": {"process_start_marker": "marker-321"}}, Ops(),
+    )
+
+    assert 321 in {row["pid"] for row in facts["registrations"]}
+    assert 556 not in {row["pid"] for row in facts["registrations"]}
+
+
+def test_cleanup_native_observation_does_not_default_non_python_descendant_image(monkeypatch):
+    from contextlib import ExitStack, contextmanager
+    from scripts.validation import windows_host_process_cleanup as cleanup
+
+    calls = []
+    monkeypatch.setattr(cleanup, "living_children", lambda root_pid: [
+        {"pid": 556, "parent_pid": root_pid, "created": 111},
+    ])
+
+    def fake_native(pid, *, parent_pid=None, image_name=""):
+        calls.append((pid, image_name))
+        return {
+            "handle_opened": True, "handle_closed": True, "native_creation": 111,
+            "parent_pid": parent_pid, "image_name": "conhost.exe",
+        }
+
+    monkeypatch.setattr(cleanup, "native_process_fact", fake_native)
+
+    class Ops:
+        @contextmanager
+        def observe_process_exit(self, pid):
+            yield lambda: 0
+
+    with ExitStack() as stack:
+        capture = cleanup._capture_owned_process_observations({"pid": 321}, Ops(), stack, run_id="window-1")
+
+    assert (556, "") in calls
+    assert capture["owned_processes"][556]["native_image_name"] == "conhost.exe"
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows Toolhelp inventory is required")
 def test_owned_toy_child_inventory_and_retained_exit_handle_survive_parent_exit(tmp_path):
     from ai_host.exit_processes import living_children

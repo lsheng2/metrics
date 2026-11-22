@@ -5,6 +5,7 @@ from contextlib import ExitStack
 from dataclasses import asdict
 
 from ai_host.exit_processes import living_children
+from scripts.validation.windows_host_process_window import native_process_fact
 
 
 def cleanup_is_normal(cleanup):
@@ -52,7 +53,7 @@ def _provenance_listener_pid(state):
         return None
 
 
-def _capture_owned_process_observations(state, ops, stack):
+def _capture_owned_process_observations(state, ops, stack, *, run_id=None):
     errors, owned = [], {}
     if ops is None:
         return {'owned_processes': owned, 'observation_errors': ['platform_ops_unavailable']}
@@ -71,6 +72,29 @@ def _capture_owned_process_observations(state, ops, stack):
     if listener_pid is not None and listener_pid not in owned:
         owned[listener_pid] = {'pid': listener_pid, 'role': 'listener'}
     for process in owned.values():
+        if run_id is not None:
+            process['run_id'] = run_id
+        try:
+            native = native_process_fact(
+                int(process['pid']),
+                parent_pid=process.get('parent_pid'),
+                image_name=process.get('name') or '',
+            )
+            if process.get('created') is not None and process['created'] != native.get('native_creation'):
+                errors.append(f'native_incarnation_changed:{process["pid"]}')
+            if native.get('native_creation') not in (None, ''):
+                process['native_creation'] = native['native_creation']
+            if native.get('parent_pid') is not None:
+                process['native_parent_pid'] = native['parent_pid']
+            if native.get('image_name'):
+                process['native_image_name'] = native['image_name']
+            process['native_handle_opened'] = native.get('handle_opened') is True
+            process['native_handle_closed'] = native.get('handle_closed') is True
+            if (not process['native_handle_opened'] or not process['native_handle_closed']
+                    or type(native.get('native_creation')) is not int or native['native_creation'] <= 0):
+                errors.append(f'native_observation_failed:{process["pid"]}')
+        except Exception as error:
+            errors.append(f'native_identity_failed:{process["pid"]}:{type(error).__name__}')
         try:
             process['_exit_observation'] = stack.enter_context(ops.observe_process_exit(int(process['pid'])))
         except Exception as error:
@@ -97,7 +121,7 @@ def _finalize_owned_process_observations(capture, ops):
     return all_absent, errors
 
 
-def stop_arms(engine, names):
+def stop_arms(engine, names, *, run_id=None):
     states = engine.read_state() if hasattr(engine, 'read_state') else {}
     results = {}
     ops = getattr(engine, 'platform_ops', None)
@@ -106,7 +130,9 @@ def stop_arms(engine, names):
     listeners_absent = True
     with ExitStack() as stack:
         captures = {
-            name: _capture_owned_process_observations(states.get(name, {}) if isinstance(states, dict) else {}, ops, stack)
+            name: _capture_owned_process_observations(
+                states.get(name, {}) if isinstance(states, dict) else {}, ops, stack, run_id=run_id,
+            )
             for name in names
         }
         for name in reversed(names):

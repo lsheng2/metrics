@@ -17,6 +17,7 @@ from scripts.validation.windows_host_processes import classify_process_observati
 from scripts.validation.windows_host_process_identity import (
     _command_is_bound_to_run_root, driver_process_identities, sanitize_process_rows, startup_owned_identities_from_run,
 )
+from scripts.validation.windows_host_process_window import capture_process_window
 
 
 def source_snapshot(root):
@@ -51,7 +52,7 @@ def _windows_process_details(processes):
     try:
         payload = json.loads(completed.stdout)
     except json.JSONDecodeError:
-        return {}
+        return {pid: {'sensor_error': 'process_detail_malformed'} for pid in target_pids}
     if isinstance(payload, dict):
         payload = [payload]
     details = {}
@@ -69,6 +70,8 @@ def _windows_process_details(processes):
         }
         if not details[pid]['command_line'] or not details[pid]['creation_date']:
             details[pid]['sensor_error'] = 'process_detail_incomplete'
+    for pid in target_pids - set(details):
+        details[pid] = {'sensor_error': 'process_detail_missing'}
     return details
 
 
@@ -102,8 +105,13 @@ def machine_snapshot(*, source_root=None, owned_root=None):
     finally:
         api.CloseHandle(snapshot)
     if source_root is not None or owned_root is not None:
+        with capture_process_window(processes) as process_window:
+            details = _windows_process_details(processes)
+            process_window_facts = process_window.finalize()
+        for pid, fact in process_window_facts.items():
+            details.setdefault(pid, {})['process_window'] = fact
         processes = enrich_process_observations(
-            processes, _windows_process_details(processes),
+            processes, details,
             source_root=source_root or '', owned_root=owned_root or '',
         )
     return {'cpu': cpu, 'processes': processes}
@@ -116,6 +124,7 @@ class MeasurementWindow:
         self.identity = str(uuid.uuid4())
         self.record = {'id': self.identity, 'pid': os.getpid(), 'snapshots': [], 'errors': []}
         self.owned_process_identities = set(owned_process_identities or ())
+        self.owned_process_facts = []
         self.launch_intents = []
         self._stop = threading.Event()
         self._thread = None
@@ -145,6 +154,19 @@ class MeasurementWindow:
     def register_owned_process_identities(self, identities):
         self.owned_process_identities.update(str(identity) for identity in identities if identity)
 
+    def register_owned_process_identity_facts(self, facts):
+        for fact in facts or ():
+            if not isinstance(fact, dict):
+                continue
+            pid = fact.get('pid')
+            native_creation = fact.get('native_creation')
+            if pid is None or native_creation in (None, ''):
+                continue
+            row = dict(fact)
+            row['run_id'] = self.identity
+            row['owner_key'] = f'{self.identity}:{int(pid)}:{native_creation}'
+            self.owned_process_facts.append(row)
+
     def register_launch_intent(self, command):
         self.check()
         if not _command_is_bound_to_run_root(command, self.run_root):
@@ -164,17 +186,23 @@ class MeasurementWindow:
         )
         driver_identities = driver_process_identities(row.get('processes', []), os.getpid())
         owned_identities = self.owned_process_identities | startup_identities['identities'] | driver_identities
+        owner_facts = list(self.owned_process_facts)
+        row['observed_owned_identities'] = sorted(owned_identities)
         row['ownership_setup'] = {
             'elapsed_ms': (time.monotonic() - setup_started) * 1000,
             'registered_identity_count': len(self.owned_process_identities),
+            'registered_owner_fact_count': len(owner_facts),
             'driver_identity_count': len(driver_identities),
             'startup_identity_count': len(startup_identities['identities']),
             'startup_matches': startup_identities['matches'],
         }
+        row['process_owner_registrations'] = owner_facts
         classification = classify_process_observations(
             row.get('processes', []), owned_identities=owned_identities,
+            owned_process_facts=owner_facts, current_run_id=self.identity,
         )
         row['process_classification'] = classification
+        row['process_resolution_facts'] = classification.get('process_resolution_facts', [])
         self.record['process_classification'] = classification
         if classification['certification_blockers']:
             self.record['errors'].append('relevant_process:' + ','.join(classification['certification_blockers']))

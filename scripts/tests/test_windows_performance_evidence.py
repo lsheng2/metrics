@@ -449,7 +449,8 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
         "errors": [],
         "source_before": {"head": "dashboard-source"},
         "source_after": {"head": "dashboard-source"},
-        "snapshots": [{"process_classification": {"certification_blockers": []}}],
+        "snapshots": [{"observed_owned_identities": [], "processes": [],
+                       "process_classification": {"certification_blockers": []}}],
         "verdict": {"guard_id": "window-1", "written_monotonic": 990.0, "path": str(run / "receipt.json")},
     }
     receipt = {

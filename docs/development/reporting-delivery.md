@@ -125,6 +125,27 @@ Final native, migration, mapped and certify producers share that source and
 fixture vector. The full qualifier reruns its seven modules; historical
 functional evidence is not relabelled as proof for a different source.
 
+Process-window observation retains read-only native handles across the CIM
+detail query. Missing or malformed detail never silently becomes unrelated.
+Current-run owner registration checks the original SLE start marker while the
+native handle is held; descendant creation identities must match their owned
+inventory. Only the same registered native incarnation with observed exit0 can
+resolve an incomplete detail row as owned-terminal. Unknown/living/foreign
+observations still block; PID-only caching is not permitted.
+The collector records its actual observed owned-identity input set and
+privacy-safe command fingerprints with each snapshot. Replay uses the same
+classifier for every raw row, including complete identities and unrelated
+tooling, and verifies classifications, blockers and terminal resolutions.
+Terminal resolutions also require their registrations and normal-cleanup
+evidence. Removing summary labels does not remove those obligations. Failed observer handle
+release invalidates capture, and cleanup requires successful native observation
+release as well as normal service exit and no surviving descendants/listeners.
+The first dev9 pilot remains immutable failed diagnostic evidence. The
+[bounded correction](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md#process-window-correction-2026-11-23)
+requires reviewed code and a newly frozen input family before renewed
+qualification. Numerical KPI, sampling cadence, production stop/leak budgets
+and the SDK wheel remain unchanged.
+
 The owner authorized this separate Windows performance phase on 2026-11-20.
 The [test plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md)
 defines a fresh D-drive environment, signed sampling recipe, measurement-tool
