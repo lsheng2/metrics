@@ -11,33 +11,41 @@ The approved delivery order and interfaces are in
 
 The migrated `ai_host`, summary, report-assist and project-run boundaries use
 the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
-The current candidate is `ai-base-runtime==0.1.1.dev6`, built from AIB
-`3dfa5bdad5236685802a9183db86bf751eb341b2`. Its wheel SHA256 is
-`e8279a3d987da1ef84d1f3f267f04c2b1c2ffd7822f6b3dc70ae10323dc99f1c`.
+The current candidate is `ai-base-runtime==0.1.1.dev7`, built from AIB
+`294f6c48e9792ea9ed49757104386246e859cc42`. Its wheel SHA256 is
+`fd8150f9c46bcb2d840da1f7edb72da9a1fbda7d1b9710a425a4d4e41ff33cbb`.
 This is a development candidate, not full AIB or Dashboard qualification.
 Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
 
 The owner requires latest AIB for final delivery and authorized the bounded
-Windows testkit calibration/new candidate on 2026-11-22. The dev6 package
-changes two testkit files only; non-testkit package bytes and dependency
-declarations match dev5. Production stop budgets and numerical KPI are unchanged.
-The [candidate decision](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md#windows-testkit-candidate-amendment-2026-11-22)
-supersedes the earlier dev5 target without promoting its old results.
-Fresh offline installation passed in `D:/AIGC/d6-1122/venv`: 19
+Windows testkit calibration/new candidate on 2026-11-22. The dev7 package
+changes five testkit files only; non-testkit package bytes and dependency
+declarations match dev6. Production stop budgets and numerical KPI are unchanged.
+The [candidate decision](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md#windows-lifetime-candidate-amendment-2026-11-22)
+supersedes the earlier target without promoting its old results.
+Fresh offline installation passed in `D:/AIGC/d7-1122/venv`: 19
 admission/package/host checks, authenticated page/assets, normal exit and no
 forced cleanup. Both environments have 83 distributions; only runtime version
-differs. Full dev6 functional acceptance and performance qualification are pending.
-The old dev5 environment is refused by the active dev6 pin.
-The full installed testkit follow-up is not green: its corrected formal runner
+differs. Full dev7 functional acceptance and performance qualification are pending.
+The old dev6 environment is refused by the active dev7 pin.
+The dev7 outside-checkout installed-only host/testkit combination passed148
+checks; genuine duplicate and moving-handle leak controls also passed after
+rejecting their held leaks. Installed files and frozen source inputs were
+unchanged. These scoped checks are not the complete Dashboard functional gate;
+see [candidate evidence](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev7-candidate-admission.json).
+The historical dev6 installed testkit follow-up was not green: its formal runner
 recorded 113 passes and one Windows ASGI resource-baseline failure. Task/thread
 identities returned, but the scalar handle lower bound did not. This remains
 unresolved, not a proven leak or a dismissed false positive. Bounded lifetime
-diagnostics and a deliberate semaphore-leak control inform the next method;
+diagnostics and a deliberate semaphore-leak control informed the dev7 method;
 they do not establish acceptance. See the
 [dev6 checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev6-install-checkpoint.json).
-Any further shipped correction requires a new immutable wheel, not a dev6 patch.
+Dev7 adds current-process lifetime evidence, original handle multiplicities and
+strict non-semaphore bounds. Capture races discard windows inside the same
+deadline; API/cleanup uncertainty cannot become PASS. Installed verification and
+fresh Dashboard functional evidence are required, not inferred from source tests.
 The official qualifier gives the exact full `project_management/tests` lane a
 7200-second outer subprocess cap, explicitly authorized on 2026-11-22. Other
 commands retain their existing caps. This aggregate envelope is separate from
@@ -49,10 +57,10 @@ attempt failed in runtime-stop teardown, and the fresh attempt failed the
 pre-workload resource observer's stable-plateau requirement. Diagnostics
 observed bounded Semaphore churn but do not establish acceptance or fully
 explain the uninstrumented failures. The newly authorized observer calibration
-does not claim to solve the earlier slow-stop cause; fresh dev6 proof is required.
+does not claim to solve the earlier slow-stop cause; fresh current-candidate proof is required.
 The [post-amendment checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev5-budget-requalification.json)
 retains both failures and the diagnostic/non-qualification boundary.
-Retain all dev4/dev5 environments, failures and receipts as history.
+Retain all earlier environments, failures and receipts as history.
 Final performance input freeze and certification
 must then use the new candidate and matching functional evidence; no automatic
 latest-version range, mixed-wheel evidence or legacy fallback is permitted.
@@ -289,7 +297,7 @@ Never change a historical owner marker or relabel an old receipt for a new wheel
 Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = 'D:\AIGC\d6-1122\venv\Scripts\python.exe'
+$reportingPython = 'D:\AIGC\d7-1122\venv\Scripts\python.exe'
 & $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
@@ -301,7 +309,7 @@ service or user database is silently switched.
 
 ### Windows Offline Installation
 
-The current owned artifact root is `D:\AIGC\d6-1122`.
+The current owned artifact root is `D:\AIGC\d7-1122`.
 Its `wheels/` directory contains the runtime and Windows dependency wheels.
 The installation qualifier takes the release-input record, validates ownership
 and candidate files before creating anything, creates a fresh venv, resolves
@@ -329,8 +337,8 @@ To install another development environment from a successful qualification,
 run from the Dashboard repository root:
 
 ```powershell
-$artifacts = 'D:\AIGC\d6-1122'
-$installed = Get-Content -Raw "$artifacts\evidence\install-dev6-r1.json" | ConvertFrom-Json
+$artifacts = 'D:\AIGC\d7-1122'
+$installed = Get-Content -Raw "$artifacts\evidence\install-dev7-r1.json" | ConvertFrom-Json
 if ($installed.result -ne 'PASS') { throw 'Installation qualification has not passed' }
 $wheelhouse = Join-Path $artifacts 'wheels'
 foreach ($wheel in $installed.wheels.PSObject.Properties) {
@@ -351,7 +359,7 @@ if (Test-Path -LiteralPath $newEnvironment) { throw 'Choose a new environment pa
 if ($LASTEXITCODE -ne 0) { throw 'Environment creation failed' }
 $reportingPython = Join-Path $newEnvironment 'Scripts\python.exe'
 $env:PIP_CONFIG_FILE = 'nul'
-$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev6-py3-none-any.whl'
+$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev7-py3-none-any.whl'
 & $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints $runtimeWheel
 if ($LASTEXITCODE -ne 0) { throw 'Runtime installation failed' }
 & $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints -r requirements.txt

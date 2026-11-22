@@ -4,17 +4,33 @@
 
 **Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
 `origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
-2026-11-22 另授权 Windows testkit 校准，新目标为 `ai-base-runtime==0.1.1.dev6`，
+2026-11-22 另授权 Windows testkit 校准，当前目标为 `ai-base-runtime==0.1.1.dev7`，
 具体源码与 wheel SHA256 见
-[当前候选约束](windows-performance-phase.md#windows-testkit-candidate-amendment-2026-11-22)。
-Dashboard 已在独立环境安装 dev6；新候选功能验收与性能输入复签尚未完成。
-历史 dev4/dev5 节点和不可变证据保留，不代表最新候选已经通过。
+[当前候选约束](windows-performance-phase.md#windows-lifetime-candidate-amendment-2026-11-22)。
+Dashboard 已在独立环境安装 dev7；新候选功能验收与性能输入复签尚未完成。
+历史候选节点和不可变证据保留，不代表最新候选已经通过。
 下一切片先完成候选更新及受影响功能补验，再做完整性能诊断和认证；
 不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
 
-### Dev6 Calibration Progress
+### Dev7 Lifetime Accounting Progress
+
+AIB lifetime source `294f6c4` passed148 source checks, real duplicate/moving
+semaphore controls and independent source review1/1 with zero findings.
+Candidate `0.1.1.dev7` wheel SHA256 is
+`fd8150f9c46bcb2d840da1f7edb72da9a1fbda7d1b9710a425a4d4e41ff33cbb`.
+New D:/AIGC/d7-1122/venv installation passed19 checks and normal stop;
+83 distributions differ from dev6 only in runtime version. Old dev6 is refused.
+Only five testkit package files changed; production/assets/dependencies/stop/KPI
+unchanged. The complete installed testkit combination148PASS and real installed
+alias/moving-handle controls passed. Candidate/consumer receipt review is pending,
+followed by a fresh
+native/complete/migration/mapped/all-seven-module functional chain. No full
+functional or performance acceptance is claimed.
+See [candidate admission evidence](evidence/windows-dev7-candidate-admission.json).
+
+### Dev6 Calibration Progress (Historical)
 
 Owner authorized Windows testkit calibration and a new immutable candidate on
 2026-11-22. AIB source `3dfa5bdad5236685802a9183db86bf751eb341b2` passed

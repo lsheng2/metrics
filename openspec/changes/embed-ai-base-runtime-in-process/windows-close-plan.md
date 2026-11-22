@@ -39,6 +39,12 @@ decision about resuming other Apps. This is not full AIB repository release.
 
 ### Dev6 Observer Candidate Refresh (2026-11-22)
 
+The active continuation is now the reviewed dev7 lifetime candidate, after
+dev6's installed ASGI observation failure. Use D:/AIGC/d7-1122 and versioned
+`windows-functional-acceptance-dev7.json` / `windows-performance-inputs-dev7.json`
+outputs. The owner scope, complete gate chain and unchanged budgets below
+still apply; the following dev6 identity/root records are historical.
+
 The owner authorized AIB Windows testkit observer calibration, independent
 review, a new immutable wheel and Dashboard requalification. The source change
 is separately reviewed at AIB `3dfa5bd`; the exact candidate identity is in

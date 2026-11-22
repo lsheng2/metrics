@@ -5,7 +5,21 @@ Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 
+## Windows Lifetime Candidate Amendment (2026-11-22)
+
+The same bounded calibration authorization continues with the independently
+reviewed lifetime-accounting source `294f6c48e9792ea9ed49757104386246e859cc42`.
+Candidate `ai-base-runtime==0.1.1.dev7` has wheel SHA256
+`fd8150f9c46bcb2d840da1f7edb72da9a1fbda7d1b9710a425a4d4e41ff33cbb`.
+Only five testkit files differ from dev6; production code/assets, dependencies,
+stop budgets and the complete numerical KPI/recipe are unchanged. New Windows
+installation passed; full functional acceptance and performance remain pending.
+Retain failed dev6 installed-testkit evidence. Fresh dev7 functional acceptance
+must precede its canonical performance-input renewal and numerical certification.
+
 ## Windows Testkit Candidate Amendment (2026-11-22)
+
+Historical dev6 selection, superseded by the lifetime candidate above.
 
 The owner authorized only Windows testkit resource-observer calibration,
 independent review, a new immutable wheel and consumer requalification.
