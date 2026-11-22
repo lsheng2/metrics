@@ -24,8 +24,8 @@ Independent code review found one command-failure promotion issue; its complete
 failure family was fixed and fresh rereview passed 1/1
 (`D:/AIGC/jd-1122/reviews/tools-gate.json`). All six commands in the retained
 private-wheel positive run were independently checked as exit 0, not timeout.
-Formal candidate admission/full gates remain open. Source/private-wheel success
-is not promotion of failed dev8.
+Formal dev9 admission and functional gates now pass; performance remains NOT_RUN.
+Source/private-wheel success is not promotion of failed dev8.
 This is a development workflow change, not qualification of the failed dev8 run.
 
 **Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
@@ -33,9 +33,9 @@ This is a development workflow change, not qualification of the failed dev8 run.
 2026-11-22 另授权 Windows testkit 校准，当前目标为 `ai-base-runtime==0.1.1.dev9`，
 具体源码与 wheel SHA256 见
 [当前候选约束](windows-performance-phase.md#windows-convergence-candidate-amendment-2026-11-22)。
-Dashboard 已在独立环境安装 dev9；新候选功能验收与性能输入复签尚未完成。
+Dashboard dev9 Windows 功能验收已通过；性能输入复签与认证尚未完成。
 历史候选节点和不可变证据保留，不代表最新候选已经通过。
-下一切片先完成候选更新及受影响功能补验，再做完整性能诊断和认证；
+下一切片复签性能输入并修正回执汇总绑定，再做完整性能诊断和认证；
 不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
@@ -50,8 +50,13 @@ testkit file differs from dev8; production/assets/dependencies/stop/KPI unchange
 New D:/AIGC/d9-1122/venv offline installation passed19 and normal stop without
 force. The83-package environments differ only in runtime version; old dev8
 is refused and47 installer/lock controls passed.
-Candidate receipt review then fresh native/complete/migration/mapped/seven-module
-functional qualification remain required; performance is NOT_RUN.
+Fresh native 56, complete 74/recovery 39, migration and mapped proofs passed.
+The official qualifier at `423846c` passed all 114 keys and all seven modules;
+W2.R and FUNC.R each reached 1/1 clean pass. The versioned
+[functional receipt](evidence/windows-functional-acceptance-dev9.json)
+preserves performance NOT_RUN and the historical failure boundary.
+One earlier UI caret-wait failure remains uncaused; bounded diagnostics and the
+later complete official pass do not establish that its cause was repaired.
 See [dev9 candidate evidence](evidence/windows-dev9-candidate-admission.json).
 
 ### Dev8 Capture Calibration Progress (Historical)

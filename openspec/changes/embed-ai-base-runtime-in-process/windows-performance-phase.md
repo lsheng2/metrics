@@ -16,9 +16,11 @@ retains object identities and every complete inventory/identity check; an
 unresolved race still invalidates the window. Real leakage tests, production
 code/assets/dependencies, stop budgets and the full numerical KPI/recipe remain
 unchanged. Source and formal installed host/testkit each passed163; fresh
-offline Dashboard installation passed19. No full functional or performance
-acceptance is implied. Use D:/AIGC/d9-1122 for fresh formal evidence and retain
-all old candidate artifacts/failures unchanged.
+offline Dashboard installation passed19. Windows Dashboard functional acceptance
+now passes at `423846c`, including 114 keys and all seven official module lanes;
+see the [versioned receipt](evidence/windows-functional-acceptance-dev9.json).
+Performance remains NOT_RUN. Use D:/AIGC/d9-1122 for fresh formal evidence and
+retain all old candidate artifacts/failures unchanged.
 
 ## Windows Capture Candidate Amendment (2026-11-22)
 

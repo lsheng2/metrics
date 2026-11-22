@@ -1,0 +1,149 @@
+{
+  "acceptance_profile": "functional",
+  "candidate": {
+    "source_commit": "fc680c3702ac4eaeae0a75486fa173b280929447",
+    "version": "0.1.1.dev9",
+    "wheel": "D:\\AIGC\\d9-1122\\wheels\\ai_base_runtime-0.1.1.dev9-py3-none-any.whl",
+    "wheel_sha256": "c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec"
+  },
+  "complete_conformance": {
+    "path": "D:\\AIGC\\d9-1122\\complete-functional-r1\\receipt.json",
+    "sha256": "cb9c148daa3a5edd11e4cf704022c73b1d1ac18f483874ce12e0f03bf7b6a08d"
+  },
+  "evidence_policy": "Counts overlap between producers; do not sum them. Whole green report reuse is not new execution.",
+  "functional_status": "PASS",
+  "generator": {
+    "path": "D:\\AIGC\\d9-1122\\tools\\write-functional-acceptance.py",
+    "sha256": "ae81fc6a37e8bac7b4bf3842c49815657a93de0a55b39ad121662b19582fa42b"
+  },
+  "historical_failures": "Preserved. Current PASS does not establish a shared OS root cause or erase earlier failures.",
+  "mapped_proof": {
+    "path": "D:\\AIGC\\d9-1122\\mapped-proof-runs\\0bcde675-73cc-457f-8fef-110d1b169167\\proof.json",
+    "sha256": "b95930db5845f5082c47b40f19525d9d8f755c73e8eec11870dc6a5f2093119f"
+  },
+  "module_lanes": {
+    "ai_host/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\6562b5cb-3491-49c8-9f70-2a4e44b442b3\\junit\\lane-1.verified.xml",
+        "sha256": "00ae7ce4f4e328442391dcf8e43b589a7fcbd94065931ebe4d0538eae78163c1"
+      },
+      "tests": 266
+    },
+    "bug_metrics/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\6562b5cb-3491-49c8-9f70-2a4e44b442b3\\junit\\lane-3.verified.xml",
+        "sha256": "09c0b1c4ede7e6c1d513ce28a1a6454b759c47c20bd1ab2889f23705d881efe9"
+      },
+      "tests": 250
+    },
+    "jira_sync/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\6562b5cb-3491-49c8-9f70-2a4e44b442b3\\junit\\lane-4.verified.xml",
+        "sha256": "8e755367c536b8ec774abcf04d5bd957337b7afa58f78ae6d441b80cabc633e1"
+      },
+      "tests": 32
+    },
+    "metrics/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\6562b5cb-3491-49c8-9f70-2a4e44b442b3\\junit\\lane-2.verified.xml",
+        "sha256": "14abb9695d26feeb30e6242ef152e6bd92a14734586e3e542ffec074fbf0d554"
+      },
+      "tests": 19
+    },
+    "project_management/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\6562b5cb-3491-49c8-9f70-2a4e44b442b3\\junit\\lane-6.verified.xml",
+        "sha256": "4469f010171934616f3b7b5f24b529d2bc99eaf2cdebf1636109a46a443c9d76"
+      },
+      "tests": 971
+    },
+    "scripts/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\6562b5cb-3491-49c8-9f70-2a4e44b442b3\\junit\\lane-7.verified.xml",
+        "sha256": "37bb56590ea195dd77369d671e8e066957a58a447d5b01f05c4c6bfab4183883"
+      },
+      "tests": 781
+    },
+    "ui_web/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\6562b5cb-3491-49c8-9f70-2a4e44b442b3\\junit\\lane-5.verified.xml",
+        "sha256": "971342d98fbb747f995fa42bb0273fea1a838412f89c4c689d1a3f2087a4741a"
+      },
+      "tests": 765
+    }
+  },
+  "performance_deferred_aspects": [
+    "clause:10.4:B3-incremental-timing:performance",
+    "clause:10.4:B6-page-assets:performance",
+    "clause:10.4:B6-production-static:performance",
+    "clause:10.4:B9-saturation:performance",
+    "clause:10.4:exclusive-window:performance",
+    "clause:10.4:source-and-cleanup:performance",
+    "task:10.4"
+  ],
+  "performance_status": "NOT_RUN",
+  "producers": {
+    "windows-host-conformance": {
+      "path": "D:\\AIGC\\d9-1122\\evidence\\native-functional-r1.json",
+      "sha256": "a8d37bed68fd4a0cf28d62804c839672370d69703c19779d93d266a06e0248a2"
+    },
+    "windows-migration-rehearsal": {
+      "path": "D:\\AIGC\\d9-1122\\evidence\\migration-functional-r1.json",
+      "sha256": "d08e6ea1806bd50fc11941c3addbafc5045e0d27672ab6629a07c740fb877193"
+    }
+  },
+  "qualification": {
+    "path": "D:\\AIGC\\d9-1122\\inputs\\windows-functional\\2534abbc-f68b-4609-bd38-b0b58881cb9e\\qualification.json",
+    "sha256": "39c9c29961a5da0110fe0d0e164208c775fad696dc78b7071c50ae317689aa42"
+  },
+  "qualification_inputs": {
+    "path": "D:\\AIGC\\d9-1122\\inputs\\windows-functional\\2534abbc-f68b-4609-bd38-b0b58881cb9e\\inputs.json",
+    "sha256": "7e1ffd13725ef76387ab1172f1ca2fd697e56fec61bbb329b3de21946d0820ce"
+  },
+  "qualification_mode": "official-single-run",
+  "qualification_validator": null,
+  "required_functional_evidence_keys": 114,
+  "reviews": {
+    "FUNC.R": {
+      "clean_passes": 1,
+      "gate": {
+        "path": "D:\\AIGC\\d9-1122\\functional-gate.json",
+        "sha256": "5db2dd2564e0d59ca208f0dc3e0ce8829af2da60025375809b86361bdc14a1b5"
+      },
+      "required_passes": 1,
+      "transcript": {
+        "path": "D:\\AIGC\\d9-1122\\functional-review-r2.txt",
+        "sha256": "250163cb4c3c2131cce179c188f3c34273df45544c341b5654df442c5a1925bd"
+      }
+    },
+    "W2.R": {
+      "clean_passes": 1,
+      "gate": {
+        "path": "D:\\AIGC\\d9-1122\\w2-gate.json",
+        "sha256": "3b6d0139c28b14c824b30b93ae72148debbe082fa14b46f98f5659b3670581e7"
+      },
+      "required_passes": 1,
+      "transcript": {
+        "path": "D:\\AIGC\\d9-1122\\w2-review-r1.txt",
+        "sha256": "df7c4d57efa8d31abf5ef160fbaa9cfccd537ef3bf4219ebe1510f7143fdb843"
+      }
+    }
+  },
+  "schema_version": 1,
+  "scope": "Windows Dashboard MDB-2 synthetic functional acceptance",
+  "scope_exclusions": [
+    "performance",
+    "Linux/WSL/containers",
+    "other Apps",
+    "real providers/models/data",
+    "whole AIB release",
+    "push/merge/worktree retirement"
+  ],
+  "source_policy": "The validated source precedes the documentation-only acceptance commit; that commit is reported separately.",
+  "status": "PASS",
+  "validated_functional_evidence_keys": 114,
+  "validated_source": {
+    "commit": "423846c58ebfabd3c8810a198407d6ae8cd02b6b",
+    "status": ""
+  }
+}

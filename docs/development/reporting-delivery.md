@@ -14,7 +14,7 @@ the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
 The current candidate is `ai-base-runtime==0.1.1.dev9`, built from AIB
 `fc680c3702ac4eaeae0a75486fa173b280929447`. Its wheel SHA256 is
 `c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec`.
-This is a development candidate, not full AIB or Dashboard qualification.
+This is a development candidate, not whole-AIB release or performance certification.
 Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
@@ -28,7 +28,10 @@ supersedes the earlier target without promoting its old results.
 Fresh offline installation passed in `D:/AIGC/d9-1122/venv`: 19
 admission/package/host checks, authenticated page/assets, normal exit and no
 forced cleanup. Both environments have 83 distributions; only runtime version
-differs. Full dev9 functional acceptance and performance qualification are pending.
+differs. Dev9 Windows functional acceptance now passes; performance remains NOT_RUN.
+The [current functional receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json)
+binds the tested Dashboard source `423846c58ebfabd3c8810a198407d6ae8cd02b6b`,
+114/114 keys, all seven module gates and independent W2.R/FUNC.R review.
 The old dev8 environment is refused by the active dev9 pin.
 Dev9 obtains one fresh complete capture after an internally detected race,
 retaining pinned object identities instead of erasing lifetime evidence.
@@ -66,7 +69,7 @@ That failure remains evidence, not a passed consumer milestone. Dev9 retains
 current-process lifetime evidence, original handle multiplicities and strict
 non-semaphore bounds. Capture races discard windows inside the same
 deadline; API/cleanup uncertainty cannot become PASS. Fresh Dashboard functional
-evidence is still required, not inferred from source or generic installed-host tests.
+evidence is bound by the current receipt, not inferred from generic host tests.
 The official qualifier gives the exact full `project_management/tests` lane a
 7200-second outer subprocess cap, explicitly authorized on 2026-11-22. Other
 commands retain their existing caps. This aggregate envelope is separate from
@@ -92,13 +95,17 @@ performance acceptance for the new candidate.
 The Windows delivery sequence is specified in the
 [MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
 with detailed steps and a clause-to-evidence matrix. Installation and entrypoint
-retirement passed W1. Historical dev4 Windows synthetic-data `FUNC.ACCEPT` passed at
-source `ff09d6ff97dd62e56fb3bfc44914c5c08582a144`: the
-[formal receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json)
+retirement passed W1. Current dev9 Windows synthetic-data `FUNC.ACCEPT` passed at
+source `423846c58ebfabd3c8810a198407d6ae8cd02b6b`: the
+[formal receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json)
 binds 114/114 functional keys, all seven module gates and independent review.
+The old dev4 receipt remains historical and unchanged. An earlier dev9 official
+UI lane failed a 30s editor caret-wait assertion; subsequent bounded diagnostics
+and the complete official run passed without code/assertion/budget changes.
+Its cause remains unproven, not silently classified as fixed.
 The method review and KPI freeze passed; the remaining
 [performance phase](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md)
-must refresh the final candidate, complete probes, optimize if needed and certify.
+must refresh matching performance references, complete probes, optimize if needed and certify.
 Performance acceptance remains NOT_RUN;
 stop/cancel/cleanup bounds remain functional and were not relaxed.
 The receipt covers the tested source, not subsequent product changes or full AIB release.
