@@ -30,6 +30,16 @@ admission/package/host checks, authenticated page/assets, normal exit and no
 forced cleanup. Both environments have 83 distributions; only runtime version
 differs. Full dev8 functional acceptance and performance qualification are pending.
 The old dev7 environment is refused by the active dev8 pin.
+The later source-frozen native run at `55f3d45` did not pass: B5 passed 12,
+then the backpressure lane passed 21 and failed 1 during the shipped disconnect
+assertion's pre-workload resource baseline. Later native and complete functional
+gates did not run. Keep this failure separate from installation and generic
+host/testkit success. See the
+[dev8 native checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev8-native-checkpoint.json).
+Private stage timing found repeated full GC expensive, but a one-GC-per-phase
+experiment still failed after reducing snapshot cost. It is not an accepted
+fix; no dev9 package is selected. Review race/window semantics before another
+candidate without changing leak controls, production stop budgets or KPI.
 Dev8 reuses retained semaphore references only after checking current kernel
 object identity, and repeats identity validation after the full inventory.
 This reduces repeated binding work without weakening leak checks or deadlines.

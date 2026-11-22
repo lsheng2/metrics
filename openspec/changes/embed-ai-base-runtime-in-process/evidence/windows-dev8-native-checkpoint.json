@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "kind": "windows-dev8-native-requalification-checkpoint",
+  "status": "BLOCKED",
+  "functional_status": "NOT_ACCEPTED",
+  "performance_status": "NOT_RUN",
+  "candidate": {
+    "version": "0.1.1.dev8",
+    "source_commit": "9eee64a9d48a646d1f9f0b1af24839bc4dcd29bb",
+    "wheel_sha256": "f7b6f8831d7d203630a70ce98905a4b843ae154f684dec2c9094c3b45d28adb9"
+  },
+  "dashboard_test_source": "55f3d455b762d2abc5243823da46cfdfbf1681a0",
+  "frozen_inputs": {
+    "path": "D:\\AIGC\\d8-1122\\inputs\\functional-r1.json",
+    "sha256": "2adf08516718f3ed3dc91ed859c3017fd46f1e8da31826f1ea607bd3c9ddd648"
+  },
+  "candidate_receipt_review": {
+    "path": "D:\\AIGC\\d8-1122\\install-gate.json",
+    "sha256": "98e905650206d0b106ffd3a8d8c330f1725605e316194da91dbf3568ed7e81f3"
+  },
+  "native_b5": {
+    "path": "D:\\AIGC\\d8-1122\\conformance-runs\\75d1456a-715c-4fef-9717-a8307ed7870b\\junit\\b5.xml",
+    "sha256": "56f438cc7d35787d5dc87119c2e74a7ab08383cadbb48eede8522b02740f0a2a",
+    "tests": 12,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "native_backpressure": {
+    "path": "D:\\AIGC\\d8-1122\\conformance-runs\\75d1456a-715c-4fef-9717-a8307ed7870b\\junit\\backpressure.xml",
+    "sha256": "8c490933cc4ee0b903cc6411a3a0fd96cec6d40160f3eb52fe10647d63591fed",
+    "tests": 22,
+    "errors": 0,
+    "failures": 1,
+    "skipped": 0
+  },
+  "failed_command": {
+    "path": "D:\\AIGC\\d8-1122\\conformance-runs\\75d1456a-715c-4fef-9717-a8307ed7870b\\logs\\native-backpressure.command.json",
+    "sha256": "272d670c894c36b502c76fd316890bd667992ad7d8b06fe3225749286385d7be"
+  },
+  "failed_stdout": {
+    "path": "D:\\AIGC\\d8-1122\\conformance-runs\\75d1456a-715c-4fef-9717-a8307ed7870b\\logs\\native-backpressure.stdout.txt",
+    "sha256": "5520e7c99ad25f5a5cee51fbd624d280c60e17d2298b937de5cab80d634db34f"
+  },
+  "failure": "Disconnect assertion baseline did not obtain adjacent complete coherent windows inside 3s, before its measured workload.",
+  "later_native_lanes": "NOT_RUN after fail-fast; no native acceptance receipt exists",
+  "snapshot_cost_diagnostic": {
+    "observations": {
+      "path": "D:\\AIGC\\d8-1122\\diag-snapshot-cost-r1\\observations.json",
+      "sha256": "32f140272b9699fddd149ebdfcd4176468e5b177b0f134ba139999b13048036b"
+    },
+    "package_guard": {
+      "path": "D:\\AIGC\\d8-1122\\diag-snapshot-cost-r1\\package-guard.json",
+      "sha256": "d18568af63411bc9a7d7b4fb2a8f3afe3e133414bf808041582c518dae595eb2"
+    },
+    "acceptance_eligible": false,
+    "samples": 27,
+    "capture_races": 3,
+    "mean_snapshot_ms": 65.83982963261575,
+    "mean_gc_ms": 61.704303707099626,
+    "mean_native_capture_ms": 3.772403706399793,
+    "junit": {
+      "path": "D:\\AIGC\\d8-1122\\diag-snapshot-cost-r1\\junit.xml",
+      "sha256": "d80a8cafac782eefc89d11b21a21bc49cda4cb06f97d02181396be9d1abbf93f",
+      "tests": 22,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    }
+  },
+  "phase_gc_experiment": {
+    "observations": {
+      "path": "D:\\AIGC\\d8-1122\\diag-phase-gc-r1\\observations.json",
+      "sha256": "35e86a9387c386724de1bbfcfc7d8b2bf64168dee24ffa3bb0ddf8bc8e81c310"
+    },
+    "package_guard": {
+      "path": "D:\\AIGC\\d8-1122\\diag-phase-gc-r1\\package-guard.json",
+      "sha256": "d18568af63411bc9a7d7b4fb2a8f3afe3e133414bf808041582c518dae595eb2"
+    },
+    "acceptance_eligible": false,
+    "samples": 97,
+    "capture_races": 6,
+    "mean_snapshot_ms": 3.9450515460069338,
+    "mean_gc_ms": 0.6684494845703552,
+    "mean_native_capture_ms": 2.9826690712895667,
+    "method": {
+      "path": "D:\\AIGC\\d8-1122\\diag-phase-gc-r1\\method-experiment.json",
+      "sha256": "11f21398547c74dbb3803feed02a2dfba00688a29873cf14a5d1ea88e9172e21"
+    },
+    "junit": {
+      "path": "D:\\AIGC\\d8-1122\\diag-phase-gc-r1\\junit.xml",
+      "sha256": "6a7543453c1f34627f73871a2fef7c6a66c7f15001213ddb3c6bb344a46e6672",
+      "tests": 22,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0
+    }
+  },
+  "interpretation": [
+    "Repeated full GC is a measured observer cost, not a sufficient explanation or fix.",
+    "One-GC-per-phase experiment reduced snapshot cost but still failed the same baseline.",
+    "Periodic capture races versus adjacent-window completion need method-level investigation.",
+    "Neither a production leak nor its absence is established by the baseline failure."
+  ],
+  "invariants": {
+    "installed_package_files_unchanged": 158,
+    "production_stop_budget_unchanged": true,
+    "performance_kpi_unchanged": true,
+    "real_leak_controls_unchanged": true,
+    "diagnostics_are_not_acceptance": true,
+    "no_dev9_implementation": true
+  },
+  "next": "Review race/window/lifetime semantics and falsifying leak controls before another candidate; no blind formal retries or budget changes.",
+  "publisher_checkpoint": {
+    "path": "D:\\AIGC\\Report_creater_agent\\openspec\\changes\\extract-embeddable-agent-runtime\\evidence\\w3\\windows-capture-dev8-requalification.json",
+    "sha256": "b7b9f4ce333ac9a7c930d3261db00931f9e3042e2efd4c20b80a8c2f25096949"
+  }
+}

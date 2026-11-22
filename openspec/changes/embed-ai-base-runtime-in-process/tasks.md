@@ -16,6 +16,18 @@ Dashboard 已在独立环境安装 dev8；新候选功能验收与性能输入�
 
 ### Dev8 Capture Calibration Progress
 
+**Formal requalification is blocked.** Native run `75d1456a` at frozen
+Dashboard `55f3d45` passed B5 12/12, then failed 1 of 22 backpressure-lane cases.
+The failure is the shipped disconnect baseline before measured workload:
+seven capture races prevented valid adjacent windows in the unchanged 3s.
+Later native/complete/migration/mapped/seven-module gates were not run.
+Candidate/receipt review passed 1/1; that does not qualify this failed run.
+Private GC stage timing and a one-GC-per-phase experiment are nonqualifying;
+the latter reduced mean sampling cost but also failed, so GC-only dev9 is not
+implemented. Next: review race/window/lifetime semantics and leak negatives,
+not another blind formal retry or numerical budget change. Evidence:
+[native checkpoint](evidence/windows-dev8-native-checkpoint.json).
+
 AIB source `9eee64a` passed independent source review 1/1, 150 source host/testkit
 checks and real duplicate/moving-handle leak controls. Source Dashboard
 diagnostic and uninstrumented control each passed 22. The immutable dev8 wheel
