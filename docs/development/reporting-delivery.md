@@ -11,26 +11,36 @@ The approved delivery order and interfaces are in
 
 The migrated `ai_host`, summary, report-assist and project-run boundaries use
 the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
-The current candidate is `ai-base-runtime==0.1.1.dev8`, built from AIB
-`9eee64a9d48a646d1f9f0b1af24839bc4dcd29bb`. Its wheel SHA256 is
-`f7b6f8831d7d203630a70ce98905a4b843ae154f684dec2c9094c3b45d28adb9`.
+The current candidate is `ai-base-runtime==0.1.1.dev9`, built from AIB
+`fc680c3702ac4eaeae0a75486fa173b280929447`. Its wheel SHA256 is
+`c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec`.
 This is a development candidate, not full AIB or Dashboard qualification.
 Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
 
 The owner requires latest AIB for final delivery and authorized the bounded
-Windows testkit calibration/new candidate on 2026-11-22. The dev8 package
+Windows testkit calibration/new candidate on 2026-11-22. The dev9 package
 changes one testkit file only; non-testkit package bytes and dependency
-declarations match dev7. Production stop budgets and numerical KPI are unchanged.
-The [candidate decision](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md#windows-capture-candidate-amendment-2026-11-22)
+declarations match dev8. Production stop budgets and numerical KPI are unchanged.
+The [candidate decision](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md#windows-convergence-candidate-amendment-2026-11-22)
 supersedes the earlier target without promoting its old results.
-Fresh offline installation passed in `D:/AIGC/d8-1122/venv`: 19
+Fresh offline installation passed in `D:/AIGC/d9-1122/venv`: 19
 admission/package/host checks, authenticated page/assets, normal exit and no
 forced cleanup. Both environments have 83 distributions; only runtime version
-differs. Full dev8 functional acceptance and performance qualification are pending.
-The old dev7 environment is refused by the active dev8 pin.
-The later source-frozen native run at `55f3d45` did not pass: B5 passed 12,
+differs. Full dev9 functional acceptance and performance qualification are pending.
+The old dev8 environment is refused by the active dev9 pin.
+Dev9 obtains one fresh complete capture after an internally detected race,
+retaining pinned object identities instead of erasing lifetime evidence.
+Every returned sample still passes full inventory and object revalidation;
+an unresolved race still invalidates its window under the unchanged deadline.
+Public/backend races and fatal API/cleanup errors do not get this convergence.
+Source review passed 1/1, source and formal installed host/testkit suites each
+passed 163, and held real alias/moving-handle leaks remained rejected.
+The separate source22/private-wheel23 development results are nonqualifying.
+See [candidate evidence](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev9-candidate-admission.json).
+
+Historical dev8's source-frozen native run at `55f3d45` did not pass: B5 passed 12,
 then the backpressure lane passed 21 and failed 1 during the shipped disconnect
 assertion's pre-workload resource baseline. Later native and complete functional
 gates did not run. Keep this failure separate from installation and generic
@@ -38,18 +48,11 @@ host/testkit success. See the
 [dev8 native checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev8-native-checkpoint.json).
 Private stage timing found repeated full GC expensive, but a one-GC-per-phase
 experiment still failed after reducing snapshot cost. It is not an accepted
-fix; no dev9 package is selected. Review race/window semantics before another
-candidate without changing leak controls, production stop budgets or KPI.
-Dev8 reuses retained semaphore references only after checking current kernel
-object identity, and repeats identity validation after the full inventory.
-This reduces repeated binding work without weakening leak checks or deadlines.
-Source review passed 1/1; the source host/testkit combination passed 150 checks.
-The source-only Dashboard diagnostic and uninstrumented control each passed 22.
-The outside-checkout installed host/testkit combination also passed 150;
-real duplicate/moving-handle leaks were refused and passed only after release.
-All 158 package files and 1562 frozen source inputs stayed unchanged.
-These are bounded candidate checks, not the complete Dashboard functional gate;
-see [candidate evidence](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev8-candidate-admission.json).
+fix. Later stack and ordinary correlation evidence linked the races to normal
+audit-store queue waits. The dev9 method keeps that background work active;
+it does not introduce a GC-only workaround. The historical dev8 source/installed
+150-pass records remain bounded and unchanged at
+[dev8 candidate evidence](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev8-candidate-admission.json).
 The historical dev6 installed testkit follow-up was not green: its formal runner
 recorded 113 passes and one Windows ASGI resource-baseline failure. Task/thread
 identities returned, but the scalar handle lower bound did not. This remains
@@ -59,7 +62,7 @@ they do not establish acceptance. See the
 [dev6 checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev6-install-checkpoint.json).
 Dev7's generic installed host/testkit suite passed 148, but its fresh Dashboard
 native run `39548f08` failed the backpressure baseline after capture races.
-That failure remains evidence, not a passed consumer milestone. Dev8 retains
+That failure remains evidence, not a passed consumer milestone. Dev9 retains
 current-process lifetime evidence, original handle multiplicities and strict
 non-semaphore bounds. Capture races discard windows inside the same
 deadline; API/cleanup uncertainty cannot become PASS. Fresh Dashboard functional
@@ -315,7 +318,7 @@ Never change a historical owner marker or relabel an old receipt for a new wheel
 Use the separately installed candidate interpreter:
 
 ```powershell
-$reportingPython = 'D:\AIGC\d8-1122\venv\Scripts\python.exe'
+$reportingPython = 'D:\AIGC\d9-1122\venv\Scripts\python.exe'
 & $reportingPython -I -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd())); from ai_host.admission import admit_runtime_candidate; print(admit_runtime_candidate()['version'])"
 ```
 
@@ -351,7 +354,7 @@ source layer. It and the AIB checkout remain read-only; all run state belongs
 to a fresh UUID under the marked development root:
 
 ```powershell
-$devPython = 'D:/AIGC/d8-1122/venv/Scripts/python.exe'
+$devPython = 'D:/AIGC/d9-1122/venv/Scripts/python.exe'
 $devRoot = 'D:/AIGC/jdv-1122'
 & $devPython -I -B scripts/validation/aib_joint_dev.py source `
     --aib-root D:/AIGC/Report_creater_agent --python $devPython --data-root $devRoot
@@ -361,12 +364,12 @@ The private-wheel layer reuses the verified dependency pool, not an existing
 qualification environment. No dependency is resolved from the network:
 
 ```powershell
-$lock = 'D:/AIGC/d8-1122/inputs/wheelhouse-lock.json'
+$lock = 'D:/AIGC/d9-1122/inputs/wheelhouse-lock.json'
 $lockSha = (Get-FileHash -LiteralPath $lock -Algorithm SHA256).Hash.ToLowerInvariant()
 & $devPython -I -B scripts/validation/aib_joint_dev.py wheel `
     --aib-root D:/AIGC/Report_creater_agent --python C:/Python313/python.exe `
     --build-python D:/AIGC/fc1120/aib-venv/Scripts/python.exe `
-    --wheelhouse D:/AIGC/d8-1122/wheels --wheelhouse-lock $lock `
+    --wheelhouse D:/AIGC/d9-1122/wheels --wheelhouse-lock $lock `
     --wheelhouse-sha256 $lockSha --data-root $devRoot
 ```
 
@@ -393,7 +396,7 @@ as a separate measured duration.
 
 ### Windows Offline Installation
 
-The current owned artifact root is `D:\AIGC\d8-1122`.
+The current owned artifact root is `D:\AIGC\d9-1122`.
 Its `wheels/` directory contains the runtime and Windows dependency wheels.
 The installation qualifier takes the release-input record, validates ownership
 and candidate files before creating anything, creates a fresh venv, resolves
@@ -421,8 +424,8 @@ To install another development environment from a successful qualification,
 run from the Dashboard repository root:
 
 ```powershell
-$artifacts = 'D:\AIGC\d8-1122'
-$installed = Get-Content -Raw "$artifacts\evidence\install-dev8-r1.json" | ConvertFrom-Json
+$artifacts = 'D:\AIGC\d9-1122'
+$installed = Get-Content -Raw "$artifacts\evidence\install-dev9-r1.json" | ConvertFrom-Json
 if ($installed.result -ne 'PASS') { throw 'Installation qualification has not passed' }
 $wheelhouse = Join-Path $artifacts 'wheels'
 foreach ($wheel in $installed.wheels.PSObject.Properties) {
@@ -443,7 +446,7 @@ if (Test-Path -LiteralPath $newEnvironment) { throw 'Choose a new environment pa
 if ($LASTEXITCODE -ne 0) { throw 'Environment creation failed' }
 $reportingPython = Join-Path $newEnvironment 'Scripts\python.exe'
 $env:PIP_CONFIG_FILE = 'nul'
-$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev8-py3-none-any.whl'
+$runtimeWheel = Join-Path $wheelhouse 'ai_base_runtime-0.1.1.dev9-py3-none-any.whl'
 & $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints $runtimeWheel
 if ($LASTEXITCODE -ne 0) { throw 'Runtime installation failed' }
 & $reportingPython -I -m pip --isolated install --no-index --find-links $wheelhouse --only-binary=:all: -c $constraints -r requirements.txt

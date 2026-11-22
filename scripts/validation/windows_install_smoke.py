@@ -29,7 +29,7 @@ from scripts.validation.windows_install_wheelhouse import (
 )
 
 PINS = {
-    'ai-base-runtime': '0.1.1.dev8', 'django': '6.0.7', 'whitenoise': '6.12.0',
+    'ai-base-runtime': '0.1.1.dev9', 'django': '6.0.7', 'whitenoise': '6.12.0',
     'waitress': '3.0.2', 'portalocker': '4.4.2', 'pytest': '9.2.0',
     'pytest-asyncio': '1.5.0', 'pytest-django': '4.12.0', 'playwright': '1.57.0',
 }
@@ -310,7 +310,7 @@ def run_install(request):
         empty = run / 'empty-wheelhouse'
         empty.mkdir()
         command([*pip, 'install', '--no-index', '--find-links', empty, '--no-cache-dir',
-                 '--only-binary=:all:', 'ai-base-runtime==0.1.1.dev8'], 'offline-missing-wheel', expect_failure=True)
+                 '--only-binary=:all:', 'ai-base-runtime==0.1.1.dev9'], 'offline-missing-wheel', expect_failure=True)
         install = [*pip, 'install', '--no-index', '--find-links', request.wheelhouse,
                    '--no-cache-dir', '--only-binary=:all:', '-c', constraints]
         verify_wheelhouse_lock(request.wheelhouse_lock)

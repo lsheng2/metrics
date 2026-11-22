@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "windows-dev9-candidate-admission",
+  "installation_status": "PASS",
+  "testkit_installed_status": "PASS",
+  "functional_status": "PENDING",
+  "performance_status": "NOT_RUN",
+  "candidate": {
+    "version": "0.1.1.dev9",
+    "source_commit": "fc680c3702ac4eaeae0a75486fa173b280929447",
+    "wheel_sha256": "c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec",
+    "package_files": 158
+  },
+  "aib_candidate_evidence": {
+    "path": "D:\\AIGC\\Report_creater_agent\\openspec\\changes\\extract-embeddable-agent-runtime\\evidence\\w3\\windows-lifetime-dev9.json",
+    "sha256": "c9af39d27dbd6aaa5c6f8b9c9a6b62df562b234e32dd71d1ae6ef85fddeb66c7"
+  },
+  "install": {
+    "path": "D:\\AIGC\\d9-1122\\evidence\\install-dev9-r1.json",
+    "sha256": "2a59a20fc0bde839703f0c54f08a809cf7f95dd76f54c662a075bae9a9a33562"
+  },
+  "environment_comparison": {
+    "path": "D:\\AIGC\\d9-1122\\evidence\\dependency-version-comparison.json",
+    "sha256": "cb50fa467884b8743ddeef2ad853b2d4fd7774264aa61fc4f45a8c0c114d31af"
+  },
+  "installer_red": {
+    "path": "D:\\AIGC\\d9-1122\\evidence\\install-pin-red-r1.xml",
+    "sha256": "e5415bd21c9b8387d96c4745974874d8f88f3440c94b173f681fc04f050ffa40"
+  },
+  "installer_green": {
+    "path": "D:\\AIGC\\d9-1122\\evidence\\install-pin-green-r1.xml",
+    "sha256": "d9053ebe1b5639d3417bd0ead536d47e84312853f33528d8aa48a5d43b78e444"
+  },
+  "old_environment_refusal": {
+    "path": "D:\\AIGC\\d9-1122\\evidence\\old-dev8-environment-refusal.json",
+    "sha256": "0d3324f72e90f79457578549dcb60624b4570c9c0b124707172b966ba569c778"
+  },
+  "history": "Dev5/dev6/dev7/dev8 artifacts and failures are immutable; no earlier receipt relabelled",
+  "remaining": [
+    "Independent candidate/consumer receipt review",
+    "Fresh Dashboard source freeze/native/complete/migration/mapped/seven-module functional acceptance",
+    "Candidate-matched performance input renewal and later numerical qualification"
+  ]
+}

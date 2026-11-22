@@ -191,9 +191,10 @@ receipts and do not substitute for these tool-boundary tests.
 
 ### Dev6 Observer Candidate Refresh (2026-11-22)
 
-The active continuation is now the reviewed dev8 capture candidate, after
-dev7's Dashboard backpressure observation failure. Use D:/AIGC/d8-1122 and versioned
-`windows-functional-acceptance-dev8.json` / `windows-performance-inputs-dev8.json`
+The active continuation is now the reviewed dev9 convergence candidate, after
+dev8's Dashboard observation failure and the three-layer development checks.
+Use D:/AIGC/d9-1122 and versioned
+`windows-functional-acceptance-dev9.json` / `windows-performance-inputs-dev9.json`
 outputs. The owner scope, complete gate chain and unchanged budgets below
 still apply; the following dev6 identity/root records are historical.
 

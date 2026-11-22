@@ -5,7 +5,24 @@ Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 
+## Windows Convergence Candidate Amendment (2026-11-22)
+
+After source22/private-wheel23 checks and independent source review, the formal
+candidate is `ai-base-runtime==0.1.1.dev9`, source
+`fc680c3702ac4eaeae0a75486fa173b280929447`, wheel SHA256
+`c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec`.
+One testkit payload file differs from dev8. A single internal fresh capture
+retains object identities and every complete inventory/identity check; an
+unresolved race still invalidates the window. Real leakage tests, production
+code/assets/dependencies, stop budgets and the full numerical KPI/recipe remain
+unchanged. Source and formal installed host/testkit each passed163; fresh
+offline Dashboard installation passed19. No full functional or performance
+acceptance is implied. Use D:/AIGC/d9-1122 for fresh formal evidence and retain
+all old candidate artifacts/failures unchanged.
+
 ## Windows Capture Candidate Amendment (2026-11-22)
+
+Historical dev8 selection, superseded by the convergence candidate above.
 
 The same testkit-only authorization selects `ai-base-runtime==0.1.1.dev8`,
 source `9eee64a9d48a646d1f9f0b1af24839bc4dcd29bb`, wheel SHA256

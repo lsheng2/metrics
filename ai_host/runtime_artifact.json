@@ -170,15 +170,15 @@
     "ai_base_runtime/testkit/host_support/_stream_assertions.py": "122efd1bf189e27b73bd33d9d9512f3c8a1e6b4bf537f8d05839bd12c346d0e1",
     "ai_base_runtime/testkit/host_support/_windows_handle_api.py": "603da0304234413192162ca9beb83270c2799e2cdb410f95eb3cde4d411c5448",
     "ai_base_runtime/testkit/host_support/_windows_handle_windows.py": "c63506f4c3b6d767d4b5f54fb9c64f3e772a6c2c6cc0989cca7326bb19cba1ed",
-    "ai_base_runtime/testkit/host_support/_windows_handles.py": "8b55fe1adf2c53356255167f2156dc5a24588d647253e628696e777d5514a1b2",
+    "ai_base_runtime/testkit/host_support/_windows_handles.py": "e942ab5c33bb8fb73ea42863c525eaf8624f32666082b4320792b6e875d75bc9",
     "ai_base_runtime/testkit/hosts.py": "331f68ffccb94f8d16934d96a9166f2c4d6426af7c1a74d29900dafb2401a2c2",
     "ai_base_runtime/testkit/models.py": "2d7eb9c52d3bc600acd849f5d17161291ce6b45c21b70e032d3e3604f260ac2a",
     "ai_base_runtime/testkit/pytest_plugin.py": "fa81423cf6e6c0101634be032cd6e158a8844dc03922a3bb9549252c4b028e03"
   },
   "schemaVersion": 1,
-  "sourceCommit": "9eee64a9d48a646d1f9f0b1af24839bc4dcd29bb",
-  "sourceTree": "ccdd90d8f1d4d7bfb575ac86cfc25510974c4ec0",
-  "version": "0.1.1.dev8",
-  "wheelFile": "ai_base_runtime-0.1.1.dev8-py3-none-any.whl",
-  "wheelSha256": "f7b6f8831d7d203630a70ce98905a4b843ae154f684dec2c9094c3b45d28adb9"
+  "sourceCommit": "fc680c3702ac4eaeae0a75486fa173b280929447",
+  "sourceTree": "e9640b427bc4cf4f006bbecdf826afd564ba7cfb",
+  "version": "0.1.1.dev9",
+  "wheelFile": "ai_base_runtime-0.1.1.dev9-py3-none-any.whl",
+  "wheelSha256": "c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec"
 }
