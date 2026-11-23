@@ -2,6 +2,23 @@
 
 ## Latest Delivery Decision
 
+### Authorized Short-Latency Localization (2026-11-23)
+
+The dev9 diagnostic at source `fa0b060` completed96 blocks/11520 measured
+samples; raw semantic replay and PERF.PROBE.R passed1/1, no findings.
+Evidence is retained at `D:/AIGC/d9-1122/runs/diagnostic-final-r2.json`
+and `probe-r2-evidence-gate.json`. Normal stop, no force/residue and34 process
+snapshots passed. Numerical failures remain: development runtime CSS119.3983ms
+and production seq/draft_edit P95 ratio1.58434. Neither is waived.
+
+Owner now authorizes the
+[100ms diagnostic-only refreeze](windows-performance-test-plan.md#short-latency-diagnostic-refreeze-2026-11-23).
+PERF.PROBE.REPLAN passed independent plan/validation review1/1 with no findings
+(`D:/AIGC/d9-1122/subsecond-plan-gate.json`). Private adapters, their code review
+and native calibration precede live sampling. SDK dev9, KPI, stop/leak limits and historical receipts
+remain unchanged. No optimization/no-change decision, certification, final
+full qualifier or WIN.ACCEPT is established by the diagnostic or this plan.
+
 ### Approved Development Loop Refresh (2026-11-22)
 
 Owner approved source joint testing -> private wheel checks -> formal candidate
@@ -594,9 +611,9 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] FUNC.ACCEPT - `evidence/windows-functional-acceptance.json` 已生成；Windows Dashboard MDB-2 功能为 PASS，性能为 NOT_RUN，原 10.4 及其它混合范围父任务保持开放。
 - [x] W3.REPLAN - 计划 `6e62127` 经独立复核达到 1/1 clean pass；三项归属、契约与命令镜像问题已关闭，结构化记录见 `evidence/windows-performance-plan-review.json`。
 - [x] PERF.KPI - 已冻结原 KPI、负载、基线、采样和判定方法，见 `evidence/windows-performance-inputs.json`；具体运行输入与动态资产在采样前另行绑定，不代表已测量。
-- [ ] PERF.PROBE - 完成保留的性能工具，独立采集诊断基线，不宣称正式验收。
-- [ ] PERF.PROBE.R - 独立复核测量工具、原始诊断证据及受影响功能消费者。
-- [ ] PERF.PROBE.REPLAN - 根据实测证据再冻结优化范围；无证据不改变产品或 KPI。
+- [x] PERF.PROBE - dev9/fa0b060 完整诊断已采集并重放；保留两项数值超标，不宣称正式验收。
+- [x] PERF.PROBE.R - 原始诊断及消费者边界独立复核 1/1 通过，见 D:/AIGC/d9-1122/probe-r2-evidence-gate.json；优化与认证仍开放。
+- [x] PERF.PROBE.REPLAN - 100ms 诊断触发与有界对照定位已获 owner 授权和独立计划复核 1/1；不改变 SDK、产品或 KPI，定位工具与原生校准仍须过门禁。
 - [ ] PERF.OPTIMIZE - 按实测瓶颈优化；已达标则记录无需优化，改变行为须功能补验。
 - [ ] PERF.OPTIMIZE.R - 复核优化或无需改动的决定及对应功能证据，再进入认证。
 - [ ] PERF.CERTIFY - 独占窗口完成正式性能验收，并确认受影响功能再次通过。

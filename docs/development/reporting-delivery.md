@@ -111,6 +111,16 @@ stop/cancel/cleanup bounds remain functional and were not relaxed.
 The receipt covers the tested source, not subsequent product changes or full AIB release.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
+The current dev9 diagnostic completed the full recipe at source `fa0b060`,
+with normal cleanup and independently reviewed evidence. Collection integrity
+is not numerical acceptance: runtime CSS119.3983ms and production draft_edit
+P95 ratio1.58434 remain failures. The owner-approved
+[short-latency investigation](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md#short-latency-diagnostic-refreeze-2026-11-23)
+uses a100ms request-level capture trigger for HTML/runtime CSS, not a changed
+KPI or whole-page threshold. It runs ordinary-token trace/control arms with
+at most300 seconds of active sampling each, bounded buffers and same-request
+PID/TID/clock evidence. It does not patch the installed SDK or certify a miss.
+
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate
 input documents compare their stable source, candidate, owner, fixture,

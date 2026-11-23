@@ -67,6 +67,32 @@
       "result": "PASS"
     }
   },
+  "performance_short_latency_refreeze": {
+    "date": "2026-11-23",
+    "baseline": "fa0b060e69bf7784ac763b54f097a74fffa93b66",
+    "owner_node": "PERF.PROBE.REPLAN",
+    "implementation_node": "PERF.OPTIMIZE",
+    "external_diagnostic_owner": {
+      "coordinator": "parent",
+      "root": "D:/AIGC/d9-1122/subsecond",
+      "policy": "Private diagnostic-only tools and immutable per-run receipts; not product source or qualification input fallback."
+    },
+    "plan": "windows-performance-test-plan.md#short-latency-diagnostic-refreeze-2026-11-23",
+    "refreeze_actions": [
+      {"action": "amend", "reason": "Owner approved a100ms diagnostic-only trigger and bounded paired localization of current dev9 subsecond failures before selecting any product optimization."}
+    ],
+    "updated_artifacts": [
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md",
+      "docs/development/reporting-delivery.md"
+    ],
+    "rerun_gates": ["PERF.PROBE.REPLAN", "PERF.OPTIMIZE.R", "CLOSE.R"],
+    "post_refreeze_preflight_result": {
+      "command": "openspec validate embed-ai-base-runtime-in-process --strict --no-interactive",
+      "result": "PASS"
+    }
+  },
   "expected_node_count": 28,
   "functional_milestone_node": "FUNC.ACCEPT",
   "milestone_node": "WIN.ACCEPT",
@@ -337,7 +363,7 @@
     },
     {
       "id": "PERF.PROBE.REPLAN", "depends_on": ["PERF.PROBE.R"], "kind": "replan-review",
-      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/"], "contracts": [],
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md"], "contracts": [],
       "validation": ["V0", "V8"], "steps": "windows-performance-test-plan.md",
       "exit_criteria": "Next wave classified from measured evidence with structured actions, updated artifacts, rerun gates and refreeze result.",
       "parallel_policy": "review-only"

@@ -630,8 +630,100 @@ cleanup. Do not invent a need to solve every historical intermittent failure
 before collecting current unprofiled measurements. KPI changes, a new runtime
 candidate, real-provider work, Linux and publication retain separate decisions.
 
+## Short-Latency Diagnostic Refreeze (2026-11-23)
+
+The owner explicitly authorized a100ms **diagnostic capture trigger**, keeping
+the SDK, all acceptance KPI, signed sample counts and production stop/leak
+budgets unchanged. This supersedes only the1000ms trigger/current-target
+selection of the older circular experiment below. It does not authorize
+kernel collection, a product optimization or a new candidate.
+
+Source `fa0b060` with immutable dev9 completed96 blocks/11520 page samples.
+The original receipt and standalone semantic replay are retained under
+`D:/AIGC/d9-1122`; PERF.PROBE.R passed1/1 with no findings. Collection/window/
+cleanup passed, but development direct CSS119.3983ms and production sequential
+draft_edit candidate/baseline P95 ratio1.58434 failed their unchanged limits.
+Neither prior failures nor current functional proofs are relabelled.
+
+The next wave is **amend**: first localize the short latency, then decide
+whether an owner fix exists. PERF.OPTIMIZE cannot close as no-change from this
+numerically failing diagnostic. The sole ledger and28-node DAG are retained;
+`profile_source=repo-local`, `agent_routing_mode=multiagent-configured`.
+
+### Bounded Packet
+
+- Private versioned adapters live under `D:/AIGC/d9-1122/subsecond/`.
+  Reuse the reviewed client/server timing and Windows clock helpers by copying
+  them to the new directory; old helpers and installed package files stay
+  immutable. Parent owns the runner, ordinary-token fixture and integration.
+- Run one paired **trace/control** experiment. Each arm has at most300 seconds
+  of active sampling, split into at most150 seconds per scenario:
+  production sequential draft_edit without held streams, then development
+  draft_edit with four concurrent page clients and four held runtime streams.
+  Fixture setup, warmup, evidence harvest and normal stop are separately timed.
+  Do not interpret results from a different setting as reproduction of a
+  failed setting.
+- A100ms individual request to the resolved HTML route or runtime CSS route
+  triggers retention. Other static assets, memory-control requests and the
+  total multi-asset page are not trigger targets. Retain the first matching
+  request per scenario immutably; after normal in-flight completion, harvest
+  that scenario before continuing. Every request/error is retained in bounded
+  buffers with explicit prefix-loss counts; errors never become latency passes.
+  First-trigger stopping censors exposure: cross-arm summaries report actual
+  counts/durations and cannot claim an unbiased speedup or absence of profiler
+  perturbation. Request ids join client/server records within an arm; they
+  are not reused as cross-arm identities.
+- Both arms have the same authenticated memory-control endpoint and client
+  recording. Only trace enables in-memory server boundary timing. Never
+  replace the real SDK asset route or alter file/response iterators.
+  Warmup is unarmed. Validate status, bytes/hash, auth refusal and asset vectors
+  before measured work. Use ordinary tokens, synthetic data and loopback only.
+- Retain request id, exact process incarnation, native PID/TID, monotonic/QPC/
+  precise-UTC brackets and thread CPU for matching client/server records.
+  Windows clock helpers may run without ETW; no marker-API result claims a
+  decoded kernel event. Missing clock/identity or a truncated matching interval
+  prevents quantitative attribution.
+  The baseline `fa0b060` belongs to the retained full diagnostic. New captures
+  bind the actual clean, reviewed plan-publication commit and new helper
+  hashes. The dev9 wheel and installed payload stay pinned; unchanged CSS
+  filename/size/hash may legitimately match dev4 and must not be invented anew.
+- Use the existing measurement guard, process observer, SLE and original
+  normal-stop path. Stop request admission at the active deadline, record
+  unfinished/in-flight work separately and fail the300s bound if it overruns;
+  never extend a deadline or discard an incomplete page to manufacture success.
+  Observer/ownership/cleanup failures stop the experiment. The already-approved
+  exact-indexer pause may be reused with bounded automatic restoration.
+- Capture status is `TRIGGERED`, `NOT_REPRODUCED` or `FAIL`, always
+  `acceptance_eligible=false`. Compare matched spans and perturbation between
+  arms, without adding overlapping spans or assigning an OS cause from a slow
+  software boundary alone. No blind full-recipe retry or repeated no-hit loop.
+- A later kernel capture needs its own frozen collector and fresh UAC if
+  required; an expired earlier collector/session is not renewed implicitly.
+  A production or SDK change still requires the existing owner/refreeze path.
+
+### Validation And Exit
+
+Before implementation, independently review this amendment and its validation
+architecture. Before live execution, require focused RED/GREEN tests for
+trigger-path filtering, exact100ms edge, unarmed warmup, first-trigger
+immutability, bounded/prefix-loss buffers, deadline admission/overrun,
+wrong wheel/version/source/clock, mismatched request/PID/TID, trace/control
+mode, unexpected auth/status/hash, late trigger and abnormal cleanup.
+Use the actual private APIs and real owning script consumers, not text checks
+or test-only replacement logic. Run existing unchanged clock/server-wrapper
+negative tests where relevant, plus a small owned native calibration proving
+both arms' payload/identity and normal exit. Then freeze private helper hashes
+and clean source identity and settle all tests/reviewers before sampling.
+
+Exit means retained same-request localization evidence or an explicit bounded
+miss, with normal cleanup and unchanged source/candidate. It is not PERF.CERTIFY,
+the full7+3 qualifier or WIN.ACCEPT. Current human guidance is synchronized in
+`docs/development/reporting-delivery.md`; application behavior is unchanged.
+
 ## Circular Diagnostic Amendment (2026-11-21)
 
+Historical recipe: its1000ms trigger and dev4/bug_trend selection are superseded
+for the new short-latency packet above; original captures remain unchanged.
 The owner authorized the smaller circular-capture experiment after the two
 anomaly-free file-mode windows. This amends the diagnostic slice of PERF.PROBE,
 not the signed measurement recipe, DAG nodes, formal acceptance or runtime.
