@@ -121,6 +121,18 @@ KPI or whole-page threshold. It runs ordinary-token trace/control arms with
 at most300 seconds of active sampling each, bounded buffers and same-request
 PID/TID/clock evidence. It does not patch the installed SDK or certify a miss.
 
+The [subsecond localization checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-subsecond-localization.md)
+records the bounded packet's current truth. The trace arm found a production
+HTML slow request with clientHTML151.0556ms, preWSGI1.0024ms, WSGI
+call148.7548ms and coarse thread CPU156.25ms on the same request; the control
+arm also reproduced productionHTML163.4204ms with server tracing disabled.
+This establishes a software/request-boundary observation, not a specific
+Python-function, GC, OS, kernel, UAC, SDK or provider root cause. The
+development CSS fault remains unresolved: v2 did not capture an eligible CSS
+trigger, and v3 only fixes offline optional non-trigger attribution while
+preserving the original producer status as FAIL. Performance acceptance,
+optimization/no-change review, certification and `WIN.ACCEPT` remain open.
+
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate
 input documents compare their stable source, candidate, owner, fixture,

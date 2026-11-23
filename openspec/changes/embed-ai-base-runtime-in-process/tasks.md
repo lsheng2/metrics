@@ -2,6 +2,41 @@
 
 ## Latest Delivery Decision
 
+### Subsecond Localization Checkpoint (2026-11-23)
+
+The capture source was clean at
+`2233d49b8e16c62025028e9e3757e651756856f2`; the admitted dev9 runtime wheel
+remains `c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec`.
+The full official dev9 diagnostic at `fa0b060` is still the retained
+PERF.PROBE evidence and still has two open numerical failures:
+CSS119.3983ms and production seq/draft_edit ratio1.58434.
+
+The bounded subsecond packet completed plan/code/target review gates 1/1 with
+no pending findings. Native calibration v1 captured development HTML187.8063ms
+instead of the target CSS fault, so v2 narrowed primary target selection; the
+v2 test delta passed 67 tests and changed only selector/tests scope. The single
+authorized paired experiment was not rerun. Trace result
+`D:/AIGC/d9-1122/subsecond/v2/runs/probe-trace-r1/result.json` remains
+`FAIL`: production sequential HTML triggered after 29.813s / 128 pages with
+clientHTML151.0556ms, preWSGI1.0024ms, WSGI call148.7548ms and coarse
+thread CPU156.25ms, while development c4 produced no eligible CSS trigger and
+failed only in optional non-trigger attribution harvest. Control result
+`D:/AIGC/d9-1122/subsecond/v2/runs/probe-control-r1/result.json` triggered
+production HTML163.4204ms with server tracing disabled; development c4 was
+NOT_REPRODUCED after 145.384s / 952 pages. These unequal first-hit exposures
+are censored and do not support speedup percentiles, exact perturbation proof
+or CSS closure.
+
+V3 has only fixed offline optional non-trigger attribution: no trigger now means
+no claimed attribution, and actual first-trigger attribution still requires the
+complete same request. Its 69-pass green proof and offline regression preserve
+the original v2 producer status as `FAIL`; v3 has not run live. Its code
+review does not replace future frozen-input/native checks. Current status: `PERF.OPTIMIZE`, `PERF.OPTIMIZE.R`,
+`PERF.CERTIFY`, `CLOSE.R` and `WIN.ACCEPT` stay open. The next useful action is
+a bounded function-level CPU profile for production HTML plus careful CSS
+same-request evidence if the CSS fault recurs; this ledger does not authorize
+or execute that work.
+
 ### Authorized Short-Latency Localization (2026-11-23)
 
 The dev9 diagnostic at source `fa0b060` completed96 blocks/11520 measured
