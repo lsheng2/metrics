@@ -142,6 +142,12 @@ optimization. A successor must prove concurrent engine isolation and calibrate
 perturbation before a new authorized window. KPI and final acceptance remain
 unchanged; a successful offline isolation test is not native qualification.
 
+The owner-approved [tail-policy amendment](../../openspec/changes/embed-ai-base-runtime-in-process/windows-tail-policy-amendment.md)
+renews P4 to per-kind P99<100ms and max<=200ms in a new policy/recipe.
+Implementation is pending. Page ratio1.2 and functional safety remain unchanged;
+historical failures are not rewritten. The next bounded diagnostic measures
+whole draft-edit pages and their individual assets, not function rankings.
+
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate
 input documents compare their stable source, candidate, owner, fixture,

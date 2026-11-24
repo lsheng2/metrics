@@ -2,18 +2,19 @@
 
 ## Latest Delivery Decision
 
+### Approved Tail Amendment (2026-11-24)
+
+Owner approved [P4 tail-rule renewal and focused asset investigation](windows-tail-policy-amendment.md).
+Implement a new recipe/policy with per-kind P99<100ms and max<=200ms; retain
+page ratio1.2, functional safety and all historical receipts. Validation and
+native packet are pending; this is not performance acceptance.
+
 ### Function Profiling Checkpoint (2026-11-24)
 
-The [bounded packet completed](evidence/windows-function-profile-checkpoint.md)
-at source `1bf83cf`: four normal-cleanup windows, 30.390 active seconds,
-427.744 total packet seconds, unchanged dev9/KPI. Main control again captured
-HTML151.3313ms with WSGI149.2544ms and coarse thread CPU140.625ms.
-Function attribution is **REFUSED_CROSS_THREAD**: the same-interpreter offline
-probe demonstrated foreign-thread functions in cProfile, matching overlapping
-probe TIDs in the captured interval. No product optimization can be justified
-from these ranks. Original producer `COMPLETE` and raw data remain unchanged.
-The offline `profile` alternative passed thread isolation only; no successor
-live window ran. Performance certification and final acceptance remain open.
+The [completed bounded packet](evidence/windows-function-profile-checkpoint.md)
+retains normal cleanup and valid control timing at source `1bf83cf`.
+Function attribution is **REFUSED_CROSS_THREAD**; cProfile ranks cannot justify
+optimization. Original data/status remain unchanged; certification stays open.
 
 ### Subsecond Localization Checkpoint (2026-11-23)
 
