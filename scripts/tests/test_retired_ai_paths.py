@@ -175,3 +175,52 @@ def test_retired_entrypoint_file_is_rejected_even_without_legacy_text(source_tre
     result = check(source_tree)
     assert not result["passed"]
     assert any(row["path"] == path for row in result["violations"])
+
+
+@pytest.mark.parametrize("module,suffix", [
+    ("check_retired_ai_paths", ".json"), ("check_embedded_runtime_boundaries", ".py"),
+])
+def test_source_gates_exclude_root_index_metadata_before_reading_transient_files(
+    source_tree, monkeypatch, module, suffix,
+):
+    file = source_tree / ".zvec-grep/locks/home.readers/fixture" / ("lock" + suffix)
+    file.parent.mkdir(parents=True)
+    file.write_text("{}", encoding="utf-8")
+    original = Path.read_text
+
+    def disappearing_metadata(path, *args, **kwargs):
+        if path == file:
+            raise FileNotFoundError("Index reader lock vanished after inventory")
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", disappearing_metadata)
+    result = importlib.import_module("scripts." + module).check(source_tree)
+    assert result["passed"], result["violations"]
+    assert ".zvec-grep" in result["excluded"]
+
+
+@pytest.mark.parametrize("module", ["check_retired_ai_paths", "check_embedded_runtime_boundaries"])
+@pytest.mark.parametrize("relative", [
+    ".zvec-grep-sibling/route.py", "ui_web/.zvec-grep/route.py", ".zvec-grep.py",
+])
+def test_index_metadata_exclusion_does_not_hide_near_miss_source(source_tree, module, relative):
+    file = source_tree / relative
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_text(
+        "from ai_base_runtime._internal import state\nroute = '/api/ai-dashboard/workflow/'\n",
+        encoding="utf-8",
+    )
+    result = importlib.import_module("scripts." + module).check(source_tree)
+    assert not result["passed"]
+    assert any(row["path"] == relative for row in result["violations"])
+
+
+@pytest.mark.parametrize("module", ["check_retired_ai_paths", "check_embedded_runtime_boundaries"])
+def test_unreadable_application_source_still_blocks_both_gates(source_tree, module):
+    (source_tree / "ui_web/broken.py").write_bytes(b"\xff")
+    result = importlib.import_module("scripts." + module).check(source_tree)
+    assert not result["passed"]
+    assert any(
+        row["path"] == "ui_web/broken.py" and row["rule"] == "unreadable_source"
+        for row in result["violations"]
+    )

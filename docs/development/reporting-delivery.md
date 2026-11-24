@@ -157,6 +157,11 @@ Old r1/r2 inputs cannot certify as r3. New-policy tests and independent review
 precede clean-source/input freeze and one fresh uninstrumented full run;
 certification and final full qualification remain open.
 
+The source-boundary and retired-path gates exclude the root `.zvec-grep`
+tool-metadata directory, whose reader locks can disappear during a scan.
+This does not honor arbitrary Git ignores: active ignored code, nested or
+prefix-sibling directory names, and unreadable application source still block.
+
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate
 input documents compare their stable source, candidate, owner, fixture,

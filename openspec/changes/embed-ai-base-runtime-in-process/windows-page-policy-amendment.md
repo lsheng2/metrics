@@ -131,3 +131,19 @@ Old policy r2 is historical once r3 is published. The P4 decision in
 instruction to retain a universal page ratio is superseded by this amendment.
 The earlier task wording and S0/S0b records are historical evidence, not a
 second current numerical authority. No acceptance is granted by a policy freeze.
+
+## Source Inventory Correction
+
+The first r3 mapped-functional run stopped after42 passes with
+`unreadable_source` for a `.zvec-grep` reader lock. That file was absent on
+reinspection; the original low-level read exception was not retained.
+The regression fixture reproduces disappearance between inventory and read.
+The failed proof is retained under
+`D:/AIGC/d9-1122/mapped-proof-runs/80ef1d8f-67d9-4fb8-beee-8ad0b0d4e372/`.
+This is a shared source-inventory defect, not a product or numerical failure.
+Under existing W1.RETIRE ownership, exclude only the root tool-metadata
+directory before traversal. Near-miss/nested names and unreadable application
+source still fail both checkers; Git-ignored business code remains scanned.
+The r3 policy, application/SDK and all budgets remain unchanged. Preserve the
+ee92276 native/migration/conformance results under their original identity,
+then freeze a fresh source/input family for the corrected validation source.

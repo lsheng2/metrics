@@ -13,6 +13,28 @@
   "amendment_dirty_inventory": "evidence/windows-functional-first-baseline.json",
   "performance_refreeze_baseline": "eb84aa23a123a191d4b5f6569e69e3d00d75268b",
   "performance_plan": "windows-performance-test-plan.md",
+  "validation_inventory_refreeze": {
+    "date": "2026-11-24",
+    "baseline": "ee92276334e64b3a6ea8e19f2f2317687ec532df",
+    "owner_node": "W1.RETIRE",
+    "plan": "windows-page-policy-amendment.md#source-inventory-correction",
+    "refreeze_actions": [
+      {"action": "amend", "reason": "A vanished root zvec reader lock exposed tool metadata being treated as source; correct the shared inventory without weakening active-source checks or changing r3 budgets."}
+    ],
+    "updated_artifacts": [
+      "scripts/runtime_check_support.py",
+      "scripts/tests/test_retired_ai_paths.py",
+      "docs/development/reporting-delivery.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-page-policy-amendment.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md"
+    ],
+    "rerun_gates": ["W1.R", "W3.FREEZE", "PERF.CERTIFY", "CLOSE.R"],
+    "post_refreeze_preflight_result": {
+      "command": "D:/AIGC/d9-1122/venv/Scripts/python.exe -I D:/AIGC/d9-1122/page-r3-1124/check-page-plan.py --implementation",
+      "result": "PASS"
+    }
+  },
   "performance_page_refreeze": {
     "date": "2026-11-24",
     "baseline": "872378a1c5617896d752728d739a331bfc01a92b",

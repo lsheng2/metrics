@@ -14,7 +14,7 @@ APP_ROOTS = {
     "pull_requests", "jira_sync", "jira_history", "bug_metrics",
 }
 ROOT_EXCLUSIONS = {
-    ".git", ".tmp", ".venv", ".venv-embedded", "venv",
+    ".git", ".tmp", ".venv", ".venv-embedded", "venv", ".zvec-grep",
     "state", "tmp_ui_validation", "screenshots",
 }
 CACHE_DIRS = {"__pycache__", "node_modules", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
