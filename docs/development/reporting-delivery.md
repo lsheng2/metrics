@@ -119,7 +119,7 @@ P95 ratio1.58434 remain failures. The owner-approved
 uses a100ms request-level capture trigger for HTML/runtime CSS, not a changed
 KPI or whole-page threshold. It runs ordinary-token trace/control arms with
 at most300 seconds of active sampling each, bounded buffers and same-request
-PID/TID/clock evidence. It does not patch the installed SDK or certify a miss.
+PID/TID/clock evidence. It does not patch the admitted runtime or certify a miss.
 
 The [subsecond localization checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-subsecond-localization.md)
 records the bounded packet's current truth. The trace arm found a production

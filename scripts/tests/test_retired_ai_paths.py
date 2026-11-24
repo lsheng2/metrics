@@ -15,7 +15,7 @@ def check(root, platform="windows"):
 def test_current_repository_has_no_retired_windows_paths():
     result = check(Path(__file__).resolve().parents[2], platform="windows")
     assert result["checked_files"] > 0
-    assert result["passed"] and not result["violations"], result
+    assert result["passed"] and not result["violations"], result["violations"]
 
 
 @pytest.mark.parametrize("path,text", [
