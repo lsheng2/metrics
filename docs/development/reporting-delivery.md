@@ -147,8 +147,12 @@ uses `windows-mdb2-s0b-r2` with per-kind/per-phase P99<100ms and max<=200ms.
 Producer, replay and input admission use the new
 `windows-performance-inputs-dev9-r2.json`; r1 inputs cannot certify as r2.
 Page ratio1.2 and functional safety remain unchanged. Historical failures are
-not rewritten. Fresh qualification is pending; the bounded diagnostic measures
-whole draft-edit pages and individual assets, not function rankings.
+not rewritten. The bounded480-page production draft-edit diagnostic completed
+with zero loss and normal cleanup; candidate P95 ratios were1.01327 and1.00193
+(saturated), while the earlier candidate regression was not reproduced.
+This instrumented subset is not full qualification. The next gate is a fresh
+uninstrumented full r2 recipe, not further threshold relaxation or repeated
+focused collection; raw references and limitations are in the amendment.
 
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate

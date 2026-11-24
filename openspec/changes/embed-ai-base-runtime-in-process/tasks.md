@@ -6,8 +6,11 @@
 
 Owner approved [P4 tail-rule renewal and focused asset investigation](windows-tail-policy-amendment.md).
 The new r2 recipe/policy implements per-kind P99<100ms and max<=200ms, retaining
-page ratio1.2, functional safety and historical receipts. Integrated review,
-input freeze and native packet are pending; this is not performance acceptance.
+page ratio1.2, functional safety and historical receipts. Policy publication,
+independent code/launch review and the focused native packet are complete.
+PERF.CERTIFY and overall closure remain open. The amendment's native checkpoint
+records the480-page results, normal cleanup, retained startup failures and
+the next full qualification gate; this subset is not performance acceptance.
 
 ### Function Profiling Checkpoint (2026-11-24)
 

@@ -1,6 +1,6 @@
 # Windows Tail Policy And Focused Asset Investigation
 
-Date: 2026-11-24. Status: policy implementation in validation; native work pending.
+Date: 2026-11-24. Status: policy published; focused native diagnostic complete.
 Docs impact: operations/validation; current guide:
 `docs/development/reporting-delivery.md`.
 `profile_source=repo-local`; `agent_routing_mode=multiagent-configured`.
@@ -108,5 +108,47 @@ P4's numerical rule changed. Local receipts are under
 Hash-verified descriptive replay against the new evaluator removes the old
 119.398ms CSS violation but retains the production seq/draft_edit page ratio
 1.5843398409046983>1.2. This is sensitivity analysis, not new qualification.
-Independent implementation review and private-collector readiness remain
-separate gates before publication/freeze and native execution, respectively.
+Independent implementation and launch-delta review each passed1/1. The policy
+was published as `50124c5022bcdb005ebb13e1e6e6cccfc15cc955`; the private collector
+passed46 tests, including actual runner/guard/HTTP/WSGI integration and
+wrong/missing evidence negatives. This does not qualify production performance.
+
+## Native Diagnostic Checkpoint
+
+The `asset-tail-r2` packet used the clean source above and unchanged dev9 wheel.
+Calibration took1.007s; all480 required pages completed in110.352 active seconds,
+below the180s cap. Request/resource joins and clock domains replayed successfully;
+all loss counters were zero, native cleanup was normal, and the two exact
+authorized indexer incarnations were restored normally without rescue.
+
+| Arm | Pages | P50 ms | P95 ms | P95 / Baseline |
+| --- | --- | --- | --- | --- |
+| Baseline | 160 | 220.701 | 249.139 | 1.00000 |
+| Candidate | 160 | 224.202 | 252.445 | 1.01327 |
+| Saturated candidate | 160 | 223.567 | 249.619 | 1.00193 |
+
+Raw result: `D:/AIGC/d9-1122/asset-tail-v1/runs/asset-tail-r2/result.json`,
+SHA256 `a33da5ea62e5283e1cb64d9a92dbc200eb6294ae238e2cf0437f297caf350c7b`.
+Frozen input: `D:/AIGC/d9-1122/inputs/asset-tail-r2-native-r2.json`,
+SHA256 `618611b4295e61e4b9613866bd1d1889119362c991377374f679f0e4f32cdc6b`.
+Offline replay/attribution: `D:/AIGC/d9-1122/asset-tail-r2-analysis.json`.
+
+Three >500ms pages occurred in the baseline. Their largest request was
+`/static/vendor/fonts/mona-sans-latin-wdth-normal.woff2`: about302-312ms lay
+after the WSGI call returned. This interval includes body iteration/delivery
+and client processing; it does not identify a disk, scheduler or network cause.
+Candidate HTML also had isolated CPU-heavy spans, without a P95 regression.
+The old1.58434 candidate episode was not reproduced or explained by this subset.
+
+Two startup failures remain preserved: PowerShell5.1 JSON-array handling failed
+before suspension/Python launch; PowerShell7 then exposed a missing host
+directory before any host or measurement request started. Both had zero pages.
+The private directory-preparation fix was RED/GREEN tested and independently
+reviewed before the new input freeze. Canonical invocation uses PowerShell7.
+
+No application/runtime optimization is justified from these observations alone.
+Keep the page ratio1.2 and revised P4 limits. Next is one fresh, uninstrumented
+full r2 qualification with the existing two-phase/six-page producer, after its
+input/source admission. Do not repeat this focused collector to seek another
+outcome. A failed full gate retains its exact evidence and reopens only its
+measured failing surface. PERF.CERTIFY, CLOSE.R and WIN.ACCEPT remain open.
