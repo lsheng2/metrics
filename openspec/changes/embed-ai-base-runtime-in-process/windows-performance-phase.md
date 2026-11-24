@@ -1,21 +1,21 @@
 # Windows Performance Phase
 
-Status: P4 tail-rule r2 implemented; new frozen inputs and certification pending.
+Status: r3 workload-class renewal authorized; prospective certification pending.
 Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-17.
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 
-## Tail Rule Renewal (2026-11-24)
+## Current Page Rule (2026-11-24)
 
-The owner-approved [amendment](windows-tail-policy-amendment.md) replaces only
-the P4 every-sample100ms rule. Current recipe `windows-mdb2-s0b-r2` uses the new
-[canonical policy](evidence/windows-performance-inputs-dev9-r2.json):
-loop-backed short and direct-asset probes each require nearest-rank P99<100ms
-and maximum<=200ms, separately in each settings phase. All errors, missing
-samples, auth/hash/slot/quota violations and cleanup failures remain failures.
-P1/P2/P3, full sample counts, the dev9 candidate and lifecycle budgets are
-unchanged. Current admission rejects r1 references; old policies and results
-remain historical, not converted acceptance evidence.
+The owner chose unchanged implementation and the [r3 page amendment](windows-page-policy-amendment.md).
+The [canonical policy](evidence/windows-performance-inputs-dev9-r3.json) keeps
+ordinary page ratio<=1.2 and gives c4/candidate_saturated a joint ratio<=1.25
+AND P95<=800ms ceiling across all six pages and both settings phases.
+The [r2 P4 renewal](windows-tail-policy-amendment.md) remains: short/direct-asset
+probes each require P99<100ms and maximum<=200ms. Streaming, sample counts,
+auth/hash/slot/quota, lifecycle/leak and cleanup requirements are unchanged.
+The original r2 full certificate remains FAIL; r3 needs fresh source-bound
+inputs and certification. Old policies and results are not converted evidence.
 
 ## Windows Convergence Candidate Amendment (2026-11-22)
 

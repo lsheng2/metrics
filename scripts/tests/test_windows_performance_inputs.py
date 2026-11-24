@@ -13,7 +13,7 @@ DEV9_FUNCTIONAL_RELATIVE = Path(
     "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json"
 )
 DEV9_POLICY_RELATIVE = Path(
-    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r2.json"
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3.json"
 )
 LEGACY_FUNCTIONAL_RELATIVE = Path(
     "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json"
@@ -27,7 +27,7 @@ def performance_policy_payload(manifest):
     return {
         "schema_version": 1,
         "kind": "windows-performance-policy",
-        "recipe_id": "windows-mdb2-s0b-r2",
+        "recipe_id": "windows-mdb2-s0b-r3",
         "status": "method-frozen-not-measured",
         "runtime": {
             "distribution": "ai-base-runtime",
@@ -50,6 +50,9 @@ def performance_policy_payload(manifest):
             "blocks": 4,
             "per_block": 40,
             "page_ratio_max": 1.2,
+            "concurrent_saturated_page": {
+                "mode": "c4", "arm": "candidate_saturated", "page_ratio_max": 1.25, "p95_max_ms": 800,
+            },
             "spacing": {"events": 50, "interval_seconds": 0.1, "first_event_max_ms": 200, "inter_arrival_p95_max_ms": 150},
             "saturation": {
                 "probe_kinds": ["loop_short", "direct_asset", "excess_stream"],
@@ -120,7 +123,7 @@ def performance_case(tmp_path, monkeypatch, *, mode="certify"):
     functional = case["root"] / FUNCTIONAL_RELATIVE
     _write_json(functional, functional_acceptance_payload(manifest, functional_proof))
     manifest["performance"] = {
-        "recipe_id": "windows-mdb2-s0b-r2",
+        "recipe_id": "windows-mdb2-s0b-r3",
         "mode": mode,
         "policy_ref": {"path": str(policy), "sha256": _sha(policy)},
         "functional_acceptance_ref": {"path": str(functional), "sha256": _sha(functional)},
@@ -136,7 +139,7 @@ def test_performance_request_reuses_common_input_boundaries_without_copying_exte
 
     request = load_performance_request(case["inputs"], case["output"], mode="certify")
 
-    assert request["performance"]["recipe_id"] == "windows-mdb2-s0b-r2"
+    assert request["performance"]["recipe_id"] == "windows-mdb2-s0b-r3"
     assert Path(request["performance"]["policy_ref"]["path"]).is_relative_to(case["root"])
     assert Path(request["performance"]["functional_acceptance_ref"]["path"]).is_relative_to(case["root"])
     assert request["_paths"]["output"] == case["output"]
@@ -187,7 +190,7 @@ def test_performance_request_accepts_owned_copy_matching_dev9_reference(tmp_path
     proof = case["owned"] / "receipts" / "functional-proof.json"
     _write_json(canonical_policy, performance_policy_payload(case["manifest"]))
     _write_json(canonical_functional, functional_acceptance_payload(case["manifest"], proof))
-    owned_policy = case["owned"] / "copies" / "windows-performance-inputs-dev9-r2.json"
+    owned_policy = case["owned"] / "copies" / "windows-performance-inputs-dev9-r3.json"
     owned_functional = case["owned"] / "copies" / "windows-functional-acceptance-dev9.json"
     _write_json(owned_policy, json.loads(canonical_policy.read_text(encoding="utf-8")))
     _write_json(owned_functional, json.loads(canonical_functional.read_text(encoding="utf-8")))
@@ -209,7 +212,7 @@ def test_performance_contract_validates_policy_and_functional_reference_content(
 
     case = performance_case(tmp_path, monkeypatch, mode="certify")
     policy = Path(case["manifest"]["performance"]["policy_ref"]["path"])
-    _write_json(policy, {"schema_version": 1, "kind": "wrong", "recipe_id": "windows-mdb2-s0b-r2"})
+    _write_json(policy, {"schema_version": 1, "kind": "wrong", "recipe_id": "windows-mdb2-s0b-r3"})
     case["manifest"]["performance"]["policy_ref"]["sha256"] = _sha(policy)
     _write_json(case["inputs"], case["manifest"])
 
@@ -225,7 +228,7 @@ def test_performance_contract_rejects_owned_marker_only_policy_or_functional_ref
     forged_functional = case["owned"] / "not-functional-evidence.json"
     _write_json(forged_policy, {
         "kind": "windows-performance-policy",
-        "recipe_id": "windows-mdb2-s0b-r2",
+        "recipe_id": "windows-mdb2-s0b-r3",
         "status": "method-frozen-not-measured",
     })
     _write_json(forged_functional, {"status": "PASS"})

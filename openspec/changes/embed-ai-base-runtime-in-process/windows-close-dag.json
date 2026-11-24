@@ -13,6 +13,35 @@
   "amendment_dirty_inventory": "evidence/windows-functional-first-baseline.json",
   "performance_refreeze_baseline": "eb84aa23a123a191d4b5f6569e69e3d00d75268b",
   "performance_plan": "windows-performance-test-plan.md",
+  "performance_page_refreeze": {
+    "date": "2026-11-24",
+    "baseline": "872378a1c5617896d752728d739a331bfc01a92b",
+    "plan": "windows-page-policy-amendment.md",
+    "owner_node": "PERF.PROBE",
+    "recipe_id": "windows-mdb2-s0b-r3",
+    "policy": "evidence/windows-performance-inputs-dev9-r3.json",
+    "refreeze_actions": [
+      {"action": "amend", "reason": "Owner selected unchanged implementation and prospective concurrent saturated page KPI reassessment; ordinary ratios and all safety limits stay fixed."}
+    ],
+    "updated_artifacts": [
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-page-policy-amendment.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-validation.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-tail-policy-amendment.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md",
+      "docs/development/reporting-delivery.md",
+      "docs/README.md"
+    ],
+    "rerun_gates": ["PERF.KPI", "PERF.OPTIMIZE.R", "PERF.CERTIFY", "CLOSE.R"],
+    "post_refreeze_preflight_result": {
+      "command": "D:/AIGC/d9-1122/venv/Scripts/python.exe -I D:/AIGC/d9-1122/page-r3-1124/check-page-plan.py",
+      "result": "PASS"
+    }
+  },
   "performance_tail_refreeze": {
     "date": "2026-11-24",
     "baseline": "bf36c180d96d33ce859e802a29cb9831ac00e9ee",
@@ -208,6 +237,7 @@
     "scripts/tests/test_windows_performance_replay_boundaries.py": "PERF.PROBE",
     "scripts/tests/test_windows_performance_inputs.py": "PERF.PROBE",
     "scripts/tests/test_windows_performance_tail_policy.py": "PERF.PROBE",
+    "scripts/tests/test_windows_performance_page_policy.py": "PERF.PROBE",
     "scripts/tests/test_windows_performance_window.py": "PERF.PROBE",
     "scripts/tests/test_windows_performance_processes.py": "PERF.PROBE",
     "scripts/tests/test_windows_host_conformance.py": "W2.HOST",
@@ -363,7 +393,7 @@
     },
     {
       "id": "W3.REPLAN", "depends_on": ["FUNC.ACCEPT"], "kind": "replan-review",
-      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md"], "contracts": [],
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md", "docs/README.md"], "contracts": [],
       "validation": ["V0"], "steps": "windows-performance-test-plan.md",
       "exit_criteria": "Remaining performance work refrozen against functional baseline with structured actions, artifacts and rerun gates.",
       "parallel_policy": "review-only"
@@ -377,7 +407,7 @@
     },
     {
       "id": "PERF.PROBE", "depends_on": ["PERF.KPI"], "kind": "implementation",
-      "owner_paths": ["scripts/validation/windows_host_qualification.py", "scripts/validation/windows_host_samples.py", "scripts/validation/windows_host_processes.py", "scripts/validation/windows_host_process_identity.py", "scripts/validation/windows_host_process_cleanup.py", "scripts/validation/windows_host_transport.py", "scripts/validation/windows_host_benchmark.py", "scripts/validation/windows_host_environment.py", "scripts/validation/windows_host_process_window.py", "scripts/validation/windows_host_process_window_evidence.py", "scripts/validation/windows_host_performance.py", "scripts/validation/windows_host_performance_contract.py", "scripts/validation/windows_host_performance_evidence.py", "scripts/validation/windows_qualification_evidence.py", "scripts/validation/windows_qualification_inputs.py", "scripts/validation/qualify_ai_runtime.py", "scripts/tests/test_windows_host_qualification.py", "scripts/tests/test_windows_process_window.py", "scripts/tests/test_windows_process_window_contract.py", "scripts/tests/windows_performance_support.py", "scripts/tests/test_windows_performance_evidence.py", "scripts/tests/test_windows_performance_replay_boundaries.py", "scripts/tests/test_windows_performance_inputs.py", "scripts/tests/test_windows_performance_tail_policy.py", "scripts/tests/test_windows_performance_window.py", "scripts/tests/test_windows_performance_processes.py", "scripts/tests/test_windows_qualification_profiles.py", "scripts/tests/test_qualify_ai_runtime.py", "ai_host/tests/windows_perf_fixture.py", "ai_host/tests/windows_perf_entry.py", "ai_host/tests/test_windows_baseline_equivalence.py", "ai_host/tests/conformance_runtime_probe.py", "ai_host/tests/conformance_runtime_cases.py", "ai_host/tests/conformance_performance_cases.py", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/"],
+      "owner_paths": ["scripts/validation/windows_host_qualification.py", "scripts/validation/windows_host_samples.py", "scripts/validation/windows_host_processes.py", "scripts/validation/windows_host_process_identity.py", "scripts/validation/windows_host_process_cleanup.py", "scripts/validation/windows_host_transport.py", "scripts/validation/windows_host_benchmark.py", "scripts/validation/windows_host_environment.py", "scripts/validation/windows_host_process_window.py", "scripts/validation/windows_host_process_window_evidence.py", "scripts/validation/windows_host_performance.py", "scripts/validation/windows_host_performance_contract.py", "scripts/validation/windows_host_performance_evidence.py", "scripts/validation/windows_qualification_evidence.py", "scripts/validation/windows_qualification_inputs.py", "scripts/validation/qualify_ai_runtime.py", "scripts/tests/test_windows_host_qualification.py", "scripts/tests/test_windows_process_window.py", "scripts/tests/test_windows_process_window_contract.py", "scripts/tests/windows_performance_support.py", "scripts/tests/test_windows_performance_evidence.py", "scripts/tests/test_windows_performance_replay_boundaries.py", "scripts/tests/test_windows_performance_inputs.py", "scripts/tests/test_windows_performance_tail_policy.py", "scripts/tests/test_windows_performance_page_policy.py", "scripts/tests/test_windows_performance_window.py", "scripts/tests/test_windows_performance_processes.py", "scripts/tests/test_windows_qualification_profiles.py", "scripts/tests/test_qualify_ai_runtime.py", "ai_host/tests/windows_perf_fixture.py", "ai_host/tests/windows_perf_entry.py", "ai_host/tests/test_windows_baseline_equivalence.py", "ai_host/tests/conformance_runtime_probe.py", "ai_host/tests/conformance_runtime_cases.py", "ai_host/tests/conformance_performance_cases.py", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/"],
       "contracts": ["INV-6", "PERF-IDENTITY", "PERF-RECIPE", "PERF-INTERVAL", "PERF-WINDOW", "PERF-CLEANUP", "PERF-CLAIM"], "validation": ["V8"], "steps": "windows-performance-test-plan.md",
       "exit_criteria": "Native producer/checker and aggregate consumer reject false proof; full recipe fidelity and cleanup pass; labelled pilot and full diagnostic retained without premature certification.",
       "parallel_policy": "single-writer"

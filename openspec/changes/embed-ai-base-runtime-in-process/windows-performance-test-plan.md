@@ -5,7 +5,7 @@ requires latest-AIB candidate admission and renewed Dashboard functional evidenc
 before final performance certification. This plan's dev4 inputs and completed
 experiments remain historical/frozen evidence, not qualification of the new
 candidate. The workload remains unchanged; current numerical policy follows
-the owner-approved P4 r2 amendment below.
+the owner-approved r3 page amendment below, including the unchanged P4 renewal.
 
 > For agentic workers: use `superpowers:executing-plans` for the steps below.
 > Execution status exists only in the existing `tasks.md`, not this document.
@@ -26,21 +26,22 @@ pins, Django, Waitress, httpx, SLE, pytest, Windows counters and conditional ETW
 [signed V8 method](windows-close-validation.md#v8-native-measurement-method);
 [research](windows-performance-research.md); [DAG](windows-close-dag.json).
 
-## P4 Tail Renewal (2026-11-24)
+## Page And Tail Policy (2026-11-24)
 
-The [approved amendment](windows-tail-policy-amendment.md) is implemented by
-recipe `windows-mdb2-s0b-r2` and `evidence/windows-performance-inputs-dev9-r2.json`.
+The [approved page amendment](windows-page-policy-amendment.md) selects
+recipe `windows-mdb2-s0b-r3` and `evidence/windows-performance-inputs-dev9-r3.json`.
 The transport owner and policy loader share the fixed nearest-rank P99<100ms/
 max<=200ms definition. Producer resolved inputs, standalone/aggregate replay
-and active fixtures use r2; stale or mixed r1 references are refused. Per-phase
-and per-kind summaries include all samples. P1/P2/P3, count inventories and
-functional safety remain unchanged. Historical replay is descriptive only.
+and active fixtures use r3; stale r1/r2 references are refused. The page owner
+keeps1.2 for ordinary cells; c4/candidate_saturated requires ratio<=1.25 AND
+P95<=800ms for all pages/phases. P1/P4, sample counts and safety are unchanged.
+Historical replay is descriptive only.
 Fresh input freeze and native qualification are still required.
 
 ## Dev9 Reference Refreeze (2026-11-22)
 
 Historical candidate/reference refreeze; the numerical contract is superseded
-only by the P4 r2 amendment above.
+by the page-class and P4 amendments above.
 
 The current baseline is Dashboard `5d15ddf3a8efeb84ae9518e72ab43277eff4d5d0`,
 after dev9 functional acceptance at `423846c`. Use `D:/AIGC/d9-1122`, its
@@ -306,7 +307,7 @@ schema: `schema_version`, `acceptance_profile=full`, `source`, `owned_root`,
 validation. Its required `performance` object contains `recipe_id`,
 `policy_ref={path,sha256}`, `functional_acceptance_ref={path,sha256}` and
 `mode`. Mode in argv and input must agree. The repo-owned recipe id is
-`windows-mdb2-s0b-r2`; it fixes all counts and thresholds in the phase document.
+`windows-mdb2-s0b-r3`; it fixes all counts and thresholds in the phase document.
 
 The performance receipt uses `schema_version=1`,
 `kind=windows-host-performance`, `phase=performance`, `mode`, `status`,

@@ -7,6 +7,7 @@ import math
 import re
 import threading
 import time
+from types import MappingProxyType
 from urllib.parse import urlsplit
 
 import httpx
@@ -16,6 +17,10 @@ PAGE_KEYS = ('home', 'projects', 'project_detail', 'stage_reports', 'draft_edit'
 ARMS = ('baseline', 'candidate', 'candidate_saturated')
 MODES = {'seq': 1, 'c4': 4}
 BLOCKS, PER_BLOCK, WARMUP = 4, 40, 10
+PAGE_RATIO_MAX = 1.2
+CONCURRENT_SATURATED_PAGE_POLICY = MappingProxyType({
+    'mode': 'c4', 'arm': 'candidate_saturated', 'page_ratio_max': 1.25, 'p95_max_ms': 800,
+})
 AUTH = ('alice', 'wonder')
 ASSET_RE = re.compile(r'<(link|script|img)\b[^>]*?\b(href|src)\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
 
@@ -198,10 +203,16 @@ def evaluate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
                     candidate, assets = validate_cell(arms[arm], blocks=blocks, per_block=per_block)
                     ratio = candidate / baseline
                     if assets != baseline_assets:
-                        raise ValueError(f'{mode}/{page}/{arm}: asset mismatch or p95 exceeds 1.2x')
-                    if ratio > 1.2:
+                        raise ValueError(f'{mode}/{page}/{arm}: asset mismatch')
+                    policy = CONCURRENT_SATURATED_PAGE_POLICY
+                    stressed = mode == policy['mode'] and arm == policy['arm']
+                    ratio_limit = policy['page_ratio_max'] if stressed else PAGE_RATIO_MAX
+                    if ratio > ratio_limit:
                         violations.append({'metric': 'page_ratio', 'mode': mode, 'page': page, 'arm': arm,
-                                           'ratio': ratio, 'limit': 1.2})
+                                           'ratio': ratio, 'limit': ratio_limit})
+                    if stressed and candidate > policy['p95_max_ms']:
+                        violations.append({'metric': 'page_p95_ms', 'mode': mode, 'page': page, 'arm': arm,
+                                           'value': candidate, 'limit': policy['p95_max_ms']})
                     rows.append({'mode': mode, 'page': page, 'arm': arm, 'ratio': ratio,
                                  'baseline_p95_ms': baseline, 'candidate_p95_ms': candidate})
         return {'rows': rows, 'violations': violations}
@@ -213,5 +224,5 @@ def validate_pages(payload, *, blocks=BLOCKS, per_block=PER_BLOCK):
     evaluation = evaluate_pages(payload, blocks=blocks, per_block=per_block)
     if evaluation['violations']:
         row = evaluation['violations'][0]
-        raise ValueError(f"{row['mode']}/{row['page']}/{row['arm']}: asset mismatch or p95 exceeds 1.2x")
+        raise ValueError(f"{row['mode']}/{row['page']}/{row['arm']}: {row['metric']} exceeds {row['limit']}")
     return evaluation['rows']

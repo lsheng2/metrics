@@ -142,17 +142,20 @@ optimization. A successor must prove concurrent engine isolation and calibrate
 perturbation before a new authorized window. KPI and final acceptance remain
 unchanged; a successful offline isolation test is not native qualification.
 
-The owner-approved [tail-policy amendment](../../openspec/changes/embed-ai-base-runtime-in-process/windows-tail-policy-amendment.md)
-uses `windows-mdb2-s0b-r2` with per-kind/per-phase P99<100ms and max<=200ms.
-Producer, replay and input admission use the new
-`windows-performance-inputs-dev9-r2.json`; r1 inputs cannot certify as r2.
-Page ratio1.2 and functional safety remain unchanged. Historical failures are
-not rewritten. The bounded480-page production draft-edit diagnostic completed
-with zero loss and normal cleanup; candidate P95 ratios were1.01327 and1.00193
-(saturated), while the earlier candidate regression was not reproduced.
-This instrumented subset is not full qualification. The next gate is a fresh
-uninstrumented full r2 recipe, not further threshold relaxation or repeated
-focused collection; raw references and limitations are in the amendment.
+The owner-approved [page-policy amendment](../../openspec/changes/embed-ai-base-runtime-in-process/windows-page-policy-amendment.md)
+keeps the application and SDK unchanged. Prospective recipe `windows-mdb2-s0b-r3`
+uses `windows-performance-inputs-dev9-r3.json`. Ordinary page-plus-assets cells
+retain nearest-rank P95<=1.2 times their matched baseline. The class with four
+page clients AND four held AI streams requires P95<=1.25 times baseline AND
+P95<=800ms, for every page in both development and production. These are
+engineering budgets, not statistically inferred or browser-rendering bounds.
+The [P4 rule](../../openspec/changes/embed-ai-base-runtime-in-process/windows-tail-policy-amendment.md)
+stays per-kind/per-phase P99<100ms and max<=200ms; all safety requirements remain.
+The complete11520-page r2 certificate is still FAIL for production c4 saturated
+draft_edit ratio1.21978. Neither480-page instrumented subset can replace it.
+Old r1/r2 inputs cannot certify as r3. New-policy tests and independent review
+precede clean-source/input freeze and one fresh uninstrumented full run;
+certification and final full qualification remain open.
 
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate

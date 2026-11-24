@@ -194,8 +194,9 @@ receipts and do not substitute for these tool-boundary tests.
 The active continuation is now the reviewed dev9 convergence candidate, after
 dev8's Dashboard observation failure and the three-layer development checks.
 Use D:/AIGC/d9-1122 and versioned
-`windows-functional-acceptance-dev9.json` / `windows-performance-inputs-dev9-r2.json`
-outputs. The P4 tail rule follows the 2026-11-24 owner amendment; the owner
+`windows-functional-acceptance-dev9.json` / `windows-performance-inputs-dev9-r3.json`
+outputs. Numerical policy follows the [page amendment](windows-page-policy-amendment.md)
+and its preserved P4 rule; the owner
 scope, complete gate chain and unchanged functional budgets below
 still apply; the following dev6 identity/root records are historical.
 

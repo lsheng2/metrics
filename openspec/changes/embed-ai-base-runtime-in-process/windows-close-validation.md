@@ -208,7 +208,9 @@ Do not invent a cheaper baseline or substitute a test double.
   This socket backlog is not the bounded runtime response-queue proof:
   `conformance_backpressure_cases.py` pauses the installed WSGI iterator,
   checks producer suspension/resumption and verifies generator/capacity cleanup.
-- B6/B9: each required page+asset p95 <=1.2 times baseline. Repeat B6 with
+- B6/B9: ordinary page+asset P95<=1.2 times baseline; c4/candidate_saturated
+  requires ratio<=1.25 AND P95<=800ms for all pages in both phases, per the
+  [r3 amendment](windows-page-policy-amendment.md). Repeat B6 with
   production settings, DEBUG=False and collectstatic output. In the **same**
   saturation interval, excess stream returns503/Retry-After2 and every short/
   direct-asset request succeeds200. The owner-approved r2 tail rule requires

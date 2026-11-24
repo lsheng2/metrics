@@ -1,6 +1,9 @@
 # Windows Tail Policy And Focused Asset Investigation
 
 Date: 2026-11-24. Status: policy published; focused native diagnostic complete.
+The later [r3 page amendment](windows-page-policy-amendment.md) supersedes this
+document's universal-page-ratio and next-r2-run instructions. Its P4 decision
+and all historical artifacts remain unchanged.
 Docs impact: operations/validation; current guide:
 `docs/development/reporting-delivery.md`.
 `profile_source=repo-local`; `agent_routing_mode=multiagent-configured`.

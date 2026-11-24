@@ -57,7 +57,7 @@ def bind_performance_refs(case, manifest, *, mode="certify"):
     _write_json(policy, performance_policy_payload(manifest))
     _write_json(functional, functional_acceptance_payload(manifest, proof))
     manifest["performance"] = {
-        "recipe_id": "windows-mdb2-s0b-r2",
+        "recipe_id": "windows-mdb2-s0b-r3",
         "mode": mode,
         "policy_ref": {"path": str(policy), "sha256": _sha(policy)},
         "functional_acceptance_ref": {"path": str(functional), "sha256": _sha(functional)},
@@ -236,7 +236,7 @@ def test_aggregate_performance_replay_revalidates_policy_identity(tmp_path, monk
     binding = deepcopy(manifest["checks"]["evidence_bindings"]["task:1.1"])
     binding.update(kind="windows-host-performance", path=str(receipt), sha256=_sha(receipt), covers=[key])
     manifest["performance"] = {
-        "recipe_id": "windows-mdb2-s0b-r2",
+        "recipe_id": "windows-mdb2-s0b-r3",
         "mode": "certify",
         "policy_ref": {"path": str(case["owned"] / "missing-policy.json"), "sha256": "0" * 64},
         "functional_acceptance_ref": {"path": str(case["owned"] / "missing-functional.json"), "sha256": "0" * 64},

@@ -2,15 +2,16 @@
 
 ## Latest Delivery Decision
 
-### Approved Tail Amendment (2026-11-24)
+### Approved Page KPI Reassessment (2026-11-24)
 
-Owner approved [P4 tail-rule renewal and focused asset investigation](windows-tail-policy-amendment.md).
-The new r2 recipe/policy implements per-kind P99<100ms and max<=200ms, retaining
-page ratio1.2, functional safety and historical receipts. Policy publication,
-independent code/launch review and the focused native packet are complete.
-PERF.CERTIFY and overall closure remain open. The amendment's native checkpoint
-records the480-page results, normal cleanup, retained startup failures and
-the next full qualification gate; this subset is not performance acceptance.
+Owner selected unchanged implementation plus [prospective workload-class KPI renewal](windows-page-policy-amendment.md).
+Independent planning recommends r3: ordinary cells retain ratio<=1.2; all six
+c4/saturated pages in both phases require ratio<=1.25 AND P95<=800ms.
+The r2 full11520-page certificate remains FAIL (one ratio1.21978); the480-page
+C4 diagnostic does not replace it. P4 P99<100ms/max<=200ms and all functional,
+auth/quota/leak/production-stop limits remain unchanged. Enforcement tests,
+independent code review, clean refreeze, new full certification and final
+qualification are still required. PERF.CERTIFY and whole closure remain open.
 
 ### Function Profiling Checkpoint (2026-11-24)
 

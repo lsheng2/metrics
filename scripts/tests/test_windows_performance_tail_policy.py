@@ -98,13 +98,13 @@ def test_tail_relaxation_never_waives_correctness_or_cleanup(mutation):
         evaluate(payload, fail_on_violation=False)
 
 
-def test_active_input_and_resolved_recipe_are_r2(tmp_path, monkeypatch):
+def test_active_input_and_resolved_recipe_are_r3(tmp_path, monkeypatch):
     from scripts.validation.windows_host_performance_contract import load_performance_request
 
     case = performance_case(tmp_path, monkeypatch)
     request = load_performance_request(case["inputs"], case["output"], mode="certify")
-    assert request["performance"]["recipe_id"] == "windows-mdb2-s0b-r2"
-    assert Path(request["performance"]["policy_ref"]["path"]).name == "windows-performance-inputs-dev9-r2.json"
+    assert request["performance"]["recipe_id"] == "windows-mdb2-s0b-r3"
+    assert Path(request["performance"]["policy_ref"]["path"]).name == "windows-performance-inputs-dev9-r3.json"
 
 
 @pytest.mark.parametrize("changed", [
@@ -151,7 +151,8 @@ def test_old_recipe_policy_and_mixed_rule_cannot_be_admitted(tmp_path, monkeypat
         load_performance_request(case["inputs"], case["output"], mode="certify")
 
 
-def test_r1_resolved_measurement_cannot_certify_under_r2_request(tmp_path):
+@pytest.mark.parametrize("old_recipe", ["windows-mdb2-s0b-r1", "windows-mdb2-s0b-r2"])
+def test_old_resolved_measurement_cannot_certify_under_r3_request(tmp_path, old_recipe):
     import json
     from scripts.tests.test_windows_performance_evidence import _artifact, _receipt_case
     from scripts.validation.windows_host_performance_evidence import validate_performance_result
@@ -159,7 +160,7 @@ def test_r1_resolved_measurement_cannot_certify_under_r2_request(tmp_path):
     receipt, request = _receipt_case(tmp_path, mode="certify")
     path = Path(receipt["resolved_inputs"]["production"]["path"])
     resolved = json.loads(path.read_text(encoding="utf-8"))
-    resolved["recipe_id"] = "windows-mdb2-s0b-r1"
+    resolved["recipe_id"] = old_recipe
     receipt["resolved_inputs"]["production"] = _artifact(path, resolved)
     with pytest.raises(QualificationError, match="resolved input phase or recipe mismatch"):
         validate_performance_result(receipt, request)
