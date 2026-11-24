@@ -138,7 +138,7 @@ def resolved_inputs_payload(
     return {
         "mode": "certify",
         "phase": "production" if production else "development",
-        "recipe_id": "windows-mdb2-s0b-r1",
+        "recipe_id": "windows-mdb2-s0b-r2",
         "settings": {
             "debug": not production,
             "production": production,
@@ -231,7 +231,7 @@ def performance_driver_request(tmp_path: Path) -> dict:
     request = {
         "schema_version": 1,
         "acceptance_profile": "full",
-        "performance": {"recipe_id": "windows-mdb2-s0b-r1", "mode": "certify"},
+        "performance": {"recipe_id": "windows-mdb2-s0b-r2", "mode": "certify"},
         "source": identity["source"],
         "python": {"candidate": str(python), "version": "3.13.7", "environments": {"candidate": environment}},
         "candidate": {

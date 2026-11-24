@@ -11,6 +11,7 @@ from scripts.validation.windows_host_samples import (
     asset_identity, client, evaluate_pages, parse_assets, run_block, sample_page,
 )
 from scripts.validation.windows_host_transport import measure_spacing, saturated_streams, validate_transport
+from scripts.validation.windows_host_performance_contract import RECIPE_ID
 
 
 DEFAULT_RECIPE = {'blocks': BLOCKS, 'per_block': PER_BLOCK, 'warmup': WARMUP,
@@ -40,7 +41,7 @@ def asset_prefix(path):
 def resolved_inputs(arms, sanity_records, metadata, *, production, recipe, direct_asset):
     return {
         'phase': 'production' if production else 'development',
-        'recipe_id': 'windows-mdb2-s0b-r1',
+        'recipe_id': RECIPE_ID,
         'settings': {'production': production, 'debug': not production},
         'recipe': dict(recipe),
         'asset_prefix': asset_prefix(direct_asset['url'] if direct_asset else None),

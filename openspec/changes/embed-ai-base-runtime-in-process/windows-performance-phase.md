@@ -1,9 +1,21 @@
 # Windows Performance Phase
 
-Status: method/plan approved; latest-candidate refresh required before certification.
+Status: P4 tail-rule r2 implemented; new frozen inputs and certification pending.
 Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-17.
 This document defines a later phase of the existing MDB-2 change. Completion
 state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
+
+## Tail Rule Renewal (2026-11-24)
+
+The owner-approved [amendment](windows-tail-policy-amendment.md) replaces only
+the P4 every-sample100ms rule. Current recipe `windows-mdb2-s0b-r2` uses the new
+[canonical policy](evidence/windows-performance-inputs-dev9-r2.json):
+loop-backed short and direct-asset probes each require nearest-rank P99<100ms
+and maximum<=200ms, separately in each settings phase. All errors, missing
+samples, auth/hash/slot/quota violations and cleanup failures remain failures.
+P1/P2/P3, full sample counts, the dev9 candidate and lifecycle budgets are
+unchanged. Current admission rejects r1 references; old policies and results
+remain historical, not converted acceptance evidence.
 
 ## Windows Convergence Candidate Amendment (2026-11-22)
 
@@ -192,14 +204,14 @@ previously authorized Linux/global deferrals remain explicit, never counted.
 
 ## KPI Freeze At PERF.KPI
 
-These are existing signed limits, not new measurements or claimed results:
+These are the current owner-approved limits, not measurements or acceptance:
 
 | ID | Workload and observable | Existing threshold |
 | --- | --- | --- |
 | KPI-P1 | B3, source events every 100 ms | First event <=200 ms; inter-arrival p95 <=150 ms |
 | KPI-P2 | B6, each prescribed page including referenced static assets | Candidate p95 <=1.2 times matched baseline |
 | KPI-P3 | B6 again with production settings, DEBUG=False and collectstatic | Same per-page/asset ratio <=1.2 |
-| KPI-P4 | B9, same saturation interval for four held streams, excess stream, short requests and pages | Excess503 with Retry-After2; every short200 and <100 ms; page/asset p95 ratio <=1.2 |
+| KPI-P4 | B9, same saturation interval for four held streams, excess stream, short requests and pages | Excess503 with Retry-After2; every short/asset200, per-kind P99<100ms and max<=200ms; page/asset p95 ratio <=1.2 |
 
 The signed measurement recipe is explicit:
 

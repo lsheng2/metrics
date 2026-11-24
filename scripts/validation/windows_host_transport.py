@@ -9,6 +9,7 @@ import re
 import socket
 import threading
 import time
+from types import MappingProxyType
 from urllib.parse import urlsplit
 
 from scripts.validation.windows_host_samples import AUTH, client, finite, percentile
@@ -16,6 +17,12 @@ from scripts.validation.windows_host_samples import AUTH, client, finite, percen
 
 PROBE_PATH = '/ai/apps/metrics/api/qualification'
 TIMING_TOLERANCE_MS = 5.0
+TAIL_LATENCY_POLICY = MappingProxyType({
+    'method': 'nearest_rank',
+    'quantile': 0.99,
+    'p99_exclusive_ms': 100,
+    'max_inclusive_ms': 200,
+})
 
 
 class Stream:
@@ -209,6 +216,24 @@ def _row_interval(row):
     return started, ended
 
 
+def _latency_tail(rows, kind, violations):
+    values = [finite(row['ms']) for row in rows]
+    p99 = percentile(values, TAIL_LATENCY_POLICY['quantile'])
+    worst = max(rows, key=lambda row: row['ms'])
+    maximum = finite(worst['ms'])
+    if p99 >= TAIL_LATENCY_POLICY['p99_exclusive_ms']:
+        violations.append({
+            'metric': f'{kind}_p99_ms', 'value': p99,
+            'limit': TAIL_LATENCY_POLICY['p99_exclusive_ms'],
+        })
+    if maximum > TAIL_LATENCY_POLICY['max_inclusive_ms']:
+        violations.append({
+            'metric': f'{kind}_max_ms', 'slot': worst.get('slot'), 'value': maximum,
+            'limit': TAIL_LATENCY_POLICY['max_inclusive_ms'],
+        })
+    return {'count': len(values), 'p99_ms': p99, 'max_ms': maximum}
+
+
 def validate_transport(
     payload, *, spacing_events=8, require_direct_asset=False,
     direct_asset_prefix='/ai/assets/', fail_on_violation=True,
@@ -244,7 +269,6 @@ def validate_transport(
             row_start, row_end = _row_interval(row)
             if not start <= row_start <= row_end <= end:
                 raise ValueError('Probe outside saturation interval')
-            elapsed = finite(row['ms'])
             if require_direct_asset:
                 if row['kind'] not in {'loop_short', 'direct_asset', 'excess_stream'}:
                     raise ValueError('Unexpected performance probe kind')
@@ -261,9 +285,7 @@ def validate_transport(
                 per_slot_kind_counts[key] = per_slot_kind_counts.get(key, 0) + 1
             if row['kind'] in {'short', 'loop_short'}:
                 if row['status'] != 200:
-                    raise ValueError('Short requests failed or reached 100ms')
-                if elapsed >= 100:
-                    violations.append({'metric': 'short_ms', 'slot': row.get('slot'), 'value': elapsed, 'limit': 100})
+                    raise ValueError('Short request failed')
                 short.append(row)
             elif row['kind'] == 'direct_asset':
                 digest = row.get('content_sha256')
@@ -272,8 +294,6 @@ def validate_transport(
                         or not isinstance(digest, str)
                         or re.fullmatch(r'[0-9a-f]{64}', digest) is None):
                     raise ValueError('Direct runtime asset probe failed')
-                if elapsed >= 100:
-                    violations.append({'metric': 'direct_asset_ms', 'slot': row.get('slot'), 'value': elapsed, 'limit': 100})
                 direct.append(row)
             elif row['kind'] in {'excess', 'excess_stream'}:
                 if row['status'] != 503 or row['retry_after'] != '2':
@@ -302,10 +322,14 @@ def validate_transport(
         if (type(stream_count) is not int or stream_count != 0
                 or type(short_count) is not int or short_count not in {0, 1}):
             raise ValueError('Admission resources were not returned')
+        tails = {
+            kind: _latency_tail(rows, kind, violations)
+            for kind, rows in (('short', short), ('direct_asset', direct)) if rows
+        }
         if fail_on_violation and violations:
             raise ValueError('Transport KPI violation')
         return {'first_event_ms': first, 'spacing_p95_ms': gap_p95,
                 'short_probes': len(short), 'direct_asset_probes': len(direct), 'excess_probes': len(excess),
-                'violations': violations}
+                'latency_tails': tails, 'violations': violations}
     except (KeyError, TypeError) as error:
         raise ValueError('Incomplete transport measurement') from error

@@ -1,6 +1,6 @@
 # Windows Tail Policy And Focused Asset Investigation
 
-Date: 2026-11-24. Status: owner-approved direction; implementation pending.
+Date: 2026-11-24. Status: policy implementation in validation; native work pending.
 Docs impact: operations/validation; current guide:
 `docs/development/reporting-delivery.md`.
 `profile_source=repo-local`; `agent_routing_mode=multiagent-configured`.
@@ -96,3 +96,17 @@ Rerun gates are focused performance tests, existing OpenSpec/DAG preflight,
 PERF.KPI/PERF.PROBE review and later full certification. P4 retrospective
 replay is sensitivity analysis only. PERF.CERTIFY, CLOSE.R and WIN.ACCEPT remain
 open; no broad closure is granted by this packet.
+
+## Implementation Validation Checkpoint
+
+The r2 contract, transport evaluator, producer/replay identities and active
+fixtures pass164 focused tests. Size/whitespace and strict OpenSpec checks pass.
+The28-node refreeze preflight verifies the9 code/test owners and that only
+P4's numerical rule changed. Local receipts are under
+`D:/AIGC/d9-1122/tail-r2-test-evidence/`.
+
+Hash-verified descriptive replay against the new evaluator removes the old
+119.398ms CSS violation but retains the production seq/draft_edit page ratio
+1.5843398409046983>1.2. This is sensitivity analysis, not new qualification.
+Independent implementation review and private-collector readiness remain
+separate gates before publication/freeze and native execution, respectively.

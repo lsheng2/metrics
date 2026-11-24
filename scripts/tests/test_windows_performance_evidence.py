@@ -250,7 +250,7 @@ def test_performance_checker_consumes_resolved_inputs_and_asset_prefix(tmp_path)
     receipt, request = _receipt_case(tmp_path, mode="certify", asset_prefix="/conformance/ai/assets/")
     receipt["resolved_inputs"]["development"] = _artifact(
         Path(receipt["run_directory"]) / "resolved-development.json",
-        {"phase": "development", "recipe_id": "windows-mdb2-s0b-r1"},
+        {"phase": "development", "recipe_id": "windows-mdb2-s0b-r2"},
     )
     with pytest.raises(QualificationError):
         validate_performance_result(receipt, request)
@@ -409,7 +409,7 @@ def _receipt_case(tmp_path, *, mode: str, blocks: int | None = None, per_block: 
     request = {
         "schema_version": 1,
         "acceptance_profile": "full",
-        "performance": {"recipe_id": "windows-mdb2-s0b-r1", "mode": mode},
+        "performance": {"recipe_id": "windows-mdb2-s0b-r2", "mode": mode},
         "source": identity["source"],
         "python": {"candidate": str(python), "version": "3.13.7", "environments": {"candidate": environment}},
         "candidate": {

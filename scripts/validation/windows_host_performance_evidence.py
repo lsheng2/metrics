@@ -7,7 +7,7 @@ import re
 from scripts.validation.project_full_stack_support import read_json
 from scripts.validation.windows_host_conformance_environment import expected_environment
 from scripts.validation.windows_install_smoke import validate_import_probe
-from scripts.validation.windows_host_performance_contract import recipe_for_mode, validate_performance_contract
+from scripts.validation.windows_host_performance_contract import RECIPE_ID, recipe_for_mode, validate_performance_contract
 from scripts.validation.windows_host_samples import ARMS, MODES, PAGE_KEYS, asset_identity, evaluate_pages, finite
 from scripts.validation.windows_host_process_window_evidence import check_terminal_resolution_cleanup, check_window_terminal_facts
 from scripts.validation.windows_host_transport import validate_transport
@@ -40,7 +40,7 @@ def _recipe_for(mode: str) -> dict:
 def _check_resolved_inputs(resolved: dict, *, phase: str, mode: str) -> str:
     recipe = _recipe_for(mode)
     expected_phase = phase
-    if resolved.get("phase") != expected_phase or resolved.get("recipe_id") != "windows-mdb2-s0b-r1":
+    if resolved.get("phase") != expected_phase or resolved.get("recipe_id") != RECIPE_ID:
         raise QualificationError("resolved input phase or recipe mismatch")
     if resolved.get("recipe") != recipe:
         raise QualificationError("resolved input recipe mismatch")

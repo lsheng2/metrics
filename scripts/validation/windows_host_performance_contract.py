@@ -9,14 +9,15 @@ from scripts.validation import windows_qualification_inputs as inputs
 from scripts.validation.qualify_ai_runtime import run_command
 from scripts.validation.windows_install_smoke import installer_environment, validate_import_probe
 from scripts.validation.windows_migration_admission import capture_environment
+from scripts.validation.windows_host_transport import TAIL_LATENCY_POLICY
 
 
-RECIPE_ID = "windows-mdb2-s0b-r1"
+RECIPE_ID = "windows-mdb2-s0b-r2"
 MODES = ("pilot", "diagnostic", "certify")
 PERFORMANCE_KEYS = {"recipe_id", "policy_ref", "functional_acceptance_ref", "mode"}
 FULL_RECIPE = {"warmup": 10, "blocks": 4, "per_block": 40, "spacing_events": 50, "require_direct_asset": True}
 PILOT_RECIPE = {"warmup": 1, "blocks": 1, "per_block": 5, "spacing_events": 50, "require_direct_asset": True}
-POLICY_RELATIVE = Path("openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9.json")
+POLICY_RELATIVE = Path("openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r2.json")
 FUNCTIONAL_RELATIVE = Path("openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json")
 
 
@@ -77,6 +78,8 @@ def _validate_policy_semantics(policy: dict, request: dict) -> None:
             or recipe.get("page_ratio_max") != 1.2
             or recipe.get("spacing", {}).get("events") != FULL_RECIPE["spacing_events"]
             or recipe.get("saturation", {}).get("probe_kinds") != ["loop_short", "direct_asset", "excess_stream"]
+            or recipe.get("saturation", {}).get("latency_tail") != TAIL_LATENCY_POLICY
+            or "short_ms_exclusive_limit" in recipe.get("saturation", {})
             or recipe.get("production", {}).get("collectstatic_required") is not True):
         raise inputs.QualificationError("performance policy recipe mismatch")
     modes = policy.get("execution_modes")

@@ -143,10 +143,12 @@ perturbation before a new authorized window. KPI and final acceptance remain
 unchanged; a successful offline isolation test is not native qualification.
 
 The owner-approved [tail-policy amendment](../../openspec/changes/embed-ai-base-runtime-in-process/windows-tail-policy-amendment.md)
-renews P4 to per-kind P99<100ms and max<=200ms in a new policy/recipe.
-Implementation is pending. Page ratio1.2 and functional safety remain unchanged;
-historical failures are not rewritten. The next bounded diagnostic measures
-whole draft-edit pages and their individual assets, not function rankings.
+uses `windows-mdb2-s0b-r2` with per-kind/per-phase P99<100ms and max<=200ms.
+Producer, replay and input admission use the new
+`windows-performance-inputs-dev9-r2.json`; r1 inputs cannot certify as r2.
+Page ratio1.2 and functional safety remain unchanged. Historical failures are
+not rewritten. Fresh qualification is pending; the bounded diagnostic measures
+whole draft-edit pages and individual assets, not function rankings.
 
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate

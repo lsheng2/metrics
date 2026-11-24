@@ -210,8 +210,9 @@ Do not invent a cheaper baseline or substitute a test double.
   checks producer suspension/resumption and verifies generator/capacity cleanup.
 - B6/B9: each required page+asset p95 <=1.2 times baseline. Repeat B6 with
   production settings, DEBUG=False and collectstatic output. In the **same**
-  saturation interval, excess stream returns503/Retry-After2 and every short
-  request succeeds200 in <100ms. Each one-second slot includes both the
+  saturation interval, excess stream returns503/Retry-After2 and every short/
+  direct-asset request succeeds200. The owner-approved r2 tail rule requires
+  per-kind P99<100ms and maximum<=200ms in each settings phase. Each one-second slot includes both the
   loop-backed short request and a discovered direct runtime asset; excess
   stream probing occurs every5seconds. Do not discard inconvenient samples.
 - B7 functional proof is required before FUNC.ACCEPT: original browser subset equivalent. Cold AI pane starts with empty cache;
