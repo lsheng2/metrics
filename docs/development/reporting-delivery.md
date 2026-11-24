@@ -133,11 +133,14 @@ trigger, and v3 only fixes offline optional non-trigger attribution while
 preserving the original producer status as FAIL. Performance acceptance,
 optimization/no-change review, certification and `WIN.ACCEPT` remain open.
 
-The next authorized diagnostic is the
-[bounded production HTML function profile](../../openspec/changes/embed-ai-base-runtime-in-process/windows-function-profile.md).
-It separates cProfile function wall time from request-thread CPU, preserves
-same-request identity and compares against a profiler-disabled control.
-It does not change KPI or admit instrumented samples as acceptance evidence.
+The [bounded production HTML function-profile checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-function-profile-checkpoint.md)
+records completed collection with **refused function attribution**. The
+profiler-disabled control again captured HTML151.3313ms / WSGI149.2544ms,
+but cProfile on the tested Python 3.13.7 mixed foreign-thread functions into
+the instrumented profile. Do not use those ranks for same-request hotspots or
+optimization. A successor must prove concurrent engine isolation and calibrate
+perturbation before a new authorized window. KPI and final acceptance remain
+unchanged; a successful offline isolation test is not native qualification.
 
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate

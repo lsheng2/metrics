@@ -637,6 +637,11 @@ The owner authorized the next
 It retains the boundaries below but narrows this new packet to production HTML,
 adds request-local function observations and defines its own nonrenewable
 320-second active allowance. It does not rerun or relabel the prior packet.
+The [execution checkpoint](evidence/windows-function-profile-checkpoint.md)
+records successful bounded collection but refused function attribution:
+same-interpreter cProfile captured foreign-thread functions. A metadata
+request/TID join is not an engine-isolation proof. No further application
+window or KPI change is granted by this result.
 
 ## Short-Latency Diagnostic Refreeze (2026-11-23)
 

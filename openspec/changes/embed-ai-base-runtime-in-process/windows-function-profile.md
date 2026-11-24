@@ -1,8 +1,16 @@
 # Bounded Production HTML Function Profile
 
-Date: 2026-11-24. Status: authorized diagnostic; execution pending.
+Date: 2026-11-24. Status: executed; function attribution refused.
 Docs impact: operations. Current guide: `docs/development/reporting-delivery.md`.
 This amends only the next diagnostic packet, not the existing task DAG or KPI.
+
+The [execution checkpoint](evidence/windows-function-profile-checkpoint.md)
+supersedes this recipe's unproven engine-isolation assumption. On the tested
+Python 3.13.7, cProfile captured foreign-thread functions. Request-envelope
+identity is insufficient; do not reuse these function ranks for attribution.
+Future recipes must prove concurrent engine isolation and calibrate overhead
+before any new owner-authorized application window. The original recipe and
+raw outputs below are retained as history, not a current readiness claim.
 
 ## Question And Authority
 

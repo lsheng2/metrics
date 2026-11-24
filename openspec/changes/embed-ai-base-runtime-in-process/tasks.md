@@ -2,15 +2,18 @@
 
 ## Latest Delivery Decision
 
-### Authorized Function Profiling (2026-11-24)
+### Function Profiling Checkpoint (2026-11-24)
 
-Owner authorized [bounded production HTML function profiling](windows-function-profile.md)
-without KPI changes. Only production sequential draft_edit is in scope:
-profile/control calibration at most 10 active seconds each, then one pair at
-most 150 active seconds each. The existing V3 lifecycle, package admission
-and same-request evidence are reused in new private tools; prior receipts
-remain immutable. Review, implementation and native execution are pending.
-No SDK/product change, CSS closure, certification or WIN.ACCEPT is implied.
+The [bounded packet completed](evidence/windows-function-profile-checkpoint.md)
+at source `1bf83cf`: four normal-cleanup windows, 30.390 active seconds,
+427.744 total packet seconds, unchanged dev9/KPI. Main control again captured
+HTML151.3313ms with WSGI149.2544ms and coarse thread CPU140.625ms.
+Function attribution is **REFUSED_CROSS_THREAD**: the same-interpreter offline
+probe demonstrated foreign-thread functions in cProfile, matching overlapping
+probe TIDs in the captured interval. No product optimization can be justified
+from these ranks. Original producer `COMPLETE` and raw data remain unchanged.
+The offline `profile` alternative passed thread isolation only; no successor
+live window ran. Performance certification and final acceptance remain open.
 
 ### Subsecond Localization Checkpoint (2026-11-23)
 
