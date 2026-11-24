@@ -2,6 +2,16 @@
 
 ## Latest Delivery Decision
 
+### Authorized Function Profiling (2026-11-24)
+
+Owner authorized [bounded production HTML function profiling](windows-function-profile.md)
+without KPI changes. Only production sequential draft_edit is in scope:
+profile/control calibration at most 10 active seconds each, then one pair at
+most 150 active seconds each. The existing V3 lifecycle, package admission
+and same-request evidence are reused in new private tools; prior receipts
+remain immutable. Review, implementation and native execution are pending.
+No SDK/product change, CSS closure, certification or WIN.ACCEPT is implied.
+
 ### Subsecond Localization Checkpoint (2026-11-23)
 
 The capture source was clean at
@@ -33,7 +43,8 @@ complete same request. Its 69-pass green proof and offline regression preserve
 the original v2 producer status as `FAIL`; v3 has not run live. Its code
 review does not replace future frozen-input/native checks. Current status: `PERF.OPTIMIZE`, `PERF.OPTIMIZE.R`,
 `PERF.CERTIFY`, `CLOSE.R` and `WIN.ACCEPT` stay open. The next useful action is
-a bounded function-level CPU profile for production HTML plus careful CSS
+a bounded function profile with separate request-thread CPU observations for
+production HTML plus careful CSS
 same-request evidence if the CSS fault recurs; this ledger does not authorize
 or execute that work.
 

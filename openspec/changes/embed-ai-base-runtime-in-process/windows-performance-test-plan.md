@@ -630,6 +630,14 @@ cleanup. Do not invent a need to solve every historical intermittent failure
 before collecting current unprofiled measurements. KPI changes, a new runtime
 candidate, real-provider work, Linux and publication retain separate decisions.
 
+## Current Function Profiling Packet (2026-11-24)
+
+The owner authorized the next
+[bounded production HTML function profile](windows-function-profile.md).
+It retains the boundaries below but narrows this new packet to production HTML,
+adds request-local function observations and defines its own nonrenewable
+320-second active allowance. It does not rerun or relabel the prior packet.
+
 ## Short-Latency Diagnostic Refreeze (2026-11-23)
 
 The owner explicitly authorized a100ms **diagnostic capture trigger**, keeping

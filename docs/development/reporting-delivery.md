@@ -133,6 +133,12 @@ trigger, and v3 only fixes offline optional non-trigger attribution while
 preserving the original producer status as FAIL. Performance acceptance,
 optimization/no-change review, certification and `WIN.ACCEPT` remain open.
 
+The next authorized diagnostic is the
+[bounded production HTML function profile](../../openspec/changes/embed-ai-base-runtime-in-process/windows-function-profile.md).
+It separates cProfile function wall time from request-thread CPU, preserves
+same-request identity and compares against a profiler-disabled control.
+It does not change KPI or admit instrumented samples as acceptance evidence.
+
 The current dev9 performance refreeze uses versioned policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate
 input documents compare their stable source, candidate, owner, fixture,
