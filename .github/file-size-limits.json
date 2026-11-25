@@ -60,8 +60,8 @@
   "legacy_over_limit_allowances": [
     {"name": "legacy-report-editor-scripts", "max_added_lines": 0,
      "patterns": ["ui_web/static/js/report_editor/fragment_codec.js", "ui_web/static/js/report_editor/index.js",
-                  "ui_web/static/js/report_editor/template_builder.js", "ui_web/editor_build/report_milkdown.js"],
-     "reason": "Owner: project reporting UI. Split plan: separate codec node families, editor bootstrap from toolbar wiring, template builder steps, and Milkdown plugin registration."},
+                  "ui_web/static/js/report_editor/template_builder.js"],
+     "reason": "Owner: project reporting UI. Split plan: separate codec node families, editor bootstrap from toolbar wiring, and template builder steps."},
     {"name": "legacy-python-modules", "max_added_lines": 0,
      "patterns": ["ui_web/facades/bug_trend_scope_config_facade.py"],
      "reason": "Owner: ui_web facades. Split plan: split the scope-config facade into read, preview, and save services."}

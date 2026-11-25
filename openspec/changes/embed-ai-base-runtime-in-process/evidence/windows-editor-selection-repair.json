@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "kind": "dashboard-editor-selection-focused-repair",
+  "status": "FOCUSED_PASS_NOT_FINAL_ACCEPTANCE",
+  "acceptance_eligible": false,
+  "recorded_on": "2026-11-25",
+  "authorization": "Owner authorized a bounded Dashboard selection-sync repair, independent review and requalification; AIB and all KPI stay unchanged.",
+  "source_baseline": "db002105af10faeaf75c2ff226f7da7ee73fa8d2",
+  "aib_commit": "1a6ac981b67f148bbaaed6750e6874896ada0bcc",
+  "installed_runtime": "0.1.1.dev9",
+  "aib_worktree_unchanged": true,
+  "dependency_pins_unchanged": true,
+  "original_browser_test_unchanged": true,
+  "kpi_and_production_budgets_unchanged": true,
+  "failure_mechanism": "Native in-editor caret/range changed before the selectionchange event updated ProseMirror; immediate toolbar commands consumed stale selection and converted the wrong block.",
+  "repair_owner": "ui_web/editor_build/editor_selection.js through the shared editor_commands.js command boundary",
+  "contract": [
+    "Map valid owned text anchor/head through public ProseMirror APIs before commands.",
+    "Preserve direction, genuine AllSelection and specialized node/table selection semantics.",
+    "Do not import wholly outside selections; refuse cross-boundary, unmappable or composing inputs.",
+    "Mapping RangeError refuses the command; transaction/other unexpected errors remain errors.",
+    "No sleep, test-predicate weakening, SDK/dependency change or private DOMObserver API."
+  ],
+  "red": {
+    "runtime": {
+      "testcases": 4,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\red.xml",
+        "sha256": "e5c8ddffb6653905254553c8f04aed7b1dd2f2e910d6a9c717c2ebd80ccbeefb"
+      }
+    },
+    "generated_inputs": {
+      "testcases": 6,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\vendor-red.xml",
+        "sha256": "b832fbc2a0267c55d441cfe36ee105163b4abe748cc4d30e0861fe595cc8ac3a"
+      }
+    },
+    "dispatch_error": {
+      "testcases": 11,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\node-red-dispatch.xml",
+        "sha256": "f0d2c127facfa1ff8e24d021adb5ce0a8415147ca0b3ae431f1f7fd87b8f6a34"
+      }
+    }
+  },
+  "green": {
+    "final_runtime_and_original_browser": {
+      "testcases": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\final-browser.xml",
+        "sha256": "4d4bad580b550d51d98db942a13baeab46fed9d7580d4b062b843228d76c999d"
+      }
+    },
+    "command_codec_and_boundary_units": {
+      "testcases": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\node-green.xml",
+        "sha256": "e8a4368c4a3652c88d799bbd1df6e5861f3b04759e58a43f3cbb5e022e4fbe5e"
+      }
+    },
+    "generated_input_guards": {
+      "testcases": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\vendor-green.xml",
+        "sha256": "12d79aeb244d399e90902a103d7ab5802fd049c9517ab7f34a4fa45ddc991974"
+      }
+    },
+    "affected_report_template_browser_flows": {
+      "testcases": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\focused-browser.xml",
+        "sha256": "3da2bd90de770b0cd17f4396b987e4822b68dfc8fd7f324bd8dc55e6b00e3838"
+      }
+    }
+  },
+  "evidence_reuse": "The 33-case and visual passes precede only moving transaction dispatch outside the mapping-error catch; their successful-path behavior and markup/CSS are unchanged. The final 9-case run and 21 units validate the rebuilt final bundle/source. Counts overlap and are not summed.",
+  "generated_manifest": {
+    "path": "D:\\AIGC\\scrum_dashboard\\ui_web\\static\\js\\report_editor\\vendor\\asset-manifest.json",
+    "sha256": "29dd202898bfb9d71290aa9fc2b68da9334c9c1eb9ae2ce66fdc6d7bc996e9fe"
+  },
+  "first_party_source_input_hashes": {
+    "ui_web/static/js/report_editor/fragment_codec.js": "f4bc0428760bebf08cf7c45f3b0fac15076f7e45372b847beecf1ab87516f050",
+    "ui_web/editor_build/editor_commands.js": "fa1efe4fd423b624dff4f856e16f91b86b5619aa7c8962d91e41222cde931e27",
+    "ui_web/editor_build/editor_selection.js": "efc750c44375fc716185bad1a64a7840f45f881252db5c4b37c358763acea3cd",
+    "ui_web/editor_build/report_milkdown.js": "eea7d949f8839be2c4802cc28f5776c7690e626a580e30ba90da84e6b4277abd"
+  },
+  "static_and_django": {
+    "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\static-checks-final.json",
+    "sha256": "32a2dda87fc9f01455ffd29b5365ef0eeeec93f1c130fa7e313d56fb41211ae3"
+  },
+  "frontend_check": {
+    "command": "npm --prefix ui_web/frontend run check",
+    "observed_exit_code": 0,
+    "contrast_pairs": 152
+  },
+  "visual": {
+    "report_observations": {
+      "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\visual\\manual-report-focused.json",
+      "sha256": "fd17a0e0f40a02a37b8bbade260a31ad2b1139f4cdc919b6dc8c01ae82e7ec04"
+    },
+    "template_observations": {
+      "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\visual-r2\\manual-template.json",
+      "sha256": "4c93d0771228a58cdecf1b262ad3a46abbae06130875534894cf2da923c917b0"
+    },
+    "template_save_revision_2": {
+      "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\visual-r2\\manual-template-save.json",
+      "sha256": "3b5685ebd7e947ea7beeff0ad2370268c355648b66d4f65a66dbc85ee1510051"
+    },
+    "preview_normal_stop": {
+      "testcases": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\visual-r2-lifecycle.xml",
+        "sha256": "7c521582d63d5ebe6b8fcda4285b197a623535180bc0861522d984cc394508f1"
+      }
+    },
+    "scope": "Both editors in light/dark at1440/390; screenshots inspected. The first preview's authentication failures and timeout remain nonqualifying process evidence."
+  },
+  "route_qa": {
+    "status": "FAIL_PREEXISTING_NOT_WAIVED",
+    "current": {
+      "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\route-qa-current\\report.json",
+      "sha256": "75b659fdce24fe6d1b42cb5e27512897d1beaa1e16efc22652ecd31f92af0320"
+    },
+    "baseline": {
+      "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\route-qa-baseline\\report.json",
+      "sha256": "bd00844fa64affb1807038f7cfe8ddd660edb996fff32bf9a63b1d1db5dddeb0"
+    },
+    "baseline_archive": {
+      "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\baseline-db00210.tar",
+      "sha256": "feeb1a66a1a256af447fd5cac218e095655c6a47bef5a29b9e8f505f0369dc26"
+    },
+    "baseline_source": "db002105af10faeaf75c2ff226f7da7ee73fa8d2",
+    "same_normalized_findings": true,
+    "compared_checks": 8,
+    "findings": [
+      "aria-prohibited-attr on empty editor surfaces",
+      "synthetic report recovery fixture returns503"
+    ],
+    "disposition": "Not introduced by this selection repair and outside its authorized mutation scope. Both failed reports remain FAIL; no whole-page accessibility/recovery acceptance is claimed.",
+    "baseline_preview_normal_stop": {
+      "testcases": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\baseline-visual-lifecycle.xml",
+        "sha256": "b2cd3ec3d2609c938d41f0acdace966fe7217771c5d94495492bf4697079c474"
+      }
+    }
+  },
+  "historical_full_failure": {
+    "path": "D:\\AIGC\\d9-1122\\qualifier-failures\\0d71431e-e3ab-4929-a3ae-1c30978dcf8e.json",
+    "sha256": "0bf086c4111c5c016c1cc1c43ce70c3fcab2506c9be02b5c228d3b74f567d180"
+  },
+  "remaining": [
+    "independent code review",
+    "clean-source requalification",
+    "CLOSE.R",
+    "WIN.ACCEPT"
+  ],
+  "generator": {
+    "path": "D:\\AIGC\\d9-1122\\editor-selection-1125\\write_repair_evidence.py",
+    "sha256": "2dd9ef18c10b215034b6823915f1f78ff6877add7f131970e2a0d0c753b31b01"
+  }
+}

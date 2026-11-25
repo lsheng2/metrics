@@ -3390,6 +3390,22 @@
       ],
       "format": "esm"
     },
+    "node_modules/@milkdown/kit/lib/utils.js": {
+      "bytes": 66,
+      "imports": [
+        {
+          "path": "node_modules/@milkdown/utils/lib/index.js",
+          "kind": "import-statement",
+          "original": "@milkdown/utils"
+        }
+      ],
+      "format": "esm"
+    },
+    "../static/js/report_editor/fragment_codec.js": {
+      "bytes": 26864,
+      "imports": [],
+      "format": "esm"
+    },
     "node_modules/@milkdown/kit/lib/prose/commands.js": {
       "bytes": 78,
       "imports": [
@@ -3423,24 +3439,55 @@
       ],
       "format": "esm"
     },
-    "node_modules/@milkdown/kit/lib/utils.js": {
-      "bytes": 66,
+    "editor_selection.js": {
+      "bytes": 1314,
       "imports": [
         {
-          "path": "node_modules/@milkdown/utils/lib/index.js",
+          "path": "node_modules/@milkdown/kit/lib/prose/state.js",
           "kind": "import-statement",
-          "original": "@milkdown/utils"
+          "original": "@milkdown/kit/prose/state"
         }
       ],
       "format": "esm"
     },
-    "../static/js/report_editor/fragment_codec.js": {
-      "bytes": 26864,
-      "imports": [],
+    "editor_commands.js": {
+      "bytes": 8423,
+      "imports": [
+        {
+          "path": "node_modules/@milkdown/kit/lib/prose/history.js",
+          "kind": "import-statement",
+          "original": "@milkdown/kit/prose/history"
+        },
+        {
+          "path": "node_modules/@milkdown/kit/lib/prose/state.js",
+          "kind": "import-statement",
+          "original": "@milkdown/kit/prose/state"
+        },
+        {
+          "path": "node_modules/@milkdown/kit/lib/prose/commands.js",
+          "kind": "import-statement",
+          "original": "@milkdown/kit/prose/commands"
+        },
+        {
+          "path": "node_modules/@milkdown/kit/lib/prose/schema-list.js",
+          "kind": "import-statement",
+          "original": "@milkdown/kit/prose/schema-list"
+        },
+        {
+          "path": "node_modules/@milkdown/kit/lib/prose/tables.js",
+          "kind": "import-statement",
+          "original": "@milkdown/kit/prose/tables"
+        },
+        {
+          "path": "editor_selection.js",
+          "kind": "import-statement",
+          "original": "./editor_selection.js"
+        }
+      ],
       "format": "esm"
     },
     "report_milkdown.js": {
-      "bytes": 19546,
+      "bytes": 11454,
       "imports": [
         {
           "path": "node_modules/@milkdown/kit/lib/core.js",
@@ -3478,21 +3525,6 @@
           "original": "@milkdown/kit/prose/state"
         },
         {
-          "path": "node_modules/@milkdown/kit/lib/prose/commands.js",
-          "kind": "import-statement",
-          "original": "@milkdown/kit/prose/commands"
-        },
-        {
-          "path": "node_modules/@milkdown/kit/lib/prose/schema-list.js",
-          "kind": "import-statement",
-          "original": "@milkdown/kit/prose/schema-list"
-        },
-        {
-          "path": "node_modules/@milkdown/kit/lib/prose/tables.js",
-          "kind": "import-statement",
-          "original": "@milkdown/kit/prose/tables"
-        },
-        {
           "path": "node_modules/@milkdown/kit/lib/utils.js",
           "kind": "import-statement",
           "original": "@milkdown/kit/utils"
@@ -3501,6 +3533,11 @@
           "path": "../static/js/report_editor/fragment_codec.js",
           "kind": "import-statement",
           "original": "../static/js/report_editor/fragment_codec.js"
+        },
+        {
+          "path": "editor_commands.js",
+          "kind": "import-statement",
+          "original": "./editor_commands.js"
         }
       ],
       "format": "esm"
@@ -4112,11 +4149,17 @@
         "../static/js/report_editor/fragment_codec.js": {
           "bytesInOutput": 16404
         },
+        "editor_selection.js": {
+          "bytesInOutput": 939
+        },
+        "editor_commands.js": {
+          "bytesInOutput": 6039
+        },
         "report_milkdown.js": {
-          "bytesInOutput": 13746
+          "bytesInOutput": 7758
         }
       },
-      "bytes": 755894
+      "bytes": 756884
     }
   }
 }

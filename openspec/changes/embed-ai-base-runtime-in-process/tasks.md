@@ -2,6 +2,22 @@
 
 ## Latest Delivery Decision
 
+### Authorized Editor Selection Repair (2026-11-25)
+
+Owner authorized a Dashboard-only selection repair, independent review and
+requalification, keeping AIB and every KPI/safety budget unchanged.
+The full r3 qualifier at `db00210` stopped on the original editor test:
+UI764PASS/1FAIL; later module/support lanes did not run. That failure remains.
+Two native diagnostic captures found a collapsed DOM caret but stale runtime
+AllSelection; the code-block command therefore converted the existing heading.
+New same-turn real-runtime regressions reproduced both caret and range variants.
+The shared Dashboard command boundary now reconciles valid text selections with
+public ProseMirror APIs, preserves special selections, and refuses cross-owner,
+unmappable or composing inputs. Original browser assertions and waits are unchanged.
+The over-cap editor entry was split; generated manifest schema2 binds all its
+first-party inputs. [Focused evidence](evidence/windows-editor-selection-repair.json)
+does not close `CLOSE.R` or `WIN.ACCEPT`; modified-source full qualification remains.
+
 ### Approved Page KPI Reassessment (2026-11-24)
 
 Owner selected unchanged implementation plus [prospective workload-class KPI renewal](windows-page-policy-amendment.md).
@@ -22,39 +38,14 @@ optimization. Original data/status remain unchanged; certification stays open.
 
 ### Subsecond Localization Checkpoint (2026-11-23)
 
-The capture source was clean at
-`2233d49b8e16c62025028e9e3757e651756856f2`; the admitted dev9 runtime wheel
-remains `c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec`.
-The full official dev9 diagnostic at `fa0b060` is still the retained
-PERF.PROBE evidence and still has two open numerical failures:
-CSS119.3983ms and production seq/draft_edit ratio1.58434.
-
-The bounded subsecond packet completed plan/code/target review gates 1/1 with
-no pending findings. Native calibration v1 captured development HTML187.8063ms
-instead of the target CSS fault, so v2 narrowed primary target selection; the
-v2 test delta passed 67 tests and changed only selector/tests scope. The single
-authorized paired experiment was not rerun. Trace result
-`D:/AIGC/d9-1122/subsecond/v2/runs/probe-trace-r1/result.json` remains
-`FAIL`: production sequential HTML triggered after 29.813s / 128 pages with
-clientHTML151.0556ms, preWSGI1.0024ms, WSGI call148.7548ms and coarse
-thread CPU156.25ms, while development c4 produced no eligible CSS trigger and
-failed only in optional non-trigger attribution harvest. Control result
-`D:/AIGC/d9-1122/subsecond/v2/runs/probe-control-r1/result.json` triggered
-production HTML163.4204ms with server tracing disabled; development c4 was
-NOT_REPRODUCED after 145.384s / 952 pages. These unequal first-hit exposures
-are censored and do not support speedup percentiles, exact perturbation proof
-or CSS closure.
-
-V3 has only fixed offline optional non-trigger attribution: no trigger now means
-no claimed attribution, and actual first-trigger attribution still requires the
-complete same request. Its 69-pass green proof and offline regression preserve
-the original v2 producer status as `FAIL`; v3 has not run live. Its code
-review does not replace future frozen-input/native checks. Current status: `PERF.OPTIMIZE`, `PERF.OPTIMIZE.R`,
-`PERF.CERTIFY`, `CLOSE.R` and `WIN.ACCEPT` stay open. The next useful action is
-a bounded function profile with separate request-thread CPU observations for
-production HTML plus careful CSS
-same-request evidence if the CSS fault recurs; this ledger does not authorize
-or execute that work.
+The [immutable localization checkpoint](evidence/windows-subsecond-localization.md)
+retains clean source `2233d49`, trace/control results and the diagnostic boundary.
+The `fa0b060` diagnostic still records CSS119.3983ms and production
+seq/draft_edit ratio1.58434. Trace v2 remains FAIL, control reproduced HTML,
+and neither exposure establishes CSS attribution or comparative percentiles.
+V3's offline69-pass correction did not replace the failed original or run live.
+Later function-profile and r3 records have their own source/policy identities;
+none retroactively rewrites these diagnostic results.
 
 ### Authorized Short-Latency Localization (2026-11-23)
 

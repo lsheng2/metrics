@@ -19,6 +19,17 @@ Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
 
+The Dashboard editor command boundary synchronizes native text/caret selection
+into ProseMirror state before running toolbar commands. Report authoring and
+template editing share this boundary. Genuine whole-document and special
+node/table selections retain their semantics; selections wholly outside the
+owner are not imported. Cross-boundary or unmappable selections and active IME
+composition refuse the command. No sleep, retry, private observer API, dependency
+upgrade or AIB change is involved. The
+[focused repair evidence](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-editor-selection-repair.json)
+is not final Windows acceptance: the earlier full qualifier at `db00210`
+retains its UI failure, and modified-source qualification is still required.
+
 The owner requires latest AIB for final delivery and authorized the bounded
 Windows testkit calibration/new candidate on 2026-11-22. The dev9 package
 changes one testkit file only; non-testkit package bytes and dependency

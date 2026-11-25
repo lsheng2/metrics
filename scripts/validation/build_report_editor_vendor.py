@@ -42,11 +42,12 @@ def bin_path(node_modules):
 
 def manifest_payload():
     return {
-        'schema_version': 1,
+        'schema_version': 2,
         'bundle': 'milkdown.bundle.js',
         'bundle_sha256': sha256(BUNDLE),
         'source_entry': 'ui_web/editor_build/report_milkdown.js',
         'source_entry_sha256': sha256(SOURCE_ENTRY),
+        'source_inputs_sha256': source_input_hashes(),
         'package_json': 'ui_web/editor_build/package.json',
         'package_json_sha256': sha256(PACKAGE_JSON),
         'package_lock': 'ui_web/editor_build/package-lock.json',
@@ -57,6 +58,20 @@ def manifest_payload():
         'bundler': 'esbuild@0.28.2',
         'build_command': 'cd ui_web/editor_build && npm run build',
     }
+
+
+def source_input_hashes():
+    metadata = json.loads(METAFILE.read_text(encoding='utf-8'))
+    sources = {}
+    for name in sorted(metadata['inputs']):
+        if 'node_modules' in Path(name).parts:
+            continue
+        source = (EDITOR_BUILD / name).resolve()
+        relative = source.relative_to(ROOT.resolve()).as_posix()
+        sources[relative] = sha256(source)
+    if SOURCE_ENTRY.relative_to(ROOT).as_posix() not in sources:
+        raise ValueError('Editor build metadata omits its source entry')
+    return sources
 
 
 def sha256(path):

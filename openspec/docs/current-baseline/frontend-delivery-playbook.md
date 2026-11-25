@@ -37,7 +37,7 @@ Node ≥22. First run: `npm --prefix ui_web/frontend ci`.
 - Global CSS draws icons with `--icon: url()` and `mask` at 1em. Report-local mask rules and `report_editor/vendor/iconoir/` were deleted: report pages use the global subset.
 - Static storage: `metrics/settings/defaults.py` declares `STATICFILES_STORAGE` (WhiteNoise `CompressedManifestStaticFilesStorage`), but Django 5.1+ ignores that setting, so the effective backend is the default `StaticFilesStorage` with unhashed URLs. Keep every asset manifest-safe anyway, since moving the declaration to `STORAGES` is the intended fix: the manifest backend rewrites every CSS `url()`, so each target must exist and vendored files must not carry a `//# sourceMappingURL` comment. Validate with `collectstatic --noinput` into a temporary `STATIC_ROOT` with `STORAGES['staticfiles']` set to that backend.
 - htmx, Chart.js, the date-fns adapter and the annotation plugin are vendored, never fetched from a CDN, and never replaced by homemade shims.
-- The Milkdown report-editor bundle is built locally, not by `build:vendor`. `python -I scripts/validation/build_report_editor_vendor.py` runs `npm ci` and `npm run build` (esbuild, pinned `@milkdown/kit`) in `ui_web/editor_build/` and writes `ui_web/static/js/report_editor/vendor/asset-manifest.json` with the sha256 of the bundle, its esbuild metafile, the source entry `report_milkdown.js`, `package.json` and `package-lock.json`. `check-report-editor-vendor.mjs` (part of `check`) recomputes the five hashes with CRLF folded to LF, because these text files follow the checkout's line endings; editing the source entry without rebuilding fails `check`. Never edit the bundle or its manifest by hand; rebuild with the script and commit the changed inputs (source entry, `package.json`, lockfile) with the bundle, metafile and manifest.
+- The Milkdown report-editor bundle is built locally, not by `build:vendor`. `python -I scripts/validation/build_report_editor_vendor.py` uses existing local build dependencies or runs `npm ci` when absent, then runs `npm run build` (esbuild, pinned `@milkdown/kit`) in `ui_web/editor_build/`. Manifest schema 2 records the bundle, metafile, entry and package hashes plus every first-party input from the esbuild metafile. `check-report-editor-vendor.mjs` requires the exact input inventory and recomputes its hashes with CRLF folded to LF. Editing an imported command/selection/codec module without rebuilding therefore fails `check`; schema 1 is not a fallback. Never edit generated outputs by hand. Commit changed sources with the rebuilt bundle, metafile and manifest; dependency declarations remain unchanged unless separately authorized.
 
 ### 1.4 Stylelint
 
@@ -85,7 +85,7 @@ One asset manifest, no bundler, no CSS `@import` chains.
 The table lists the frontend-relevant rules; `.github/file-size-limits.json` is the authority for every rule (YAML 400, other JSON 1200, repository config 300, AI guidance JSON 220) and exemption.
 
 - Every changed file must be claimed by a rule or an explicit exemption (vendored, generated, binary, translation catalogs); an unclaimed file fails the gate.
-- Files already over their cap are legacy allowances with `max_added_lines` 0, an owner and a split plan. An allowance is a temporary freeze, not a home: in changed-file mode the file never grows, and its owner splits it below the cap and deletes the entry (`test_legacy_allowances_name_an_owner_and_still_cover_over_cap_files` fails on a stale entry). `--all` and explicit-path runs stay strict and show the debt. The only frontend allowance left is `legacy-report-editor-scripts` (`report_editor/fragment_codec.js`, `index.js`, `template_builder.js` and `ui_web/editor_build/report_milkdown.js`); dashboard templates, stylesheets and shell or feature scripts have none, and never get one.
+- Files already over their cap are legacy allowances with `max_added_lines` 0, an owner and a split plan. An allowance is a temporary freeze, not a home: in changed-file mode the file never grows, and its owner splits it below the cap and deletes the entry (`test_legacy_allowances_name_an_owner_and_still_cover_over_cap_files` fails on a stale entry). `--all` and explicit-path runs stay strict and show the debt. The frontend allowance is `legacy-report-editor-scripts` (`report_editor/fragment_codec.js`, `index.js` and `template_builder.js`). The Milkdown entry now delegates command and selection handling to focused build modules and no longer needs an allowance.
 - **Split before you add.** When a template, stylesheet or script approaches its cap, split it by concern before adding more: partials for templates, one CSS file per component family or feature, extracted JS feature modules. Never fix a size failure with an exemption, a minified line or a looser cap.
 - Giant files also slow the work itself (every read, edit and review pays for the whole file); give each feature its own file so parallel work has disjoint ownership.
 - When migrating, delete the obsolete rules, classes and scripts it replaces (grep for references first). No compatibility shims or aliases; rename old variable usages directly.
@@ -206,6 +206,19 @@ Pinned by tests (search `ui_web/tests` before changing any):
 - Clipping bugs hide in `overflow: hidden` ancestors: tags, focus rings and popovers need either room or `overflow: visible`.
 - A percentage `min-height` resolves only once the parent's height is definite. A grid item stretched to a content-sized row becomes definite after the row has been sized from every child, so a sibling's height counts twice: once in the row and again as blank space inside the percentage child (recipes §2.7). Keep fill-the-pane percentages inside frames with a fixed height. To locate a gap, read each box's `getBoundingClientRect()` and toggle one rule at a time in the browser before editing.
 - Geometry assertions belong in browser tests with explicit viewport sizes and a registry limit; a pass at 1440 says nothing about 390.
+
+### 6.5 Native Editor Selection
+
+Rendered caret movement can precede ProseMirror's `selectionchange` update.
+The shared runtime command boundary in `ui_web/editor_build/editor_selection.js`
+maps valid in-editor text anchor/head positions through public ProseMirror APIs
+before toolbar mutations. It preserves range direction and genuine AllSelection;
+NodeSelection and other specialized selections keep their own authority.
+Outside-editor selections are not imported. Cross-boundary/unmappable selection
+or active composition refuses the command. Keep the original user workflow
+assertions: waiting longer after an incorrect block conversion cannot restore
+the lost heading. Use deterministic same-turn DOM/runtime regressions alongside
+the real report/template browser workflows, not sleeps or private observer calls.
 
 ## 7. Working Rules
 
