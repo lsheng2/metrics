@@ -11,7 +11,7 @@
             </div>
         </div>
     {% endif %}
-    <div class="report-editor-surface paper" data-report-editor-surface tabindex="0" aria-label="{{ label }}"></div>
+    <div class="report-editor-surface paper" data-report-editor-surface tabindex="0" role="group" aria-label="{{ label }}"></div>
     <p class="help" data-report-paste-status aria-live="polite"></p>
     {{ region.fragment|json_script:region.fragment_script_id }}
 </div>

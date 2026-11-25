@@ -37,6 +37,60 @@ decision about resuming other Apps. This is not full AIB repository release.
 
 ## Baseline And Established Architecture
 
+### Current-Source Functional Refresh (2026-11-25)
+
+Owner resumed continuous Windows checkout: close the known non-performance
+openings first, establish functional acceptance for the resulting source, then
+resume performance. This supersedes the private editor-repair handoff's order
+that waited for a performance certificate before any new complete functional
+run. It does not change either acceptance profile or remove the final full
+qualifier, numerical KPI, process, stop, authentication or leakage gates.
+
+Baseline: Dashboard `c845224c2f4fc9a5c830979b2772815572eacacc`, AIB
+`1a6ac981b67f148bbaaed6750e6874896ada0bcc`, clean main checkouts; retain the
+admitted dev9 wheel and its hash. The existing repo-local profile and configured
+agent routing apply. Use the existing W2.HOST -> W2.R -> W2.REPLAN -> W3
+functional sequence; no new product subsystem or competing execution ledger.
+
+| Contract / risk | Producer and consumers | Required check |
+| --- | --- | --- |
+| Editor naming / normal | Report/template/continuity surface templates and dynamic surface creators; shared Milkdown runtime and its generated bundle | Lazy surfaces have valid named container semantics; mounted editors expose an accurate named multiline editing role. Check normal, dynamic and read-only surfaces without changing focus/selection/content behavior. |
+| Synthetic recovery ownership / high | `ReportAuthoringBrowserTestCase` service/archive; report/template/history browser fixtures; real `ReportRecoveryView` | The recovery route uses the same owned draft service as the page. Reproduce the old503; then prove real GET/checkpoint roundtrip and preserve auth, wrong-owner and actual-storage503 negatives. No stubbed200 or production error suppression. |
+| Source-bound acceptance / high | Original native/migration/mapped producers and `qualify_ai_runtime.py`; FUNC.R/FUNC.ACCEPT and later full-profile consumers | Fresh committed-source inputs, admission/pip checks and all seven functional modules. The three additional performance-support lanes belong only to the later full profile. Historical114-key PASS and focused editor PASS cannot stand in for this execution. Functional evidence must still be rejected by a full-profile consumer lacking performance. |
+
+Consumer census: UI, test fixtures, generated editor artifacts, validation
+scripts and current validation/design docs apply. Production API/schema,
+storage, audit, exports, scheduling, provider/model access and CLI behavior
+are unchanged non-goals. AIB, other Apps, Linux and real data remain excluded.
+
+Execution:
+
+1. Reproduce both known QA failure classes at their owning boundaries. Cover
+   sibling dynamically-created note/action editors as well as report/template
+   markup. Keep existing browser assertions, fixture failures and raw reports.
+2. Apply the smallest semantic/fixture repair in W2.HOST. Run new regressions,
+   affected editor/recovery consumers, frontend checks, isolated Django check,
+   eight route/theme/viewport QA combinations and real-browser inspection.
+   Independent review includes the generated bundle and fixture subclasses.
+3. Commit/push the scoped reviewed repair using the prior mainline publication
+   authorization. Freeze its source and unchanged installed wheel; create a
+   new immutable native/migration/mapped/functional input family.
+4. Run the existing functional qualifier, including admission, pip consistency
+   and all seven module lanes. Write a new current-source functional receipt only
+   after FUNC.R. Keep all old receipts immutable; counts from overlapping
+   producers are not summed.
+5. Refreeze downstream performance inputs under W3.REPLAN. Only then resume
+   bounded tail localization, optimization/no-change review and certification.
+   Final full qualification (including its three performance-support lanes),
+   CLOSE.R and WIN.ACCEPT remain required. Stop and
+   ask on a genuine external prerequisite or unauthorized scope change.
+
+The Implementation Engineer owns the bounded repair; the controller owns
+execution/order and evidence assembly. The Architect Planner Reviewer performs
+the combined boundary/validation planning and later independent code review;
+a separate debugger seat is unnecessary because the controller has traced
+the two bounded failure paths.
+
 ### Three-Layer Joint Development Amendment (2026-11-22)
 
 Owner approved this amendment after comparing dev8 wheel construction (4.58s)

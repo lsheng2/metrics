@@ -712,8 +712,9 @@ alternative beyond `aria-label` is specified yet (known gap).
   typography (lists `disc`/`decimal` with `padding-left: var(--space-5)`, h1 xl / h2 lg / h3 md / h4–6 sm, blockquote with
   a 3px paper rule, `code` and `pre` on bg-muted, `--color-paper-link` underlined links, cells with a 1px paper rule and
   opaque paper bg). `.paper` alone styles rendered prose; the retired `.content` broke its headings in dark mode.
-- Markup: `<div class="report-editor-surface paper" aria-readonly="true">` with help text outside; add `paper` wherever
-  report content renders. Export HTML only inlines `<p style="margin:0 0 8px 0">` and blockquote, so `.paper` must style
+- Static projection markup: `<div class="report-editor-surface paper">` with the existing read-only help text outside.
+  This is rich document content, not an input: do not attach widget-only `aria-readonly` or a deceptive textbox role.
+  Add `paper` wherever report content renders. Export HTML only inlines `<p style="margin:0 0 8px 0">` and blockquote, so `.paper` must style
   tables, lists, headings and links.
 - Authored paint colors are chosen against white (`#0055aa`, `#008000`, `#aa0000`; highlights `#fff4cc`, `#dff7e8`,
   `#fde2e2`). Chrome around paper follows the theme.
@@ -873,6 +874,20 @@ Selectors live in `pages/project-reports.css`; form-grid alignment and in-table 
   `npm --prefix ui_web/frontend run build:vendor`.
 
 ### 12.2 Report editor, publication and period pages
+
+- Lazy rich-text hosts are named `role="group"` containers, retaining their focus activation
+  and translated `aria-label`. This includes static report/template/action surfaces and dynamically
+  added continuity notes/actions. The inert host is not the editable textbox. On mount, the shared
+  runtime gives the actual ProseMirror node the same accessible name, `role="textbox"`,
+  `aria-multiline="true"` and accurate `aria-readonly`, using public view props so redraws retain
+  them. Static fixed-template projections retain native rich-prose semantics instead of these
+  widget attributes. Do not remove names or hide rich content to silence accessibility checks.
+- Synthetic editor browser fixtures bind recovery to the same draft service/archive as their page
+  facades. Real checkpoint roundtrips and wrong-owner/CSRF/storage-failure checks remain separate;
+  a default-archive503 is not a healthy preview and a stubbed200 is not recovery proof.
+- Manual preview automation must supply its synthetic Basic credentials in each browser-command
+  round, including asynchronous recovery/save requests. An earlier navigation's CDP headers are
+  not a durable login. Preserve401/tool-timeout evidence; do not misclassify it as storage failure.
 
 Selectors live in `report_editor.css` (editor pages only), `report_assist.css`, `pages/project-reports.css` (command
 bar, publication list) and `pages/dense-tables.css` (matrix cells, because `period.html` loads no report CSS).

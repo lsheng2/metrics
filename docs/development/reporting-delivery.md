@@ -122,6 +122,17 @@ stop/cancel/cleanup bounds remain functional and were not relaxed.
 The receipt covers the tested source, not subsequent product changes or full AIB release.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
+For the current-source functional refresh, finish the known editor accessibility
+and synthetic recovery-fixture openings before restarting performance work.
+Use the existing `functional` qualifier on the new committed source, including
+admission/pip checks and all seven modules; bind a new receipt after independent
+review. The historical dev9 receipt above and editor-focused regressions do not
+certify the refreshed source. A browser fixture must bind recovery to the same
+owned draft service/archive as its editor page; do not silence a real503 or
+fake a successful response. Final `full` qualification and combined Windows
+acceptance remain separately required, including the full profile's three
+performance-support lanes and unchanged performance/safety gates.
+
 The current dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity
 is not numerical acceptance: runtime CSS119.3983ms and production draft_edit

@@ -4,7 +4,7 @@
     {% if block.kind == "content" %}
         <div class="report-section-band" data-template-fixed-content>
             <h3 class="report-band-title">{% trans "Template content" %}</h3>
-            <div class="report-editor-surface paper" aria-readonly="true">{{ block.html|safe }}</div>
+            <div class="report-editor-surface paper">{{ block.html|safe }}</div>
             <p class="help">{% trans "Fixed template text is read only in this report." %}</p>
         </div>
     {% elif block.kind == "slot" %}
@@ -142,7 +142,7 @@
                                                                 <option value="canceled" {% if action.state == "canceled" %}selected{% endif %}>{% trans "Canceled" %}</option>
                                                             </select></div>
                                                             <label class="checkbox"><input type="checkbox" data-continuity-action-done> {% trans "Mark done" %}</label>
-                                                            <div class="report-editor-surface paper" data-continuity-action-editor tabindex="0" aria-label="{% trans "Resolution" %}"></div>
+                                                            <div class="report-editor-surface paper" data-continuity-action-editor tabindex="0" role="group" aria-label="{% trans "Resolution" %}"></div>
                                                             {% for evidence in action.evidence_refs %}
                                                                 <label class="checkbox"><input type="checkbox" data-continuity-evidence value="{{ evidence }}" checked> {{ evidence }}</label>
                                                             {% endfor %}

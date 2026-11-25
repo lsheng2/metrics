@@ -117,7 +117,12 @@ async function createRuntime(element, fragment, { readOnly = false, onChange, on
         },
     };
     if (readOnly) {
-        view().setProps({ editable: () => false });
+        view().setProps({
+            attributes: editorViewAttributes(element, readOnly),
+            editable: () => false,
+        });
+    } else {
+        view().setProps({ attributes: editorViewAttributes(element, readOnly) });
     }
     const originalDispatch = view().dispatch.bind(view());
     view().dispatch = transaction => {
@@ -131,6 +136,22 @@ async function createRuntime(element, fragment, { readOnly = false, onChange, on
         }
     };
     return runtime;
+}
+
+function editorViewAttributes(element, readOnly) {
+    const attributes = {
+        role: 'textbox',
+        'aria-multiline': 'true',
+        'aria-readonly': String(Boolean(readOnly)),
+    };
+    const label = element.getAttribute('aria-label');
+    const labelledBy = element.getAttribute('aria-labelledby');
+    if (label) {
+        attributes['aria-label'] = label;
+    } else if (labelledBy) {
+        attributes['aria-labelledby'] = labelledBy;
+    }
+    return attributes;
 }
 
 function fragmentToEditorDoc(fragment) {

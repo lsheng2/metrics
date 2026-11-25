@@ -12,6 +12,7 @@
 - Windows resumed validation: [storage recovery and W2 integration](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-w2-resume.json); frozen native certification and joint acceptance remain separate.
 - Windows functional closeout: [accepted evidence and limits](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-closeout.md) and [formal receipt](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json); 114/114 functional keys accepted at `ff09d6f`, with performance NOT_RUN.
 - Supporting docs migrated from this folder: `openspec/docs/`
+- Windows non-performance refresh: [scoped repair evidence](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-nonperformance-refresh-repair.json); full current-source functional qualification remains separate.
 - Migration inventory: `openspec/docs/baseline-docs-inventory.md`
 - Case studies and operator walkthroughs: `docs/case_study/`
 - New user onboarding walkthroughs: `docs/onboarding/`

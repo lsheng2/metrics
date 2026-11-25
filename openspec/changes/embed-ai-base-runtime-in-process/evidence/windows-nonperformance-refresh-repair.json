@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "kind": "dashboard-nonperformance-focused-repair",
+  "status": "FOCUSED_PASS_NOT_FUNCTIONAL_ACCEPTANCE",
+  "acceptance_eligible": false,
+  "source_baseline": "c845224c2f4fc9a5c830979b2772815572eacacc",
+  "aib_commit": "1a6ac981b67f148bbaaed6750e6874896ada0bcc",
+  "runtime": "0.1.1.dev9",
+  "aib_dependency_kpi_and_safety_budgets_unchanged": true,
+  "responsibility": {
+    "editor": "Dashboard host markup and public ProseMirror view props; same naming semantics for static/dynamic/read-only surfaces.",
+    "recovery": "Shared synthetic browser fixture omitted same-service recovery wiring; production ArchiveError/private503 behavior remains unchanged."
+  },
+  "red": {
+    "tests": 3,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0,
+    "report": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\implementation-red-focused-owned-regressions.xml",
+      "sha256": "95bef45f7487c5f2c776f90554b2b4660c89cc8621544477effcccc5506aca8a"
+    }
+  },
+  "green": {
+    "owned_regressions": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\implementation-green-owned-regressions-r2.xml",
+        "sha256": "256234bb93cedfa95222744db10fd5e582deac79089e235548e89b41263a3ff5"
+      }
+    },
+    "original_recovery_reproduction": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\implementation-green-original-recovery-repro.xml",
+        "sha256": "dee65532adab0e3c4b34454f118c0789daedd33fde3f2f425547b0f13aedaf2b"
+      }
+    },
+    "recovery_negatives": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\implementation-green-recovery-route-negatives.xml",
+        "sha256": "344af5680782d454801196e16fc86684fb94504981ac57ce934c9961cc95ed9a"
+      }
+    },
+    "editor_consumers": {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\implementation-green-editor-consumers-r2.xml",
+        "sha256": "5f0b038714ac113ad9b7247551669c48b4408ec5e57213c2e8738e718b026afc"
+      }
+    },
+    "recovery_workflows": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\implementation-green-recovery-workflow-consumers.xml",
+        "sha256": "61b6389ba60855a808c36b4dafc44413e21bdd0ee224f640899683c564999975"
+      }
+    }
+  },
+  "counts_policy": "Groups overlap and are not summed; focused evidence cannot replace current-source qualification.",
+  "route_qa": {
+    "checks": 12,
+    "failed": 0,
+    "report": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\route-qa-r2\\report.json",
+      "sha256": "31e2223df70ea5a07ac08013cfba3f945d997f4376ed8bc69b2803711f0cb42c"
+    }
+  },
+  "generated_manifest": {
+    "path": "D:\\AIGC\\scrum_dashboard\\ui_web\\static\\js\\report_editor\\vendor\\asset-manifest.json",
+    "sha256": "d206d8dde97e89d53a4f49cc573748b4ba017a8de57fa8816c2df01394622b40"
+  },
+  "frontend_check": {
+    "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\implementation-npm-check.log",
+    "sha256": "76a24ff53d52fd6ef27353315eb2a85cec589392297d7a85f707cfdb174f53ea"
+  },
+  "static_checks": {
+    "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\static-checks.json",
+    "sha256": "a431e3bc7c0afb01b18d85e71ced70fe213efc7fef89bb6f1481a9ed57142fb1"
+  },
+  "real_browser": {
+    "report_views": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\visual-r2\\manual-failure.json",
+      "sha256": "38057942879fcf8ef5209dba744a00aa2ac3c0b04fafecd970307c2599c07dac"
+    },
+    "template_views": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\visual-r2\\manual-template.json",
+      "sha256": "2dd8ee929b6e72b4c1116c1811ce99c236eb741d30057cbd45b5c5dedcb2926f"
+    },
+    "report_persisted": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\visual-r2\\report-reload.json",
+      "sha256": "5e82909568b1684f710fd54371664aa9088e92df7097d1589eb57f8f967a12d1"
+    },
+    "template_persisted": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\visual-r2\\template-save.json",
+      "sha256": "78d8c71e2096f09cec984d446cab1bec26c1464cffa995648c27ed8274764697"
+    },
+    "recovery": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\visual-r2\\recovery.json",
+      "sha256": "cc94dae08b91060f60fa1453cded0f47f28c351046ae5d8ad7ce059a70512de1"
+    },
+    "normal_preview_stop": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\visual-r2-lifecycle.xml",
+        "sha256": "5b94ef001e924ea20bcd9112a1a47f80fec825482c7ff54abe9492c0bd89b457"
+      }
+    },
+    "screenshots_inspected": true,
+    "limitations": "Report view captures completed before an aborted next navigation. Later reload proved its save. Earlier CLI authentication, selector/viewport errors and the first900s preview timeout remain failed diagnostic evidence, not product acceptance."
+  },
+  "source_policy": "The later scoped commit binds this reviewed repair; final functional tests must use that clean source and a new immutable input family.",
+  "does_not_establish": [
+    "independent review",
+    "current-source full functional acceptance",
+    "performance acceptance",
+    "CLOSE.R",
+    "WIN.ACCEPT"
+  ],
+  "generator": {
+    "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\update_repair_receipt.py",
+    "sha256": "dcbfa8108d915eafdcaac5b077c82899e5caca7aec202e558cd75dabddac2ea6"
+  },
+  "prior_scoped_packet": {
+    "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\repair-receipt-r1.json",
+    "sha256": "1b1566d13b613539977fe676037c62a030a97cbf90ce281dac16a267940d7721"
+  },
+  "initial_generator": {
+    "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\write_repair_receipt.py",
+    "sha256": "6ec4894a147cebf1ff2eea349fbccc86288f974f495aec4e9bc1ce866bacecdf"
+  },
+  "readonly_projection_followup": {
+    "finding": "APR-001",
+    "review": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\review-1.txt",
+      "sha256": "33f66c61a2594a45b450bb63349cc5406d6e4f09f466424fa2cabc9a6e1e47ee"
+    },
+    "class_expansion": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\class-expansion-1.json",
+      "sha256": "b8d2d29a43d0d93d82450cc1bb3943330d0dd871d2b5ab9b7d9534c86cdabc5c"
+    },
+    "resolution": "Static fixed-template rich prose no longer carries widget-only aria-readonly. Actual runtime readonly textbox behavior is unchanged.",
+    "red": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\fix1-red-fixed-content-accessibility-r2.xml",
+        "sha256": "e3101dee9b5027e289cbe65216f6219ded346c2e7b1b6bac90fa82fc7d8aab84"
+      }
+    },
+    "green": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\fix1-green-fixed-content-accessibility.xml",
+        "sha256": "6893c753f7fe20d84ea656f4361fa93387a173b775ccfd2a643e433f67f08171"
+      }
+    },
+    "all_editor_semantics": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\fix1-green-editor-accessibility-file.xml",
+        "sha256": "7a68b74b3dfde86bfe7bbe2a5fb985d375180d1ca02f9cc9c9074fca016c8154"
+      }
+    },
+    "preview_normal_stop": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\fixed-content-lifecycle.xml",
+        "sha256": "566466059b4db816f6a3b868ac5cfc8021a632e1d5bf1b08be1c92cae78a815b"
+      }
+    },
+    "fixture": {
+      "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\fixed_content_preview.py",
+      "sha256": "53ea410327bf4e110c659be06cb74097307bfcfea5b2ee4ccd1e4f6a8105dfa8"
+    },
+    "browser_scope": "Original report/template plus actual user-template-backed fixed-content report, both themes and1440/390; all12QA combinations pass. Dedicated real-browser test checks rich headings/readability and nonmutation.",
+    "screenshots_inspected": true,
+    "reuse": "Earlier interactive report/template proof is retained only for unchanged editable runtime/fixture behavior. New fixed-content proof covers the changed static branch. None replaces fresh complete functional qualification."
+  }
+}

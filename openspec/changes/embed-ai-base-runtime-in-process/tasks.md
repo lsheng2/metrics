@@ -2,6 +2,15 @@
 
 ## Latest Delivery Decision
 
+### Current-Source Functional Refresh (2026-11-25)
+
+Owner authorized continuous checkout with non-performance closure first; the
+[current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25) reopens the functional nodes below.
+Historical dev4/dev9 PASS receipts retain their original source bindings.
+Openings: lazy/dynamic editor ARIA naming, synthetic recovery503 and current full functional qualification.
+Production503, AIB/dev9, all KPI and safety budgets remain unchanged. No new feature, other-App or Linux scope.
+Performance waits for the refreshed functional verdict. Scoped mainline publication remains authorized; full qualification/CLOSE.R/WIN.ACCEPT stay open.
+
 ### Authorized Editor Selection Repair (2026-11-25)
 
 Owner authorized a Dashboard-only selection repair, independent review and
@@ -644,17 +653,17 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] W1.RETIRE - 当前 Windows 边界/残留 gate、58 项检查和默认 smoke 通过；编辑器任务与退役文件存在性已纳入检查。Linux 定义仍延期，不关闭原全平台条款。
 - [x] W1.R - 两次独立审查，1 个 P1 修复后达到 1/1 clean pass；范围绑定代码提交 `b3fbada`，见 `evidence/windows-w1-review.json`。
 - [x] W1.REPLAN - W2=amend、W3=continue；基线适配要求已写入 steps/validation，五项 S0b 源码哈希未变，18 节点/20 依赖及严格 OpenSpec 检查通过。结构化回执在 `evidence/windows-w1-review.json`；W2.VA 仍须独立签核。
-- [x] W2.VA - 独立 Validation Engineer 签核完整 Windows 生命周期、测量、状态演练和汇总检查设计；批准保留真实空闲 ProjectRunRuntime 的 S0b 测试基线适配。原始回执及授权澄清见 `evidence/windows-w2-validation.md`，无新增 owner 决策阻塞。
-- [x] W2.HOST - 生命周期实现、原生证明夹具、迁移及验收工具完成；早期回归见 `evidence/windows-w2-resume.json`，最终冻结证明见下方 W2.CERTIFY 和正式功能回执。
-- [x] W2.CERTIFY - `ff09d6f` 原生 56 项、完整一致性 74 项及恢复/观测 39 项通过；计数有重叠，不求和。历史 I/O 失败保留，不因本次 PASS 改写归因。
-- [x] W2.R - `ff09d6f` 独立 W2 gate 达到 1/1 clean pass，原生生产者/消费者证据绑定通过；精确路径和哈希见 `evidence/windows-functional-acceptance.json` 的 W2.R 引用。
-- [x] W2.REPLAN - W2 签核在 `ff09d6f` 判定 continue，随后进入 W3；未改变 wheel 或生产预算，性能判定仍后置。
-- [x] W3.FREEZE - 固定 Dashboard `ff09d6f`、AIB `d589ac8`、dev4 wheel、依赖、fixture 及实际环境；回执记录前后干净源码与指纹。
-- [x] W3.REHEARSE - 同源码 Windows 合成状态副本的新旧版本切换、语义读取及回滚通过；不关闭原 10.3 的镜像条款。
-- [x] W3.JOIN - 完成联合业务映射和七组完整功能模块门禁；同源码续跑明确区分复用与新执行，114/114 功能证据键全部有效。
-- [x] FUNC.R - 独立 authority-boundary review 达到 1/1 clean pass；两次 counted review 中一项 P1 已闭环，最终 P0-P3 为零，性能及全局排除范围已核对。
-- [x] FUNC.ACCEPT - `evidence/windows-functional-acceptance.json` 已生成；Windows Dashboard MDB-2 功能为 PASS，性能为 NOT_RUN，原 10.4 及其它混合范围父任务保持开放。
-- [x] W3.REPLAN - 计划 `6e62127` 经独立复核达到 1/1 clean pass；三项归属、契约与命令镜像问题已关闭，结构化记录见 `evidence/windows-performance-plan-review.json`。
+- [x] W2.VA - Current-source boundary/validation planning passed2026-11-25; `D:/AIGC/d9-1122/functional-refresh-1125/review-planning.md` and28-node preflight cover editor semantics, fixture ownership and functional-first order. No code acceptance is implied.
+- [x] W2.HOST - Editor semantics/recovery-fixture repair and APR-001 static-projection correction implemented; red/green, affected consumers and expanded QA12/12 passed. See `evidence/windows-nonperformance-refresh-repair.json`; independent re-review and current-source qualification remain separate.
+- [ ] W2.CERTIFY - Rebind and execute native/conformance/recovery proof on the repaired source. Historical dev4/dev9 runs remain unchanged; overlapping counts are not summed.
+- [ ] W2.R - Independent review of the scoped repair and source-bound producer/consumer evidence; previous reviewed snapshots remain historical.
+- [ ] W2.REPLAN - Refreeze W3 against the repaired source and unchanged dev9 artifact; preserve rollback prerequisites and production budgets.
+- [ ] W3.FREEZE - Freeze the reviewed current Dashboard source, unchanged AIB/dev9 wheel, fixtures and actual environment in a fresh input family.
+- [ ] W3.REHEARSE - Current-source Windows copied-state upgrade/read/rollback evidence; existing historical rehearsals do not close a different source.
+- [ ] W3.JOIN - Current-source mapped proof, admission/pip checks and all seven functional modules, with114/114 functional bindings; the three performance-support lanes stay in the later full profile.
+- [ ] FUNC.R - Independently review the refreshed functional matrix, including both non-performance QA dispositions and source identity.
+- [ ] FUNC.ACCEPT - Write a fresh current-source functional receipt only after FUNC.R; keep earlier dev4/dev9 PASS receipts immutable and performance unqualified.
+- [ ] W3.REPLAN - Refreeze downstream performance inputs after the new functional verdict; retain historical method reviews and all KPI/safety limits.
 - [x] PERF.KPI - 已冻结原 KPI、负载、基线、采样和判定方法，见 `evidence/windows-performance-inputs.json`；具体运行输入与动态资产在采样前另行绑定，不代表已测量。
 - [x] PERF.PROBE - dev9/fa0b060 完整诊断已采集并重放；保留两项数值超标，不宣称正式验收。
 - [x] PERF.PROBE.R - 原始诊断及消费者边界独立复核 1/1 通过，见 D:/AIGC/d9-1122/probe-r2-evidence-gate.json；优化与认证仍开放。

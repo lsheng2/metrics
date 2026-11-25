@@ -103,7 +103,7 @@ export function createContinuityController(root, form) {
         article.dataset.continuityPersistentDraft = noteId;
         article.innerHTML = `
             <label class="label is-small"></label>
-            <div class="report-editor-surface paper" data-continuity-fragment-surface tabindex="0"></div>
+            <div class="report-editor-surface paper" data-continuity-fragment-surface tabindex="0" role="group"></div>
             <label class="checkbox"><input type="checkbox" data-continuity-carry checked> <span></span></label>
         `;
         const noteLabel = root.dataset.messagePersistentNote || 'Persistent note';

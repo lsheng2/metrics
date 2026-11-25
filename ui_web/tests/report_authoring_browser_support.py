@@ -49,6 +49,7 @@ class ReportAuthoringBrowserTestCase(CaptureArchiveScenario, ProjectRouteTestSup
             clock=FixedClock(),
             reference_verifier=self.reference_verifier,
         )
+        self.recovery = report_api.ReportRecoveryService(self.service)
         self.completion = ReportCompletionService(
             self.service,
             self.source,
@@ -73,6 +74,7 @@ class ReportAuthoringBrowserTestCase(CaptureArchiveScenario, ProjectRouteTestSup
     def _patch_report_facades(self):
         from ui_web.views import project_reports
         from ui_web.views.report_completion import ReportDraftCompletionView
+        from ui_web.views.report_recovery import ReportRecoveryView
 
         classes = (
             project_reports.ProjectStageReportView,
@@ -95,6 +97,7 @@ class ReportAuthoringBrowserTestCase(CaptureArchiveScenario, ProjectRouteTestSup
             ReportDraftCompletionView,
             attribute='project_api_factory',
         )
+        self.patch_view_factory(lambda: self.recovery, ReportRecoveryView, attribute='service_factory')
 
     def editor_url(self, draft_id):
         from django.urls import reverse

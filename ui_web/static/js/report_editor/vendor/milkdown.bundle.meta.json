@@ -3487,7 +3487,7 @@
       "format": "esm"
     },
     "report_milkdown.js": {
-      "bytes": 11454,
+      "bytes": 12119,
       "imports": [
         {
           "path": "node_modules/@milkdown/kit/lib/core.js",
@@ -4156,10 +4156,10 @@
           "bytesInOutput": 6039
         },
         "report_milkdown.js": {
-          "bytesInOutput": 7758
+          "bytesInOutput": 8259
         }
       },
-      "bytes": 756884
+      "bytes": 757385
     }
   }
 }

@@ -24,6 +24,7 @@ export function createWorkflowControls(root, changed) {
         const body = document.createElement('div');
         body.className = 'report-editor-surface paper';
         body.tabIndex = 0;
+        body.setAttribute('role', 'group');
         body.setAttribute('aria-label', message('messageArBody', 'AR'));
         const remove = document.createElement('button');
         remove.type = 'button';
