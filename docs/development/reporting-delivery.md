@@ -40,8 +40,8 @@ Fresh offline installation passed in `D:/AIGC/d9-1122/venv`: 19
 admission/package/host checks, authenticated page/assets, normal exit and no
 forced cleanup. Both environments have 83 distributions; only runtime version
 differs. Dev9 Windows functional acceptance now passes; performance remains NOT_RUN.
-The [current functional receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json)
-binds the tested Dashboard source `423846c58ebfabd3c8810a198407d6ae8cd02b6b`,
+The [current functional receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9-refresh.json)
+binds the tested Dashboard source `4f538b773efdd5068a36b3d699ea2cf6890e83d8`,
 114/114 keys, all seven module gates and independent W2.R/FUNC.R review.
 The old dev8 environment is refused by the active dev9 pin.
 Dev9 obtains one fresh complete capture after an internally detected race,
@@ -106,7 +106,7 @@ performance acceptance for the new candidate.
 The Windows delivery sequence is specified in the
 [MDB-2 closure plan](../../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md),
 with detailed steps and a clause-to-evidence matrix. Installation and entrypoint
-retirement passed W1. Current dev9 Windows synthetic-data `FUNC.ACCEPT` passed at
+retirement passed W1. Initial dev9 Windows synthetic-data `FUNC.ACCEPT` passed at
 source `423846c58ebfabd3c8810a198407d6ae8cd02b6b`: the
 [formal receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json)
 binds 114/114 functional keys, all seven module gates and independent review.
@@ -122,16 +122,17 @@ stop/cancel/cleanup bounds remain functional and were not relaxed.
 The receipt covers the tested source, not subsequent product changes or full AIB release.
 The existing MDB-2 `tasks.md` remains the sole migration status ledger.
 
-For the current-source functional refresh, finish the known editor accessibility
-and synthetic recovery-fixture openings before restarting performance work.
-Use the existing `functional` qualifier on the new committed source, including
-admission/pip checks and all seven modules; bind a new receipt after independent
-review. The historical dev9 receipt above and editor-focused regressions do not
-certify the refreshed source. A browser fixture must bind recovery to the same
-owned draft service/archive as its editor page; do not silence a real503 or
-fake a successful response. Final `full` qualification and combined Windows
-acceptance remain separately required, including the full profile's three
-performance-support lanes and unchanged performance/safety gates.
+The current-source functional refresh passed at `4f538b7`: admission/pip checks,
+all seven modules,114/114keys and independent W2.R/FUNC.R1/1. The new
+`windows-functional-acceptance-dev9-refresh.json` checkpoint retains that exact
+source, not a later publication commit. Historical dev9 evidence is unchanged.
+The [reference refresh](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md#current-functional-reference-refresh-2026-11-25)
+must publish and bind that checkpoint before formal performance uses it.
+Browser recovery uses the same owned draft service/archive as the page;
+real503/auth/ownership refusals remain. Current-source bug_trend480-page
+diagnosis did not reproduce the old burst; root cause is still unproven.
+Final full qualification, its three performance-support lanes, unchanged KPI/
+safety gates and combined Windows acceptance remain required.
 
 The current dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity
@@ -166,7 +167,7 @@ unchanged; a successful offline isolation test is not native qualification.
 
 The owner-approved [page-policy amendment](../../openspec/changes/embed-ai-base-runtime-in-process/windows-page-policy-amendment.md)
 keeps the application and SDK unchanged. Prospective recipe `windows-mdb2-s0b-r3`
-uses `windows-performance-inputs-dev9-r3.json`. Ordinary page-plus-assets cells
+uses `windows-performance-inputs-dev9-r3-refresh.json`. Ordinary page-plus-assets cells
 retain nearest-rank P95<=1.2 times their matched baseline. The class with four
 page clients AND four held AI streams requires P95<=1.25 times baseline AND
 P95<=800ms, for every page in both development and production. These are

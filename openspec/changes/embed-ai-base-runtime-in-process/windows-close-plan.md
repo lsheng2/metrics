@@ -85,6 +85,12 @@ Execution:
    CLOSE.R and WIN.ACCEPT remain required. Stop and
    ask on a genuine external prerequisite or unauthorized scope change.
 
+Current functional acceptance is now complete at `4f538b7`; its external
+checkpoint preserves the tested clean source. Before formal performance,
+[publish and review its fixed reference](windows-performance-test-plan.md#current-functional-reference-refresh-2026-11-25).
+The current-source bounded tail observation did not reproduce the burst and
+does not establish root cause, optimization success or numerical acceptance.
+
 The Implementation Engineer owns the bounded repair; the controller owns
 execution/order and evidence assembly. The Architect Planner Reviewer performs
 the combined boundary/validation planning and later independent code review;
@@ -248,7 +254,7 @@ receipts and do not substitute for these tool-boundary tests.
 The active continuation is now the reviewed dev9 convergence candidate, after
 dev8's Dashboard observation failure and the three-layer development checks.
 Use D:/AIGC/d9-1122 and versioned
-`windows-functional-acceptance-dev9.json` / `windows-performance-inputs-dev9-r3.json`
+`windows-functional-acceptance-dev9-refresh.json` / `windows-performance-inputs-dev9-r3-refresh.json`
 outputs. Numerical policy follows the [page amendment](windows-page-policy-amendment.md)
 and its preserved P4 rule; the owner
 scope, complete gate chain and unchanged functional budgets below

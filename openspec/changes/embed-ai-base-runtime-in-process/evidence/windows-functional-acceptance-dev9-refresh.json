@@ -1,0 +1,149 @@
+{
+  "acceptance_profile": "functional",
+  "candidate": {
+    "source_commit": "fc680c3702ac4eaeae0a75486fa173b280929447",
+    "version": "0.1.1.dev9",
+    "wheel": "D:\\AIGC\\d9-1122\\wheels\\ai_base_runtime-0.1.1.dev9-py3-none-any.whl",
+    "wheel_sha256": "c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec"
+  },
+  "complete_conformance": {
+    "path": "D:\\AIGC\\d9-1122\\complete-functional-refresh-r3-1125\\receipt.json",
+    "sha256": "e5282f2d5bddaab46bfade4b05109289882ad8d251940e10dfa06e2bba42ac43"
+  },
+  "evidence_policy": "Counts overlap between producers; do not sum them. Whole green report reuse is not new execution.",
+  "functional_status": "PASS",
+  "generator": {
+    "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\checkpoint\\write-functional-acceptance.py",
+    "sha256": "bf78d7b66df6e5131df62b954b221361d350d145bcdb07caf7c631b704f54594"
+  },
+  "historical_failures": "Preserved. Current PASS does not establish a shared OS root cause or erase earlier failures.",
+  "mapped_proof": {
+    "path": "D:\\AIGC\\d9-1122\\mapped-proof-runs\\7456e51c-3910-49f2-80d5-801ba0114574\\proof.json",
+    "sha256": "e9202b066b212ff7377731bca727334fcd96418864637bd0e90204a31b822431"
+  },
+  "module_lanes": {
+    "ai_host/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\12fe1b2d-6891-4561-98a4-3c7d2c36a9cc\\junit\\lane-1.verified.xml",
+        "sha256": "ce77d911447e7ffca2bc2d58707eabfdfce9cd32307841b3eddb440a519f92dd"
+      },
+      "tests": 266
+    },
+    "bug_metrics/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\12fe1b2d-6891-4561-98a4-3c7d2c36a9cc\\junit\\lane-3.verified.xml",
+        "sha256": "fe3f089e59681293d21c59ba2244b7d3d96c128ee8cdc63425703c53f8979831"
+      },
+      "tests": 250
+    },
+    "jira_sync/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\12fe1b2d-6891-4561-98a4-3c7d2c36a9cc\\junit\\lane-4.verified.xml",
+        "sha256": "72200998e834bcb82224b8158be281e98f773dc86e130c10c9eea054ff66bc65"
+      },
+      "tests": 32
+    },
+    "metrics/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\12fe1b2d-6891-4561-98a4-3c7d2c36a9cc\\junit\\lane-2.verified.xml",
+        "sha256": "505326c427f857ad0acb4099353f29f20543476581cd4a5269475605276c2734"
+      },
+      "tests": 19
+    },
+    "project_management/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\12fe1b2d-6891-4561-98a4-3c7d2c36a9cc\\junit\\lane-6.verified.xml",
+        "sha256": "8f276d4ddc5d70a3a762b4cceaad6f08790a7d99bd04bc05c27adccfe55923ca"
+      },
+      "tests": 971
+    },
+    "scripts/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\12fe1b2d-6891-4561-98a4-3c7d2c36a9cc\\junit\\lane-7.verified.xml",
+        "sha256": "18468890b80443d53f8c1b0cb2d47b587bcc743c60fe01ca975279215d6cb524"
+      },
+      "tests": 975
+    },
+    "ui_web/tests": {
+      "junit": {
+        "path": "D:\\AIGC\\d9-1122\\qualifier-runs\\12fe1b2d-6891-4561-98a4-3c7d2c36a9cc\\junit\\lane-5.verified.xml",
+        "sha256": "4881f306ae593a07a920773b8d752ed8babcc079816a55207683fcbc41b99204"
+      },
+      "tests": 773
+    }
+  },
+  "performance_deferred_aspects": [
+    "clause:10.4:B3-incremental-timing:performance",
+    "clause:10.4:B6-page-assets:performance",
+    "clause:10.4:B6-production-static:performance",
+    "clause:10.4:B9-saturation:performance",
+    "clause:10.4:exclusive-window:performance",
+    "clause:10.4:source-and-cleanup:performance",
+    "task:10.4"
+  ],
+  "performance_status": "NOT_RUN",
+  "producers": {
+    "windows-host-conformance": {
+      "path": "D:\\AIGC\\d9-1122\\evidence\\native-functional-refresh-r3-1125.json",
+      "sha256": "38ec2030af7856c1839e0d4f1956dae085f396d24bd464ccddc3692a3ba968c2"
+    },
+    "windows-migration-rehearsal": {
+      "path": "D:\\AIGC\\d9-1122\\evidence\\migration-functional-refresh-r3-1125.json",
+      "sha256": "d01f251fa6ad09c32dc8856500775e89fab2a4aef4cd6125013e1bd1fb343f8c"
+    }
+  },
+  "qualification": {
+    "path": "D:\\AIGC\\d9-1122\\inputs\\windows-functional\\9aa71ca0-a499-4249-9f60-d13a5e9ddb61\\qualification.json",
+    "sha256": "7eb82b03dfee8c2b3b2bba177552ae7a4799bfc22f9dd16c3ff3dbc531c6be54"
+  },
+  "qualification_inputs": {
+    "path": "D:\\AIGC\\d9-1122\\inputs\\windows-functional\\9aa71ca0-a499-4249-9f60-d13a5e9ddb61\\inputs.json",
+    "sha256": "a3378e2cc484c00b6f895b20ba3418a289cfc739fc1b402108851bf3ca983e3c"
+  },
+  "qualification_mode": "official-single-run",
+  "qualification_validator": null,
+  "required_functional_evidence_keys": 114,
+  "reviews": {
+    "FUNC.R": {
+      "clean_passes": 1,
+      "gate": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\functional-gate-r2.json",
+        "sha256": "132d9a0d5309d76c11122831128a1ee572360a00e1db1ae0fc4684990c41bc35"
+      },
+      "required_passes": 1,
+      "transcript": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\functional-review-r2-pass2.txt",
+        "sha256": "819c60bf2e9644e8e6cf2b385cdae1265cf142e369ea01d895586d6c21577620"
+      }
+    },
+    "W2.R": {
+      "clean_passes": 1,
+      "gate": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\w2-gate.json",
+        "sha256": "8d45362f746dd39fa004809c14a9b780f4e55bb0fd9e4413db7f905309c979e9"
+      },
+      "required_passes": 1,
+      "transcript": {
+        "path": "D:\\AIGC\\d9-1122\\functional-refresh-1125\\w2-review-1.txt",
+        "sha256": "f07266edb4f983a36b0be540badb31bb0fbddb6b1d1019c00b67bc0c067a7051"
+      }
+    }
+  },
+  "schema_version": 1,
+  "scope": "Windows Dashboard MDB-2 synthetic functional acceptance",
+  "scope_exclusions": [
+    "performance",
+    "Linux/WSL/containers",
+    "other Apps",
+    "real providers/models/data",
+    "whole AIB release",
+    "push/merge/worktree retirement"
+  ],
+  "source_policy": "The validated source precedes the documentation-only acceptance commit; that commit is reported separately.",
+  "status": "PASS",
+  "validated_functional_evidence_keys": 114,
+  "validated_source": {
+    "commit": "4f538b773efdd5068a36b3d699ea2cf6890e83d8",
+    "status": ""
+  }
+}

@@ -29,7 +29,8 @@ pins, Django, Waitress, httpx, SLE, pytest, Windows counters and conditional ETW
 ## Page And Tail Policy (2026-11-24)
 
 The [approved page amendment](windows-page-policy-amendment.md) selects
-recipe `windows-mdb2-s0b-r3` and `evidence/windows-performance-inputs-dev9-r3.json`.
+recipe `windows-mdb2-s0b-r3`; its current reference-only copy is
+`evidence/windows-performance-inputs-dev9-r3-refresh.json`.
 The transport owner and policy loader share the fixed nearest-rank P99<100ms/
 max<=200ms definition. Producer resolved inputs, standalone/aggregate replay
 and active fixtures use r3; stale r1/r2 references are refused. The page owner
@@ -37,6 +38,51 @@ keeps1.2 for ordinary cells; c4/candidate_saturated requires ratio<=1.25 AND
 P95<=800ms for all pages/phases. P1/P4, sample counts and safety are unchanged.
 Historical replay is descriptive only.
 Fresh input freeze and native qualification are still required.
+
+## Current Functional Reference Refresh (2026-11-25)
+
+Dashboard `4f538b773efdd5068a36b3d699ea2cf6890e83d8` has current functional
+acceptance:114/114keys, all seven whole modules and W2.R/FUNC.R1/1.
+The source-preserving checkpoint is
+`D:/AIGC/d9-1122/functional-refresh-1125/checkpoint/windows-functional-acceptance-dev9-refresh.json`
+with SHA256 `beced470cab7864eec90f89f3d0b9fb1518d4c87a3f1650b0fc7222c57a345dd`.
+The bounded current-source bug_trend diagnostic completed480pages without
+reproducing the burst; it does not explain the old failure or certify a KPI.
+
+At baseline4f538b7, the performance contract pinned the historical423846c receipt.
+W3.REPLAN/PERF.PROBE must publish the checkpoint byte-for-byte as
+`evidence/windows-functional-acceptance-dev9-refresh.json`, derive a new
+`evidence/windows-performance-inputs-dev9-r3-refresh.json` changing reference
+metadata only, and switch the two canonical paths in
+`scripts/validation/windows_host_performance_contract.py`. Keep the original
+trusted-reference/hash validation, recipe id, full recipe, execution modes,
+baseline architecture, runtime/environment and all historical files intact.
+This supersedes the checkpoint note's plan to defer publication until CLOSE.R:
+formal consumers need the reviewed canonical reference before measurement.
+
+| Authority | Producers and consumers | Required negative proof |
+| --- | --- | --- |
+| PERF-IDENTITY, high | New canonical snapshots -> performance contract -> standalone replay and full qualifier | Refuse old repo references, changed owned copies, mismatched candidate/source inputs; accept only current canonical or byte-identical owned references. |
+| PERF-RECIPE, high | Existing r3 policy -> new reference-only policy -> recipe/tail/page evaluators | Derive and compare baseline/full_recipe/execution_modes/runtime/environment unchanged; existing numerical mutation controls remain red. |
+| PERF-CLAIM, high | Current114-key checkpoint -> current guide, ledger and full-profile inputs | Preserve validated source4f538b7; do not relabel it as the later publication commit or promote diagnostic NOT_REPRODUCED to FIXED/PASS. |
+
+Main agent owns this small single-owner reference edit; Architect Planner
+Reviewer reviews the diff, evidence and downstream execution boundary.
+Separate implementer/debugger/validation seats add no distinct gate here.
+Validation scripts, receipt artifacts, CLI consumers, current docs and test
+fixtures apply. Product APIs/UI, business storage/export/audit, scheduling,
+cache, AIB and providers are unchanged non-goals; Linux remains deferred.
+
+Before publication, run the input/refusal, evidence/replay, profile, tail/page
+policy and private input-adapter checks, size/whitespace and OpenSpec gates.
+After scoped commit/push, freeze a new exact-source family using the existing
+preparation owner. Current4f538b7 functional proof remains a named prerequisite,
+not cross-source producer proof. Renew source-bound native/migration/mapped
+inputs as required by their existing validators. Run the full unprofiled
+diagnostic, independent optimization/no-change review, certification and
+original full qualifier with all seven modules and three support lanes.
+No private monkeypatch, cross-source relaxation, new KPI or additional
+bounded-tail retries are authorized by this reference refresh.
 
 ## Dev9 Reference Refreeze (2026-11-22)
 

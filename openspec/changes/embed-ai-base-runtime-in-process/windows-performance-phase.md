@@ -8,7 +8,7 @@ state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 ## Current Page Rule (2026-11-24)
 
 The owner chose unchanged implementation and the [r3 page amendment](windows-page-policy-amendment.md).
-The [canonical policy](evidence/windows-performance-inputs-dev9-r3.json) keeps
+The [canonical reference-refreshed policy](evidence/windows-performance-inputs-dev9-r3-refresh.json) keeps
 ordinary page ratio<=1.2 and gives c4/candidate_saturated a joint ratio<=1.25
 AND P95<=800ms ceiling across all six pages and both settings phases.
 The [r2 P4 renewal](windows-tail-policy-amendment.md) remains: short/direct-asset
@@ -30,7 +30,7 @@ code/assets/dependencies, stop budgets and the full numerical KPI/recipe remain
 unchanged. Source and formal installed host/testkit each passed163; fresh
 offline Dashboard installation passed19. Windows Dashboard functional acceptance
 now passes at `423846c`, including 114 keys and all seven official module lanes;
-see the [versioned receipt](evidence/windows-functional-acceptance-dev9.json).
+see the [initial dev9 receipt](evidence/windows-functional-acceptance-dev9.json).
 Performance remains NOT_RUN. Use D:/AIGC/d9-1122 for fresh formal evidence and
 retain all old candidate artifacts/failures unchanged.
 

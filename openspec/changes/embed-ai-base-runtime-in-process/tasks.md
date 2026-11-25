@@ -4,12 +4,12 @@
 
 ### Current-Source Functional Refresh (2026-11-25)
 
-Owner authorized continuous checkout with non-performance closure first; the
-[current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25) reopens the functional nodes below.
-Historical dev4/dev9 PASS receipts retain their original source bindings.
-Openings: lazy/dynamic editor ARIA naming, synthetic recovery503 and current full functional qualification.
-Production503, AIB/dev9, all KPI and safety budgets remain unchanged. No new feature, other-App or Linux scope.
-Performance waits for the refreshed functional verdict. Scoped mainline publication remains authorized; full qualification/CLOSE.R/WIN.ACCEPT stay open.
+The [current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25)
+passed at4f538b7: editor/recovery repairs, seven whole modules,114/114keys and W2.R/FUNC.R1/1.
+Receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`; historical receipts remain unchanged.
+The480-page bug_trend diagnostic did not reproduce the burst; root cause and performance remain unqualified.
+Next: [formal reference refresh](windows-performance-test-plan.md#current-functional-reference-refresh-2026-11-25).
+AIB/dev9, KPI, safety and scope stay fixed. Authorized scoped publication does not close full qualification/CLOSE.R/WIN.ACCEPT.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 
@@ -655,14 +655,14 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] W1.REPLAN - W2=amend、W3=continue；基线适配要求已写入 steps/validation，五项 S0b 源码哈希未变，18 节点/20 依赖及严格 OpenSpec 检查通过。结构化回执在 `evidence/windows-w1-review.json`；W2.VA 仍须独立签核。
 - [x] W2.VA - Current-source boundary/validation planning passed2026-11-25; `D:/AIGC/d9-1122/functional-refresh-1125/review-planning.md` and28-node preflight cover editor semantics, fixture ownership and functional-first order. No code acceptance is implied.
 - [x] W2.HOST - Editor semantics/recovery-fixture repair and APR-001 static-projection correction implemented; red/green, affected consumers and expanded QA12/12 passed. See `evidence/windows-nonperformance-refresh-repair.json`; independent re-review and current-source qualification remain separate.
-- [ ] W2.CERTIFY - Rebind and execute native/conformance/recovery proof on the repaired source. Historical dev4/dev9 runs remain unchanged; overlapping counts are not summed.
-- [ ] W2.R - Independent review of the scoped repair and source-bound producer/consumer evidence; previous reviewed snapshots remain historical.
-- [ ] W2.REPLAN - Refreeze W3 against the repaired source and unchanged dev9 artifact; preserve rollback prerequisites and production budgets.
-- [ ] W3.FREEZE - Freeze the reviewed current Dashboard source, unchanged AIB/dev9 wheel, fixtures and actual environment in a fresh input family.
-- [ ] W3.REHEARSE - Current-source Windows copied-state upgrade/read/rollback evidence; existing historical rehearsals do not close a different source.
-- [ ] W3.JOIN - Current-source mapped proof, admission/pip checks and all seven functional modules, with114/114 functional bindings; the three performance-support lanes stay in the later full profile.
-- [ ] FUNC.R - Independently review the refreshed functional matrix, including both non-performance QA dispositions and source identity.
-- [ ] FUNC.ACCEPT - Write a fresh current-source functional receipt only after FUNC.R; keep earlier dev4/dev9 PASS receipts immutable and performance unqualified.
+- [x] W2.CERTIFY - Fresh4f538b7 native/conformance/recovery proof passed; checkpoint producer references retain exact inputs and historical failures.
+- [x] W2.R - Independent source-bound producer/consumer review1/1 at `D:/AIGC/d9-1122/functional-refresh-1125/w2-gate.json`.
+- [x] W2.REPLAN - W3 refrozen against reviewed4f538b7/unchanged dev9; immutable input family and114-key binding preflight passed.
+- [x] W3.FREEZE - New `functional-refresh-r3-1125` family binds4f538b7, unchanged AIB/dev9, fixtures and installed environment.
+- [x] W3.REHEARSE - Current-source Windows copied-state upgrade/read/rollback proof passed and is bound by the functional checkpoint.
+- [x] W3.JOIN - Current-source mapped proof, admission/pip and all seven whole modules passed with114/114bindings; three performance-support lanes remain for full qualification.
+- [x] FUNC.R - Independent refreshed matrix review1/1; `D:/AIGC/d9-1122/functional-refresh-1125/functional-gate-r2.json` is complete with zero findings.
+- [x] FUNC.ACCEPT - Fresh4f538b7 checkpoint generated after FUNC.R, SHA256 `beced470cab7864eec90f89f3d0b9fb1518d4c87a3f1650b0fc7222c57a345dd`; performance NOT_RUN and old receipts immutable.
 - [ ] W3.REPLAN - Refreeze downstream performance inputs after the new functional verdict; retain historical method reviews and all KPI/safety limits.
 - [x] PERF.KPI - 已冻结原 KPI、负载、基线、采样和判定方法，见 `evidence/windows-performance-inputs.json`；具体运行输入与动态资产在采样前另行绑定，不代表已测量。
 - [x] PERF.PROBE - dev9/fa0b060 完整诊断已采集并重放；保留两项数值超标，不宣称正式验收。

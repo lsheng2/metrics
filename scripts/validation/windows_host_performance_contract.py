@@ -18,8 +18,8 @@ MODES = ("pilot", "diagnostic", "certify")
 PERFORMANCE_KEYS = {"recipe_id", "policy_ref", "functional_acceptance_ref", "mode"}
 FULL_RECIPE = {"warmup": 10, "blocks": 4, "per_block": 40, "spacing_events": 50, "require_direct_asset": True}
 PILOT_RECIPE = {"warmup": 1, "blocks": 1, "per_block": 5, "spacing_events": 50, "require_direct_asset": True}
-POLICY_RELATIVE = Path("openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3.json")
-FUNCTIONAL_RELATIVE = Path("openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json")
+POLICY_RELATIVE = Path("openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3-refresh.json")
+FUNCTIONAL_RELATIVE = Path("openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9-refresh.json")
 
 
 def recipe_for_mode(mode: str) -> dict:

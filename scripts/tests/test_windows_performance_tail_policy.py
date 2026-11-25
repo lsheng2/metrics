@@ -104,7 +104,7 @@ def test_active_input_and_resolved_recipe_are_r3(tmp_path, monkeypatch):
     case = performance_case(tmp_path, monkeypatch)
     request = load_performance_request(case["inputs"], case["output"], mode="certify")
     assert request["performance"]["recipe_id"] == "windows-mdb2-s0b-r3"
-    assert Path(request["performance"]["policy_ref"]["path"]).name == "windows-performance-inputs-dev9-r3.json"
+    assert Path(request["performance"]["policy_ref"]["path"]).name == "windows-performance-inputs-dev9-r3-refresh.json"
 
 
 @pytest.mark.parametrize("changed", [

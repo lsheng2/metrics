@@ -10,10 +10,10 @@ from scripts.validation.windows_host_performance_contract import FUNCTIONAL_RELA
 
 
 DEV9_FUNCTIONAL_RELATIVE = Path(
-    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9.json"
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9-refresh.json"
 )
 DEV9_POLICY_RELATIVE = Path(
-    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3.json"
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3-refresh.json"
 )
 LEGACY_FUNCTIONAL_RELATIVE = Path(
     "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance.json"
@@ -181,6 +181,46 @@ def test_performance_request_rejects_stale_pre_dev9_repo_references(tmp_path, mo
         load_performance_request(case["inputs"], case["output"], mode="certify")
 
 
+@pytest.mark.parametrize("field,filename", [
+    ("functional_acceptance_ref", "windows-functional-acceptance-dev9.json"),
+    ("policy_ref", "windows-performance-inputs-dev9-r3.json"),
+])
+def test_performance_request_rejects_historical_dev9_repo_references(tmp_path, monkeypatch, field, filename):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch)
+    current = Path(case["manifest"]["performance"][field]["path"])
+    historical = current.with_name(filename)
+    _write_json(historical, json.loads(current.read_text(encoding="utf-8")))
+    case["manifest"]["performance"][field] = {"path": str(historical), "sha256": _sha(historical)}
+    _write_json(case["inputs"], case["manifest"])
+
+    with pytest.raises(Exception, match="reviewed frozen reference"):
+        load_performance_request(case["inputs"], case["output"], mode="certify")
+
+
+def test_reference_refresh_preserves_the_signed_recipe_and_binds_current_functional_proof():
+    root = Path(__file__).resolve().parents[2]
+    policy_path = root / DEV9_POLICY_RELATIVE
+    functional_path = root / DEV9_FUNCTIONAL_RELATIVE
+    assert policy_path.is_file(), "The current reference-only policy must be published"
+    assert functional_path.is_file(), "The reviewed functional checkpoint must be published"
+    previous = json.loads(policy_path.with_name("windows-performance-inputs-dev9-r3.json").read_text(encoding="utf-8"))
+    refreshed = json.loads(policy_path.read_text(encoding="utf-8"))
+    for key in ("recipe_id", "baseline", "full_recipe", "execution_modes", "runtime", "environment"):
+        assert refreshed[key] == previous[key], key
+    assert refreshed["candidate_refreeze"]["functional_acceptance"] == {
+        "relative": DEV9_FUNCTIONAL_RELATIVE.as_posix(), "sha256": _sha(functional_path),
+    }
+    functional = json.loads(functional_path.read_text(encoding="utf-8"))
+    assert functional["validated_source"] == {
+        "commit": "4f538b773efdd5068a36b3d699ea2cf6890e83d8", "status": "",
+    }
+    assert functional["status"] == functional["functional_status"] == "PASS"
+    assert functional["performance_status"] == "NOT_RUN"
+    assert functional["required_functional_evidence_keys"] == functional["validated_functional_evidence_keys"] == 114
+
+
 def test_performance_request_accepts_owned_copy_matching_dev9_reference(tmp_path, monkeypatch):
     from scripts.validation.windows_host_performance_contract import load_performance_request
 
@@ -190,8 +230,8 @@ def test_performance_request_accepts_owned_copy_matching_dev9_reference(tmp_path
     proof = case["owned"] / "receipts" / "functional-proof.json"
     _write_json(canonical_policy, performance_policy_payload(case["manifest"]))
     _write_json(canonical_functional, functional_acceptance_payload(case["manifest"], proof))
-    owned_policy = case["owned"] / "copies" / "windows-performance-inputs-dev9-r3.json"
-    owned_functional = case["owned"] / "copies" / "windows-functional-acceptance-dev9.json"
+    owned_policy = case["owned"] / "copies" / "windows-performance-inputs-dev9-r3-refresh.json"
+    owned_functional = case["owned"] / "copies" / "windows-functional-acceptance-dev9-refresh.json"
     _write_json(owned_policy, json.loads(canonical_policy.read_text(encoding="utf-8")))
     _write_json(owned_functional, json.loads(canonical_functional.read_text(encoding="utf-8")))
     case["manifest"]["performance"]["policy_ref"] = {"path": str(owned_policy), "sha256": _sha(owned_policy)}
