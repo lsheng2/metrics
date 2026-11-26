@@ -17,9 +17,10 @@ superseded_by: []
 
 **Goal:** obtain trustworthy native calibration within the existing small
 collector envelope, then resume the actual Windows performance closure.
-**Architecture:** keep the frozen collector and decoder; repair the ordinary
+**Architecture:** keep the ETW profile and decoder; repair the ordinary
 workload ordering and scope of state reconstruction in a separately versioned
-private method. No new process manager or production interface.
+private method. The owner's ten-capture amendment versions only the bounded
+collector authorization controller. No new process manager or production interface.
 **Tech stack:** Windows, selected dev9 Python, existing TraceEvent 3.2.8 /
 .NET 10.0.15 decoder, current SLE and measurement guard.
 **Execution:** use systematic debugging, TDD and independent review. The
@@ -72,12 +73,13 @@ Private evidence under `D:/AIGC/d9-1122/close-1126/`:
 
 ## Authority And Limits
 
-The new ordinary method is `scheduler-retention-v2`; its collector and decoded
-format remain `scheduler-observation-v1`. Store both identities explicitly.
+The new ordinary method is `scheduler-retention-v2`; its ETW/receipt protocol
+and decoded format remain `scheduler-observation-v1`. The prospective
+authorization revision is `scheduler-grant-ten-v1`. Store these identities explicitly.
 Old v1 receipts are not v2 calibration: do not rewrite their method, verdict,
 helper hashes or source identity.
 
-Only the calibration all-decoded-event cost limit changes prospectively:
+The retained-window revision changes the calibration all-decoded-event cost limit:
 250,000 -> 1,000,000. The observed 529,161-event retained trace cost 8,151,035
 ETL bytes, 66,575,760 derived bytes and about 4.98 s for the bounded decoder.
 The new count cap matches the existing decoder ceiling and later diagnostic
@@ -101,18 +103,33 @@ It cannot admit another calibration: both `circular-session.ps1` and
 `Assert-LowEventCaptureRequest` require calibration at count zero. The earlier
 count 1 admission plan was incorrect; the old failure/history remain unchanged.
 
-The owner authorized a new long-duration UAC session on 2026-11-26. Use the
-unchanged reviewed launcher: each new grant lasts eight hours and allows at
-most two captures. This creates a separate grant, never a reset or extension
-of the old one. The 18:45 request returned user-canceled; its withdrawn launch
-is not a grant. Until a new `launch-ready.json` exists and is verified, keep
-`policy.json` session null and refuse freeze/collection before starting apps.
+The 18:45 UAC request returned user-canceled; its withdrawn launch is not a grant.
+A new eight-hour/two-capture session became READY at 19:11:
+`212e4042-2d56-44c7-b874-91e123ad9567`, PID 105020, original expiry
+`2026-11-27T03:11:02.4615447+08:00`, count zero, no active capture.
+The owner then explicitly authorized a ceiling of ten captures. The existing
+two-capture session remains unchanged; it is not the ten-capture grant.
 
-Bind the new directory, PID/incarnation, original expiry, launch-ready and scope
-hashes in policy. Admit the first calibration only with an authenticated
-READY/no-active response, count 0/max 2, zero retained ETL bytes and empty history.
-Recheck all seven unchanged privileged-file hashes. Never change those files,
-reset a count, increase a cap, renew expiry or disguise calibration as diagnostic.
+Create a reviewed versioned controller under private `collector10/`. Keep the
+eight-hour expiry, 8 GiB session ETL bound, exact command allowlist and all
+per-run bounds. Only the prospective count ceiling becomes ten; no automatic
+retry or unbounded renewal. Preserve the original seven privileged files and
+all old receipts. New copied source hashes belong to the new grant revision.
+An independent collector-only review must bind the exact new source scope
+before its launcher requests UAC. Final ordinary-method review/freeze follows
+actual grant admission. This is not permission to alter a running helper.
+
+Until the reviewed ten-capture launch is READY, keep `policy.json` session null
+and refuse native method freeze/collection before apps start. Bind its actual
+directory, PID/incarnation, original expiry, launch-ready/scope and source hashes.
+Admit calibration only with READY/no active capture, count 0/max 10, zero ETL
+bytes and empty history. Calibration remains first; diagnostics may consume
+counts 1 through 9 only with matching proof and fresh per-run owner-go receipts.
+The owner-go is one `diagnostic-go-<run_name>.json` artifact with kind
+`scheduler-diagnostic-owner-go`; "run-go" is not a second approval mechanism.
+At count 10, refuse before creating resources. The old two/six limits must not
+remain hidden in PowerShell or Python consumers, and must not be used as a fallback.
+Never reset a count, extend expiry or disguise calibration as diagnostic.
 A subsequent diagnostic also needs valid method proof, separate approval and
 remaining capacity; a calibration pass alone does not authorize its execution.
 Live admission checks current readiness, incarnation and expiry before launch.
@@ -124,10 +141,10 @@ with replay time: successful capture consumes quota and replay may occur later.
 
 | ID | Producer -> Consumer | Required Proof / Refusal |
 | --- | --- | --- |
-| RET-IDENTITY | New freeze/producer -> replay and operator report | Current source/input/dev9/helper hashes, original collector scope, new ordinary method; refuse old/wrong/changed identities |
+| RET-IDENTITY | New freeze/producer -> replay and operator report | Current source/input/dev9/helper hashes, reviewed new grant scope/revision and ordinary method; refuse old/wrong/changed identities |
 | RET-WINDOW | Raw decoder -> interval selector -> versioned state model | Audit all target identities/clocks first; classify only necessary observations; retain full raw evidence and selection bounds |
 | RET-WITNESS | Late ordinary native thread + real CSS route -> calibration proof | Actual start/stop lifetime, wait/ready/run, marker/clock/request join; no inferred Sleep duration or metadata-only coverage |
-| RET-BUDGET | Fixed v2 policy -> producer/decoder/replay | New event cap only; all loss/byte/time/pool/ownership/cleanup gates stay fail-closed |
+| RET-BUDGET | Fixed v2 policy -> producer/decoder/replay | Prospective event cap and separately authorized ten-capture grant; all loss/byte/time/pool/ownership/cleanup gates stay fail-closed |
 | RET-CLAIM | Complete raw/native gates -> dated report | Calibration is never P1-P4 acceptance; original failure remains; no phase promotion from collection success |
 
 These are local slices of existing `PERF-IDENTITY`, `PERF-RECIPE`,
@@ -157,6 +174,7 @@ file writes or live runs are parallel; all agents stop before a measurement wind
 | File / Interface | Responsibility |
 | --- | --- |
 | `policy.json` | Fixed method/cost bounds; unresolved grant refuses; verified fresh grant binds original expiry and count-zero allowance |
+| `collector10/`, `session_control_v2.py` | Versioned ten-capture control plane and matching ordinary consumer; original controllers remain immutable |
 | `retention_interval.py::partition(decoded, start_qpc, end_qpc, pid, tid)` | Full target audit, minimal retained-window selection, documented strict state model |
 | `witness_v2.py::validate_witness(...)` | Existing marker/lifetime/wait/release checks with the v2 interval consumer |
 | `kernel_adapter_v2.py::RetentionCapture` | Existing three-arm workload with late witness/CSS/save order |

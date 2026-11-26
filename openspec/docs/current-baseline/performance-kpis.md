@@ -3,7 +3,7 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-26.3 |
+| Revision | 2026-11-26.4 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
@@ -289,8 +289,8 @@ do not claim that every counter has already been measured, or that an unmeasured
 CPU, memory, startup or throughput release budget exists.
 
 The [scheduler retention amendment](../../changes/embed-ai-base-runtime-in-process/windows-scheduler-retention.md)
-versions the ordinary calibration/replay method while retaining the frozen
-[low-event collector](../../changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md).
+versions the ordinary calibration/replay method while retaining the ETW profile
+and decoder from the [low-event design](../../changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md).
 Separate bounds remain: 30 s active calibration/40 pages, 90 s recording, 360 s collector,
 120 s whole decode, 128 MiB actual ETW buffer pool, 512 MiB raw+temporary artifacts,
 512 MiB derived artifacts, 128 markers and 50,000 selected rows. The original v1
@@ -307,14 +307,17 @@ cost and zero loss. Its refusal remains immutable. Any amended analysis or
 budget must have a new version, rationale and review; it cannot rewrite the
 original refusal. A retained elevated helper keeps its original immutable
 privileged scope and expiry. No amount of KPI authority renews that expiry.
-The old helper has two captures total and one already consumed; it cannot run
-another calibration because the unchanged collector permits calibration only
-at count zero. A new owner-authorized grant is required, with its own verified
-launch receipt, scope, PID/incarnation and original eight-hour expiry. Admit
-calibration at count 0/max 2 with empty history and zero ETL bytes. A new grant
-does not reset or renew the old one. The 18:45 UAC request on 2026-11-26 was
-canceled; unresolved grant means no native freeze/run. Diagnostic execution
-still requires valid calibration, separate approval and remaining capacity.
+The old used helper cannot recalibrate. The 18:45 UAC request was canceled;
+a new two-capture grant became READY at 19:11, with expiry 03:11 on 2026-11-27.
+The owner then authorized a prospective maximum of ten captures per session,
+under `scheduler-grant-ten-v1`. A separately reviewed controller and fresh UAC
+grant are required; neither existing session is modified. Eight hours, the
+8 GiB session ETL limit and all per-capture bounds remain unchanged.
+Admit first calibration at count 0/max 10 with empty history/zero ETL bytes.
+Diagnostics at counts 1..9 require valid same-session method proof and distinct
+per-run owner approval. Count 10 refuses before work. This is a ceiling, not an
+instruction to run ten times or retry automatically. Until the new grant and
+final method review/freeze are complete, native execution remains unavailable.
 
 ## 9. Current Results And Gaps
 
@@ -372,3 +375,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | 2026-11-26.1 | Consolidated existing P/R/C criteria, measurement boundaries, safety/diagnostic distinctions, report governance and known gaps | None; no budget or KPI was changed by consolidation |
 | 2026-11-26.2 | Prospective retained-window calibration repair with unchanged collector and strict interval evidence | Calibration observation-cost cap 250,000 ->1,000,000 events; all application KPI, byte/time/loss/cleanup and privilege bounds unchanged |
 | 2026-11-26.3 | Corrected calibration admission to require a separate verified count-zero UAC grant; canceled request is not readiness | None; same eight-hour/two-capture collector, product KPI and safety bounds |
+| 2026-11-26.4 | Owner authorized prospective `scheduler-grant-ten-v1`; requires reviewed new controller and fresh grant, retaining old sessions/receipts | Session capture ceiling 2 ->10 only; no product KPI, per-run, byte/time, loss or cleanup relaxation |

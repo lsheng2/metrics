@@ -8,8 +8,8 @@ The [current-source refresh](windows-close-plan.md#current-source-functional-ref
 passed at 4f538b7: editor/recovery repairs, seven whole modules, 114/114 keys and W2.R/FUNC.R 1/1; receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`. Historical receipts remain unchanged.
 The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but 529,161 events exceed 250,000.
 Its native proof remains REFUSED. New owner authorization permits evidence-led closure and prospective KPI revision; safety and helper expiry remain fixed.
-Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and [the retained-window method repair](windows-scheduler-retention.md); only the prospective calibration event-cost cap changes, not application KPI or safety.
-The old helper cannot recalibrate at count1; a separate verified count0/max2 grant is required. The 18:45 UAC request was canceled; native admission stays closed. Review/freeze precede collection; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open. Original failures and privileged scope are preserved.
+Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and [the retained-window method repair](windows-scheduler-retention.md); prospective calibration event cost and owner-authorized session count change, not application KPI or per-run safety.
+The used helper cannot recalibrate. A new max2 helper became READY at 19:11 after the canceled 18:45 request; it remains unchanged. Owner now authorizes max10 via a separately reviewed controller/fresh grant. Review/freeze precede collection; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open. Original failures and old privileged scopes are preserved.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 

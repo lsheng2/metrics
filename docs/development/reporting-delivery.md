@@ -142,26 +142,29 @@ Final full qualification, its three performance-support lanes, unchanged KPI/
 safety gates and combined Windows acceptance remain required.
 
 The [retained-window repair](../../openspec/changes/embed-ai-base-runtime-in-process/windows-scheduler-retention.md)
-is the current ordinary diagnostic-method direction. It reuses the frozen
-[low-event collector](../../openspec/changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md),
+is the current ordinary diagnostic-method direction. It reuses the ETW profile
+and decoder from the [low-event design](../../openspec/changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md),
 preserves strict unknown-state refusal, and requires reviewed helpers plus a
 fresh native calibration before any claim of method acceptance.
 Its prospective 1,000,000-event calibration cost cap is not a product KPI change.
-All byte/time/loss/cleanup and privilege limits stay fixed.
+All per-capture byte/time/loss/cleanup limits stay fixed; the separately
+authorized session-count amendment below does not change them.
 
 The [first low-event refusal](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-low-event-calibration-20261126.json)
 remains unchanged: 529,161 events exceeded the original 250,000 cap. Later raw
 inspection also found the early synthetic interval outside retained scheduler
 coverage; zero reported loss was not enough. No original result is promoted.
-The original helper expires at 22:02 on 2026-11-26, Asia/Shanghai. Its first
-capture is consumed, and its remaining quota cannot be used for recalibration:
-the unchanged collector accepts calibration only at count zero. A separate
-owner-authorized eight-hour/two-capture grant must bind its actual launch
-receipt, PID/incarnation, scope hashes and original expiry before freeze/run.
-The 18:45 UAC request was canceled, so native readiness is still absent.
-Never reset attempts, extend expiry or broaden commands. A later diagnostic
-also requires valid calibration and separate approval/capacity. AIB, application
-code and P1-P4 remain unchanged.
+The used original helper cannot recalibrate. After the canceled 18:45 request,
+an unused two-capture grant became READY at 19:11 and expires at 03:11 on
+2026-11-27, Asia/Shanghai. The owner then authorized a maximum of ten captures.
+The new `scheduler-grant-ten-v1` controller must pass independent source review
+before a fresh UAC grant; old sessions and source remain unchanged.
+First calibration requires count0/max10, exact launch/scope/PID/incarnation,
+empty history and zero bytes. Later diagnostics need matching calibration and
+distinct per-run approval; count10 refuses. Eight-hour and byte/per-run limits
+remain fixed, with no automatic retry, count reset, expiry extension or broader
+commands. Final method review/freeze and native proof remain outstanding.
+AIB, application code and P1-P4 remain unchanged.
 
 The current dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity
