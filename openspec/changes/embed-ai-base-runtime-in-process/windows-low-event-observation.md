@@ -1,14 +1,14 @@
 ---
 id: MDB2-WIN-LOW-EVENT-20261126
 title: Scheduler-first Windows observation
-status: proposed
+status: accepted
 owner: Dashboard validation
 created: 2026-11-26
 last_reviewed: 2026-11-26
 docs_impact: operations
 human_docs: [docs/development/reporting-delivery.md]
-implemented_by: []
-tests: []
+implemented_by: [D:/AIGC/d9-1122/low-event-1126/run_kernel.py]
+tests: [D:/AIGC/d9-1122/low-event-1126/test_scheduler.py, D:/AIGC/d9-1122/low-event-1126/test_observation.py]
 supersedes: []
 superseded_by: []
 ---
@@ -17,11 +17,11 @@ superseded_by: []
 
 ## Decision And Scope
 
-The owner authorized redesign and independent review on 2026-11-26.
-This is a proposed diagnostic method, not implementation or capture permission.
+The owner authorized redesign and independent review on 2026-11-26, then
+approved the next stage's fresh bounded UAC and reuse within its original expiry.
 Keep the existing `tasks.md` and 28-node closure DAG; this is the PERF.PROBE
 method boundary, not a new performance policy or parallel execution ledger.
-After design review, ask for approval of implementation and one calibration.
+The current stage is private implementation, independent code review and one calibration.
 The diagnostic window needs a separate go decision after calibration evidence.
 
 Do not change AIB, the installed dev9 payload, application behavior, r3 KPI,
@@ -85,7 +85,7 @@ Keep declared buffers at64x1024KiB kernel plus8x128KiB markers initially.
 Query actual owned ETW session properties at start and before save/cancel:
 session name/id, buffer size/count, allocated pool and loss counters. Configured
 65MiB is not measured allocation; Windows may adjust per-processor reservation.
-Proposed combined allocated-buffer stop threshold is128MiB. This is not a
+The combined allocated-buffer stop threshold is128MiB. This is not a
 collector working-set limit or a change to application resource acceptance.
 An unavailable or ambiguous query prevents calibration admission.
 
@@ -125,7 +125,7 @@ server thread. A short CSS request need not contain a wait or ReadyThread event
 if bracketing transitions prove it remained running.
 The synthetic witness proves measurement capability, not reproduction.
 
-Additional proposed observation-cost ceilings:
+Observation-cost ceilings:
 
 | Resource | Calibration | Later diagnostic |
 | --- | --- | --- |
@@ -213,7 +213,7 @@ No separate implementation agent is needed for this small, coupled private metho
 Review risk is high: authority, persisted receipts/replay, diagnostics,
 cross-file identities, PID/TID reuse and mocked negative boundaries apply.
 
-Implementation sequence after approval:
+Authorized implementation sequence:
 1. Freeze a new private directory, profile and explicit method contract.
    Add failing actual-consumer tests for each boundary above before helper edits.
 2. Implement the narrow profile/exporter/reducer and calibration witness;
@@ -239,11 +239,13 @@ No helper, capture, app or process configuration is changed by this design.
 
 ## Documentation And Verification
 
-This design changes operational intent only. Current human guidance links here;
-historical recipes and failed receipts remain untouched. Upon approval this
-method will supersede the broad-profile continuation for this next packet only,
+The private tools change diagnostic operations only; product behavior is unchanged.
+Current human guidance links here and historical receipts remain untouched.
+This method supersedes the broad-profile continuation for this next packet only,
 not its historical evidence or the formal KPI contract.
-No new source tests or native results are claimed in the empty metadata above.
+The private implementation's `review/state.json` and `frozen-method.json` bind
+its code gate and actual source/helper hashes. A native calibration proof is
+still required before requesting the diagnostic go decision.
 Historical facts are pinned by the named receipt/hash/field checks; online
 references are explanatory, not proof of this machine's capabilities. Future
 profile behavior and state reconstruction are proposed, not derived claims
@@ -256,6 +258,6 @@ Primary Microsoft references retrieved2026-11-26 (read-only):
 `https://learn.microsoft.com/en-us/windows/win32/api/evntrace/ns-evntrace-event_trace_properties`.
 They distinguish system keywords/stacks, automatic save rundown, actual buffer
 allocation and loss counters. They do not guarantee retention or zero overhead.
-Validate this docs-only packet with scoped size/whitespace, OpenSpec strict,
-local-link and historical-reference checks, plus independent design review.
-Implementation approval, code review and native calibration remain later gates.
+Validate source and docs with scoped size/whitespace, OpenSpec strict,
+local-link/reference checks, negative tests and independent implementation review.
+Design review does not replace the code gate or native calibration.

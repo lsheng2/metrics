@@ -134,14 +134,15 @@ diagnosis did not reproduce the old burst; root cause is still unproven.
 Final full qualification, its three performance-support lanes, unchanged KPI/
 safety gates and combined Windows acceptance remain required.
 
-The [2026-11-26 low-event observation proposal](../../openspec/changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md)
+The [2026-11-26 low-event observation method](../../openspec/changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md)
 is the current diagnostic design boundary. Broad-profile R3 calibration reported
 21,698lost events and no usable target interval; its collection/cleanup success
-is not native qualification. Do not retry that method. The owner authorized
-redesign and independent review only: scheduler events plus sparse markers,
+is not native qualification. Do not retry that method. The accepted direction uses
+scheduler events plus sparse markers,
 with file/image/stack families removed and explicit unknown-state refusal.
-Implementation, a newly frozen bounded UAC session and one calibration require
-the next decision; a workload diagnostic follows only a separate go decision.
+The next authorized stage implements and independently reviews the private tools,
+then uses one fresh bounded UAC session for one calibration. A workload diagnostic
+follows only a separate go decision after a verified calibration.
 Preserve current helpers within original expiry without modifying their hashes,
 resetting attempts or broadening commands. No AIB, application or KPI change.
 

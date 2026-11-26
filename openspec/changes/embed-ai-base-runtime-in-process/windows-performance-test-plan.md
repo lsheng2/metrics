@@ -33,7 +33,9 @@ R3 calibration was refused for21,698lost events and missing target coverage;
 do not repeat the broad profile or promote its successful collection to native proof.
 The proposal removes file/image/stack families, defines narrower scheduler claims
 and requires a new reviewed method and calibration before any diagnostic.
-This authorization is docs/design-only. AIB/dev9, r3 KPI and all safety budgets stay fixed.
+The follow-up authorizes implementation, code review, one calibration and fresh bounded UAC.
+Reuse the new helper only within its original expiry; a diagnostic needs a separate go.
+AIB/dev9, r3 KPI and all safety budgets stay fixed.
 
 ## Page And Tail Policy (2026-11-24)
 
