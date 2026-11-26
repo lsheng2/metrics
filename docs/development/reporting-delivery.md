@@ -157,8 +157,12 @@ coverage; zero reported loss was not enough. No original result is promoted.
 The used original helper cannot recalibrate. After the canceled 18:45 request,
 an unused two-capture grant became READY at 19:11 and expires at 03:11 on
 2026-11-27, Asia/Shanghai. The owner then authorized a maximum of ten captures.
-The new `scheduler-grant-ten-v1` controller must pass independent source review
-before a fresh UAC grant; old sessions and source remain unchanged.
+The `scheduler-grant-ten-v1` controller passed independent source review.
+Its fresh ten-capture UAC grant became READY at 21:15 on 2026-11-26 and expires
+at 05:15 on 2026-11-27, Asia/Shanghai. Actual launch/scope references and the
+authenticated count-zero admission are bound in the private v2 policy; old
+sessions and source remain unchanged. Final method review/freeze still precedes
+native collection.
 First calibration requires count0/max10, exact launch/scope/PID/incarnation,
 empty history and zero bytes. Later diagnostics need matching calibration and
 distinct per-run approval; count10 refuses. Eight-hour and byte/per-run limits

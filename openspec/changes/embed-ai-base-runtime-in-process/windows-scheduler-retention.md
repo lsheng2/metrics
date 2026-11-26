@@ -119,9 +119,15 @@ An independent collector-only review must bind the exact new source scope
 before its launcher requests UAC. Final ordinary-method review/freeze follows
 actual grant admission. This is not permission to alter a running helper.
 
-Until the reviewed ten-capture launch is READY, keep `policy.json` session null
-and refuse native method freeze/collection before apps start. Bind its actual
-directory, PID/incarnation, original expiry, launch-ready/scope and source hashes.
+The reviewed ten-capture launch became READY on 2026-11-26 at 21:15:
+`7855e53e-5b3a-4ecb-950a-d5b294aa7800`, PID 90496, incarnation
+`2026-11-26T13:15:23.2526469Z`, original expiry
+`2026-11-27T05:15:25.4836816+08:00`.
+`policy.json` now binds that direct session directory and immutable launch/scope
+SHA256 references. Authenticated status verified count zero, max ten, empty
+history, zero ETL bytes and no active capture. Final ordinary-method review and
+source freeze are still required; this grant is not native calibration proof.
+An unresolved or mismatched grant must refuse before apps or capture resources.
 Admit calibration only with READY/no active capture, count 0/max 10, zero ETL
 bytes and empty history. Calibration remains first; diagnostics may consume
 counts 1 through 9 only with matching proof and fresh per-run owner-go receipts.
@@ -291,10 +297,10 @@ fallback between them. Execute the private Python suites with:
 & D:/AIGC/d9-1122/venv/Scripts/python.exe -I D:/AIGC/d9-1122/retention-v2-1126/check_plan.py
 ```
 
-Native collection is not ready while the new grant is unresolved. Once its
-actual receipt is bound, publish the concrete `run_retention.py --inputs ...
---session ... --name le1126-ret2-cal1` command in the execution report, using
-the new clean-source input and verified session path, with no placeholders.
+The grant is bound, but native collection is not ready until final method
+review/freeze succeeds. The execution report must publish the concrete
+`run_retention.py` command with the fresh clean-source input, verified session
+path and run name `le1126-ret2-cal1`, with no placeholders.
 Do not execute the former count-1 command. After the reviewed collection,
 decode and replay use these explicit owned paths:
 

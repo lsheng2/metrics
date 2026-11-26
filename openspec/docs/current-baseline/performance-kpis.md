@@ -3,7 +3,7 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-26.4 |
+| Revision | 2026-11-26.5 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
@@ -309,15 +309,17 @@ original refusal. A retained elevated helper keeps its original immutable
 privileged scope and expiry. No amount of KPI authority renews that expiry.
 The old used helper cannot recalibrate. The 18:45 UAC request was canceled;
 a new two-capture grant became READY at 19:11, with expiry 03:11 on 2026-11-27.
-The owner then authorized a prospective maximum of ten captures per session,
-under `scheduler-grant-ten-v1`. A separately reviewed controller and fresh UAC
-grant are required; neither existing session is modified. Eight hours, the
+The owner then authorized a maximum of ten captures per session under
+`scheduler-grant-ten-v1`. Its independently source-reviewed controller obtained
+a fresh READY grant at 21:15 on 2026-11-26, expiring at 05:15 on 2026-11-27
+(Asia/Shanghai). Authenticated admission verified count 0/max 10, empty history,
+zero ETL bytes and PID incarnation; neither old session was modified. Eight hours, the
 8 GiB session ETL limit and all per-capture bounds remain unchanged.
 Admit first calibration at count 0/max 10 with empty history/zero ETL bytes.
 Diagnostics at counts 1..9 require valid same-session method proof and distinct
 per-run owner approval. Count 10 refuses before work. This is a ceiling, not an
-instruction to run ten times or retry automatically. Until the new grant and
-final method review/freeze are complete, native execution remains unavailable.
+instruction to run ten times or retry automatically. Final ordinary-method
+review/freeze and a fresh live-admission check still precede native execution.
 
 ## 9. Current Results And Gaps
 
@@ -376,3 +378,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | 2026-11-26.2 | Prospective retained-window calibration repair with unchanged collector and strict interval evidence | Calibration observation-cost cap 250,000 ->1,000,000 events; all application KPI, byte/time/loss/cleanup and privilege bounds unchanged |
 | 2026-11-26.3 | Corrected calibration admission to require a separate verified count-zero UAC grant; canceled request is not readiness | None; same eight-hour/two-capture collector, product KPI and safety bounds |
 | 2026-11-26.4 | Owner authorized prospective `scheduler-grant-ten-v1`; requires reviewed new controller and fresh grant, retaining old sessions/receipts | Session capture ceiling 2 ->10 only; no product KPI, per-run, byte/time, loss or cleanup relaxation |
+| 2026-11-26.5 | Bound the independently reviewed ten-capture UAC grant and verified its actual readiness, incarnation and original expiry | None; method review/freeze and native proof remain outstanding |
