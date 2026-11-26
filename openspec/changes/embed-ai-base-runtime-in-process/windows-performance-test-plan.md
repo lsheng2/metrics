@@ -26,6 +26,15 @@ pins, Django, Waitress, httpx, SLE, pytest, Windows counters and conditional ETW
 [signed V8 method](windows-close-validation.md#v8-native-measurement-method);
 [research](windows-performance-research.md); [DAG](windows-close-dag.json).
 
+## Low-Event Observation Redesign (2026-11-26)
+
+The owner authorized the [scheduler-first design and independent review](windows-low-event-observation.md).
+R3 calibration was refused for21,698lost events and missing target coverage;
+do not repeat the broad profile or promote its successful collection to native proof.
+The proposal removes file/image/stack families, defines narrower scheduler claims
+and requires a new reviewed method and calibration before any diagnostic.
+This authorization is docs/design-only. AIB/dev9, r3 KPI and all safety budgets stay fixed.
+
 ## Page And Tail Policy (2026-11-24)
 
 The [approved page amendment](windows-page-policy-amendment.md) selects

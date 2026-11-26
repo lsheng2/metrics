@@ -2,14 +2,14 @@
 
 ## Latest Delivery Decision
 
-### Current-Source Functional Refresh (2026-11-25)
+### Current Frontier: Observation Redesign (2026-11-26)
 
 The [current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25)
 passed at4f538b7: editor/recovery repairs, seven whole modules,114/114keys and W2.R/FUNC.R1/1.
 Receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`; historical receipts remain unchanged.
-The480-page bug_trend diagnostic did not reproduce the burst; root cause and performance remain unqualified.
-Next: [formal reference refresh](windows-performance-test-plan.md#current-functional-reference-refresh-2026-11-25).
-AIB/dev9, KPI, safety and scope stay fixed. Authorized scoped publication does not close full qualification/CLOSE.R/WIN.ACCEPT.
+R3 native calibration refused21,698lost events; no diagnostic followed. Root cause and performance remain unqualified.
+Owner authorized [low-event design and independent review](windows-low-event-observation.md), not new collection.
+AIB/dev9, KPI and safety stay fixed. Implementation/calibration await approval; full qualification/CLOSE.R/WIN.ACCEPT remain open.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 

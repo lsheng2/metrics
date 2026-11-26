@@ -134,6 +134,17 @@ diagnosis did not reproduce the old burst; root cause is still unproven.
 Final full qualification, its three performance-support lanes, unchanged KPI/
 safety gates and combined Windows acceptance remain required.
 
+The [2026-11-26 low-event observation proposal](../../openspec/changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md)
+is the current diagnostic design boundary. Broad-profile R3 calibration reported
+21,698lost events and no usable target interval; its collection/cleanup success
+is not native qualification. Do not retry that method. The owner authorized
+redesign and independent review only: scheduler events plus sparse markers,
+with file/image/stack families removed and explicit unknown-state refusal.
+Implementation, a newly frozen bounded UAC session and one calibration require
+the next decision; a workload diagnostic follows only a separate go decision.
+Preserve current helpers within original expiry without modifying their hashes,
+resetting attempts or broadening commands. No AIB, application or KPI change.
+
 The current dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity
 is not numerical acceptance: runtime CSS119.3983ms and production draft_edit
@@ -245,8 +256,8 @@ classification records; missing absence facts are not success.
 The current [Windows investigation checkpoint](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-investigation.md)
 records an incomplete full diagnostic and separately labelled asset-localization
 experiments. It does not replace the functional receipt or establish
-performance acceptance. Elevated kernel collection is verified, but its latest
-bounded run did not reproduce the anomaly; root-cause attribution remains open.
+performance acceptance. Its historical elevated kernel capture was verified,
+not the later R3 method refused above; root-cause attribution remains open.
 The bounded circular experiment verified driver/server PID/TID and QPC
 write-bracket correspondence in its calibration ETL. Its subsequent
 2,760-sample diagnostic did not reproduce the anomaly; all five no-trigger
