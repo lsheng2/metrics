@@ -21,7 +21,8 @@
     "plan": "windows-scheduler-retention.md",
     "private_policy": "D:/AIGC/d9-1122/retention-v2-1126/policy.json",
     "refreeze_actions": [
-      {"action": "amend", "reason": "Raw ETL does not retain the early witness and whole-capture tie refusal overreaches later intervals. Repair ordinary calibration ordering and interval selection; prospectively align its event-cost cap with the existing decoder ceiling while preserving all other bounds and original failures."}
+      {"action": "amend", "reason": "Raw ETL does not retain the early witness and whole-capture tie refusal overreaches later intervals. Repair ordinary calibration ordering and interval selection; prospectively align its event-cost cap with the existing decoder ceiling while preserving all other bounds and original failures."},
+      {"action": "amend", "reason": "The unchanged collector permits calibration only at count zero. A separate owner-authorized eight-hour/two-capture grant must be verified; the canceled new launch and old count-one session cannot authorize recalibration. Offline replay checks recorded admission, not current capacity/time."}
     ],
     "updated_artifacts": [
       "openspec/changes/embed-ai-base-runtime-in-process/windows-scheduler-retention.md",
@@ -37,7 +38,7 @@
       "command": "D:/AIGC/d9-1122/venv/Scripts/python.exe -I D:/AIGC/d9-1122/retention-v2-1126/check_plan.py",
       "result": "PASS"
     },
-    "scope": "One ordinary-method repair and one remaining calibration; unchanged collector scope, candidate and product KPI."
+    "scope": "One ordinary-method repair and one first calibration in a separately verified fresh count-zero/max-two grant; native admission stays closed while unresolved. Collector files, per-grant bounds, candidate and product KPI remain unchanged."
   },
   "performance_registry_refreeze": {
     "date": "2026-11-26",

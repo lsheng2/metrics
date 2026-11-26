@@ -153,11 +153,15 @@ The [first low-event refusal](../../openspec/changes/embed-ai-base-runtime-in-pr
 remains unchanged: 529,161 events exceeded the original 250,000 cap. Later raw
 inspection also found the early synthetic interval outside retained scheduler
 coverage; zero reported loss was not enough. No original result is promoted.
-The original helper expires at 22:02 on 2026-11-26, Asia/Shanghai, and has one
-remaining capture out of its actual two-capture allowance. Reauthenticate and
-verify frozen scope before reuse; never reset attempts, extend expiry or broaden
-commands. A later diagnostic requires valid calibration and separately available
-authorized capture capacity. AIB, application code and P1-P4 remain unchanged.
+The original helper expires at 22:02 on 2026-11-26, Asia/Shanghai. Its first
+capture is consumed, and its remaining quota cannot be used for recalibration:
+the unchanged collector accepts calibration only at count zero. A separate
+owner-authorized eight-hour/two-capture grant must bind its actual launch
+receipt, PID/incarnation, scope hashes and original expiry before freeze/run.
+The 18:45 UAC request was canceled, so native readiness is still absent.
+Never reset attempts, extend expiry or broaden commands. A later diagnostic
+also requires valid calibration and separate approval/capacity. AIB, application
+code and P1-P4 remain unchanged.
 
 The current dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity

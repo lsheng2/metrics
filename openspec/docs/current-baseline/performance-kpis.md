@@ -3,7 +3,7 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-26.2 |
+| Revision | 2026-11-26.3 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
@@ -307,9 +307,14 @@ cost and zero loss. Its refusal remains immutable. Any amended analysis or
 budget must have a new version, rationale and review; it cannot rewrite the
 original refusal. A retained elevated helper keeps its original immutable
 privileged scope and expiry. No amount of KPI authority renews that expiry.
-The currently selected helper has two captures total and one already consumed;
-the outer implementation's possible six-capture ceiling cannot increase that
-allowance. V2 may consume only its one remaining calibration opportunity.
+The old helper has two captures total and one already consumed; it cannot run
+another calibration because the unchanged collector permits calibration only
+at count zero. A new owner-authorized grant is required, with its own verified
+launch receipt, scope, PID/incarnation and original eight-hour expiry. Admit
+calibration at count 0/max 2 with empty history and zero ETL bytes. A new grant
+does not reset or renew the old one. The 18:45 UAC request on 2026-11-26 was
+canceled; unresolved grant means no native freeze/run. Diagnostic execution
+still requires valid calibration, separate approval and remaining capacity.
 
 ## 9. Current Results And Gaps
 
@@ -366,3 +371,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | --- | --- | --- |
 | 2026-11-26.1 | Consolidated existing P/R/C criteria, measurement boundaries, safety/diagnostic distinctions, report governance and known gaps | None; no budget or KPI was changed by consolidation |
 | 2026-11-26.2 | Prospective retained-window calibration repair with unchanged collector and strict interval evidence | Calibration observation-cost cap 250,000 ->1,000,000 events; all application KPI, byte/time/loss/cleanup and privilege bounds unchanged |
+| 2026-11-26.3 | Corrected calibration admission to require a separate verified count-zero UAC grant; canceled request is not readiness | None; same eight-hour/two-capture collector, product KPI and safety bounds |

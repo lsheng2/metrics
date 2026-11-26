@@ -92,17 +92,33 @@ artifacts; 512 MiB derived artifacts; 50,000 selected rows; 128 markers;
 1,000 ms native wait timeout. Product P1-P4, auth, real-leak checks and
 production stop budgets are unchanged.
 
-The authenticated existing session is
+The historical session is
 `a905e77e-ebb5-4307-a41f-11549903dfb6`, helper PID 103804,
 original expiry `2026-11-26T22:02:52.4175985+08:00`.
 Its actual allowance is two captures, one already consumed. The outer helper
 implementation's possible six-capture ceiling is not this session's allowance.
-Admit exactly one new calibration only after checking READY/no active capture,
-count 1/max 2, the original session/scope and seven privileged-file hashes.
-The original failed capture must remain in the terminal history.
-Do not change those files, reset a count, increase a cap or renew expiry.
-A later diagnostic requires a valid new calibration and remaining authorized
-collector capacity; this session will have none after the next calibration.
+It cannot admit another calibration: both `circular-session.ps1` and
+`Assert-LowEventCaptureRequest` require calibration at count zero. The earlier
+count 1 admission plan was incorrect; the old failure/history remain unchanged.
+
+The owner authorized a new long-duration UAC session on 2026-11-26. Use the
+unchanged reviewed launcher: each new grant lasts eight hours and allows at
+most two captures. This creates a separate grant, never a reset or extension
+of the old one. The 18:45 request returned user-canceled; its withdrawn launch
+is not a grant. Until a new `launch-ready.json` exists and is verified, keep
+`policy.json` session null and refuse freeze/collection before starting apps.
+
+Bind the new directory, PID/incarnation, original expiry, launch-ready and scope
+hashes in policy. Admit the first calibration only with an authenticated
+READY/no-active response, count 0/max 2, zero retained ETL bytes and empty history.
+Recheck all seven unchanged privileged-file hashes. Never change those files,
+reset a count, increase a cap, renew expiry or disguise calibration as diagnostic.
+A subsequent diagnostic also needs valid method proof, separate approval and
+remaining capacity; a calibration pass alone does not authorize its execution.
+Live admission checks current readiness, incarnation and expiry before launch.
+Offline proof instead validates the frozen grant and recorded admission from
+that capture. It must not query current remaining capacity or compare expiry
+with replay time: successful capture consumes quota and replay may occur later.
 
 ## Contracts And Consumers
 
@@ -140,7 +156,7 @@ file writes or live runs are parallel; all agents stop before a measurement wind
 
 | File / Interface | Responsibility |
 | --- | --- |
-| `policy.json` | Fixed ordinary/collector IDs, prospective cost bounds and original session allowance |
+| `policy.json` | Fixed method/cost bounds; unresolved grant refuses; verified fresh grant binds original expiry and count-zero allowance |
 | `retention_interval.py::partition(decoded, start_qpc, end_qpc, pid, tid)` | Full target audit, minimal retained-window selection, documented strict state model |
 | `witness_v2.py::validate_witness(...)` | Existing marker/lifetime/wait/release checks with the v2 interval consumer |
 | `kernel_adapter_v2.py::RetentionCapture` | Existing three-arm workload with late witness/CSS/save order |
@@ -237,8 +253,9 @@ deliberately missing/evicted witness. Unknown decoder/lifetime state is a refusa
 3. Run new tests and affected original collector/clock/decoder boundary tests.
 4. Run private size/whitespace checks, repository hygiene, OpenSpec strict and
    source/policy/link/ownership preflight; independently review implementation.
-5. Publish the scoped spec/docs packet, freeze the actual resulting clean
-   source and full helper vector, then authenticate the unchanged helper.
+5. Resolve the new UAC grant, bind its actual receipt and count-zero allowance,
+   publish the scoped spec/docs packet, and independently review the final
+   policy/source/helper vector before freeze. Authenticate the unchanged helper.
 6. Close reviewers and stop build/test activity before the exclusive native
    measurement window. Use one fresh run name and do not retry automatically.
 7. Decode within bounds, independently replay every evidence gate, and produce
@@ -256,11 +273,14 @@ fallback between them. Execute the private Python suites with:
 & D:/AIGC/d9-1122/venv/Scripts/python.exe -I D:/AIGC/d9-1122/retention-v2-1126/check_plan.py
 ```
 
-After implementation review and a clean source/helper freeze, the one native
-sequence uses these explicit owned paths:
+Native collection is not ready while the new grant is unresolved. Once its
+actual receipt is bound, publish the concrete `run_retention.py --inputs ...
+--session ... --name le1126-ret2-cal1` command in the execution report, using
+the new clean-source input and verified session path, with no placeholders.
+Do not execute the former count-1 command. After the reviewed collection,
+decode and replay use these explicit owned paths:
 
 ```powershell
-& D:/AIGC/d9-1122/venv/Scripts/python.exe -I -B D:/AIGC/d9-1122/retention-v2-1126/run_retention.py --inputs D:/AIGC/d9-1122/retention-v2-1126/inputs-final.json --session D:/AIGC/pf1120/circular-sessions/a905e77e-ebb5-4307-a41f-11549903dfb6 --name le1126-ret2-cal1
 & D:/AIGC/d9-1122/venv/Scripts/python.exe -I -B D:/AIGC/d9-1122/retention-v2-1126/decode_retention.py --run D:/AIGC/d9-1122/retention-v2-1126/le1126-ret2-cal1 --output D:/AIGC/d9-1122/low-event-1126/decoder/artifacts/le1126-ret2-cal1.json
 & D:/AIGC/d9-1122/venv/Scripts/python.exe -I -B D:/AIGC/d9-1122/retention-v2-1126/proof_v2.py --run D:/AIGC/d9-1122/retention-v2-1126/le1126-ret2-cal1 --decoded D:/AIGC/d9-1122/low-event-1126/decoder/artifacts/le1126-ret2-cal1.json --output D:/AIGC/d9-1122/retention-v2-1126/le1126-ret2-cal1/native-proof.json
 ```

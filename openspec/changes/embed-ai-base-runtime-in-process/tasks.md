@@ -9,7 +9,7 @@ passed at 4f538b7: editor/recovery repairs, seven whole modules, 114/114 keys an
 The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but 529,161 events exceed 250,000.
 Its native proof remains REFUSED. New owner authorization permits evidence-led closure and prospective KPI revision; safety and helper expiry remain fixed.
 Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and [the retained-window method repair](windows-scheduler-retention.md); only the prospective calibration event-cost cap changes, not application KPI or safety.
-Review/freeze precede the helper's one remaining native calibration; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open. Original failures and privileged scope are preserved.
+The old helper cannot recalibrate at count1; a separate verified count0/max2 grant is required. The 18:45 UAC request was canceled; native admission stays closed. Review/freeze precede collection; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open. Original failures and privileged scope are preserved.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 
