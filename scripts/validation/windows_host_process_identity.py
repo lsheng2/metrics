@@ -73,7 +73,7 @@ def _normalized_text(*parts):
 
 
 def _command_parts(command_line):
-    return [str(part).casefold() for part in (_split_command(command_line) or [])]
+    return _normalize_parts(_split_command(command_line))
 
 
 def _normalize_parts(command):
@@ -94,12 +94,27 @@ def _git_like(row, command_line):
 
 def _git_relevance(command_line):
     parts = _command_parts(command_line)
-    for part in parts[1:]:
-        value = part.lstrip("-")
-        if value in GIT_READ_COMMANDS:
-            return "git_read", False
-        if value in GIT_WRITE_COMMANDS:
-            return "git_write", True
+    values = {"-c", "--git-dir", "--work-tree", "--namespace", "--config-env"}
+    switches = {"--no-optional-locks", "--no-pager", "--paginate", "--literal-pathspecs", "--no-replace-objects"}
+    index = 1
+    while index < len(parts):
+        part = parts[index]
+        if part in values:
+            if index + 1 >= len(parts) or not parts[index + 1]:
+                return "git_unknown", True
+            index += 2
+        elif "=" in part and part.partition("=")[0] in values - {"-c"}:
+            if not part.partition("=")[2]:
+                return "git_unknown", True
+            index += 1
+        elif part in switches:
+            index += 1
+        else:
+            if part in GIT_READ_COMMANDS:
+                return "git_read", False
+            if part in GIT_WRITE_COMMANDS:
+                return "git_write", True
+            return "git_unknown", True
     return "git_unknown", True
 
 

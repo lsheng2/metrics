@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import json
-import subprocess
+from types import SimpleNamespace
 
 import pytest
 
@@ -140,23 +141,33 @@ def test_measurement_window_persists_only_sanitized_process_rows(tmp_path, monke
     assert "secret" not in json.dumps(lines)
 
 
-def test_windows_process_details_does_not_embed_process_names_in_script(monkeypatch):
+def test_windows_process_details_never_executes_process_names_or_cim(monkeypatch):
     from scripts.validation import windows_host_environment as environment
 
     captured = {}
 
-    def fake_run(argv, **kwargs):
-        captured["script"] = argv[-1]
-        return subprocess.CompletedProcess(argv, 0, stdout="[]", stderr="")
+    @contextmanager
+    def native_capture(rows, *, capture_details):
+        captured["rows"] = rows
+        assert capture_details is True
+        yield SimpleNamespace(details=lambda: {
+            1: {"command_line": "python.exe", "creation_date": "2026-11-26T12:00:00",
+                "executable_path": "C:/Python/python.exe"},
+        })
 
-    monkeypatch.setattr(environment.subprocess, "run", fake_run)
+    def forbidden_spawn(*_args, **_kwargs):
+        raise AssertionError("Process details must not spawn PowerShell/CIM")
 
-    environment._windows_process_details([
+    monkeypatch.setattr(environment, "capture_process_window", native_capture)
+    monkeypatch.setattr(environment.subprocess, "run", forbidden_spawn)
+    rows = [
         {"pid": 1, "name": "python.exe\"; throw \"boom", "threads": 1},
-    ])
+    ]
 
-    assert "boom" not in captured["script"]
-    assert "python.exe" not in captured["script"]
+    details = environment._windows_process_details(rows)
+
+    assert captured["rows"] == rows
+    assert details[1]["command_line"] == "python.exe"
 
 
 def _write_prepared_lifecycle_state(run_root, service_root, *, pid, command):

@@ -71,13 +71,15 @@ def _native_creation(api, handle: int) -> int | None:
 
 
 class ProcessWindowCapture(AbstractContextManager):
-    """Retain read-only process handles across the CIM detail window."""
+    """Retain read-only handles and optional ephemeral details for one snapshot."""
 
-    def __init__(self, processes, *, api=None):
+    def __init__(self, processes, *, api=None, detail_reader=None):
         self._processes = [dict(row) for row in processes]
         self._api = _configure_api(api) if api is not None else _default_api()
         self._handles: dict[int, int] = {}
         self._facts: dict[int, dict] = {}
+        self._details: dict[int, dict] = {}
+        self._detail_reader = detail_reader
         self._closed = False
 
     def __enter__(self):
@@ -99,15 +101,27 @@ class ProcessWindowCapture(AbstractContextManager):
         handle = self._api.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, False, pid)
         if not handle:
             fact["handle_error"] = "open_failed"
+            self._details[pid] = {"sensor_error": "native_handle_unavailable"}
             return
         self._handles[pid] = int(handle)
         fact["handle_opened"] = True
         fact["native_creation"] = _native_creation(self._api, handle)
         if fact["native_creation"] is None:
             fact["handle_error"] = "native_creation_unavailable"
+            self._details[pid] = {"sensor_error": "native_creation_unavailable"}
+        elif self._detail_reader is not None:
+            try:
+                self._details[pid] = self._detail_reader(int(handle), fact["native_creation"])
+            except Exception as error:
+                self._details[pid] = {"sensor_error": f"native_detail_error:{type(error).__name__}"}
 
     def facts(self) -> dict[int, dict]:
         return deepcopy(self._facts)
+
+    def details(self) -> dict[int, dict]:
+        if self._detail_reader is None:
+            raise ValueError("Native process details were not requested")
+        return deepcopy(self._details)
 
     def finalize(self) -> dict[int, dict]:
         if self._closed:
@@ -175,8 +189,14 @@ class ProcessWindowCapture(AbstractContextManager):
         return False
 
 
-def capture_process_window(processes, *, api=None) -> ProcessWindowCapture:
-    return ProcessWindowCapture([row for row in processes if _is_target(row)], api=api)
+def capture_process_window(processes, *, api=None, capture_details=False) -> ProcessWindowCapture:
+    reader = None
+    if capture_details:
+        from scripts.validation.windows_host_process_details import read_process_details
+
+        reader = read_process_details
+    rows = [row for row in processes if _is_target(row)]
+    return ProcessWindowCapture(rows, api=api, detail_reader=reader)
 
 
 def native_process_rows_by_pid(pids, *, api=None) -> dict[int, dict]:

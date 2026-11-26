@@ -31,47 +31,31 @@ def source_snapshot(root):
     return {'head': git('rev-parse', 'HEAD'), 'status_sha256': hashlib.sha256(status.encode()).hexdigest()}
 
 
-def _windows_process_details(processes):
+def _windows_process_details(processes, *, capture=None):
     target_pids = {
         int(row['pid']) for row in processes
         if str(row.get('name') or '').casefold().startswith(('python', 'py.', 'git'))
     }
     if not target_pids:
         return {}
-    script = (
-        "Get-CimInstance Win32_Process | "
-        "Select-Object ProcessId,Name,CommandLine,@{Name='CreationDate';Expression={$_.CreationDate.ToString()}},ExecutablePath | "
-        "ConvertTo-Json -Compress"
-    )
-    completed = subprocess.run(
-        ['powershell', '-NoProfile', '-Command', script],
-        capture_output=True, text=True, timeout=20, check=False,
-    )
-    if completed.returncode or not completed.stdout.strip():
-        return {pid: {'sensor_error': 'process_detail_unavailable'} for pid in target_pids}
-    try:
-        payload = json.loads(completed.stdout)
-    except json.JSONDecodeError:
+    if capture is None:
+        with capture_process_window(processes, capture_details=True) as owned_capture:
+            return _windows_process_details(processes, capture=owned_capture)
+    payload = capture.details()
+    if not isinstance(payload, dict):
         return {pid: {'sensor_error': 'process_detail_malformed'} for pid in target_pids}
-    if isinstance(payload, dict):
-        payload = [payload]
     details = {}
-    for row in payload or []:
-        try:
-            pid = int(row.get('ProcessId'))
-        except (TypeError, ValueError):
-            continue
-        if pid not in target_pids:
-            continue
-        details[pid] = {
-            'command_line': row.get('CommandLine') or '',
-            'creation_date': row.get('CreationDate') or '',
-            'executable_path': row.get('ExecutablePath') or '',
-        }
-        if not details[pid]['command_line'] or not details[pid]['creation_date']:
-            details[pid]['sensor_error'] = 'process_detail_incomplete'
-    for pid in target_pids - set(details):
-        details[pid] = {'sensor_error': 'process_detail_missing'}
+    fields = {'command_line', 'creation_date', 'executable_path'}
+    for pid in target_pids:
+        row = payload.get(pid)
+        if row is None:
+            details[pid] = {'sensor_error': 'process_detail_missing'}
+        elif isinstance(row, dict) and set(row) == fields and all(isinstance(row[key], str) and row[key] for key in fields):
+            details[pid] = dict(row)
+        elif isinstance(row, dict) and set(row) == {'sensor_error'} and isinstance(row['sensor_error'], str) and row['sensor_error']:
+            details[pid] = dict(row)
+        else:
+            details[pid] = {'sensor_error': 'process_detail_malformed'}
     return details
 
 
@@ -80,6 +64,7 @@ def machine_snapshot(*, source_root=None, owned_root=None):
         raise ValueError('Only Windows qualification is authorized')
     from ai_host.exit_processes import ProcessEntry, _windows_api
 
+    started = time.monotonic()
     api = _windows_api()
     api.GetSystemTimes.argtypes = [ctypes.POINTER(wintypes.FILETIME)] * 3
     api.GetSystemTimes.restype = wintypes.BOOL
@@ -105,8 +90,8 @@ def machine_snapshot(*, source_root=None, owned_root=None):
     finally:
         api.CloseHandle(snapshot)
     if source_root is not None or owned_root is not None:
-        with capture_process_window(processes) as process_window:
-            details = _windows_process_details(processes)
+        with capture_process_window(processes, capture_details=True) as process_window:
+            details = _windows_process_details(processes, capture=process_window)
             process_window_facts = process_window.finalize()
         for pid, fact in process_window_facts.items():
             details.setdefault(pid, {})['process_window'] = fact
@@ -114,6 +99,14 @@ def machine_snapshot(*, source_root=None, owned_root=None):
             processes, details,
             source_root=source_root or '', owned_root=owned_root or '',
         )
+        ended = time.monotonic()
+        return {'cpu': cpu, 'processes': processes, 'process_observation': {
+            'method': 'windows-native-process-details-v1',
+            'started_monotonic': started, 'ended_monotonic': ended,
+            'elapsed_ms': (ended - started) * 1000,
+            'target_count': len(details),
+            'sensor_error_count': sum(bool(row.get('sensor_error')) for row in details.values()),
+        }}
     return {'cpu': cpu, 'processes': processes}
 
 

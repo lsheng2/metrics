@@ -409,7 +409,7 @@ def test_admitted_toy_interpreter_identity_matches_sensor_and_sle_registry(tmp_p
             diagnostic["attempts"].append({
                 "poll": child.poll(),
                 "process_exists": platform_ops.process_exists(observed_pid),
-                "cim_row_present": bool(details),
+                "native_row_present": bool(details),
                 "command_present": bool(command_line),
                 "creation_present": bool(created),
                 "executable_present": bool(details.get("executable_path")),

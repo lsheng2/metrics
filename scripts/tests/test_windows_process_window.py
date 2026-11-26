@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -104,38 +105,31 @@ def _install_terminal_resolution(receipt, *, include_raw=True, include_registrat
     return run, window, cleanup
 
 
-def test_windows_process_details_marks_omitted_target_as_missing(monkeypatch):
+def test_windows_process_details_marks_omitted_target_as_missing():
     from scripts.validation import windows_host_environment as environment
-
-    def fake_run(argv, **kwargs):
-        return subprocess.CompletedProcess(argv, 0, stdout="[]", stderr="")
-
-    monkeypatch.setattr(environment.subprocess, "run", fake_run)
 
     details = environment._windows_process_details([
         {"pid": 4100, "name": "python.exe", "parent_pid": 1},
         {"pid": 4200, "name": "explorer.exe", "parent_pid": 1},
-    ])
+    ], capture=SimpleNamespace(details=lambda: {}))
 
     assert details == {4100: {"sensor_error": "process_detail_missing"}}
 
 
-def test_windows_process_details_marks_malformed_cim_for_all_targets(monkeypatch):
+def test_windows_process_details_refuses_malformed_native_identity():
     from scripts.validation import windows_host_environment as environment
-
-    def fake_run(argv, **kwargs):
-        return subprocess.CompletedProcess(argv, 0, stdout="{not-json", stderr="")
-
-    monkeypatch.setattr(environment.subprocess, "run", fake_run)
 
     details = environment._windows_process_details([
         {"pid": 4100, "name": "python.exe", "parent_pid": 1},
         {"pid": 5100, "name": "git.exe", "parent_pid": 1},
-    ])
+    ], capture=SimpleNamespace(details=lambda: {
+        4100: {"command_line": "python.exe", "creation_date": ""},
+        5100: {"sensor_error": "native_query_terminated"},
+    }))
 
     assert details == {
         4100: {"sensor_error": "process_detail_malformed"},
-        5100: {"sensor_error": "process_detail_malformed"},
+        5100: {"sensor_error": "native_query_terminated"},
     }
 
 
@@ -231,10 +225,24 @@ def test_process_window_capture_closes_retained_handles_after_exception():
             return True
 
     api = Api()
+    observed = []
+
+    def reader(handle, created):
+        observed.append((handle, created, tuple(api.closed)))
+        return {"command_line": "python.exe --token=synthetic-only",
+                "creation_date": "2026-11-26T12:00:00",
+                "executable_path": "C:/Python/python.exe"}
+
     with pytest.raises(RuntimeError):
-        with ProcessWindowCapture([{"pid": 41, "parent_pid": 1, "name": "python.exe"}], api=api):
+        with ProcessWindowCapture(
+            [{"pid": 41, "parent_pid": 1, "name": "python.exe"}],
+            api=api, detail_reader=reader,
+        ) as capture:
+            assert capture.details()[41]["command_line"].endswith("synthetic-only")
+            assert "command_line" not in capture.facts()[41]
             raise RuntimeError("boom")
 
+    assert observed == [(7041, 7041, ())]
     assert api.closed == [7041]
 
 

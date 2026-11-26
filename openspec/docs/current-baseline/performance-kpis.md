@@ -3,7 +3,7 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-26.5 |
+| Revision | 2026-11-26.6 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
@@ -321,6 +321,14 @@ per-run owner approval. Count 10 refuses before work. This is a ceiling, not an
 instruction to run ten times or retry automatically. Final ordinary-method
 review/freeze and a fresh live-admission check still precede native execution.
 
+The first retained-method attempt at `dcd7323` was INVALID before app startup,
+measured requests or ETW capture: short-lived Git command identities were
+missing across the native inventory and slow CIM detail-query interval.
+The grant remains unused. The [native process observation repair](../../changes/embed-ai-base-runtime-in-process/windows-native-process-observation.md)
+replaces that detail query and fixes quoted/global-option Git parsing without
+waiving unresolved processes, ownership, loss, cleanup or product KPI.
+It requires fresh implementation review and a new source/method freeze.
+
 ## 9. Current Results And Gaps
 
 This table is an index, not a new execution report. Read the exact report and
@@ -379,3 +387,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | 2026-11-26.3 | Corrected calibration admission to require a separate verified count-zero UAC grant; canceled request is not readiness | None; same eight-hour/two-capture collector, product KPI and safety bounds |
 | 2026-11-26.4 | Owner authorized prospective `scheduler-grant-ten-v1`; requires reviewed new controller and fresh grant, retaining old sessions/receipts | Session capture ceiling 2 ->10 only; no product KPI, per-run, byte/time, loss or cleanup relaxation |
 | 2026-11-26.5 | Bound the independently reviewed ten-capture UAC grant and verified its actual readiness, incarnation and original expiry | None; method review/freeze and native proof remain outstanding |
+| 2026-11-26.6 | Recorded pre-capture observation refusal and bounded native detail/Git parsing repair | None; no product KPI, UAC scope, count or safety relaxation |

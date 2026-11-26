@@ -163,6 +163,11 @@ at 05:15 on 2026-11-27, Asia/Shanghai. Actual launch/scope references and the
 authenticated count-zero admission are bound in the private v2 policy; old
 sessions and source remain unchanged. Final method review/freeze still precedes
 native collection.
+The first attempt then stopped before apps or capture because the process
+observer lost short-lived Git command details. Follow the
+[native detail and command-classification repair](../../openspec/changes/embed-ai-base-runtime-in-process/windows-native-process-observation.md)
+before a new frozen-source run; the original refusal remains and grant count is
+still zero. No numerical performance or normal-stop acceptance follows from it.
 First calibration requires count0/max10, exact launch/scope/PID/incarnation,
 empty history and zero bytes. Later diagnostics need matching calibration and
 distinct per-run approval; count10 refuses. Eight-hour and byte/per-run limits
