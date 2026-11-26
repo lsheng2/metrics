@@ -2,14 +2,14 @@
 
 ## Latest Delivery Decision
 
-### Current Frontier: Calibration Refused (2026-11-26)
+### Current Frontier: Evidence-Led Performance Closure (2026-11-26)
 
 The [current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25)
-passed at4f538b7: editor/recovery repairs, seven whole modules,114/114keys and W2.R/FUNC.R1/1.
-Receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`; historical receipts remain unchanged.
-The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but529,161events exceed250,000.
-Code review passed1/1; native proof is REFUSED, no diagnostic/retry followed. The bounded helper remains within its original expiry.
-AIB/dev9, KPI and safety stay fixed. Offline cost-policy review needs the next decision; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open.
+passed at 4f538b7: editor/recovery repairs, seven whole modules, 114/114 keys and W2.R/FUNC.R 1/1; receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`. Historical receipts remain unchanged.
+The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but 529,161 events exceed 250,000.
+Its native proof remains REFUSED. New owner authorization permits evidence-led closure and prospective KPI revision; safety and helper expiry remain fixed.
+Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and its dated reports; no numerical policy changes or new acceptance are made by this documentation packet.
+Offline method analysis continues without a new per-number approval wait; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 

@@ -13,6 +13,32 @@
   "amendment_dirty_inventory": "evidence/windows-functional-first-baseline.json",
   "performance_refreeze_baseline": "eb84aa23a123a191d4b5f6569e69e3d00d75268b",
   "performance_plan": "windows-performance-test-plan.md",
+  "performance_registry_refreeze": {
+    "date": "2026-11-26",
+    "baseline": "77f11ad4d41fb93da7f20deb53f644da3383c484",
+    "owner_node": "W3.REPLAN",
+    "plan": "../../docs/current-baseline/performance-kpis.md",
+    "refreeze_actions": [
+      {"action": "amend", "reason": "Owner requests one central performance KPI register and repeatable dated reports; preserve current numerical policy, safety invariants and immutable historical results. Evidence-led prospective KPI revision is authorized, not retrospective acceptance."}
+    ],
+    "updated_artifacts": [
+      "openspec/docs/current-baseline/performance-kpis.md",
+      "openspec/docs/validation/performance-report-template.md",
+      "openspec/docs/validation/performance-reports/README.md",
+      "openspec/docs/validation/performance-reports/2026-11-26-low-event-calibration.md",
+      "docs/README.md",
+      "docs/development/reporting-delivery.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md"
+    ],
+    "rerun_gates": ["W3.REPLAN", "PERF.KPI", "PERF.CERTIFY", "CLOSE.R"],
+    "post_refreeze_preflight_result": {
+      "command": "D:/AIGC/d9-1122/venv/Scripts/python.exe -I D:/AIGC/d9-1122/close-1126/check_kpi_docs.py",
+      "result": "PASS"
+    },
+    "scope": "Documentation and ownership only; no new DAG nodes, product changes or performance acceptance."
+  },
   "performance_functional_reference_refresh": {
     "date": "2026-11-25",
     "baseline": "4f538b773efdd5068a36b3d699ea2cf6890e83d8",
@@ -506,7 +532,7 @@
     },
     {
       "id": "W3.REPLAN", "depends_on": ["FUNC.ACCEPT"], "kind": "replan-review",
-      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md", "docs/README.md"], "contracts": [],
+      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md", "docs/README.md", "openspec/docs/current-baseline/performance-kpis.md", "openspec/docs/validation/performance-report-template.md", "openspec/docs/validation/performance-reports/"], "contracts": [],
       "validation": ["V0"], "steps": "windows-performance-test-plan.md",
       "exit_criteria": "Remaining performance work refrozen against functional baseline with structured actions, artifacts and rerun gates.",
       "parallel_policy": "review-only"

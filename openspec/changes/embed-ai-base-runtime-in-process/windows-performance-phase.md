@@ -1,5 +1,13 @@
 # Windows Performance Phase
 
+Current human-readable authority: [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md).
+The owner authorization of 2026-11-26 permits evidence-led KPI revision with
+profiling/debugging, updated documentation/checkers, independent review and
+fresh prospective qualification. It supersedes this document's older
+per-number approval restrictions, not historical results or safety invariants.
+Use [dated test reports](../../docs/validation/performance-reports/README.md);
+this change remains the plan/history, not a second current KPI register.
+
 Status: r3 workload-class renewal authorized; prospective certification pending.
 Owner execution authorization: 2026-11-20; original ordering amendment: 2026-11-17.
 This document defines a later phase of the existing MDB-2 change. Completion
@@ -204,7 +212,10 @@ previously authorized Linux/global deferrals remain explicit, never counted.
 
 ## KPI Freeze At PERF.KPI
 
-These are the current owner-approved limits, not measurements or acceptance:
+The following table records the earlier freeze; its universal 1.2 page rows are
+superseded for concurrent saturation by r3. Current complete definitions and
+results are in [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md).
+Neither table nor policy metadata is a performance measurement or acceptance:
 
 | ID | Workload and observable | Existing threshold |
 | --- | --- | --- |

@@ -1,5 +1,12 @@
 # Reporting Development And Validation
 
+Performance requirements now have one current register:
+[PERF-SPEC-001](../../openspec/docs/current-baseline/performance-kpis.md).
+Use its conditions, metric classifications and current-policy links, together
+with the [dated reports](../../openspec/docs/validation/performance-reports/README.md)
+and [report template](../../openspec/docs/validation/performance-report-template.md).
+The dated measurements below remain historical evidence for their named bytes.
+
 Current development rules: [AI Contract](../../AI_CONTRACT.md).
 Current behavior and task state:
 [reporting guide](../../openspec/docs/current-baseline/project-reporting.md) and
