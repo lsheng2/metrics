@@ -2,14 +2,14 @@
 
 ## Latest Delivery Decision
 
-### Current Frontier: Observation Redesign (2026-11-26)
+### Current Frontier: Calibration Refused (2026-11-26)
 
 The [current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25)
 passed at4f538b7: editor/recovery repairs, seven whole modules,114/114keys and W2.R/FUNC.R1/1.
 Receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`; historical receipts remain unchanged.
-R3 native calibration refused21,698lost events; no diagnostic followed. Root cause and performance remain unqualified.
-Owner authorized the [low-event method](windows-low-event-observation.md), code review, one calibration and fresh bounded UAC.
-AIB/dev9, KPI and safety stay fixed. Native/code gates remain required; diagnostic go and full qualification/CLOSE.R/WIN.ACCEPT remain open.
+The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but529,161events exceed250,000.
+Code review passed1/1; native proof is REFUSED, no diagnostic/retry followed. The bounded helper remains within its original expiry.
+AIB/dev9, KPI and safety stay fixed. Offline cost-policy review needs the next decision; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 

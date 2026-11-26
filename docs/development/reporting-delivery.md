@@ -146,6 +146,15 @@ follows only a separate go decision after a verified calibration.
 Preserve current helpers within original expiry without modifying their hashes,
 resetting attempts or broadening commands. No AIB, application or KPI change.
 
+The [first low-event calibration receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-low-event-calibration-20261126.json)
+binds source `7dd8545` and records normal collection/cleanup, zero reported loss
+and an8,151,035-byte ETL. Native proof was refused because529,161events exceed
+the frozen250,000-event observation-cost ceiling, before scheduler coverage
+validation completed. Do not promote it, loosen the ceiling or repeat collection.
+Code review remains1/1; it is not native qualification. The next decision concerns
+read-only review of retained evidence and the observation-cost policy, not a
+production KPI change. The helper snapshot is dated; recheck liveness/expiry before reuse.
+
 The current dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity
 is not numerical acceptance: runtime CSS119.3983ms and production draft_edit

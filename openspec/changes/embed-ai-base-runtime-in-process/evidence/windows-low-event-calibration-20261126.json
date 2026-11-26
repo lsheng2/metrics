@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "scheduler-calibration-refusal",
+  "method": "scheduler-observation-v1",
+  "status": "CALIBRATION_REFUSED",
+  "reason": "NATIVE_EVENT_BUDGET_EXCEEDED",
+  "recorded_on": "2026-11-26",
+  "source_commit": "7dd854517341adcc8d852c8862fa308b3b99f9c9",
+  "aib_commit": "1a6ac981b67f148bbaaed6750e6874896ada0bcc",
+  "runtime_version": "0.1.1.dev9",
+  "run_name": "le1126-cal1",
+  "capture_id": "d06e1501-dc05-44c7-bb12-388cb3295aba",
+  "acceptance_eligible": false,
+  "root_cause_attributed": false,
+  "native_proof_published": false,
+  "scheduler_coverage_validation_completed": false,
+  "diagnostic_started": false,
+  "retry_started": false,
+  "collection": {
+    "status": "CALIBRATION_COLLECTED",
+    "window_result": "PASS",
+    "measured_pages": 40,
+    "designated_css_ms": 6.2617,
+    "recording_to_stop_seconds": 16.5669717,
+    "flush_seconds": 1.8724701,
+    "collector_exit_code": 0,
+    "collector_forced": false,
+    "etl_bytes": 8151035,
+    "final_temporary_bytes": 22020096,
+    "maximum_observed_temporary_bytes": 88342528,
+    "actual_native_buffer_bytes": 84934656
+  },
+  "decode": {
+    "exit_code": 0,
+    "forced": false,
+    "all_event_count": 529161,
+    "calibration_event_limit": 250000,
+    "events_lost": 0,
+    "truncated": false,
+    "markers": 13,
+    "marker_decode_errors": 0,
+    "payload_decode_errors": 0,
+    "omitted": 0,
+    "selected_scheduler_rows": 137,
+    "context_switch_events": 327054,
+    "ready_thread_events": 183407,
+    "total_derived_bytes": 66575760
+  },
+  "cleanup": {
+    "normal": true,
+    "registered_application_incarnations": 9,
+    "matching_live_incarnations": 0,
+    "application_ports": [11392, 14138, 10544],
+    "listeners": 0,
+    "driver_collector_decoder_absent": true
+  },
+  "retained_helper_snapshot": {
+    "pid": 103804,
+    "session": "D:/AIGC/pf1120/circular-sessions/a905e77e-ebb5-4307-a41f-11549903dfb6",
+    "state": "READY",
+    "active": null,
+    "capture_count": 1,
+    "expires_at": "2026-11-26T22:02:52.4175985+08:00",
+    "scope_changed": false
+  },
+  "next_boundary": "Owner decision on read-only review of the retained trace and observation-cost policy. No new capture, budget change, KPI change, SDK change or retrospective PASS is authorized by this refusal.",
+  "references": [
+    {
+      "path": "D:/AIGC/d9-1122/low-event-1126/le1126-cal1/result.json",
+      "sha256": "e8e060a8f61166a28587928d64254984318eabf157efc2a1794b983868a1c0b7"
+    },
+    {
+      "path": "D:/AIGC/d9-1122/low-event-1126/le1126-cal1/decode-result.json",
+      "sha256": "299bd29eab8910809d6c806a1828ed9d816b4426add47c5b3149301d72176aed"
+    },
+    {
+      "path": "D:/AIGC/d9-1122/low-event-1126/decoder/artifacts/le1126-cal1-decoded.json",
+      "sha256": "494993eccaa008975ef8ee540fc2502b61f92fa51b50f42d76d6c9e8beb69d75"
+    },
+    {
+      "path": "D:/AIGC/d9-1122/low-event-1126/frozen-method.json",
+      "sha256": "828359d294d7be12bfc5f1ee3298c63b78257739163e2f312263dcee0f2e83c9"
+    },
+    {
+      "path": "D:/AIGC/d9-1122/low-event-1126/review/state.json",
+      "sha256": "d2438652a1a8de193e5fa4c85d837a8ca821048933ede61ab602eeb52f0fff7b"
+    },
+    {
+      "path": "D:/AIGC/pf1120/circular-runs/le1126-cal1/captures/d06e1501-dc05-44c7-bb12-388cb3295aba/capture.etl",
+      "sha256": "a802248d41bd540883e89060b4bf261c2a0577babb8f8bcce901652e7d392271"
+    }
+  ]
+}
