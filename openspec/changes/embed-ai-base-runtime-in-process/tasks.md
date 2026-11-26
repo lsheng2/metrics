@@ -8,8 +8,8 @@ The [current-source refresh](windows-close-plan.md#current-source-functional-ref
 passed at 4f538b7: editor/recovery repairs, seven whole modules, 114/114 keys and W2.R/FUNC.R 1/1; receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`. Historical receipts remain unchanged.
 The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but 529,161 events exceed 250,000.
 Its native proof remains REFUSED. New owner authorization permits evidence-led closure and prospective KPI revision; safety and helper expiry remain fixed.
-Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and its dated reports; no numerical policy changes or new acceptance are made by this documentation packet.
-Offline method analysis continues without a new per-number approval wait; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open.
+Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and [the retained-window method repair](windows-scheduler-retention.md); only the prospective calibration event-cost cap changes, not application KPI or safety.
+Review/freeze precede the helper's one remaining native calibration; root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open. Original failures and privileged scope are preserved.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 
@@ -665,9 +665,9 @@ Linux、其它 App、真实用户数据和未批准的发布动作保持各自�
 - [x] FUNC.ACCEPT - Fresh4f538b7 checkpoint generated after FUNC.R, SHA256 `beced470cab7864eec90f89f3d0b9fb1518d4c87a3f1650b0fc7222c57a345dd`; performance NOT_RUN and old receipts immutable.
 - [ ] W3.REPLAN - Refreeze downstream performance inputs after the new functional verdict; retain historical method reviews and all KPI/safety limits.
 - [x] PERF.KPI - 已冻结原 KPI、负载、基线、采样和判定方法，见 `evidence/windows-performance-inputs.json`；具体运行输入与动态资产在采样前另行绑定，不代表已测量。
-- [x] PERF.PROBE - dev9/fa0b060 完整诊断已采集并重放；保留两项数值超标，不宣称正式验收。
-- [x] PERF.PROBE.R - 原始诊断及消费者边界独立复核 1/1 通过，见 D:/AIGC/d9-1122/probe-r2-evidence-gate.json；优化与认证仍开放。
-- [x] PERF.PROBE.REPLAN - 100ms 诊断触发与有界对照定位已获 owner 授权和独立计划复核 1/1；不改变 SDK、产品或 KPI，定位工具与原生校准仍须过门禁。
+- [ ] PERF.PROBE - 保留 dev9/fa0b060 诊断和数值超标；新增 retained-window v2 方法须实现、复核并完成原生校准，不宣称正式验收。
+- [ ] PERF.PROBE.R - 原始诊断复核 1/1 保留于 D:/AIGC/d9-1122/probe-r2-evidence-gate.json；v2 方法及新证据须另行复核。
+- [ ] PERF.PROBE.REPLAN - 保留原 100ms 触发设计；按 retained-window 修订复核剩余定位/优化范围，不改变 SDK、产品 KPI、安全或既有特权额度。
 - [ ] PERF.OPTIMIZE - 按实测瓶颈优化；已达标则记录无需优化，改变行为须功能补验。
 - [ ] PERF.OPTIMIZE.R - 复核优化或无需改动的决定及对应功能证据，再进入认证。
 - [ ] PERF.CERTIFY - 独占窗口完成正式性能验收，并确认受影响功能再次通过。

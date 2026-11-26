@@ -141,26 +141,23 @@ diagnosis did not reproduce the old burst; root cause is still unproven.
 Final full qualification, its three performance-support lanes, unchanged KPI/
 safety gates and combined Windows acceptance remain required.
 
-The [2026-11-26 low-event observation method](../../openspec/changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md)
-is the current diagnostic design boundary. Broad-profile R3 calibration reported
-21,698lost events and no usable target interval; its collection/cleanup success
-is not native qualification. Do not retry that method. The accepted direction uses
-scheduler events plus sparse markers,
-with file/image/stack families removed and explicit unknown-state refusal.
-The next authorized stage implements and independently reviews the private tools,
-then uses one fresh bounded UAC session for one calibration. A workload diagnostic
-follows only a separate go decision after a verified calibration.
-Preserve current helpers within original expiry without modifying their hashes,
-resetting attempts or broadening commands. No AIB, application or KPI change.
+The [retained-window repair](../../openspec/changes/embed-ai-base-runtime-in-process/windows-scheduler-retention.md)
+is the current ordinary diagnostic-method direction. It reuses the frozen
+[low-event collector](../../openspec/changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md),
+preserves strict unknown-state refusal, and requires reviewed helpers plus a
+fresh native calibration before any claim of method acceptance.
+Its prospective 1,000,000-event calibration cost cap is not a product KPI change.
+All byte/time/loss/cleanup and privilege limits stay fixed.
 
-The [first low-event calibration receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-low-event-calibration-20261126.json)
-binds source `7dd8545` and records normal collection/cleanup, zero reported loss
-and an8,151,035-byte ETL. Native proof was refused because529,161events exceed
-the frozen250,000-event observation-cost ceiling, before scheduler coverage
-validation completed. Do not promote it, loosen the ceiling or repeat collection.
-Code review remains1/1; it is not native qualification. The next decision concerns
-read-only review of retained evidence and the observation-cost policy, not a
-production KPI change. The helper snapshot is dated; recheck liveness/expiry before reuse.
+The [first low-event refusal](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-low-event-calibration-20261126.json)
+remains unchanged: 529,161 events exceeded the original 250,000 cap. Later raw
+inspection also found the early synthetic interval outside retained scheduler
+coverage; zero reported loss was not enough. No original result is promoted.
+The original helper expires at 22:02 on 2026-11-26, Asia/Shanghai, and has one
+remaining capture out of its actual two-capture allowance. Reauthenticate and
+verify frozen scope before reuse; never reset attempts, extend expiry or broaden
+commands. A later diagnostic requires valid calibration and separately available
+authorized capture capacity. AIB, application code and P1-P4 remain unchanged.
 
 The current dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity

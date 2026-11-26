@@ -6,6 +6,7 @@
 - Active/future changes: `openspec/changes/`
 - Central performance KPI specification: [PERF-SPEC-001](../openspec/docs/current-baseline/performance-kpis.md), covering current metrics, workload conditions, assumptions, evidence and open gaps.
 - Performance test evidence: [dated report register](../openspec/docs/validation/performance-reports/README.md) and [report template](../openspec/docs/validation/performance-report-template.md); keep one immutable report per run/policy.
+- Windows observation method: [retained-window calibration repair](../openspec/changes/embed-ai-base-runtime-in-process/windows-scheduler-retention.md), with frozen collector bounds and no product KPI change.
 - Windows AIB/Dashboard closure plan: [execution plan](../openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md), functional acceptance first, followed by the separate [performance phase](../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md); one task ledger.
 - Windows page KPI renewal: [concurrent saturated policy](../openspec/changes/embed-ai-base-runtime-in-process/windows-page-policy-amendment.md); unchanged runtime, prospective evidence only.
 - Windows editor selection repair: [focused regression evidence](../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-editor-selection-repair.json); Dashboard-only command-boundary repair, not final combined acceptance.

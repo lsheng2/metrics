@@ -1,7 +1,7 @@
 ---
 id: MDB2-WIN-LOW-EVENT-20261126
 title: Scheduler-first Windows observation
-status: accepted
+status: superseded
 owner: Dashboard validation
 created: 2026-11-26
 last_reviewed: 2026-11-26
@@ -10,10 +10,16 @@ human_docs: [docs/development/reporting-delivery.md]
 implemented_by: [D:/AIGC/d9-1122/low-event-1126/run_kernel.py]
 tests: [D:/AIGC/d9-1122/low-event-1126/test_scheduler.py, D:/AIGC/d9-1122/low-event-1126/test_observation.py]
 supersedes: []
-superseded_by: []
+superseded_by: [MDB2-WIN-RETENTION-20261126]
 ---
 
 # Low-Event Windows Observation Design
+
+Current ordinary calibration/replay direction:
+[retained-window repair](windows-scheduler-retention.md). This document preserves
+the original v1 method and refused calibration. Its frozen collector is reused
+unchanged; the new ordinary method does not rewrite v1 receipts or enlarge
+privileged scope. Current observation-cost policy is in PERF-SPEC-001.
 
 ## Decision And Scope
 

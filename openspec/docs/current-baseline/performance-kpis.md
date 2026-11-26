@@ -3,7 +3,7 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-26.1 |
+| Revision | 2026-11-26.2 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
@@ -288,11 +288,16 @@ These rows define what must be disclosed when used in an investigation. They
 do not claim that every counter has already been measured, or that an unmeasured
 CPU, memory, startup or throughput release budget exists.
 
-The current [scheduler observation method](../../changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md)
-has separate bounds: 30 s active calibration/40 pages, 90 s recording, 360 s collector,
+The [scheduler retention amendment](../../changes/embed-ai-base-runtime-in-process/windows-scheduler-retention.md)
+versions the ordinary calibration/replay method while retaining the frozen
+[low-event collector](../../changes/embed-ai-base-runtime-in-process/windows-low-event-observation.md).
+Separate bounds remain: 30 s active calibration/40 pages, 90 s recording, 360 s collector,
 120 s whole decode, 128 MiB actual ETW buffer pool, 512 MiB raw+temporary artifacts,
-512 MiB derived artifacts, 128 markers and 50,000 selected rows. Its original event
-ceilings are 250,000 for calibration and 1,000,000 for a later 80 s diagnostic.
+512 MiB derived artifacts, 128 markers and 50,000 selected rows. The original v1
+calibration ceiling is 250,000 all-decoded events. Prospective
+`scheduler-retention-v2` calibration uses 1,000,000, matching the existing
+decoder ceiling and later 80 s diagnostic cap. Implementation review, source
+freeze and new native proof remain required before that method is accepted.
 Zero loss, no truncation/omission, complete target identity/clock coverage and
 normal cleanup remain evidence-quality requirements.
 
@@ -302,6 +307,9 @@ cost and zero loss. Its refusal remains immutable. Any amended analysis or
 budget must have a new version, rationale and review; it cannot rewrite the
 original refusal. A retained elevated helper keeps its original immutable
 privileged scope and expiry. No amount of KPI authority renews that expiry.
+The currently selected helper has two captures total and one already consumed;
+the outer implementation's possible six-capture ceiling cannot increase that
+allowance. V2 may consume only its one remaining calibration opportunity.
 
 ## 9. Current Results And Gaps
 
@@ -357,3 +365,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | Revision | Change | Numerical Impact |
 | --- | --- | --- |
 | 2026-11-26.1 | Consolidated existing P/R/C criteria, measurement boundaries, safety/diagnostic distinctions, report governance and known gaps | None; no budget or KPI was changed by consolidation |
+| 2026-11-26.2 | Prospective retained-window calibration repair with unchanged collector and strict interval evidence | Calibration observation-cost cap 250,000 ->1,000,000 events; all application KPI, byte/time/loss/cleanup and privilege bounds unchanged |
