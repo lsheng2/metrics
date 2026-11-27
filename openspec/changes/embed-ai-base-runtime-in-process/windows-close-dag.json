@@ -588,7 +588,7 @@
     },
     {
       "id": "W3.REPLAN", "depends_on": ["FUNC.ACCEPT"], "kind": "replan-review",
-      "owner_paths": ["openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md", "docs/README.md", "openspec/docs/current-baseline/performance-kpis.md", "openspec/docs/validation/performance-report-template.md", "openspec/docs/validation/performance-reports/"], "contracts": [],
+      "owner_paths": [".gitattributes", "openspec/changes/embed-ai-base-runtime-in-process/", "docs/development/reporting-delivery.md", "docs/README.md", "openspec/docs/current-baseline/performance-kpis.md", "openspec/docs/validation/performance-report-template.md", "openspec/docs/validation/performance-reports/"], "contracts": [],
       "validation": ["V0"], "steps": "windows-performance-test-plan.md",
       "exit_criteria": "Remaining performance work refrozen against functional baseline with structured actions, artifacts and rerun gates.",
       "parallel_policy": "review-only"

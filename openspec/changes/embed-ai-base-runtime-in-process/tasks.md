@@ -4,22 +4,29 @@
 
 ### Dev10 Functional Continuation (2026-11-27)
 
-Pinned dev10 continues; publication fixture repair `c53696c` passed28 checks/review1/1.
-Run `0141cab6-35d3-435b-83c8-70866aa1046c` retains module6's970PASS/1FAIL.
-Scripts readiness then had1008PASS/2FAIL:30s toys exited before identity capture.
-Bounded timing located repeated CIM work; the
-[registration amendment](windows-native-process-observation.md#owner-registration-amendment-2026-11-27)
-retains SLE identity, test lifetimes, AIB, KPI and safety limits.
-Fresh source-bound qualification is required after review/publication.
+Pinned dev10 package adoption and Windows synthetic functional acceptance are
+current PASS; use `evidence/windows-functional-acceptance-dev10.json` and the
+[current validation guide](../../../docs/development/reporting-delivery.md) as identity authority.
+The receipt records 3332 normalized tests across seven lanes, 114/114 keys,
+native56, complete74/recovery39, migration PASS, W2.R/FUNC.R 1/1 and
+performance NOT_RUN. Counts overlap; do not sum.
+Old interrupted/failed dev10 runs remain evidence only; scoped repairs are
+reviewed, and generic SLE/app/AIB/KPI/stop/leakage limits are unchanged.
 
 ### Current Frontier: Evidence-Led Performance Closure (2026-11-26)
 
-The [current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25)
-passed at 4f538b7: editor/recovery repairs, seven whole modules, 114/114 keys and W2.R/FUNC.R 1/1; receipt: `evidence/windows-functional-acceptance-dev9-refresh.json`. Historical receipts remain unchanged.
+The current functional reference is now the dev10 receipt above; historical dev9 refresh `evidence/windows-functional-acceptance-dev9-refresh.json` remains unchanged and no longer defines the current candidate.
 The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but 529,161 events exceed 250,000.
 Its native proof remains REFUSED. New owner authorization permits evidence-led closure and prospective KPI revision; safety and helper expiry remain fixed.
 Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and [the retained-window method repair](windows-scheduler-retention.md); prospective calibration event cost and owner-authorized session count change, not application KPI or per-run safety.
-The max10 grant became READY at 21:15, expiring 2026-11-27 05:15 Asia/Shanghai. Method review passed 1/1 and froze135helpers, but `le1126-ret2-cal1` was INVALID before apps/pages/ETW: slow CIM lookup lost short-lived Git identities. Grant remains count0/empty/zero bytes; driver/guard exited. Three controlled native-versus-CIM trials reproduce the lifetime gap; quoted/global-option Git classification also needs repair. Follow [the native observation slice](windows-native-process-observation.md), with review and fresh source freeze before another attempt. Root cause/full qualification/CLOSE.R/WIN.ACCEPT remain open. Reporting R1-R10 needs current dev9 clone reruns, including browser R4. Preserve all old failures and scopes.
+The max10 UAC grant and `le1126-ret2-cal1` refusal are historical: the grant
+expired, and the invalid run stopped before apps/pages/ETW. Native detail and
+Git classifier repairs are not a current prerequisite for this functional
+milestone; they do not qualify performance. Root cause/full qualification/
+CLOSE.R/WIN.ACCEPT remain open. Current executable performance policy still
+points at dev9 r3-refreshed; dev10 reference-only adoption is next after this
+documentation-only publication. Reporting R1-R10 applicability, C3-C5 definition
+gaps, and R4/R7 known limits remain visible. Preserve all old failures and scopes.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 
@@ -108,27 +115,17 @@ private-wheel positive run were independently checked as exit 0, not timeout.
 Formal dev9 admission and functional gates now pass; performance remains NOT_RUN.
 Source/private-wheel success is not promotion of failed dev8.
 
-**Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
-`origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
-2026-11-22 另授权 Windows testkit 校准，当前目标为 `ai-base-runtime==0.1.1.dev9`，
-具体源码与 wheel SHA256 见
-[当前候选约束](windows-performance-phase.md#windows-convergence-candidate-amendment-2026-11-22)。
-Dashboard dev9 Windows 功能验收和性能输入复签评审已通过；性能认证尚未完成。
-历史候选节点和不可变证据保留，不代表最新候选已经通过。
-下一切片完成进程观测修正与独立复核，再冻结新输入并做完整性能诊断和认证；
-不得继续以 dev4 完成最终交付，不因本次合并/推送关闭 PERF 或 WIN.ACCEPT。
-候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
-下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
+**Owner 授权（2026-11-21/22，历史）**：双方 scoped mainline publication 与
+dev9 testkit 校准约束见[当前候选约束](windows-performance-phase.md#windows-convergence-candidate-amendment-2026-11-22)。
+这些记录保留 dev4/dev9 不能最终交付、性能认证未完成和不可静默换包的历史边界；
+当前候选状态以上方 dev10 receipt 为准。
 
 ### Historical Dev9 Convergence
 
-The [candidate receipt](evidence/windows-dev9-candidate-admission.json) retains
-source/private-wheel, installed host/testkit and real-leak control evidence.
-The [functional receipt](evidence/windows-functional-acceptance-dev9.json)
-binds `423846c`,114 keys, seven modules and W2.R/FUNC.R1/1; performance NOT_RUN.
-Earlier native/observer/UI failures remain preserved. Later PASS does not
-establish their cause or qualify the current dev10 candidate.
-See [dev9 candidate evidence](evidence/windows-dev9-candidate-admission.json).
+Dev9 candidate and functional evidence remain historical in
+[candidate evidence](evidence/windows-dev9-candidate-admission.json) and
+[functional receipt](evidence/windows-functional-acceptance-dev9.json). They
+preserve earlier failures and do not qualify the current dev10 candidate.
 
 ### Dev9 Performance Refreeze
 

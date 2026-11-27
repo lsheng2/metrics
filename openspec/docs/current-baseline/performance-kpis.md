@@ -3,11 +3,11 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-27.1 |
+| Revision | 2026-11-27.2 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
-| Current MDB-2 policy | `windows-mdb2-s0b-r3`; numeric rules unchanged, dev10 candidate binding pending |
+| Current MDB-2 policy | `windows-mdb2-s0b-r3`; numeric rules unchanged; executable policy still references dev9 r3-refresh while dev10 reference-only adoption is next |
 | Change authority | Owner authorization of 2026-11-26 permits evidence-led KPI revision and continued closure |
 | Results index | [Performance test reports](../validation/performance-reports/README.md) |
 | Report format | [KPI test report template](../validation/performance-report-template.md) |
@@ -23,10 +23,11 @@ The executable source of numerical truth remains each named owning checker and
 its frozen policy. For MDB-2, use the
 [last frozen dev9 policy JSON](../../changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3-refresh.json).
 This document and that checker must agree. A disagreement blocks certification;
-never choose whichever representation is easier to pass. Dev10 is selected for
-the asset-cache slice; its functional acceptance and candidate-bound performance
-policy are not yet complete. The old dev9 reference cannot admit a dev10
-certification request. No numerical value is changed by this candidate update.
+never choose whichever representation is easier to pass. Dev10 is selected and
+functionally accepted for the asset-cache slice, but the executable performance
+policy still points at the dev9 r3-refreshed reference until a reviewed dev10
+reference-only adoption is published. The old dev9 reference cannot admit a
+dev10 certification request. No numerical value is changed by this candidate update.
 OpenSpec changes retain decision history and implementation plans. Their dated
 older values do not override this register's current-policy links.
 
@@ -339,6 +340,7 @@ source/policy/fixture identity before reusing evidence.
 
 | Profile/Metric | Latest Relevant Recorded Result | Current Claim |
 | --- | --- | --- |
+| MDB2 dev10 Windows functional acceptance | PASS at Dashboard `3b60b05830062605aa4c225bb6e7a98c6e1c7594`, AIB dev10 `3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a`, 114/114 keys, seven functional lanes, performance NOT_RUN | Functional prerequisite satisfied for this candidate; not numerical performance or WIN.ACCEPT |
 | MDB2 r3 full certificate at db00210 | Historical complete PASS, 11,520 pages, dev9 | Not current-source acceptance after subsequent changes |
 | MDB2 r3 certificate at c845224 | Complete FAIL: development seq/candidate bug_trend ratio 1.5376 >1.20 | KPI-P2 failure retained; other passing cells do not make the run pass |
 | MDB2 diagnostic at d7dd699 | INCOMPLETE: probe not bound to scheduled slot | No release verdict from the incomplete run; raw exceedances remain diagnostic evidence |
@@ -391,3 +393,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | 2026-11-26.4 | Owner authorized prospective `scheduler-grant-ten-v1`; requires reviewed new controller and fresh grant, retaining old sessions/receipts | Session capture ceiling 2 ->10 only; no product KPI, per-run, byte/time, loss or cleanup relaxation |
 | 2026-11-26.5 | Bound the independently reviewed ten-capture UAC grant and verified its actual readiness, incarnation and original expiry | None; method review/freeze and native proof remain outstanding |
 | 2026-11-26.6 | Recorded pre-capture observation refusal and bounded native detail/Git parsing repair | None; no product KPI, UAC scope, count or safety relaxation |
+| 2026-11-27.2 | Recorded dev10 functional PASS provenance and clarified that current executable performance policy remains dev9 r3-refresh until reviewed reference adoption | None; no KPI, workload, safety, or active policy numeric change |

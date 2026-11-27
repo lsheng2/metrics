@@ -39,12 +39,13 @@ decision about resuming other Apps. This is not full AIB repository release.
 
 ### Current-Source Functional Refresh (2026-11-25)
 
-Owner resumed continuous Windows checkout: close the known non-performance
-openings first, establish functional acceptance for the resulting source, then
-resume performance. This supersedes the private editor-repair handoff's order
-that waited for a performance certificate before any new complete functional
-run. It does not change either acceptance profile or remove the final full
-qualifier, numerical KPI, process, stop, authentication or leakage gates.
+Owner resumed continuous Windows checkout: repair the two then-known
+qualification blockers, establish functional acceptance for the resulting
+source, then resume performance. This superseded the private
+editor-repair handoff's order that waited for a performance certificate before
+any new complete functional run. It did not change either acceptance profile or
+remove the final full qualifier, numerical KPI, process, stop, authentication
+or leakage gates.
 
 Baseline: Dashboard `c845224c2f4fc9a5c830979b2772815572eacacc`, AIB
 `1a6ac981b67f148bbaaed6750e6874896ada0bcc`, clean main checkouts; retain the
@@ -85,11 +86,22 @@ Execution:
    CLOSE.R and WIN.ACCEPT remain required. Stop and
    ask on a genuine external prerequisite or unauthorized scope change.
 
-Current functional acceptance is now complete at `4f538b7`; its external
-checkpoint preserves the tested clean source. Before formal performance,
-[publish and review its fixed reference](windows-performance-test-plan.md#current-functional-reference-refresh-2026-11-25).
-The current-source bounded tail observation did not reproduce the burst and
-does not establish root cause, optimization success or numerical acceptance.
+The Nov25 current-source functional refresh completed at `4f538b7`; its external
+checkpoint preserves that tested clean source. It remains historical now that
+dev10 is the current functional reference. Historical bounded tail observations
+do not establish root cause, optimization success or numerical acceptance.
+
+### Current Dev10 Functional Acceptance (2026-11-27)
+
+After the two scoped qualification blockers were repaired, the MDB-2 synthetic
+functional scope passed for dev10. The current receipt is
+`evidence/windows-functional-acceptance-dev10.json`; it records 3332 normalized
+tests across seven lanes, 114/114 evidence keys, native 56, complete 74/recovery
+39, migration PASS, W2.R/FUNC.R 1/1 and performance NOT_RUN. Counts overlap and
+are not summed. Before formal performance, publish and review a dev10
+reference-only adoption; the executable performance policy still points at dev9
+r3-refreshed. Broader C5 correctness, performance, real-provider/model,
+other-App and Linux scopes remain open or excluded as before.
 
 The Implementation Engineer owns the bounded repair; the controller owns
 execution/order and evidence assembly. The Architect Planner Reviewer performs
@@ -251,8 +263,10 @@ receipts and do not substitute for these tool-boundary tests.
 
 ### Dev6 Observer Candidate Refresh (2026-11-22)
 
-The active continuation is now the reviewed dev9 convergence candidate, after
-dev8's Dashboard observation failure and the three-layer development checks.
+The active continuation is now the reviewed dev10 functional candidate; the
+following dev9/dev8 candidate records are historical. Dev9 was previously the
+reviewed convergence candidate after dev8's Dashboard observation failure and
+the three-layer development checks.
 Use D:/AIGC/d9-1122 and versioned
 `windows-functional-acceptance-dev9-refresh.json` / `windows-performance-inputs-dev9-r3-refresh.json`
 outputs. Numerical policy follows the [page amendment](windows-page-policy-amendment.md)
@@ -347,10 +361,10 @@ a product SDK compatibility path. Fresh dev5 task10.3 evidence is still required
 | --- | --- |
 | Dashboard source | `d0c395eb8649a90d2a2cae09d1f5362252bb0353`; clean at plan creation |
 | Amendment baseline | `1dbdd338efaa31f8df1d2f8d9a55a6218c35536e`; existing W2 dirty paths recorded in `evidence/windows-functional-first-baseline.json` |
-| Accepted functional source | `ff09d6ff97dd62e56fb3bfc44914c5c08582a144`; all 114 functional keys and 7 module lanes accepted, performance NOT_RUN |
-| AIB candidate source | `d589ac8e6572a903edc3846e7d78195e85858868` |
-| Runtime | `ai-base-runtime==0.1.1.dev4` |
-| Wheel SHA256 | `b332f338f77bf2e966de7495eea6b5968606eb670287588d97a3a4d82905ec94` |
+| Accepted functional source | `3b60b05830062605aa4c225bb6e7a98c6e1c7594`; all 114 functional keys and 7 module lanes accepted, performance NOT_RUN |
+| AIB candidate source | `3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a` |
+| Runtime | `ai-base-runtime==0.1.1.dev10` |
+| Wheel SHA256 | `18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55` |
 | Artifact/import authority | `ai_host/runtime_artifact.json`, `ai_host/admission.py` |
 | Candidate environment | Current explicit interpreter in `docs/development/reporting-delivery.md` |
 | Project profile | `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` |
@@ -372,8 +386,8 @@ manager, bootstrap authority, sidecar fallback or provider abstraction.
 Tech stack stays Python 3.13, Django 6.0.7, WhiteNoise 6.12.0, Waitress 3.0.2,
 portalocker 4.4.2, the pinned runtime, existing htmx/Meridian UI and local Grafana.
 W1 installed and verified this dependency set. W2 and the Windows functional
-W3/FUNC gates passed at the accepted source; later documentation-only closeout
-does not change those tested product bytes.
+W3/FUNC gates passed at the accepted dev10 source; later documentation-only
+closeout does not change those tested product bytes.
 
 ### Original Planning Gaps And Current Frontier
 

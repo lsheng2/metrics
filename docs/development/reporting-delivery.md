@@ -21,7 +21,8 @@ the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
 The current candidate is `ai-base-runtime==0.1.1.dev10`, built from AIB
 `3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a`. Its wheel SHA256 is
 `18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55`.
-This is a development candidate, not whole-AIB release or performance certification.
+This is the pinned Dashboard package candidate, not whole-AIB release or
+performance certification.
 Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
@@ -38,28 +39,36 @@ ACL restoration. Its first attempt failed because Windows observer children
 could not import the exported test package; a new launcher admits only the
 SDK-free test parent and preserves runtime-source exclusion (10 guard cases).
 See [dev10 candidate admission](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev10-candidate-admission.json).
-Native/full functional and numerical qualification remain pending; dev9
-evidence below does not qualify dev10. KPI, production
-shutdown budgets, leak detection, asset bytes and dependency declarations are
-unchanged. No old-SDK compatibility or source-mode production path is added.
+Current dev10 Windows MDB-2 synthetic functional acceptance is PASS at tested
+Dashboard source `3b60b05830062605aa4c225bb6e7a98c6e1c7594`, distinct from
+later documentation-only commits. The public receipt is
+[windows-functional-acceptance-dev10](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev10.json):
+3332 normalized tests across seven whole functional lanes 266/19/250/32/773/973/1019 passed with zero
+failures/errors/skips/timeouts, 114/114 evidence keys, native 56, complete
+74/recovery 39, migration PASS, and W2.R/FUNC.R each 1/1. The final input root
+is `D:/AIGC/d10-1127/inputs/windows-functional/8fd03870-6471-4acb-89a5-d45c2916fdbb/`.
+KPI, production shutdown budgets, leak detection, asset bytes and dependency
+declarations are unchanged. No old-SDK compatibility or source-mode production
+path is added.
 
-The dev10 full functional run at `b415335` passed its first five modules, then
-reported970 passes/one failure in `project_management`; scripts and final
-qualification did not run. The failing timed test wrote its connection file
-non-atomically, while the real model fixture already publishes by replacement.
-A deterministic real-file control reproduces that mismatch. The fixture repair
-retains strict invalid-record refusal and the existing readiness limits; its
-28 focused checks are not whole functional acceptance. Fresh source-bound
-qualification is required before publishing the dev10 functional receipt.
+Historical dev10 failures remain evidence. The `b415335` full functional run
+stopped after five modules with970 passes/one `project_management` failure, and
+scripts/final qualification did not run. The separate scripts readiness run
+reported1008 passes/two failures from owned30s toy process identity capture.
+Fix `c53696c` repaired atomic test publication; `3b60b05` repaired measurement
+detail reuse. These repairs do not change AIB/KPI/SLE/stop/leakage limits and
+do not establish a shared root cause for older intermittent failures.
 
-The separate scripts readiness run then reported1008 passes/two failures:
-owned30s toy processes expired during repeated CIM identity queries. A bounded
-diagnostic measured19.7449s for self identity preparation, including12.8976s
-in registration. The [native registration amendment](../../openspec/changes/embed-ai-base-runtime-in-process/windows-native-process-observation.md#owner-registration-amendment-2026-11-27)
-reuses retained-handle details while preserving SLE marker verification,
-native birth/parent identity, refusal and handle cleanup. Test lifetimes and
-all KPI/safety budgets stay fixed; new focused/native and complete functional
-results remain required. These diagnostic timings are not product latency.
+### Human Trial Boundary
+
+After the functional milestone and the existing bounded performance usability
+check, a human trial is a separate local release exercise, not a performance
+certification. Use only an owned seeded D-drive clone with the pinned interpreter
+and the dev10 runtime candidate. Do not use the operator's running 8017 service,
+production data, live sync, force refresh, scheduling, external publishing, real
+model/provider credentials, or real provider/model dispatch without separate
+explicit scope. No trial server or URL has been launched by this documentation
+update.
 
 The Dashboard editor command boundary synchronizes native text/caret selection
 into ProseMirror state before running toolbar commands. Report authoring and
@@ -212,7 +221,7 @@ remain fixed, with no automatic retry, count reset, expiry extension or broader
 commands. Final method review/freeze and native proof remain outstanding.
 AIB, application code and P1-P4 remain unchanged.
 
-The current dev9 diagnostic completed the full recipe at source `fa0b060`,
+The dev9 diagnostic completed the full recipe at source `fa0b060`,
 with normal cleanup and independently reviewed evidence. Collection integrity
 is not numerical acceptance: runtime CSS119.3983ms and production draft_edit
 P95 ratio1.58434 remain failures. The owner-approved
@@ -263,7 +272,8 @@ tool-metadata directory, whose reader locks can disappear during a scan.
 This does not honor arbitrary Git ignores: active ignored code, nested or
 prefix-sibling directory names, and unreadable application source still block.
 
-The current dev9 performance refreeze uses versioned policy/functional files;
+The still-current executable performance refreeze uses the dev9 versioned
+policy/functional files;
 old dev4 files remain historical. Separate immutable producer and aggregate
 input documents compare their stable source, candidate, owner, fixture,
 performance-policy and candidate-environment identities, not their paths.
