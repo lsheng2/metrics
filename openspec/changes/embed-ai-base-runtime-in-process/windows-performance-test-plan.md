@@ -19,14 +19,52 @@ comparison fixture and the existing sample/process/transport helpers. Add a
 small performance producer and semantic checker, not a second runtime,
 process manager, benchmark framework or legacy host interface.
 
-**Tech Stack:** CPython 3.13.7, the frozen dev4 wheel and matching dependency
+**Tech Stack:** CPython 3.13.7, the frozen dev10 wheel and matching dependency
 pins, Django, Waitress, httpx, SLE, pytest, Windows counters and conditional ETW.
 
 **Spec:** [performance phase](windows-performance-phase.md);
 [signed V8 method](windows-close-validation.md#v8-native-measurement-method);
 [research](windows-performance-research.md); [DAG](windows-close-dag.json).
 
+## Dev10 Reference Refreeze (2026-11-27)
+
+The dev10 functional receipt is current at tested source `3b60b05`; its
+documentation publication baseline is `efbf8e2`. The canonical references are
+`evidence/windows-functional-acceptance-dev10.json` and the new
+`evidence/windows-performance-inputs-dev10-r3.json`. Existing dev9 files retain
+their exact historical bytes and test controls. AIB code/wheel, application
+behavior, r3 recipe, baseline, execution modes, numerical and safety rules do
+not change in this adoption. Of the 83 dependency pins, only the runtime
+version differs from dev9. The tested functional source is not relabelled.
+
+The existing performance contract changes only its two canonical paths.
+Actual loader tests admit dev10 and identical owned copies, reject each stale
+dev9 reference and changed owned copy, and retain candidate/source and numeric
+mutation refusals. Private policy/input generators reuse the existing owners.
+The parent owns this small reference slice; one independent reviewer checks
+the generators, evidence, consumer tests and current docs. No separate
+implementation or debugging agent is needed for these fixed reference edits.
+
+After focused validation, independent review and scoped publication, freeze
+a fresh actual-source/environment/fixture input family under `D:/AIGC/d10-1127`.
+Inputs use the full profile, `checks.coverage` and the existing four-field
+performance object; old evidence bindings and old source hashes are not copied.
+Run the existing native equivalence and transport support lanes, then one
+pilot with all six pages, both settings phases, all arms, seq/c4, 50 stream
+events and direct-asset probes. Tests, review and Git writes must be finished
+before measurement. Inspect errors, violations, raw replay and normal cleanup,
+not merely the process exit code.
+
+The immediate outcome is a bounded usability assessment for a controlled
+local human trial. A pilot never establishes numerical certification.
+Any later certify/full qualifier retains its original complete recipe and
+exact-source evidence requirements. C5 correctness, Reporting applicability
+and R4/R7 gaps remain visible; no indefinite optimization or automatic
+threshold relaxation follows from this reference adoption.
+
 ## Low-Event Observation Redesign (2026-11-26)
+
+This dated dev9 observation packet is historical, not a new UAC grant.
 
 The owner authorized the [scheduler-first design and independent review](windows-low-event-observation.md).
 R3 calibration was refused for21,698lost events and missing target coverage;
@@ -41,7 +79,7 @@ AIB/dev9, r3 KPI and all safety budgets stay fixed.
 
 The [approved page amendment](windows-page-policy-amendment.md) selects
 recipe `windows-mdb2-s0b-r3`; its current reference-only copy is
-`evidence/windows-performance-inputs-dev9-r3-refresh.json`.
+`evidence/windows-performance-inputs-dev10-r3.json`.
 The transport owner and policy loader share the fixed nearest-rank P99<100ms/
 max<=200ms definition. Producer resolved inputs, standalone/aggregate replay
 and active fixtures use r3; stale r1/r2 references are refused. The page owner
@@ -52,7 +90,8 @@ Fresh input freeze and native qualification are still required.
 
 ## Current Functional Reference Refresh (2026-11-25)
 
-Dashboard `4f538b773efdd5068a36b3d699ea2cf6890e83d8` has current functional
+This dated dev9 refresh is historical; the dev10 reference above is current.
+Dashboard `4f538b773efdd5068a36b3d699ea2cf6890e83d8` had functional
 acceptance:114/114keys, all seven whole modules and W2.R/FUNC.R1/1.
 The source-preserving checkpoint is
 `D:/AIGC/d9-1122/functional-refresh-1125/checkpoint/windows-functional-acceptance-dev9-refresh.json`

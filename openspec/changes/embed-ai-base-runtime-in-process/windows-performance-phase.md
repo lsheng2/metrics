@@ -16,7 +16,7 @@ state lives only in [tasks.md](tasks.md). It creates no new runtime interface.
 ## Current Page Rule (2026-11-24)
 
 The owner chose unchanged implementation and the [r3 page amendment](windows-page-policy-amendment.md).
-The [canonical reference-refreshed policy](evidence/windows-performance-inputs-dev9-r3-refresh.json) keeps
+The [canonical dev10 policy](evidence/windows-performance-inputs-dev10-r3.json) keeps
 ordinary page ratio<=1.2 and gives c4/candidate_saturated a joint ratio<=1.25
 AND P95<=800ms ceiling across all six pages and both settings phases.
 The [r2 P4 renewal](windows-tail-policy-amendment.md) remains: short/direct-asset
@@ -25,7 +25,20 @@ auth/hash/slot/quota, lifecycle/leak and cleanup requirements are unchanged.
 The original r2 full certificate remains FAIL; r3 needs fresh source-bound
 inputs and certification. Old policies and results are not converted evidence.
 
+## Dev10 Candidate Reference (2026-11-27)
+
+The current runtime and functional receipt are dev10; exact version, wheel and
+tested source are in [the functional acceptance](evidence/windows-functional-acceptance-dev10.json).
+The [reference-only plan](windows-performance-test-plan.md#dev10-reference-refreeze-2026-11-27)
+binds that receipt and the 83-package candidate environment to the unchanged
+r3 method. Policy baseline `efbf8e2` is the documentation publication, not the
+functional tested source `3b60b05`. Fresh input families bind the actual later
+committed source. One bounded pilot may inform a controlled human trial; it is
+not certification. The dated candidate amendments below remain historical.
+
 ## Windows Convergence Candidate Amendment (2026-11-22)
+
+Historical dev9 candidate selection, superseded by the dev10 reference above.
 
 After source22/private-wheel23 checks and independent source review, the formal
 candidate is `ai-base-runtime==0.1.1.dev9`, source

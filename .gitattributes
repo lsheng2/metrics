@@ -1,5 +1,6 @@
 provider_sync/out/_jql/* -text -filter
 provider_sync/out/_jql/parser.cjs -diff
 ui_web/static/vendor/** -text
-# Keep the hash-bound acceptance receipt byte-for-byte.
+# Keep hash-bound evidence byte-for-byte.
 openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev10.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev10-r3.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

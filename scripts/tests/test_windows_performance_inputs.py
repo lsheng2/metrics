@@ -7,8 +7,15 @@ import pytest
 
 from scripts.tests.test_qualify_ai_runtime import _base_case, _sha, _write_json
 from scripts.validation.windows_host_performance_contract import FUNCTIONAL_RELATIVE, POLICY_RELATIVE
+from scripts.validation.windows_qualification_inputs import QualificationError
 
 
+DEV10_FUNCTIONAL_RELATIVE = Path(
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev10.json"
+)
+DEV10_POLICY_RELATIVE = Path(
+    "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev10-r3.json"
+)
 DEV9_FUNCTIONAL_RELATIVE = Path(
     "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9-refresh.json"
 )
@@ -145,12 +152,12 @@ def test_performance_request_reuses_common_input_boundaries_without_copying_exte
     assert request["_paths"]["output"] == case["output"]
 
 
-def test_performance_request_accepts_dev9_canonical_references(tmp_path, monkeypatch):
+def test_performance_request_accepts_dev10_canonical_references(tmp_path, monkeypatch):
     from scripts.validation.windows_host_performance_contract import load_performance_request
 
     case = performance_case(tmp_path, monkeypatch, mode="certify")
-    policy = case["root"] / DEV9_POLICY_RELATIVE
-    functional = case["root"] / DEV9_FUNCTIONAL_RELATIVE
+    policy = case["root"] / DEV10_POLICY_RELATIVE
+    functional = case["root"] / DEV10_FUNCTIONAL_RELATIVE
     proof = case["owned"] / "receipts" / "functional-proof.json"
     _write_json(policy, performance_policy_payload(case["manifest"]))
     _write_json(functional, functional_acceptance_payload(case["manifest"], proof))
@@ -162,6 +169,24 @@ def test_performance_request_accepts_dev9_canonical_references(tmp_path, monkeyp
 
     assert Path(request["performance"]["policy_ref"]["path"]) == policy
     assert Path(request["performance"]["functional_acceptance_ref"]["path"]) == functional
+
+
+@pytest.mark.parametrize("field,relative", [
+    ("functional_acceptance_ref", DEV9_FUNCTIONAL_RELATIVE),
+    ("policy_ref", DEV9_POLICY_RELATIVE),
+])
+def test_performance_request_rejects_superseded_dev9_refresh_references(tmp_path, monkeypatch, field, relative):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch)
+    current = Path(case["manifest"]["performance"][field]["path"])
+    stale = case["root"] / relative
+    _write_json(stale, json.loads(current.read_text(encoding="utf-8")))
+    case["manifest"]["performance"][field] = {"path": str(stale), "sha256": _sha(stale)}
+    _write_json(case["inputs"], case["manifest"])
+
+    with pytest.raises(QualificationError, match="reviewed frozen reference"):
+        load_performance_request(case["inputs"], case["output"], mode="certify")
 
 
 def test_performance_request_rejects_stale_pre_dev9_repo_references(tmp_path, monkeypatch):
@@ -221,17 +246,17 @@ def test_reference_refresh_preserves_the_signed_recipe_and_binds_current_functio
     assert functional["required_functional_evidence_keys"] == functional["validated_functional_evidence_keys"] == 114
 
 
-def test_performance_request_accepts_owned_copy_matching_dev9_reference(tmp_path, monkeypatch):
+def test_performance_request_accepts_owned_copy_matching_dev10_reference(tmp_path, monkeypatch):
     from scripts.validation.windows_host_performance_contract import load_performance_request
 
     case = performance_case(tmp_path, monkeypatch, mode="certify")
-    canonical_policy = case["root"] / DEV9_POLICY_RELATIVE
-    canonical_functional = case["root"] / DEV9_FUNCTIONAL_RELATIVE
+    canonical_policy = case["root"] / DEV10_POLICY_RELATIVE
+    canonical_functional = case["root"] / DEV10_FUNCTIONAL_RELATIVE
     proof = case["owned"] / "receipts" / "functional-proof.json"
     _write_json(canonical_policy, performance_policy_payload(case["manifest"]))
     _write_json(canonical_functional, functional_acceptance_payload(case["manifest"], proof))
-    owned_policy = case["owned"] / "copies" / "windows-performance-inputs-dev9-r3-refresh.json"
-    owned_functional = case["owned"] / "copies" / "windows-functional-acceptance-dev9-refresh.json"
+    owned_policy = case["owned"] / "copies" / "windows-performance-inputs-dev10-r3.json"
+    owned_functional = case["owned"] / "copies" / "windows-functional-acceptance-dev10.json"
     _write_json(owned_policy, json.loads(canonical_policy.read_text(encoding="utf-8")))
     _write_json(owned_functional, json.loads(canonical_functional.read_text(encoding="utf-8")))
     case["manifest"]["performance"]["policy_ref"] = {"path": str(owned_policy), "sha256": _sha(owned_policy)}
@@ -245,6 +270,76 @@ def test_performance_request_accepts_owned_copy_matching_dev9_reference(tmp_path
 
     assert Path(request["performance"]["policy_ref"]["path"]) == owned_policy
     assert Path(request["performance"]["functional_acceptance_ref"]["path"]) == owned_functional
+
+
+@pytest.mark.parametrize("field,identity_key", [
+    ("policy_ref", "runtime"), ("functional_acceptance_ref", "candidate"),
+])
+def test_performance_request_rejects_changed_owned_reference(tmp_path, monkeypatch, field, identity_key):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch)
+    current = Path(case["manifest"]["performance"][field]["path"])
+    payload = json.loads(current.read_text(encoding="utf-8"))
+    payload[identity_key]["version"] = "0.1.1.dev9"
+    stale = case["owned"] / "copies" / current.name
+    _write_json(stale, payload)
+    case["manifest"]["performance"][field] = {"path": str(stale), "sha256": _sha(stale)}
+    _write_json(case["inputs"], case["manifest"])
+
+    with pytest.raises(QualificationError, match="reviewed frozen reference"):
+        load_performance_request(case["inputs"], case["output"], mode="certify")
+
+
+def test_dev10_reference_admits_accepted_candidate_without_changing_the_signed_recipe(tmp_path):
+    from scripts.validation.windows_host_performance_contract import validate_performance_contract
+
+    root = Path(__file__).resolve().parents[2]
+    policy_path = root / DEV10_POLICY_RELATIVE
+    functional_path = root / DEV10_FUNCTIONAL_RELATIVE
+    previous = json.loads((root / DEV9_POLICY_RELATIVE).read_text(encoding="utf-8"))
+    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    functional = json.loads(functional_path.read_text(encoding="utf-8"))
+    for key in ("recipe_id", "baseline", "full_recipe", "execution_modes", "numerical_amendment"):
+        assert policy.get(key) == previous.get(key), key
+    assert functional["candidate"]["version"] == "0.1.1.dev10"
+    assert policy["candidate_refreeze"]["functional_source"] == functional["validated_source"]
+    assert policy["candidate_refreeze"]["functional_acceptance"] == {
+        "relative": DEV10_FUNCTIONAL_RELATIVE.as_posix(), "sha256": _sha(functional_path),
+    }
+    request = {
+        "candidate": functional["candidate"],
+        "performance": {
+            "recipe_id": "windows-mdb2-s0b-r3", "mode": "pilot",
+            "policy_ref": {"path": str(policy_path), "sha256": _sha(policy_path)},
+            "functional_acceptance_ref": {"path": str(functional_path), "sha256": _sha(functional_path)},
+        },
+    }
+
+    bound = validate_performance_contract(request, (root, tmp_path), mode="pilot")
+
+    assert bound == {"policy": policy_path, "functional_acceptance": functional_path}
+
+
+@pytest.mark.parametrize("field,identity_key", [
+    ("policy_ref", "runtime"), ("functional_acceptance_ref", "candidate"),
+])
+@pytest.mark.parametrize("changed", ["version", "source_commit", "wheel_sha256"])
+def test_performance_contract_rejects_mismatched_candidate_identity(
+    tmp_path, monkeypatch, field, identity_key, changed,
+):
+    from scripts.validation.windows_host_performance_contract import load_performance_request
+
+    case = performance_case(tmp_path, monkeypatch)
+    artifact = Path(case["manifest"]["performance"][field]["path"])
+    payload = json.loads(artifact.read_text(encoding="utf-8"))
+    payload[identity_key][changed] = "wrong-candidate"
+    _write_json(artifact, payload)
+    case["manifest"]["performance"][field]["sha256"] = _sha(artifact)
+    _write_json(case["inputs"], case["manifest"])
+
+    with pytest.raises(QualificationError, match="runtime mismatch|candidate mismatch"):
+        load_performance_request(case["inputs"], case["output"], mode="certify")
 
 
 def test_performance_contract_validates_policy_and_functional_reference_content(tmp_path, monkeypatch):

@@ -3,11 +3,11 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-27.2 |
+| Revision | 2026-11-27.3 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
-| Current MDB-2 policy | `windows-mdb2-s0b-r3`; numeric rules unchanged; executable policy still references dev9 r3-refresh while dev10 reference-only adoption is next |
+| Current MDB-2 policy | `windows-mdb2-s0b-r3`; dev10 candidate-bound references, numerical rules unchanged |
 | Change authority | Owner authorization of 2026-11-26 permits evidence-led KPI revision and continued closure |
 | Results index | [Performance test reports](../validation/performance-reports/README.md) |
 | Report format | [KPI test report template](../validation/performance-report-template.md) |
@@ -21,13 +21,14 @@ safety prerequisites and result status. It is not a production availability SLA.
 
 The executable source of numerical truth remains each named owning checker and
 its frozen policy. For MDB-2, use the
-[last frozen dev9 policy JSON](../../changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3-refresh.json).
+[current dev10 policy JSON](../../changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev10-r3.json).
 This document and that checker must agree. A disagreement blocks certification;
 never choose whichever representation is easier to pass. Dev10 is selected and
-functionally accepted for the asset-cache slice, but the executable performance
-policy still points at the dev9 r3-refreshed reference until a reviewed dev10
-reference-only adoption is published. The old dev9 reference cannot admit a
-dev10 certification request. No numerical value is changed by this candidate update.
+functionally accepted for the asset-cache slice. Its policy now binds that
+functional receipt and candidate environment, preserving the dev9 r3 recipe.
+The old dev9 references are historical and cannot admit a current request.
+This metadata adoption is not a measurement or a certification; no numerical
+value is changed by this candidate update.
 OpenSpec changes retain decision history and implementation plans. Their dated
 older values do not override this register's current-policy links.
 
@@ -394,3 +395,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | 2026-11-26.5 | Bound the independently reviewed ten-capture UAC grant and verified its actual readiness, incarnation and original expiry | None; method review/freeze and native proof remain outstanding |
 | 2026-11-26.6 | Recorded pre-capture observation refusal and bounded native detail/Git parsing repair | None; no product KPI, UAC scope, count or safety relaxation |
 | 2026-11-27.2 | Recorded dev10 functional PASS provenance and clarified that current executable performance policy remains dev9 r3-refresh until reviewed reference adoption | None; no KPI, workload, safety, or active policy numeric change |
+| 2026-11-27.3 | Adopted dev10 candidate, environment and functional references for fresh performance inputs; historical dev9 records remain unchanged | None; the signed r3 recipe, numerical rules and safety bounds are identical |

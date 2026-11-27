@@ -98,9 +98,10 @@ functional scope passed for dev10. The current receipt is
 `evidence/windows-functional-acceptance-dev10.json`; it records 3332 normalized
 tests across seven lanes, 114/114 evidence keys, native 56, complete 74/recovery
 39, migration PASS, W2.R/FUNC.R 1/1 and performance NOT_RUN. Counts overlap and
-are not summed. Before formal performance, publish and review a dev10
-reference-only adoption; the executable performance policy still points at dev9
-r3-refreshed. Broader C5 correctness, performance, real-provider/model,
+are not summed. The executable performance references now select dev10 through
+the [reference-only refreeze](windows-performance-test-plan.md#dev10-reference-refreeze-2026-11-27).
+Fresh exact-source inputs and runtime observations remain required; metadata
+adoption is not numerical acceptance. Broader C5 correctness, real-provider/model,
 other-App and Linux scopes remain open or excluded as before.
 
 The Implementation Engineer owns the bounded repair; the controller owns

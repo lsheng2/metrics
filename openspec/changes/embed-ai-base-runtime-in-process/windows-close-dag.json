@@ -13,6 +13,35 @@
   "amendment_dirty_inventory": "evidence/windows-functional-first-baseline.json",
   "performance_refreeze_baseline": "eb84aa23a123a191d4b5f6569e69e3d00d75268b",
   "performance_plan": "windows-performance-test-plan.md",
+  "performance_dev10_reference_refreeze": {
+    "date": "2026-11-27",
+    "baseline": "efbf8e261941639b2f4b7f5c1a37af600bcafddf",
+    "owner_node": "W3.REPLAN",
+    "implementation_node": "PERF.PROBE",
+    "plan": "windows-performance-test-plan.md#dev10-reference-refreeze-2026-11-27",
+    "refreeze_actions": [
+      {"action": "amend", "reason": "Adopt the accepted dev10 functional reference and candidate environment for fresh inputs. Preserve historical receipts, exact tested-source identity, the signed r3 recipe and every numerical/safety rule. Run one bounded usability pilot after review/publication and native support; do not promote it to certification."}
+    ],
+    "updated_artifacts": [
+      ".gitattributes",
+      "scripts/validation/windows_host_performance_contract.py",
+      "scripts/tests/test_windows_performance_inputs.py",
+      "scripts/tests/test_windows_performance_tail_policy.py",
+      "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev10-r3.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-phase.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-plan.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md",
+      "openspec/docs/current-baseline/performance-kpis.md",
+      "docs/development/reporting-delivery.md"
+    ],
+    "rerun_gates": ["W3.REPLAN", "PERF.KPI", "PERF.PROBE", "PERF.PROBE.R", "PERF.PROBE.REPLAN", "PERF.CERTIFY", "CLOSE.R"],
+    "post_refreeze_preflight_result": {
+      "command": "D:/AIGC/d10-1127/venv/Scripts/python.exe -I -B D:/AIGC/d10-1127/performance-helpers/check-reference-plan.py",
+      "result": "PASS"
+    }
+  },
   "native_process_observation_refreeze": {
     "date": "2026-11-26",
     "baseline": "dcd732399dbad0202d09c8e68beb4329234a9f93",

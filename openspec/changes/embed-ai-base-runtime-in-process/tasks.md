@@ -13,7 +13,7 @@ performance NOT_RUN. Counts overlap; do not sum.
 Old interrupted/failed dev10 runs remain evidence only; scoped repairs are
 reviewed, and generic SLE/app/AIB/KPI/stop/leakage limits are unchanged.
 
-### Current Frontier: Evidence-Led Performance Closure (2026-11-26)
+### Current Frontier: Bounded Dev10 Usability (2026-11-27)
 
 The current functional reference is now the dev10 receipt above; historical dev9 refresh `evidence/windows-functional-acceptance-dev9-refresh.json` remains unchanged and no longer defines the current candidate.
 The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but 529,161 events exceed 250,000.
@@ -23,10 +23,10 @@ The max10 UAC grant and `le1126-ret2-cal1` refusal are historical: the grant
 expired, and the invalid run stopped before apps/pages/ETW. Native detail and
 Git classifier repairs are not a current prerequisite for this functional
 milestone; they do not qualify performance. Root cause/full qualification/
-CLOSE.R/WIN.ACCEPT remain open. Current executable performance policy still
-points at dev9 r3-refreshed; dev10 reference-only adoption is next after this
-documentation-only publication. Reporting R1-R10 applicability, C3-C5 definition
-gaps, and R4/R7 known limits remain visible. Preserve all old failures and scopes.
+CLOSE.R/WIN.ACCEPT remain open. The executable performance references now select
+dev10 under the [reference-only refreeze](windows-performance-test-plan.md#dev10-reference-refreeze-2026-11-27).
+After review/publication, freeze actual-source inputs and run native support
+then one bounded pilot. R1-R10/C3-C5/R4/R7 gaps and all old failures remain visible.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 

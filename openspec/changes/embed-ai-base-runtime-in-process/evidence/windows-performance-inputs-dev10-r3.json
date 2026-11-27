@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "kind": "windows-performance-policy",
+  "recipe_id": "windows-mdb2-s0b-r3",
+  "status": "method-frozen-not-measured",
+  "reviewed_plan_commit": "872378a1c5617896d752728d739a331bfc01a92b",
+  "source_baseline": "efbf8e261941639b2f4b7f5c1a37af600bcafddf",
+  "runtime": {
+    "distribution": "ai-base-runtime",
+    "version": "0.1.1.dev10",
+    "source_commit": "3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a",
+    "wheel_sha256": "18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55"
+  },
+  "environment": {
+    "platform": "win32",
+    "python_version": "3.13.7",
+    "version_pin_count": 83,
+    "artifact_id": "d10-1127",
+    "private_artifact_root": "D:/AIGC/<artifact_id>",
+    "version_record": {
+      "relative": "evidence/performance-package-versions-dev10.json",
+      "sha256": "9bbd1f4a1078dc91a0be85dd73dd8cbcf66476d07eb3a34e372f8f0fb3af2da3"
+    },
+    "note": "Fresh dev10 candidate environment with the same Python version and only the ai-base-runtime distribution version changed from dev9."
+  },
+  "baseline": {
+    "role": "faithful-threaded-wsgi",
+    "server": [
+      "socketserver.ThreadingMixIn",
+      "django.core.servers.basehttp.WSGIServer",
+      "django.core.servers.basehttp.WSGIRequestHandler",
+      "django.contrib.staticfiles.handlers.StaticFilesHandler"
+    ],
+    "server_timeout_seconds": 0.5,
+    "daemon_request_threads": true,
+    "worker": "real idle ProjectRunRuntime",
+    "dispatch_allowed": false
+  },
+  "full_recipe": {
+    "settings": [
+      "development",
+      "production"
+    ],
+    "page_keys": [
+      "home",
+      "projects",
+      "project_detail",
+      "stage_reports",
+      "draft_edit",
+      "bug_trend"
+    ],
+    "arms": [
+      "baseline",
+      "candidate",
+      "candidate_saturated"
+    ],
+    "modes": {
+      "seq": 1,
+      "c4": 4
+    },
+    "warmup": 10,
+    "blocks": 4,
+    "per_block": 40,
+    "arm_order": "alternate_forward_reverse",
+    "percentile": {
+      "method": "nearest_rank",
+      "quantile": 0.95
+    },
+    "page_ratio_max": 1.2,
+    "concurrent_saturated_page": {
+      "mode": "c4",
+      "arm": "candidate_saturated",
+      "page_ratio_max": 1.25,
+      "p95_max_ms": 800
+    },
+    "spacing": {
+      "events": 50,
+      "interval_seconds": 0.1,
+      "first_event_max_ms": 200,
+      "inter_arrival_p95_max_ms": 150
+    },
+    "saturation": {
+      "streams": [
+        "active",
+        "idle",
+        "idle",
+        "idle"
+      ],
+      "paired_period_seconds": 1,
+      "excess_period_seconds": 5,
+      "probe_kinds": [
+        "loop_short",
+        "direct_asset",
+        "excess_stream"
+      ],
+      "short_status": 200,
+      "excess_status": 503,
+      "retry_after": "2",
+      "asset_prefix": "/ai/assets/",
+      "latency_tail": {
+        "method": "nearest_rank",
+        "quantile": 0.99,
+        "p99_exclusive_ms": 100,
+        "max_inclusive_ms": 200
+      }
+    },
+    "production": {
+      "debug": false,
+      "collectstatic_required": true
+    },
+    "static_auth": {
+      "unauthenticated_baseline_static": 200,
+      "unauthenticated_candidate_static": 401,
+      "unauthenticated_pages": 401,
+      "authenticated_pages_and_assets": 200
+    }
+  },
+  "execution_modes": {
+    "pilot": {
+      "warmup": 1,
+      "blocks": 1,
+      "per_block": 5,
+      "acceptance_eligible": false
+    },
+    "diagnostic": {
+      "uses_full_recipe": true,
+      "acceptance_eligible": false
+    },
+    "certify": {
+      "uses_full_recipe": true,
+      "acceptance_eligible": true
+    }
+  },
+  "identity_rule": "Per-run immutable requests bind actual clean source, installed environment and this policy hash. Resolved routes, assets, seed and fixture hashes are saved during guarded setup before sampling.",
+  "acceptance_rule": "The eligible mode alone never proves PASS. The owning semantic checker recomputes the complete raw recipe, identities, same-window evidence and normal cleanup.",
+  "non_claims": [
+    "This method metadata records no performance measurement, KPI result, or certification.",
+    "Only runtime, accepted functional reference, and candidate environment/version metadata move to dev10; r3 workload and numerical thresholds are unchanged.",
+    "All historical dev9 policies, inputs, results, candidate environments, receipts, and failures are preserved.",
+    "The functional receipt keeps its tested source identity; source_baseline records only the clean repository head supplied at generation time.",
+    "Other Apps, Linux, real providers/models/data, and whole AIB release remain outside this policy."
+  ],
+  "candidate_refreeze": {
+    "baseline": "efbf8e261941639b2f4b7f5c1a37af600bcafddf",
+    "functional_source": {
+      "commit": "3b60b05830062605aa4c225bb6e7a98c6e1c7594",
+      "status": ""
+    },
+    "functional_acceptance": {
+      "relative": "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev10.json",
+      "sha256": "6efac6315e6b34c026d2acc5b55a13bbeb525e8dafa49dc9ce5416030214f7c8"
+    },
+    "scope": "Reference-only dev10 runtime and environment metadata refresh; r3 numerics and workload are unchanged."
+  },
+  "numerical_amendment": {
+    "approved_date": "2026-11-24",
+    "scope": "Owner authorized unchanged implementation and KPI reassessment. All six c4/candidate_saturated pages in both phases require nearest-rank P95 ratio<=1.25 AND P95<=800ms; all other page cells keep1.2.",
+    "supersedes": {
+      "relative": "evidence/windows-performance-inputs-dev9-r2.json",
+      "sha256": "c0a5da6346da05b7ae88770822b1e0022cac7cb62497dc06b8d2543e9f7357aa"
+    },
+    "historical_rule": "Original policies, inputs and failures remain unchanged; r1/r2 receipts cannot certify under r3."
+  },
+  "reference_refresh": {
+    "date": "2026-11-27",
+    "previous_policy": {
+      "relative": "openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3-refresh.json",
+      "sha256": "eb5263de650c7807371c4f2c3556fa5f513e70bfe26278968b64ecd868938089"
+    },
+    "scope": "Bind the dev10 functional reference for later performance-input generation; this is not measurement or certification."
+  }
+}

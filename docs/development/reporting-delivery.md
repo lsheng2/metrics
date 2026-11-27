@@ -51,6 +51,15 @@ KPI, production shutdown budgets, leak detection, asset bytes and dependency
 declarations are unchanged. No old-SDK compatibility or source-mode production
 path is added.
 
+The current performance method references
+[the dev10 r3 policy](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev10-r3.json)
+and that dev10 functional receipt. Its publication baseline is `efbf8e2`, not
+the tested functional source `3b60b05`. The 83 pinned dependency versions change
+only for the runtime relative to dev9; the signed recipe and every numerical
+and safety rule stay unchanged. Fresh performance inputs bind the actual
+subsequent committed source. A bounded pilot can inform a local trial but
+cannot certify performance or close `WIN.ACCEPT`.
+
 Historical dev10 failures remain evidence. The `b415335` full functional run
 stopped after five modules with970 passes/one `project_management` failure, and
 scripts/final qualification did not run. The separate scripts readiness run
@@ -272,9 +281,9 @@ tool-metadata directory, whose reader locks can disappear during a scan.
 This does not honor arbitrary Git ignores: active ignored code, nested or
 prefix-sibling directory names, and unreadable application source still block.
 
-The still-current executable performance refreeze uses the dev9 versioned
-policy/functional files;
-old dev4 files remain historical. Separate immutable producer and aggregate
+The executable performance refreeze now uses the dev10 versioned
+policy/functional files; dev9 and dev4 references remain historical.
+Separate immutable producer and aggregate
 input documents compare their stable source, candidate, owner, fixture,
 performance-policy and candidate-environment identities, not their paths.
 The producer manifest must have the full profile and supported schema.
