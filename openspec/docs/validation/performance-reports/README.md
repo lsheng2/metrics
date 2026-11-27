@@ -9,6 +9,8 @@ This index is not a second task ledger or a substitute for raw semantic validati
 
 | Date | Profile / Kind | Result | Report | Acceptance Scope |
 | --- | --- | --- | --- | --- |
+| 2026-11-27 | Dev10 Windows / reduced pilot R2 | COMPLETE/PASS, zero errors/violations; full raw replay passed | [Post-repair pilot](2026-11-27-2024-dev10-pilot-r2.md) | Controlled-trial usability signal only; not formal performance acceptance |
+| 2026-11-27 | Dev10 Windows / reduced pilot R1 | FAIL: final source observation; two raw page-ratio violations | [Preserved first pilot](2026-11-27-1906-dev10-pilot-r1.md) | None; not converted by later repair or PASS |
 | 2026-11-26 | Scheduler observation calibration | FAIL: event-cost limit | [Low-event calibration](2026-11-26-low-event-calibration.md) | None; no native proof or product KPI certification |
 
 ## Historical Evidence Inventory
@@ -18,7 +20,7 @@ identity must be read from each record before making a reuse claim.
 
 | Date | Evidence | Result And Boundary |
 | --- | --- | --- |
-| 2026-11-07 | [Reporting S0/S1 delivery](../../../changes/add-provider-neutral-project-reporting/performance-delivery.md) | Scoped historical reporting PASS; old candidate/source, not current dev9 timing proof |
+| 2026-11-07 | [Reporting S0/S1 delivery](../../../changes/add-provider-neutral-project-reporting/performance-delivery.md) | Scoped historical reporting PASS; old candidate/source, not current dev10 timing proof |
 | 2026-11-25 | `D:/AIGC/d9-1122/runs/certify-r3-1124d.json` | Complete r3 PASS at db00210; historical |
 | 2026-11-25 | `D:/AIGC/d9-1122/runs/certify-editor-sync-r3-1125a.json` | Complete FAIL at c845224: seq/development bug_trend ratio |
 | 2026-11-25 | `D:/AIGC/d9-1122/runs/diagnostic-perf-ref-refresh-r3-1125.json` | Receipt FAIL / collection INCOMPLETE at d7dd699: scheduled-slot integrity |

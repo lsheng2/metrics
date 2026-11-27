@@ -77,14 +77,14 @@ do not establish a shared root cause for older intermittent failures.
 
 ### Human Trial Boundary
 
-After the functional milestone and the existing bounded performance usability
-check, a human trial is a separate local release exercise, not a performance
-certification. Use only an owned seeded D-drive clone with the pinned interpreter
+The dev10 functional milestone and [bounded Windows pilot](../../openspec/docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
+now pass. They support a controlled human trial, not formal performance or
+whole-project release. Use only an owned seeded D-drive clone with the pinned interpreter
 and the dev10 runtime candidate. Do not use the operator's running 8017 service,
 production data, live sync, force refresh, scheduling, external publishing, real
 model/provider credentials, or real provider/model dispatch without separate
-explicit scope. No trial server or URL has been launched by this documentation
-update.
+explicit scope. Manual acceptance, C5 correctness, R4/R7 and full certification
+remain open. No trial server or URL is launched by this documentation update.
 
 The Dashboard editor command boundary synchronizes native text/caret selection
 into ProseMirror state before running toolbar commands. Report authoring and

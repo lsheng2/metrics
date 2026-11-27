@@ -16,12 +16,12 @@ reviewed, and generic SLE/app/AIB/KPI/stop/leakage limits are unchanged.
 ### Current Frontier: Bounded Dev10 Usability (2026-11-27)
 
 The current functional reference is now the dev10 receipt above; historical dev9 refresh `evidence/windows-functional-acceptance-dev9-refresh.json` remains unchanged and no longer defines the current candidate.
-Dev10 references are adopted; native equivalence3 and transport31 passed.
-The first360-page pilot failed final Git observation despite normal cleanup.
-The [environment repair](windows-performance-test-plan.md#windows-environment-restoration-2026-11-27)
-restores native empty parent variables without weakening source/KPI checks.
-After review/publication, freeze actual-source inputs and run one post-fix pilot.
-Two raw page-ratio violations remain historical, not performance acceptance.
+Dev10 references, native equivalence3 and transport31 passed. Repair17d4b1e
+passed53 checks, a real lifecycle proof and independent1/1 review.
+The [post-fix pilot](../../docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
+passed360pages/48comparisons, zero errors/violations, full raw replay and cleanup.
+The failed first pilot and its two raw ratio violations remain historical.
+Current goal is controlled human trial readiness, not further open-ended tuning.
 R1-R10/C3-C5/R4/R7, full qualification and CLOSE.R/WIN.ACCEPT remain open.
 The [low-event refusal](evidence/windows-low-event-calibration-20261126.json),
 expired max10 grant and [retention method](windows-scheduler-retention.md)

@@ -6,10 +6,13 @@
 
 旧外部伴随服务、旧 HTTP business API、旧 Grafana CLI precondition、旧 proof id、旧 demo approval prefix、旧 demo publish endpoint 和旧 host-action 消息协议都不是当前操作说明。历史案例若提到这些术语，只能作为旧证据阅读。
 
-Windows 入口已统一到进程内 `serve` 和 SLE 所有权管理，安装与启停证据见 MDB-2 的
-`evidence/windows-release-inputs.json`、`evidence/windows-w1-launch.json`。
-完整 10.2-10.4 验收、后续宿主资格和 Linux 部署仍是开放项；
-本 runbook 不把发布链路或 Windows 局部验收当作整个项目关闭的证明。
+Windows 入口已统一到进程内 `serve` 和 SLE 所有权管理。当前候选为 dev10，
+解释器与安装身份以 [当前验证指南](../development/reporting-delivery.md) 为准。
+[功能回执](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev10.json)
+记录 3332 项、114/114 证据键通过；
+[有界 pilot](../../openspec/docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
+记录完整采集、零错误、零超限。它们支持受控人工试用，不是正式性能认证或整个项目发布。
+真实 provider/model、人工验收、C5 正确性、R4/R7、完整性能及 Linux 资格仍未关闭。
 
 ## Windows 入口
 
@@ -18,6 +21,10 @@ Dashboard，不附带迁移、示例数据或 Grafana 导入；E2E 入口显式�
 Grafana。两者都拒绝旧启动选项，不回退到另一套 Python。停止按已登记实例及进程身份进行，
 记录服务真实退出码；强制、失败和未知退出不算正常停止。完整 stack smoke 读取当前
 Workbench 和服务端 workflow form，不再要求已退役的业务 API。
+
+本轮试用只使用新的 D 盘隔离数据副本和 synthetic provider/model；不使用现有 8017、
+生产数据、真实凭据、同步、force refresh 或调度。涉及 Grafana 时仅使用明确隔离的
+本地目标，不导入外部环境。当前文档不会自动启动试用服务。
 
 ## 当前契约
 
@@ -54,20 +61,21 @@ Workbench 稳定选择器：
 按 `docs/development/reporting-delivery.md` 的 no-dotenv 入口运行显式测试路径。示例从 Dashboard repo root 运行 real browser join，并使用新的临时 basetemp：
 
 ```powershell
-$reportingPython = 'D:\AIGC\artifacts\mdb2-windows-20261117\windows-venv-r4\Scripts\python.exe'
-$baseTemp = Join-Path $env:TEMP ('mdb2-publication-browser-' + [guid]::NewGuid().ToString('N'))
-& $reportingPython -I scripts/validation/run_report_authoring_tests.py ai_host/tests/test_publication_browser_join.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function --basetemp $baseTemp
+$reportingPython = 'D:\AIGC\d10-1127\venv\Scripts\python.exe'
+$baseTemp = Join-Path 'D:\AIGC\d10-1127\temp' ('mdb2-publication-browser-' + [guid]::NewGuid().ToString('N'))
+& $reportingPython -I -B scripts/validation/run_report_authoring_tests.py ai_host/tests/test_publication_browser_join.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function --basetemp $baseTemp
 ```
 
 `pytest` 直接运行不是等价门禁，因为它会遗漏部分模块并加载开发设置。
 
-本 packet 的当前证据记录在：
+原发布 packet 的历史证据记录在：
 
 ```text
 openspec/changes/embed-ai-base-runtime-in-process/evidence/publication-packet-20261117.json
 ```
 
-该文件记录的 final browser fixture 是 runtime approval + Grafana + Workbench history 的 synthetic 验证证据；它仍明确标记完整 Dashboard qualification 和完整 AIB qualification 未关闭。
+该文件记录当时 runtime approval + Grafana + Workbench history 的 synthetic 验证；
+它不替代本页顶部的当前 dev10 回执，也不证明整个 Dashboard/AIB 项目已关闭。
 
 ## 当前安全边界
 

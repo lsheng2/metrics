@@ -3,7 +3,7 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-27.3 |
+| Revision | 2026-11-27.4 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
@@ -341,6 +341,8 @@ source/policy/fixture identity before reusing evidence.
 
 | Profile/Metric | Latest Relevant Recorded Result | Current Claim |
 | --- | --- | --- |
+| MDB2 dev10 bounded pilot R2 | COMPLETE/PASS at `17d4b1e`, 360 pages,48 comparisons, zero errors/violations, source/environment/window/replay and normal cleanup valid | Supports controlled local human trial; reduced pilot, not PERF.CERTIFY or WIN.ACCEPT |
+| MDB2 dev10 pilot R1 | Failed final source/environment observation; separate raw analysis found two page-ratio violations | Preserved failure; later sanitizer repair/R2 does not relabel or prove an application performance improvement |
 | MDB2 dev10 Windows functional acceptance | PASS at Dashboard `3b60b05830062605aa4c225bb6e7a98c6e1c7594`, AIB dev10 `3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a`, 114/114 keys, seven functional lanes, performance NOT_RUN | Functional prerequisite satisfied for this candidate; not numerical performance or WIN.ACCEPT |
 | MDB2 r3 full certificate at db00210 | Historical complete PASS, 11,520 pages, dev9 | Not current-source acceptance after subsequent changes |
 | MDB2 r3 certificate at c845224 | Complete FAIL: development seq/candidate bug_trend ratio 1.5376 >1.20 | KPI-P2 failure retained; other passing cells do not make the run pass |
@@ -396,3 +398,4 @@ or applicable R/C qualification gaps remain. Report scoped closure explicitly.
 | 2026-11-26.6 | Recorded pre-capture observation refusal and bounded native detail/Git parsing repair | None; no product KPI, UAC scope, count or safety relaxation |
 | 2026-11-27.2 | Recorded dev10 functional PASS provenance and clarified that current executable performance policy remains dev9 r3-refresh until reviewed reference adoption | None; no KPI, workload, safety, or active policy numeric change |
 | 2026-11-27.3 | Adopted dev10 candidate, environment and functional references for fresh performance inputs; historical dev9 records remain unchanged | None; the signed r3 recipe, numerical rules and safety bounds are identical |
+| 2026-11-27.4 | Indexed separate failed R1 and valid R2 pilot reports; documented the Windows validation-environment repair and controlled-trial boundary | None; no KPI, workload, safety or certification-eligibility change |
