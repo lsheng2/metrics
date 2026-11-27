@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "windows-runtime-candidate-admission",
+  "status": "BOUNDED_PASS",
+  "candidate": {
+    "version": "0.1.1.dev10",
+    "source_commit": "3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a",
+    "wheel_sha256": "18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55",
+    "package_files": 158
+  },
+  "payload_comparison": {
+    "path": "D:/AIGC/d10-1127/evidence/candidate-preparation.json",
+    "sha256": "c16a48d24675eca5147ee6483763c2055bf0c1bc2f3286b2b7c2a6b847822267"
+  },
+  "dashboard_install": {
+    "path": "D:/AIGC/d10-1127/evidence/install-dev10-r1.json",
+    "sha256": "26c99abc6eabbadca2b617f5263895da771788f923e359cc49f269b0964edbb7",
+    "tests": 19,
+    "normal_exit": true,
+    "forced_cleanup": false
+  },
+  "installed_runtime": {
+    "path": "D:/AIGC/d10-1127/evidence/installed-runtime-r2.json",
+    "sha256": "ea267323cb691b0524ffe0befaa7771ffb7c6fc0974ce3dbeddcc32532741bb5",
+    "junit_path": "D:/AIGC/d10-1127/evidence/installed-runtime-r2.xml",
+    "junit_sha256": "64ceeb56209d4f45fb7ca492eaf29533fe75ad559d594a0ed7a1e52462841387",
+    "tests": 392,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exported_input_files_unchanged": 1573
+  },
+  "readonly_permissions": {
+    "path": "D:/AIGC/d10-1127/evidence/readonly-r2.json",
+    "sha256": "93bad80a68638acf8b741fcb7deeb4fa512a5d69c08ab204f56de233218bc6f9",
+    "restored": true
+  },
+  "import_guard_regression": {
+    "path": "D:/AIGC/d10-1127/evidence/import-guard-green.xml",
+    "sha256": "aad809cd88a169a43aa406d2be83ea0e96bc8e9e3500facc502fdb86524e3a3f",
+    "tests": 10
+  },
+  "scope": "Installed candidate and host admission only; full Dashboard and numerical acceptance remain pending.",
+  "non_claims": [
+    "No historical result is promoted to dev10.",
+    "The original 376-pass/16-failure r1 test-launcher result remains unchanged.",
+    "No KPI, stop budget, real-leak check, dependency declaration or packaged UI asset change.",
+    "No Linux, other App, real provider/model or whole-AIB qualification."
+  ]
+}

@@ -3,11 +3,11 @@
 | Document Control | Value |
 | --- | --- |
 | Document ID | PERF-SPEC-001 |
-| Revision | 2026-11-26.6 |
+| Revision | 2026-11-27.1 |
 | Status | Active registry; current Windows performance acceptance remains OPEN |
 | Owners | Dashboard application and validation; AIB owns embedded-runtime behavior |
 | Current platform | Windows, one Dashboard application with one embedded AIB runtime |
-| Current MDB-2 policy | `windows-mdb2-s0b-r3`, reference-refreshed dev9 policy |
+| Current MDB-2 policy | `windows-mdb2-s0b-r3`; numeric rules unchanged, dev10 candidate binding pending |
 | Change authority | Owner authorization of 2026-11-26 permits evidence-led KPI revision and continued closure |
 | Results index | [Performance test reports](../validation/performance-reports/README.md) |
 | Report format | [KPI test report template](../validation/performance-report-template.md) |
@@ -21,9 +21,12 @@ safety prerequisites and result status. It is not a production availability SLA.
 
 The executable source of numerical truth remains each named owning checker and
 its frozen policy. For MDB-2, use the
-[current policy JSON](../../changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3-refresh.json).
+[last frozen dev9 policy JSON](../../changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev9-r3-refresh.json).
 This document and that checker must agree. A disagreement blocks certification;
-never choose whichever representation is easier to pass.
+never choose whichever representation is easier to pass. Dev10 is selected for
+the asset-cache slice; its functional acceptance and candidate-bound performance
+policy are not yet complete. The old dev9 reference cannot admit a dev10
+certification request. No numerical value is changed by this candidate update.
 OpenSpec changes retain decision history and implementation plans. Their dated
 older values do not override this register's current-policy links.
 
@@ -76,9 +79,9 @@ until its workload, rationale, checker and review are frozen.
 ### 3.1 Candidate And Environment
 
 - Use the admitted immutable AIB wheel, not an editable source install for
-  certification. The current candidate is `ai-base-runtime==0.1.1.dev9`,
-  source `fc680c3702ac4eaeae0a75486fa173b280929447`, wheel SHA256
-  `c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec`.
+  certification. The current candidate is `ai-base-runtime==0.1.1.dev10`,
+  source `3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a`, wheel SHA256
+  `18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55`.
 - Current Windows qualification uses CPython 3.13.7, Waitress 3.0.2 and the
   83-distribution pinned environment. Each run records actual executable,
   import origins, package versions, OS/build, logical CPUs, memory and clocks.

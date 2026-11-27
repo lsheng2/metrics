@@ -85,15 +85,15 @@
     "ai_base_runtime/_internal/generic_capabilities/tokenizer.py": "906ce071687563024014b6441e2a0077048f3ff2371e609d1efd020295fbf8c9",
     "ai_base_runtime/_internal/generic_capabilities/worker_client.py": "2225a8c558a0c4160b65233713aee8faaa01bd7c3fa4d254258e57c34a5a7dfa",
     "ai_base_runtime/_internal/generic_capabilities/worker_results.py": "c1d42de9e57d8d0829a833d1754cf802dfb199a9bddc879e2413d16308e7d693",
-    "ai_base_runtime/_internal/http/app.py": "747c1c9b41f9c43751b8ce3cbd7b976796ae8d1d88a844e795c46109334412ee",
-    "ai_base_runtime/_internal/http/assets.py": "fad2b4c9b0cc2f13cfec32012c043381633c8ec4b3d6cfee12cb31ba7afc687f",
+    "ai_base_runtime/_internal/http/app.py": "48083c3c6d183e94f5d8787cdb1016c1d2e7b224c4e6bd51861a744df4498729",
+    "ai_base_runtime/_internal/http/assets.py": "be00617f22304560d28eedcf32f1e0d858ac59405b6db67af54e1dfedde221fb",
     "ai_base_runtime/_internal/http/bodies.py": "f3b093bc814de3ebf9ca860cb0b2ba53ac68201287184da5b728762b9a570a24",
     "ai_base_runtime/_internal/http/domain_routes.py": "288038edf36e8bcb65a43b1b10ab193ea784020c9e35bea6460e40b4b2fa4384",
     "ai_base_runtime/_internal/http/framing.py": "157f9140a0d27f4682a4cc466f3edb8090991ce251cdca54c6993af0805bda61",
     "ai_base_runtime/_internal/http/requests.py": "79622e864aab0cb5f3507a332e0bfe5ea2b8fac293145bc09c8a47a51357c56e",
     "ai_base_runtime/_internal/http/responses.py": "c27f3fc57b2aab9b3f00c020b1269bb3de08ae62836c01d4cc41dd8ecfd4c4ca",
     "ai_base_runtime/_internal/http/security.py": "29865009288bf0fc111a355313f1e1f390c46014d5334f50c3d60c57afa9f319",
-    "ai_base_runtime/_internal/http/state.py": "d06f510bee7d3bdc5abf5e599a78f5acc7d55c7e936fd8fd3cfcad7c80d3b0b3",
+    "ai_base_runtime/_internal/http/state.py": "88932645aa141909999c68f857227b5432c4fa09725e398b7d0b14656dfccd59",
     "ai_base_runtime/_internal/http/streams.py": "e561175066ec2e22c0cd844c56953b7d04fbd8b4e40ee4f075507e5db5955473",
     "ai_base_runtime/_internal/http/types.py": "a77f0469f99b69f4435004d37360c557927e5d89aeb04a053c9c625e05bbe2f8",
     "ai_base_runtime/_internal/http/ui_entries.py": "642c0d92c52c22715740cd26316e2d8d0c425b898558049a11c8463d0619c539",
@@ -176,9 +176,9 @@
     "ai_base_runtime/testkit/pytest_plugin.py": "fa81423cf6e6c0101634be032cd6e158a8844dc03922a3bb9549252c4b028e03"
   },
   "schemaVersion": 1,
-  "sourceCommit": "fc680c3702ac4eaeae0a75486fa173b280929447",
-  "sourceTree": "e9640b427bc4cf4f006bbecdf826afd564ba7cfb",
-  "version": "0.1.1.dev9",
-  "wheelFile": "ai_base_runtime-0.1.1.dev9-py3-none-any.whl",
-  "wheelSha256": "c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec"
+  "sourceCommit": "3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a",
+  "sourceTree": "6a4036cedda9c5ca0317e3d5057a96021d39e383",
+  "version": "0.1.1.dev10",
+  "wheelFile": "ai_base_runtime-0.1.1.dev10-py3-none-any.whl",
+  "wheelSha256": "18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55"
 }

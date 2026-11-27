@@ -18,13 +18,30 @@ The approved delivery order and interfaces are in
 
 The migrated `ai_host`, summary, report-assist and project-run boundaries use
 the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
-The current candidate is `ai-base-runtime==0.1.1.dev9`, built from AIB
-`fc680c3702ac4eaeae0a75486fa173b280929447`. Its wheel SHA256 is
-`c729b2c9a0c37c86ef811ad86dfda613548c516a74df414fb663074ad20575ec`.
+The current candidate is `ai-base-runtime==0.1.1.dev10`, built from AIB
+`3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a`. Its wheel SHA256 is
+`18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55`.
 This is a development candidate, not whole-AIB release or performance certification.
 Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
+
+Dev10 changes only the shared runtime asset cache owner and its HTTP wiring.
+Each runtime retains successfully verified immutable package assets, not
+authentication, entry HTML or user data. Recreate the runtime after a package
+upgrade; cached files are not reloaded from a running installation. The AIB
+OpenSpec is `cache-immutable-runtime-assets`. Source22/private-wheel23 checks
+are development-only. New offline installation at `D:/AIGC/d10-1127/venv`
+passed admission and real page/asset serving with normal, unforced exit.
+Read-only installed verification passed392 cases with no skips and original
+ACL restoration. Its first attempt failed because Windows observer children
+could not import the exported test package; a new launcher admits only the
+SDK-free test parent and preserves runtime-source exclusion (10 guard cases).
+See [dev10 candidate admission](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev10-candidate-admission.json).
+Native/full functional and numerical qualification remain pending; dev9
+evidence below does not qualify dev10. KPI, production
+shutdown budgets, leak detection, asset bytes and dependency declarations are
+unchanged. No old-SDK compatibility or source-mode production path is added.
 
 The Dashboard editor command boundary synchronizes native text/caret selection
 into ProseMirror state before running toolbar commands. Report authoring and
@@ -37,6 +54,8 @@ upgrade or AIB change is involved. The
 is not final Windows acceptance: the earlier full qualifier at `db00210`
 retains its UI failure, and modified-source qualification is still required.
 
+### Historical Dev9 Qualification
+
 The owner requires latest AIB for final delivery and authorized the bounded
 Windows testkit calibration/new candidate on 2026-11-22. The dev9 package
 changes one testkit file only; non-testkit package bytes and dependency
@@ -47,7 +66,7 @@ Fresh offline installation passed in `D:/AIGC/d9-1122/venv`: 19
 admission/package/host checks, authenticated page/assets, normal exit and no
 forced cleanup. Both environments have 83 distributions; only runtime version
 differs. Dev9 Windows functional acceptance now passes; performance remains NOT_RUN.
-The [current functional receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9-refresh.json)
+The [historical dev9 functional receipt](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev9-refresh.json)
 binds the tested Dashboard source `4f538b773efdd5068a36b3d699ea2cf6890e83d8`,
 114/114 keys, all seven module gates and independent W2.R/FUNC.R review.
 The old dev8 environment is refused by the active dev9 pin.
