@@ -338,6 +338,7 @@
     "scripts/check_retired_ai_paths.py": "W1.RETIRE",
     "scripts/tests/test_embedded_runtime_boundaries.py": "W1.RETIRE",
     "scripts/tests/test_retired_ai_paths.py": "W1.RETIRE",
+    "project_management/tests/test_project_full_stack_lifecycle.py": "W2.HOST",
     "ai_host/serve_control.py": "W2.HOST",
     "ai_host/exit_inventory.py": "W2.HOST",
     "ai_host/exit_processes.py": "W2.HOST",
@@ -481,6 +482,7 @@
       "owner_paths": [
         "manage.py", "ai_host/", "metrics/settings/", "metrics/tests/",
         "project_management/runtime.py", "project_management/tests/test_project_runtime.py",
+        "project_management/tests/test_project_full_stack_lifecycle.py",
         "scripts/validation/project_full_stack_app_entry.py",
         "scripts/validation/windows_host_qualification.py",
         "scripts/validation/windows_host_conformance.py",

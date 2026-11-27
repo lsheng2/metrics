@@ -43,6 +43,15 @@ evidence below does not qualify dev10. KPI, production
 shutdown budgets, leak detection, asset bytes and dependency declarations are
 unchanged. No old-SDK compatibility or source-mode production path is added.
 
+The dev10 full functional run at `b415335` passed its first five modules, then
+reported970 passes/one failure in `project_management`; scripts and final
+qualification did not run. The failing timed test wrote its connection file
+non-atomically, while the real model fixture already publishes by replacement.
+A deterministic real-file control reproduces that mismatch. The fixture repair
+retains strict invalid-record refusal and the existing readiness limits; its
+28 focused checks are not whole functional acceptance. Fresh source-bound
+qualification is required before publishing the dev10 functional receipt.
+
 The Dashboard editor command boundary synchronizes native text/caret selection
 into ProseMirror state before running toolbar commands. Report authoring and
 template editing share this boundary. Genuine whole-document and special

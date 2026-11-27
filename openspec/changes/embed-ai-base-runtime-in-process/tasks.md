@@ -2,6 +2,16 @@
 
 ## Latest Delivery Decision
 
+### Dev10 Functional Continuation (2026-11-27)
+
+The owner resumed functional delivery with usable performance on pinned dev10.
+Run `0141cab6-35d3-435b-83c8-70866aa1046c` remains failed: lanes1-5 passed,
+module6 had970PASS/1FAIL, and later gates did not run.
+`W2.HOST` owns the [atomic-publication fixture repair](../../../docs/development/reporting-delivery.md#environment).
+Controlled RED reproduced the empty-JSON read;28 focused checks now pass.
+Production/AIB behavior, strict refusals, readiness limits and all KPI are unchanged.
+Fresh source-bound qualification is required after scoped repair review/publication.
+
 ### Current Frontier: Evidence-Led Performance Closure (2026-11-26)
 
 The [current-source refresh](windows-close-plan.md#current-source-functional-refresh-2026-11-25)
@@ -97,7 +107,6 @@ failure family was fixed and fresh rereview passed 1/1
 private-wheel positive run were independently checked as exit 0, not timeout.
 Formal dev9 admission and functional gates now pass; performance remains NOT_RUN.
 Source/private-wheel success is not promotion of failed dev8.
-This is a development workflow change, not qualification of the failed dev8 run.
 
 **Owner 授权（2026-11-21）**：将双方现有 scoped commits 合入并推送各自
 `origin/main`；最终 Windows Dashboard 交付必须使用最新 AIB。本次核对的
@@ -111,23 +120,14 @@ Dashboard dev9 Windows 功能验收和性能输入复签评审已通过；性能
 候选冻结前再次核对最新 AIB；更新版本先评审并重新锁定，不静默换包。
 下方原执行授权/实测检查点保留其日期和适用候选，本节优先于原 push 限制。
 
-### Dev9 Convergence Candidate Progress
+### Historical Dev9 Convergence
 
-Source `50c8b6e` passed independent review1/1 and source host/testkit163;
-the new developer source22/private-wheel23 stages passed without formal
-promotion. Version freeze `fc680c3` produced immutable dev9; formal installed
-host/testkit163 and real alias/moving-handle leak controls passed. Only one
-testkit file differs from dev8; production/assets/dependencies/stop/KPI unchanged.
-New D:/AIGC/d9-1122/venv offline installation passed19 and normal stop without
-force. The83-package environments differ only in runtime version; old dev8
-is refused and47 installer/lock controls passed.
-Fresh native 56, complete 74/recovery 39, migration and mapped proofs passed.
-The official qualifier at `423846c` passed all 114 keys and all seven modules;
-W2.R and FUNC.R each reached 1/1 clean pass. The versioned
-[functional receipt](evidence/windows-functional-acceptance-dev9.json)
-preserves performance NOT_RUN and the historical failure boundary.
-One earlier UI caret-wait failure remains uncaused; bounded diagnostics and the
-later complete official pass do not establish that its cause was repaired.
+The [candidate receipt](evidence/windows-dev9-candidate-admission.json) retains
+source/private-wheel, installed host/testkit and real-leak control evidence.
+The [functional receipt](evidence/windows-functional-acceptance-dev9.json)
+binds `423846c`,114 keys, seven modules and W2.R/FUNC.R1/1; performance NOT_RUN.
+Earlier native/observer/UI failures remain preserved. Later PASS does not
+establish their cause or qualify the current dev10 candidate.
 See [dev9 candidate evidence](evidence/windows-dev9-candidate-admission.json).
 
 ### Dev9 Performance Refreeze

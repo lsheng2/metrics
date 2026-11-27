@@ -86,25 +86,83 @@ def test_should_restart_only_app_and_preserve_closed_logs(tmp_path, monkeypatch)
     assert any((run_dir / 'evidence' / 'restart').glob('*/closed-app.out.log'))
 
 
-def test_should_wait_for_current_launch_connection_publication(tmp_path):
+def test_should_wait_for_current_launch_connection_publication(tmp_path, monkeypatch):
     run_dir, engine, platform = running_owned_services(tmp_path, graceful_after=1.0)
     state = engine.read_state()[project_full_stack.MODEL_NAME]
     launch = current_launch_for_service(run_dir, state, project_full_stack.MODEL_NAME)
     launch.connection_file.unlink()
     connection = model_connection(state['pid'], launch)
+    opened = threading.Event()
+    release = threading.Event()
+    publisher_errors = []
+    original_open = Path.open
+    original_exists = Path.exists
+
+    def hold_unfinished_publication(path, mode='r', *args, **kwargs):
+        # Let the reader inspect visibility while the real writer is unfinished.
+        stream = original_open(path, mode, *args, **kwargs)
+        if (threading.current_thread() is timer and mode in {'w', 'x'}
+                and path.parent == launch.directory
+                and path.name.startswith(launch.connection_file.name)):
+            opened.set()
+            if not release.wait(timeout=2.0):
+                stream.close()
+                raise AssertionError('Connection publication barrier was not released.')
+        return stream
+
+    def observe_publication(path):
+        exists = original_exists(path)
+        if path == launch.connection_file and opened.is_set() and not exists:
+            release.set()
+        return exists
 
     def publish():
-        write_json(launch.connection_file, connection)
+        try:
+            write_json(launch.connection_file, connection, replace=True)
+        except BaseException as error:
+            publisher_errors.append(error)
 
     timer = threading.Timer(0.1, publish)
+    monkeypatch.setattr(Path, 'open', hold_unfinished_publication)
+    monkeypatch.setattr(Path, 'exists', observe_publication)
     timer.start()
     try:
         observed = wait_valid_model_connection(run_dir, launch, state, read_json(run_dir / 'runtime-manifest.json'),
                                                platform_ops=engine.platform_ops, seconds=2.0)
     finally:
+        release.set()
         timer.cancel()
+        timer.join(timeout=2.0)
+        assert not timer.is_alive()
+        if publisher_errors:
+            raise publisher_errors[0]
 
+    assert opened.is_set()
     assert observed['launch_id'] == launch.launch_id
+
+
+@pytest.mark.parametrize('mutation', ['malformed', 'wrong_identity'])
+def test_should_reject_invalid_published_connection_without_retry(tmp_path, monkeypatch, mutation):
+    run_dir, engine, platform = running_owned_services(tmp_path, graceful_after=1.0)
+    state = engine.read_state()[project_full_stack.MODEL_NAME]
+    launch = current_launch_for_service(run_dir, state, project_full_stack.MODEL_NAME)
+    if mutation == 'malformed':
+        launch.connection_file.write_text('{', encoding='utf-8')
+        expected_error = json.JSONDecodeError
+    else:
+        connection = model_connection(state['pid'], launch)
+        connection['launch_id'] = 'another-launch'
+        write_json(launch.connection_file, connection, replace=True)
+        expected_error = ValueError
+
+    def unexpected_retry(_seconds):
+        raise AssertionError('Invalid published connection must not be retried.')
+
+    monkeypatch.setattr('scripts.validation.project_full_stack_identity.time.sleep', unexpected_retry)
+    with pytest.raises(expected_error):
+        wait_valid_model_connection(run_dir, launch, state, read_json(run_dir / 'runtime-manifest.json'),
+                                    platform_ops=engine.platform_ops, seconds=2.0)
+    assert not (launch.directory / 'process-proof.json').exists()
 
 
 def test_should_reject_wrong_connection_identity(tmp_path):
