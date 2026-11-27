@@ -232,9 +232,22 @@ def test_owner_registration_rejects_descendant_native_creation_mismatch(monkeypa
     from scripts.validation import windows_host_process_identity as identity
     from scripts.service_lifecycle_engine import platform_ops
 
+    details = {
+        321: {
+            "command_line": "python.exe root-321",
+            "creation_date": "created-321",
+            "executable_path": r"C:\Python\python.exe",
+        },
+        556: {
+            "command_line": "conhost.exe child-556",
+            "creation_date": "created-556",
+            "executable_path": r"C:\Windows\System32\conhost.exe",
+        },
+    }
+
     class Ops:
         def process_command_line(self, pid):
-            return f"python.exe child-{pid}"
+            raise AssertionError("registration must use retained native process details")
 
         def process_start_marker(self, pid):
             return f"marker-{pid}"
@@ -242,7 +255,13 @@ def test_owner_registration_rejects_descendant_native_creation_mismatch(monkeypa
     monkeypatch.setattr(identity, "living_children", lambda root_pid: [
         {"pid": 556, "parent_pid": root_pid, "created": 111, "name": "conhost.exe"},
     ])
-    monkeypatch.setattr(platform_ops, "get_process_created_at", lambda pid: f"created-{pid}")
+    monkeypatch.setattr(
+        platform_ops,
+        "get_process_created_at",
+        lambda pid: (_ for _ in ()).throw(
+            AssertionError("registration must use retained native process details")
+        ),
+    )
     monkeypatch.setattr(identity, "native_process_rows_by_pid", lambda pids: {
         int(pid): {
             "pid": int(pid),
@@ -252,8 +271,9 @@ def test_owner_registration_rejects_descendant_native_creation_mismatch(monkeypa
     })
 
     class Capture:
-        def __init__(self, rows):
+        def __init__(self, rows, *, detail_reader=None):
             self.rows = rows
+            self.detail_reader = detail_reader
 
         def __enter__(self):
             return self
@@ -270,6 +290,11 @@ def test_owner_registration_rejects_descendant_native_creation_mismatch(monkeypa
                     "image_name": row["name"],
                 } for row in self.rows
             }
+
+        def details(self):
+            if self.detail_reader is None:
+                raise ValueError("Native process details were not requested")
+            return {row["pid"]: dict(details[row["pid"]]) for row in self.rows}
 
     monkeypatch.setattr(identity, "ProcessWindowCapture", Capture)
 

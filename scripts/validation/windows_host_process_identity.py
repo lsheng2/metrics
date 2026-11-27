@@ -14,6 +14,7 @@ from scripts.validation.windows_host_process_window import (
     native_process_rows_by_pid,
     terminal_resolution_fact,
 )
+from scripts.validation.windows_host_process_details import read_process_details
 from scripts.validation.windows_qualification_inputs import QualificationError
 
 
@@ -226,22 +227,28 @@ def sanitize_process_rows(records):
     ]
 
 
-def _registration_from_retained_native(pid, ops, platform_ops, *, role, expected_native_creation=None, expected_marker=None):
+def _registration_from_retained_native(pid, ops, *, role, expected_native_creation=None, expected_marker=None):
     pid = int(pid)
     row = native_process_rows_by_pid([pid]).get(pid)
     if not row:
         return None, None, None
-    command_line, created, marker = "", "", None
-    with ProcessWindowCapture([row]) as capture:
+    details, marker = {}, None
+    with ProcessWindowCapture([row], detail_reader=read_process_details) as capture:
         native = capture.facts().get(pid, {})
-        command_line = ops.process_command_line(pid)
-        created = platform_ops.get_process_created_at(pid)
+        details = capture.details().get(pid, {})
         if role == "service_root":
             marker = ops.process_start_marker(pid)
             if not expected_marker or marker != expected_marker:
                 return None, None, None
     if expected_native_creation is not None and str(native.get("native_creation")) != str(expected_native_creation):
         return None, None, None
+    if not isinstance(details, dict) or set(details) != {"command_line", "creation_date", "executable_path"}:
+        return None, None, marker
+    command_line = details["command_line"]
+    created = details["creation_date"]
+    executable_path = details["executable_path"]
+    if not all(isinstance(value, str) and value.strip() for value in (command_line, created, executable_path)):
+        return None, None, marker
     sensor_identity = process_identity(pid, created, command_line)
     fingerprint = _command_fingerprint(_split_command(command_line))
     if (not fingerprint or not sensor_identity or native.get("handle_opened") is not True
@@ -261,8 +268,6 @@ def _registration_from_retained_native(pid, ops, platform_ops, *, role, expected
 
 
 def owned_process_identity_facts_from_state(state, ops):
-    from scripts.service_lifecycle_engine import platform_ops
-
     facts = {
         "identities": set(), "sensor_identity": None, "sle_marker": None,
         "listener_identity": None, "descendant_identities": [], "registrations": [],
@@ -273,7 +278,7 @@ def owned_process_identity_facts_from_state(state, ops):
     try:
         pid = int(state["pid"])
         root, sensor_identity, marker = _registration_from_retained_native(
-            pid, ops, platform_ops, role="service_root", expected_marker=provenance["process_start_marker"],
+            pid, ops, role="service_root", expected_marker=provenance["process_start_marker"],
         )
         if root is None:
             return facts
@@ -290,7 +295,7 @@ def owned_process_identity_facts_from_state(state, ops):
         child_identity = None
         try:
             registration, child_identity, _ = _registration_from_retained_native(
-                child_pid, ops, platform_ops, role="descendant", expected_native_creation=child["created"],
+                child_pid, ops, role="descendant", expected_native_creation=child["created"],
             )
             if registration is not None and registration["parent_pid"] == child.get("parent_pid"):
                 facts["identities"].add(child_identity)

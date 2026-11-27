@@ -4,7 +4,7 @@ title: Native process detail observation
 status: accepted
 owner: Dashboard validation
 created: 2026-11-26
-last_reviewed: 2026-11-26
+last_reviewed: 2026-11-27
 docs_impact: operations
 human_docs: [openspec/docs/current-baseline/performance-kpis.md, docs/development/reporting-delivery.md]
 implemented_by: []
@@ -84,8 +84,9 @@ read-only behavior from a process name, parent, exit code or occurrence of a
 read-command word inside another argument.
 
 The production measurement path no longer starts PowerShell/CIM for each
-snapshot. Stable SLE ownership registration is outside this change; native
-detail identities must match its existing process-identity representation.
+snapshot. Generic SLE marker construction and lifecycle ownership are unchanged;
+the amendment below covers measurement-side detail acquisition during
+registration. Native identities retain the existing identity representation.
 Store raw command text only in ephemeral observer data; published snapshots
 keep existing fingerprints, not command lines or token-bearing arguments.
 Retained handle ownership, creation identity, terminal observations, close
@@ -97,6 +98,35 @@ No alternate legacy/CIM mode, permission downgrade, broad admin command,
 process termination, security-software change, indexer suspension, provider/model
 call or Linux execution belongs to this slice. Existing elevated collector
 source and expiry remain unchanged; its grant was not consumed.
+
+### Owner Registration Amendment (2026-11-27)
+
+The dev10 scripts readiness run passed1008 cases and failed two native
+owner-registration cases at31.380/31.422s, after their unchanged30s toy
+processes exited normally. The timing diagnostic at
+`D:/AIGC/d10-1127/diagnostics/process-registration/timing-r1/observation.json`
+records19.7449s for self identity preparation and12.8976s in registration.
+Six command/creation CIM subprocess calls cost about3-3.56s each. Nested
+marker timings overlap and must not be added to their child timings.
+
+This amendment extends the existing native detail reader to the performance
+owner-registration acquisition path only. Use direct `ProcessWindowCapture`
+with `read_process_details` on the same retained handle. Do not use the
+target-filtering capture factory: owned non-Python descendants remain in
+scope. Require exactly complete command, creation and executable fields;
+missing, partial, malformed or sensor-error detail data refuses registration,
+without a slow-query fallback.
+
+The opaque SLE root marker is still freshly checked against persisted
+provenance through the unchanged SLE operation. Generic SLE marker creation
+and platform operations are not changed. Preserve native birth/parent
+matching, descendant-marker independence, registration shape, terminal replay
+and fatal handle-close refusal. No30s toy lifetime, readiness wait, production
+stop budget, leakage check, application code, AIB package or KPI is retuned.
+Independent planning review approved this boundary before implementation.
+Targeted RED/GREEN, the two unchanged native tests, observer regressions and
+fresh independent code review precede a new source freeze. This diagnostic
+and the resulting functional controls are not numerical acceptance.
 
 ## Propagation And Validation
 

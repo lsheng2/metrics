@@ -74,36 +74,77 @@ def registered_owner(monkeypatch):
     from scripts.service_lifecycle_engine import platform_ops
     from scripts.validation import windows_host_process_identity as identity
 
+    state = {
+        "pid": 4100,
+        "provenance": {"process_start_marker": "original-marker"},
+        "native_creation": {4100: 41000, 4101: 41010},
+        "native_parent": {4100: 50, 4101: 4100},
+        "native_image": {4100: "python.exe", 4101: "conhost.exe"},
+        "native_details": {
+            4100: {
+                "command_line": "python.exe root-4100",
+                "creation_date": "created-4100",
+                "executable_path": r"C:\Python\python.exe",
+            },
+            4101: {
+                "command_line": "conhost.exe child-4101",
+                "creation_date": "created-4101",
+                "executable_path": r"C:\Windows\System32\conhost.exe",
+            },
+        },
+        "close_failure": False,
+    }
+
     class Capture:
-        def __init__(self, rows):
+        def __init__(self, rows, *, detail_reader=None):
             self.rows = rows
+            self.detail_reader = detail_reader
 
         def __enter__(self):
             return self
 
         def __exit__(self, *_args):
+            if state["close_failure"]:
+                raise QualificationError("native process observation handle release failed")
             return False
 
         def facts(self):
             return {
                 row["pid"]: {
-                    "handle_opened": True, "native_creation": row["pid"] * 10,
-                    "parent_pid": row["parent_pid"], "image_name": row["name"],
+                    "handle_opened": True,
+                    "native_creation": state["native_creation"].get(row["pid"]),
+                    "parent_pid": state["native_parent"].get(row["pid"]),
+                    "image_name": state["native_image"].get(row["pid"]),
                 } for row in self.rows
+            }
+
+        def details(self):
+            if self.detail_reader is None:
+                raise ValueError("Native process details were not requested")
+            return {
+                row["pid"]: dict(state["native_details"].get(row["pid"], {}))
+                for row in self.rows
             }
 
     monkeypatch.setattr(identity, "ProcessWindowCapture", Capture)
     monkeypatch.setattr(identity, "native_process_rows_by_pid", lambda pids: {
-        pid: {"pid": pid, "parent_pid": 4100 if pid == 4101 else 50, "name": "python.exe"}
+        pid: {
+            "pid": pid,
+            "parent_pid": state["native_parent"].get(pid),
+            "name": state["native_image"].get(pid),
+        }
         for pid in pids
     })
     monkeypatch.setattr(identity, "living_children", lambda root_pid: [
-        {"pid": 4101, "parent_pid": root_pid, "created": 41010},
+        {"pid": 4101, "parent_pid": root_pid, "created": state["native_creation"][4101]},
     ])
-    monkeypatch.setattr(platform_ops, "get_process_created_at", lambda pid: f"created-{pid}")
-    state = {"pid": 4100, "provenance": {"process_start_marker": "original-marker"}}
+
+    def legacy_sensor_unavailable(pid):
+        raise AssertionError("registration must use retained native process details")
+
+    monkeypatch.setattr(platform_ops, "get_process_created_at", legacy_sensor_unavailable)
     ops = SimpleNamespace(
-        process_command_line=lambda pid: f"python.exe run-{pid}",
+        process_command_line=legacy_sensor_unavailable,
         process_start_marker=lambda pid: "original-marker" if pid == 4100 else "child-marker",
     )
     return identity, state, ops
@@ -113,6 +154,14 @@ def test_admitted_root_can_authorize_current_native_descendants(registered_owner
     identity, state, ops = registered_owner
     facts = identity.owned_process_identity_facts_from_state(state, ops)
     assert {row["pid"] for row in facts["registrations"]} == {4100, 4101}
+    assert {row["pid"] for row in facts["descendant_identities"]} == {4101}
+
+
+def test_descendant_registration_keeps_non_python_native_row(registered_owner):
+    identity, state, ops = registered_owner
+    facts = identity.owned_process_identity_facts_from_state(state, ops)
+    child = next(row for row in facts["registrations"] if row["pid"] == 4101)
+    assert child["image_name"] == "conhost.exe"
 
 
 @pytest.mark.parametrize("marker", [None, "", "stale-marker"])
@@ -135,6 +184,37 @@ def test_descendant_registration_does_not_require_an_unowned_sle_marker(register
     ops.process_start_marker = marker
     facts = identity.owned_process_identity_facts_from_state(state, ops)
     assert {row["pid"] for row in facts["registrations"]} == {4100, 4101}
+
+
+@pytest.mark.parametrize("details", [
+    {"sensor_error": "process_detail_access_denied"},
+    {"command_line": "", "creation_date": "created-4101", "executable_path": r"C:\Windows\System32\conhost.exe"},
+    {"command_line": "conhost.exe child-4101", "creation_date": "", "executable_path": r"C:\Windows\System32\conhost.exe"},
+    {"command_line": "conhost.exe child-4101", "creation_date": "created-4101", "executable_path": ""},
+    {"command_line": ["conhost.exe"], "creation_date": "created-4101", "executable_path": r"C:\Windows\System32\conhost.exe"},
+    {"command_line": "conhost.exe child-4101", "creation_date": "created-4101"},
+])
+def test_incomplete_native_details_refuse_descendant_without_legacy_fallback(registered_owner, details):
+    identity, state, ops = registered_owner
+    state["native_details"][4101] = details
+    facts = identity.owned_process_identity_facts_from_state(state, ops)
+    assert {row["pid"] for row in facts["registrations"]} == {4100}
+    assert facts["descendant_identities"] == [{"pid": 4101, "parent_pid": 4100, "created": 41010, "sensor_identity": None}]
+
+
+def test_descendant_registration_rejects_native_parent_mismatch(registered_owner):
+    identity, state, ops = registered_owner
+    state["native_parent"][4101] = 9999
+    facts = identity.owned_process_identity_facts_from_state(state, ops)
+    assert {row["pid"] for row in facts["registrations"]} == {4100}
+    assert facts["descendant_identities"][0]["sensor_identity"] is None
+
+
+def test_registration_native_handle_close_failure_stays_fatal(registered_owner):
+    identity, state, ops = registered_owner
+    state["close_failure"] = True
+    with pytest.raises(QualificationError, match="native process observation handle release failed"):
+        identity.owned_process_identity_facts_from_state(state, ops)
 
 
 class CloseFailureApi:

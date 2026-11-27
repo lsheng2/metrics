@@ -52,6 +52,15 @@ retains strict invalid-record refusal and the existing readiness limits; its
 28 focused checks are not whole functional acceptance. Fresh source-bound
 qualification is required before publishing the dev10 functional receipt.
 
+The separate scripts readiness run then reported1008 passes/two failures:
+owned30s toy processes expired during repeated CIM identity queries. A bounded
+diagnostic measured19.7449s for self identity preparation, including12.8976s
+in registration. The [native registration amendment](../../openspec/changes/embed-ai-base-runtime-in-process/windows-native-process-observation.md#owner-registration-amendment-2026-11-27)
+reuses retained-handle details while preserving SLE marker verification,
+native birth/parent identity, refusal and handle cleanup. Test lifetimes and
+all KPI/safety budgets stay fixed; new focused/native and complete functional
+results remain required. These diagnostic timings are not product latency.
+
 The Dashboard editor command boundary synchronizes native text/caret selection
 into ProseMirror state before running toolbar commands. Report authoring and
 template editing share this boundary. Genuine whole-document and special

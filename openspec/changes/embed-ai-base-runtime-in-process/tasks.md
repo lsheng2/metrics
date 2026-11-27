@@ -4,13 +4,13 @@
 
 ### Dev10 Functional Continuation (2026-11-27)
 
-The owner resumed functional delivery with usable performance on pinned dev10.
-Run `0141cab6-35d3-435b-83c8-70866aa1046c` remains failed: lanes1-5 passed,
-module6 had970PASS/1FAIL, and later gates did not run.
-`W2.HOST` owns the [atomic-publication fixture repair](../../../docs/development/reporting-delivery.md#environment).
-Controlled RED reproduced the empty-JSON read;28 focused checks now pass.
-Production/AIB behavior, strict refusals, readiness limits and all KPI are unchanged.
-Fresh source-bound qualification is required after scoped repair review/publication.
+Pinned dev10 continues; publication fixture repair `c53696c` passed28 checks/review1/1.
+Run `0141cab6-35d3-435b-83c8-70866aa1046c` retains module6's970PASS/1FAIL.
+Scripts readiness then had1008PASS/2FAIL:30s toys exited before identity capture.
+Bounded timing located repeated CIM work; the
+[registration amendment](windows-native-process-observation.md#owner-registration-amendment-2026-11-27)
+retains SLE identity, test lifetimes, AIB, KPI and safety limits.
+Fresh source-bound qualification is required after review/publication.
 
 ### Current Frontier: Evidence-Led Performance Closure (2026-11-26)
 
