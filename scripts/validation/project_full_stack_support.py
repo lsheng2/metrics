@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import ctypes
+from ctypes import wintypes
 from dataclasses import asdict, is_dataclass
 from enum import Enum
 from hashlib import sha256
@@ -198,6 +200,14 @@ def sanitized_process_environment(directory: Path):
     finally:
         os.environ.clear()
         os.environ.update(previous)
+        if os.name == 'nt':
+            # Python's mapping can retain empty keys that native children lost.
+            setter = ctypes.WinDLL('kernel32', use_last_error=True).SetEnvironmentVariableW
+            setter.argtypes = (wintypes.LPCWSTR, wintypes.LPCWSTR)
+            setter.restype = wintypes.BOOL
+            for key, value in previous.items():
+                if value == '' and not setter(key, ''):
+                    raise ctypes.WinError(ctypes.get_last_error())
 
 
 def copy_if_exists(source: str | Path, target: Path) -> str | None:

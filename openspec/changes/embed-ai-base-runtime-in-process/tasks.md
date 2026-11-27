@@ -16,17 +16,16 @@ reviewed, and generic SLE/app/AIB/KPI/stop/leakage limits are unchanged.
 ### Current Frontier: Bounded Dev10 Usability (2026-11-27)
 
 The current functional reference is now the dev10 receipt above; historical dev9 refresh `evidence/windows-functional-acceptance-dev9-refresh.json` remains unchanged and no longer defines the current candidate.
-The [low-event calibration](evidence/windows-low-event-calibration-20261126.json) collected with zero loss but 529,161 events exceed 250,000.
-Its native proof remains REFUSED. New owner authorization permits evidence-led closure and prospective KPI revision; safety and helper expiry remain fixed.
-Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md) and [the retained-window method repair](windows-scheduler-retention.md); prospective calibration event cost and owner-authorized session count change, not application KPI or per-run safety.
-The max10 UAC grant and `le1126-ret2-cal1` refusal are historical: the grant
-expired, and the invalid run stopped before apps/pages/ETW. Native detail and
-Git classifier repairs are not a current prerequisite for this functional
-milestone; they do not qualify performance. Root cause/full qualification/
-CLOSE.R/WIN.ACCEPT remain open. The executable performance references now select
-dev10 under the [reference-only refreeze](windows-performance-test-plan.md#dev10-reference-refreeze-2026-11-27).
-After review/publication, freeze actual-source inputs and run native support
-then one bounded pilot. R1-R10/C3-C5/R4/R7 gaps and all old failures remain visible.
+Dev10 references are adopted; native equivalence3 and transport31 passed.
+The first360-page pilot failed final Git observation despite normal cleanup.
+The [environment repair](windows-performance-test-plan.md#windows-environment-restoration-2026-11-27)
+restores native empty parent variables without weakening source/KPI checks.
+After review/publication, freeze actual-source inputs and run one post-fix pilot.
+Two raw page-ratio violations remain historical, not performance acceptance.
+R1-R10/C3-C5/R4/R7, full qualification and CLOSE.R/WIN.ACCEPT remain open.
+The [low-event refusal](evidence/windows-low-event-calibration-20261126.json),
+expired max10 grant and [retention method](windows-scheduler-retention.md)
+remain historical. Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md).
 
 ### Authorized Editor Selection Repair (2026-11-25)
 

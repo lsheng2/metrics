@@ -62,6 +62,32 @@ exact-source evidence requirements. C5 correctness, Reporting applicability
 and R4/R7 gaps remain visible; no indefinite optimization or automatic
 threshold relaxation follows from this reference adoption.
 
+## Windows Environment Restoration (2026-11-27)
+
+The first dev10 pilot completed both settings phases and normal service cleanup,
+but failed its final source observation. A separate owned lifecycle reproduced
+Git exit128 with `missing config value GIT_CONFIG_VALUE_0`. The sanitizer's
+Python environment mapping appeared restored while a native child lost the
+originally empty value. A direct counterfactual restored every originally
+empty value through `SetEnvironmentVariableW` and the same Git command passed.
+The original pilot remains failed; this does not identify a scheduling cause.
+
+Repair only `project_full_stack_support.sanitized_process_environment`: after
+restoring its saved Python snapshot, restore every saved empty value to the
+native Windows environment. Keep child allowlisting, environment receipts,
+serialized fixture starts and exception handling; native restoration failure
+must propagate. This is not a general concurrent environment manager. Do not
+change SLE/AIB, Git refusal behavior, numerical rules or any safety budget.
+
+Use a new focused test module for real native child empty/nonempty/absent
+values, normal and exception exit, synthetic credential exclusion and failed
+native restoration. Run affected full-stack lifecycle/fixture and measurement
+consumers, static gates, and one owned native lifecycle with before/after Git
+proof and normal cleanup. Independent review and scoped publication precede
+fresh exact-source inputs and at most one post-fix pilot. The original
+3332-test functional receipt keeps its tested source; validation-only repair
+does not relabel it or close formal performance/whole-project acceptance.
+
 ## Low-Event Observation Redesign (2026-11-26)
 
 This dated dev9 observation packet is historical, not a new UAC grant.

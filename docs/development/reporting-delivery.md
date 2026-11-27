@@ -60,6 +60,13 @@ and safety rule stay unchanged. Fresh performance inputs bind the actual
 subsequent committed source. A bounded pilot can inform a local trial but
 cannot certify performance or close `WIN.ACCEPT`.
 
+Windows fixture startup preserves the saved parent environment, including
+empty values visible to native child processes, while the fixture still
+inherits only its allowlisted environment. The
+[environment-restoration repair](../../openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md#windows-environment-restoration-2026-11-27)
+addresses a reproduced post-run Git observation failure, not application
+latency. The original failed pilot and its two page-ratio violations remain.
+
 Historical dev10 failures remain evidence. The `b415335` full functional run
 stopped after five modules with970 passes/one `project_management` failure, and
 scripts/final qualification did not run. The separate scripts readiness run

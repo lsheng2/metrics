@@ -13,6 +13,29 @@
   "amendment_dirty_inventory": "evidence/windows-functional-first-baseline.json",
   "performance_refreeze_baseline": "eb84aa23a123a191d4b5f6569e69e3d00d75268b",
   "performance_plan": "windows-performance-test-plan.md",
+  "performance_environment_restore_refreeze": {
+    "date": "2026-11-27",
+    "baseline": "b23d13cc17777cfd8534e13e90103d050220d7ef",
+    "owner_node": "W3.REPLAN",
+    "implementation_node": "PERF.PROBE",
+    "plan": "windows-performance-test-plan.md#windows-environment-restoration-2026-11-27",
+    "refreeze_actions": [
+      {"action": "amend", "reason": "A real owned lifecycle and native-child counterfactual reproduce empty parent environment values lost by the Windows sanitizer round trip. Repair that owner, keep child isolation and every source/KPI/safety gate, then allow one fresh post-fix pilot after review and publication."}
+    ],
+    "updated_artifacts": [
+      "scripts/validation/project_full_stack_support.py",
+      "project_management/tests/test_project_full_stack_environment_restoration.py",
+      "docs/development/reporting-delivery.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-performance-test-plan.md",
+      "openspec/changes/embed-ai-base-runtime-in-process/windows-close-dag.json",
+      "openspec/changes/embed-ai-base-runtime-in-process/tasks.md"
+    ],
+    "rerun_gates": ["W3.REPLAN", "PERF.PROBE", "PERF.PROBE.R", "PERF.PROBE.REPLAN", "PERF.CERTIFY", "CLOSE.R"],
+    "post_refreeze_preflight_result": {
+      "command": "D:/AIGC/d10-1127/venv/Scripts/python.exe -I -B D:/AIGC/d10-1127/diagnostics/check-environment-plan.py",
+      "result": "PASS"
+    }
+  },
   "performance_dev10_reference_refreeze": {
     "date": "2026-11-27",
     "baseline": "efbf8e261941639b2f4b7f5c1a37af600bcafddf",
@@ -631,7 +654,7 @@
     },
     {
       "id": "PERF.PROBE", "depends_on": ["PERF.KPI"], "kind": "implementation",
-      "owner_paths": ["scripts/validation/windows_host_qualification.py", "scripts/validation/windows_host_samples.py", "scripts/validation/windows_host_processes.py", "scripts/validation/windows_host_process_identity.py", "scripts/validation/windows_host_process_cleanup.py", "scripts/validation/windows_host_transport.py", "scripts/validation/windows_host_benchmark.py", "scripts/validation/windows_host_environment.py", "scripts/validation/windows_host_process_window.py", "scripts/validation/windows_host_process_details.py", "scripts/validation/windows_host_process_window_evidence.py", "scripts/validation/windows_host_performance.py", "scripts/validation/windows_host_performance_contract.py", "scripts/validation/windows_host_performance_evidence.py", "scripts/validation/windows_qualification_evidence.py", "scripts/validation/windows_qualification_inputs.py", "scripts/validation/qualify_ai_runtime.py", "scripts/tests/test_windows_host_qualification.py", "scripts/tests/test_windows_process_window.py", "scripts/tests/test_windows_process_details.py", "scripts/tests/test_windows_process_window_contract.py", "scripts/tests/windows_performance_support.py", "scripts/tests/test_windows_performance_evidence.py", "scripts/tests/test_windows_performance_replay_boundaries.py", "scripts/tests/test_windows_performance_inputs.py", "scripts/tests/test_windows_performance_tail_policy.py", "scripts/tests/test_windows_performance_page_policy.py", "scripts/tests/test_windows_performance_window.py", "scripts/tests/test_windows_performance_processes.py", "scripts/tests/test_windows_qualification_profiles.py", "scripts/tests/test_qualify_ai_runtime.py", "ai_host/tests/windows_perf_fixture.py", "ai_host/tests/windows_perf_entry.py", "ai_host/tests/test_windows_baseline_equivalence.py", "ai_host/tests/conformance_runtime_probe.py", "ai_host/tests/conformance_runtime_cases.py", "ai_host/tests/conformance_performance_cases.py", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/"],
+      "owner_paths": ["scripts/validation/windows_host_qualification.py", "scripts/validation/windows_host_samples.py", "scripts/validation/windows_host_processes.py", "scripts/validation/windows_host_process_identity.py", "scripts/validation/windows_host_process_cleanup.py", "scripts/validation/windows_host_transport.py", "scripts/validation/windows_host_benchmark.py", "scripts/validation/windows_host_environment.py", "scripts/validation/windows_host_process_window.py", "scripts/validation/windows_host_process_details.py", "scripts/validation/windows_host_process_window_evidence.py", "scripts/validation/windows_host_performance.py", "scripts/validation/windows_host_performance_contract.py", "scripts/validation/windows_host_performance_evidence.py", "scripts/validation/windows_qualification_evidence.py", "scripts/validation/windows_qualification_inputs.py", "scripts/validation/qualify_ai_runtime.py", "scripts/tests/test_windows_host_qualification.py", "scripts/tests/test_windows_process_window.py", "scripts/tests/test_windows_process_details.py", "scripts/tests/test_windows_process_window_contract.py", "scripts/tests/windows_performance_support.py", "scripts/tests/test_windows_performance_evidence.py", "scripts/tests/test_windows_performance_replay_boundaries.py", "scripts/tests/test_windows_performance_inputs.py", "scripts/tests/test_windows_performance_tail_policy.py", "scripts/tests/test_windows_performance_page_policy.py", "scripts/tests/test_windows_performance_window.py", "scripts/tests/test_windows_performance_processes.py", "scripts/tests/test_windows_qualification_profiles.py", "scripts/tests/test_qualify_ai_runtime.py", "ai_host/tests/windows_perf_fixture.py", "ai_host/tests/windows_perf_entry.py", "ai_host/tests/test_windows_baseline_equivalence.py", "ai_host/tests/conformance_runtime_probe.py", "ai_host/tests/conformance_runtime_cases.py", "ai_host/tests/conformance_performance_cases.py", "docs/development/reporting-delivery.md", "openspec/changes/embed-ai-base-runtime-in-process/", "scripts/validation/project_full_stack_support.py", "project_management/tests/test_project_full_stack_environment_restoration.py"],
       "contracts": ["INV-6", "PERF-IDENTITY", "PERF-RECIPE", "PERF-INTERVAL", "PERF-WINDOW", "PERF-CLEANUP", "PERF-CLAIM"], "validation": ["V8"], "steps": "windows-performance-test-plan.md",
       "exit_criteria": "Native producer/checker and aggregate consumer reject false proof; full recipe fidelity and cleanup pass; labelled pilot and full diagnostic retained without premature certification.",
       "parallel_policy": "single-writer"
