@@ -6,6 +6,7 @@ import unittest
 from project_management.app.domain.summary_contracts import AnalysisError
 from project_management.app.domain.captures import PartCoverage
 from project_management.tests.report_source_fixtures import ReportSourceScenario
+from project_management.tests.test_summary_input import body_not_requested_metadata
 
 
 class TestSummaryDeltaJournal(ReportSourceScenario, unittest.TestCase):
@@ -55,6 +56,21 @@ class TestSummaryDeltaJournal(ReportSourceScenario, unittest.TestCase):
                                               initial.attempt_id, snapshot1, result1, self.contract)
             self.assertEqual(accepted1, replay)
             self.assertEqual(3, self.read_report_source(archive, third.capture_id).rows[0].summary_ref.revision)
+
+    def test_shouldReuseNoWorkWhenRetainedBodyNotRequestedMetadataChainIsUnchanged(self):
+        with self.archive_service() as (root, archive):
+            _, base = self.summary_source()
+            retained = body_not_requested_metadata(base)
+            first = self.capture_summary_source(archive, snapshot=retained)
+            accepted, _, _ = self.accept(archive, self.prepare(archive, first.source_key).attempt)
+            second = self.capture_summary_source(archive, snapshot=retained)
+            before = self.archive_files(root)
+
+            reused = self.prepare(archive, first.source_key)
+
+            self.assertEqual(('no_work', accepted.summary_id), (reused.kind, reused.accepted.summary_id))
+            self.assertEqual(before, self.archive_files(root))
+            self.assertEqual(1, self.read_report_source(archive, second.capture_id).rows[0].summary_ref.revision)
 
     def test_shouldPreserveChangesAcrossFailedAnalysis(self):
         with self.archive_service() as (root, archive):

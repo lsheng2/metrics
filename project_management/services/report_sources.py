@@ -13,7 +13,7 @@ from project_management.app.domain.report_contracts import (
 )
 from project_management.app.domain.report_values import report_hash
 from project_management.app.domain.summary_contracts import AnalysisError
-from project_management.app.domain.summary_input import complete_source, unchanged_since
+from project_management.app.domain.summary_input import SUMMARY_INPUT_SCOPE_NOTICE, complete_source, unchanged_since
 from project_management.services.summary_material import verified_accepted_material
 from project_management.services.report_source_values import (
     checked_limits,
@@ -155,6 +155,7 @@ class ReportSourceReader:
             'pending_count': pending_count,
             'complete': selected.membership.coverage.state == 'complete' and pending_count == 0,
             'comparison_state': 'initial_baseline',
+            'limitations': (SUMMARY_INPUT_SCOPE_NOTICE,),
         }
         return ReportSourceSnapshot(
             schema_version=1,
@@ -172,7 +173,7 @@ class ReportSourceReader:
             baseline_publication_id=selection.baseline_publication_id,
             comparison_policy_hash=COMPARISON_POLICY_HASH,
             coverage=coverage,
-            key_messages=(self._coverage_message(accepted_count, pending_count),),
+            key_messages=(self._coverage_message(accepted_count, pending_count), self._scope_message()),
             rows=rows,
             events=(),
             days=(),
@@ -315,6 +316,9 @@ class ReportSourceReader:
             f'{accepted_count} accepted summaries and {pending_count} pending items.',
             (),
         )
+
+    def _scope_message(self):
+        return ReportMessage('summary_input_scope', SUMMARY_INPUT_SCOPE_NOTICE, ())
 
     def _text(self, value):
         if isinstance(value, dict) and isinstance(value.get('name'), str):

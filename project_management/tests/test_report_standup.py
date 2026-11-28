@@ -81,13 +81,18 @@ def test_shouldRenderOnlyEffectiveNotesProviderStatesAndUnresolvedActions():
 
 def test_shouldKeepCompactCoverageAndPendingTicketsWithoutRestoringSourceNarrative():
     source, ctx = authored_context()
+    scope_notice = (
+        'Attachment and linked-item bodies were not supplied to AI summary input; '
+        'AI summaries cover only fields, comments and history.'
+    )
     coverage = {**source.coverage, 'complete': False, 'members_count': 2, 'accepted_count': 1,
-                'pending_count': 1, 'limitations': ['Some comments are unavailable.']}
+                'pending_count': 1, 'limitations': ['Some comments are unavailable.', scope_notice]}
     rows = (source.rows[0], replace(source.rows[1], pending_reason='source_incomplete', summary_ref=None))
     output = render(replace(source, coverage=coverage, rows=rows), ctx)
     assert 'Source: 1 complete, 1 incomplete, 0 unavailable' in output.plain_text
     assert 'AI summaries: 1/2 available' in output.plain_text
     assert 'Some comments are unavailable.' in output.plain_text
+    assert 'Attachment and linked-item bodies were not supplied' in output.plain_text
     assert 'DEMO-101' in output.plain_text and 'DEMO-102' in output.plain_text
 
 

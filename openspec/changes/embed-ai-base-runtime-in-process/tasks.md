@@ -10,7 +10,7 @@ Synthetic PASS is not live E2E. Production services, external writes and KPI sta
 
 - [x] LIVE.PREFLIGHT - Freeze source/scope and GET-only prerequisites; CA propagation is the recorded blocker, not a business PASS.
 - [x] LIVE.PLAN.R - Independent plan/validation advisory approves the bounded flow and fail-closed CA repair.
-- [ ] LIVE.CA - Repair and independently verify Dashboard model CA propagation without changing AIB or TLS policy.
+- [x] LIVE.CA - Fail-closed Dashboard model CA repair published as `4b88d83`; independent review and 53 focused tests passed. TLS/AIB unchanged by this repair.
 - [ ] LIVE.REPORT - Qualify real capture, model summary/authoring, browser edit, Save/Finalize and readback.
 - [ ] LIVE.CHART - Qualify actual model tool use, preview, approval and isolated Grafana publication.
 - [ ] LIVE.RECOVERY - Qualify session/context continuity, idempotency, refusal/recovery, restart and normal owned cleanup.

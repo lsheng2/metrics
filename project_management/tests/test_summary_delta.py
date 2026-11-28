@@ -7,6 +7,7 @@ from project_management.app.domain.summary_contracts import AcceptedSummary, Ana
 from project_management.app.domain.summary_input import build_initial_input
 from project_management.app.domain.summary_validation import validate_candidate
 from project_management.tests.summary_fixtures import SummaryScenario
+from project_management.tests.test_summary_input import body_not_requested_metadata
 
 
 class TestSummaryDelta(SummaryScenario, unittest.TestCase):
@@ -72,6 +73,18 @@ class TestSummaryDelta(SummaryScenario, unittest.TestCase):
         self.assertEqual(['comment:201', 'comment:202', 'comment:203', 'comment:204'],
                          value['delta']['added_ids'])
         self.assertEqual(12, len(value['evidence']))
+
+    def test_shouldBuildCumulativeInputAcrossRetainedBodyNotRequestedMetadata(self):
+        key, chain, sources, baseline = self.sources()
+        prepared = self.build(key, chain, tuple(body_not_requested_metadata(source) for source in sources), baseline)
+        value = json.loads(prepared.input_content)
+
+        self.contract.validate_input(value)
+        self.assertEqual('metrics.project_summary@2', value['profile_revision'])
+        self.assertEqual({'facts': 'complete', 'comments': 'complete', 'history': 'complete'}, value['coverage'])
+        self.assertEqual({'field', 'comment'}, {row['kind'] for row in value['evidence']})
+        self.assertNotIn('attachment', {row['kind'] for row in value['evidence']})
+        self.assertNotIn('dependency', {row['kind'] for row in value['evidence']})
 
     def test_shouldRejectBrokenBaselineIncompleteSegmentAndOversizedHistory(self):
         key, chain, sources, baseline = self.sources()

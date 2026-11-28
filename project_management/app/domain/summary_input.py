@@ -3,6 +3,12 @@ from project_management.app.domain.summary_contracts import AnalysisError, Prepa
 
 
 REQUIRED_PARTS = ('facts', 'comments', 'history')
+OPTIONAL_BODY_METADATA_PARTS = ('attachments', 'dependencies')
+BODY_NOT_REQUESTED = 'BODY_NOT_REQUESTED'
+SUMMARY_INPUT_SCOPE_NOTICE = (
+    'Attachment and linked-item bodies were not supplied to AI summary input; '
+    'AI summaries cover only fields, comments and history.'
+)
 MAX_INPUT_BYTES = 65536
 MAX_EVIDENCE = 64
 MAX_CHAIN = 100
@@ -52,13 +58,9 @@ def require_complete_source(snapshot):
     if (not snapshot.consistent
             or any(getattr(snapshot.coverage, part).state != 'complete' for part in REQUIRED_PARTS)):
         raise AnalysisError('ANALYSIS_SOURCE_INCOMPLETE')
-    if snapshot.attachments_by_id or snapshot.dependencies_by_id:
-        raise AnalysisError('ANALYSIS_PART_UNSUPPORTED')
-    for name in ('attachments', 'dependencies'):
-        part = getattr(snapshot.coverage, name)
-        if (part.state not in {'not_requested', 'complete'}
-                or part.observed_count not in (None, 0) or part.total_count not in (None, 0)
-                or (part.state == 'complete' and (part.observed_count != 0 or part.total_count != 0))):
+    for name in OPTIONAL_BODY_METADATA_PARTS:
+        if not _optional_body_metadata_allowed(getattr(snapshot.coverage, name),
+                                               getattr(snapshot, name + '_by_id')):
             raise AnalysisError('ANALYSIS_PART_UNSUPPORTED')
 
 
@@ -73,6 +75,15 @@ def complete_source(snapshot):
 def _evidence(ref_id, kind, source_id, pointer, value, capture_id):
     return {'ref_id': ref_id, 'kind': kind, 'source_id': source_id, 'json_pointer': pointer,
             'value': value, 'source_hash': content_hash(value), 'capture_id': capture_id}
+
+
+def _optional_body_metadata_allowed(part, values):
+    count = len(values)
+    if count:
+        return (part.state == 'partial' and part.reason_code == BODY_NOT_REQUESTED
+                and part.observed_count == count and part.total_count == count)
+    return (part.state == 'not_requested' and part.observed_count in (None, 0) and part.total_count in (None, 0)
+            or part.state == 'complete' and part.observed_count == 0 and part.total_count == 0)
 
 
 def unchanged_since(capture_id, source_hash, chain):

@@ -1,10 +1,13 @@
 from dataclasses import replace
+import json
 
 import pytest
 
 from project_management.app.domain.capture_values import canonical_bytes, content_hash
 from project_management.app.domain.summary_contracts import AnalysisError
+from project_management.app.domain.summary_input import build_initial_input
 from project_management.tests.summary_fixtures import SummaryScenario
+from project_management.tests.test_summary_input import body_not_requested_metadata
 
 
 def values():
@@ -22,7 +25,7 @@ def test_contract_validates_new_owned_records_without_http_sdk_pack():
     contract.validate_request(request)
     contract.validate_snapshot(request, snapshot)
     assert contract.validate_result_envelope(request, snapshot, result) == output
-    assert contract.profile_ref == 'metrics.project_summary@1'
+    assert contract.profile_ref == 'metrics.project_summary@2'
 
 
 @pytest.mark.parametrize('field,value', [
@@ -81,3 +84,27 @@ def test_runtime_digest_does_not_replace_the_application_source_binding():
     assert contract.validate_result_envelope(request, snapshot, result) == output
     with pytest.raises(AnalysisError):
         contract.validate_snapshot(request, replace(snapshot, source_input_sha256='e' * 64))
+
+
+def test_v2_request_preparation_admits_metadata_without_optional_body_evidence():
+    scenario = SummaryScenario()
+    scenario.setUp()
+    reference, source = scenario.summary_source()
+    retained = body_not_requested_metadata(source)
+    prepared = build_initial_input(
+        scenario.project.id,
+        scenario.stage,
+        scenario.source_key(scenario.intent()),
+        reference,
+        retained,
+        scenario.contract.profile_ref,
+    )
+    attempt = scenario.attempt(prepared)
+    value = json.loads(attempt.request.input_json)
+
+    scenario.contract.validate_request(attempt.request)
+    assert attempt.request.profile_version == '2'
+    assert value['profile_revision'] == 'metrics.project_summary@2'
+    assert [row['kind'] for row in value['evidence']] == ['field', 'comment', 'comment', 'comment']
+    assert 'Attachment and linked-item bodies are not supplied' in scenario.contract.profile.instructions
+    assert 'blockers and limitations must cite evidence_refs' in scenario.contract.profile.instructions

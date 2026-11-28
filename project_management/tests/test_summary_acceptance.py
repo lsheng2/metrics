@@ -23,7 +23,7 @@ class TestSummaryAcceptance(SummaryScenario, unittest.TestCase):
     def test_shouldRejectWrongSnapshotAuthorityBeforeAcceptingItsResult(self):
         for field, mutate in [
             ('profile_id', lambda snapshot: replace(snapshot, profile_id='metrics.other')),
-            ('profile_version', lambda snapshot: replace(snapshot, profile_version='2')),
+            ('profile_version', lambda snapshot: replace(snapshot, profile_version='99')),
             ('source_input_sha256', lambda snapshot: replace(snapshot, source_input_sha256='b' * 64)),
             ('status', lambda snapshot: replace(snapshot, status='canceled')),
             ('dispatch.profile_definition_sha256',
@@ -40,7 +40,7 @@ class TestSummaryAcceptance(SummaryScenario, unittest.TestCase):
         for field, mutate in [
             ('run_id', lambda result: replace(result, run_id='other-run')),
             ('profile_id', lambda result: replace(result, profile_id='metrics.other')),
-            ('profile_version', lambda result: replace(result, profile_version='2')),
+            ('profile_version', lambda result: replace(result, profile_version='99')),
             ('source_input_sha256', lambda result: replace(result, source_input_sha256='b' * 64)),
             ('input_sha256', lambda result: replace(result, input_sha256='c' * 64)),
             ('effective_input_sha256', lambda result: replace(result, effective_input_sha256='d' * 64)),

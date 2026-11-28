@@ -29,6 +29,7 @@ from project_management.tests.report_source_memory import (
     MemoryRepository,
     MemoryRepositoryFactory,
 )
+from project_management.tests.test_summary_input import body_not_requested_metadata
 
 
 class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
@@ -156,6 +157,41 @@ class TestReportSourceReader(ReportSourceScenario, unittest.TestCase):
 
         refs = tuple(row['ref_id'] for row in snapshot.rows[0].evidence)
         self.assertEqual(('fields', 'comment:203'), refs)
+
+    def test_shouldDisclosePrimaryInputScopeAndKeepBlockerLimitationEvidenceRefs(self):
+        _, base = self.summary_source()
+        retained = body_not_requested_metadata(base)
+        capture = self.memory_capture(snapshot=retained)
+        prepared = build_initial_input(
+            self.project.id,
+            self.stage,
+            capture['source_key'],
+            capture['ref'],
+            retained,
+            self.contract.profile_ref,
+        )
+        output = self.output(prepared)
+        output['evidence'] = ['fields']
+        output['blockers'] = ['comment:202']
+        output['limitations'] = ['comment:201']
+        self.add_memory_acceptance(capture['files'], capture['ref'], retained, capture['source_key'], output=output)
+        archive, repository = self.memory_archive(capture['files'])
+
+        snapshot = self.read_memory_report(archive, repository, capture['capture_id'])
+
+        self.assertIn(
+            'summary_input_scope',
+            tuple(message.message_id for message in snapshot.key_messages),
+        )
+        disclosure = next(message for message in snapshot.key_messages if message.message_id == 'summary_input_scope')
+        self.assertIn('fields, comments and history', disclosure.text)
+        self.assertIn('Attachment and linked-item bodies were not supplied', disclosure.text)
+        self.assertIn(disclosure.text, snapshot.coverage['limitations'])
+        row = snapshot.rows[0]
+        self.assertEqual(('comment:202',), row.blocker_refs)
+        self.assertEqual(('comment:201',), row.limitation_refs)
+        self.assertEqual(('fields', 'comment:203', 'comment:202', 'comment:201'),
+                         tuple(item['ref_id'] for item in row.evidence))
 
     def test_shouldRefuseStoredSourceAndSummaryCorruption(self):
         cases = {

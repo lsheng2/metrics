@@ -15,8 +15,9 @@ performance certification or production deployment.
 
 Baseline: Dashboard `ab28eb7882d8e7d3b1758998c9b1b2ea3026ecae`,
 AIB `9de48851ff4910ef98d414406077dbbcc93abb5b`, both clean on main.
-Use installed `ai-base-runtime==0.1.1.dev10`, wheel SHA256
-`18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55`.
+After the owner-authorized schema-delivery repair, use `ai-base-runtime==0.1.1.dev11`,
+source `d066c104e4394a570ba054098d3d6ed4b5597f2c`, wheel SHA256
+`a05cbd5d8fdabcd48f7ec5c106432370b1d461f0e080a11e0fad04a67a6f9931`.
 Record the actual source again if a scoped repair changes it.
 
 The existing source is Jira; the initial sample is a bounded subset of the
@@ -41,8 +42,8 @@ proved. The source records may be sent only to this configured model gateway.
   task profiles. No fixture AppConfig, scripted model, patched transport or
   direct handler invocation may stand in for a successful live workflow.
 - Do not weaken TLS, approval, deadlines, stop/leak budgets or numerical KPI.
-- Do not modify AIB unless a reproduced AIB-owned blocker needs a separately
-  reviewed source/wheel change. Never patch the installed wheel.
+- The owner authorized the reproduced AIB output-schema repair; source review,
+  source joins and private-wheel gates passed. Never patch an installed wheel.
 - Keep raw enterprise content, screenshots and generated reports outside Git.
   Public receipts contain only non-sensitive identity, counts and outcomes.
 - At most three source items in the first vertical slice, at most twelve
@@ -154,10 +155,23 @@ recheck through the installed runtime. Record source change separately from
 the unchanged wheel. This repair is LIVE.CA; LIVE.REPORT remains
 blocked until its review is complete.
 
+## Model Output Contract Repair
+
+The owner subsequently authorized the confirmed AIB schema-delivery blocker.
+Shared source delivers the original output schema in trusted instructions and
+retains post-validation, retries0 and every budget. Source78, Dashboard schema
+joins2, source-host22 and private-wheel23 passed; independent source review
+found no remaining issues. Actual-model synthetic-input probes establish schema
+delivery only, not a filled authoring candidate or real-source business acceptance.
+The new immutable dev11 payload differs from dev10 in one backend file;
+dependencies/assets/testkit are unchanged. Install into a fresh environment,
+then run LIVE.REPORT/CHART/RECOVERY. Preserve all dev10 receipts and performance
+references; do not certify dev11 using the historical dev10 functional receipt.
+
 ## Validation And Evidence
 
 PowerShell commands use the installed candidate interpreter
-`D:/AIGC/d10-1127/venv/Scripts/python.exe`; no implicit legacy `.venv`.
+`D:/AIGC/d11-1128/venv/Scripts/python.exe`; no implicit legacy `.venv`.
 Focused repair tests use `-I scripts/validation/run_report_authoring_tests.py`
 with explicit test paths, `-q --tb=short -p no:cacheprovider` and
 `-o asyncio_default_fixture_loop_scope=function`.
@@ -175,3 +189,40 @@ certification without their own evidence.
 
 Preflight review must check node dependencies, owner paths, negative cases and
 the sole checkbox ledger together. No second execution ledger is introduced.
+
+## Primary-Issue Eligibility Repair
+
+The actual read-only Jira capture was consistent with complete facts, comments
+and history, but the initial `review-1` readiness predicate refused retained
+attachment/link metadata before model dispatch. Independent architecture review
+confirmed the bounded primary-issue flow can admit this state without fetching
+those bodies. This amendment supersedes the empty-only optional-part restriction
+in `add-provider-neutral-project-reporting/early-ai-integration.md` for the new
+`metrics.project_summary@2` profile, not historical requests or receipts.
+
+Dashboard owns this repair. Keep all three required parts complete and the
+snapshot consistent. Optional parts admit only existing empty states or exact
+`partial + BODY_NOT_REQUESTED` metadata whose observed/total counts match the
+retained map. Unsupported/access-lost states, mismatched counts, unknown reasons
+and positive body-complete claims remain refused. Apply the same predicate to
+initial, cumulative and no-work paths. Do not strip source maps or rewrite hashes.
+The model receives only primary facts/comments/history and is instructed not to
+infer attachment or linked-item bodies. An application-owned report message
+always discloses this scope; model evidence-reference limitations keep their
+existing meaning and raw model output stays immutable.
+
+Owned product paths: `project_management/app/domain/summary_input.py`,
+`project_management/ai_profiles/project_summary.json`,
+`project_management/services/report_sources.py`, and a cohesive disclosure helper
+if required by the existing file-size gate. Owned tests are the corresponding
+input/delta/profile/acceptance/report-source suites and typed-task contract tests.
+No AIB, provider adapter, output-schema relaxation, historical v1 compatibility,
+budget or performance change is included.
+
+RED/GREEN must prove metadata-only admission and rejection of each invalid
+sibling state, retained-chain checks, v2 profile/hash binding, deterministic
+disclosure and actual task preparation. Run the installed task joins after the
+focused tests, then independent source review before resuming LIVE.REPORT.
+Existing v1 data remains immutable; mixed-version accepted-history migration is
+outside this empty-instance qualification. Stop and report if that migration is
+needed. A source repair PASS is not a live business PASS.

@@ -6,12 +6,12 @@
 
 旧外部伴随服务、旧 HTTP business API、旧 Grafana CLI precondition、旧 proof id、旧 demo approval prefix、旧 demo publish endpoint 和旧 host-action 消息协议都不是当前操作说明。历史案例若提到这些术语，只能作为旧证据阅读。
 
-Windows 入口已统一到进程内 `serve` 和 SLE 所有权管理。当前候选为 dev10，
+Windows 入口已统一到进程内 `serve` 和 SLE 所有权管理。当前候选为 dev11，
 解释器与安装身份以 [当前验证指南](../development/reporting-delivery.md) 为准。
 [功能回执](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev10.json)
 记录 3332 项、114/114 证据键通过；
 [有界 pilot](../../openspec/docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
-记录完整采集、零错误、零超限。它们支持受控人工试用，不是正式性能认证或整个项目发布。
+记录完整采集、零错误、零超限。这些 dev10 证据不自动成为 dev11 验收，也不是整个项目发布。
 真实 provider/model、人工验收、C5 正确性、R4/R7、完整性能及 Linux 资格仍未关闭。
 
 ## Windows 入口
@@ -75,8 +75,8 @@ Workbench 稳定选择器：
 按 `docs/development/reporting-delivery.md` 的 no-dotenv 入口运行显式测试路径。示例从 Dashboard repo root 运行 real browser join，并使用新的临时 basetemp：
 
 ```powershell
-$reportingPython = 'D:\AIGC\d10-1127\venv\Scripts\python.exe'
-$baseTemp = Join-Path 'D:\AIGC\d10-1127\temp' ('mdb2-publication-browser-' + [guid]::NewGuid().ToString('N'))
+$reportingPython = 'D:\AIGC\d11-1128\venv\Scripts\python.exe'
+$baseTemp = Join-Path 'D:\AIGC\d11-1128\temp' ('mdb2-publication-browser-' + [guid]::NewGuid().ToString('N'))
 & $reportingPython -I -B scripts/validation/run_report_authoring_tests.py ai_host/tests/test_publication_browser_join.py -q --tb=short -p no:cacheprovider -o asyncio_default_fixture_loop_scope=function --basetemp $baseTemp
 ```
 
@@ -89,7 +89,7 @@ openspec/changes/embed-ai-base-runtime-in-process/evidence/publication-packet-20
 ```
 
 该文件记录当时 runtime approval + Grafana + Workbench history 的 synthetic 验证；
-它不替代本页顶部的当前 dev10 回执，也不证明整个 Dashboard/AIB 项目已关闭。
+它不替代本页顶部的历史 dev10 回执或新的 dev11 真实链路验收，也不证明整个 Dashboard/AIB 项目已关闭。
 
 ## 当前安全边界
 

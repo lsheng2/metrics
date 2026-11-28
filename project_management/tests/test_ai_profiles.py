@@ -14,7 +14,7 @@ def test_profiles_are_metrics_owned_versioned_data_without_sdk_wire_pack():
         'metrics.project_summary', 'metrics.report_authoring',
     }
     for profile in profiles:
-        assert profile.version == '1'
+        assert profile.version == {'metrics.project_summary': '2', 'metrics.report_authoring': '1'}[profile.id]
         assert profile.instructions
         assert profile.output_schema_sha256 == content_hash(profile.output_schema)
         assert profile.definition_sha256 == content_hash(profile.definition)
@@ -47,8 +47,8 @@ def test_profile_revisions_use_new_exact_business_identity():
         assert profile.definition['id'] == profile.id
         assert profile.definition['version'] == profile.version
     summary = load_task_profile('metrics.project_summary')
-    assert 'metrics.project_summary@1' in json.dumps(summary.input_schema)
-    assert 'metrics.project_summary@1' in json.dumps(summary.output_schema)
+    assert 'metrics.project_summary@2' in json.dumps(summary.input_schema)
+    assert 'metrics.project_summary@2' in json.dumps(summary.output_schema)
 
 
 def test_metrics_package_registers_the_owned_profiles():

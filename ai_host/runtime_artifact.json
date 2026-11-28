@@ -39,7 +39,7 @@
     "ai_base_runtime/_internal/backends/copilot_result.py": "6578a4ce89c7c046d24ef7a13479cbc95119b7716e9f60d714b6bdbff68775b5",
     "ai_base_runtime/_internal/backends/copilot_wire.py": "4d0ba4e52b243ac5e106c8434e720bd292c27dd71ca102e6a932e96fbfa6f996",
     "ai_base_runtime/_internal/backends/factory.py": "b8fd10d09a6b0447cf59b68ab80c08929d7046df8734349c37432617c7ce4919",
-    "ai_base_runtime/_internal/backends/pydantic_openai.py": "500e348ab507515a24b76262acb1fd4e59e03d19f888c8751903998ba119046b",
+    "ai_base_runtime/_internal/backends/pydantic_openai.py": "a74b3fd5cb7257a614f2b9f77e7522642cd37a3088ebdec574b2134c36725a12",
     "ai_base_runtime/_internal/backends/tool_names.py": "f981cea06b3ed6657a8f1108fb27eadfe6b1ebe3c922ac0e1e92f497c9d372e8",
     "ai_base_runtime/_internal/backends/tracing.py": "bb816c19985a4e2f9333ebe83c057c4a6e2bc9104f4e97a87de0f02efe275f75",
     "ai_base_runtime/_internal/backends/types.py": "1b6b2c5220516ed7c2f4106c1e9012c97490dcf1f733884683dcea195d5aef4d",
@@ -176,9 +176,9 @@
     "ai_base_runtime/testkit/pytest_plugin.py": "fa81423cf6e6c0101634be032cd6e158a8844dc03922a3bb9549252c4b028e03"
   },
   "schemaVersion": 1,
-  "sourceCommit": "3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a",
-  "sourceTree": "6a4036cedda9c5ca0317e3d5057a96021d39e383",
-  "version": "0.1.1.dev10",
-  "wheelFile": "ai_base_runtime-0.1.1.dev10-py3-none-any.whl",
-  "wheelSha256": "18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55"
+  "sourceCommit": "d066c104e4394a570ba054098d3d6ed4b5597f2c",
+  "sourceTree": "8f3163d249b7d42d84d22c35d652438ffa65f7bc",
+  "version": "0.1.1.dev11",
+  "wheelFile": "ai_base_runtime-0.1.1.dev11-py3-none-any.whl",
+  "wheelSha256": "a05cbd5d8fdabcd48f7ec5c106432370b1d461f0e080a11e0fad04a67a6f9931"
 }

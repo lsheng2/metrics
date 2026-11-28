@@ -18,28 +18,33 @@ The approved delivery order and interfaces are in
 
 The migrated `ai_host`, summary, report-assist and project-run boundaries use
 the embedded runtime candidate recorded in `ai_host/runtime_artifact.json`.
-The current candidate is `ai-base-runtime==0.1.1.dev10`, built from AIB
-`3a9fb21f7da310c1a34dd35e38e5e8d60e51bd3a`. Its wheel SHA256 is
-`18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55`.
+The current candidate is `ai-base-runtime==0.1.1.dev11`, built from AIB
+`d066c104e4394a570ba054098d3d6ed4b5597f2c`. Its wheel SHA256 is
+`a05cbd5d8fdabcd48f7ec5c106432370b1d461f0e080a11e0fad04a67a6f9931`.
 This is the pinned Dashboard package candidate, not whole-AIB release or
 performance certification.
 Current execution priority is Windows. Linux, WSL and Linux-container validation
 are deferred; their interfaces and environment definitions remain available for
 later qualification and are not prerequisites for this Windows packet.
 
-Dev10 changes only the shared runtime asset cache owner and its HTTP wiring.
+Dev11 changes only model output-schema delivery relative to dev10; new-wheel/live gates are separate.
+The fresh Windows interpreter is `D:/AIGC/d11-1128/venv/Scripts/python.exe`.
+Installed checks passed: offline installation, installer37, Dashboard36 and
+runtime/backend78 (separate optional-Copilot test environment). Real-source
+business acceptance remains separate; see the live acceptance packet.
+Historical dev10 changed the shared runtime asset cache owner and its HTTP wiring.
 Each runtime retains successfully verified immutable package assets, not
 authentication, entry HTML or user data. Recreate the runtime after a package
 upgrade; cached files are not reloaded from a running installation. The AIB
 OpenSpec is `cache-immutable-runtime-assets`. Source22/private-wheel23 checks
-are development-only. New offline installation at `D:/AIGC/d10-1127/venv`
+are development-only. Historical offline installation at `D:/AIGC/d10-1127/venv`
 passed admission and real page/asset serving with normal, unforced exit.
 Read-only installed verification passed392 cases with no skips and original
 ACL restoration. Its first attempt failed because Windows observer children
 could not import the exported test package; a new launcher admits only the
 SDK-free test parent and preserves runtime-source exclusion (10 guard cases).
 See [dev10 candidate admission](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-dev10-candidate-admission.json).
-Current dev10 Windows MDB-2 synthetic functional acceptance is PASS at tested
+Historical dev10 Windows MDB-2 synthetic functional acceptance is PASS at tested
 Dashboard source `3b60b05830062605aa4c225bb6e7a98c6e1c7594`, distinct from
 later documentation-only commits. The public receipt is
 [windows-functional-acceptance-dev10](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-functional-acceptance-dev10.json):
@@ -51,14 +56,14 @@ KPI, production shutdown budgets, leak detection, asset bytes and dependency
 declarations are unchanged. No old-SDK compatibility or source-mode production
 path is added.
 
-The current performance method references
+The performance method retains its historical candidate references:
 [the dev10 r3 policy](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-performance-inputs-dev10-r3.json)
 and that dev10 functional receipt. Its publication baseline is `efbf8e2`, not
 the tested functional source `3b60b05`. The 83 pinned dependency versions change
 only for the runtime relative to dev9; the signed recipe and every numerical
 and safety rule stay unchanged. Fresh performance inputs bind the actual
 subsequent committed source. A bounded pilot can inform a local trial but
-cannot certify performance or close `WIN.ACCEPT`.
+cannot certify dev11 performance or close `WIN.ACCEPT`.
 
 Windows fixture startup preserves the saved parent environment, including
 empty values visible to native child processes, while the fixture still
@@ -67,13 +72,8 @@ inherits only its allowlisted environment. The
 addresses a reproduced post-run Git observation failure, not application
 latency. The original failed pilot and its two page-ratio violations remain.
 
-Historical dev10 failures remain evidence. The `b415335` full functional run
-stopped after five modules with970 passes/one `project_management` failure, and
-scripts/final qualification did not run. The separate scripts readiness run
-reported1008 passes/two failures from owned30s toy process identity capture.
-Fix `c53696c` repaired atomic test publication; `3b60b05` repaired measurement
-detail reuse. These repairs do not change AIB/KPI/SLE/stop/leakage limits and
-do not establish a shared root cause for older intermittent failures.
+Historical dev10 failures and repairs remain in their original receipts.
+They are not dev11 qualification or a shared root cause for old intermittent failures.
 
 ### Model TLS Configuration
 

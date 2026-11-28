@@ -188,6 +188,12 @@ when their body maps are empty. The original snapshot hash excludes coverage:
 one shared source-readiness predicate is used by preparation and no-work reuse,
 and every retained version is checked independently of its raw-data hash.
 
+Historical restriction: the empty-only optional-part rule above describes
+`review-1`. The bounded `metrics.project_summary@2` amendment in
+[real-model acceptance](../embed-ai-base-runtime-in-process/windows-live-acceptance.md#primary-issue-eligibility-repair)
+supersedes it for exact metadata-only `BODY_NOT_REQUESTED` coverage, with
+deterministic scope disclosure. Old requests and receipts remain unchanged.
+
 First-baseline input has null summary/capture/text, accepted_revision0 and all
 comment IDs in added_ids. The schema-required fixture_version is `review-1`;
 it is a profile wire version, not a fabricated catalog identity.

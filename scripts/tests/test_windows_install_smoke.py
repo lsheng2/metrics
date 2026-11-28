@@ -10,7 +10,7 @@ import pytest
 
 
 PINS = {
-    'ai-base-runtime': '0.1.1.dev10',
+    'ai-base-runtime': '0.1.1.dev11',
     'django': '6.0.7',
     'whitenoise': '6.12.0',
     'waitress': '3.0.2',
@@ -44,12 +44,12 @@ def install_input(tmp_path, monkeypatch):
     (source / 'ai_host').mkdir(parents=True)
     (root / 'wheels').mkdir(parents=True)
     monkeypatch.setattr(installer, 'ROOT', source)
-    wheel = root / 'wheels/ai_base_runtime-0.1.1.dev10-py3-none-any.whl'
+    wheel = root / 'wheels/ai_base_runtime-0.1.1.dev11-py3-none-any.whl'
     payload = b'# synthetic runtime\n'
     with zipfile.ZipFile(wheel, 'w') as archive:
         archive.writestr('ai_base_runtime/__init__.py', payload)
-        archive.writestr('ai_base_runtime-0.1.1.dev10.dist-info/METADATA',
-                         'Metadata-Version: 2.3\nName: ai-base-runtime\nVersion: 0.1.1.dev10\n')
+        archive.writestr('ai_base_runtime-0.1.1.dev11.dist-info/METADATA',
+                         'Metadata-Version: 2.3\nName: ai-base-runtime\nVersion: 0.1.1.dev11\n')
     digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
     dependency = root / 'wheels/django-6.0.7-py3-none-any.whl'
     dependency.write_bytes(b'synthetic dependency wheel')
@@ -59,7 +59,7 @@ def install_input(tmp_path, monkeypatch):
         dependency.name: hashlib.sha256(dependency.read_bytes()).hexdigest(),
     })
     manifest = {
-        'distribution': 'ai-base-runtime', 'version': '0.1.1.dev10', 'wheelSha256': digest,
+        'distribution': 'ai-base-runtime', 'version': '0.1.1.dev11', 'wheelSha256': digest,
         'packageFiles': {'ai_base_runtime/__init__.py': hashlib.sha256(payload).hexdigest()},
     }
     (source / 'ai_host/runtime_artifact.json').write_text(json.dumps(manifest), encoding='utf-8')
@@ -74,7 +74,7 @@ def install_input(tmp_path, monkeypatch):
         'schema_version': 1,
         'source': {'repository': str(source)},
         'owned_root': {'path': str(root), 'marker': str(root / 'owner.json')},
-        'candidate': {'wheel': str(wheel), 'version': '0.1.1.dev10', 'wheel_sha256': digest},
+        'candidate': {'wheel': str(wheel), 'version': '0.1.1.dev11', 'wheel_sha256': digest},
         'python': {'bootstrap': sys.executable, 'new_environment_root': str(root / 'venv')},
         'wheelhouse': {
             'path': str(root / 'wheels'),

@@ -79,8 +79,8 @@ print(json.dumps({key: record[key] for key in ('distribution', 'version', 'wheel
     record = json.loads(result.stdout)
 
     assert record['distribution'] == 'ai-base-runtime'
-    assert record['version'] == '0.1.1.dev10'
-    assert record['wheelSha256'] == '18b5071ee9e601f6e36fb9f2cd563d43c8ce5a8beea5dafcb3f119e635ce7e55'
+    assert record['version'] == '0.1.1.dev11'
+    assert record['wheelSha256'] == 'a05cbd5d8fdabcd48f7ec5c106432370b1d461f0e080a11e0fad04a67a6f9931'
 
 
 def test_shouldRejectTamperedRuntimeArtifact(tmp_path):

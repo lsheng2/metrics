@@ -10,6 +10,27 @@ from project_management.app.domain.summary_input import build_initial_input, unc
 from project_management.tests.capture_archive_fixtures import CaptureArchiveScenario
 
 
+def body_not_requested_metadata(snapshot, *, attachments=1, dependencies=1, reason='BODY_NOT_REQUESTED'):
+    attachments_by_id = {
+        f'att-{index}': {'id': f'att-{index}', 'filename': f'log-{index}.txt', 'size': index}
+        for index in range(1, attachments + 1)
+    }
+    dependencies_by_id = {
+        f'dep-{index}': {'id': f'dep-{index}', 'type': 'relates', 'key': f'ALPHA-{index + 1}'}
+        for index in range(1, dependencies + 1)
+    }
+    return replace(
+        snapshot,
+        attachments_by_id=attachments_by_id,
+        dependencies_by_id=dependencies_by_id,
+        coverage=replace(
+            snapshot.coverage,
+            attachments=PartCoverage('partial', 'attachments-v1', attachments, attachments, reason),
+            dependencies=PartCoverage('partial', 'dependencies-v1', dependencies, dependencies, reason),
+        ),
+    )
+
+
 class TestSummaryInput(CaptureArchiveScenario, unittest.TestCase):
     def source(self):
         snapshot = replace(
@@ -30,7 +51,7 @@ class TestSummaryInput(CaptureArchiveScenario, unittest.TestCase):
 
     def build(self, reference, snapshot):
         return build_initial_input(self.project.id, self.stage, self.source_key(self.intent()),
-                                   reference, snapshot, 'project-reporting.summary@review-1')
+                                   reference, snapshot, 'metrics.project_summary@2')
 
     def test_shouldPreserveActualScopeAllCommentsAndLongOriginalText(self):
         reference, snapshot = self.source()
@@ -91,3 +112,69 @@ class TestSummaryInput(CaptureArchiveScenario, unittest.TestCase):
                 ))
                 with self.subTest(part=name, state=state), self.assertRaises(AnalysisError):
                     self.build(reference, source)
+
+    def test_shouldAdmitRetainedBodyNotRequestedMetadataWithoutSupplyingBodies(self):
+        reference, snapshot = self.source()
+        source = body_not_requested_metadata(snapshot)
+
+        prepared = self.build(reference, source)
+        value = json.loads(prepared.input_content)
+
+        self.assertEqual('metrics.project_summary@2', value['profile_revision'])
+        self.assertEqual({'facts': 'complete', 'comments': 'complete', 'history': 'complete'}, value['coverage'])
+        self.assertNotIn('attachments_by_id', value)
+        self.assertNotIn('dependencies_by_id', value)
+        self.assertEqual(['field', 'comment', 'comment', 'comment'], [row['kind'] for row in value['evidence']])
+        self.assertEqual(hashlib.sha256(prepared.input_content.encode()).hexdigest(), prepared.input_hash)
+
+    def test_shouldRejectInvalidRetainedBodyMetadataSiblings(self):
+        reference, snapshot = self.source()
+        valid = body_not_requested_metadata(snapshot)
+        invalid_cases = {
+            'unknown_reason': replace(
+                valid,
+                coverage=replace(
+                    valid.coverage,
+                    attachments=PartCoverage('partial', 'attachments-v1', 1, 1, 'FETCH_FAILED'),
+                ),
+            ),
+            'observed_count_mismatch': replace(
+                valid,
+                coverage=replace(
+                    valid.coverage,
+                    attachments=PartCoverage('partial', 'attachments-v1', 0, 1, 'BODY_NOT_REQUESTED'),
+                ),
+            ),
+            'total_count_mismatch': replace(
+                valid,
+                coverage=replace(
+                    valid.coverage,
+                    dependencies=PartCoverage('partial', 'dependencies-v1', 1, 2, 'BODY_NOT_REQUESTED'),
+                ),
+            ),
+            'positive_complete_claim': replace(
+                valid,
+                coverage=replace(
+                    valid.coverage,
+                    dependencies=PartCoverage('complete', 'dependencies-v1', 1, 1, None),
+                ),
+            ),
+            'access_lost': replace(
+                valid,
+                coverage=replace(
+                    valid.coverage,
+                    attachments=PartCoverage('access_lost', 'attachments-v1', 1, 1, 'BODY_NOT_REQUESTED'),
+                ),
+            ),
+            'empty_partial_not_broadened': replace(
+                snapshot,
+                coverage=replace(
+                    snapshot.coverage,
+                    attachments=PartCoverage('partial', 'attachments-v1', 0, 0, 'BODY_NOT_REQUESTED'),
+                ),
+            ),
+        }
+        for name, source in invalid_cases.items():
+            with self.subTest(name=name), self.assertRaises(AnalysisError) as caught:
+                self.build(reference, source)
+            self.assertEqual('ANALYSIS_PART_UNSUPPORTED', caught.exception.code)
