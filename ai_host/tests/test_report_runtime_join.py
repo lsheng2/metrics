@@ -13,6 +13,7 @@ from ai_host.package import METRICS_APP
 from ai_host.settings import RUNTIME_START_SECONDS, build_runtime_settings
 from ai_host.task_runs import RuntimeTaskRunPort
 from ai_host.tests.test_summary_runtime_join import completion
+from ai_host.tests.output_schema_wire import assert_output_schema_delivered
 from project_management.app.api.ai_profiles import load_task_profile
 from project_management.app.domain.capture_values import canonical_bytes
 from project_management.app.domain.report_assists import available_targets, build_assist_input
@@ -150,6 +151,7 @@ def test_installed_runtime_recovers_authoring_and_preserves_native_archive_prove
             assert note['provenance']['origin'] == 'human'
             assert publication_file_bytes(fixture, publication) == original_files
             assert len(endpoint.requests) == 1
+            assert_output_schema_delivered(endpoint.requests[0], contract.profile.output_schema)
         assert handle.stop_result.completed
         assert handle.stop_result.persistent_state_flushed
         assert handle.stop_result.unclosed_resources == ()

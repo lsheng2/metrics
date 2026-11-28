@@ -12,6 +12,7 @@ from ai_base_runtime.testkit import InMemoryHost, scripted_model_endpoint
 from ai_host.package import METRICS_APP
 from ai_host.settings import RUNTIME_START_SECONDS, build_runtime_settings
 from ai_host.task_runs import RuntimeTaskRunPort
+from ai_host.tests.output_schema_wire import assert_output_schema_delivered
 from project_management.app.domain.task_runs import TaskRunAdmissionMetadata
 from project_management.services.summary_analysis import SummaryAnalysisService
 from project_management.tests.summary_fixtures import SummaryScenario
@@ -89,6 +90,7 @@ class TestSummaryRuntimeJoin(SummaryScenario, unittest.TestCase):
                     )
                     self.assertEqual(request, stored.request)
                     self.assertEqual(1, len(endpoint.requests))
+                    assert_output_schema_delivered(endpoint.requests[0], self.contract.profile.output_schema)
                 self.assertTrue(handle.stop_result.completed)
                 self.assertTrue(handle.stop_result.persistent_state_flushed)
                 self.assertEqual((), handle.stop_result.unclosed_resources)
