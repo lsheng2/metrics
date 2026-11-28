@@ -51,7 +51,7 @@ class TestSummaryInput(CaptureArchiveScenario, unittest.TestCase):
 
     def build(self, reference, snapshot):
         return build_initial_input(self.project.id, self.stage, self.source_key(self.intent()),
-                                   reference, snapshot, 'metrics.project_summary@2')
+                                   reference, snapshot, 'metrics.project_summary@3')
 
     def test_shouldPreserveActualScopeAllCommentsAndLongOriginalText(self):
         reference, snapshot = self.source()
@@ -120,7 +120,7 @@ class TestSummaryInput(CaptureArchiveScenario, unittest.TestCase):
         prepared = self.build(reference, source)
         value = json.loads(prepared.input_content)
 
-        self.assertEqual('metrics.project_summary@2', value['profile_revision'])
+        self.assertEqual('metrics.project_summary@3', value['profile_revision'])
         self.assertEqual({'facts': 'complete', 'comments': 'complete', 'history': 'complete'}, value['coverage'])
         self.assertNotIn('attachments_by_id', value)
         self.assertNotIn('dependencies_by_id', value)

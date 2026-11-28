@@ -226,3 +226,37 @@ focused tests, then independent source review before resuming LIVE.REPORT.
 Existing v1 data remains immutable; mixed-version accepted-history migration is
 outside this empty-instance qualification. Stop and report if that migration is
 needed. A source repair PASS is not a live business PASS.
+
+## In-Flight Observation Repair
+
+Real run `39d6a7e2-6c7e-437f-b5c1-d158b2be3d04` completed successfully with
+the configured model after 23.4 seconds. Dashboard stopped observing earlier:
+`SummaryAnalysisService.advance` returned `unknown` for a known `running`
+snapshot whose dispatch uncertainty was still unknown. The worker then produced
+a partial report, despite the later valid runtime result.
+
+Keep `queued` and `running` snapshots observable under their lifecycle status;
+retain their original uncertainty in the durable observation. Unknown terminal
+dispatch, missing lookup and transport errors remain unaccepted. Do not resend,
+replace keys/deadlines, or change the 16-observation bound or any runtime/KPI
+limit. Owned changes: `project_management/services/summary_analysis.py`, its
+focused regression tests, this amendment and current reporting guidance.
+Test queued/running uncertainty followed by the same run's confirmed result,
+one admission only, and the existing uncertain-success/cancellation negatives.
+Run the installed summary join and independently review before live revalidation.
+Use a fresh isolated stage of the same bounded source for revalidation; preserve
+the expired/partial experiment unchanged. This does not promise all oversized
+source records fit the unchanged 65536-byte profile limit.
+
+The retained real v2 result also exposed a model-facing schema gap: reference
+arrays permitted arbitrary strings although the existing business validator
+requires exact input evidence IDs. It correctly refused explanatory prose with
+bracket citations. `metrics.project_summary@3` strengthens all four reference
+array item schemas with their existing identifier grammar and explicit field
+descriptions. It supersedes v2 only prospectively; no output is normalized or
+retrospectively accepted. Membership, quote, owner and binding validation remain
+unchanged, as do all limits. Additional owned paths: the summary profile,
+`test_ai_profiles.py`, `test_typed_task_contracts.py`, and
+`test_summary_acceptance.py`. RED must expose the old schema accepting prose;
+GREEN also proves a syntactically valid but absent ID still fails business
+membership. Revalidate the final profile through the installed summary join.

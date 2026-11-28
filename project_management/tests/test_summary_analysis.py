@@ -170,6 +170,29 @@ class TestSummaryAnalysis(SummaryScenario, unittest.TestCase):
         self.assertIsNone(self.journal.accepted)
         self.assertEqual(['start'], [call[0] for call in self.port.calls])
 
+    def test_inflight_uncertainty_keeps_same_run_observable_until_confirmed_result(self):
+        for status in ('queued', 'running'):
+            with self.subTest(status=status):
+                service = self.service(lambda *args: None)
+                terminal, result = self.responses(self.value)
+                pending = replace(
+                    terminal, status=status,
+                    dispatch=replace(terminal.dispatch, dispatched=False, uncertainty='unknown', usage=None),
+                    result=replace(terminal.result, output_sha256=None, usage=None),
+                )
+                self.port.handler = lambda method, *args: (
+                    pending if method == 'start' else result if method == 'result' else terminal
+                )
+                original = self.value.request
+
+                self.assertEqual(status, self.advance(service).state)
+                self.assertIsNone(self.journal.accepted)
+                self.assertEqual('unknown', self.journal.observations[-1]['snapshot']['dispatch']['uncertainty'])
+                self.assertEqual('accepted', self.advance(service).state)
+                self.assertEqual(['start', 'get', 'result'], [call[0] for call in self.port.calls])
+                self.assertTrue(all(call[1][1] == original for call in self.port.calls))
+                self.assertEqual(terminal.run_id, self.port.calls[1][1][2])
+
     def test_shouldRespectCancellationAtDispatchAndAcceptanceFences(self):
         service = self.service(lambda *args: self.fail('No port call may occur'))
         self.assertEqual('canceled', self.advance(service, cancel_requested=lambda: True).state)

@@ -80,7 +80,7 @@ class TestSummaryDelta(SummaryScenario, unittest.TestCase):
         value = json.loads(prepared.input_content)
 
         self.contract.validate_input(value)
-        self.assertEqual('metrics.project_summary@2', value['profile_revision'])
+        self.assertEqual('metrics.project_summary@3', value['profile_revision'])
         self.assertEqual({'facts': 'complete', 'comments': 'complete', 'history': 'complete'}, value['coverage'])
         self.assertEqual({'field', 'comment'}, {row['kind'] for row in value['evidence']})
         self.assertNotIn('attachment', {row['kind'] for row in value['evidence']})

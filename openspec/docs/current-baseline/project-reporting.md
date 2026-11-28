@@ -16,11 +16,17 @@ Chiplet不是生产代码中的固定项目。用户可以创建任意命名项�
 报告读取与按钮延迟已通过本机限定性能门槛，完整provider覆盖和正式运行仍未完成。
 内部合成能力不等于真实来源或真实模型已经上线。
 
-当前摘要 profile 为 `metrics.project_summary@2`：必须完整读取主工单的字段、评论和历史，
+当前摘要 profile 为 `metrics.project_summary@3`：必须完整读取主工单的字段、评论和历史，
 且快照一致。附件与关联工单正文不在本 profile 的读取范围；仅当已保留元数据与
 `BODY_NOT_REQUESTED` 状态及数量一致时，才允许继续分析。不可用、权限丢失、数量不符
 或必需部分不完整仍拒绝。应用在报告消息中固定披露该范围，不依赖模型自行声明，
-也不把未读正文伪装为已读。旧 v1 请求、接受记录和回执不修改，不提供混合版本历史复用。
+也不把未读正文伪装为已读。旧 v1/v2 请求、接受记录和回执不修改，不提供混合版本历史复用。
+四类输出引用数组只接受证据 ID 格式；模型不得以说明文字或方括号引用代替 ID。
+schema 的格式检查不代替应用对真实引用成员、原文、负责人和来源绑定的校验。
+
+真实模型执行中的 `queued/running` 保持可观察状态，即使派发确定性尚未落定；
+应用继续读取同一 run，不重新提交。成功结果仍须派发已确认并通过 schema 与业务校验。
+未知终态不能接受，原始期限、观察次数和输入大小限制保持不变。
 
 2026-11-07另完成用户授权的限定真实Jira三日演示：两个会议日实际采集、人工编辑和
 本地定稿，中间一天停会。16份既有note及富文本/来源状态完整继承，12个发布原文件
@@ -469,7 +475,7 @@ HSDES直接由Stage的saved-query profile路由，不伪造Jira scope。
 
 AI填写是单独的候选操作，不是模板渲染或生成报告的默认副作用。
 手工编辑不依赖嵌入运行时；候选先审阅再保存，继续沿原显式定稿/Git/权限边界。
-应用自有`metrics.report_authoring@1`与`metrics.project_summary@2`使用同一宿主的
+应用自有`metrics.report_authoring@1`与`metrics.project_summary@3`使用同一宿主的
 typed task-run端口，但分别验证自己的输入、输出与接受规则；合成资格不是正式模型资格。
 当前接线与限定证据见[开发验证指南](../../../docs/development/reporting-delivery.md#assist-validation)；
 [ASSIST合同](../../changes/add-provider-neutral-project-reporting/assist-execution.md)保留业务接受规则的历史依据。
@@ -641,7 +647,7 @@ Ego桌面验证保留在本地`.tmp/project-reporting-w2/browser/`，不将合�
 Dashboard 通过 `ai_host` 在自身进程内托管一个 AIB runtime，使用同源 AI pane
 和 App-owned 同步 task-run 端口。候选 wheel 的精确版本、来源和 SHA256 由
 [`ai_host/runtime_artifact.json`](../../../ai_host/runtime_artifact.json)固定并在使用前校验。
-摘要和报告辅助分别引用 `metrics.project_summary@2` 与 `metrics.report_authoring@1`；
+摘要和报告辅助分别引用 `metrics.project_summary@3` 与 `metrics.report_authoring@1`；
 schema、instructions 和定义摘要由 `project_management/ai_profiles` 的应用档案提供。
 这些应用策略不会变成其他 App 的默认策略。
 

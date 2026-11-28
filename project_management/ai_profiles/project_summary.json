@@ -1,6 +1,6 @@
 {
   "id": "metrics.project_summary",
-  "version": "2",
+  "version": "3",
   "instructions": "Summarize only the explicit input evidence. Return raw summary JSON without input_hash. The input evidence contains only primary fields, comments and history; Attachment and linked-item bodies are not supplied, so do not infer attachment or linked-item body content. Use only ref_id values from input.evidence as evidence_refs: output evidence, blockers and limitations must cite evidence_refs, and blockers and limitations must not be prose explanations. Owner rules are strict: owner_confirmed must be false; use owner_basis unknown with owner_id and owner_quote null when cited evidence does not name an owner; use owner_basis explicit only when a cited passage quotes and names the owner; use owner_basis suggested only for a known person present in supplied evidence. Do not confirm owners or publish.",
   "input_schema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -285,7 +285,7 @@
             }
           },
           "profile_revision": {
-            "const": "metrics.project_summary@2"
+            "const": "metrics.project_summary@3"
           },
           "required_parts": {
             "const": [
@@ -359,9 +359,11 @@
         "type": "object"
       },
       "blockers": {
+        "description": "Exact ref_id values copied from input.evidence only. Use an empty array when none. Never include prose, labels, explanations, or bracket citations.",
         "items": {
           "maxLength": 16000,
           "minLength": 1,
+          "pattern": "^(?:archived:[^:]+:)?(?:fields|comment:.+|history:.+)$",
           "type": "string"
         },
         "maxItems": 64,
@@ -374,11 +376,13 @@
         "type": "string"
       },
       "evidence": {
+        "description": "Exact ref_id values copied from input.evidence that support the summary. Reference IDs only, without prose or bracket citations.",
         "allOf": [
           {
             "items": {
               "maxLength": 16000,
               "minLength": 1,
+              "pattern": "^(?:archived:[^:]+:)?(?:fields|comment:.+|history:.+)$",
               "type": "string"
             },
             "maxItems": 64,
@@ -392,9 +396,11 @@
         "const": "summary"
       },
       "limitations": {
+        "description": "Exact ref_id values copied from input.evidence only. Use an empty array when none. Never include prose, labels, explanations, or bracket citations; the application supplies the input-scope notice.",
         "items": {
           "maxLength": 16000,
           "minLength": 1,
+          "pattern": "^(?:archived:[^:]+:)?(?:fields|comment:.+|history:.+)$",
           "type": "string"
         },
         "maxItems": 64,
@@ -411,11 +417,13 @@
               "type": "string"
             },
             "evidence": {
+              "description": "Exact ref_id values copied from input.evidence that support this action. Reference IDs only, without prose or bracket citations.",
               "allOf": [
                 {
                   "items": {
                     "maxLength": 16000,
                     "minLength": 1,
+                    "pattern": "^(?:archived:[^:]+:)?(?:fields|comment:.+|history:.+)$",
                     "type": "string"
                   },
                   "maxItems": 64,
@@ -476,7 +484,7 @@
         "const": "en"
       },
       "profile_revision": {
-        "const": "metrics.project_summary@2"
+        "const": "metrics.project_summary@3"
       },
       "target_capture_id": {
         "maxLength": 16000,

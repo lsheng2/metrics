@@ -10,6 +10,42 @@ from project_management.tests.summary_fixtures import SummaryScenario
 
 
 class TestSummaryAcceptance(SummaryScenario, unittest.TestCase):
+    def test_output_schema_rejects_prose_in_every_evidence_reference_array(self):
+        for field in ('evidence', 'blockers', 'limitations', 'action_evidence'):
+            with self.subTest(field=field):
+                attempt = self.attempt()
+                output = self.output(attempt.prepared)
+                target = output['next_actions'][0] if field == 'action_evidence' else output
+                target['evidence' if field == 'action_evidence' else field] = ['Follow up [fields]']
+                snapshot, result = self.responses(attempt, output)
+                with self.assertRaises(AnalysisError):
+                    self.contract.validate_result_envelope(attempt.request, snapshot, result)
+
+    def test_well_formed_but_absent_reference_still_fails_business_membership(self):
+        attempt = self.attempt()
+        output = self.output(attempt.prepared)
+        output['limitations'] = ['comment:not-in-the-input']
+        snapshot, result = self.responses(attempt, output)
+        self.contract.validate_result_envelope(attempt.request, snapshot, result)
+        with self.assertRaises(AnalysisError):
+            self.contract.validate_result(attempt.prepared, attempt.request, snapshot, result)
+
+    def test_output_schema_preserves_current_and_archived_reference_syntax(self):
+        references = [
+            'fields', 'comment:201', 'history:301', 'archived:older-capture:fields',
+            'archived:older-capture:comment:201', 'archived:older-capture:history:301',
+        ]
+        for field in ('evidence', 'blockers', 'limitations', 'action_evidence'):
+            with self.subTest(field=field):
+                attempt = self.attempt()
+                output = self.output(attempt.prepared)
+                target = output['next_actions'][0] if field == 'action_evidence' else output
+                target['evidence' if field == 'action_evidence' else field] = references
+                snapshot, result = self.responses(attempt, output)
+                self.assertEqual(
+                    output, self.contract.validate_result_envelope(attempt.request, snapshot, result),
+                )
+
     def test_shouldBindCandidateLocallyAndPreserveOriginalResultAndUnknownUsage(self):
         attempt = self.attempt()
         snapshot, result = self.responses(attempt)

@@ -83,6 +83,8 @@ class SummaryAnalysisService:
                 snapshot = self.task_run_port.get(principal, attempt.request, snapshot.run_id)
             self.contract.validate_snapshot(attempt.request, snapshot)
             self.archive.record_analysis_observation(*arguments, {'snapshot': snapshot})
+            if snapshot.status in {'queued', 'running'}:
+                return AnalysisStep(snapshot.status, attempt_id, error_code=snapshot.error_code)
             if snapshot.dispatch.uncertainty == 'unknown':
                 return AnalysisStep('unknown', attempt_id, error_code=snapshot.error_code)
             if snapshot.status != 'succeeded':

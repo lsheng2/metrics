@@ -25,7 +25,7 @@ def test_contract_validates_new_owned_records_without_http_sdk_pack():
     contract.validate_request(request)
     contract.validate_snapshot(request, snapshot)
     assert contract.validate_result_envelope(request, snapshot, result) == output
-    assert contract.profile_ref == 'metrics.project_summary@2'
+    assert contract.profile_ref == 'metrics.project_summary@3'
 
 
 @pytest.mark.parametrize('field,value', [
@@ -103,8 +103,8 @@ def test_v2_request_preparation_admits_metadata_without_optional_body_evidence()
     value = json.loads(attempt.request.input_json)
 
     scenario.contract.validate_request(attempt.request)
-    assert attempt.request.profile_version == '2'
-    assert value['profile_revision'] == 'metrics.project_summary@2'
+    assert attempt.request.profile_version == '3'
+    assert value['profile_revision'] == 'metrics.project_summary@3'
     assert [row['kind'] for row in value['evidence']] == ['field', 'comment', 'comment', 'comment']
     assert 'Attachment and linked-item bodies are not supplied' in scenario.contract.profile.instructions
     assert 'blockers and limitations must cite evidence_refs' in scenario.contract.profile.instructions
