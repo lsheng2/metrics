@@ -7,7 +7,7 @@ experiments remain historical/frozen evidence, not qualification of the new
 candidate. The workload remains unchanged; current numerical policy follows
 the owner-approved r3 page amendment below, including the unchanged P4 renewal.
 
-> For agentic workers: use `superpowers:executing-plans` for the steps below.
+> For agentic workers: use the `r2-change-loop` skill for the steps below.
 > Execution status exists only in the existing `tasks.md`, not this document.
 
 **Goal:** Measure and, where evidence requires, improve the Windows Dashboard

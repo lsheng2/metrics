@@ -1,7 +1,7 @@
 # Windows Closure Implementation Plan
 
-> Agent execution: use the existing OpenSpec ledger with
-> `superpowers:executing-plans` or `superpowers:subagent-driven-development`.
+> Agent execution: use the existing OpenSpec ledger with the `r2-change-loop`
+> skill.
 > Only `tasks.md` contains execution checkboxes. This document and the JSON DAG
 > define work; they do not maintain another progress ledger.
 
