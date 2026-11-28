@@ -1,6 +1,6 @@
 # Report Performance Implementation Plan
 
-> For agentic workers: 按 `AI_CONTRACT.md`、Superpowers TDD 执行，状态只写本change的tasks。
+> For agentic workers: 按 `AI_CONTRACT.md`、r2-change-loop 与 TDD 执行，状态只写本change的tasks。
 
 **Goal:** 消除报告工作台与日常操作的重复Git读取，保持全部业务与安全保证。
 **Architecture:** 模块内查询/命令分离，请求级固定head和中立批量读取port；不增加持久索引。

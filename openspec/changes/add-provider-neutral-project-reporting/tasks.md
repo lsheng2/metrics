@@ -1,6 +1,6 @@
 # Provider-Neutral Project Reporting Execution Plan
 
-> For agentic workers: execute this OpenSpec tasks file with Superpowers TDD and bounded validation.
+> For agentic workers: execute this OpenSpec tasks file with r2-change-loop, TDD and bounded validation.
 > Do not execute parent summaries as one giant task.
 
 Goal: user-defined projects/stages for Jira and HSD-ES, followed by generic project reporting.
