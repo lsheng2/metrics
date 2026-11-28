@@ -1,6 +1,8 @@
+import ssl
 from pathlib import Path
 
 from django.conf import settings as django_settings
+from django.core.exceptions import ImproperlyConfigured
 
 from metrics.auth import BASIC_AUTH_CHALLENGE
 
@@ -55,6 +57,8 @@ MODEL_SETTING_NAMES = (
     'METRICS_AI_MODEL_NAME',
     'METRICS_AI_MODEL_API_KEY',
 )
+MODEL_CA_BUNDLE_SETTING = 'METRICS_AI_MODEL_CA_BUNDLE'
+MODEL_CA_BUNDLE_ERROR = f'{MODEL_CA_BUNDLE_SETTING} must name a readable PEM certificate bundle file.'
 
 
 def runtime_mount_path(base_url=None):
@@ -110,10 +114,35 @@ def build_host_config():
         root_path=runtime_mount_path(),
         http_limits=HttpLimits(max_streams=HTTP_MAX_STREAMS, max_requests=HTTP_MAX_REQUESTS),
         model=_build_model_config(),
-        network=NetworkPolicy(),
+        network=NetworkPolicy(ca_bundle=_model_ca_bundle()),
         www_authenticate=BASIC_AUTH_CHALLENGE,
         allow_anonymous_approval=bool(getattr(django_settings, 'AI_HOST_ALLOW_ANONYMOUS_APPROVAL', False)),
     )
+
+
+def _model_ca_bundle():
+    raw_path = str(getattr(django_settings, MODEL_CA_BUNDLE_SETTING, '') or '').strip()
+    if not raw_path:
+        return None
+
+    try:
+        ca_bundle = Path(raw_path).expanduser().resolve()
+    except (OSError, RuntimeError):
+        raise ImproperlyConfigured(MODEL_CA_BUNDLE_ERROR) from None
+
+    if not ca_bundle.is_file():
+        raise ImproperlyConfigured(MODEL_CA_BUNDLE_ERROR)
+
+    try:
+        with ca_bundle.open('rb') as handle:
+            if not handle.read(1):
+                raise ValueError
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.load_verify_locations(cafile=str(ca_bundle))
+    except (OSError, ssl.SSLError, ValueError):
+        raise ImproperlyConfigured(MODEL_CA_BUNDLE_ERROR) from None
+
+    return ca_bundle
 
 
 def _build_model_config():

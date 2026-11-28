@@ -22,9 +22,23 @@ Grafana。两者都拒绝旧启动选项，不回退到另一套 Python。停止
 记录服务真实退出码；强制、失败和未知退出不算正常停止。完整 stack smoke 读取当前
 Workbench 和服务端 workflow form，不再要求已退役的业务 API。
 
-本轮试用只使用新的 D 盘隔离数据副本和 synthetic provider/model；不使用现有 8017、
-生产数据、真实凭据、同步、force refresh 或调度。涉及 Grafana 时仅使用明确隔离的
-本地目标，不导入外部环境。当前文档不会自动启动试用服务。
+自动回归使用新的 D 盘隔离数据和 synthetic provider/model，不接触现有 8017 或生产数据。
+最终功能交付还必须完成经授权的真实 provider/model 端到端验收；合成回归不能替代它。
+2026-11-28 已授权按[真实链路验收计划](../../openspec/changes/embed-ai-base-runtime-in-process/windows-live-acceptance.md)
+执行限定只读 Jira、已配置的真实模型和新的本地隔离实例。
+真实凭据只在进程内使用，业务证据不进入 Git；不做 provider 写入、force refresh、调度或
+外部发布。涉及 Grafana 时仅使用明确隔离的本地目标。授权不等于验收通过。
+
+## 真实链路必验项
+
+1. 从真实 provider 只读采集限定范围，核对身份、字段、成员集合、完整性和当前来源。
+2. 从实际页面调用已安装 AIB 和真实模型，取得有效的摘要与编辑候选；不能以模型连通性或固定回复代替。
+3. 人工检查事实和业务结果，完成编辑、Save、Finalize 和重开；图表流程须由模型实际调用工具，经显式审批发布到隔离目标。
+4. 验证上下文切换、会话保持、重复请求、失败恢复、正常停止及无本次进程残留。
+5. 分别记录外部调用耗时和用户端总等待；既有本机性能 PASS 不代表真实模型总耗时合格。
+
+每项结果绑定双方源码、wheel、模型和实际数据范围。自动化浏览器验收与用户亲自试用
+分别记录，不互相冒充；未运行或受阻项不标记 PASS。
 
 ## 当前契约
 
@@ -99,7 +113,7 @@ openspec/changes/embed-ai-base-runtime-in-process/evidence/publication-packet-20
 
 ## 非目标
 
-- 不验证真实 provider/model。
+- synthetic 自动回归不默认调用真实 provider/model；最终功能交付必须通过上面的真实链路验收。
 - 不验证用户数据库或既有 Grafana 服务。
 - 不以发布链路证明完整宿主资格或 Linux 部署通过。
 - 不声明 9.4、10.2、10.3、10.4 完成。

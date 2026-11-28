@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
 
 from ai_host.settings import (
@@ -21,6 +22,13 @@ from ai_host.settings import (
 from ai_host.package import METRICS_APP
 
 
+MODEL_SETTINGS = {
+    'METRICS_AI_MODEL_BASE_URL': 'https://model.example.internal/v1',
+    'METRICS_AI_MODEL_NAME': 'gpt-test',
+    'METRICS_AI_MODEL_API_KEY': 'synthetic-secret',
+}
+
+
 @pytest.mark.parametrize(('runtime_cap', 'expected'), [(512, 1_048_577), (16_777_216, 16_777_217)])
 def test_body_cap_uses_the_selected_settings_and_keeps_the_larger_app_limit(monkeypatch, runtime_cap, expected):
     selected = build_runtime_settings()
@@ -36,6 +44,89 @@ def test_body_cap_uses_the_selected_settings_and_keeps_the_larger_app_limit(monk
     monkeypatch.setattr('ai_base_runtime.request_body_policy', policy)
     monkeypatch.setattr('ai_host.settings.build_runtime_settings', unexpected_rebuild)
     assert body_limit_for_waitress(selected, (METRICS_APP,)) == expected
+
+
+def test_explicit_model_ca_bundle_reaches_network_policy_and_keeps_tls_verification():
+    import certifi
+
+    ca_bundle = Path(certifi.where()).resolve()
+
+    with override_settings(**MODEL_SETTINGS, METRICS_AI_MODEL_CA_BUNDLE=str(ca_bundle)):
+        host_config = build_host_config()
+
+    assert host_config.network.ca_bundle == ca_bundle
+    assert host_config.network.verify_tls is True
+    assert host_config.network.proxy_url is None
+
+
+def test_empty_model_ca_bundle_keeps_default_trust_and_model_optionality():
+    with override_settings(
+        METRICS_AI_MODEL_BASE_URL='',
+        METRICS_AI_MODEL_NAME='',
+        METRICS_AI_MODEL_API_KEY='',
+        METRICS_AI_MODEL_CA_BUNDLE='',
+    ):
+        host_config = build_host_config()
+
+        assert missing_model_settings() == (
+            'METRICS_AI_MODEL_BASE_URL',
+            'METRICS_AI_MODEL_NAME',
+            'METRICS_AI_MODEL_API_KEY',
+        )
+        assert host_config.model is None
+        assert host_config.network.ca_bundle is None
+        assert host_config.network.verify_tls is True
+        assert host_config.network.proxy_url is None
+
+
+@pytest.mark.parametrize(
+    'bundle_factory',
+    [
+        pytest.param(lambda tmp_path: tmp_path / 'missing-ca.pem', id='missing'),
+        pytest.param(lambda tmp_path: tmp_path, id='directory'),
+    ],
+)
+def test_explicit_model_ca_bundle_fails_closed_when_path_is_not_a_readable_file(tmp_path, bundle_factory):
+    ca_bundle = bundle_factory(tmp_path)
+
+    with override_settings(**MODEL_SETTINGS, METRICS_AI_MODEL_CA_BUNDLE=str(ca_bundle)):
+        with pytest.raises(ImproperlyConfigured) as raised:
+            build_host_config()
+
+    assert 'METRICS_AI_MODEL_CA_BUNDLE' in str(raised.value)
+    assert str(ca_bundle) not in str(raised.value)
+
+
+def test_explicit_model_ca_bundle_fails_closed_when_file_is_unreadable(tmp_path, monkeypatch):
+    ca_bundle = tmp_path / 'unreadable-ca.pem'
+    ca_bundle.write_text('-----BEGIN CERTIFICATE-----\nsynthetic\n-----END CERTIFICATE-----\n', encoding='utf-8')
+    original_open = Path.open
+
+    def deny_ca_read(self, *args, **kwargs):
+        if self == ca_bundle.resolve():
+            raise PermissionError(str(ca_bundle))
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'open', deny_ca_read)
+
+    with override_settings(**MODEL_SETTINGS, METRICS_AI_MODEL_CA_BUNDLE=str(ca_bundle)):
+        with pytest.raises(ImproperlyConfigured) as raised:
+            build_host_config()
+
+    assert 'METRICS_AI_MODEL_CA_BUNDLE' in str(raised.value)
+    assert str(ca_bundle) not in str(raised.value)
+
+
+def test_explicit_model_ca_bundle_fails_closed_when_pem_is_invalid(tmp_path):
+    ca_bundle = tmp_path / 'invalid-ca.pem'
+    ca_bundle.write_text('not a pem certificate bundle', encoding='utf-8')
+
+    with override_settings(**MODEL_SETTINGS, METRICS_AI_MODEL_CA_BUNDLE=str(ca_bundle)):
+        with pytest.raises(ImproperlyConfigured) as raised:
+            build_host_config()
+
+    assert 'METRICS_AI_MODEL_CA_BUNDLE' in str(raised.value)
+    assert str(ca_bundle) not in str(raised.value)
 
 
 class TestAiHostSettings(SimpleTestCase):

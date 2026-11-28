@@ -2,30 +2,34 @@
 
 ## Latest Delivery Decision
 
+### Real Provider/Model Acceptance (2026-11-28)
+
+The owner approved the [live acceptance packet](windows-live-acceptance.md):
+read-only Jira, the configured real model, actual UI and isolated publication.
+Synthetic PASS is not live E2E. Production services, external writes and KPI stay unchanged.
+
+- [x] LIVE.PREFLIGHT - Freeze source/scope and GET-only prerequisites; CA propagation is the recorded blocker, not a business PASS.
+- [x] LIVE.PLAN.R - Independent plan/validation advisory approves the bounded flow and fail-closed CA repair.
+- [ ] LIVE.CA - Repair and independently verify Dashboard model CA propagation without changing AIB or TLS policy.
+- [ ] LIVE.REPORT - Qualify real capture, model summary/authoring, browser edit, Save/Finalize and readback.
+- [ ] LIVE.CHART - Qualify actual model tool use, preview, approval and isolated Grafana publication.
+- [ ] LIVE.RECOVERY - Qualify session/context continuity, idempotency, refusal/recovery, restart and normal owned cleanup.
+- [ ] LIVE.CLOSE.R - Independently review evidence and publish the bounded live acceptance/manual-trial receipt.
+
 ### Dev10 Functional Continuation (2026-11-27)
 
-Pinned dev10 package adoption and Windows synthetic functional acceptance are
-current PASS; use `evidence/windows-functional-acceptance-dev10.json` and the
-[current validation guide](../../../docs/development/reporting-delivery.md) as identity authority.
-The receipt records 3332 normalized tests across seven lanes, 114/114 keys,
-native56, complete74/recovery39, migration PASS, W2.R/FUNC.R 1/1 and
-performance NOT_RUN. Counts overlap; do not sum.
-Old interrupted/failed dev10 runs remain evidence only; scoped repairs are
-reviewed, and generic SLE/app/AIB/KPI/stop/leakage limits are unchanged.
+Dev10 Windows synthetic PASS: 3332 tests/114 keys, bound by
+`evidence/windows-functional-acceptance-dev10.json` and the
+[validation guide](../../../docs/development/reporting-delivery.md).
 
 ### Current Frontier: Bounded Dev10 Usability (2026-11-27)
 
 The current functional reference is now the dev10 receipt above; historical dev9 refresh `evidence/windows-functional-acceptance-dev9-refresh.json` remains unchanged and no longer defines the current candidate.
-Dev10 references, native equivalence3 and transport31 passed. Repair17d4b1e
-passed53 checks, a real lifecycle proof and independent1/1 review.
 The [post-fix pilot](../../docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
-passed360pages/48comparisons, zero errors/violations, full raw replay and cleanup.
-The failed first pilot and its two raw ratio violations remain historical.
-Current goal is controlled human trial readiness, not further open-ended tuning.
+binds dev10 references, repair17d4b1e, 360pages/48comparisons, zero errors/violations,
+full raw replay and cleanup. Its failed first attempt remains historical.
 R1-R10/C3-C5/R4/R7, full qualification and CLOSE.R/WIN.ACCEPT remain open.
-The [low-event refusal](evidence/windows-low-event-calibration-20261126.json),
-expired max10 grant and [retention method](windows-scheduler-retention.md)
-remain historical. Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md).
+Use [PERF-SPEC-001](../../docs/current-baseline/performance-kpis.md); expired capture grants stay expired.
 
 ### Authorized Editor Selection Repair (2026-11-25)
 

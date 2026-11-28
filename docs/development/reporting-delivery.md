@@ -75,16 +75,27 @@ Fix `c53696c` repaired atomic test publication; `3b60b05` repaired measurement
 detail reuse. These repairs do not change AIB/KPI/SLE/stop/leakage limits and
 do not establish a shared root cause for older intermittent failures.
 
+### Model TLS Configuration
+
+Set `METRICS_AI_MODEL_BASE_URL`, `METRICS_AI_MODEL_NAME` and `METRICS_AI_MODEL_API_KEY`
+for the actual configured gateway. For enterprise certificates, explicitly set
+`METRICS_AI_MODEL_CA_BUNDLE` to a readable PEM bundle; empty retains default trust.
+An invalid explicit bundle refuses startup. TLS verification stays enabled;
+ambient `SSL_CERT_FILE` does not configure the embedded runtime's network policy.
+
 ### Human Trial Boundary
 
-The dev10 functional milestone and [bounded Windows pilot](../../openspec/docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
-now pass. They support a controlled human trial, not formal performance or
-whole-project release. Use only an owned seeded D-drive clone with the pinned interpreter
-and the dev10 runtime candidate. Do not use the operator's running 8017 service,
-production data, live sync, force refresh, scheduling, external publishing, real
-model/provider credentials, or real provider/model dispatch without separate
-explicit scope. Manual acceptance, C5 correctness, R4/R7 and full certification
-remain open. No trial server or URL is launched by this documentation update.
+The dev10 synthetic functional milestone and [bounded Windows pilot](../../openspec/docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
+pass within their recorded scope, not whole-product E2E or formal performance
+certification. Final functional delivery also requires actual provider/model
+business workflows. On 2026-11-28 the owner authorized the
+[live acceptance packet](../../openspec/changes/embed-ai-base-runtime-in-process/windows-live-acceptance.md):
+bounded read-only Jira, the existing configured model, a fresh owned D-drive
+instance, and explicit local report/Grafana publication. Keep raw enterprise
+evidence and secrets outside Git. Do not use the operator's running 8017 service,
+production database, provider writes, force refresh, scheduling or external
+publication. Live evidence, operator acceptance, C5 correctness, R4/R7 and full
+certification remain separate gates; authorization is not a PASS.
 
 The Dashboard editor command boundary synchronizes native text/caret selection
 into ProseMirror state before running toolbar commands. Report authoring and
