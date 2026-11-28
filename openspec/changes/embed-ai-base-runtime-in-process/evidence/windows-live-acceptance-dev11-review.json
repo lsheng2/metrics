@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "reviewed_on": "2026-11-28",
+  "verdict": "PASS",
+  "scope": "bounded evidence accuracy and documentation truthfulness",
+  "reviewed_receipt": "windows-live-acceptance-dev11.json",
+  "reviewed_receipt_sha256": "3dd19ea9e3ee861429dea23ba7ef2c5796a6e352f60a9dc215060ae20f2d3426",
+  "review_report_sha256": "abe4a9672fc53d4118a35abcff0b5a0544fe3ce304e20838e91ebc7927ca5556",
+  "reviewer": {
+    "role": "independent Validation Engineer",
+    "model": "gpt-5.5",
+    "reasoning_effort": "xhigh",
+    "independent_context": true,
+    "model_policy": "Explicit owner preference; Codex subagent allowlist has no alternate vendor."
+  },
+  "blocking_findings": 0,
+  "private_evidence_files_hash_verified": 22,
+  "focused_test_rerun": {
+    "junit_sha256": "c13fb1fca9e7755a0e8f21df4e659812368086dc6af901b586218e940e0f9edb",
+    "testcase_elements": 60,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "pytest_summary": "60 passed in 3.69s",
+    "suite_attribute_tests": 117,
+    "count_note": "Use collected items/testcase elements; do not treat the suite attribute as the exact testcase count."
+  },
+  "remaining_boundaries": [
+    "owner manual acceptance",
+    "large input and real changed multi-day history",
+    "statistical model reliability",
+    "full dev11 performance certification",
+    "C5 and R4/R7",
+    "Linux and other apps",
+    "whole OpenSpec change completion or archive",
+    "receipt publication when unrelated mainline commits need separate authorization"
+  ],
+  "product_or_acceptance_files_modified_by_reviewer": false,
+  "live_services_or_models_started_by_reviewer": false
+}

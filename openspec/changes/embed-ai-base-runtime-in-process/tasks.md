@@ -1,6 +1,12 @@
 # Tasks
 
-## Latest Delivery Decision
+## Now / Next / Blockers
+
+Now: bounded LIVE.REPORT/CHART/RECOVERY and [independent evidence review](evidence/windows-live-acceptance-dev11-review.json) passed.
+Next: owner manual acceptance and the queued-governance publication decision; see [dev11 live receipt](evidence/windows-live-acceptance-dev11.json).
+Blockers: no model/configuration blocker; do not bundle unrelated mainline commits without owner authorization.
+Assumptions: Windows and the frozen source subset only; oversized and real multi-day history qualification remain open.
+Files: live receipt, live plan, runbook, validation guide and docs index.
 
 ### Real Provider/Model Acceptance (2026-11-28)
 
@@ -11,20 +17,14 @@ Synthetic PASS is not live E2E. Production services, external writes and KPI sta
 - [x] LIVE.PREFLIGHT - Freeze source/scope and GET-only prerequisites; CA propagation is the recorded blocker, not a business PASS.
 - [x] LIVE.PLAN.R - Independent plan/validation advisory approves the bounded flow and fail-closed CA repair.
 - [x] LIVE.CA - Fail-closed Dashboard model CA repair published as `4b88d83`; independent review and 53 focused tests passed. TLS/AIB unchanged by this repair.
-- [ ] LIVE.REPORT - Qualify real capture, model summary/authoring, browser edit, Save/Finalize and readback.
-- [ ] LIVE.CHART - Qualify actual model tool use, preview, approval and isolated Grafana publication.
-- [ ] LIVE.RECOVERY - Qualify session/context continuity, idempotency, refusal/recovery, restart and normal owned cleanup.
-- [ ] LIVE.CLOSE.R - Independently review evidence and publish the bounded live acceptance/manual-trial receipt.
+- [x] LIVE.REPORT - Real Jira summary accepted, real authoring applied, human/AI edits saved, revision 3 finalized and browser download matched.
+- [x] LIVE.CHART - Actual catalog/workflow/publish tools, explicit approval and local Grafana query passed; original preview/range preserved.
+- [x] LIVE.RECOVERY - Context/session continuity, exact-key replay, auth refusal/recovery, restart readback and normal zero-residue cleanup passed.
+- [ ] LIVE.CLOSE.R - Independent evidence review PASS; receipt publication awaits the separate queued-governance authorization.
 
-### Dev10 Functional Continuation (2026-11-27)
+### Historical Dev10 Functional And Usability Evidence (2026-11-27)
 
-Dev10 Windows synthetic PASS: 3332 tests/114 keys, bound by
-`evidence/windows-functional-acceptance-dev10.json` and the
-[validation guide](../../../docs/development/reporting-delivery.md).
-
-### Current Frontier: Bounded Dev10 Usability (2026-11-27)
-
-The current functional reference is now the dev10 receipt above; historical dev9 refresh `evidence/windows-functional-acceptance-dev9-refresh.json` remains unchanged and no longer defines the current candidate.
+Dev10's 3332 tests/114 keys remain bound to `evidence/windows-functional-acceptance-dev10.json`; they are not relabelled as dev11 execution.
 The [post-fix pilot](../../docs/validation/performance-reports/2026-11-27-2024-dev10-pilot-r2.md)
 binds dev10 references, repair17d4b1e, 360pages/48comparisons, zero errors/violations,
 full raw replay and cleanup. Its failed first attempt remains historical.

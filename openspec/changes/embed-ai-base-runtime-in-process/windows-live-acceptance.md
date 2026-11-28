@@ -1,6 +1,6 @@
 # Windows Real Provider And Model Acceptance
 
-Status: authorized, in progress (2026-11-28).
+Status: bounded execution and independent evidence review passed; publication and owner acceptance remain separate (2026-11-28).
 Profile source: repo-local. Agent routing mode: multiagent-configured.
 Docs impact: operations, configuration, validation.
 Task authority: this change's `tasks.md`, `LIVE.*` nodes only.
@@ -18,14 +18,21 @@ AIB `9de48851ff4910ef98d414406077dbbcc93abb5b`, both clean on main.
 After the owner-authorized schema-delivery repair, use `ai-base-runtime==0.1.1.dev11`,
 source `d066c104e4394a570ba054098d3d6ed4b5597f2c`, wheel SHA256
 `a05cbd5d8fdabcd48f7ec5c106432370b1d461f0e080a11e0fad04a67a6f9931`.
-Record the actual source again if a scoped repair changes it.
+Qualified Dashboard product source: `6dcf9b0159741669843b43663aabb84786fe4d75`.
+The [live receipt](evidence/windows-live-acceptance-dev11.json) binds current package
+bytes, private evidence hashes and later governance-only source equivalence.
 
 The existing source is Jira; the initial sample is a bounded subset of the
 previously demonstrated scope. Freeze the exact query and membership in private
 evidence before business execution. Use the existing configured AIB external
 gateway/model, not a new endpoint or a fallback model. Configuration discovery
-has identified `gpt-5.5`; network authentication and compatibility are not yet
-proved. The source records may be sent only to this configured model gateway.
+identified `gpt-5.5`; actual summary, authoring and tool/approval flows now pass
+within the recorded bounds. Source records may be sent only to this configured gateway.
+
+The original member exceeded the unchanged 65536-byte summary input limit.
+A second member of the same authorized parent scope was frozen separately and
+qualified, without deleting the first refusal or truncating source records.
+This is not qualification of oversized input or real changed multi-day history.
 
 ## Global Constraints
 

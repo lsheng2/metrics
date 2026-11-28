@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "status": "PASS_BOUNDED_AGENT_EXECUTION",
+  "observed_on": "2026-11-28",
+  "generated_at": "2026-11-28T08:44:42.708470+00:00",
+  "platform": "Windows",
+  "python": "3.13.7",
+  "tested_code": {
+    "dashboard": "6dcf9b0159741669843b43663aabb84786fe4d75",
+    "aib_runtime": "d066c104e4394a570ba054098d3d6ed4b5597f2c"
+  },
+  "source_equivalence": {
+    "dashboard_governance_head": "3ab7a2a7d64918d77b1b133609efb6bf9a83e09d",
+    "aib_governance_head": "0eab0a0ac81926878b6cc26b80b05af1becfd755",
+    "dashboard_product_paths_unchanged": [
+      "ai_host",
+      "project_management",
+      "provider_sync",
+      "jira_sync",
+      "jira_history",
+      "bug_metrics",
+      "ui_web",
+      "metrics",
+      "requirements.txt",
+      "manage.py",
+      "scripts/service_lifecycle_engine",
+      "scripts/validation/run_report_authoring_tests.py",
+      "scripts/validation/windows_install_smoke.py"
+    ],
+    "aib_package_trees_unchanged": {
+      "packages/runtime": "8f3163d249b7d42d84d22c35d652438ffa65f7bc",
+      "packages/runtime-ui": "c2e686eeea1e004920ecbc8f2812e16b7cb8551d"
+    },
+    "note": "Later local commits affect governance, skills and development tooling, not the qualified product bytes."
+  },
+  "runtime": {
+    "version": "0.1.1.dev11",
+    "wheel_sha256": "a05cbd5d8fdabcd48f7ec5c106432370b1d461f0e080a11e0fad04a67a6f9931",
+    "verified_package_files": 158,
+    "immutable_install": true,
+    "full_aib_release_qualification": false
+  },
+  "model": {
+    "provider": "openai-compatible",
+    "configured_name": "gpt-5.5",
+    "schema_delivery": "complete output schema in trusted instructions, with post-validation",
+    "provider_native_response_format_claimed": false,
+    "automatic_retries": 0
+  },
+  "profiles": {
+    "summary": "metrics.project_summary@3",
+    "authoring": "metrics.report_authoring@1"
+  },
+  "source_scope": {
+    "provider": "jira",
+    "real_members_read": 2,
+    "business_qualified_members": 1,
+    "required_parts_complete": [
+      "facts",
+      "comments",
+      "history"
+    ],
+    "qualified_comments": 4,
+    "qualified_history": 3,
+    "attachment_and_linked_item_bodies_read": false,
+    "provider_writes": false,
+    "synthetic_facts_used": false
+  },
+  "assertions": {
+    "real_summary_accepted": true,
+    "real_authoring_filled_and_applied": true,
+    "human_and_ai_edits_saved_with_provenance": true,
+    "exact_revision_finalized": true,
+    "native_browser_download_matches_committed_artifact": true,
+    "real_model_catalog_workflow_publish_tools": true,
+    "no_publication_before_explicit_runtime_approval": true,
+    "session_and_iframe_preserved_across_context_change": true,
+    "original_preview_and_range_preserved_on_publication": true,
+    "grafana_real_query_time_field_and_values": true,
+    "save_and_chat_idempotency": true,
+    "history_refresh_preserves_session": true,
+    "restart_preserves_session_approval_publication_and_report": true,
+    "wrong_auth_refused_then_valid_auth_recovers": true,
+    "restart_and_replay_do_not_admit_new_model_runs": true,
+    "normal_exit_zero_no_forced_cleanup_no_owned_residue": true
+  },
+  "report": {
+    "publication_id": "3e6b5672-b4ca-5978-9930-d40c403caef9",
+    "draft_revision": 3,
+    "archive_commit": "d6695a84736a532b54a2f485607899e2a837b318",
+    "html_bytes": 91835,
+    "html_sha256": "7f7422db2ed6e81ddfc2bb1b794fe133ff916649a477463277fa5b78e9158578"
+  },
+  "chart": {
+    "publication_id": "096f6cb5-61c0-4e93-9ab3-59e6c003dd39",
+    "run_id": "f6fdbcc9-630a-4989-99db-2bbff647f13b",
+    "approval_id": "dca2be72-bf67-4f08-9169-9d60d8db69d9",
+    "tool_call_id": "8585659a-52b0-5143-8ca1-b1f156bbc082",
+    "preview_digest": "f385a3f1146525a46d814dc3ba20904382f46ce5816035d8c2a2dc0b502925a0",
+    "data_fingerprint": "a953185c8af48b2e270c23df4f13e1c5ce8a0ea49a6ddae83ce08e52c3ba7e5f",
+    "range_start": "2026-11-16",
+    "range_end": "2026-11-28"
+  },
+  "grafana_data": {
+    "metric_values": [
+      0,
+      1
+    ],
+    "time_field": true,
+    "canvas_nonblank": true,
+    "target_class": "new isolated loopback Grafana"
+  },
+  "observed_ui_timings_ms": {
+    "first_capture_to_draft_ready": 106019,
+    "authoring_candidate": 11997,
+    "human_save": 2802,
+    "ai_save": 2890,
+    "finalize": 12744
+  },
+  "cleanup": {
+    "normal_stop_exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "forced": false,
+    "observed_process_instances_per_check": [
+      19,
+      6
+    ],
+    "remaining_instances": 0,
+    "remaining_listeners": 0
+  },
+  "focused_junit": [
+    {
+      "file": "inflight-v3-final.xml",
+      "sha256": "45b11e5560c72971de16985dbe40cd6cc8edf73543bda90b78ddfa2f53a1db09",
+      "testcase_elements": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "inflight-v3-installed-join.xml",
+      "sha256": "10c93150965b571fb39233cb2535f902c17eade042f3605701aeb25d049606eb",
+      "testcase_elements": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "limits_and_non_goals": {
+    "summary_input_limit_bytes": 65536,
+    "observation_limit": 16,
+    "kpis_changed": false,
+    "original_oversized_member_rejected": true,
+    "observed_oversized_cumulative_input_bytes": 184445,
+    "real_large_input_and_changed_multi_day_history_qualified": false,
+    "initial_independent_draft_requires_first_save_before_ai_targets": true,
+    "statistical_model_reliability_claimed": false,
+    "full_dev11_performance_certification": false,
+    "historical_dev10_full_suite_relabelled_as_dev11": false,
+    "linux_or_other_apps_qualified": false,
+    "c5_or_r4_r7_closed_by_this_receipt": false,
+    "human_acceptance": "pending",
+    "whole_openspec_change_done_or_archived": false,
+    "screenshot_bitmap": "Ego capture failed; DOM, actual query, nonblank canvas samples and native download verified."
+  },
+  "private_evidence": [
+    {
+      "file": "real-run-r6-audit-0ac5fd82-fce7-40ee-80a0-aeaba1400329.json",
+      "sha256": "e4e112c39fe7cf3b6330449b4f772dded9c65c4b1c181443f5347cc8a17931b8",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-authoring-candidate.json",
+      "sha256": "998bc4bdb33888fa9423451d8e33be0e6d5e42dc251a747f9b51fa85938bb334",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-manual-save.json",
+      "sha256": "e41591b8fdd0e477a80c95ff52f56e809c4e4c87ea6c11d6e9955fe1d9f64a5c",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-ai-save.json",
+      "sha256": "e3f89580c121f503bc27175173768d8540ec8695f6e75513b875ff6ec3119b21",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-save-idempotency.json",
+      "sha256": "0e9e82acb86ee7ce1851111097407798a19779b1fbffd15f85fe89bcaae3f12e",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "publication-api-audit-11f57338-85d7-4fbf-98c3-a2b0bcd83459.json",
+      "sha256": "b219869e1178e20c0f0268996e180d6440ab910357c581927969275196e36775",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "final-browser-artifacts.json",
+      "sha256": "162f81d349021451b383ed212ff936f50ebc152a33a11bb91d2b744bcd70254c",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-chart-context-preservation.json",
+      "sha256": "623c258bf4a46930f9aa5f2c62a22c014b137100572d9863720f6983136fe645",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-chart-published.json",
+      "sha256": "e9bf6dcb04c0aadf11994fd58940b35e72339be17e27b5f59f3a9b3a146e8bcd",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-chart-idempotency-history.json",
+      "sha256": "aa060fd7072ffd9c2f1ed796b665e55f29cedcd4151e1f30926ed4992ac17676",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-grafana-data-validation.json",
+      "sha256": "70083ac6e156c3fec4ba73972f614c313d31ec094836edee001d92d360caa0db",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-chat-audit-bdf32e70-f5e2-4569-94c0-f18bbde761ad.json",
+      "sha256": "37b453df67bc7b0f55a7233a9924a29e11197fda36a9f8feafa22a978ac0c2e1",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "host-recovery-7b6967d8-fddc-4f57-a518-f92d4f3b6af6.json",
+      "sha256": "5f96536dd86ae4cc2dd3f3c08046e591cd5110b0f3bc92b388bb0683196711c3",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "owned-processes-after.json",
+      "sha256": "a59735ea1f81fb366e30d3fc5e4b38b71bcbb87b5535e2fd81f34265fa634559",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "owned-processes-recovery-after.json",
+      "sha256": "828decb6218e12cc3c5e6737ad4cc0f536a8e7d6eb4391217eb15abbf625f5a8",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "stop-f3fa9bb6-1c6c-4c36-81ad-f9c157621b00.json",
+      "sha256": "b27318f354fcfa037b180e90dff1c274418bd0f56b51eca525baf35964d8ce89",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "grafana-stop-cd1378c7-f404-4847-9a01-aeeff493a420.json",
+      "sha256": "795c24a50acb43a23bcd97d70154c7941d7f77fce26a9cb314469f4d94c725bd",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "stop-00bcf7c6-90b1-4f7f-a06c-c095bc280360.json",
+      "sha256": "680cd4b2fb846f4ad43f35ecd2666120abd7bbc62c85c3166ce1fe881c5deedc",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "input-limit-aa15bf12-b0ec-4197-936f-bc29d0325cf2.json",
+      "sha256": "f7510c8d1b5c58e84457b4031fa1aa07d8d0c86486d662f07de9c142460a312b",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-run-r6-browser-result.json",
+      "sha256": "b2648deaaac1ed67eafd902351e2188c293a25aefbd838c4bd781be6ed42ce1b",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "real-finalize-browser.json",
+      "sha256": "6658d4995032feaf8653e0e165de391c5573d86982892ab790fee3fe4ef8d17a",
+      "visibility": "owner-local"
+    },
+    {
+      "file": "chart-sync-result-65fa5d64-f318-4d78-9954-77ca4e8418b7.json",
+      "sha256": "83c5f394450e203e2551a64e5f4bb1bfd3b07218020238870f25ea643d19fb9d",
+      "visibility": "owner-local"
+    }
+  ]
+}

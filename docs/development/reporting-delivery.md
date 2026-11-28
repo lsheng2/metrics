@@ -30,8 +30,8 @@ later qualification and are not prerequisites for this Windows packet.
 Dev11 changes only model output-schema delivery relative to dev10; new-wheel/live gates are separate.
 The fresh Windows interpreter is `D:/AIGC/d11-1128/venv/Scripts/python.exe`.
 Installed checks passed: offline installation, installer37, Dashboard36 and
-runtime/backend78 (separate optional-Copilot test environment). Real-source
-business acceptance remains separate; see the live acceptance packet.
+runtime/backend78 (separate optional-Copilot test environment). Bounded real-source
+business execution passed separately; see the live acceptance receipt below.
 Historical dev10 changed the shared runtime asset cache owner and its HTTP wiring.
 Each runtime retains successfully verified immutable package assets, not
 authentication, entry HTML or user data. Recreate the runtime after a package
@@ -94,8 +94,9 @@ bounded read-only Jira, the existing configured model, a fresh owned D-drive
 instance, and explicit local report/Grafana publication. Keep raw enterprise
 evidence and secrets outside Git. Do not use the operator's running 8017 service,
 production database, provider writes, force refresh, scheduling or external
-publication. Live evidence, operator acceptance, C5 correctness, R4/R7 and full
-certification remain separate gates; authorization is not a PASS.
+publication. [Dev11 live execution](../../openspec/changes/embed-ai-base-runtime-in-process/evidence/windows-live-acceptance-dev11.json)
+passed one bounded real-source workflow; the original oversized member remained refused.
+Owner acceptance, large/changed-history coverage, C5, R4/R7 and full certification remain separate.
 
 The Dashboard editor command boundary synchronizes native text/caret selection
 into ProseMirror state before running toolbar commands. Report authoring and
