@@ -375,7 +375,7 @@ Spec：[delta](specs/report-authoring/spec.md)、[design](report-authoring-v2.md
 [contracts](report-authoring-contracts.md)、[completion](report-completion.md)、
 [continuity](report-continuity.md)、[validation](report-authoring-validation.md)。
 profile_source：repo-local；agent_routing_mode：single-agent实施协调，独立Architect Planner Reviewer。
-使用writing-plans/TDD；不复制另一份勾选ledger。Implementation Engineer由同一协调者兼任，
+使用r2-change-loop与TDD；不复制另一份勾选ledger。Implementation Engineer由同一协调者兼任，
 Validation Engineer只在VA有独立验证风险时派发，Debugger当前跳过（不是故障实施请求）。
 子代理继续显式GPT-5.5/xhigh，不要求用户另行安排开发者。
 
@@ -828,7 +828,7 @@ browser ClipboardItem; the separate editor Agent now owns the approved
 open-source WYSIWYG integration. No AI Base API change is needed.
 Spec: html-report-authoring.md and specs/project-reporting/spec.md;
 cases/commands: html-report-validation.md HT01-HT32.
-Use Superpowers TDD/executing-plans and the existing independent review policy.
+Use r2-change-loop with TDD and the existing independent review policy.
 
 Global constraints: owner/CSRF checks; no provider/model side effects; English
 generated content and literal source/human notes; independent data root; no
