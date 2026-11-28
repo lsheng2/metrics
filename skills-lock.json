@@ -3,9 +3,10 @@
   "skills": {
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
+      "ref": "agent-skills-5a37a6329fbad3666c3207392a6a7c0110e92efb",
       "sourceType": "github",
       "skillPath": "skills/web-design-guidelines/SKILL.md",
-      "computedHash": "d8e7d3afe37dcc8a97b99ffb5afdb4d0919ae0092ea8b68f44eb201f035e33ac"
+      "computedHash": "5a32b3fbbcb879e4e03a8ea1667d1d7456729421ca13335e2a28bd93193fbf51"
     }
   }
 }
