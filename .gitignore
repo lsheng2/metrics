@@ -1,6 +1,7 @@
 # IDE/AI files
 .idea
-.claude
+.claude/*
+!.claude/skills/
 .codebase-memory/
 .github/skills/lsheng2-coding/*.receipts.json
 

@@ -4,7 +4,7 @@
   "include_untracked": true,
   "rules": [
     {"name": "ai-guidance-markdown", "max_lines": 260,
-     "patterns": ["AI_CONTRACT.md", "AGENTS.md", "CLAUDE.md", ".github/**/*.md", ".agents/**/*.md"],
+     "patterns": ["AI_CONTRACT.md", "AGENTS.md", "CLAUDE.md", ".github/**/*.md", ".agents/**/*.md", ".claude/**/*.md"],
      "rationale": "Always-loaded AI contracts and customization files stay compact; detail belongs in openspec/docs."},
     {"name": "ai-guidance-json", "max_lines": 220, "patterns": [".github/**/*.json"],
      "rationale": "AI governance JSON should remain reviewable and should not hide large policy bodies."},
@@ -37,7 +37,7 @@
      "patterns": ["**/.gitignore", ".gitattributes", ".dockerignore", ".env.example", "*.ini", "*.txt", "LICENSE",
                   "**/Dockerfile", "**/*.sample", ".agents/skills/.openspec-target"],
      "rationale": "Repository and tool configuration files stay small and declarative."},
-    {"name": "ai-guidance-assets", "max_lines": 260, "patterns": [".github/**", ".agents/**"],
+    {"name": "ai-guidance-assets", "max_lines": 260, "patterns": [".github/**", ".agents/**", ".claude/**"],
      "rationale": "Other AI customization assets (catalog pages, samples) follow the AI guidance cap."}
   ],
   "exemptions": [
