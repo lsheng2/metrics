@@ -6,15 +6,15 @@ This project-local overlay customizes `authority-boundary-review` for this repos
 
 - Runtime code authority stays in the modular monolith boundaries from `AGENTS.md`: domain modules communicate through public APIs in `app/api/`, and `ui_web` is the federation gateway.
 - Local service lifecycle authority is owned by `scripts/service_lifecycle_engine/`. For launcher work, wrapper PID, listener PID, process group, command identity, process start marker, listener identity, lifecycle state, readiness endpoint, and termination ledger are separate authorities and must not be substituted for one another without an explicit capability downgrade.
-- Copilot skill authority stays under `.github/skills/` and user-level `.copilot/skills/`; Codex-only adapters stay under `.agents/skills/` and must clearly say they are for Codex only.
-- The three lsheng2 skills have canonical user-level Copilot sources. Project-local Codex adapters may forward to canonical scripts, but must not create a second script authority or silently change Copilot behavior.
-- Agent routing authority for DAG work is `.github/custom-agents.md`, `.github/agents/*.agent.md`, and the DAG project profile routing section. Codex role adapters may map to these roles but must not redefine them incompatibly.
+- Skill authority: shared skills live once in user-level `~/.agents/skills/` (read by Copilot and Codex); project skills live once in `.agents/skills/` with byte-identical `.claude/skills/` copies; OpenSpec-managed per-tool copies and the Copilot-facing `drawio` skill live under `.github/skills/`. The layout and its exceptions are in `.github/skills/README.md`. Codex-only role adapters stay under `.agents/skills/`, say they are for Codex only, and are turned off for Copilot in `.github/copilot/settings.json`.
+- The lsheng2 skills have canonical user-level sources under `~/.agents/skills/`. This repository holds only their project overlays (`.github/skills/lsheng2-coding/`); a project `SKILL.md` or script wrapper that forwards to a personal path is a second authority.
+- Agent routing authority is `.github/custom-agents.md` and `.github/agents/*.agent.md`; lanes and the R2 loop come from `AI_CONTRACT.md` §1 and the `r2-change-loop` skill. Codex role adapters may map to these roles but must not redefine them incompatibly.
 - Forbidden degradations: copying canonical workflow scripts into a divergent implementation, adding Codex adapter hooks that Copilot can accidentally invoke, restoring removed `port_lifecycle` compatibility during zero-compatibility work, treating process existence as service ownership, treating a non-ready persisted endpoint as live, conflating caller force request with kill escalation, or documenting a dual-agent path that only works for one agent.
 
 ## Project-Specific Surface Matrix Requirements
 
-- Skill adapter reviews must include `.agents/skills/README.md`, every touched `.agents/skills/*/SKILL.md`, any `.agents/skills/*/scripts/*.py` wrapper, `.github/skills/README.md`, every touched `.github/skills/*/SKILL.md`, and `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md`.
-- For script-capable skills, include both the Codex wrapper and the canonical user-level target named by the wrapper. The review must verify that wrapper behavior is pure forwarding plus clear failure reporting.
+- Skill layout reviews must include `.github/skills/README.md`, `.agents/skills/README.md`, `.github/copilot/settings.json`, every touched `SKILL.md` under `.github/skills/`, `.agents/skills/` and `.claude/skills/`, and `scripts/tests/test_skill_copies.py`.
+- For script-capable skills, review the scripts at their single canonical location; a project copy or forwarding wrapper of a canonical script is a finding.
 - For routing-sensitive skills, include `.github/custom-agents.md`, `.github/agents/*.agent.md`, and any Codex role adapter SKILL files that claim to map those roles.
 - For documentation truth sync, include `AGENTS.md`, `.github/copilot-instructions.md` when present, `openspec/docs/backlog/README.md`, and any handoff or guide files changed in the same dirty tree.
 - Generated receipt files and review gate state are local process artifacts; review them for protocol health only when they are touched, not as product source authority.
@@ -23,10 +23,10 @@ This project-local overlay customizes `authority-boundary-review` for this repos
 
 ## Project-Specific Negative Fixtures
 
-- A Copilot-only skill path exists but no `.agents/skills/<skill>/SKILL.md` Codex adapter exists for the same skill.
-- A `.agents/skills/<skill>/SKILL.md` exists but does not state that it is Codex-only and must not be pointed to by Copilot.
-- A wrapper script exists in `.agents/skills/*/scripts/` but does not forward to the canonical user-level script path or cannot fail clearly when the canonical source is missing.
-- A legacy alias such as `dag-based-planning` exists but does not point to the renamed `lsheng2-dag-based-planning` skill.
+- The same skill name appears in more than one project skill directory outside the exceptions listed in `.github/skills/README.md`.
+- A project `SKILL.md` or script wrapper forwards to a personal skill path (`~/.agents/skills/`, `~/.copilot/skills/` or `%USERPROFILE%`).
+- A `.claude/skills/<skill>` entry differs from `.agents/skills/<skill>`.
+- A Codex-only role adapter is missing from the Copilot `disabledSkills` list in `.github/copilot/settings.json`, or states role content that differs from its `.github/agents/*.agent.md` source.
 - README instructions describe dual-agent compatibility but omit where the canonical source lives, how sync is maintained, or which directories are intentionally agent-specific.
 - A registered wrapper PID no longer exists while an owned listener is still alive.
 - A persisted listener PID exists but is not currently listening on the service host/port.
@@ -38,8 +38,8 @@ This project-local overlay customizes `authority-boundary-review` for this repos
 ## Project-Specific Validation Rules
 
 - Run `python scripts/check_file_size_limits.py --include-untracked` and `python scripts/check_diff_whitespace.py --include-untracked` before review when available.
-- Run the lsheng2 adapter maintenance checks when lsheng2 scripts or READMEs are touched: `.agents/skills/lsheng2-dag-based-planning/scripts/dag_setup_doctor.py`, `.agents/skills/lsheng2-dag-based-planning/scripts/lint_project_profile.py`, and `.agents/skills/lsheng2-dag-based-planning/scripts/run_maintainer_checks.py` when those wrappers exist and their canonical scripts are installed.
-- Static review must search for accidental Copilot entry points into `.agents/skills/`, accidental Codex entry points into `.github/skills/` where not intended, stale `dag-based-planning` canonical references, and non-forwarding duplicate script logic.
+- Run `scripts/tests/test_skill_copies.py` through the no-dotenv test entry when `.agents/skills/` or `.claude/skills/` changes.
+- Static review must search for forwarding `SKILL.md` files, duplicate skill names across project skill directories, routing references to retired skills (`dag-based-planning`, `lsheng2-dag-based-planning`, `lsheng2-multiagent-creation`) in current guides, and duplicated script logic.
 - Documentation-only changes do not require Django runtime tests unless they alter application code, configuration defaults, templates, or scripts executed by the application.
 - For `service_lifecycle_engine`, Tier 1 should run the targeted tests for the failure class first, especially `scripts/tests/test_service_lifecycle_platform_ops.py`, `test_service_lifecycle_provenance.py`, `test_service_lifecycle_stopping.py`, `test_service_lifecycle_resolver.py`, and `test_service_lifecycle_state_store.py` as applicable.
 - For `service_lifecycle_engine`, Tier 2 should run the focused lifecycle/launcher bundle: `python -m pytest scripts/tests/test_service_lifecycle_engine.py scripts/tests/test_service_lifecycle_stopping.py scripts/tests/test_service_lifecycle_state_store.py scripts/tests/test_service_lifecycle_provenance.py scripts/tests/test_service_lifecycle_platform_ops.py scripts/tests/test_service_lifecycle_resolver.py scripts/tests/test_service_lifecycle_process.py scripts/tests/test_service_lifecycle_cli.py scripts/tests/test_e2e_bug_trend_launcher.py scripts/tests/test_e2e_provider_parity_launcher.py -q`.
@@ -48,7 +48,7 @@ This project-local overlay customizes `authority-boundary-review` for this repos
 
 ## Reviewer Prompt Additions
 
-- Require the reviewer to inspect both agent entry trees and to state whether any surface is intentionally one-agent-only.
-- Require every clean pass to state which adapter/script/README surfaces were covered and whether Copilot behavior remains unchanged.
-- Treat unclear ownership between `.agents/skills/`, `.github/skills/`, and user-level `.copilot/skills/` as an authority-boundary finding.
+- Require the reviewer to inspect all three tool entry trees (`.github/skills/`, `.agents/skills/`, `.claude/skills/`) and to state whether any surface is intentionally one-tool-only.
+- Require every clean pass to state which skill, README and settings surfaces were covered and which file each tool resolves for every touched skill name.
+- Treat unclear ownership between `.agents/skills/`, `.github/skills/`, `.claude/skills/` and user-level `~/.agents/skills/` as an authority-boundary finding.
 - For `service_lifecycle_engine`, require each reviewer prompt after a process/identity finding to bundle sibling checks for wrapper PID, listener PID, process group, command executable identity, command arguments, listener endpoint identity, persisted lifecycle readiness, and force/kill semantics.

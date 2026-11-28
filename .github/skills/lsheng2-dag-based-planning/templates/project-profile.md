@@ -1,5 +1,9 @@
 # Project Profile
 
+Status: retained only for in-flight changes that cite it (`embed-ai-base-runtime-in-process`,
+`add-provider-neutral-project-reporting`). New work follows the lanes in `AI_CONTRACT.md` §1;
+an R2 change runs with the `r2-change-loop` skill, not a DAG plan.
+
 Everything repository-specific lives here so the DAG workflow stays portable.
 
 ## Identity
@@ -246,6 +250,6 @@ Use `normal` only when the authority is internal to one module and has no export
 ## Initialization Follow-ups
 
 - No current unresolved placeholder entries.
-- Keep the legacy `.github/skills/dag-based-planning/templates/project-profile.md` path only as a compatibility copy unless the project intentionally updates older agent references.
+- The legacy `.github/skills/dag-based-planning/` copy was removed on 2026-11-28; older references to it are historical.
 - Re-run discovery if source roots, CI, validation commands, module boundaries, or deployment artifacts change substantially.
 - Before any closure claim, run or explicitly account for the hard gate commands relevant to the touched owner paths.
