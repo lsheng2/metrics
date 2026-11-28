@@ -54,7 +54,7 @@ Use these states consistently:
 
 - `candidate`: Captured but not yet accepted as project backlog.
 - `accepted`: Worth preserving, but not ready for planning.
-- `ready-for-plan`: Trigger and owner paths are clear enough to create a DAG plan.
+- `ready-for-plan`: Trigger and owner paths are clear enough to pick a lane and plan the work.
 - `planned`: Covered by an approved plan or implementation handoff.
 - `in-progress`: Active work is underway.
 - `blocked`: Cannot proceed until a named dependency is resolved.
@@ -71,9 +71,9 @@ When deferring work, write `deferred-with-trigger` instead of a generic TODO. Th
 
 When closing an item, cite the validation evidence. Do not mark `done` from memory or intent.
 
-## Promotion To DAG Planning
+## Promotion To Planned Work
 
-A backlog item may become a DAG-backed plan only when all of these are true:
+A backlog item may be promoted to planned work only when all of these are true:
 
 - The item has a concrete `trigger_to_start` that has occurred or has been accepted by the user.
 - The owning modules, docs, or contracts are named.
@@ -81,7 +81,7 @@ A backlog item may become a DAG-backed plan only when all of these are true:
 - The work has a bounded non-goal list.
 - The required review gate is known.
 
-Once promoted, follow the DAG planning skill and keep the backlog item linked to the plan or handoff.
+Once promoted, pick its lane in `AI_CONTRACT.md` §1 (an R2 item becomes an OpenSpec change run with the `r2-change-loop` skill) and keep the backlog item linked to the change, brief or handoff.
 
 ## Triage Rhythm
 

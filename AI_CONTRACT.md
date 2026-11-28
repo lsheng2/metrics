@@ -9,7 +9,17 @@ It does not grant permissions beyond the current user request or higher-level in
 - Read this contract, the current task frontier, and the relevant module/specification before work.
   Use [README](README.md) and the current guides for product context; load detailed history only
   when it answers a concrete question. Do not repeatedly reload unchanged historical reports.
-- OpenSpec owns requirements and changes; Superpowers supplies implementation and quality methods.
+- Pick a lane before work. R2 is any of: a public `app/api/` or AI Base contract change, a data
+  migration or durable-data semantics change, security/credential/permission work, cross-repository
+  work, or work expected to span more than one session or agent; it runs as an OpenSpec change with
+  the `r2-change-loop` skill. R1 adds or adjusts behavior inside one module: a one-page brief with
+  acceptance examples in the PR description or commit body, plus a minimal OpenSpec change only
+  when `openspec/specs/` behavior changes. R0 restores intended behavior: a test that fails first,
+  the fix, and a commit body naming symptom, root cause, fix and test id; no OpenSpec change. A
+  spike is time-boxed and ends in at most one page of findings that re-enters lane selection.
+- OpenSpec owns durable behavior contracts, so a change folder exists only when one changes; the
+  method rules in §4 supply implementation discipline; acceptance test ids decide done
+  (`scripts/compute_done.py` on an R2 change's `feature_list.json`).
   One change has one authoritative `tasks.md`, one implementation coordinator and one evidence trail.
   Delta-spec and archive authoring rules are in
   [repo context](.github/ai-governance/repo-context.md#openspec-authoring).
@@ -74,9 +84,15 @@ It does not grant permissions beyond the current user request or higher-level in
 
 ## 4. Match Tests To The Risk
 
-- Use TDD for behavior changes: reproduce a meaningful failure, make the smallest correct change,
-  then run direct and affected-consumer checks. Adding missing proof of existing behavior need not
-  manufacture a product failure or change already-correct code.
+- Use TDD for behavior changes: write the failing test at the real boundary first and watch it fail
+  for the right reason, make the smallest correct change, then run direct and affected-consumer
+  checks. Adding missing proof of existing behavior need not manufacture a product failure or change
+  already-correct code. Copy, style or config-only changes match test effort to risk and need no new
+  test when behavior does not change.
+- Debug from evidence: reproduce, name the root cause (`file:function`), then fix only that. Never
+  claim done without fresh evidence: name the command run and the test ids that passed. The pinned
+  `test-driven-development`, `systematic-debugging` and `verification-before-completion` skills
+  hold the long form; load them on demand.
 - Test observable business contracts. One test may use several assertions for one user story or
   invariant. Mock external/SPI boundaries, not the business logic being qualified.
 - HTTP/CSRF/owner validation, template coverage, schema/nullable values, dependency wiring and
@@ -110,7 +126,8 @@ It does not grant permissions beyond the current user request or higher-level in
   automatically a newly discovered product defect.
 - One production writer per repository. Use another agent only for a distinct independent task
   or gate. Codex subagents explicitly use `gpt-5.5` with `xhigh`; do not alter the main model.
-- After two equivalent failures without new information, change the hypothesis or instrumentation.
+- After two equivalent failures without new information, return your own edits to the last green
+  state and change the hypothesis or instrumentation.
   Do not blindly retry, weaken checks, extend an existing operation deadline or invent progress.
 - Record setup, call and cleanup separately when measuring cost. Do not add overlapping timers,
   equate pytest/JUnit duration with whole-turn wall time, or promise unmeasured savings.

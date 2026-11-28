@@ -15,4 +15,4 @@ Status: active BKM.
 
 ## Practical Interpretation
 
-For small fixes, keep this lightweight. For multi-owner work, use the DAG skill and custom agents.
+For small fixes, keep this lightweight. Pick the lane in `AI_CONTRACT.md` §1; multi-owner (R2) work runs as an OpenSpec change with the `r2-change-loop` skill and custom agents.

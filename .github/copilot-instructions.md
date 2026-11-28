@@ -8,7 +8,7 @@ development contract shared with Codex and Claude; this file is a routing index.
 1. Root `AI_CONTRACT.md` for development authority, architecture, testing and safety.
 2. `.github/ai-governance/README.md` and the matching BKM file when the task touches coding flow, validation, shell commands, comments, or closure claims.
 3. Target module files and nearby tests before editing.
-4. Shared `lsheng2-dag-based-planning` skill plus `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` when a task needs DAG-backed planning, multi-agent handoff, or review gates.
+4. For an R2 change (lanes in `AI_CONTRACT.md` §1), the current OpenSpec change plus the `r2-change-loop` skill.
 
 ## Stable Repo Truths
 
@@ -54,7 +54,7 @@ development contract shared with Codex and Claude; this file is a routing index.
 2. Use `.github/agents/implementation-engineer.agent.md` to execute approved handoffs.
 3. Use `.github/agents/validation-engineer.agent.md` for test-plan signoff and stale/wrong-owner test review.
 4. Use `.github/agents/dashboard-debugger.agent.md` for runtime debugging across Django, tracker adapters, htmx partials, and templates.
-5. Use the shared `lsheng2-dag-based-planning` skill with `.github/skills/lsheng2-dag-based-planning/templates/project-profile.md` for dependency-aware plans and multi-agent execution ledgers. The older `.github/skills/dag-based-planning/templates/project-profile.md` path is compatibility-only.
+5. Use the `r2-change-loop` skill to execute an approved R2 OpenSpec change; its session state lives only in that change's `tasks.md`.
 6. Use `.github/skills/drawio/` for complex architecture diagrams.
 7. Use `.github/ai-governance/` as the local BKM library for repeatable AI coding practices.
 

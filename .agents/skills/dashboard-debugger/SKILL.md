@@ -1,7 +1,7 @@
 ---
 name: dashboard-debugger
 description: Use when Codex should act as the project's Dashboard Debugger for Jira, Azure, Django, htmx, forecast, velocity, PR review gate, or runtime diagnosis work.
-argument-hint: failure symptom, failing command, broken URL, dashboard page, provider issue, or debug DAG node
+argument-hint: failure symptom, failing command, broken URL, dashboard page, provider issue, or incident
 ---
 
 # Dashboard Debugger Adapter
@@ -14,15 +14,15 @@ The canonical role definition remains:
 
 `.github/agents/dashboard-debugger.agent.md`
 
-Load that file before acting in this role. Treat it as the source of truth for domain registry, evidence order, secret handling, output shape, and DAG participation.
+Load that file before acting in this role. Treat it as the source of truth for domain registry, evidence order, secret handling, output shape, and change participation.
 
 ## Use In Codex
 
 Use this adapter when Codex needs the Dashboard Debugger role directly, or when a Codex subagent/task should be prompted with this role.
 
-Default DAG ownership:
+Default ownership:
 
-- debug or incident nodes;
+- debug or incident work;
 - reproduced failures;
 - runtime symptoms;
 - external-service issues;

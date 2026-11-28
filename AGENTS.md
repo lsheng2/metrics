@@ -3,7 +3,8 @@
 Before design, coding, testing, review or development-document changes, read and follow
 [AI_CONTRACT.md](AI_CONTRACT.md). It is the single repository development contract.
 
-Use the current OpenSpec change and its one `tasks.md`; do not keep a second skill ledger.
+Pick the lane in `AI_CONTRACT.md` §1. An R2 change uses its OpenSpec change, one `tasks.md` and the
+`r2-change-loop` skill; do not keep a second skill ledger.
 Current product context is in [README.md](README.md) and [repo context](.github/ai-governance/repo-context.md).
 Load only the relevant module, specification, tests and BKM after the contract.
 

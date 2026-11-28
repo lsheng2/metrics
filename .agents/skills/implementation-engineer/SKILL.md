@@ -1,7 +1,7 @@
 ---
 name: implementation-engineer
-description: Use when Codex should act as the project's Implementation Engineer for approved handoffs, DAG implementation nodes, or scoped production/test/doc/config changes.
-argument-hint: approved handoff, implementation node, owner paths, or focused code change
+description: Use when Codex should act as the project's Implementation Engineer for approved handoffs, R2 change milestones, or scoped production/test/doc/config changes.
+argument-hint: approved handoff, milestone, owner paths, or focused code change
 ---
 
 # Implementation Engineer Adapter
@@ -20,9 +20,9 @@ Load that file before acting in this role. Treat it as the source of truth for r
 
 Use this adapter when Codex needs the Implementation Engineer role directly, or when a Codex subagent/task should be prompted with this role.
 
-Default DAG ownership:
+Default R2 change ownership:
 
-- approved implementation nodes `W*.N*`;
+- approved `tasks.md` milestones, run with the `r2-change-loop` skill;
 - scoped code, test, documentation, configuration, or artifact edits;
 - implementation reports and focused validation evidence.
 

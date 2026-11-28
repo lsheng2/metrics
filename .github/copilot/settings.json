@@ -1,0 +1,23 @@
+{
+  "disabledSkills": [
+    "architect-planner-reviewer",
+    "dashboard-debugger",
+    "implementation-engineer",
+    "validation-engineer",
+    "lsheng2-agent-router",
+    "openspec-apply-change",
+    "openspec-explore",
+    "openspec-update-change",
+    "superpowers:brainstorming",
+    "superpowers:diagnosing-superpowers",
+    "superpowers:dispatching-parallel-agents",
+    "superpowers:executing-plans",
+    "superpowers:finishing-a-development-branch",
+    "superpowers:requesting-code-review",
+    "superpowers:subagent-driven-development",
+    "superpowers:using-git-worktrees",
+    "superpowers:using-superpowers",
+    "superpowers:writing-plans",
+    "superpowers:writing-skills"
+  ]
+}
